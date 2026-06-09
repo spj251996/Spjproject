@@ -11,7 +11,8 @@
 <title>Sebastian & Flemy — 9 January 2027</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Alex+Brush&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Alex+Brush&family=Jost:wght@300;400;500;600&display=swap&font-display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Alex+Brush&family=Jost:wght@300;400;500;600&display=swap"></noscript>
 <style>
 /* ══════════════════════════════════════════════
    DESIGN TOKENS
@@ -59,7 +60,7 @@
    RESET & BASE
 ══════════════════════════════════════════════ */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; font-size:16px; }
+html { scroll-behavior:smooth; font-size:16px; overflow-x:hidden; max-width:100%; }
 body {
   background:var(--cream);
   color:var(--ink);
@@ -67,29 +68,61 @@ body {
   font-weight:300;
   line-height:1.7;
   overflow-x:clip;
+  max-width:100vw;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
-a { text-decoration:none; color:inherit; -webkit-tap-highlight-color:transparent; }
+a, a:visited, a:active { text-decoration:none; color:inherit; -webkit-tap-highlight-color:transparent; }
 button { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 img { display:block; max-width:100%; }
 
 /* ══════════════════════════════════════════════
-   SCROLL REVEAL
+   SCROLL REVEAL — GPU composited, zero jank
 ══════════════════════════════════════════════ */
+
+/* Use translate3d to guarantee GPU layer promotion */
 .sr {
   opacity:0;
-  transform:translateY(20px);
-  transition:opacity .65s cubic-bezier(.22,1,.36,1),
-             transform .65s cubic-bezier(.22,1,.36,1);
+  transform:translate3d(0, 22px, 0);
+  will-change:opacity, transform;
+  transition:
+    opacity   .6s cubic-bezier(.22,1,.36,1),
+    transform .6s cubic-bezier(.22,1,.36,1);
+  backface-visibility:hidden;
 }
-.sr.in { opacity:1; transform:none; }
-.tl-row.in { opacity:1; transform:none; }
+.sr.in {
+  opacity:1;
+  transform:translate3d(0, 0, 0);
+  will-change:auto;
+}
+
+/* Timeline rows — also GPU promoted */
+.tl-row {
+  opacity:0;
+  transform:translate3d(-14px, 0, 0);
+  will-change:opacity, transform;
+  transition:
+    opacity   .58s cubic-bezier(.22,1,.36,1),
+    transform .58s cubic-bezier(.22,1,.36,1);
+  backface-visibility:hidden;
+}
+.tl-row.in {
+  opacity:1;
+  transform:translate3d(0, 0, 0);
+  will-change:auto;
+}
+.tl-row.in::before {
+  background:var(--sage-lt);
+  box-shadow:0 0 0 4px rgba(90,122,90,.15);
+  transition:background .4s ease, box-shadow .4s ease;
+}
+
+/* Staggered delays */
 .sr.d1 { transition-delay:.08s; }
-.sr.d2 { transition-delay:.16s; }
-.sr.d3 { transition-delay:.24s; }
-.sr.d4 { transition-delay:.32s; }
-.sr.d5 { transition-delay:.40s; }
+.sr.d2 { transition-delay:.15s; }
+.sr.d3 { transition-delay:.22s; }
+.sr.d4 { transition-delay:.30s; }
+.sr.d5 { transition-delay:.38s; }
 
 /* ══════════════════════════════════════════════
    NAV
@@ -101,10 +134,11 @@ img { display:block; max-width:100%; }
   display:flex; align-items:center; justify-content:space-between;
   padding:0 1.5rem;
   background:rgba(249,245,238,.92);
-  -webkit-backdrop-filter:blur(16px) saturate(1.5);
-  backdrop-filter:blur(16px) saturate(1.5);
+  -webkit-backdrop-filter:blur(10px) saturate(1.3);
+  backdrop-filter:blur(10px) saturate(1.3);
+  transform:translateZ(0);
   border-bottom:1px solid var(--border);
-  transition:box-shadow .3s;
+  transition:filter .25s ease;
 }
 .nav.up { box-shadow:var(--s2); }
 .nav-logo {
@@ -123,19 +157,27 @@ img { display:block; max-width:100%; }
 .nav-ham.open span:nth-child(2) { opacity:0; width:0; }
 .nav-ham.open span:nth-child(3) { transform:rotate(-45deg) translate(4.5px,-4.5px); }
 .nav-drawer {
-  display:none; position:fixed; top:56px; left:0; right:0; z-index:899;
+  position:fixed; top:56px; left:0; right:0; z-index:899;
   background:var(--white); border-bottom:1px solid var(--border);
-  padding:1.2rem 1.8rem 1.8rem; flex-direction:column;
+  padding:0 1.8rem; flex-direction:column;
   box-shadow:var(--s3);
+  max-height:0; overflow:hidden;
+  transition:max-height .38s cubic-bezier(.22,1,.36,1),
+             padding   .38s cubic-bezier(.22,1,.36,1),
+             opacity   .3s ease;
+  opacity:0; display:flex;
 }
-.nav-drawer.open { display:flex; }
+.nav-drawer.open {
+  max-height:520px; padding:1.2rem 1.8rem 1.8rem; opacity:1;
+}
+
 .nav-drawer a {
   font-size:.7rem; font-weight:500; letter-spacing:.2em; text-transform:uppercase;
   color:var(--ink2); padding:.75rem 0; border-bottom:1px solid var(--border);
-  transition:color .2s;
+  transition:color .22s ease, padding-left .22s ease;
 }
 .nav-drawer a:last-child { border:none; }
-.nav-drawer a:hover { color:var(--sage); }
+.nav-drawer a:hover { color:var(--sage); padding-left:.5rem; }
 @media(min-width:768px) {
   .nav-ham { display:none; }
   .nav-drawer {
@@ -153,29 +195,17 @@ img { display:block; max-width:100%; }
   display:grid;
   grid-template-rows:1fr auto;
   padding-top:56px;
-  background:var(--forest);
-  position:relative; overflow:hidden; overflow:clip;
+  background:
+    radial-gradient(ellipse 70% 55% at 20% 10%,  rgba(90,122,90,.26) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 80%,  rgba(184,147,90,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 75% 30%,  rgba(90,122,90,.12) 0%, transparent 60%),
+    var(--forest);
+  position:relative; overflow:clip;
+  contain:layout style;
 }
 
-/* Organic background shapes */
-.hero-blob {
-  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
-}
-.hero-blob-1 {
-  width:min(600px,100vw); height:min(600px,100vw);
-  top:-15%; left:-20%;
-  background:radial-gradient(circle, rgba(90,122,90,.28) 0%, transparent 70%);
-}
-.hero-blob-2 {
-  width:min(500px,90vw); height:min(500px,90vw);
-  bottom:-10%; right:-15%;
-  background:radial-gradient(circle, rgba(184,147,90,.2) 0%, transparent 70%);
-}
-.hero-blob-3 {
-  width:min(300px,70vw); height:min(300px,70vw);
-  top:30%; right:10%;
-  background:radial-gradient(circle, rgba(90,122,90,.14) 0%, transparent 70%);
-}
+/* Hero ambient glow — single composited layer, no repaints */
+.hero-blob { display:none; }
 
 /* Botanical line art */
 .hero-botanical {
@@ -188,10 +218,11 @@ img { display:block; max-width:100%; }
 }
 .hero-botanical-r {
   top:56px; right:0;
-  width:min(240px,48vw);
-  opacity:.18;
-  transform:scaleX(-1) rotate(15deg);
+  width:min(200px,40vw);
+  opacity:.15;
+  transform:scaleX(-1) rotate(12deg);
   transform-origin:right top;
+  overflow:hidden;
 }
 
 /* Thin horizontal rule top */
@@ -322,23 +353,15 @@ img { display:block; max-width:100%; }
   font-family:var(--display);
   font-size:1.4rem; color:rgba(184,147,90,.2); line-height:1;
 }
-.hero-cd-n {
-  display:block;
-  font-family:var(--display);
-  font-size:clamp(2rem,8vw,2.8rem);
-  font-weight:400;
-  color:rgba(249,245,238,.75);
-  line-height:1;
-  transition:opacity .3s;
-}
-.hero-cd-n.tick { animation:cdTick .35s ease; }
+/* Smooth digit slot-machine flip */
 .hero-cd-l {
   font-size:.44rem; font-weight:600; letter-spacing:.25em; text-transform:uppercase;
   color:rgba(138,170,138,.4); margin-top:.35rem;
 }
-@keyframes cdTick {
-  0%   { opacity:.2; transform:translateY(-5px); }
-  100% { opacity:.75; transform:none; }
+@keyframes cdFlip {
+  0%   { opacity:0;    transform:translate3d(0,-12px,0) scale(.95); }
+  40%  { opacity:1;    transform:translate3d(0, 3px,0) scale(1.02); }
+  100% { opacity:.78;  transform:translate3d(0, 0, 0)  scale(1);    }
 }
 @keyframes hIn {
   from { opacity:0; transform:translateY(18px); }
@@ -348,7 +371,7 @@ img { display:block; max-width:100%; }
 /* ══════════════════════════════════════════════
    SECTION SHELL
 ══════════════════════════════════════════════ */
-.sec { padding:5.5rem 1.5rem; }
+.sec { padding:5.5rem 1.5rem; contain:content; }
 .sec-sm { padding:4rem 1.5rem; }
 .sec-inner { max-width:720px; margin:0 auto; text-align:left; }
 @media(min-width:768px) { .sec-inner { text-align:center; } }
@@ -410,10 +433,11 @@ img { display:block; max-width:100%; }
   border-radius:var(--r-md);
   overflow:hidden;
   border:1px solid var(--border);
-  transition:transform .25s, box-shadow .25s;
+  transition:transform .22s ease, filter .22s ease;
   display:flex; flex-direction:column;
+  transform:translateZ(0);
 }
-.bento-card:hover { transform:translateY(-3px); box-shadow:var(--s3); }
+.bento-card:hover { transform:translate3d(0,-3px,0); filter:drop-shadow(0 8px 24px rgba(30,46,30,.14)); }
 
 .bc-header {
   background:var(--forest);
@@ -474,15 +498,17 @@ img { display:block; max-width:100%; }
   border-radius:var(--r-md);
   padding:1.8rem 1.6rem;
   border:1px solid var(--border);
-  position:relative; overflow:hidden;
-  transition:box-shadow .3s, transform .3s;
+  position:relative; overflow:clip;
+  transition:transform .22s ease, filter .22s ease;
+  transform:translateZ(0);
 }
-.vc:hover { box-shadow:var(--s2); transform:translateY(-2px); }
+.vc:hover { transform:translate3d(0,-2px,0); filter:drop-shadow(0 4px 16px rgba(30,46,30,.1)); }
 /* Sage accent bar */
 .vc::before {
   content:''; position:absolute; top:0; left:0; right:0; height:3px;
-  background:linear-gradient(to right, var(--sage-dk), var(--sage-lt), var(--gold-lt));
-  transform:scaleX(0); transform-origin:left; transition:transform .4s;
+  background:linear-gradient(to right, var(--sage-dk), var(--gold-lt));
+  transform:scaleX(0); transform-origin:left;
+  transition:transform .45s cubic-bezier(.22,1,.36,1);
 }
 .vc:hover::before { transform:scaleX(1); }
 .vc-icon { font-size:1.4rem; margin-bottom:.8rem; }
@@ -492,11 +518,13 @@ img { display:block; max-width:100%; }
 .map-btn {
   display:inline-flex; align-items:center; gap:.4rem;
   font-size:.56rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--sage-dk); border:1px solid var(--sage-dk);
+  color:var(--sage-dk); border:1.5px solid var(--sage-dk);
   padding:.52rem 1rem; border-radius:30px;
-  transition:all .25s;
+  transition:background .22s ease, color .22s ease,
+             transform .22s ease, box-shadow .22s ease;
+  transform:translateZ(0);
 }
-.map-btn:hover { background:var(--sage-dk); color:var(--cream); }
+
 
 /* ══════════════════════════════════════════════
    FAMILIES — dark editorial section
@@ -529,9 +557,11 @@ img { display:block; max-width:100%; }
   border-radius:var(--r-md);
   padding:2rem 1.8rem;
   cursor:pointer;
-  transition:background .3s, border-color .3s;
+  transform:translateZ(0);
+  transition:background .3s ease, border-color .3s ease, transform .25s ease;
 }
-.fam-card:hover { background:rgba(255,252,245,.08); border-color:rgba(184,147,90,.25); }
+.fam-card:hover { transform:translate3d(0,-2px,0); border-color:rgba(184,147,90,.3); }
+.fam-card:hover { background:rgba(255,252,245,.08); border-color:rgba(184,147,90,.25); transform:translate3d(0,0,0); }
 
 .fam-card-top {
   display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;
@@ -545,10 +575,11 @@ img { display:block; max-width:100%; }
   font-size:1.5rem; color:rgba(249,245,238,.9); line-height:1.1;
 }
 .fam-chevron {
-  width:26px; height:26px; border-radius:50%; flex-shrink:0; margin-top:.3rem;
+  width:28px; height:28px; border-radius:50%; flex-shrink:0; margin-top:.3rem;
   background:rgba(255,252,245,.08); border:1px solid rgba(184,147,90,.2);
   display:flex; align-items:center; justify-content:center;
-  transition:transform .4s, background .3s;
+  transition:transform .42s cubic-bezier(.22,1,.36,1),
+             background .3s ease;
 }
 .fam-card.open .fam-chevron { transform:rotate(180deg); background:rgba(184,147,90,.15); }
 .fam-chevron svg { transition:inherit; }
@@ -562,10 +593,11 @@ img { display:block; max-width:100%; }
 /* expandable */
 .fam-expand {
   max-height:0; overflow:hidden;
-  transition:max-height .5s cubic-bezier(.22,1,.36,1), opacity .4s;
+  transition:max-height .55s cubic-bezier(.22,1,.36,1),
+             opacity    .45s ease;
   opacity:0;
 }
-.fam-card.open .fam-expand { max-height:500px; opacity:1; }
+.fam-card.open .fam-expand { max-height:600px; opacity:1; }
 .fam-expand-inner { padding-top:1.4rem; }
 .fam-members { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-bottom:1rem; }
 .fam-member { text-align:center; }
@@ -641,7 +673,7 @@ img { display:block; max-width:100%; }
   border-left:3px solid var(--sage-pale);
   transition:border-left-color .3s, box-shadow .3s;
 }
-.dc:hover { border-left-color:var(--sage); box-shadow:var(--s1); }
+.dc:hover { border-left-color:var(--sage); transform:translate3d(0,-1px,0); }
 .dc-ev {
   font-size:.52rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase;
   color:var(--sage); margin-bottom:.45rem;
@@ -679,7 +711,8 @@ img { display:block; max-width:100%; }
 ══════════════════════════════════════════════ */
 .faith-sec {
   background:var(--forest); text-align:center;
-  padding:5.5rem 1.5rem; position:relative; overflow:hidden;
+  padding:5.5rem 1.5rem; position:relative; overflow:clip;
+  contain:content;
 }
 .faith-sec::before {
   content:''; position:absolute; inset:0; pointer-events:none;
@@ -740,6 +773,10 @@ img { display:block; max-width:100%; }
 .fi:focus, .fs:focus {
   border-color:var(--sage);
   box-shadow:0 0 0 3px rgba(90,122,90,.1);
+  outline:none;
+}
+.fi, .fs, .fta {
+  transition:border-color .22s ease, box-shadow .22s ease;
 }
 .fs { appearance:none; cursor:pointer; }
 
@@ -752,9 +789,11 @@ img { display:block; max-width:100%; }
   border:1.5px solid var(--border);
   border-radius:var(--r-sm);
   background:var(--cream);
-  cursor:pointer; text-align:center;
-  transition:all .25s;
+  cursor:pointer; text-align:center; transform:translateZ(0);
+  transition:background .22s ease, border-color .22s ease,
+             transform .22s ease, box-shadow .22s ease;
 }
+.event-toggle:hover { transform:translate3d(0,-1px,0); box-shadow:0 3px 10px rgba(90,122,90,.1); }
 .event-toggle.active {
   border-color:var(--sage);
   background:var(--sage-pale);
@@ -771,11 +810,12 @@ img { display:block; max-width:100%; }
   background:var(--forest); color:rgba(249,245,238,.9);
   font-family:var(--body); font-size:.65rem; font-weight:600;
   letter-spacing:.32em; text-transform:uppercase;
-  border:none; border-radius:30px; cursor:pointer;
-  transition:background .25s, transform .15s, box-shadow .25s;
+  border:none; border-radius:30px; cursor:pointer; transform:translateZ(0);
+  transition:background .25s ease, transform .2s ease, box-shadow .25s ease,
+             letter-spacing .25s ease;
 }
-.fb:hover { background:var(--sage-dk); box-shadow:0 4px 20px rgba(58,90,58,.3); }
-.fb:active { transform:scale(.99); }
+.fb:hover { background:var(--sage-dk); box-shadow:0 6px 22px rgba(58,90,58,.3); transform:translate3d(0,-1px,0); }
+.fb:active { transform:scale(.98) translateZ(0); }
 .rsvp-ok { display:none; text-align:center; padding:3rem 1rem; }
 .rsvp-ok p {
   font-family:var(--display); font-style:italic;
@@ -794,9 +834,9 @@ img { display:block; max-width:100%; }
 .cc {
   background:var(--cream2); border-radius:var(--r-md);
   padding:1.8rem 1.5rem; text-align:center;
-  border:1px solid var(--border); transition:box-shadow .25s;
+  border:1px solid var(--border); transition:filter .25s ease;
 }
-.cc:hover { box-shadow:var(--s2); }
+.cc:hover { transform:translate3d(0,-1px,0); filter:drop-shadow(0 4px 14px rgba(30,46,30,.1)); }
 .cc-tag { font-size:.52rem; font-weight:600; letter-spacing:.25em; text-transform:uppercase; color:var(--sage); margin-bottom:.55rem; }
 .cc-name { font-family:var(--display); font-size:1.2rem; font-weight:500; color:var(--forest); margin-bottom:.2rem; }
 .cc-role { font-size:.75rem; font-style:italic; color:var(--ink2); margin-bottom:1rem; }
@@ -805,8 +845,11 @@ img { display:block; max-width:100%; }
   display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
   padding:.6rem .9rem; border:1px solid var(--border-g); border-radius:30px;
   font-size:.56rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--ink2); transition:all .25s;
+  color:var(--ink2); transform:translateZ(0);
+  transition:background .22s ease, color .22s ease, border-color .22s ease,
+             transform .22s ease;
 }
+.cc-link:hover { transform:translate3d(0,-1px,0); }
 .cc-link:hover { background:var(--forest); color:rgba(249,245,238,.9); border-color:var(--forest); }
 .cc-link.wa:hover { background:#25D366; border-color:#25D366; color:#fff; }
 
@@ -824,6 +867,477 @@ footer {
 .foot-names { font-family:var(--display); font-style:italic; font-weight:400; font-size:1rem; color:rgba(249,245,238,.6); }
 .foot-date { font-size:.58rem; letter-spacing:.14em; color:rgba(184,147,90,.32); margin-top:.3rem; }
 .foot-love { font-size:.68rem; font-style:italic; color:rgba(184,147,90,.24); margin-top:2rem; }
+
+/* ══════════════════════════════════════════════
+   ENGAGEMENT & WEDDING EVENT SECTIONS
+══════════════════════════════════════════════ */
+
+/* Section backgrounds */
+.engagement-sec { background:var(--cream2); }
+.wedding-sec    { background:var(--ivory); position:relative; overflow:clip; }
+
+/* Subtle forest glow for wedding */
+.wedding-sec .sec-inner { position:relative; z-index:1; }
+.wedding-sec .title { color:var(--forest); }
+.wedding-sec .title em { color:var(--sage); }
+.wedding-sec .eyebrow { color:var(--sage); }
+
+/* Date hero badge */
+.ev-date-hero {
+  display:flex; align-items:center; justify-content:center; gap:1.4rem;
+  margin:0 auto 2.8rem;
+}
+.ev-date-block {
+  text-align:center;
+}
+.ev-date-num {
+  font-family:var(--display); font-weight:400;
+  font-size:clamp(3.5rem,12vw,5.5rem);
+  line-height:1; letter-spacing:-.02em;
+  color:var(--forest);
+}
+.ev-date-num-lt { color:rgba(249,245,238,.9); }
+.ev-date-month {
+  font-family:var(--body); font-size:.62rem; font-weight:600;
+  letter-spacing:.35em; text-transform:uppercase;
+  color:var(--sage); margin-top:.15rem; display:block;
+}
+.ev-date-month-lt { color:var(--sage-lt); }
+.ev-date-year {
+  font-family:var(--body); font-size:.55rem; font-weight:400;
+  letter-spacing:.28em; text-transform:uppercase;
+  color:var(--ink4); margin-top:.08rem; display:block;
+}
+.ev-date-year-lt { color:rgba(138,170,138,.55); }
+.ev-date-sep {
+  font-family:var(--display); font-style:italic;
+  font-size:1.8rem; color:var(--gold-lt); opacity:.55;
+  line-height:1; align-self:center;
+}
+
+/* Day label badge */
+.ev-day-badge {
+  display:inline-block; margin-bottom:2rem;
+  background:var(--sage-pale); color:var(--sage-dk);
+  font-size:.6rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase;
+  padding:.38rem 1.1rem; border-radius:30px;
+  border:1px solid rgba(90,122,90,.2);
+}
+.ev-day-badge-dk {
+  background:rgba(90,122,90,.15); color:var(--sage-lt);
+  border-color:rgba(90,122,90,.25);
+}
+
+/* Two-column event cards */
+.ev-cols {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  max-width:680px; margin:0 auto 2rem;
+}
+@media(min-width:560px){ .ev-cols { grid-template-columns:1fr 1fr; } }
+
+/* Individual event card */
+.ev-card {
+  background:var(--white);
+  border-radius:var(--r-md);
+  overflow:clip;
+  border:1px solid var(--border);
+  transform:translateZ(0);
+  transition:transform .28s cubic-bezier(.22,1,.36,1),
+             filter    .28s ease,
+             border-color .25s ease;
+}
+.ev-card:hover {
+  transform:translate3d(0,-4px,0);
+  filter:drop-shadow(0 10px 24px rgba(30,46,30,.13));
+  border-color:rgba(90,122,90,.3);
+}
+.ev-card-dk {
+  background:rgba(255,252,245,.05);
+  border-color:rgba(90,122,90,.22);
+}
+.ev-card-dk:hover { filter:drop-shadow(0 8px 20px rgba(0,0,0,.25)); }
+
+/* Card top accent strip */
+.ev-card-strip {
+  height:3px;
+  background:linear-gradient(to right, var(--sage-dk), var(--gold-lt));
+}
+.ev-card-strip-gold {
+  background:linear-gradient(to right, var(--gold), var(--gold-lt));
+}
+
+/* Card header */
+.ev-card-head {
+  padding:1.1rem 1.3rem .8rem;
+  display:flex; align-items:center; gap:.85rem;
+  border-bottom:1px solid var(--border);
+}
+.ev-card-dk .ev-card-head { border-bottom-color:rgba(90,122,90,.2); }
+
+.ev-card-icon {
+  width:38px; height:38px; border-radius:50%; flex-shrink:0;
+  background:var(--sage-pale); color:var(--sage-dk);
+  display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+}
+.ev-card-icon-dk {
+  background:rgba(184,147,90,.14); color:var(--gold-lt);
+}
+
+.ev-card-title {
+  font-family:var(--display); font-style:italic; font-weight:400;
+  font-size:1.05rem; line-height:1.25;
+  color:var(--forest);
+}
+.ev-card-title-lt { color:rgba(249,245,238,.9); }
+
+.ev-card-time {
+  font-size:.62rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--sage); margin-top:.15rem;
+}
+.ev-card-time-lt { color:var(--sage-lt); }
+
+/* Card body */
+.ev-card-body { padding:1rem 1.3rem 1.2rem; }
+.ev-card-venue {
+  font-size:.88rem; color:var(--ink2); line-height:1.65; margin-bottom:.85rem;
+}
+.ev-card-venue-lt { color:rgba(234,228,218,.72); }
+
+.ev-map-btn {
+  display:inline-flex; align-items:center; gap:.4rem;
+  font-size:.6rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--sage-dk); border:1.5px solid var(--sage-dk);
+  padding:.48rem .95rem; border-radius:30px;
+  text-decoration:none; transform:translateZ(0);
+  transition:background .22s ease, color .22s ease,
+             transform .22s ease, box-shadow .22s ease;
+}
+.ev-map-btn:hover {
+  background:var(--sage-dk); color:var(--cream);
+  transform:translate3d(0,-1px,0); box-shadow:0 3px 12px rgba(58,90,58,.22);
+}
+.ev-map-btn-lt {
+  color:var(--sage-lt); border-color:rgba(90,122,90,.4);
+}
+.ev-map-btn-lt:hover { background:rgba(90,122,90,.25); color:rgba(249,245,238,.9); }
+
+/* Dress code strip */
+.ev-dress-strip {
+  max-width:680px; margin:0 auto;
+  background:var(--sage-pale);
+  border-radius:var(--r-md);
+  border:1px solid rgba(90,122,90,.18);
+  padding:1.1rem 1.5rem;
+  display:flex; flex-direction:column; align-items:center; gap:.35rem; text-align:center;
+}
+.ev-dress-strip-dk {
+  background:rgba(90,122,90,.12);
+  border-color:rgba(90,122,90,.25);
+}
+.ev-dress-label {
+  font-size:.6rem; font-weight:600; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--sage-dk); display:flex; align-items:center; gap:.5rem;
+}
+.ev-dress-label-lt { color:var(--sage-lt); }
+.ev-dress-text {
+  font-family:var(--display); font-style:italic; font-weight:400;
+  font-size:1.05rem; color:var(--ink2); line-height:1.6;
+}
+.ev-dress-text-lt { color:rgba(234,228,218,.8); }
+
+/* Update nav links */
+
+
+/* ══════════════════════════════════════════════
+   GLOBAL SMOOTH TRANSITIONS
+══════════════════════════════════════════════ */
+
+/* ── Link & button micro-transitions ── */
+a, button { transition:color .2s ease, background .22s ease, border-color .22s ease, opacity .2s ease, transform .2s ease; }
+
+/* ── Nav link hover underline slide ── */
+.nav-drawer a {
+  position:relative;
+}
+.nav-drawer a::after {
+  content:'';
+  position:absolute; bottom:-1px; left:0; width:0; height:1px;
+  background:var(--sage);
+  transition:width .28s cubic-bezier(.22,1,.36,1);
+}
+.nav-drawer a:hover::after { width:100%; }
+
+
+
+/* ── Vc card accent line ── */
+.vc::after {
+  transition:transform .35s cubic-bezier(.22,1,.36,1) !important;
+}
+
+/* ── Event card hover scale ── */
+.ev-card {
+  transition:transform .25s cubic-bezier(.22,1,.36,1), filter .25s ease, box-shadow .25s ease !important;
+}
+.ev-card:hover {
+  transform:translate3d(0,-4px,0) scale(1.005) !important;
+  box-shadow:0 12px 32px rgba(30,46,30,.1);
+  filter:none !important;
+}
+
+/* ── Family card smooth expand ── */
+.fam-expand {
+  transition:max-height .55s cubic-bezier(.22,1,.36,1), opacity .4s ease !important;
+}
+.fam-chevron svg {
+  transition:transform .4s cubic-bezier(.22,1,.36,1) !important;
+}
+.fam-card { transition:background .3s ease, border-color .3s ease, transform .25s ease !important; }
+.fam-card:hover { transform:translate3d(0,-2px,0); }
+
+/* ── Contact / cc cards ── */
+.cc { transition:transform .25s ease, filter .25s ease !important; }
+.cc:hover { transform:translate3d(0,-3px,0); filter:drop-shadow(0 6px 18px rgba(30,46,30,.1)); }
+/* ── Ornament divider entrance ── */
+.orn { transition:opacity .5s ease, transform .5s ease; }
+.orn.in { opacity:1 !important; transform:none !important; }
+
+/* ── Section background shift on scroll-in ── */
+.sec {
+  transition:background .4s ease, transform .65s cubic-bezier(.22,1,.36,1), opacity .6s cubic-bezier(.22,1,.36,1) !important;
+}
+
+/* ── Scroll-to-top smooth section transitions ── */
+html { scroll-behavior:smooth; }
+
+/* ══════════════════════════════════════════════
+   ODOMETER COUNTDOWN TIMER
+══════════════════════════════════════════════ */
+
+/* Wrapper that holds current and next digit */
+
+.cd-digit-wrap.ticking .cd-digit-wrap.ticking .hero-cd-l {
+  font-size:.46rem; font-weight:600; letter-spacing:.25em; text-transform:uppercase;
+  color:rgba(138,170,138,.4); margin-top:.35rem; display:block; text-align:center;
+}
+
+/* Separator dot pulse */
+.hero-cd-unit:not(:last-child)::after {
+  animation:cdDotPulse 1s ease-in-out infinite !important;
+}
+@keyframes cdDotPulse {
+  0%,100% { opacity:.2; }
+  50%      { opacity:.55; }
+}
+
+
+
+/* Transition class added by JS on each tick */
+
+
+
+
+  100% { opacity:0;   transform:translateY(-8px) scale(.94);  filter:blur(3px); }
+}
+
+  100% { opacity:.88; transform:translateY(0)    scale(1);    filter:blur(0);   }
+}
+
+/* Separator dots between units */
+.hero-cd-unit {
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 clamp(.8rem,3vw,1.8rem);
+  position:relative;
+}
+.hero-cd-unit:not(:last-child)::after {
+  content:'·';
+  position:absolute; right:0; top:50%;
+  transform:translateY(-58%);
+  font-family:var(--display);
+  font-size:1.4rem; color:rgba(184,147,90,.3); line-height:1;
+  animation:cdDotPulse 2s ease-in-out infinite;
+}
+@keyframes cdDotPulse {
+  0%,100% { opacity:.2; }
+  50%     { opacity:.55; }
+}
+
+
+/* ══════════════════════════════════════════════
+   COUNTDOWN — smooth crossfade slide
+══════════════════════════════════════════════ */
+
+.hero-cd-n.leaving {
+  animation: cdLeave .28s cubic-bezier(.4,0,1,1) forwards;
+}
+.hero-cd-n.entering {
+  animation: cdEnter .32s cubic-bezier(0,0,.2,1) forwards;
+}
+@keyframes cdLeave {
+  0%   { opacity: .9; transform: translateY(0);    }
+  100% { opacity: 0;  transform: translateY(-14px); }
+}
+@keyframes cdEnter {
+  0%   { opacity: 0;  transform: translateY(14px);  }
+  100% { opacity: .9; transform: translateY(0);     }
+}
+
+
+/* ══════════════════════════════════════════════
+   COUNTDOWN — number swap with glow pulse
+══════════════════════════════════════════════ */
+.hero-cd-n {
+  display: block;
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 9vw, 3.2rem);
+  font-weight: 400;
+  color: rgba(249,245,238,.90);
+  line-height: 1;
+  letter-spacing: .02em;
+  transform: translateZ(0);
+  position: relative;
+}
+
+/* On every tick, the number gets a soft glow-swap */
+@keyframes cdGlowSwap {
+  0%   { opacity:.90; transform:scale(1);    text-shadow:none; }
+  30%  { opacity:.25; transform:scale(.88);  text-shadow:0 0 18px rgba(184,147,90,.0); }
+  55%  { opacity:.10; transform:scale(.82);  text-shadow:0 0 24px rgba(184,147,90,.5); }
+  56%  { opacity:.10; transform:scale(.82);  } /* value swaps here at 56% */
+  80%  { opacity:.80; transform:scale(1.04); text-shadow:0 0 14px rgba(184,147,90,.4); }
+  100% { opacity:.90; transform:scale(1);    text-shadow:none; }
+}
+.hero-cd-n.swapping {
+  animation: cdGlowSwap .42s cubic-bezier(.25,.8,.35,1) forwards;
+}
+
+/* Separator dots */
+.hero-cd-unit:not(:last-child)::after {
+  content: '·';
+  position: absolute; right: 0; top: 50%;
+  transform: translateY(-60%);
+  font-family: var(--display);
+  font-size: 1.5rem;
+  color: rgba(184,147,90,.28);
+  line-height: 1;
+  animation: cdDotPulse 2s ease-in-out infinite;
+}
+@keyframes cdDotPulse {
+  0%,100% { opacity:.2; }
+  50%     { opacity:.5; }
+}
+
+
+/* ══════════════════════════════════════════════
+   BUTTONS — smooth, no blank-on-return bug
+══════════════════════════════════════════════ */
+
+/* ── Map / location buttons (ev-map-btn + map-btn) ── */
+.ev-map-btn, .map-btn {
+  display:inline-flex; align-items:center; gap:.45rem;
+  font-size:.62rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+  border-radius:30px; text-decoration:none;
+  padding:.52rem 1.05rem;
+  /* Stable colour state — no pseudo-element fills that can get stuck */
+  background:transparent;
+  color:var(--sage-dk);
+  border:1.5px solid var(--sage-dk);
+  /* GPU-composited transition — only opacity + transform, no color repaints */
+  transition:
+    background   .24s cubic-bezier(.22,1,.36,1),
+    color        .24s cubic-bezier(.22,1,.36,1),
+    border-color .24s cubic-bezier(.22,1,.36,1),
+    transform    .2s  cubic-bezier(.22,1,.36,1),
+    box-shadow   .2s  ease;
+  transform:translateZ(0);
+  will-change:transform;
+  -webkit-tap-highlight-color:transparent;
+  /* Prevent visited-state color changes */
+  -webkit-appearance:none;
+}
+/* Visited — same as default, prevents blank */
+.ev-map-btn:visited, .map-btn:visited {
+  color:var(--sage-dk);
+  background:transparent;
+  border-color:var(--sage-dk);
+}
+/* Hover */
+.ev-map-btn:hover, .map-btn:hover {
+  background:var(--sage-dk);
+  color:var(--cream);
+  border-color:var(--sage-dk);
+  transform:translate3d(0,-2px,0) translateZ(0);
+  box-shadow:0 4px 14px rgba(58,90,58,.22);
+}
+/* Active / tap — instant press feel */
+.ev-map-btn:active, .map-btn:active {
+  transform:translate3d(0,0,0) scale(.97) translateZ(0);
+  box-shadow:none;
+  transition-duration:.08s;
+}
+/* Dark section light variant */
+.ev-map-btn-lt {
+  color:rgba(138,170,138,.85) !important;
+  border-color:rgba(90,122,90,.45) !important;
+}
+.ev-map-btn-lt:visited {
+  color:rgba(138,170,138,.85) !important;
+  border-color:rgba(90,122,90,.45) !important;
+  background:transparent !important;
+}
+.ev-map-btn-lt:hover {
+  background:rgba(90,122,90,.25) !important;
+  color:rgba(249,245,238,.92) !important;
+  border-color:rgba(90,122,90,.6) !important;
+  box-shadow:0 4px 14px rgba(0,0,0,.2) !important;
+}
+.ev-map-btn-lt:active {
+  transform:translate3d(0,0,0) scale(.97) translateZ(0) !important;
+  transition-duration:.08s !important;
+}
+
+/* ── Contact buttons (Call + WhatsApp) ── */
+.cc-link {
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+  padding:.62rem .95rem;
+  border:1px solid rgba(184,147,90,.28); border-radius:30px;
+  font-size:.6rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+  background:transparent; color:var(--ink2);
+  text-decoration:none;
+  transition:
+    background   .24s cubic-bezier(.22,1,.36,1),
+    color        .24s cubic-bezier(.22,1,.36,1),
+    border-color .24s cubic-bezier(.22,1,.36,1),
+    transform    .2s  cubic-bezier(.22,1,.36,1),
+    box-shadow   .2s  ease;
+  transform:translateZ(0);
+  -webkit-tap-highlight-color:transparent;
+}
+.cc-link:visited {
+  color:var(--ink2);
+  background:transparent;
+}
+.cc-link:hover {
+  background:var(--forest);
+  color:rgba(249,245,238,.92);
+  border-color:var(--forest);
+  transform:translate3d(0,-2px,0) translateZ(0);
+  box-shadow:0 4px 14px rgba(30,46,30,.18);
+}
+.cc-link:active {
+  transform:translate3d(0,0,0) scale(.97) translateZ(0);
+  box-shadow:none;
+  transition-duration:.08s;
+}
+.cc-link.wa:hover {
+  background:#25D366;
+  border-color:#25D366;
+  color:#fff;
+  box-shadow:0 4px 14px rgba(37,211,102,.28);
+}
+.cc-link.wa:visited { color:var(--ink2); background:transparent; }
+
 </style>
 </head>
 <body>
@@ -833,11 +1347,10 @@ footer {
   <div class="nav-logo">S &amp; F</div>
   <button class="nav-ham" id="navHam" aria-label="Menu"><span></span><span></span><span></span></button>
   <div class="nav-drawer" id="navDrawer">
-    <a href="#events"    onclick="closeNav()">Events</a>
-    <a href="#venue"     onclick="closeNav()">Venue</a>
+    <a href="#engagement" onclick="closeNav()">Engagement</a>
+    <a href="#wedding"    onclick="closeNav()">Wedding</a>
     <a href="#families"  onclick="closeNav()">Families</a>
     <a href="#ceremony"  onclick="closeNav()">Ceremony</a>
-    <a href="#dresscode" onclick="closeNav()">Dress Code</a>
     <a href="#travel"    onclick="closeNav()">Travel</a>
     <a href="#rsvp"      onclick="closeNav()">RSVP</a>
     <a href="#contact"   onclick="closeNav()">Contact</a>
@@ -846,11 +1359,6 @@ footer {
 
 <!-- ══════════ HERO ══════════ -->
 <section class="hero" id="home">
-
-  <!-- Organic blobs -->
-  <div class="hero-blob hero-blob-1"></div>
-  <div class="hero-blob hero-blob-2"></div>
-  <div class="hero-blob hero-blob-3"></div>
 
   <!-- Botanical corner art -->
   <svg class="hero-botanical hero-botanical-l" viewBox="0 0 280 320" fill="none">
@@ -911,7 +1419,7 @@ footer {
     </div>
 
     <div class="hero-date">
-      <div class="hero-date-main">3 – 9 January 2027</div>
+      <div class="hero-date-main">4th &amp; 9th January 2027</div>
       <div class="hero-date-sub">Calicut &amp; Koothattukulam · Kerala</div>
     </div>
 
@@ -925,97 +1433,145 @@ footer {
   <div class="hero-countdown">
     <span class="hero-cd-label">Counting down to the wedding</span>
     <div class="hero-cd-row">
-      <div class="hero-cd-unit"><span class="hero-cd-n" id="cd-d">00</span><span class="hero-cd-l">Days</span></div>
-      <div class="hero-cd-unit"><span class="hero-cd-n" id="cd-h">00</span><span class="hero-cd-l">Hrs</span></div>
-      <div class="hero-cd-unit"><span class="hero-cd-n" id="cd-m">00</span><span class="hero-cd-l">Mins</span></div>
-      <div class="hero-cd-unit"><span class="hero-cd-n" id="cd-s">00</span><span class="hero-cd-l">Secs</span></div>
+      <div class="hero-cd-unit">
+        <span class="hero-cd-n" id="cd-d">00</span>
+        <span class="hero-cd-l">Days</span>
+      </div>
+      <div class="hero-cd-unit">
+        <span class="hero-cd-n" id="cd-h">00</span>
+        <span class="hero-cd-l">Hrs</span>
+      </div>
+      <div class="hero-cd-unit">
+        <span class="hero-cd-n" id="cd-m">00</span>
+        <span class="hero-cd-l">Mins</span>
+      </div>
+      <div class="hero-cd-unit">
+        <span class="hero-cd-n" id="cd-s">00</span>
+        <span class="hero-cd-l">Secs</span>
+      </div>
     </div>
   </div>
 
 </section>
 
-<!-- ══════════ EVENTS ══════════ -->
-<section class="sec events-sec" id="events">
+<!-- ══════════ ENGAGEMENT ══════════ -->
+<section class="sec engagement-sec" id="engagement">
   <div class="sec-inner">
-    <span class="eyebrow sr">Our Celebrations</span>
-    <h2 class="title sr d1">Events &amp; <em>Schedule</em></h2>
-    <div class="orn sr d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
 
-    <div style="text-align:center" class="sr d2">
-      <span class="loc-chip">📍 Poovattuparambu, Calicut — Bride's Side</span>
+    <h2 class="title sr d1"><em>Engagement</em> Ceremony</h2>
+    <div class="orn sr d2">
+      <div class="orn-line"></div>
+      <div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div>
+      <div class="orn-line"></div>
     </div>
-    <div class="bento sr d3" style="margin-top:1.2rem">
-      <div class="bento-card">
-        <div class="bc-header">
-          <div class="bc-date"><span class="bc-day">04</span><span class="bc-mon">Jan</span></div>
-          <div class="bc-divider"></div>
-          <div class="bc-event-name">Engagement — Betrothal</div>
-        </div>
-        <div class="bc-body">
-          <div class="bc-time">10:00 AM · Church Ceremony</div>
-          <div class="bc-venue">St. Antony's Church, Paropady, Calicut, Kerala</div>
-          <div class="bc-note">Followed by Reception at Noon — St. Antony's Church Reception Hall, Paropady, Calicut.</div>
-          <span class="bc-pill">Indo-Western · Formal</span>
-        </div>
+
+    <!-- Date display -->
+    <div class="ev-date-hero sr d2">
+      <div class="ev-date-block">
+        <span class="ev-date-num">04</span>
+        <span class="ev-date-month">January</span>
+        <span class="ev-date-year">2027</span>
+      </div>
+      <span class="ev-date-sep">·</span>
+      <div style="text-align:left">
+        <div style="font-family:var(--display);font-style:italic;font-size:clamp(1rem,3vw,1.25rem);color:var(--ink2);line-height:1.5">Poovattuparambu<br>Calicut, Kerala</div>
       </div>
     </div>
 
-    <div style="text-align:center;margin-top:2rem" class="sr d2">
-      <span class="loc-chip">📍 Koothattukulam, Ernakulam — Groom's Side</span>
-    </div>
-    <div class="bento sr d3" style="margin-top:1.2rem">
-      <div class="bento-card">
-        <div class="bc-header">
-          <div class="bc-date"><span class="bc-day">09</span><span class="bc-mon">Jan</span></div>
-          <div class="bc-divider"></div>
-          <div class="bc-event-name">Holy Wedding Ceremony</div>
+    <!-- Event cards -->
+    <div class="ev-cols">
+
+      <div class="ev-card sr d3">
+        <div class="ev-card-strip"></div>
+        <div class="ev-card-head">
+          <div class="ev-card-icon">⛪</div>
+          <div>
+            <div class="ev-card-title">Church Betrothal</div>
+            <div class="ev-card-time">10:00 AM</div>
+          </div>
         </div>
-        <div class="bc-body">
-          <div class="bc-time">11:00 AM · Church Ceremony</div>
-          <div class="bc-venue">St. John the Baptist Holy Catholic Church, Vadakara, Koothattukulam</div>
-          <div class="bc-note">Followed by Reception Lunch at Chinnas Auditorium, Koothattukulam.</div>
-          <span class="bc-pill">Formals · Traditional</span>
+        <div class="ev-card-body">
+          <div class="ev-card-venue">St. Antony's Church,<br>Paropady, Calicut, Kerala</div>
+          <a href="https://maps.google.com/?q=St+Antony+Church+Paropady+Calicut+Kerala" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
         </div>
       </div>
+
+      <div class="ev-card sr d4">
+        <div class="ev-card-strip"></div>
+        <div class="ev-card-head">
+          <div class="ev-card-icon">🥂</div>
+          <div>
+            <div class="ev-card-title">Reception Lunch</div>
+            <div class="ev-card-time">12:00 PM · Noon</div>
+          </div>
+        </div>
+        <div class="ev-card-body">
+          <div class="ev-card-venue">St. Antony's Church<br>Reception Hall, Paropady, Calicut</div>
+          <a href="https://maps.google.com/?q=St+Antony+Church+Reception+Hall+Paropady+Calicut" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
 
-<!-- ══════════ VENUE ══════════ -->
-<section class="sec venue-sec" id="venue">
+<!-- ══════════ WEDDING ══════════ -->
+<section class="sec wedding-sec" id="wedding">
   <div class="sec-inner">
-    <span class="eyebrow sr">Where to Be</span>
-    <h2 class="title sr d1">Venue &amp; <em>Location</em></h2>
-    <div class="orn sr d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
-    <div class="venue-stack">
-      <div class="vc sr d2">
-        <div class="vc-icon">💍</div>
-        <div class="vc-tag">Engagement Ceremony — Paropady, Calicut</div>
-        <div class="vc-name">St. Antony's Church</div>
-        <div class="vc-addr">Paropady,<br>Calicut (Kozhikode), Kerala</div>
-        <a href="https://maps.google.com/?q=St+Antony+Church+Paropady+Calicut" target="_blank" class="map-btn">📍 Open in Maps</a>
+
+    <h2 class="title sr d1"><em>Wedding</em> Ceremony</h2>
+    <div class="orn sr d2">
+      <div class="orn-line"></div>
+      <div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div>
+      <div class="orn-line"></div>
+    </div>
+
+    <!-- Date display -->
+    <div class="ev-date-hero sr d2">
+      <div class="ev-date-block">
+        <span class="ev-date-num">09</span>
+        <span class="ev-date-month">January</span>
+        <span class="ev-date-year">2027</span>
       </div>
-      <div class="vc sr d3">
-        <div class="vc-icon">🥂</div>
-        <div class="vc-tag">Engagement Reception — Paropady, Calicut</div>
-        <div class="vc-name">St. Antony's Church Reception Hall</div>
-        <div class="vc-addr">Paropady,<br>Calicut (Kozhikode), Kerala</div>
-        <a href="https://maps.google.com/?q=St+Antony+Church+Reception+Hall+Paropady+Calicut" target="_blank" class="map-btn">📍 Open in Maps</a>
+      <span class="ev-date-sep">·</span>
+      <div style="text-align:left">
+        <div style="font-family:var(--display);font-style:italic;font-size:clamp(1rem,3vw,1.25rem);color:var(--ink2);line-height:1.5">Koothattukulam<br>Ernakulam, Kerala</div>
       </div>
-      <div class="vc sr d4">
-        <div class="vc-icon">⛪</div>
-        <div class="vc-tag">Wedding Church — Koothattukulam</div>
-        <div class="vc-name">St. John the Baptist Holy Catholic Church</div>
-        <div class="vc-addr">Vadakara, Koothattukulam,<br>Ernakulam District, Kerala</div>
-        <a href="https://maps.google.com/?q=St+John+the+Baptist+Catholic+Church+Vadakara+Koothattukulam" target="_blank" class="map-btn">📍 Open in Maps</a>
+    </div>
+
+    <!-- Event cards -->
+    <div class="ev-cols">
+
+      <div class="ev-card sr d3">
+        <div class="ev-card-strip"></div>
+        <div class="ev-card-head">
+          <div class="ev-card-icon">⛪</div>
+          <div>
+            <div class="ev-card-title">Church Ceremony</div>
+            <div class="ev-card-time">11:00 AM</div>
+          </div>
+        </div>
+        <div class="ev-card-body">
+          <div class="ev-card-venue">St. John the Baptist Holy Catholic Church,<br>Vadakara, Koothattukulam, Ernakulam</div>
+          <a href="https://maps.google.com/?q=St+John+the+Baptist+Catholic+Church+Vadakara+Koothattukulam" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
+        </div>
       </div>
-      <div class="vc sr d5">
-        <div class="vc-icon">🌿</div>
-        <div class="vc-tag">Wedding Reception — Koothattukulam</div>
-        <div class="vc-name">Chinnas Auditorium</div>
-        <div class="vc-addr">Near St. John the Baptist Church,<br>Koothattukulam, Ernakulam, Kerala</div>
-        <a href="https://maps.google.com/?q=Chinnas+Auditorium+Koothattukulam+Ernakulam" target="_blank" class="map-btn">📍 Open in Maps</a>
+
+      <div class="ev-card sr d4">
+        <div class="ev-card-strip"></div>
+        <div class="ev-card-head">
+          <div class="ev-card-icon">🌿</div>
+          <div>
+            <div class="ev-card-title">Reception Lunch</div>
+            <div class="ev-card-time">Follows the Ceremony</div>
+          </div>
+        </div>
+        <div class="ev-card-body">
+          <div class="ev-card-venue">Chinnas Auditorium,<br>Near St. John's Church,<br>Koothattukulam, Ernakulam</div>
+          <a href="https://maps.google.com/?q=Chinnas+Auditorium+Koothattukulam+Ernakulam" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
+        </div>
       </div>
+
     </div>
   </div>
 </section>
@@ -1178,27 +1734,6 @@ footer {
   </div>
 </section>
 
-<!-- ══════════ DRESS CODE ══════════ -->
-<section class="sec dress-sec" id="dresscode">
-  <div class="sec-inner">
-    <span class="eyebrow sr">Come Dressed</span>
-    <h2 class="title sr d1">Dress <em>Code</em></h2>
-    <div class="orn sr d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
-    <div class="dress-grid">
-      <div class="dc sr d2">
-        <div class="dc-ev">Engagement — 4 January</div>
-        <div class="dc-ti">Indo-Western / Formal</div>
-        <div class="dc-de">Ladies: Silk saree, lehenga, or any elegant Indo-western outfit.<br><br>Gentlemen: Any smart Indo-western or formal traditional attire.</div>
-      </div>
-      <div class="dc sr d3">
-        <div class="dc-ev">Wedding &amp; Reception — 9 January</div>
-        <div class="dc-ti">Formals / Traditional</div>
-        <div class="dc-de">Ladies: Kasavu saree, silk saree, lehenga, or any elegant formal attire.<br><br>Gentlemen: Any smart formal or traditional attire befitting the occasion.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ══════════ TRAVEL ══════════ -->
 <section class="sec travel-sec" id="travel">
   <div class="sec-inner">
@@ -1326,69 +1861,100 @@ footer {
 <footer>
   <div class="foot-orn"></div>
   <div class="foot-script">Sebastian &amp; Flemy</div>
-  <div class="foot-hash">#SebastianWedFlemy2027</div>
   <div class="foot-names">Sebastian P Joseph ✦ Flemy Roy</div>
-  <div class="foot-date">3 – 9 January 2027 · Calicut &amp; Koothattukulam, Kerala · By God's Grace</div>
+  <div class="foot-date">4th &amp; 9th January 2027 · Calicut &amp; Koothattukulam, Kerala · By God's Grace</div>
   <div class="foot-love">Made with ❤️ for our most beautiful day</div>
 </footer>
 
 <script>
 // ── NAV ──────────────────────────────
-const ham = document.getElementById('navHam');
+const ham    = document.getElementById('navHam');
 const drawer = document.getElementById('navDrawer');
+const topNav = document.getElementById('topNav');
+
 ham.addEventListener('click', () => {
   ham.classList.toggle('open');
   drawer.classList.toggle('open');
-});
+}, { passive:true });
+
 function closeNav() {
   ham.classList.remove('open');
   drawer.classList.remove('open');
 }
-window.addEventListener('scroll', () => {
-  document.getElementById('topNav').classList.toggle('up', window.scrollY > 30);
-}, {passive:true});
 
-// ── COUNTDOWN ────────────────────────
-function pad(n){ return String(n).padStart(2,'0'); }
-function setUnit(id, val){
-  const el = document.getElementById(id);
-  if(!el || el.textContent === val) return;
-  el.textContent = val;
-  el.classList.remove('tick');
+// Debounced nav shadow — single rAF per scroll burst
+let _navRaf;
+window.addEventListener('scroll', () => {
+  if (_navRaf) return;
+  _navRaf = requestAnimationFrame(() => {
+    topNav.classList.toggle('up', window.scrollY > 30);
+    _navRaf = null;
+  });
+}, { passive:true });
+
+// ── COUNTDOWN — glow-swap ───────────
+const _cdTarget = new Date('2027-01-09T11:00:00').getTime();
+const _cdEls = {
+  d: document.getElementById('cd-d'),
+  h: document.getElementById('cd-h'),
+  m: document.getElementById('cd-m'),
+  s: document.getElementById('cd-s')
+};
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+function swapDigit(el, newVal) {
+  if (!el || el.textContent === newVal) return;
+  el.classList.remove('swapping');
   void el.offsetWidth;
-  el.classList.add('tick');
+  el.classList.add('swapping');
+  setTimeout(() => { el.textContent = newVal; }, 235);
+  setTimeout(() => el.classList.remove('swapping'), 440);
 }
-function tick(){
-  const diff = new Date('2027-01-09T11:00:00') - new Date();
-  if(diff <= 0) return;
-  setUnit('cd-d', pad(Math.floor(diff/86400000)));
-  setUnit('cd-h', pad(Math.floor(diff%86400000/3600000)));
-  setUnit('cd-m', pad(Math.floor(diff%3600000/60000)));
-  setUnit('cd-s', pad(Math.floor(diff%60000/1000)));
+
+function tick() {
+  const diff = _cdTarget - Date.now();
+  if (diff <= 0) return;
+  swapDigit(_cdEls.d, pad(Math.floor(diff / 86400000)));
+  swapDigit(_cdEls.h, pad(Math.floor(diff % 86400000 / 3600000)));
+  swapDigit(_cdEls.m, pad(Math.floor(diff % 3600000  / 60000)));
+  swapDigit(_cdEls.s, pad(Math.floor(diff % 60000    / 1000)));
 }
 tick(); setInterval(tick, 1000);
 
-// ── SCROLL REVEAL ────────────────────
+
+// ── SCROLL REVEAL — rAF-batched, single observer ──────────────────
 function revealAll() {
   document.querySelectorAll('.sr, .tl-row').forEach(el => el.classList.add('in'));
 }
+
 if ('IntersectionObserver' in window) {
-  const ro = new IntersectionObserver(entries => {
+  const _pending = [];
+  let   _rafId   = null;
+
+  function _flush() {
+    // Batch all class adds in one paint frame
+    _pending.splice(0).forEach(el => el.classList.add('in'));
+    _rafId = null;
+  }
+
+  const _ro = new IntersectionObserver(entries => {
+    let changed = false;
     entries.forEach(e => {
-      if(e.isIntersecting){
-        e.target.classList.add('in');
-        ro.unobserve(e.target);
+      if (e.isIntersecting) {
+        _pending.push(e.target);
+        _ro.unobserve(e.target);
+        changed = true;
       }
     });
-  }, {threshold:.05, rootMargin:'0px 0px -20px 0px'});
-  document.querySelectorAll('.sr, .tl-row').forEach(el => ro.observe(el));
-  // Fallback: if after 2s some elements still hidden, reveal them all
-  setTimeout(() => {
-    const hidden = document.querySelectorAll('.sr:not(.in), .tl-row:not(.in)');
-    hidden.forEach(el => el.classList.add('in'));
-  }, 2000);
+    if (changed && !_rafId) _rafId = requestAnimationFrame(_flush);
+  }, { threshold: 0.06, rootMargin: '0px 0px -16px 0px' });
+
+  document.querySelectorAll('.sr, .tl-row').forEach(el => _ro.observe(el));
+
+  // Fallback for WhatsApp / restricted WebViews
+  setTimeout(revealAll, 2200);
+
 } else {
-  // Browser doesn't support IntersectionObserver — show everything
   revealAll();
 }
 
@@ -1404,24 +1970,45 @@ function toggleEvent(id){
 
 // ── RSVP SUBMIT ──────────────────────
 function submitRSVP(){
-  const name = document.getElementById('rsvp-name').value.trim();
+  const name   = document.getElementById('rsvp-name').value.trim();
   const guests = document.getElementById('rsvp-guests').value;
-  if(!name || !guests){
+  if (!name || !guests) {
     alert('Please fill in your name and number of guests.');
     return;
   }
   const form = document.getElementById('rsvpForm');
-  form.style.transition = 'opacity .4s';
-  form.style.opacity = '0';
+  form.style.transition = 'opacity .4s ease';
+  form.style.opacity    = '0';
   setTimeout(() => {
     form.style.display = 'none';
     const ok = document.getElementById('rsvpOk');
-    ok.style.display = 'block';
-    ok.style.opacity = '0';
-    ok.style.transition = 'opacity .5s';
-    requestAnimationFrame(() => ok.style.opacity = '1');
+    ok.style.display   = 'block';
+    ok.style.opacity   = '0';
+    ok.style.transition = 'opacity .5s ease';
+    requestAnimationFrame(() => { ok.style.opacity = '1'; });
   }, 400);
 }
+
+// ── PREVENT BLANK BUTTONS ON RETURN (iOS back-navigation fix) ──
+window.addEventListener('pageshow', function(e) {
+  // Force repaint of all buttons when returning via back-nav or app-switch
+  if (e.persisted) {
+    document.querySelectorAll('.ev-map-btn, .map-btn, .cc-link').forEach(function(el) {
+      el.style.transform = 'translateZ(0)';
+      void el.offsetWidth; // force reflow
+      el.style.transform = '';
+    });
+  }
+}, { passive:true });
+
+// Blur all buttons when page loses focus (user leaves to maps/phone app)
+// This resets any stuck hover states on return
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    document.querySelectorAll('.ev-map-btn, .map-btn, .cc-link').forEach(el => el.blur());
+  }
+});
+
 </script>
 </body>
 </html>
