@@ -8,7 +8,42 @@
 <meta name="theme-color" content="#1e2e1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Sebastian & Flemy — 9 January 2027</title>
+<!-- ══════════════════════════════════════════════
+     OPEN GRAPH — WhatsApp, iMessage, Telegram preview
+     ACTION REQUIRED: Replace YOUR_SITE_URL with your
+     actual Netlify/hosted URL (e.g. https://sebastianandflemy.netlify.app)
+════════════════════════════════════════════════ -->
+
+<!-- Core OG -->
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="YOUR_SITE_URL">
+<meta property="og:site_name"   content="Sebastian & Flemy Wedding">
+<meta property="og:locale"      content="en_IN">
+
+<!-- Preview title & description -->
+<meta property="og:title"       content="Sebastian & Flemy — 4th & 9th January 2027">
+<meta property="og:description" content="You're invited to celebrate the wedding of Sebastian P Joseph & Flemy Roy — 4th January in Calicut and 9th January in Koothattukulam, Kerala. Join us for our most beautiful day.">
+
+<!-- Preview image — upload og-preview.jpg to same folder as index.html -->
+<meta property="og:image"       content="YOUR_SITE_URL/og-preview.jpg">
+<meta property="og:image:type"  content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height"content="630">
+<meta property="og:image:alt"   content="Sebastian & Flemy Wedding — 4th & 9th January 2027, Kerala">
+
+<!-- Twitter / iMessage large card -->
+<meta name="twitter:card"       content="summary_large_image">
+<meta name="twitter:title"      content="Sebastian & Flemy — 4th & 9th January 2027">
+<meta name="twitter:description"content="You're invited to celebrate the wedding of Sebastian P Joseph & Flemy Roy in Kerala. 4th January in Calicut · 9th January in Koothattukulam.">
+<meta name="twitter:image"      content="YOUR_SITE_URL/og-preview.jpg">
+<meta name="twitter:image:alt"  content="Sebastian & Flemy Wedding — Kerala, January 2027">
+
+<!-- WhatsApp reads these too -->
+<meta itemprop="name"           content="Sebastian & Flemy — Wedding Invitation">
+<meta itemprop="description"    content="You're invited to our wedding! 4th & 9th January 2027, Kerala.">
+<meta itemprop="image"          content="YOUR_SITE_URL/og-preview.jpg">
+
+<title>Sebastian &amp; Flemy — 4th &amp; 9th January 2027</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Alex+Brush&family=Jost:wght@300;400;500;600&display=swap&font-display=swap" onload="this.onload=null;this.rel='stylesheet'">
@@ -18,25 +53,50 @@
    DESIGN TOKENS
 ══════════════════════════════════════════════ */
 :root {
-  /* Palette — sage, cream, forest, gold */
-  --cream:    #f9f5ee;
-  --cream2:   #f3ece0;
-  --cream3:   #ece3d2;
-  --white:    #fefcf8;
-  --sage:     #5a7a5a;
-  --sage-lt:  #8aaa8a;
-  --sage-dk:  #3a5a3a;
-  --sage-pale:#e2ece0;
-  --forest:   #1e2e1e;
+  /* Palette — refined sage, warm cream, gold, rose, silver */
+
+  /* ── Cream surfaces (warmer, richer tint) ── */
+  --cream:    #faf6ef;   /* page bg — slightly warmer */
+  --cream2:   #f5ede0;   /* section alt */
+  --cream3:   #ede3d0;   /* deeper section */
+  --white:    #fdf9f3;   /* card surface — warm cream, not pure white */
+  --ivory:    #f8f2e8;   /* mid-card surface */
+
+  /* ── Sage — muted, sophisticated (less vivid, more dusty) ── */
+  --sage:     #607868;   /* muted sage — less pure green, hint of grey */
+  --sage-lt:  #8fa898;   /* lighter muted sage */
+  --sage-dk:  #3e5845;   /* deep muted sage */
+  --sage-pale:#e4ece6;   /* very pale sage tint */
+
+  /* ── Forest (dark sections) ── */
+  --forest:   #1a2b1a;
+
+  /* ── Gold (unchanged) ── */
   --gold:     #b8935a;
   --gold-lt:  #d4ae7a;
   --gold-pale:#f0dfc0;
-  --ink:      #1a1208;
-  --ink2:     #3a2a10;
-  --ink3:     #6a5030;
-  --ink4:     #9a7a50;
-  --border:   rgba(90,122,90,0.12);
-  --border-g: rgba(184,147,90,0.22);
+
+  /* ── Dusty Rose (new secondary accent) ── */
+  --rose:     #c4857a;   /* warm dusty rose */
+  --rose-lt:  #d9a89f;   /* lighter rose */
+  --rose-pale:#f5e8e6;   /* blush tint for backgrounds */
+
+  /* ── Silver (new tertiary accent) ── */
+  --silver:   #a8b4c0;   /* cool silver */
+  --silver-lt:#c8d2da;   /* lighter silver */
+  --silver-pale:#eaecf0; /* near-white silver tint */
+
+  /* ── Ink ── */
+  --ink:      #1c140a;
+  --ink2:     #3d2c14;
+  --ink3:     #6e5235;
+  --ink4:     #9c7c56;
+
+  /* ── Borders ── */
+  --border:   rgba(80,110,80,.11);
+  --border-g: rgba(184,147,90,.2);
+  --border-r: rgba(196,133,122,.18);  /* rose border */
+  --border-s: rgba(168,180,192,.2);   /* silver border */
 
   /* Type */
   --display: 'Playfair Display', serif;
@@ -133,26 +193,42 @@ img { display:block; max-width:100%; }
   height:calc(56px + env(safe-area-inset-top, 0px));
   display:flex; align-items:center; justify-content:space-between;
   padding:0 1.5rem;
-  background:rgba(249,245,238,.92);
-  -webkit-backdrop-filter:blur(10px) saturate(1.3);
-  backdrop-filter:blur(10px) saturate(1.3);
+  /* Start fully transparent over hero */
+  background:transparent;
+  -webkit-backdrop-filter:blur(0px);
+  backdrop-filter:blur(0px);
+  border-bottom:1px solid transparent;
   transform:translateZ(0);
-  border-bottom:1px solid var(--border);
-  transition:filter .25s ease;
+  transition:
+    background      .45s cubic-bezier(.22,1,.36,1),
+    backdrop-filter .45s ease,
+    -webkit-backdrop-filter .45s ease,
+    border-color    .45s ease,
+    box-shadow      .45s ease;
 }
-.nav.up { box-shadow:var(--s2); }
+/* Solid state — applied by JS when scrolled past hero */
+.nav.solid {
+  background:rgba(250,246,239,.95);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);
+  backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--s2);
+}
 .nav-logo {
   font-family:var(--script);
-  font-size:1.75rem; color:var(--forest); line-height:1;
+  font-size:1.75rem; color:var(--cream); line-height:1;
+  transition:color .4s ease;
 }
+.nav.solid .nav-logo { color:var(--forest); }
 .nav-ham {
   display:flex; flex-direction:column; gap:5px;
   background:none; border:none; cursor:pointer; padding:6px;
 }
 .nav-ham span {
   display:block; width:20px; height:1.5px;
-  background:var(--ink2); border-radius:2px; transition:all .28s;
+  background:rgba(249,245,238,.85); border-radius:2px; transition:all .28s, background .4s ease;
 }
+.nav.solid .nav-ham span { background:var(--ink2); }
 .nav-ham.open span:nth-child(1) { transform:rotate(45deg) translate(4.5px,4.5px); }
 .nav-ham.open span:nth-child(2) { opacity:0; width:0; }
 .nav-ham.open span:nth-child(3) { transform:rotate(-45deg) translate(4.5px,-4.5px); }
@@ -184,7 +260,8 @@ img { display:block; max-width:100%; }
     display:flex !important; position:static;
     flex-direction:row; padding:0; border:none; background:none; box-shadow:none; gap:2rem;
   }
-  .nav-drawer a { padding:0; border:none; font-size:.62rem; }
+  .nav-drawer a { padding:0; border:none; font-size:.62rem; color:rgba(249,245,238,.75); }
+  .nav.solid .nav-drawer a { color:var(--ink2); }
 }
 
 /* ══════════════════════════════════════════════
@@ -245,14 +322,14 @@ img { display:block; max-width:100%; }
 .hero-eyebrow {
   font-size:.58rem; font-weight:600; letter-spacing:.5em; text-transform:uppercase;
   color:var(--sage-lt); margin-bottom:1.6rem;
-  animation:hIn .9s .15s both;
+  animation:hIn 1.0s .1s  both;
 }
 
 /* Large cross ornament */
 .hero-cross {
   display:flex; align-items:center; gap:1.2rem;
   margin-bottom:1.4rem;
-  animation:hIn .9s .25s both;
+  animation:hIn 1.0s .45s both;
 }
 .hero-cross-line {
   flex:1; max-width:55px; height:1px;
@@ -264,7 +341,7 @@ img { display:block; max-width:100%; }
 
 /* Script names */
 .hero-names {
-  animation:hIn .9s .35s both;
+  animation:hIn 1.0s .85s both;
   line-height:1;
 }
 .hero-name-script {
@@ -286,7 +363,7 @@ img { display:block; max-width:100%; }
   display:flex; align-items:center; gap:.8rem;
   margin:1.8rem 0 1.6rem;
   max-width:260px; width:100%;
-  animation:hIn .9s .45s both;
+  animation:hIn 1.0s 1.3s both;
 }
 .hero-orn-line { flex:1; height:1px; background:rgba(184,147,90,.3); }
 .hero-orn-nodes { display:flex; align-items:center; gap:.38rem; }
@@ -295,7 +372,7 @@ img { display:block; max-width:100%; }
 
 /* Date */
 .hero-date {
-  animation:hIn .9s .55s both;
+  animation:hIn 1.0s 1.65s both;
   margin-bottom:1.8rem;
 }
 .hero-date-main {
@@ -319,7 +396,7 @@ img { display:block; max-width:100%; }
   line-height:1.9; max-width:280px;
   border-top:1px solid rgba(90,122,90,.2);
   padding-top:1.6rem;
-  animation:hIn .9s .65s both;
+  animation:hIn 1.0s 2.0s  both;
 }
 .hero-verse cite {
   display:block; font-style:normal;
@@ -364,8 +441,8 @@ img { display:block; max-width:100%; }
   100% { opacity:.78;  transform:translate3d(0, 0, 0)  scale(1);    }
 }
 @keyframes hIn {
-  from { opacity:0; transform:translateY(18px); }
-  to   { opacity:1; transform:none; }
+  from { opacity:0; transform:translateY(28px); filter:blur(4px); }
+  to   { opacity:1; transform:none;         filter:blur(0);   }
 }
 
 /* ══════════════════════════════════════════════
@@ -429,7 +506,7 @@ img { display:block; max-width:100%; }
 }
 
 .bento-card {
-  background:var(--white);
+  background:var(--ivory);
   border-radius:var(--r-md);
   overflow:hidden;
   border:1px solid var(--border);
@@ -494,7 +571,7 @@ img { display:block; max-width:100%; }
   .vc-full { grid-column:1 / -1; }
 }
 .vc {
-  background:var(--cream2);
+  background:var(--white);
   border-radius:var(--r-md);
   padding:1.8rem 1.6rem;
   border:1px solid var(--border);
@@ -749,7 +826,7 @@ img { display:block; max-width:100%; }
 .rsvp-sec { background:var(--cream2); }
 .rsvp-card {
   max-width:480px; margin:0 auto;
-  background:var(--white);
+  background:var(--ivory);
   border-radius:var(--r-xl);
   padding:2.5rem 2.2rem;
   box-shadow:var(--s3);
@@ -764,7 +841,7 @@ img { display:block; max-width:100%; }
 .fi, .fs {
   width:100%; padding:.78rem .95rem;
   border:1.5px solid var(--border);
-  background:var(--cream);
+  background:var(--white);
   border-radius:var(--r-sm);
   font-family:var(--body); font-size:.92rem; font-weight:300;
   color:var(--ink); outline:none;
@@ -795,8 +872,8 @@ img { display:block; max-width:100%; }
 }
 .event-toggle:hover { transform:translate3d(0,-1px,0); box-shadow:0 3px 10px rgba(90,122,90,.1); }
 .event-toggle.active {
-  border-color:var(--sage);
-  background:var(--sage-pale);
+  border-color:var(--rose);
+  background:var(--rose-pale);
 }
 .event-toggle-title {
   display:block; font-size:.7rem; font-weight:600; color:var(--forest); margin-bottom:.18rem;
@@ -832,9 +909,9 @@ img { display:block; max-width:100%; }
   gap:12px; max-width:520px; margin:0 auto;
 }
 .cc {
-  background:var(--cream2); border-radius:var(--r-md);
+  background:var(--white); border-radius:var(--r-md);
   padding:1.8rem 1.5rem; text-align:center;
-  border:1px solid var(--border); transition:filter .25s ease;
+  border:1px solid var(--border-s); transition:filter .25s ease;
 }
 .cc:hover { transform:translate3d(0,-1px,0); filter:drop-shadow(0 4px 14px rgba(30,46,30,.1)); }
 .cc-tag { font-size:.52rem; font-weight:600; letter-spacing:.25em; text-transform:uppercase; color:var(--sage); margin-bottom:.55rem; }
@@ -1338,9 +1415,345 @@ html { scroll-behavior:smooth; }
 }
 .cc-link.wa:visited { color:var(--ink2); background:transparent; }
 
+
+/* ══════════════════════════════════════════════
+   SECONDARY ACCENTS — Dusty Rose & Silver
+══════════════════════════════════════════════ */
+
+/* Section eyebrow labels alternate between gold, rose, silver */
+.sec-eng .eyebrow  { color:var(--rose);   }
+.sec-fam .eyebrow  { color:var(--silver); }
+.sec-faith .eyebrow{ color:var(--rose-lt);}
+
+/* Hero ornament star — rose tint */
+.hero-orn-star { color:var(--rose-lt) !important; }
+
+/* Timeline dot — rose accent on entry */
+.tl-row.in::before {
+  background:var(--rose-lt) !important;
+  box-shadow:0 0 0 4px rgba(196,133,122,.14) !important;
+}
+
+/* Ornament diamonds — alternate gold and silver */
+.orn-dia { background:var(--silver) !important; opacity:.6; }
+
+/* Card top accent strips — rose for engagement, silver for travel */
+.ev-card-strip        { background:linear-gradient(to right, var(--sage-dk), var(--gold-lt)); }
+.ev-card-strip-rose   { background:linear-gradient(to right, var(--rose), var(--gold-lt)); }
+.ev-card-strip-silver { background:linear-gradient(to right, var(--silver), var(--silver-lt)); }
+
+/* RSVP event toggle active — rose */
+.event-toggle.active {
+  border-color:var(--rose) !important;
+  background:var(--rose-pale) !important;
+}
+.event-toggle.active .event-toggle-title { color:var(--rose); }
+
+/* Fam card open chevron — rose tint */
+.fam-card.open .fam-chevron {
+  background:rgba(196,133,122,.15);
+  border-color:rgba(196,133,122,.3);
+}
+
+/* Contact card — silver border on groom's side, rose on bride's */
+.cc:first-child { border-color:var(--border-s); }
+.cc:last-child  { border-color:var(--border-r);  }
+
+/* WhatsApp button — rose bg on hover fallback */
+.cc-link.wa:hover { background:#25D366 !important; }
+
+/* Hero verse border — rose tint instead of sage */
+.hero-verse { border-top-color:rgba(196,133,122,.22) !important; }
+
+/* Scroll progress bar — gold to rose gradient */
+#scroll-progress {
+  background:linear-gradient(to right, var(--gold), var(--rose)) !important;
+}
+
+/* Nav drawer link hover — rose */
+.nav-drawer a:hover { color:var(--rose) !important; }
+
+/* Faith section cite — silver */
+.faith-cite { color:var(--silver-lt) !important; opacity:.75; }
+
+/* Vc accent bar — rose/gold gradient */
+.vc::before {
+  background:linear-gradient(to right, var(--sage-dk), var(--rose), var(--gold-lt)) !important;
+}
+
+/* Submit button — rose-gold gradient */
+.fb {
+  background:linear-gradient(135deg, var(--forest) 0%, #2a1e10 100%) !important;
+  border:1px solid rgba(196,133,122,.2);
+}
+.fb:hover {
+  background:linear-gradient(135deg, var(--rose) 0%, var(--gold) 100%) !important;
+  box-shadow:0 4px 24px rgba(196,133,122,.3) !important;
+}
+
+
+/* ── Seconds digit heartbeat pulse ── */
+@keyframes cdSecPulse {
+  0%   { transform:scale(1);    opacity:.90; }
+  18%  { transform:scale(1.08); opacity:1;   }
+  38%  { transform:scale(.97);  opacity:.88; }
+  55%  { transform:scale(1.02); opacity:.92; }
+  100% { transform:scale(1);    opacity:.90; }
+}
+.hero-cd-sec-pulse {
+  animation:cdSecPulse .82s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+/* ── All digits — idle glow on dark background ── */
+.hero-cd-n {
+  text-shadow:0 0 18px rgba(184,147,90,.08);
+  transition:text-shadow .3s ease;
+}
+.hero-cd-n.swapping {
+  text-shadow:0 0 28px rgba(184,147,90,.35);
+}
+
+
+/* ══════════════════════════════════════════════
+   SCROLL PROGRESS BAR
+══════════════════════════════════════════════ */
+#scroll-progress {
+  position:fixed; top:0; left:0; z-index:1000;
+  height:2.5px; width:0%;
+  background:linear-gradient(to right, var(--gold), var(--rose));
+  transform:translateZ(0);
+  will-change:width;
+  pointer-events:none;
+  transition:width .08s linear;
+  box-shadow:0 0 6px rgba(196,133,122,.35);
+}
+
+
+/* ══════════════════════════════════════════════
+   NAV — Active section highlight
+══════════════════════════════════════════════ */
+.nav-drawer a {
+  position:relative;
+  transition:color .25s ease, padding-left .22s ease;
+}
+
+/* Sliding underline on ALL links */
+.nav-drawer a::after {
+  content:'';
+  position:absolute; bottom:-1px; left:0;
+  width:0; height:1.5px;
+  background:var(--gold);
+  border-radius:2px;
+  transition:width .3s cubic-bezier(.22,1,.36,1);
+}
+.nav-drawer a:hover::after { width:100%; }
+
+/* Active link — gold colour + full underline */
+.nav-drawer a.nav-active {
+  color:var(--gold) !important;
+  font-weight:500;
+}
+.nav-drawer a.nav-active::after {
+  width:100%;
+  background:var(--gold);
+}
+
+/* Desktop pill indicator */
+@media(min-width:768px) {
+  .nav-drawer a.nav-active {
+    color:var(--gold) !important;
+  }
+  .nav-drawer a.nav-active::after {
+    background:linear-gradient(to right, var(--gold), var(--rose));
+    height:1.5px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════
+   EVENT CARD — one-shot glow pulse on reveal
+══════════════════════════════════════════════ */
+@keyframes cardGlowPulse {
+  0%   { box-shadow:0 0  0px rgba(184,147,90,.0); }
+  30%  { box-shadow:0 0 22px rgba(184,147,90,.28),
+                    0 0 40px rgba(196,133,122,.14); }
+  65%  { box-shadow:0 0 14px rgba(184,147,90,.18),
+                    0 0 28px rgba(196,133,122,.08); }
+  100% { box-shadow:0 0  0px rgba(184,147,90,.0); }
+}
+.ev-card.glow-in {
+  animation:cardGlowPulse 1.4s cubic-bezier(.22,1,.36,1) forwards;
+}
+/* Also glow bento cards (venue section) */
+@keyframes venueGlowPulse {
+  0%   { box-shadow:var(--s1); }
+  35%  { box-shadow:0 0 24px rgba(184,147,90,.22),
+                    0 0 48px rgba(90,122,90,.12); }
+  70%  { box-shadow:0 0 14px rgba(184,147,90,.12); }
+  100% { box-shadow:var(--s1); }
+}
+.bento-card.glow-in {
+  animation:venueGlowPulse 1.4s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+
+/* ══════════════════════════════════════════════
+   FAMILY — staggered photo reveal + smooth expand
+══════════════════════════════════════════════ */
+
+/* Smoother expand — longer easing, easeOut spring */
+.fam-expand {
+  max-height:0; overflow:hidden; opacity:0;
+  transition:
+    max-height .65s cubic-bezier(.22,1,.36,1),
+    opacity    .45s ease !important;
+}
+.fam-card.open .fam-expand {
+  max-height:620px; opacity:1;
+}
+
+/* Chevron — smooth rotate */
+.fam-chevron {
+  transition:transform .45s cubic-bezier(.22,1,.36,1),
+             background .3s ease,
+             border-color .3s ease !important;
+}
+.fam-card.open .fam-chevron {
+  transform:rotate(180deg);
+}
+
+/* Each fam-member starts hidden */
+.fam-member {
+  opacity:0;
+  transform:scale(.88) translateY(10px);
+  transition:
+    opacity   .45s cubic-bezier(.22,1,.36,1),
+    transform .45s cubic-bezier(.22,1,.36,1);
+}
+
+/* When card opens, JS adds .photo-visible class with nth-child delays */
+.fam-member.photo-visible {
+  opacity:1;
+  transform:scale(1) translateY(0);
+}
+.fam-member.photo-visible:nth-child(1) { transition-delay:.10s; }
+.fam-member.photo-visible:nth-child(2) { transition-delay:.20s; }
+.fam-member.photo-visible:nth-child(3) { transition-delay:.30s; }
+.fam-member.photo-visible:nth-child(4) { transition-delay:.40s; }
+.fam-member.photo-visible:nth-child(5) { transition-delay:.50s; }
+.fam-member.photo-visible:nth-child(6) { transition-delay:.60s; }
+
+/* Fam photo — subtle zoom on hover */
+.fam-photo {
+  overflow:hidden;
+}
+.fam-photo img {
+  width:100%; height:100%; object-fit:cover;
+  transition:transform .5s cubic-bezier(.22,1,.36,1);
+}
+.fam-photo:hover img {
+  transform:scale(1.06);
+}
+
+/* Fam member name + role — fade up slightly behind photo */
+.fam-member-name, .fam-member-role {
+  transition:opacity .3s ease;
+}
+.fam-member.photo-visible .fam-member-name { opacity:1; }
+.fam-member.photo-visible .fam-member-role { opacity:1; }
+
+
+/* ══════════════════════════════════════════════
+   HAPTIC FEEDBACK — :active press states
+   Gives tactile feeling on all tappable elements
+══════════════════════════════════════════════ */
+
+/* ── Buttons & submit ── */
+.fb:active {
+  transform:scale(.97) translateY(1px);
+  transition-duration:.06s !important;
+  box-shadow:none !important;
+}
+
+/* ── Map / location buttons ── */
+.ev-map-btn:active,
+.map-btn:active {
+  transform:scale(.95) translateZ(0) !important;
+  opacity:.85;
+  transition-duration:.06s !important;
+}
+
+/* ── Contact links (call / whatsapp) ── */
+.cc-link:active {
+  transform:scale(.94) translateZ(0) !important;
+  opacity:.8;
+  transition-duration:.06s !important;
+}
+
+/* ── Family cards (tap to expand) ── */
+.fam-card:active {
+  transform:scale(.985) !important;
+  transition-duration:.08s !important;
+}
+
+/* ── Nav hamburger ── */
+.nav-ham:active {
+  transform:scale(.88);
+  transition-duration:.06s;
+}
+
+/* ── Event cards ── */
+.bento-card:active,
+.ev-card:active {
+  transform:scale(.985) translateZ(0) !important;
+  transition-duration:.08s !important;
+}
+
+/* ── Venue cards ── */
+.vc:active {
+  transform:scale(.985) translateZ(0) !important;
+  transition-duration:.08s !important;
+}
+
+/* ── RSVP event toggles ── */
+.event-toggle:active {
+  transform:scale(.93);
+  transition-duration:.06s;
+}
+
+/* ── Travel cards ── */
+.tc:active {
+  transform:scale(.97);
+  transition-duration:.06s;
+}
+
+/* ── Nav drawer links ── */
+.nav-drawer a:active {
+  opacity:.65;
+  transform:translateX(3px);
+  transition-duration:.06s;
+}
+
+/* Ensure touch targets meet 44px minimum */
+.ev-map-btn, .map-btn, .cc-link, .fb {
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
+}
+.event-toggle {
+  min-height:48px;
+}
+.nav-ham {
+  min-width:44px; min-height:44px;
+  display:flex; align-items:center; justify-content:center;
+}
+
 </style>
 </head>
 <body>
+
+<!-- ══════════ NAV ══════════ -->
+<div id="scroll-progress"></div>
 
 <!-- ══════════ NAV ══════════ -->
 <nav class="nav" id="topNav">
@@ -1395,7 +1808,7 @@ html { scroll-behavior:smooth; }
 
     <div class="hero-cross">
       <div class="hero-cross-line"></div>
-      <svg width="16" height="22" viewBox="0 0 16 22" style="animation:hIn .9s .28s both;opacity:0">
+      <svg width="16" height="22" viewBox="0 0 16 22" style="animation:hIn 1.0s .48s both;opacity:0">
         <rect x="6.5" y="0" width="3" height="22" fill="#b8935a" opacity=".45"/>
         <rect x="0" y="7" width="16" height="3" fill="#b8935a" opacity=".45"/>
       </svg>
@@ -1882,15 +2295,61 @@ function closeNav() {
   drawer.classList.remove('open');
 }
 
-// Debounced nav shadow — single rAF per scroll burst
+// ── SMOOTH SCROLL WITH NAV OFFSET ────
+// Override default anchor behaviour to account for 56px fixed nav
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', function(e) {
+    const targetId = this.getAttribute('href').slice(1);
+    const target   = document.getElementById(targetId);
+    if (!target) return;
+    e.preventDefault();
+    closeNav();
+    const navH   = topNav.offsetHeight || 56;
+    const offset = target.getBoundingClientRect().top + window.scrollY - navH - 8;
+    window.scrollTo({ top: offset, behavior: 'smooth' });
+  });
+});
+
+// ── NAV — transparent→solid on scroll ──
 let _navRaf;
+const _heroH = () => (document.querySelector('.hero')?.offsetHeight || window.innerHeight) * 0.15;
 window.addEventListener('scroll', () => {
   if (_navRaf) return;
   _navRaf = requestAnimationFrame(() => {
-    topNav.classList.toggle('up', window.scrollY > 30);
+    const scrolled = window.scrollY > _heroH();
+    topNav.classList.toggle('solid', scrolled);
     _navRaf = null;
   });
 }, { passive:true });
+// Run once on load in case page is refreshed mid-scroll
+(function(){ topNav.classList.toggle('solid', window.scrollY > _heroH()); })();
+
+// ── ACTIVE SECTION HIGHLIGHT ─────────
+// Watch all sections and mark the matching nav link as active
+(function initActiveNav() {
+  const sections  = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('.nav-drawer a[href^="#"]');
+
+  function setActive(id) {
+    navLinks.forEach(a => {
+      const isActive = a.getAttribute('href') === '#' + id;
+      a.classList.toggle('nav-active', isActive);
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    const sectionObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) setActive(e.target.id);
+      });
+    }, {
+      // Trigger when section crosses 30% into viewport from top
+      rootMargin: '-56px 0px -55% 0px',
+      threshold: 0
+    });
+    sections.forEach(s => sectionObs.observe(s));
+  }
+})();
 
 // ── COUNTDOWN — glow-swap ───────────
 const _cdTarget = new Date('2027-01-09T11:00:00').getTime();
@@ -1918,6 +2377,12 @@ function tick() {
   swapDigit(_cdEls.h, pad(Math.floor(diff % 86400000 / 3600000)));
   swapDigit(_cdEls.m, pad(Math.floor(diff % 3600000  / 60000)));
   swapDigit(_cdEls.s, pad(Math.floor(diff % 60000    / 1000)));
+  // Subtle pulse on seconds digit every tick
+  if (_cdEls.s) {
+    _cdEls.s.classList.remove('hero-cd-sec-pulse');
+    void _cdEls.s.offsetWidth;
+    _cdEls.s.classList.add('hero-cd-sec-pulse');
+  }
 }
 tick(); setInterval(tick, 1000);
 
@@ -1958,9 +2423,21 @@ if ('IntersectionObserver' in window) {
   revealAll();
 }
 
-// ── FAMILY TOGGLE ────────────────────
-function toggleFam(id){
-  document.getElementById(id).classList.toggle('open');
+// ── FAMILY TOGGLE — staggered photo reveal ──
+function toggleFam(id) {
+  const card    = document.getElementById(id);
+  const isOpen  = card.classList.toggle('open');
+  const members = card.querySelectorAll('.fam-member');
+
+  if (isOpen) {
+    // Stagger in — short delay to let expand animation start first
+    members.forEach((m, i) => {
+      setTimeout(() => m.classList.add('photo-visible'), 80 + i * 90);
+    });
+  } else {
+    // Reset immediately on close so they re-animate next open
+    members.forEach(m => m.classList.remove('photo-visible'));
+  }
 }
 
 // ── RSVP EVENT TOGGLE ────────────────
@@ -2008,6 +2485,22 @@ document.addEventListener('visibilitychange', function() {
     document.querySelectorAll('.ev-map-btn, .map-btn, .cc-link').forEach(el => el.blur());
   }
 });
+
+
+// ── SCROLL PROGRESS BAR ────────────────────
+const _progEl = document.getElementById('scroll-progress');
+let _progRaf  = null;
+function updateProgress() {
+  const scrolled = window.scrollY;
+  const total    = document.documentElement.scrollHeight - window.innerHeight;
+  const pct      = total > 0 ? (scrolled / total) * 100 : 0;
+  if (_progEl) _progEl.style.width = pct + '%';
+  _progRaf = null;
+}
+window.addEventListener('scroll', () => {
+  if (!_progRaf) _progRaf = requestAnimationFrame(updateProgress);
+}, { passive:true });
+updateProgress();
 
 </script>
 </body>
