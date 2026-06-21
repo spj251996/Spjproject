@@ -144,11 +144,11 @@ img { display:block; max-width:100%; }
 /* Use translate3d to guarantee GPU layer promotion */
 .sr {
   opacity:0;
-  transform:translate3d(0, 22px, 0);
+  transform:translate3d(0, 28px, 0);
   will-change:opacity, transform;
   transition:
-    opacity   .6s cubic-bezier(.22,1,.36,1),
-    transform .6s cubic-bezier(.22,1,.36,1);
+    opacity   .85s cubic-bezier(.16,1,.3,1),
+    transform .85s cubic-bezier(.16,1,.3,1);
   backface-visibility:hidden;
 }
 .sr.in {
@@ -179,11 +179,11 @@ img { display:block; max-width:100%; }
 }
 
 /* Staggered delays */
-.sr.d1 { transition-delay:.08s; }
-.sr.d2 { transition-delay:.15s; }
-.sr.d3 { transition-delay:.22s; }
-.sr.d4 { transition-delay:.30s; }
-.sr.d5 { transition-delay:.38s; }
+.sr.d1 { transition-delay:.10s; }
+.sr.d2 { transition-delay:.20s; }
+.sr.d3 { transition-delay:.30s; }
+.sr.d4 { transition-delay:.40s; }
+.sr.d5 { transition-delay:.50s; }
 
 /* ══════════════════════════════════════════════
    NAV
@@ -611,22 +611,16 @@ img { display:block; max-width:100%; }
   position:relative; overflow:hidden;
 }
 .fam-sec::before {
-  content:''; position:absolute; inset:0; pointer-events:none;
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background:
-    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(184,147,90,.22) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(184,147,90,.12) 0%, transparent 60%);
-  z-index:0;
+    radial-gradient(ellipse 70% 38% at 18% 12%, rgba(184,147,90,.28) 0%, transparent 58%),
+    radial-gradient(ellipse 65% 35% at 85% 30%, rgba(212,174,122,.20) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 42% at 50% 100%, rgba(184,147,90,.22) 0%, transparent 60%);
 }
 .fam-sec > * { position:relative; z-index:1; }
 
 /* Subtle sage glow */
-.fam-sec::before {
-  content:''; position:absolute;
-  width:60vw; height:60vw; max-width:500px; max-height:500px;
-  border-radius:50%; top:-20%; right:-15%;
-  background:radial-gradient(circle, rgba(184,147,90,.2) 0%, transparent 70%);
-  pointer-events:none;
-}
+
 .fam-sec .eyebrow { color:rgba(184,147,90,.6); }
 .fam-sec .orn-line { background:rgba(184,147,90,.2); }
 .fam-sec .orn-dot,.fam-sec .orn-dia { background:var(--gold-lt); }
@@ -948,11 +942,10 @@ footer {
   position:relative; overflow:hidden;
 }
 footer::before {
-  content:''; position:absolute; inset:0; pointer-events:none;
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background:
-    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(184,147,90,.22) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(184,147,90,.12) 0%, transparent 60%);
-  z-index:0;
+    radial-gradient(ellipse 85% 50% at 22% 0%, rgba(184,147,90,.26) 0%, transparent 62%),
+    radial-gradient(ellipse 75% 45% at 80% 100%, rgba(212,174,122,.18) 0%, transparent 62%);
 }
 footer > * { position:relative; z-index:1; }
 
@@ -1537,12 +1530,12 @@ html { scroll-behavior:smooth; }
 ══════════════════════════════════════════════ */
 #scroll-progress {
   position:fixed; top:0; left:0; z-index:1000;
-  height:2.5px; width:0%;
+  height:2.5px; width:100%;
+  transform:scaleX(0); transform-origin:left center;
   background:linear-gradient(to right, var(--gold), var(--rose));
-  transform:translateZ(0);
-  will-change:width;
+  will-change:transform;
   pointer-events:none;
-  transition:width .08s linear;
+  transition:transform .12s cubic-bezier(.22,1,.36,1);
   box-shadow:0 0 6px rgba(196,133,122,.35);
 }
 
@@ -1910,6 +1903,61 @@ html { scroll-behavior:smooth; }
 .cer-sec, .rsvp-sec {
   background-position:center top;
 }
+
+/* ── Mobile: sections use portrait paper so florals stay visible ── */
+@media (max-width:767px) {
+  .engagement-sec, .wedding-sec, .cer-sec, .travel-sec, .rsvp-sec, .contact-sec, .itin-sec {
+    background-image:
+      linear-gradient(180deg, rgba(249,243,231,.85) 0%, rgba(249,243,231,.8) 50%, rgba(249,243,231,.87) 100%),
+      url("hero-bg-mobile.jpg") !important;
+    background-size:cover !important;
+    background-position:center top !important;
+    background-repeat:no-repeat !important;
+  }
+  /* Alternate the vertical anchor so repeated sections show different florals */
+  .wedding-sec, .travel-sec, .contact-sec {
+    background-position:center center !important;
+  }
+  .cer-sec, .rsvp-sec {
+    background-position:center bottom !important;
+  }
+}
+
+/* ── Smooth blend between hero and first section ── */
+.hero::after {
+  content:''; position:absolute; left:0; right:0; bottom:0;
+  height:140px; z-index:2; pointer-events:none;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    rgba(249,243,231,.3) 45%,
+    rgba(249,243,231,.7) 75%,
+    rgba(249,243,231,.92) 100%);
+}
+/* First section after hero — soft fade-in at its top edge */
+.engagement-sec::after {
+  content:''; position:absolute; top:0; left:0; right:0;
+  height:120px; z-index:0; pointer-events:none;
+  background:linear-gradient(to bottom,
+    rgba(249,243,231,.9) 0%,
+    rgba(249,243,231,.4) 55%,
+    transparent 100%);
+}
+.engagement-sec { position:relative; }
+.engagement-sec > * { position:relative; z-index:1; }
+
+/* ── Global smoothness enhancements ── */
+html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+* { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+@media (prefers-reduced-motion:reduce){
+  *, *::before, *::after {
+    animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important; scroll-behavior:auto !important;
+  }
+}
+/* Smooth hover transitions on all interactive elements */
+a, button, .ev-card, .fam-card, .tc, .cc, .fb, .map-btn, .ev-map-btn, .cc-link {
+  transition-timing-function:cubic-bezier(.22,1,.36,1);
+}
 </style>
 </head>
 <body>
@@ -2023,7 +2071,7 @@ html { scroll-behavior:smooth; }
 <section class="sec engagement-sec" id="engagement">
   <div class="sec-inner">
 
-    <h2 class="title sr d1"><em>Engagement</em> Ceremony</h2>
+    <h2 class="title sr d1"><em>Betrothal</em> Ceremony</h2>
     <div class="orn sr d2">
       <div class="orn-line"></div>
       <div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div>
@@ -2071,8 +2119,8 @@ html { scroll-behavior:smooth; }
           </div>
         </div>
         <div class="ev-card-body">
-          <div class="ev-card-venue">St. Antony's Church<br>Reception Hall, Paropady, Calicut</div>
-          <a href="https://maps.google.com/?q=St+Antony+Church+Reception+Hall+Paropady+Calicut" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
+          <div class="ev-card-venue">St. Antony's Church<br>Parish Hall, Paroppadi, Calicut</div>
+          <a href="https://maps.app.goo.gl/MzLafcPRD1wS6t717" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
         </div>
       </div>
 
@@ -2118,7 +2166,7 @@ html { scroll-behavior:smooth; }
         </div>
         <div class="ev-card-body">
           <div class="ev-card-venue">St. John the Baptist Holy Catholic Church,<br>Vadakara, Koothattukulam, Ernakulam</div>
-          <a href="https://maps.google.com/?q=St+John+the+Baptist+Catholic+Church+Vadakara+Koothattukulam" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
+          <a href="https://maps.app.goo.gl/BBER36V36QARUMPt6" target="_blank" class="ev-map-btn">📍 Open in Maps</a>
         </div>
       </div>
 
@@ -2563,7 +2611,7 @@ if ('IntersectionObserver' in window) {
       }
     });
     if (changed && !_rafId) _rafId = requestAnimationFrame(_flush);
-  }, { threshold: 0.06, rootMargin: '0px 0px -16px 0px' });
+  }, { threshold: 0.06, rootMargin: '0px 0px -12% 0px' });
 
   document.querySelectorAll('.sr, .tl-row').forEach(el => _ro.observe(el));
 
@@ -2645,7 +2693,7 @@ function updateProgress() {
   const scrolled = window.scrollY;
   const total    = document.documentElement.scrollHeight - window.innerHeight;
   const pct      = total > 0 ? (scrolled / total) * 100 : 0;
-  if (_progEl) _progEl.style.width = pct + '%';
+  if (_progEl) _progEl.style.transform = 'scaleX(' + (pct/100) + ')';
   _progRaf = null;
 }
 window.addEventListener('scroll', () => {
