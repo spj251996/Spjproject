@@ -610,6 +610,15 @@ img { display:block; max-width:100%; }
   background:var(--forest);
   position:relative; overflow:hidden;
 }
+.fam-sec::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(184,147,90,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(184,147,90,.12) 0%, transparent 60%);
+  z-index:0;
+}
+.fam-sec > * { position:relative; z-index:1; }
+
 /* Subtle sage glow */
 .fam-sec::before {
   content:''; position:absolute;
@@ -936,7 +945,17 @@ footer {
   background:var(--forest); padding:4rem 1.5rem 3rem;
   text-align:center;
   border-top:1px solid rgba(184,147,90,.15);
+  position:relative; overflow:hidden;
 }
+footer::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(184,147,90,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(184,147,90,.12) 0%, transparent 60%);
+  z-index:0;
+}
+footer > * { position:relative; z-index:1; }
+
 .foot-orn { width:50px; height:1px; background:rgba(184,147,90,.22); margin:0 auto 2rem; }
 .foot-script { font-family:'Pinyon Script', cursive; font-size:2.1rem; color:rgba(250,244,232,.82); line-height:1.15; margin-bottom:.5rem; letter-spacing:.01em; text-align:center; }
 .foot-hash { font-size:.56rem; font-weight:600; letter-spacing:.28em; color:rgba(184,147,90,.45); margin-bottom:.9rem; }
@@ -1847,6 +1866,50 @@ html { scroll-behavior:smooth; }
 .hero-names-img {
   filter:drop-shadow(0 1px 1px rgba(255,250,242,.8)) drop-shadow(0 2px 10px rgba(90,62,34,.22)) !important;
 }
+
+/* ── Hero background graceful fade-in on load ── */
+.hero-bg-reveal {
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:#f4eee4;
+  animation:heroBgFade 1.6s ease-out .1s forwards;
+}
+@keyframes heroBgFade {
+  from { opacity:1; }
+  to   { opacity:0; }
+}
+/* Gentle scale-in of the hero image itself for life */
+@media (min-width:768px){
+  .hero { animation:heroBgZoom 2.6s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes heroBgZoom {
+    from { background-size:110%, 110%; }
+    to   { background-size:cover, cover; }
+  }
+}
+
+/* ── Cohesive floral paper texture on light sections ── */
+.engagement-sec, .wedding-sec, .cer-sec, .travel-sec, .rsvp-sec, .contact-sec, .itin-sec {
+  position:relative;
+  background-image:
+    linear-gradient(180deg, rgba(249,243,231,.86) 0%, rgba(249,243,231,.82) 50%, rgba(249,243,231,.88) 100%),
+    url("hero-bg.jpg") !important;
+  background-size:cover;
+  background-position:center center;
+  background-attachment:scroll;
+  background-repeat:no-repeat;
+}
+/* Cards sit on a clean surface so content stays crisp over the paper */
+.engagement-sec .ev-card, .wedding-sec .ev-card,
+.cer-sec .tl, .travel-sec .tc, .rsvp-sec .rsvp-card,
+.contact-sec .cc, .itin-sec .itin-wrap {
+  position:relative; z-index:1;
+}
+/* Alternate sections get a slightly different paper position for variety */
+.wedding-sec, .travel-sec, .contact-sec {
+  background-position:center bottom;
+}
+.cer-sec, .rsvp-sec {
+  background-position:center top;
+}
 </style>
 </head>
 <body>
@@ -1871,6 +1934,7 @@ html { scroll-behavior:smooth; }
 
 <!-- ══════════ HERO ══════════ -->
 <section class="hero" id="home">
+  <div class="hero-bg-reveal"></div>
 
   <!-- Botanical corner art -->
   <svg class="hero-botanical hero-botanical-l" viewBox="0 0 280 320" fill="none">
