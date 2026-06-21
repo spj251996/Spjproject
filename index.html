@@ -274,14 +274,13 @@ img { display:block; max-width:100%; }
   display:grid;
   grid-template-rows:1fr auto;
   padding-top:56px;
-  background:
-    /* subtle light wash for text legibility on the paper */
-    linear-gradient(180deg, rgba(250,244,232,.32) 0%, rgba(250,244,232,.12) 35%, rgba(250,244,232,.40) 100%),
+  background-image:
+    linear-gradient(180deg, rgba(244,238,228,.28) 0%, rgba(244,238,228,.08) 35%, rgba(244,238,228,.34) 100%),
     url("hero-bg.jpg");
-  background-size:cover;
-  background-position:center center;
-  background-repeat:no-repeat;
-  background-color:#faf4e8;
+  background-size:cover, cover;
+  background-position:center center, center center;
+  background-repeat:no-repeat, no-repeat;
+  background-color:#e8e2da;
   position:relative; overflow:clip;
   contain:layout style;
 }
@@ -1804,11 +1803,12 @@ html { scroll-behavior:smooth; }
    names sit in the darker space — use lighter mobile file */
 @media (max-width:767px) {
   .hero {
-    background:
-      linear-gradient(180deg, rgba(250,244,232,.34) 0%, rgba(250,244,232,.12) 38%, rgba(250,244,232,.42) 100%),
+    background-image:
+      linear-gradient(180deg, rgba(244,238,228,.30) 0%, rgba(244,238,228,.08) 40%, rgba(244,238,228,.34) 100%),
       url("hero-bg-mobile.jpg") !important;
-    background-size:cover;
-    background-position:center center;
+    background-size:cover, cover !important;
+    background-position:center center, center center !important;
+    background-repeat:no-repeat, no-repeat !important;
   }
   .hero-body { align-items:center; padding-left:1.6rem; padding-right:1.6rem; max-width:none; }
   .hero-names-img { width:min(420px,80vw); }
