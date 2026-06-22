@@ -2811,6 +2811,25 @@ function submitRSVP(){
     alert('Please fill in your name and number of guests.');
     return;
   }
+
+  // Which event(s) are selected
+  const events = [];
+  if (document.getElementById('evEngagement').classList.contains('active')) events.push('Betrothal');
+  if (document.getElementById('evWedding').classList.contains('active'))     events.push('Wedding');
+  const eventStr = events.length ? events.join(' & ') : '—';
+
+  // Send to Google Sheet (fire-and-forget)
+  const RSVP_URL = 'https://script.google.com/macros/s/AKfycbz04TR2vRA61hdOc7jEAdK7G-QRZRlOmtMAfP17EWUOxo1waMpFSH28oztsl2q7sPu-sQ/exec';
+  try {
+    fetch(RSVP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ name: name, guests: guests, event: eventStr })
+    });
+  } catch (err) { /* ignore network errors, still thank the guest */ }
+
+  // Show thank-you screen
   const form = document.getElementById('rsvpForm');
   form.style.transition = 'opacity .4s ease';
   form.style.opacity    = '0';
