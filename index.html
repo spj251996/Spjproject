@@ -216,6 +216,15 @@ img { display:block; max-width:100%; }
   border-bottom:1px solid var(--border);
   box-shadow:var(--s2);
 }
+.nav.menu-open {
+  background:rgba(250,246,239,.97);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);
+  backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--s2);
+}
+.nav.menu-open .nav-logo { color:var(--forest); }
+.nav.menu-open .nav-ham span { background:#3a2718; }
 .nav-logo {
   font-family:var(--script);
   font-size:1.75rem; color:var(--forest); line-height:1;
@@ -2612,11 +2621,13 @@ const topNav = document.getElementById('topNav');
 ham.addEventListener('click', () => {
   ham.classList.toggle('open');
   drawer.classList.toggle('open');
+  topNav.classList.toggle('menu-open', drawer.classList.contains('open'));
 }, { passive:true });
 
 function closeNav() {
   ham.classList.remove('open');
   drawer.classList.remove('open');
+  topNav.classList.remove('menu-open');
 }
 
 // ── SMOOTH SCROLL WITH NAV OFFSET ────
