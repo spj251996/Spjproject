@@ -966,6 +966,8 @@ footer > * { position:relative; z-index:1; }
 .foot-names { font-family:var(--display); font-style:italic; font-weight:400; font-size:1rem; color:rgba(250,244,232,.6); }
 .foot-date { font-size:.6rem; letter-spacing:.14em; color:rgba(212,174,122,.6); margin-top:.5rem; }
 .foot-love { font-size:.7rem; font-style:italic; color:rgba(212,174,122,.5); margin-top:2rem; }
+.foot-compliments { font-family:var(--body); font-size:.58rem; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:rgba(212,174,122,.5); margin-top:2.2rem; }
+.foot-compliments-names { font-family:var(--body); font-style:normal; font-weight:400; font-size:.72rem; line-height:1.5; color:rgba(212,174,122,.55); margin-top:.45rem; letter-spacing:.06em; }
 
 /* ══════════════════════════════════════════════
    ENGAGEMENT & WEDDING EVENT SECTIONS
@@ -1865,6 +1867,9 @@ html { scroll-behavior:smooth; }
 @media (max-width:767px) {
   .foot-script { font-size:1.95rem; letter-spacing:.01em; }
   .foot-name  { white-space:nowrap; }
+  /* Contact cards: align Call/WhatsApp buttons to the bottom */
+  .cc { display:flex; flex-direction:column; height:100%; }
+  .cc-links { margin-top:auto; }
 
   .hero {
     background-image:
@@ -2383,8 +2388,8 @@ body { scroll-behavior:smooth; }
           </div>
         </div>
         <div class="fam-detail">
-          <strong>Father:</strong>&ensp;Roy John<br>
-          <strong>Mother:</strong>&ensp;Minimol<br>
+          <strong>Father:</strong>&ensp;Roy John Edatt<br>
+          <strong>Mother:</strong>&ensp;Minimol Roy<br>
           <strong>Hometown:</strong>&ensp;Poovattuparambu, Calicut, Keralam<br>
           <strong>Parish:</strong>&ensp;St. Kuriakose Elias Chavara Church, Harinagar, Delhi
         </div>
@@ -2590,8 +2595,10 @@ body { scroll-behavior:smooth; }
 <footer>
   <div class="foot-orn"></div>
   <div class="foot-script"><span class="foot-name">Sebastian P Joseph</span><span class="foot-amp">&amp;</span><span class="foot-name">Flemy Roy</span></div>
-  <div class="foot-date">4th &amp; 9th January 2027 · Calicut &amp; Koothattukulam, Keralam · By God's Grace</div>
+  <div class="foot-date">4th &amp; 9th January 2027 · Calicut &amp; Koothattukulam, Keralam</div>
   <div class="foot-love">Made with ❤️ for our most beautiful day</div>
+  <div class="foot-compliments">Best compliments from</div>
+  <div class="foot-compliments-names">Amal Roy, Marietta Joseph &amp; Harry William</div>
 </footer>
 
 <script>
