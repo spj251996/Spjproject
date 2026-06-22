@@ -2088,6 +2088,29 @@ body { scroll-behavior:smooth; }
     scroll-behavior:auto !important;
   }
 }
+
+/* ── Disable text selection & blue highlight site-wide ── */
+* {
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+}
+html, body, body * {
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  user-select:none;
+}
+/* Keep form fields usable (typing / selecting text) */
+input, textarea, select {
+  -webkit-user-select:text;
+  -moz-user-select:text;
+  -ms-user-select:text;
+  user-select:text;
+}
+/* Remove the blue selection flash entirely */
+::selection      { background:transparent; }
+::-moz-selection { background:transparent; }
+input::selection, textarea::selection { background:rgba(184,147,90,.25); }
 </style>
 </head>
 <body>
