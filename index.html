@@ -792,7 +792,7 @@ img { display:block; max-width:100%; }
   font-size:.56rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase;
   color:var(--sage); margin-bottom:.5rem;
 }
-.tc-tx { font-size:.92rem; color:var(--ink2); line-height:1.78; }
+.tc-tx { font-size:.82rem; color:var(--ink2); line-height:1.78; }
 
 /* ══════════════════════════════════════════════
    FAITH — full bleed dark
@@ -897,8 +897,8 @@ img { display:block; max-width:100%; }
   display:block;
   width:auto; padding:.8rem 2.2rem; margin:1.2rem auto 0;
   background:var(--forest); color:rgba(250,244,232,.9);
-  font-family:var(--body); font-size:.72rem; font-weight:600;
-  letter-spacing:.22em; text-transform:uppercase;
+  font-family:var(--body); font-size:.62rem; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase;
   border:none; border-radius:30px; cursor:pointer; transform:translateZ(0);
   transition:background .25s ease, transform .2s ease, box-shadow .25s ease,
              letter-spacing .25s ease;
@@ -928,7 +928,7 @@ img { display:block; max-width:100%; }
 .cc:hover { transform:translate3d(0,-1px,0); filter:drop-shadow(0 4px 14px rgba(0,0,0,.1)); }
 .cc-tag { font-size:.52rem; font-weight:600; letter-spacing:.25em; text-transform:uppercase; color:var(--sage); margin-bottom:.55rem; }
 .cc-name { font-family:var(--display); font-size:1.2rem; font-weight:500; color:var(--forest); margin-bottom:.2rem; }
-.cc-role { font-size:.85rem; font-style:italic; color:var(--ink2); margin-bottom:1rem; }
+.cc-role { font-size:.75rem; font-style:italic; color:var(--ink2); margin-bottom:1rem; }
 .cc-links { display:flex; flex-direction:column; gap:.5rem; }
 .cc-link {
   display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
@@ -1059,8 +1059,16 @@ footer > * { position:relative; z-index:1; }
 
 /* Card top accent strip */
 .ev-card-strip {
-  height:3px;
+  height:2px;
+  background:linear-gradient(to right, var(--sage-lt), var(--gold-pale));
+  transition:height .3s cubic-bezier(.22,1,.36,1),
+             background .3s ease,
+             box-shadow .3s ease;
+}
+.ev-card:hover .ev-card-strip {
+  height:4px;
   background:linear-gradient(to right, var(--sage-dk), var(--gold-lt));
+  box-shadow:0 0 10px rgba(184,147,90,.55);
 }
 .ev-card-strip-gold {
   background:linear-gradient(to right, var(--gold), var(--gold-lt));
@@ -1099,7 +1107,7 @@ footer > * { position:relative; z-index:1; }
 /* Card body */
 .ev-card-body { padding:1rem 1.3rem 1.2rem; }
 .ev-card-venue {
-  font-size:.98rem; color:var(--ink2); line-height:1.65; margin-bottom:.85rem;
+  font-size:.9rem; color:var(--ink2); line-height:1.65; margin-bottom:.85rem;
 }
 .ev-card-venue-lt { color:rgba(244,234,214,.72); }
 
