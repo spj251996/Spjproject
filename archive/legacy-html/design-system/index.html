@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Design System — Sebastian &amp; Flemy Wedding (dev only)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Tangerine:wght@400;700&family=Great+Vibes&family=Jost:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="site-styles.css">
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+
+<div class="ds-banner">DEV ONLY — this /design-system/ folder must be removed before handoff/deploy. No build pipeline excludes it automatically.</div>
+
+<div class="ds-shell">
+  <nav class="ds-toc" aria-label="Design system sections">
+    <div class="ds-toc-bucket">Foundations</div>
+    <a href="#ds-colors">Colors</a>
+    <a href="#ds-typography">Typography</a>
+    <a href="#ds-spacing">Spacing</a>
+    <a href="#ds-layout">Layout</a>
+    <a href="#ds-imagery">Imagery</a>
+    <a href="#ds-motion">Motion</a>
+    <a href="#ds-shapes">Shapes</a>
+    <a href="#ds-elevation">Elevation &amp; Depth</a>
+    <a href="#ds-iconography">Iconography</a>
+    <div class="ds-toc-bucket">Components</div>
+    <a href="#ds-shell">Shell</a>
+    <a href="#ds-ui">UI</a>
+    <div class="ds-toc-bucket">Domain</div>
+    <a href="#ds-scroll-progress">Scroll Progress</a>
+    <a href="#ds-hero">Hero</a>
+    <a href="#ds-events">Event Blocks</a>
+    <a href="#ds-families">Families</a>
+    <a href="#ds-ceremony">Ceremony Timeline</a>
+    <a href="#ds-travel">Travel</a>
+    <a href="#ds-faith">Faith</a>
+    <a href="#ds-rsvp">RSVP</a>
+    <a href="#ds-contact">Contact</a>
+    <a href="#ds-footer">Footer</a>
+  </nav>
+
+  <main class="ds-main">
+    <header class="ds-header">
+      <h1>Design System</h1>
+      <p>Inventory-mode gallery for the Sebastian &amp; Flemy wedding invitation (single-file static HTML,
+      no build step). Every specimen below links the project's real <code>site-styles.css</code>
+      (a verbatim copy of <code>index.html</code>'s inline <code>&lt;style&gt;</code> block) and reuses
+      real markup/classes — never hand-faked CSS.</p>
+      <p class="ds-note">Theme: single light theme only — no dark mode or alt-theme block exists in the
+      source, so no theme toggle is built here (per the skill's theme-detection rule: 0/1 theme = no toggle).</p>
+      <p class="ds-note">Specimens tagged <span class="ds-tag ds-tag-posed">posed</span> render a static
+      snapshot of state that production drives with JavaScript (scroll-reveal, countdown, family-card
+      expand) — this gallery does not load the site's own &lt;script&gt;, so nothing here is scroll- or
+      timer-driven. Specimens tagged <span class="ds-tag ds-tag-dead">dead css</span> mark classes/tokens
+      that exist in the stylesheet but never render on the live page.</p>
+    </header>
+
+    <!-- ═══════════════════ FOUNDATIONS ═══════════════════ -->
+
+    <section class="ds-section" id="ds-colors">
+      <h2>Foundations · Colors</h2>
+      <p class="ds-identity">Four semantic families over a warm paper base — no pure white or pure black,
+      every value is warm-tinted. Swatches render via the real CSS custom properties in
+      <code>site-styles.css</code>.</p>
+      <div class="ds-swatch-grid">
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--white)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">white</div><div class="ds-swatch-value">#fdf9f1 · card surface</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--ivory)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">ivory</div><div class="ds-swatch-value">#f8f0e1 · card surface</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--cream)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">cream</div><div class="ds-swatch-value">#faf4e8 · page bg</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--cream2)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">cream2</div><div class="ds-swatch-value">#f4ead6 · alt section</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--cream3)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">cream3</div><div class="ds-swatch-value">#ecdcc2 · alt section</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--sage)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">sage <span class="ds-tag ds-tag-live">live alias</span></div><div class="ds-swatch-value">#a9763f · caramel accent</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--sage-lt)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">sage-lt</div><div class="ds-swatch-value">#c89a63</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--sage-dk)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">sage-dk</div><div class="ds-swatch-value">#4a3422</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--sage-pale)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">sage-pale</div><div class="ds-swatch-value">#f1e3cf</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--forest)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">forest</div><div class="ds-swatch-value">#3a2718 · espresso sections</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--gold)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">gold</div><div class="ds-swatch-value">#b8935a · ornament/progress</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--gold-lt)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">gold-lt</div><div class="ds-swatch-value">#d4ae7a</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--gold-pale)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">gold-pale</div><div class="ds-swatch-value">#f0dfc0</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--ink)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">ink</div><div class="ds-swatch-value">#2e2013 · body text</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--ink2)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">ink2</div><div class="ds-swatch-value">#3f2c1a</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--ink3)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">ink3</div><div class="ds-swatch-value">#6e5234 · muted text</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--ink4)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">ink4</div><div class="ds-swatch-value">#997b56</div></div></div>
+        <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--silver)"></div><div class="ds-swatch-meta"><div class="ds-swatch-name">silver (taupe)</div><div class="ds-swatch-value">#a89478</div></div></div>
+      </div>
+      <p class="ds-note" style="margin-top:1rem">Dead/unreferenced tokens (declared, never <code>var()</code>-consumed):
+      <code>--caramel</code>, <code>--caramel-lt</code>, <code>--caramel-dk</code>, <code>--silver-pale</code> —
+      see DESIGN.md → Iteration Notes → Known Gaps. Off-token color in use: a secondary rose glow
+      <code>rgba(196,133,122,*)</code> with no custom property at all.</p>
+    </section>
+
+    <section class="ds-section" id="ds-typography">
+      <h2>Foundations · Typography</h2>
+      <p class="ds-identity">Editorial serif for ceremony/scripture, a couple script reserved for names,
+      a body sans for everything functional. Each row renders with the real font stack from
+      <code>site-styles.css</code>.</p>
+      <div class="ds-frame">
+        <div class="ds-type-row"><span style="font-family:var(--script);font-size:2.7rem;color:var(--sage)">Sebastian &amp; Flemy</span><span class="ds-type-meta">couple-script<br>Great Vibes · clamp(1.85–2.7rem)</span></div>
+        <div class="ds-type-row"><span style="font-family:'Tangerine',cursive;font-size:1.75rem;color:var(--sage)">S &amp; F</span><span class="ds-type-meta">monogram<br>Tangerine · 1.75rem</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--display);font-size:2rem;color:var(--ink)"><em>Betrothal</em> Ceremony</span><span class="ds-type-meta">section-title<br>Playfair Display · clamp(1.9–2.8rem)</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--display);font-style:italic;font-size:1.3rem;color:var(--ink2)">"What God has joined together..."</span><span class="ds-type-meta">verse<br>Playfair italic · clamp(1.15–1.8rem)</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--display);font-size:3.5rem;color:var(--ink)">09</span><span class="ds-type-meta">date-numeral<br>Playfair · clamp(3.5–5.5rem)</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--display);font-size:2.4rem;color:var(--ink)">04</span><span class="ds-type-meta">countdown-numeral<br>Playfair · clamp(2.4–3.2rem)</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--display);font-size:1.15rem;font-weight:500;color:var(--ink)">Church Betrothal</span><span class="ds-type-meta">card-title<br>Playfair 500 · 1.15rem</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--body);font-size:.9rem;color:var(--ink2);max-width:360px;line-height:1.7">With the blessings of our families, we joyfully invite you to our betrothal.</span><span class="ds-type-meta">body<br>Jost 300–400 · .82–.9rem</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--body);font-size:.62rem;font-weight:600;letter-spacing:.42em;text-transform:uppercase;color:var(--sage)">We Are Getting Married</span><span class="ds-type-meta">eyebrow<br>Jost 600 · .62rem/.42em</span></div>
+        <div class="ds-type-row"><span style="font-family:var(--body);font-size:.62rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink2)">Groom's Family</span><span class="ds-type-meta">label<br>Jost 600 · .62rem/.18em</span></div>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-spacing">
+      <h2>Foundations · Spacing</h2>
+      <p class="ds-identity">No formal spacing-scale tokens exist in the source — this names the
+      effective rhythm observed in the build (DESIGN.md → Known Gaps).</p>
+      <div class="ds-frame">
+        <div class="ds-bar-scale">
+          <div class="ds-bar-row"><span class="ds-bar-label">section-y — 64px</span><div class="ds-bar" style="width:64px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">section-y-faith — 88px</span><div class="ds-bar" style="width:88px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">gutter — 24px</span><div class="ds-bar" style="width:24px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">gap-lg — 14px</span><div class="ds-bar" style="width:14px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">gap-md — 12px</span><div class="ds-bar" style="width:12px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">gap-sm — 8px</span><div class="ds-bar" style="width:8px"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-layout">
+      <h2>Foundations · Layout</h2>
+      <div class="ds-prose">
+        <p>A single vertical column of full-bleed sections, each with a centered inner content wrapper.
+        Content column caps at 720px by default; denser blocks narrow further — RSVP card 480px,
+        ceremony timeline 580px, faith section 600px.</p>
+        <p>Card layouts use CSS Grid (one column on phones, two above 560px); nav, hero, dividers, and
+        card internals use flex. The hero is a viewport-height grid (<code>1fr auto</code>) pinning the
+        countdown to the bottom edge. Global: <code>overflow-x</code> clipped, border-box reset,
+        <code>scroll-padding-top:72px</code> so anchor jumps clear the fixed nav.</p>
+      </div>
+      <div class="ds-frame" style="margin-top:1rem">
+        <div class="ds-bar-scale">
+          <div class="ds-bar-row"><span class="ds-bar-label">default column — 720px</span><div class="ds-bar" style="width:220px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">faith — 600px</span><div class="ds-bar" style="width:183px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">timeline — 580px</span><div class="ds-bar" style="width:177px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">RSVP card — 480px</span><div class="ds-bar" style="width:146px"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-imagery">
+      <h2>Foundations · Imagery</h2>
+      <div class="ds-prose">
+        <ul>
+          <li>Hero couple-names calligraphy — raster image, size-capped responsively (<code>min(420px,80vw)</code>).
+          Rendered below as a stand-in graphic — the real base64-embedded asset is not duplicated in this gallery.</li>
+          <li>Family portraits — circular raster thumbnails, <code>scale(1.06)</code> zoom on hover. A stand-in
+          avatar shape appears below (see Domain · Families).</li>
+          <li>Background photography — <code>hero-bg.jpg</code> desktop/tablet, swapped to
+          <code>hero-bg-mobile.jpg</code> at ≤767px, reused at ~0.85 opacity as a paper texture behind
+          light sections. Not re-demoed here — see the live site.</li>
+        </ul>
+      </div>
+      <div class="ds-frame" style="margin-top:1rem;display:flex;justify-content:center">
+        <div class="ds-image-placeholder">Sebastian &amp; Flemy</div>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-motion">
+      <h2>Foundations · Motion</h2>
+      <p class="ds-identity">Entrance-and-reveal plus tactile press. Durations group into functional
+      tiers; standard easing is a soft overshoot <code>cubic-bezier(.22,1,.36,1)</code>.</p>
+      <div class="ds-frame" style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div class="ds-motion-demo"></div>
+          <div class="ds-shape-meta">reveal easing, live loop<br>(reduced-motion honored)</div>
+        </div>
+        <div class="ds-bar-scale" style="flex:1;min-width:220px">
+          <div class="ds-bar-row"><span class="ds-bar-label">press — 70ms</span><div class="ds-bar" style="width:14px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">base — 300ms</span><div class="ds-bar" style="width:60px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">reveal — 600ms</span><div class="ds-bar" style="width:120px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">glow — 1400ms</span><div class="ds-bar" style="width:200px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">bg-fade — 1600ms</span><div class="ds-bar" style="width:220px"></div></div>
+          <div class="ds-bar-row"><span class="ds-bar-label">bg-zoom — 2600ms</span><div class="ds-bar" style="width:260px"></div></div>
+        </div>
+      </div>
+      <p class="ds-note" style="margin-top:.6rem">Two continuous ambient animations exceed a restrained
+      motion policy (hero names breathing glow, countdown dot pulse) — flagged in DESIGN.md → Known Gaps.</p>
+    </section>
+
+    <section class="ds-section" id="ds-shapes">
+      <h2>Foundations · Shapes</h2>
+      <div class="ds-frame">
+        <div class="ds-shape-row">
+          <div><div class="ds-shape" style="border-radius:var(--r-sm)"></div><div class="ds-shape-meta">r-sm · 8px<br>inputs, toggle</div></div>
+          <div><div class="ds-shape" style="border-radius:var(--r-md)"></div><div class="ds-shape-meta">r-md · 14px<br>standard cards</div></div>
+          <div><div class="ds-shape" style="border-radius:var(--r-xl)"></div><div class="ds-shape-meta">r-xl · 28px<br>RSVP card</div></div>
+          <div><div class="ds-shape" style="border-radius:30px"></div><div class="ds-shape-meta">pill · 30px <span class="ds-tag ds-tag-dead">no token</span><br>buttons, badges</div></div>
+          <div><div class="ds-shape" style="border-radius:50%"></div><div class="ds-shape-meta">circle · 50%<br>portraits, dots</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-elevation">
+      <h2>Foundations · Elevation &amp; Depth</h2>
+      <p class="ds-identity">Flat at rest, lifted on interaction — cards carry only a hairline border
+      until hovered, then gain a soft drop-shadow (not demoed here as hover is per-component, not tokenized).</p>
+      <div class="ds-depth-grid">
+        <div class="ds-depth-card" style="box-shadow:var(--s1)">s1<br>nav resting</div>
+        <div class="ds-depth-card" style="box-shadow:var(--s2)">s2<br>nav scrolled, drawer</div>
+        <div class="ds-depth-card" style="box-shadow:var(--s3)">s3<br>RSVP card</div>
+      </div>
+      <p class="ds-note" style="margin-top:.8rem"><code>--s4</code> is declared but unreferenced anywhere
+      (DESIGN.md → Known Gaps). The nav is the only backdrop-blur surface — <code>blur(14px) saturate(1.4)</code>
+      once scrolled past the hero.</p>
+    </section>
+
+    <section class="ds-section" id="ds-iconography">
+      <h2>Foundations · Iconography</h2>
+      <div class="ds-prose">
+        <p>No icon font or icon library. Two sources: inline SVG (family-card chevron, faith cross) and
+        emoji-as-icon (⛪ event, 🥂 reception, 📍 map, ✈️🚂🚌🅿️ travel, 📞💬 contact, 🌸 RSVP thanks, ❤️ footer,
+        ✦ hero ornament). Ornament dots/diamonds are CSS shapes, not glyphs.</p>
+      </div>
+      <div class="ds-frame" style="display:flex;gap:2rem;align-items:center">
+        <div style="text-align:center">
+          <svg width="18" height="18" viewBox="0 0 12 12" fill="none" stroke="rgba(184,147,90,.75)" stroke-width="1.5"><polyline points="2,4 6,8 10,4"/></svg>
+          <div class="ds-shape-meta">fam-chevron</div>
+        </div>
+        <div style="text-align:center">
+          <svg width="16" height="22" viewBox="0 0 22 30"><rect x="9" y="0" width="4" height="30" fill="rgba(184,147,90,.4)"/><rect x="0" y="8" width="22" height="4" fill="rgba(184,147,90,.4)"/></svg>
+          <div class="ds-shape-meta">faith-cross</div>
+        </div>
+        <div style="font-size:1.4rem;letter-spacing:.3rem">⛪ 🥂 📍 ✈️ 🚂 🚌 🅿️ 📞 💬 🌸 ❤️ ✦</div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ COMPONENTS ═══════════════════ -->
+
+    <section class="ds-section" id="ds-shell">
+      <h2>Components · Shell</h2>
+      <p class="ds-identity">Site-wide chrome mounted once. The fixed nav is bounded in a
+      <code>translateZ(0)</code> containing block below (this project's ChromeFrame equivalent) so its
+      <code>position:fixed</code> resolves inside the frame, not the real viewport.</p>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>.nav</code> / <code>.nav-logo</code> / <code>.nav-ham</code> / <code>.nav-drawer</code> <span class="ds-tag ds-tag-live">live</span></div>
+        <div class="ds-chrome-frame" style="height:80px">
+          <div style="position:relative;height:100%">
+            <nav class="nav solid" id="topNav" style="position:absolute">
+              <div class="nav-logo">S &amp; F</div>
+              <button class="nav-ham" id="navHam" aria-label="Menu"><span></span><span></span><span></span></button>
+              <div class="nav-drawer" id="navDrawer">
+                <a href="#engagement" onclick="closeNav()">Engagement</a>
+                <a href="#wedding" onclick="closeNav()">Wedding</a>
+                <a href="#families" onclick="closeNav()">Families</a>
+                <a href="#ceremony" onclick="closeNav()">Ceremony</a>
+                <a href="#travel" onclick="closeNav()">Travel</a>
+                <a href="#rsvp" onclick="closeNav()">Join Us</a>
+                <a href="#contact" onclick="closeNav()">Contact</a>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>monogram</code> (<code>.nav-logo</code>) <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+        <div class="ds-frame" style="display:inline-block"><div class="nav-logo" style="position:static">S &amp; F</div></div>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-ui">
+      <h2>Components · UI</h2>
+
+      <div class="ds-group-label">Controls / Actions</div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>button-primary</code> (<code>.fb</code>) <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+        <div class="ds-frame" style="max-width:340px"><button class="fb">Confirm Attendance</button></div>
+      </div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>button-outline</code> (<code>.cc-link</code> / <code>.ev-map-btn</code>) <span class="ds-tag ds-tag-live">live</span> [standalone]</div>
+        <div class="ds-frame" style="display:flex;gap:.8rem;flex-wrap:wrap">
+          <a href="#" class="cc-link">📞 Call</a>
+          <a href="#" class="cc-link wa">💬 WhatsApp</a>
+          <a href="#" class="ev-map-btn">📍 Open in Maps</a>
+        </div>
+      </div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>toggle-chip</code> (<code>.event-toggle</code>) <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+        <div class="ds-frame" style="max-width:340px">
+          <div class="event-toggle-group">
+            <div class="event-toggle"><span class="event-toggle-title">Engagement</span><span class="event-toggle-date">4 Jan · Calicut</span></div>
+            <div class="event-toggle active"><span class="event-toggle-title">Wedding</span><span class="event-toggle-date">9 Jan · Koothattukulam</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-group-label">Inputs</div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>text-field</code> / <code>select-field</code> (<code>.fi</code> / <code>.fs</code>) <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+        <div class="ds-frame" style="max-width:340px;display:flex;flex-direction:column;gap:1rem">
+          <div class="fg"><label class="fl">Your Full Name</label><input type="text" class="fi" placeholder="e.g. Thomas George"></div>
+          <div class="fg"><label class="fl">Number of Guests</label><select class="fs"><option value="">— Select —</option><option>1 (Just me)</option><option>2</option></select></div>
+        </div>
+      </div>
+
+      <div class="ds-group-label">Display</div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>card</code> (<code>.tc</code> / <code>.fam-card</code> / <code>.ev-card</code> / <code>.cc</code>) <span class="ds-tag ds-tag-live">live</span> [standalone]</div>
+        <div class="ds-frame" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem">
+          <div class="tc"><div class="tc-ico">✈️</div><div class="tc-ti">By Air</div><p class="tc-tx">Sample travel card.</p></div>
+          <div class="ev-card">
+            <div class="ev-card-head"><div class="ev-card-icon">⛪</div><div><div class="ev-card-title">Church Betrothal</div><div class="ev-card-time">10:00 AM</div></div></div>
+            <div class="ev-card-body"><div class="ev-card-venue">Sample venue line</div></div>
+          </div>
+          <div class="cc"><div class="cc-tag">Sample Side</div><div class="cc-name">Sample Name</div><div class="cc-role">Sample role</div></div>
+        </div>
+        <p class="ds-note" style="margin-top:.5rem">Full <code>.fam-card</code> (expandable) is demoed at
+        Domain · Families with its real member grid. <code>.dc</code>/<code>.bento-card</code>/<code>.vc</code>
+        are <span class="ds-tag ds-tag-dead">dead css</span> — not rendered here (see DESIGN.md → Known Gaps).</p>
+      </div>
+
+      <div class="ds-specimen">
+        <div class="ds-specimen-label"><code>ornament-divider</code> (<code>.orn</code>) <span class="ds-tag ds-tag-live">live</span> [standalone]</div>
+        <div class="ds-frame">
+          <div class="orn"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ DOMAIN COMPONENTS ═══════════════════ -->
+
+    <section class="ds-section" id="ds-scroll-progress">
+      <h2>Domain · Scroll Progress</h2>
+      <div class="ds-specimen-label"><code>#scroll-progress</code> <span class="ds-tag ds-tag-posed">posed</span> [inline]</div>
+      <div class="ds-frame" style="padding:.5rem 0">
+        <div style="height:2.5px;width:38%;background:linear-gradient(90deg,var(--gold),#c4857a);border-radius:2px"></div>
+      </div>
+      <p class="ds-note">Production drives width via live <code>scaleX</code> transform on scroll position;
+      shown here at a fixed 38% as a static pose.</p>
+    </section>
+
+    <section class="ds-section" id="ds-hero">
+      <h2>Domain · Hero</h2>
+      <div class="ds-specimen-label"><code>.hero</code> <span class="ds-tag ds-tag-posed">posed</span> [inline]</div>
+      <div class="ds-frame ds-frame-pad0">
+        <div class="hero" style="position:relative;min-height:auto;height:auto;padding:3rem 1.5rem">
+          <div class="hero-body" style="position:static">
+            <span class="hero-eyebrow">We are getting married</span>
+            <div class="hero-names"><div class="ds-image-placeholder" style="margin:1rem auto">Sebastian &amp; Flemy</div></div>
+            <div class="hero-orn">
+              <div class="hero-orn-line"></div>
+              <div class="hero-orn-nodes"><div class="hero-orn-dot"></div><span class="hero-orn-star">✦</span><div class="hero-orn-dot"></div></div>
+              <div class="hero-orn-line"></div>
+            </div>
+            <div class="hero-date">
+              <div class="hero-date-main">4th &amp; 9th January 2027</div>
+              <div class="hero-date-sub">Calicut &amp; Koothattukulam · Keralam</div>
+            </div>
+            <p class="hero-verse">"What God has joined together,<br>let no one separate."<cite>— Mark 10 : 9</cite></p>
+          </div>
+          <div class="hero-countdown" style="position:static;margin-top:2rem">
+            <span class="hero-cd-label">Counting down to the wedding</span>
+            <div class="hero-cd-row">
+              <div class="hero-cd-unit"><span class="hero-cd-n">127</span><span class="hero-cd-l">Days</span></div>
+              <div class="hero-cd-unit"><span class="hero-cd-n">14</span><span class="hero-cd-l">Hrs</span></div>
+              <div class="hero-cd-unit"><span class="hero-cd-n">32</span><span class="hero-cd-l">Mins</span></div>
+              <div class="hero-cd-unit"><span class="hero-cd-n">08</span><span class="hero-cd-l">Secs</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="ds-note">Countdown digits are a static pose (sample values) — production ticks live to
+      2027-01-09T11:00:00 with a per-digit glow-swap animation. The names graphic is a stand-in for the
+      real embedded image.</p>
+    </section>
+
+    <section class="ds-section" id="ds-events">
+      <h2>Domain · Event Blocks — Betrothal &amp; Wedding</h2>
+      <div class="ds-specimen-label"><code>.engagement-sec</code> / <code>.wedding-sec</code> <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+
+      <div class="ds-frame ds-frame-pad0" style="margin-bottom:1rem">
+        <section class="sec engagement-sec" style="position:static">
+          <div class="sec-inner">
+            <h2 class="title d1"><em>Betrothal</em> Ceremony</h2>
+            <div class="orn d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+            <p class="cer-intro d2" style="text-align:center;margin-bottom:2.2rem;">With the blessings of our families, we joyfully invite you to our betrothal — the sacred beginning of our journey, as we exchange rings and promises before God.</p>
+            <div class="ev-date-hero d2">
+              <div class="ev-date-block"><span class="ev-date-num">04</span><span class="ev-date-month">January</span><span class="ev-date-year">2027</span></div>
+              <span class="ev-date-sep">·</span>
+              <div style="text-align:left"><div style="font-family:var(--display);font-style:italic;font-size:clamp(1rem,3vw,1.25rem);color:var(--ink2);line-height:1.5">Poovattuparambu<br>Calicut, Keralam</div></div>
+            </div>
+            <div class="ev-cols">
+              <div class="ev-card d3">
+                <div class="ev-card-head"><div class="ev-card-icon">⛪</div><div><div class="ev-card-title">Church Betrothal</div><div class="ev-card-time">10:00 AM · Morning</div></div></div>
+                <div class="ev-card-body"><div class="ev-card-venue">St. Antony's Syro - Malabar Church,<br>Paropady, Calicut, Keralam</div><a href="#" class="ev-map-btn">📍 Open in Maps</a></div>
+              </div>
+              <div class="ev-card d4">
+                <div class="ev-card-head"><div class="ev-card-icon">🥂</div><div><div class="ev-card-title">Reception Lunch</div><div class="ev-card-time">12:00 PM · Noon</div></div></div>
+                <div class="ev-card-body"><div class="ev-card-venue">St. Antony's Church Parish Hall,<br>Paropady, Calicut, Keralam</div><a href="#" class="ev-map-btn">📍 Open in Maps</a></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="ds-frame ds-frame-pad0">
+        <section class="sec wedding-sec" style="position:static">
+          <div class="sec-inner">
+            <h2 class="title d1"><em>Wedding</em> Ceremony</h2>
+            <div class="orn d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+            <p class="cer-intro d2" style="text-align:center;margin-bottom:2.2rem;">Surrounded by those we love, we will be united in the Sacrament of Holy Matrimony. We would be honoured to have you celebrate this blessed union with us.</p>
+            <div class="ev-date-hero d2">
+              <div class="ev-date-block"><span class="ev-date-num">09</span><span class="ev-date-month">January</span><span class="ev-date-year">2027</span></div>
+              <span class="ev-date-sep">·</span>
+              <div style="text-align:left"><div style="font-family:var(--display);font-style:italic;font-size:clamp(1rem,3vw,1.25rem);color:var(--ink2);line-height:1.5">Koothattukulam<br>Ernakulam, Keralam</div></div>
+            </div>
+            <div class="ev-cols">
+              <div class="ev-card d3">
+                <div class="ev-card-head"><div class="ev-card-icon">⛪</div><div><div class="ev-card-title">Church Ceremony</div><div class="ev-card-time">10:00 AM · Morning</div></div></div>
+                <div class="ev-card-body"><div class="ev-card-venue">St. John the Baptist Holy Catholic Church,<br>Koothattukulam, Ernakulam, Keralam</div><a href="#" class="ev-map-btn">📍 Open in Maps</a></div>
+              </div>
+              <div class="ev-card d4">
+                <div class="ev-card-head"><div class="ev-card-icon">🥂</div><div><div class="ev-card-title">Reception Lunch</div><div class="ev-card-time">12:00 PM · Noon</div></div></div>
+                <div class="ev-card-body"><div class="ev-card-venue">Chinnas Auditorium, Koothattukulam,<br>Ernakulam, Keralam</div><a href="#" class="ev-map-btn">📍 Open in Maps</a></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-families">
+      <h2>Domain · Families</h2>
+      <div class="ds-specimen-label"><code>.fam-sec</code> <span class="ds-tag ds-tag-live">live</span> + <span class="ds-tag ds-tag-posed">posed open</span> [inline]</div>
+      <div class="ds-frame ds-frame-dark ds-frame-pad0">
+        <section class="sec fam-sec" style="position:static">
+          <div class="sec-inner">
+            <span class="eyebrow">Joined Together</span>
+            <h2 class="title title-dk d1">Our <em>Families</em></h2>
+            <div class="orn d2"><div class="orn-line" style="background:rgba(184,147,90,.18)"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line" style="background:rgba(184,147,90,.18)"></div></div>
+            <div class="fam-grid">
+              <div class="fam-card open d2">
+                <div class="fam-card-top">
+                  <div><div class="fam-badge">Groom's Family</div><div class="fam-name">Plackeel Family</div></div>
+                  <div class="fam-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(184,147,90,.75)" stroke-width="1.5"><polyline points="2,4 6,8 10,4"/></svg></div>
+                </div>
+                <div class="fam-detail"><strong>Father:</strong>&ensp;P D Joseph<br><strong>Mother:</strong>&ensp;Rani Joseph<br><strong>Hometown:</strong>&ensp;Koothattukulam, Keralam<br><strong>Parish:</strong>&ensp;St. John the Baptist Holy Catholic Church, Vadakara, Koothattukulam, Ernakulam, Keralam</div>
+                <div class="fam-expand"><div class="fam-expand-inner">
+                  <div class="fam-members" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem 0.8rem;">
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">P D Joseph</div><div class="fam-member-role">Father</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Rani Joseph</div><div class="fam-member-role">Mother</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Sebastian</div><div class="fam-member-role">Groom</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Marietta Joseph</div><div class="fam-member-role">Sister</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Harry William</div><div class="fam-member-role">Brother-in-law</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Oliver Harry</div><div class="fam-member-role">Nephew</div></div>
+                  </div>
+                </div></div>
+              </div>
+              <div class="fam-card open d3">
+                <div class="fam-card-top">
+                  <div><div class="fam-badge">Bride's Family</div><div class="fam-name">Edatt Family</div></div>
+                  <div class="fam-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(184,147,90,.75)" stroke-width="1.5"><polyline points="2,4 6,8 10,4"/></svg></div>
+                </div>
+                <div class="fam-detail"><strong>Father:</strong>&ensp;Roy John Edatt<br><strong>Mother:</strong>&ensp;Minimol Roy<br><strong>Hometown:</strong>&ensp;Poovattuparambu, Calicut, Keralam<br><strong>Parish:</strong>&ensp;St. Kuriakose Elias Chavara Church, Harinagar, Delhi</div>
+                <div class="fam-expand"><div class="fam-expand-inner">
+                  <div class="fam-members" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem 0.8rem;">
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Roy John Edatt</div><div class="fam-member-role">Father</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Minimol Roy</div><div class="fam-member-role">Mother</div></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Amal Roy</div><div class="fam-member-role">Brother</div></div>
+                    <div class="fam-member" style="visibility:hidden"></div>
+                    <div class="fam-member"><div class="fam-photo ds-avatar-placeholder"></div><div class="fam-member-name">Flemy Roy</div><div class="fam-member-role">Bride</div></div>
+                    <div class="fam-member" style="visibility:hidden"></div>
+                  </div>
+                </div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p class="ds-note">Chevron toggle click is inert here (posed open). Portraits are stand-in avatar
+      shapes — the real base64 photos are not duplicated in this gallery.</p>
+    </section>
+
+    <section class="ds-section" id="ds-ceremony">
+      <h2>Domain · Ceremony Timeline</h2>
+      <div class="ds-specimen-label"><code>.cer-sec</code> / <code>.tl</code> <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+      <div class="ds-frame ds-frame-pad0">
+        <section class="sec cer-sec" style="position:static">
+          <div class="sec-inner">
+            <span class="eyebrow">Syro-Malabar Catholic</span>
+            <h2 class="title d1">The <em>Ceremony</em></h2>
+            <div class="orn d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+            <p class="cer-intro d2">The Syro-Malabar Church traces its roots to St. Thomas the Apostle, who arrived in Kerala in 52 AD. The wedding is celebrated as a sacred sacrament within the Holy Qurbana — the ancient East Syriac liturgy.</p>
+            <div class="tl">
+              <div class="tl-row"><span class="tl-lbl">Madhuramveppu</span><p class="tl-txt">A sweet-offering ceremony where rice cooked in milk and jaggery is shared as a blessing, symbolising a life filled with sweetness and grace.</p></div>
+              <div class="tl-row"><span class="tl-lbl">Nischayam — The Betrothal</span><p class="tl-txt">A formal church blessing where the couple exchange rings before the priest, publicly declaring their intent to marry as a sacred covenant.</p></div>
+              <div class="tl-row"><span class="tl-lbl">The Rite of Marriage</span><p class="tl-txt">The couple declare their intent, exchange solemn vows, and the priest blesses the rings — a binding covenant before God and all who witness.</p></div>
+              <div class="tl-row"><span class="tl-lbl">Minnu &amp; Manthrakodi</span><p class="tl-txt">The groom ties the <em>Minnu</em> — a sacred gold pendant — around the bride's neck, then drapes the silk <em>Manthrakodi</em> kasavu saree over her shoulders.</p></div>
+              <div class="tl-row"><span class="tl-lbl">Nuptial Qurbana &amp; Blessing</span><p class="tl-txt">The couple receive the Nuptial Blessing and participate in the Holy Eucharist together for the first time as husband and wife.</p></div>
+              <div class="tl-row"><span class="tl-lbl">Signing &amp; Recessional</span><p class="tl-txt">The couple sign the register and walk out as husband and wife while the choir fills the church with song and joy.</p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-travel">
+      <h2>Domain · Travel</h2>
+      <div class="ds-specimen-label"><code>.travel-sec</code> <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+      <div class="ds-frame ds-frame-pad0">
+        <section class="sec travel-sec" style="position:static">
+          <div class="sec-inner">
+            <span class="eyebrow">Getting Here</span>
+            <h2 class="title d1">Travel &amp; <em>Directions</em></h2>
+            <div class="orn d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+            <div class="travel-grid">
+              <div class="tc"><div class="tc-ico">✈️</div><div class="tc-ti">By Air</div><p class="tc-tx"><strong>Calicut (Jan 4):</strong> Calicut International Airport (CCJ), ~30 min drive.<br><strong>Koothattukulam (Jan 9):</strong> Cochin Airport (COK), ~60 min drive.</p></div>
+              <div class="tc"><div class="tc-ico">🚂</div><div class="tc-ti">By Train</div><p class="tc-tx"><strong>Calicut:</strong> Kozhikode Railway Station.<br><strong>Koothattukulam:</strong> Aluva or Ernakulam Junction, then cab (~45 min).</p></div>
+              <div class="tc"><div class="tc-ico">🚌</div><div class="tc-ti">By Bus</div><p class="tc-tx">KSRTC and private AC buses from Kochi, Thrissur, Thiruvananthapuram and Kozhikode.</p></div>
+              <div class="tc"><div class="tc-ico">🅿️</div><div class="tc-ti">Parking</div><p class="tc-tx">Ample parking at the church compound and Chinnas Auditorium. Attendants will be present to assist.</p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-faith">
+      <h2>Domain · Faith</h2>
+      <div class="ds-specimen-label"><code>.faith-sec</code> <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+      <div class="ds-frame ds-frame-dark ds-frame-pad0">
+        <section class="faith-sec" style="position:static">
+          <div class="faith-inner">
+            <span class="eyebrow" style="color:rgba(184,147,90,.55)">In His Grace</span>
+            <h2 class="title title-dk d1">Our <em>Faith</em></h2>
+            <div class="orn d2"><div class="orn-line" style="background:rgba(184,147,90,.15)"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line" style="background:rgba(184,147,90,.15)"></div></div>
+            <svg class="faith-cross" width="22" height="30" viewBox="0 0 22 30"><rect x="9" y="0" width="4" height="30" fill="rgba(184,147,90,.4)"/><rect x="0" y="8" width="22" height="4" fill="rgba(184,147,90,.4)"/></svg>
+            <p class="faith-verse">"Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight."</p>
+            <p class="faith-cite">— Proverbs 3 : 5 – 6</p>
+            <div class="faith-church">The wedding ceremony will be solemnised at<br><strong>St. John the Baptist Holy Catholic Church, Vadakara, Koothattukulam</strong>Syro-Malabar Catholic Church</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-rsvp">
+      <h2>Domain · RSVP</h2>
+      <div class="ds-specimen-label"><code>.rsvp-sec</code> <span class="ds-tag ds-tag-posed">posed</span>, non-functional [inline]</div>
+      <div class="ds-frame ds-frame-pad0">
+        <section class="sec rsvp-sec" style="position:static">
+          <div class="sec-inner">
+            <span class="eyebrow">Kindly Reply</span>
+            <h2 class="title d1">Will You Join Us?</h2>
+            <div class="orn d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+            <div class="rsvp-card d3">
+              <div class="fg"><label class="fl">Your Full Name</label><input type="text" class="fi" placeholder="e.g. Thomas George"></div>
+              <div class="fg"><label class="fl">Number of Guests</label><select class="fs"><option value="">— Select —</option><option>1 (Just me)</option><option>2</option><option>3</option><option>4</option><option>5 or more</option></select></div>
+              <div class="fg">
+                <label class="fl">Which Event Will You Attend?</label>
+                <div class="event-toggle-group">
+                  <div class="event-toggle" onclick="toggleEvent()"><span class="event-toggle-title">Engagement</span><span class="event-toggle-date">4 Jan · Calicut</span></div>
+                  <div class="event-toggle active" onclick="toggleEvent()"><span class="event-toggle-title">Wedding</span><span class="event-toggle-date">9 Jan · Koothattukulam</span></div>
+                </div>
+              </div>
+              <button class="fb" onclick="submitRSVP(event)">Confirm Attendance</button>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p class="ds-note">Submission is disabled in the gallery (stub handler). Production posts no-cors
+      to a Google Apps Script endpoint and swaps in a 🌸 thank-you state.</p>
+    </section>
+
+    <section class="ds-section" id="ds-contact">
+      <h2>Domain · Contact</h2>
+      <div class="ds-specimen-label"><code>.contact-sec</code> <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+      <div class="ds-frame ds-frame-pad0">
+        <section class="sec contact-sec" style="position:static">
+          <div class="sec-inner">
+            <span class="eyebrow">Need Help?</span>
+            <h2 class="title d1">Get in <em>Touch</em></h2>
+            <div class="orn d2"><div class="orn-line"></div><div class="orn-nodes"><div class="orn-dot"></div><div class="orn-dia"></div><div class="orn-dot"></div></div><div class="orn-line"></div></div>
+            <div class="contact-grid">
+              <div class="cc"><div class="cc-tag">Groom's Side</div><div class="cc-name">Christopher George</div><div class="cc-role">Brother of Sebastian</div><div class="cc-links"><a href="#" class="cc-link">📞 Call</a><a href="#" class="cc-link wa">💬 WhatsApp</a></div></div>
+              <div class="cc"><div class="cc-tag">Bride's Side</div><div class="cc-name">Amal Roy</div><div class="cc-role">Brother of Flemy</div><div class="cc-links"><a href="#" class="cc-link">📞 Call</a><a href="#" class="cc-link wa">💬 WhatsApp</a></div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="ds-section" id="ds-footer">
+      <h2>Domain · Footer</h2>
+      <div class="ds-specimen-label"><code>&lt;footer&gt;</code> <span class="ds-tag ds-tag-live">live</span> [inline]</div>
+      <div class="ds-frame ds-frame-dark ds-frame-pad0">
+        <footer style="position:static">
+          <div class="foot-orn"></div>
+          <div class="foot-script"><span class="foot-name">Sebastian P Joseph</span><span class="foot-amp">&amp;</span><span class="foot-name">Flemy Roy</span></div>
+          <div class="foot-date">4th &amp; 9th January 2027 · Calicut &amp; Koothattukulam, Keralam</div>
+          <div class="foot-love">Made with ❤️ for our most beautiful day</div>
+          <div class="foot-compliments">Best compliments from</div>
+          <div class="foot-compliments-names">Amal Roy, Marietta Joseph &amp; Harry William</div>
+        </footer>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="gallery.js"></script>
+</body>
+</html>

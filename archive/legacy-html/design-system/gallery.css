@@ -1,0 +1,147 @@
+/* ══════════════════════════════════════════════
+   GALLERY-ONLY CHROME
+   Not part of the project design system. Styles the catalog scaffold
+   (banner, TOC, specimen frames, visualizers) around real project markup,
+   which is styled entirely by the linked site-styles.css (verbatim copy
+   of index.html's <style> block).
+══════════════════════════════════════════════ */
+
+.ds-banner {
+  position: sticky; top: 0; z-index: 1000;
+  background: #b3261e; color: #fff;
+  font-family: 'Jost', sans-serif; font-size: .78rem; font-weight: 600;
+  letter-spacing: .04em; text-align: center;
+  padding: .5rem 1rem;
+}
+
+.ds-shell { display: flex; align-items: flex-start; max-width: 1400px; margin: 0 auto; }
+
+.ds-toc {
+  position: sticky; top: 2.4rem; flex: 0 0 220px;
+  max-height: calc(100vh - 3rem); overflow-y: auto; overflow-x: hidden;
+  padding: 1.5rem 1rem; font-family: 'Jost', sans-serif; font-size: .78rem;
+  border-right: 1px solid rgba(74,52,34,.12);
+}
+.ds-toc-bucket { font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: .66rem; color: #6e5234; margin: 1rem 0 .35rem; }
+.ds-toc-bucket:first-child { margin-top: 0; }
+.ds-toc a { display: block; padding: .2rem 0; color: #2e2013; text-decoration: none; }
+.ds-toc a:hover { color: #a9763f; }
+
+.ds-main { flex: 1 1 auto; min-width: 0; padding: 0 2.5rem 6rem; }
+
+.ds-header { max-width: 720px; margin: 2.5rem 0 3rem; font-family: 'Jost', sans-serif; }
+.ds-header h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 400;
+  color: #2e2013; margin-bottom: .6rem; }
+.ds-header p { font-size: .92rem; line-height: 1.7; color: #3f2c1a; margin-bottom: .4rem; }
+.ds-header .ds-note { font-size: .78rem; color: #6e5234; }
+
+.ds-section { padding: 2.4rem 0; border-top: 1px solid rgba(74,52,34,.1); }
+.ds-section:first-of-type { border-top: none; }
+.ds-section h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 400;
+  color: #2e2013; margin-bottom: .3rem; }
+.ds-section > .ds-identity { font-family: 'Jost', sans-serif; font-size: .85rem;
+  color: #3f2c1a; line-height: 1.6; max-width: 640px; margin-bottom: 1.2rem; }
+.ds-section > .ds-identity code { background: #f4ead6; padding: .1rem .3rem; border-radius: 4px; }
+
+.ds-group-label { font-family: 'Jost', sans-serif; font-size: .66rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: #a9763f; margin: 1.4rem 0 .6rem; }
+.ds-group-label:first-of-type { margin-top: 0; }
+
+.ds-specimen { margin-bottom: 1.4rem; }
+.ds-specimen-label { font-family: 'Jost', sans-serif; font-size: .72rem; color: #6e5234;
+  margin-bottom: .5rem; display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
+.ds-specimen-label code { background: #f4ead6; padding: .05rem .3rem; border-radius: 4px; }
+.ds-tag { font-size: .62rem; font-weight: 600; letter-spacing: .04em; padding: .1rem .4rem;
+  border-radius: 30px; text-transform: uppercase; }
+.ds-tag-live { background: #ede4d4; color: #6e5234; }
+.ds-tag-dead { background: #f1d8d5; color: #8a3a30; }
+.ds-tag-posed { background: #f0dfc0; color: #7d5328; }
+
+.ds-frame {
+  background: #faf4e8; border: 1px solid rgba(74,52,34,.12); border-radius: 14px;
+  padding: 1.5rem; overflow: hidden; position: relative;
+}
+.ds-frame.ds-frame-dark { background: #3a2718; }
+.ds-frame.ds-frame-pad0 { padding: 0; }
+
+/* ChromeFrame equivalent — establishes a containing block so position:fixed
+   descendants (the real .nav) resolve inside this frame, not the viewport. */
+.ds-chrome-frame {
+  position: relative; transform: translateZ(0); overflow: hidden;
+  border-radius: 14px; border: 1px solid rgba(74,52,34,.12);
+}
+
+/* Posed, not live: neutralize the scroll-reveal system's hidden initial
+   state inside gallery specimens only — production leaves .sr at opacity:0
+   until an IntersectionObserver adds .in. Gallery specimens don't scroll-
+   trigger, so force the resting state visible. Never applied to gallery
+   chrome itself, only inside .ds-frame. */
+.ds-frame .sr, .ds-frame .tl-row { opacity: 1 !important; transform: none !important; }
+
+/* Force the family-card expand state open for the specimen (production
+   toggles .open via a click handler). */
+.ds-frame .fam-card .fam-expand { max-height: none !important; }
+
+/* .fam-member starts opacity:0 transform:scale(.88) in site-styles.css;
+   production JS adds .photo-visible on card open. Gallery doesn't run
+   production JS, so force the visible state directly. */
+.ds-frame .fam-member { opacity: 1 !important; transform: none !important; }
+
+/* Prose / plain-rule sections render as text, not boxed */
+.ds-prose { font-family: 'Jost', sans-serif; font-size: .88rem; line-height: 1.75;
+  color: #3f2c1a; max-width: 640px; }
+.ds-prose ul { padding-left: 1.2rem; margin-top: .4rem; }
+.ds-prose li { margin-bottom: .3rem; }
+
+/* Foundations visualizers */
+.ds-swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .8rem; }
+.ds-swatch { border-radius: 10px; overflow: hidden; border: 1px solid rgba(74,52,34,.1); }
+.ds-swatch-color { height: 56px; }
+.ds-swatch-meta { padding: .5rem .6rem; font-family: 'Jost', sans-serif; background: #fff; }
+.ds-swatch-name { font-size: .74rem; font-weight: 600; color: #2e2013; }
+.ds-swatch-value { font-size: .68rem; color: #6e5234; font-family: monospace; }
+
+.ds-type-row { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; padding: .9rem 0; border-bottom: 1px solid rgba(74,52,34,.08); }
+.ds-type-row:last-child { border-bottom: none; }
+.ds-type-meta { font-family: 'Jost', sans-serif; font-size: .68rem; color: #6e5234;
+  white-space: nowrap; text-align: right; }
+
+.ds-bar-scale { display: flex; flex-direction: column; gap: .6rem; }
+.ds-bar-row { display: flex; align-items: center; gap: .8rem; font-family: 'Jost', sans-serif; font-size: .72rem; color: #3f2c1a; }
+.ds-bar-row .ds-bar-label { flex: 0 0 150px; }
+.ds-bar-row .ds-bar { background: #a9763f; height: 10px; border-radius: 4px; }
+
+.ds-shape-row { display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: flex-end; }
+.ds-shape { width: 72px; height: 72px; background: #a9763f; }
+.ds-shape-meta { text-align: center; margin-top: .4rem; font-family: 'Jost', sans-serif; font-size: .68rem; color: #6e5234; }
+
+.ds-depth-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+.ds-depth-card { background: #fdf9f1; border-radius: 14px; padding: 1.2rem; text-align: center;
+  font-family: 'Jost', sans-serif; font-size: .7rem; color: #6e5234; }
+
+.ds-motion-demo { width: 44px; height: 44px; border-radius: 50%; background: #a9763f;
+  animation: ds-pulse 1.6s cubic-bezier(.22,1,.36,1) infinite; }
+@keyframes ds-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.82); opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { .ds-motion-demo { animation: none; } }
+
+/* Placeholder avatar (family members) — borderless, project palette, reads as a person.
+   Stands in for the real base64-embedded portraits, which are not duplicated here. */
+.ds-avatar-placeholder {
+  width: 100%; aspect-ratio: 1; border-radius: 50%;
+  background-color: #ede4d4;
+  background-image:
+    radial-gradient(circle at 50% 38%, #a9763f 18%, transparent 19%),
+    radial-gradient(ellipse 42% 30% at 50% 92%, #a9763f 60%, transparent 61%);
+}
+
+/* Placeholder image block (hero calligraphy) — stands in for the real raster asset */
+.ds-image-placeholder { width: min(420px, 80vw); aspect-ratio: 3/1; border-radius: 8px;
+  background: linear-gradient(135deg, #f0dfc0, #ecdcc2); display: flex; align-items: center;
+  justify-content: center; font-family: 'Great Vibes', cursive; font-size: 2.2rem; color: #a9763f; }
+
+@media (max-width: 900px) {
+  .ds-toc { display: none; }
+  .ds-main { padding: 0 1.2rem 4rem; }
+}
