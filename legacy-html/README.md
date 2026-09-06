@@ -8,4 +8,4 @@ a self-contained static `index.html` with inline styles, no build step.
   never part of production, never deployed.
 
 Reference-only. Not served, not part of the current build. For full history prior to the move, see
-`git log --follow archive/legacy-html/index.html`.
+`git log --follow legacy-html/index.html`.
