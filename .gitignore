@@ -1,0 +1,23 @@
+# Dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Env
+.env*.local
+
+# Claude / project tooling
+.claude/
+tmp/
+.playwright/
+.playwright-cli/
+
+# OS
+.DS_Store
