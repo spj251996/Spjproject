@@ -1,0 +1,75 @@
+/* DESIGN.md → Domain Components → Timeline, the vertical spine.
+
+   Reveal mechanism. Masking, as settled for `thread-overlay`, and for the same reason: the token
+   stroke widths force `vector-effect: non-scaling-stroke` on the visible stroke, which moves its
+   geometry out of the user space a dash pattern is authored in. The mask here is a rectangle wiped
+   top to bottom — the spine is a straight vertical line, so the wipe front crosses it exactly once
+   and the wipe is equivalent to a reveal along the path. (The family gesture doubles back and
+   therefore needs a stroked-path mask instead; the mechanism is the same, the mask's content differs
+   with the path's geometry.)
+
+   Drive mechanism. "Extending downward as the reader scrolls" is scroll progress, which the platform
+   expresses declaratively, so the spine ships no JavaScript of its own. It is a VIEW timeline, not
+   the root scroll timeline `thread-overlay` uses: this segment's progress is the reader's progress
+   through this section, not through the page. The name is declared on the `<svg>`, which is a real
+   layout box, and referenced from the mask rect inside it.
+
+   Two consequences the scripted form would have owned: the reduced-motion gate is structural (the
+   animation is declared INSIDE the no-preference query, so it cannot be attached when the preference
+   is set), and there is no pre-script default to reconcile on the first client frame.
+
+   The base state is the rest state the doc requires — fully drawn — so an engine without
+   scroll-driven animations, or a reader with reduced motion, falls through to a correct static
+   render rather than a spine that never appears.
+
+   `#fff` is mask luminance, not a design color. The spine's own glow matches `thread-overlay`'s
+   resting level; both are inferred, since "minimal to absent on the ivory base" is a range. */
+
+.spine {
+  position: absolute;
+  top: 0;
+  /* An <svg> is a replaced element: with `top`/`bottom` and `height: auto` it resolves to its
+     intrinsic viewBox height (100px) instead of stretching, so the height is set explicitly. */
+  height: 100%;
+  width: var(--spacing-space-3xs);
+  /* Centers the line on the `left-*` coordinate the component sets per breakpoint. */
+  margin-left: calc(var(--spacing-space-3xs) / -2);
+  z-index: var(--z-thread);
+  pointer-events: none;
+  view-timeline-name: --timeline-spine;
+  view-timeline-axis: block;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  filter: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color-thread-red) 40%, transparent)
+  );
+}
+
+.reveal {
+  fill: #fff;
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: spine-extend linear both;
+      animation-timeline: --timeline-spine;
+    }
+  }
+}
+
+@keyframes spine-extend {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
