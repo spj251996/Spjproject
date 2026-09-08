@@ -1,26 +1,24 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/type-scale.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* The starter's own theme layer is gone rather than left beside the real tokens, where it would
+   read as sanctioned: `--background`/`--foreground`, the `--color-background`/`--color-foreground`
+   mappings, the `--font-geist-sans`/`--font-geist-mono` wiring and the `prefers-color-scheme: dark`
+   block. DESIGN.md defines one scheme, declared as `color-scheme: light` alongside the tokens.
+   What still consumes those identifiers outside this layer is named in the run report. */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Background → Paper Base: the ivory base is the only page background. Its static paper texture
+   has no asset in the doc, so no texture is declared here. */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-surface-base);
+  color: var(--color-ink);
+}
+
+/* Interaction Rules → Focus. One rule reading one variable: a component that establishes a
+   contrast ground rebinds `--focus-ring-color` on its own subtree rather than adding a second
+   ring definition. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }

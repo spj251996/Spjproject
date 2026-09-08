@@ -1,0 +1,132 @@
+/* Design tokens — transcribed from DESIGN.md → Foundations (plus the Elevation & Depth block and
+   the two width caps stated only in prose under Foundations → Layout). Inferred values are named
+   in the run report; nothing here is invented silently.
+
+   Split rationale (rules/web-frontend/design-system.md → Stylesheet organization): the token set is
+   a distinct self-contained concern, so the identity trigger fires regardless of length. */
+
+@theme static {
+  /* Foundations → Typography. DESIGN.md names three families but no token names for them; these
+     names are the contract app/layout.tsx must satisfy via next/font — until it does, the tokens
+     resolve to their fallback stacks. Overriding the framework's own `--font-sans` role token lets
+     preflight carry the body family instead of restating it on `body`. */
+  --font-script: "Mrs Saint Delafield", cursive;
+  --font-serif: "PT Serif", Georgia, serif;
+  --font-sans: "PT Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Foundations → Colors */
+  --color-surface-base: #fcfbf7;
+  --color-surface-elevated: #fffefa;
+  --color-surface-contrast: #0c3125;
+  --color-ink: #0f3d2e;
+  --color-ink-on-contrast: #f4f1e8;
+  --color-accent-gold: #e0a83c;
+  --color-accent-gold-on-base: #8a6d22;
+  --color-thread-red: #a31f1b;
+
+  /* Foundations → Typography. Size, weight, tracking and leading ride the `--text-*` modifiers;
+     family and text-transform have no modifier, which is what forces the `.type-*` class layer
+     in styles/type-scale.css. */
+  --text-display-name-mobile: 56px;
+  --text-display-name-mobile--font-weight: 400;
+  --text-display-name-tablet: 72px;
+  --text-display-name-tablet--font-weight: 400;
+  --text-display-name-desktop: 96px;
+  --text-display-name-desktop--font-weight: 400;
+  --text-heading-xl: 42px;
+  --text-heading-xl--font-weight: 700;
+  --text-heading-lg: 26px;
+  --text-heading-lg--font-weight: 700;
+  --text-date-primary: 26px;
+  --text-date-primary--font-weight: 400;
+  --text-date-primary--letter-spacing: 0.06em;
+  --text-body: 17px;
+  --text-body--font-weight: 400;
+  --text-body--line-height: 1.7;
+  --text-eyebrow: 12px;
+  --text-eyebrow--font-weight: 400;
+  --text-eyebrow--letter-spacing: 0.2em;
+  --text-action: 13px;
+  --text-action--font-weight: 700;
+  --text-action--letter-spacing: 0.16em;
+
+  /* Foundations → Spacing. Cross-Cutting Rules: "No spacing value outside the {spacing} scale."
+     Closing the namespace makes that toolchain-enforced rather than advisory — the framework's
+     `--spacing` multiplier is disabled, so `p-5` and friends stop compiling entirely. Publishing
+     the doc's own zero step reopens exactly the zero utilities (p-0, gap-0, inset-0) and nothing
+     else. The named steps keep their `space-` prefix because bare t-shirt keys shadow the
+     container scale across max-w-/min-w-/basis-/w-/h-; the zero step stays bare because prefixing
+     it is what would break those zero utilities. */
+  --spacing: initial;
+  --spacing-0: 0px;
+  --spacing-space-3xs: 4px;
+  --spacing-space-2xs: 8px;
+  --spacing-space-xs: 12px;
+  --spacing-space-sm: 16px;
+  --spacing-space-md: 24px;
+  --spacing-space-lg: 32px;
+  --spacing-space-xl: 48px;
+  --spacing-space-2xl: 64px;
+  --spacing-space-3xl: 96px;
+
+  /* Foundations → Shapes */
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+
+  /* Foundations → Elevation & Depth. The two shadows are one design value — a consumer composes
+     both into a single box-shadow utility, never two that overwrite each other. */
+  --shadow-elevated-near: 0 1px 2px rgba(15, 61, 46, 0.04);
+  --shadow-elevated-far: 0 8px 24px rgba(15, 61, 46, 0.06);
+
+  /* Foundations → Motion (easing only; there is no duration namespace — see :root below) */
+  --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
+  --ease-settle: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Responsive Behavior */
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+
+  /* Foundations → Layout. Both caps are stated only in prose in DESIGN.md — reported as drift. */
+  --container-content: 1200px;
+  --container-text: 600px;
+}
+
+/* Values whose names sit in no namespace the framework knows. They mint no utility family, so they
+   are consumed as `utility-(--token)` — e.g. `z-(--z-thread)`, `duration-(--duration-base)`. Kept
+   in a plain block for legibility, not because the compiler requires the split. */
+:root {
+  /* DESIGN.md defines a single scheme; there is no dark mode to declare. */
+  color-scheme: light;
+
+  /* Interaction Rules → Tap; Accessibility Rules */
+  --touch-target: 44px;
+
+  /* Foundations → Iconography, Layout → divider, and thread-overlay. These are SVG stroke widths
+     and one border width; they are not rehomed into `--border-width-*`, whose `border-*` utilities
+     would misdescribe the icon and thread strokes. */
+  --stroke-divider: 1px;
+  --stroke-icon: 1.25px;
+  --stroke-icon-lg: 1.5px;
+  --stroke-thread-mobile: 1.6px;
+  --stroke-thread-desktop: 1.8px;
+
+  /* Foundations → Motion */
+  --duration-fast: 200ms;
+  --duration-base: 400ms;
+  --duration-slow: 700ms;
+
+  /* Interaction Rules → Focus. The colors stay references, never copied literals. */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-accent-gold-on-base);
+  --focus-ring-color-on-contrast: var(--color-accent-gold);
+
+  /* Elevation & Depth. `z-*` takes bare numerics against no namespace, so an off-scale `z-999`
+     still compiles — this scale is a review concern, not a toolchain-enforced one. */
+  --z-base: 0;
+  --z-botanical: 10;
+  --z-content: 20;
+  --z-elevated: 30;
+  --z-thread: 40;
+  --z-modal: 50;
+}
