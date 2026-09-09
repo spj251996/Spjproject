@@ -6,6 +6,26 @@ import type { FormattedDate } from "./types.ts";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+const DATE_PARTS = new Intl.DateTimeFormat("en-IN", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/**
+ * The one ISO-date rule, shared with `validate.ts` so the two cannot drift apart.
+ * `new Date("2027-02-30")` rolls over to 2 March rather than failing, so the round-trip comparison —
+ * not `Number.isNaN` — is what actually rejects a date the calendar does not have.
+ */
+export function parseIsoDate(value: string): Date | null {
+  if (!ISO_DATE.test(value)) return null;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10) === value ? parsed : null;
+}
+
 function ordinalFor(day: number): string {
   if (day >= 11 && day <= 13) return "th";
   if (day % 10 === 1) return "st";
@@ -15,25 +35,15 @@ function ordinalFor(day: number): string {
 }
 
 export function formatEventDate(iso: string): FormattedDate {
-  if (!ISO_DATE.test(iso)) {
+  const date = parseIsoDate(iso);
+  if (date === null) {
     throw new Error(
-      `formatEventDate: expected an ISO 8601 date, YYYY-MM-DD ("${iso}")`,
+      `formatEventDate: expected a real calendar date in ISO 8601 form, YYYY-MM-DD ("${iso}")`,
     );
   }
-  const date = new Date(`${iso}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    throw new Error(`formatEventDate: not a real calendar date ("${iso}")`);
-  }
-  const part = (type: Intl.DateTimeFormatPartTypes): string => {
-    const parts = new Intl.DateTimeFormat("en-IN", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    }).formatToParts(date);
-    return parts.find((p) => p.type === type)?.value ?? "";
-  };
+  const parts = DATE_PARTS.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((p) => p.type === type)?.value ?? "";
   const day = part("day");
   return {
     weekday: part("weekday"),

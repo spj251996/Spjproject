@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type {
+  EventSegment,
   FamilyGroup,
   InviteContent,
   Ritual,
@@ -24,21 +25,22 @@ const ritual = (over: Partial<Ritual> = {}): Ritual => ({
   ...over,
 });
 
+const segment = (over: Partial<EventSegment> = {}): EventSegment => ({
+  id: "s",
+  label: "Church",
+  time: "10:00 AM",
+  venue: "V",
+  address: "A",
+  mapUrl: "https://x.test/m",
+  ...over,
+});
+
 const event = (over: Partial<WeddingEvent> = {}): WeddingEvent => ({
   id: "e",
   name: "An Event",
   cityTown: "A Town",
   date: "2027-01-09",
-  segments: [
-    {
-      id: "s",
-      label: "Church",
-      time: "10:00 AM",
-      venue: "V",
-      address: "A",
-      mapUrl: "https://x.test/m",
-    },
-  ],
+  segments: [segment()],
   ...over,
 });
 
@@ -133,6 +135,16 @@ test("rejects an event with no segments", () => {
   );
 });
 
+test("rejects a duplicate segment id within one event", () => {
+  assert.throws(
+    () =>
+      validateEvents([
+        event({ segments: [segment(), segment({ label: "Reception" })] }),
+      ]),
+    /events\[0\]\.segments\[1\]\.id duplicates an earlier id \("s"\)/,
+  );
+});
+
 test("rejects a relative mapUrl", () => {
   const bad = event();
   bad.segments[0].mapUrl = "/maps";
@@ -142,11 +154,44 @@ test("rejects a relative mapUrl", () => {
   );
 });
 
+test("rejects a mapUrl whose scheme is not http(s)", () => {
+  assert.throws(
+    () =>
+      validateEvents([
+        event({ segments: [segment({ mapUrl: "javascript:alert(1)" })] }),
+      ]),
+    /events\[0\]\.segments\[0\]\.mapUrl must be an http\(s\) URL/,
+  );
+});
+
+test("rejects an empty string in a nullable segment field", () => {
+  const fields = ["time", "venue", "address", "mapUrl"] as const;
+  for (const field of fields) {
+    assert.throws(
+      () => validateEvents([event({ segments: [segment({ [field]: "" })] })]),
+      new RegExp(
+        `events\\[0\\]\\.segments\\[0\\]\\.${field} must be null when absent, never an empty string`,
+      ),
+      `${field} accepted an empty string`,
+    );
+  }
+});
+
+test("rejects an empty string portrait", () => {
+  assert.throws(
+    () => validateFamilyGroups(pair({ members: [member({ portrait: "" })] })),
+    /familyGroups\[0\]\.members\[0\]\.portrait must be null when absent, never an empty string/,
+  );
+});
+
 test("rejects a family set that is not exactly one bride and one groom", () => {
-  assert.throws(() => validateFamilyGroups([group()]), /familyGroups/);
+  assert.throws(
+    () => validateFamilyGroups([group()]),
+    /exactly one "bride" group and one "groom" group \(got: bride\)/,
+  );
   assert.throws(
     () => validateFamilyGroups([group(), group({ id: "g2" })]),
-    /familyGroups/,
+    /exactly one "bride" group and one "groom" group \(got: bride, bride\)/,
   );
 });
 
@@ -182,10 +227,54 @@ test("rejects an id duplicated between a member and a nested member", () => {
   const nested = member({ id: "dup", family: [member({ id: "dup" })] });
   assert.throws(
     () => validateFamilyGroups(pair({ members: [nested] })),
-    /familyGroups\[0\]/,
+    /familyGroups\[0\]\.members\[0\]\.family\[0\]\.id duplicates an earlier id \("dup"\)/,
   );
 });
 
-test("accepts null for every optional field", () => {
+/* Member ids are scoped to their own family group, so both sides may use "m" — see `claimId`. */
+test("accepts the same member id on both sides", () => {
   assert.doesNotThrow(() => validateFamilyGroups(pair()));
+});
+
+test("accepts null in every nullable field", () => {
+  const bare = event({
+    segments: [
+      segment({ time: null, venue: null, address: null, mapUrl: null }),
+    ],
+  });
+  assert.doesNotThrow(() => validateEvents([bare]));
+  assert.doesNotThrow(() =>
+    validateFamilyGroups(
+      pair({
+        members: [
+          member({
+            portrait: null,
+            family: [member({ id: "kid", portrait: null })],
+          }),
+        ],
+      }),
+    ),
+  );
+});
+
+test("rejects empty invite copy, naming the field", () => {
+  assert.throws(
+    () => validateInvite({ ...invite, eyebrow: "" }),
+    /invite\.eyebrow must not be empty/,
+  );
+  assert.throws(
+    () => validateInvite({ ...invite, coupleNames: "   " }),
+    /invite\.coupleNames must not be empty/,
+  );
+});
+
+test("rejects empty wishes copy, naming the field", () => {
+  assert.throws(
+    () => validateWishes({ ...wishes, passage: "" }),
+    /wishes\.passage must not be empty/,
+  );
+  assert.throws(
+    () => validateWishes({ ...wishes, wishesLine: "   " }),
+    /wishes\.wishesLine must not be empty/,
+  );
 });

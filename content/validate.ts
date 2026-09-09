@@ -1,3 +1,4 @@
+import { parseIsoDate } from "./format.ts";
 import type {
   EventSegment,
   FamilyGroup,
@@ -27,7 +28,17 @@ function required(value: string, path: string): void {
     throw new ContentValidationError(path, "must not be empty");
 }
 
+/** Nullable fields carry a real `null` when absent — never an empty-string stand-in for one. */
+function optionalText(value: string | null, path: string): void {
+  if (value !== null && value.trim() === "")
+    throw new ContentValidationError(
+      path,
+      "must be null when absent, never an empty string",
+    );
+}
+
 function absoluteUrl(value: string | null, path: string): void {
+  optionalText(value, path);
   if (value === null) return;
   let parsed: URL;
   try {
@@ -47,6 +58,7 @@ function absoluteUrl(value: string | null, path: string): void {
 }
 
 function assetPath(value: string | null, path: string): void {
+  optionalText(value, path);
   if (value === null) return;
   if (!value.startsWith("/")) {
     throw new ContentValidationError(
@@ -56,27 +68,19 @@ function assetPath(value: string | null, path: string): void {
   }
 }
 
-/** `new Date("2027-02-30")` rolls over rather than failing, so the round-trip is the real check. */
 function isoDate(value: string, path: string): void {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (parseIsoDate(value) === null) {
     throw new ContentValidationError(
       path,
-      `must be an ISO 8601 date, YYYY-MM-DD ("${value}")`,
-    );
-  }
-  const parsed = new Date(`${value}T00:00:00Z`);
-  if (
-    Number.isNaN(parsed.getTime()) ||
-    parsed.toISOString().slice(0, 10) !== value
-  ) {
-    throw new ContentValidationError(
-      path,
-      `is not a real calendar date ("${value}")`,
+      `must be a real calendar date in ISO 8601 form, YYYY-MM-DD ("${value}")`,
     );
   }
 }
 
-/** Shared id registry so a nested member cannot reuse a top-level member's id. */
+/* Shared id registry so a nested member cannot reuse a top-level member's id. Scope is whatever
+   registry the caller passes, deliberately: ritual, event and family-group ids are unique across
+   their whole collection, segment ids only within their event, and member ids only within their
+   family group — so a bride-side and a groom-side member may both be "m". */
 function claimId(id: string, path: string, seen: Set<string>): void {
   required(id, path);
   if (seen.has(id))
@@ -104,6 +108,9 @@ export function validateRituals(rituals: Ritual[]): Ritual[] {
 
 function validateSegment(segment: EventSegment, at: string): void {
   required(segment.label, `${at}.label`);
+  optionalText(segment.time, `${at}.time`);
+  optionalText(segment.venue, `${at}.venue`);
+  optionalText(segment.address, `${at}.address`);
   absoluteUrl(segment.mapUrl, `${at}.mapUrl`);
 }
 
