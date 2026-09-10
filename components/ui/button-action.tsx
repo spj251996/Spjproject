@@ -12,13 +12,32 @@ import type { ReactNode } from "react";
    spec into a second component would have been the worse resolution. This file still takes no
    `'use client'` — a caller supplying `onClick` is the client boundary.
 
-   Foreground color is inferred: the doc states the `{colors.ink}` fill and the `{typography.action}`
-   role but no text color. `{colors.ink-on-contrast}` is the doc's own primary text on the deep-green
-   ground, and the fill is that same green. Padding takes the two endpoints of the stated
-   16px–24px range rather than a value invented between them. */
+   The engraved rule is two horizontal borders, not two pseudo-elements: `border-y` IS the pair of
+   hairlines the doc describes. The doc's "no border" means no box around the control, which holds —
+   there is no left or right edge and no radius.
 
-const actionClassName =
-  "type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) items-center justify-center rounded-sm bg-ink px-space-md py-space-sm text-center text-ink-on-contrast";
+   Padding is inferred: the doc states the hairlines, the type role and the hit area, but no padding
+   for the engraved form. On-scale values are used so the rules overrun the label slightly, which is
+   what makes them read as rules rather than as an underline. Reported as inferred.
+
+   Hover is the doc's own sentence and nothing more — rules and label to `{colors.ink}`, the space
+   between them warmed. Focus takes the global ring only; the doc gives focus no color change of its
+   own, so none is invented here. The transition carries its own reduced-motion gate at the source.
+
+   The transitioned properties are named rather than using `transition-colors`, which in Tailwind v4
+   includes `outline-color`. That made the focus ring FADE IN over the hover duration, starting from
+   `currentColor` — measured at 0ms, 120ms and 520ms after focus, the ring ran gold → part-way → ink.
+   A focus indicator must be correct on the frame it appears, and for that whole fade it sat below the
+   3:1 an indicator needs. Hover colors transition; the ring does not. */
+
+const actionClassName = [
+  "type-action inline-flex items-center justify-center text-center",
+  "min-h-(--touch-target) min-w-(--touch-target)",
+  "border-y-(length:--stroke-divider) border-accent-gold text-accent-gold",
+  "px-space-sm py-space-xs",
+  "transition-[color,background-color,border-color] duration-(--duration-fast) ease-settle motion-reduce:transition-none",
+  "hover:border-ink hover:bg-accent-gold/10 hover:text-ink",
+].join(" ");
 
 type ButtonActionProps = {
   children: ReactNode;
