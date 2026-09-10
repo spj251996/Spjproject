@@ -7,17 +7,17 @@ import {
   type SpanZone,
 } from "@/app/design-system/_kit";
 
-/* curate-gallery — Bucket 5, the Technical bucket, in DESIGN.md document order (gallery-spine.md § 19).
+/* curate-gallery — Bucket 5, the Technical bucket, in DESIGN.md document order (curate-gallery → section-spine.md § 19).
    One module for the whole bucket, per the skill's pinned `sections/` structure ("exactly 5 files — the
    count is law"); this bucket holds exactly one section.
 
    No `Technical · Z-Index Scale` section: DESIGN.md defines no such heading, and the z-index scale
-   already renders at Foundations · Elevation & Depth as a second SpecimenGroup (gallery-spine.md → Q2).
+   already renders at Foundations · Elevation & Depth as a second SpecimenGroup (curate-gallery → section-spine.md).
    `Technical Conventions`, `Accessibility Rules`, `Cross-Cutting Rules` and `Iteration Notes` are
    excluded per the spine's settled derivation — not re-derived here.
 
    Prose renders through RuleList (semantic type classes directly) — this project has no prose layer
-   and the gallery may not invent one (gallery-spine.md → Consequence of Prose's absence). No
+   and the gallery may not invent one (DESIGN.md → Overview → No prose layer). No
    Specimen/SpecimenGroup wrapper: SpanTable and DeviceRuler render directly inside GallerySection, the
    same shape Foundations uses for its other bare visualizers — the prose-vs-box rule keeps this rules
    section unboxed. */
@@ -25,7 +25,7 @@ import {
 /* § 19 — Interaction · Responsive Behavior. Three zones in DESIGN.md document order. The intro rule
    (two layout systems, lg as the switch, md's scoped exception) sits in the section intro; the three
    zone bullets become SpanTable rows; the thread-path bullet folds into each zone it governs; the
-   horizontal-scroll floor and the touch-target cross-reference (gallery-spine.md → Sanctioned
+   horizontal-scroll floor and the touch-target cross-reference (curate-gallery → section-spine.md → Sanctioned
    cross-references) close the section as labeled prose, mirroring the reference's pinned
    touch-targets/collapsing-strategy shape. */
 const ZONES: SpanZone[] = [
@@ -113,7 +113,7 @@ const ZONE_BARS: RulerStop[] = [
   },
 ];
 
-/* Sanctioned cross-reference (gallery-spine.md → Sanctioned cross-references): touch-target 44px,
+/* Sanctioned cross-reference (curate-gallery → section-spine.md): touch-target 44px,
    from the excluded Interaction Rules → Tap bullet. Not double-counting — the spine requires it here. */
 const TOUCH_TARGET_RULES = [
   "Every interaction is touch-first with a minimum touch-target (44px) hit area.",

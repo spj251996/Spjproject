@@ -17,7 +17,7 @@ import { Invite } from "@/components/invite/invite";
 import { Timeline } from "@/components/timeline/timeline";
 
 /* curate-gallery — Bucket 4, the five Domain sections, in DESIGN.md document order
-   (gallery-spine.md § 14–18). One module for the whole bucket, per the skill's pinned `sections/`
+   (curate-gallery → section-spine.md § 14–18). One module for the whole bucket, per the skill's pinned `sections/`
    structure ("exactly 5 files — the count is law").
 
    Three [standalone] entries (Invite, Family, Timeline) render the real production component live,
@@ -25,7 +25,7 @@ import { Timeline } from "@/components/timeline/timeline";
    are page-bound compositions with no component file of their own — LISTED via InlineList, never
    recreated (verification.md: "[inline] compositions are listed in an InlineList (never recreated)").
    Both name app/page.tsx as their documented home; neither is composed there yet — an already-recorded
-   drift (gallery-spine.md → D3), not fixed here.
+   drift (work/tasks.md → Event Info and Wishes not yet composed), not fixed here.
 
    None of the three live components is position: fixed, so none is wrapped in a ChromeFrame — per its
    own contract ("omit for flow content"), the frame's translateZ(0) trick exists only to contain a
@@ -33,7 +33,7 @@ import { Timeline } from "@/components/timeline/timeline";
    Family and Timeline each carry a section-anchored thread segment for the documented reason both
    components' own comments give: thread-overlay is position: fixed and cannot anchor to page content,
    so the thread reads as a disconnected decoration here — a knowingly deferred Phase-3 defect
-   (gallery-spine.md → D4, work/tasks.md → Project follow-ups), rendered honestly, not fixed or worked
+   (work/tasks.md → Project follow-ups), rendered honestly, not fixed or worked
    around. */
 
 interface VariantProps {
@@ -68,7 +68,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     home: "app/page.tsx",
     composes:
       "One mounted-pair holding the two events — engagement, then wedding. The two sheets reveal independently with fade and translate as they enter; the thread continues through as a quiet connector with no dramatic motion of its own.",
-    note: "Not yet composed — app/page.tsx is a holding page today (gallery-spine.md → D3), later-phase work rather than a defect. The pair itself renders live at Foundations · Layout.",
+    note: "Not yet composed — app/page.tsx is a holding page today (work/tasks.md → Event Info and Wishes not yet composed), later-phase work rather than a defect. The pair itself renders live at Foundations · Layout.",
   },
 ];
 
@@ -97,7 +97,7 @@ const WISHES_ENTRIES: InlineEntry[] = [
     home: "app/page.tsx",
     composes:
       "A quotation and the couple names in heading-xl and the display face, an attributed wishes line in body, and a couple illustration entering once with a subtle fade or scale. The thread slows and settles, looping loosely around the illustration, then rests with glow faded to subtle — no continuous motion remains. Candidate for the optional deep-green contrast treatment, already catalogued at Foundations · Colors; the section reads correctly on the ivory base if it is never applied.",
-    note: "Not yet composed — app/page.tsx is a holding page today (gallery-spine.md → D3), later-phase work rather than a defect. The couple illustration itself has no component or asset anywhere in code yet, so nothing exists to list beyond the page it would compose into.",
+    note: "Not yet composed — app/page.tsx is a holding page today (work/tasks.md → Event Info and Wishes not yet composed), later-phase work rather than a defect. The couple illustration itself has no component or asset anywhere in code yet, so nothing exists to list beyond the page it would compose into.",
   },
 ];
 

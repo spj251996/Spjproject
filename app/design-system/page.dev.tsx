@@ -19,7 +19,7 @@ export default function DesignSystemPage() {
     /* Dogfoods the documented content cap (--container-content, 1200px) and the doc's own
        section-spacing band (space-3xl). No SectionProgressNav: the skill's page template mounts a
        live rail, but this project ships no such component and the gallery may not invent one. No
-       theme selector either — there is no theme system (gallery-spine.md → Downstream implications). */
+       theme selector either — there is no theme system (DESIGN.md → Overview → One scheme, no theme system). */
     <main className="mx-auto flex max-w-content flex-col gap-space-3xl px-space-md py-space-3xl">
       <header className="flex flex-col gap-space-2xs">
         <h1 className="type-heading-xl text-ink">Design System</h1>

@@ -19,7 +19,7 @@ import { Portrait } from "@/components/ui/portrait";
 import { TimelineNode } from "@/components/ui/timeline-node";
 
 /* curate-gallery — Bucket 3, the two Components sections, in DESIGN.md document order
-   (gallery-spine.md § 12–13). One module for the whole bucket, per the skill's pinned `sections/`
+   (curate-gallery → section-spine.md § 12–13). One module for the whole bucket, per the skill's pinned `sections/`
    structure ("exactly 5 files — the count is law").
 
    UI renders eight Specimens flat at h3 with no SpecimenGroup layer: the doc lists eight `###`

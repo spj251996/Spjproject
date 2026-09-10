@@ -3,7 +3,7 @@
    A DESIGN.md domain entry tagged `[inline]` is page-bound composition with no component file of its
    own. It is LISTED, never rebuilt — recreating its markup would fabricate a component the design
    system does not have. The skill wraps this in `.prose-content`; this project has no prose layer
-   (see work/gallery-spine.md → "Consequence of Prose's absence"), so the list dogfoods the type-scale
+   (see work/DESIGN.md → Overview → No prose layer), so the list dogfoods the type-scale
    classes directly and takes its rhythm from the `space-*` scale. */
 
 export interface InlineEntry {

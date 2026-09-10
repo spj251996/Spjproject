@@ -25,17 +25,17 @@ import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 
 /* curate-gallery — Bucket 1, the nine Foundations sections, in DESIGN.md document order
-   (gallery-spine.md § 1–9). One module for the whole bucket, per the skill's pinned `sections/`
+   (curate-gallery → section-spine.md § 1–9). One module for the whole bucket, per the skill's pinned `sections/`
    structure; the spine restates it as "exactly 5 files (foundations.tsx 9 · …)".
 
    Prose renders through the semantic type classes directly. This project has no prose layer and the
-   gallery may not invent one (gallery-spine.md → Consequence of Prose's absence), so list structure
+   gallery may not invent one (DESIGN.md → Overview → No prose layer), so list structure
    and spacing come from the `space-*` scale and list markers are omitted rather than designed. */
 
 /* § 1 — Colors. Four role groups covering all eight tokens, in the doc's table order. There is no
    Borders group: DESIGN.md defines no border token, and the divider borrows accent-gold at
    `--stroke-divider`. Per-swatch `usage` carries the contrast ratios from Accessibility Rules — a
-   sanctioned cross-reference (gallery-spine.md → Sanctioned cross-references). */
+   sanctioned cross-reference (curate-gallery → section-spine.md). */
 const COLOR_GROUPS: SwatchGroup[] = [
   {
     label: "Surfaces",
@@ -308,7 +308,7 @@ const SHAPE_RULES = [
 /* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
    documents two token kinds. The z-order scale therefore has no section of its own: DESIGN.md has
    no Z-Index Scale heading, and minting one would point mapsTo at a heading that does not exist
-   (gallery-spine.md → Q2). */
+   (curate-gallery → section-spine.md). */
 /* Each level renders on the ground its shadow actually lands on, so the tint rule is demonstrated
    rather than asserted: all three are warm because all three fall on paper. */
 const DEPTH_LEVELS: DepthLevel[] = [
@@ -377,7 +377,7 @@ const ELEVATION_RULES = [
 
 /* § 9 — Iconography. Spec prose only: the doc specifies a full icon system, but no icon library is
    installed, no components/icons/ exists, and no component renders an icon, so there is nothing to
-   catalog and no grid may be invented (gallery-spine.md → D1). */
+   catalog and no grid may be invented (DESIGN.md → Foundations → Iconography). */
 const ICON_RULES = [
   "All icons come from one consistent set — thin, stroke-based, with no fills, rounded stroke ends, and slightly organic curves rather than perfect geometry.",
   "Stroke is --stroke-icon (1.25px) to --stroke-icon-lg (1.5px), consistent across the set, aligned to the pixel grid so small sizes stay sharp.",

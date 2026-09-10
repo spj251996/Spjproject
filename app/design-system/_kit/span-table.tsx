@@ -1,8 +1,7 @@
 /* curate-gallery visualizer kit — SpanTable (skill → references/visualizer-kit.md § 9).
 
    The skill has this table inherit a `.prose-content` editorial layer supplied by the caller. This
-   project has no prose layer and none may be invented (work/gallery-spine.md → "Consequence of
-   Prose's absence"), so the table carries its own structure from real tokens: the documented divider
+   project has no prose layer and none may be invented (DESIGN.md → Overview → No prose layer), so the table carries its own structure from real tokens: the documented divider
    for rules, the `space-*` scale for cell padding, and the type-scale classes for text.
 
    Name and Width merge down each zone with `rowSpan`, so a zone reads as one block however many

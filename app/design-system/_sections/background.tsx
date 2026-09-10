@@ -7,15 +7,15 @@ import {
 import { PaperBase } from "@/components/background/paper-base";
 
 /* curate-gallery — Bucket 2, the two Background sections, in DESIGN.md document order
-   (gallery-spine.md § 10–11). One module for the whole bucket, per the skill's pinned `sections/`
+   (curate-gallery → section-spine.md § 10–11). One module for the whole bucket, per the skill's pinned `sections/`
    structure ("exactly 5 files — the count is law").
 
    Background is a two-section bucket here, so both titles carry the `Background · ` prefix: the
    skill's prefix-free Background title assumes a single-section bucket, and this doc names two
-   sub-sections (gallery-spine.md → Two further reference-instance deviations).
+   sub-sections (curate-gallery → section-spine.md).
 
    Prose renders through the semantic type classes directly — this project has no prose layer and
-   the gallery may not invent one (gallery-spine.md → Consequence of Prose's absence). */
+   the gallery may not invent one (DESIGN.md → Overview → No prose layer). */
 
 /* § 10 — Paper Base. All three of the doc's bullets; token names carry the values, which § 1 Colors
    already renders as live swatches. */
