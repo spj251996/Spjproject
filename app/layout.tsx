@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mrs_Saint_Delafield, PT_Sans, PT_Serif } from "next/font/google";
+import { Corinthia, Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
 /* The three families bind straight onto the role tokens app/styles/tokens.css declares
@@ -8,7 +8,10 @@ import "./globals.css";
    keeps the fallback face visible instead of flashing invisible text (DESIGN.md → Technical
    Conventions). */
 
-const script = Mrs_Saint_Delafield({
+/* Corinthia declares an explicit weight because it ships as static faces only; the other two are
+   variable, and omitting `weight` there loads the whole axis rather than pinning single cuts. */
+
+const script = Corinthia({
   variable: "--font-script",
   subsets: ["latin"],
   weight: "400",
@@ -16,25 +19,23 @@ const script = Mrs_Saint_Delafield({
   fallback: ["cursive"],
 });
 
-const serif = PT_Serif({
+const serif = Cormorant_Garamond({
   variable: "--font-serif",
   subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
   fallback: ["Georgia", "serif"],
 });
 
-const sans = PT_Sans({
+const sans = Source_Sans_3({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
-  title: "Sebastian & Flemy",
-  description: "Wedding invitation for Sebastian and Flemy.",
+  title: "Flemy & Sebastian",
+  description: "Wedding invitation for Flemy and Sebastian.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

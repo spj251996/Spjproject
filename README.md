@@ -1,7 +1,7 @@
 # SF Wedding
 
-A single-page, red-thread wedding invitation for Sebastian and Flemy, covering an engagement (Calicut)
-and a wedding (Ernakulam).
+A single-page, red-thread wedding invitation for Flemy and Sebastian, covering an engagement (Kozhikode)
+and a wedding (Koothattukulam, Ernakulam).
 
 Guests get event facts up front, with zero interaction cost, plus a growing photo record of the
 celebration as each ritual completes. A single continuous scroll-driven thread ties the page together as

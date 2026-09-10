@@ -110,7 +110,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
 const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-display-name",
-    family: "Mrs Saint Delafield",
+    family: "Corinthia",
     size: 96,
     weight: 400,
     sample: "Couple names only.",
@@ -118,28 +118,28 @@ const TYPE_TOKENS: TypeToken[] = [
   },
   {
     token: "type-heading-xl",
-    family: "PT Serif",
-    size: 42,
+    family: "Cormorant Garamond",
+    size: 48,
     weight: 700,
     sample: "Section-level H1.",
   },
   {
     token: "type-heading-lg",
-    family: "PT Serif",
-    size: 26,
+    family: "Cormorant Garamond",
+    size: 30,
     weight: 700,
     sample: "H2 and event names.",
   },
   {
     token: "type-date-primary",
-    family: "PT Serif",
-    size: 26,
+    family: "Cormorant Garamond",
+    size: 30,
     weight: 400,
     sample: "The major date line on the invite and event cards.",
   },
   {
     token: "type-body",
-    family: "PT Sans",
+    family: "Source Sans 3",
     size: 17,
     weight: 400,
     lh: 1.7,
@@ -147,14 +147,14 @@ const TYPE_TOKENS: TypeToken[] = [
   },
   {
     token: "type-eyebrow",
-    family: "PT Sans",
+    family: "Source Sans 3",
     size: 12,
     weight: 400,
     sample: "Small uppercase labels above headings and card fields.",
   },
   {
     token: "type-action",
-    family: "PT Sans",
+    family: "Source Sans 3",
     size: 13,
     weight: 700,
     sample: "Buttons and calls to action.",
@@ -163,7 +163,7 @@ const TYPE_TOKENS: TypeToken[] = [
 
 const TYPE_RULES = [
   "The script face appears only on couple names — never on body copy, headings, labels, or buttons.",
-  "Long-form and functional information stays in PT Serif and PT Sans.",
+  "Long-form and functional information stays in Cormorant Garamond and Source Sans 3.",
   "Both serif and sans carry regular and bold only. Bold marks structural headings and actions; everything else sits at regular, including the date line, which separates from heading-lg at the same size by weight rather than by scale.",
   "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. display-name is the only role that steps.",
   "Body sizing is set for a mixed-age audience; it does not shrink below 17px at any viewport.",

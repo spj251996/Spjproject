@@ -10,9 +10,9 @@
      names are the contract app/layout.tsx must satisfy via next/font — until it does, the tokens
      resolve to their fallback stacks. Overriding the framework's own `--font-sans` role token lets
      preflight carry the body family instead of restating it on `body`. */
-  --font-script: "Mrs Saint Delafield", cursive;
-  --font-serif: "PT Serif", Georgia, serif;
-  --font-sans: "PT Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-script: "Corinthia", cursive;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
 
   /* Foundations → Colors */
   --color-surface-base: #fcfbf7;
@@ -33,11 +33,11 @@
   --text-display-name-tablet--font-weight: 400;
   --text-display-name-desktop: 96px;
   --text-display-name-desktop--font-weight: 400;
-  --text-heading-xl: 42px;
+  --text-heading-xl: 48px;
   --text-heading-xl--font-weight: 700;
-  --text-heading-lg: 26px;
+  --text-heading-lg: 30px;
   --text-heading-lg--font-weight: 700;
-  --text-date-primary: 26px;
+  --text-date-primary: 30px;
   --text-date-primary--font-weight: 400;
   --text-date-primary--letter-spacing: 0.06em;
   --text-body: 17px;

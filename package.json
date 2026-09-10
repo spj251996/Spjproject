@@ -2,7 +2,7 @@
   "name": "sf-wedding",
   "version": "0.1.0",
   "private": true,
-  "description": "SF Wedding — a single-page, red-thread wedding invitation for Sebastian and Flemy, built with Next.js.",
+  "description": "SF Wedding — a single-page, red-thread wedding invitation for Flemy and Sebastian, built with Next.js.",
   "scripts": {
     "dev": "next dev",
     "prebuild": "node content/verify.ts",
