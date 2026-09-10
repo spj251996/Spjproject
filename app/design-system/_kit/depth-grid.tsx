@@ -1,5 +1,8 @@
 /* curate-gallery visualizer kit — DepthGrid (skill → references/visualizer-kit.md § 5).
 
+   Text color is inherited rather than forced: a level whose `className` establishes a dark ground
+   sets its own ink there, and hardcoding `text-ink` here painted the green stock's label invisible.
+
    Each card IS its own demonstration: `className` carries that level's real elevation treatment, so
    the card demonstrates the level by being styled with it rather than describing it. */
 
@@ -26,10 +29,10 @@ export function DepthGrid({ levels }: DepthGridProps) {
           className={`flex min-h-[180px] flex-col justify-between p-space-md ${className}`}
           key={name}
         >
-          <span className="type-body text-ink">{name}</span>
+          <span className="type-body">{name}</span>
           <div className="flex flex-col gap-space-3xs">
             <span className="type-eyebrow text-accent-gold">{spec}</span>
-            <span className="type-body text-ink">{usage}</span>
+            <span className="type-body">{usage}</span>
           </div>
         </div>
       ))}

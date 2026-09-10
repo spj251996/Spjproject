@@ -21,6 +21,8 @@ import {
   type TypeToken,
 } from "@/app/design-system/_kit";
 import { Divider } from "@/components/layout/divider";
+import { MountedSheet } from "@/components/layout/mounted-sheet";
+import { EyebrowLabel } from "@/components/ui/eyebrow-label";
 
 /* curate-gallery — Bucket 1, the nine Foundations sections, in DESIGN.md document order
    (gallery-spine.md § 1–9). One module for the whole bucket, per the skill's pinned `sections/`
@@ -37,23 +39,29 @@ import { Divider } from "@/components/layout/divider";
 const COLOR_GROUPS: SwatchGroup[] = [
   {
     label: "Surfaces",
-    note: "At most one deep-green contrast section is permitted, as an intentional visual event rather than a repeating pattern. The closing section is the candidate; the treatment is optional.",
+    note: "Three layers, always in this order: the fixed ground, the mount laid on it, and the stock laid on the mount. Exactly one section takes the green stock — the closing one.",
     tokens: [
       {
         token: "--color-surface-base",
         name: "surface-base",
         usage:
-          "The ivory base. Background for the entire site, including elevated paper.",
+          "The ivory ground. Fixed behind the whole page; every section sits on it.",
+      },
+      {
+        token: "--color-surface-mount",
+        name: "surface-mount",
+        usage:
+          "The mount — the backing sheet of every mounted section. Carries no text, which is why gold's 3.93:1 on it never occurs.",
       },
       {
         token: "--color-surface-elevated",
         name: "surface-elevated",
-        usage: "Elevated paper — event cards and key containers.",
+        usage: "The paper stock — the inner sheet laid on the mount.",
       },
       {
         token: "--color-surface-contrast",
         name: "surface-contrast",
-        usage: "The optional deep-green contrast section.",
+        usage: "The green stock. The closing section's inner sheet.",
       },
     ],
   },
@@ -76,30 +84,31 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "Gold marks eyebrow labels, dividers, active jump-link state, and link accent details. No border token exists — the divider borrows accent-gold at --stroke-divider.",
+    note: "ONE gold, and it does not vary by ground. It marks eyebrows, the engraved rule, dividers and active states on both stocks. RECORDED EXCEPTION: 2.39:1 on paper against AA's 4.5:1 — a deliberate decision scoped to the eyebrow and the engraved rule's label only. Every other text role uses ink. Do not 'fix' it. On the green stock the same gold measures 5.72:1 and is compliant.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "Decorative gold on ivory at ~2.1:1, carrying no meaning on its own; legible gold on the contrast section at ~6.6:1.",
-      },
-      {
-        token: "--color-accent-gold",
-        name: "accent-gold",
-        usage:
-          "Gold for text, icons, and meaning-bearing marks on ivory. ~4.7:1 — any gold that must be read or recognized uses this one.",
+          "The single gold. 2.39:1 on paper (the recorded exception), 5.72:1 on the green stock. Never used for the focus ring on paper, where it falls under the 3:1 an indicator needs.",
       },
     ],
   },
   {
     label: "Thread reserved",
-    note: "Exclusive to the thread. Buttons, headings, icons, error states, and decorative accents never use it.",
+    note: "Exclusive to the thread. Buttons, headings, icons, error states and decorative accents never use either. The thread is decorative and never the sole carrier of meaning, which is what keeps its 1.87:1 on the green stock out of scope for contrast requirements.",
     tokens: [
       {
         token: "--color-thread-red",
         name: "thread-red",
-        usage: "The thread system only.",
+        usage:
+          "The thread and its wisp, at one colour on both stocks — a real thread does not change colour, it catches light differently.",
+      },
+      {
+        token: "--color-thread-vermilion",
+        name: "thread-vermilion",
+        usage:
+          "The thread's glow only. Never a stroke, never text. A glow cannot exist on paper — ivory has 27x less room to add light than the green stock — so on paper this is an ink bleed made by darkening.",
       },
     ],
   },
@@ -149,8 +158,8 @@ const TYPE_TOKENS: TypeToken[] = [
     token: "type-eyebrow",
     family: "Source Sans 3",
     size: 12,
-    weight: 400,
-    sample: "Small uppercase labels above headings and card fields.",
+    weight: 500,
+    sample: "Always gold, never ink — on both stocks, in every section.",
   },
   {
     token: "type-action",
@@ -273,30 +282,47 @@ const SHAPE_ITEMS: ShapeItem[] = [
 ];
 
 const SHAPE_RULES = [
-  "Primary shape is the soft rectangle, radius --radius-sm (8px) to --radius-lg (16px). Edges are clean and slightly softened, never exaggerated.",
+  "Section surfaces are SQUARE. The mount and both stocks take no radius at all — rendered both ways, radius-lg reads as a dialog and 0 reads as a sheet. A radius at section scale is the strongest signal that a card is web UI rather than paper.",
+  "The radius tokens remain for the few elements that still take one — image-placeholder and the gallery modal. Nothing at section scale uses them.",
   "Circles are containers for portraits only.",
-  "Pill buttons are used sparingly rather than as a default.",
   "Dividers are --stroke-divider (1px) lines in accent-gold — rendered under Foundations · Layout.",
+  "KNOWN DRIFT: event-card still carries radius-lg, which the doc no longer sanctions at that scale. Left to Phase 3, which owns the card's redesign.",
 ];
 
 /* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
    documents two token kinds. The z-order scale therefore has no section of its own: DESIGN.md has
    no Z-Index Scale heading, and minting one would point mapsTo at a heading that does not exist
    (gallery-spine.md → Q2). */
+/* Each level renders on the ground its shadow actually lands on, so the tint rule is demonstrated
+   rather than asserted: all three are warm because all three fall on paper. */
 const DEPTH_LEVELS: DepthLevel[] = [
   {
-    name: "Base paper",
+    name: "The ground",
     spec: "surface-base · no shadow · the hairline is the demo card's edge, not part of the level",
     className:
       "border-(length:--stroke-divider) border-accent-gold bg-surface-base",
-    usage: "The ivory page ground — the only page background.",
+    usage: "The fixed ivory ground. Everything else sits on it.",
   },
   {
-    name: "Elevated paper",
-    spec: "surface-elevated · shadow-sheet · square",
-    className: "rounded-lg bg-surface-elevated shadow-sheet",
+    name: "Mount on the ground",
+    spec: "surface-mount · shadow-mount · square",
+    className: "bg-surface-mount shadow-mount",
     usage:
-      "Event cards and key containers — a sheet catching slightly more light, not a new surface.",
+      "Lifts the whole mounted section off the ground. Keeps its shadow at every width, including where it loses its fill below the md breakpoint.",
+  },
+  {
+    name: "Paper stock on the mount",
+    spec: "surface-elevated · shadow-sheet · square",
+    className: "bg-surface-elevated shadow-sheet",
+    usage:
+      "A light sheet on a light mount barely casts, so most of its separation is the inset top highlight — which stays pure white and untinted, because the tint rule governs shadows and a highlight is the opposite of one.",
+  },
+  {
+    name: "Green stock on the mount",
+    spec: "surface-contrast · shadow-sheet-contrast · square",
+    className: "bg-surface-contrast text-ink-on-contrast shadow-sheet-contrast",
+    usage:
+      "A dark sheet on a light mount genuinely casts, so this one takes a real drop shadow and a hairline, and no highlight at all. Two constructions, not two strengths.",
   },
 ];
 
@@ -304,7 +330,7 @@ const Z_LAYERS: LayerItem[] = [
   {
     token: "--z-base",
     value: "0",
-    role: "Base — the ivory paper base with static minimal texture.",
+    role: "Base — the fixed ivory ground.",
   },
   {
     token: "--z-botanical",
@@ -319,7 +345,7 @@ const Z_LAYERS: LayerItem[] = [
   {
     token: "--z-elevated",
     value: "30",
-    role: "Elevated — event cards and key containers, as paper on paper.",
+    role: "Elevated — mounted sections, the mount and its sheet, as paper on paper.",
   },
   { token: "--z-thread", value: "40", role: "Thread — the thread overlay." },
   { token: "--z-modal", value: "50", role: "Modal — the gallery modal." },
@@ -327,8 +353,9 @@ const Z_LAYERS: LayerItem[] = [
 
 const ELEVATION_RULES = [
   "Layering must be achievable with simple stacking contexts so the thread overlay never fights nested stacking.",
-  "Elevated paper stays within the ivory family rather than taking a different section color — it reads as a sheet catching slightly more light, not as a new surface.",
-  "Shadows are slight and tinted with green ink rather than black, so depth stays warm.",
+  "A shadow takes the tint of the surface it FALLS ON, because a shadow is that surface darkened. Shadows landing on paper — the ground, the mount, the paper stock — are warm; shadows landing on the green stock are green ink. Neither is ever black.",
+  "All three recipes above are warm, because all three fall on paper. The green-ink case belongs to whatever lands on the green stock, which nothing in this layer does yet.",
+  "The paper stock and the green stock need different CONSTRUCTIONS, not different strengths — a light sheet on a light mount barely casts, a dark sheet on a light mount genuinely does.",
   "Layering adds no heavy assets and does not affect scroll performance.",
 ];
 
@@ -389,6 +416,44 @@ export function FoundationsSections() {
         title="Foundations · Layout"
       >
         <RuleList rules={LAYOUT_RULES} />
+
+        <Specimen
+          description="The card layout every section is built on — a backing mount with an inner sheet laid onto it."
+          id="layout-mounted-sheet"
+          name="mounted-sheet"
+          source="@/components/layout/mounted-sheet"
+          spec="Two stocks, one mount. The mount never changes colour; only the inner stock does. Reveal is 16px at lg, 12px at md, and below md only the hero keeps its mount — resize the window to watch the ladder. The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground. The mount carries no text."
+        >
+          <div className="flex flex-col gap-space-lg">
+            <MountedSheet hero>
+              <div className="flex flex-col gap-space-2xs p-space-lg">
+                <EyebrowLabel>The invitation</EyebrowLabel>
+                <p className="type-body text-ink">
+                  Paper stock, hero — the one section that keeps its mount below
+                  the md breakpoint.
+                </p>
+              </div>
+            </MountedSheet>
+            <MountedSheet>
+              <div className="flex flex-col gap-space-2xs p-space-lg">
+                <EyebrowLabel>Where and when</EyebrowLabel>
+                <p className="type-body text-ink">
+                  Paper stock, ordinary section — its mount disappears below the
+                  md breakpoint.
+                </p>
+              </div>
+            </MountedSheet>
+            <MountedSheet stock="contrast">
+              <div className="flex flex-col gap-space-2xs p-space-lg">
+                <EyebrowLabel>With all our love</EyebrowLabel>
+                <p className="type-body">
+                  Green stock — a real drop shadow and no inset highlight, and
+                  it rebinds the focus ring on its own subtree.
+                </p>
+              </div>
+            </MountedSheet>
+          </div>
+        </Specimen>
 
         <Specimen
           description="Thin rule separating grouped content within a section — --stroke-divider (1px) in accent-gold."

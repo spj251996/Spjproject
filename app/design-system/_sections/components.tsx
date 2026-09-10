@@ -61,14 +61,17 @@ const SAMPLE_PORTRAIT_IMAGE = `data:image/svg+xml,${encodeURIComponent(SAMPLE_PO
 /* § 12 — Shell. All eight of `thread-overlay`'s documented rules. The section is 1:1 with its single
    component, so the rules sit at section level, as Foundations · Layout does with the divider. */
 const THREAD_RULES = [
-  "A single continuous curve in thread-red with round caps, entering the top edge and exiting the bottom edge, on z-thread.",
-  "Reveal is progressive and bound to scroll position via stroke-dashoffset or masking — never to a timer, and never re-entering per section.",
-  "Depth illusion comes from opacity and glow rather than real DOM layering, so it appears to weave between the paper and botanical layers without depending on stacking order.",
-  "Glow is secondary to the line and derived from thread-red: minimal to absent on the ivory base, three stacked shadows on the deep-green contrast section. Luminous, never neon.",
-  "At rest — after settling, and whenever reduced motion is active — the thread is fully drawn at its resting glow level rather than hidden or partially revealed.",
+  "ONE colour and ONE width on both stocks — thread-red at --stroke-thread (1.6px) everywhere. A real thread does not change colour or thickness, it catches light differently. Only the glow differs between stocks.",
+  "The wisp is the thread's ENDS, not an ornament: the tail that shows it has travelled on as it leaves the frame. --stroke-thread-wisp (1.2px), same thread-red, 0.7 opacity.",
+  "Two modes, both real — a plain drawn line and a glowing one, each defined on each stock.",
+  "Glow is thread-vermilion and behaves differently per stock because the grounds are not symmetrical: ivory sits at 0.96 relative luminance against the green's 0.02, so there is 27x less room to add light. A glow cannot exist on paper — the paper treatment is an ink bleed, made by darkening.",
+  "The halo is masked to the green stock's own bounds, inset by the mount's reveal, so it never spills onto the mount or the ground.",
+  "The thread runs down one margin per section and crosses the centre only in the gaps between sheets. It never passes under a glyph — at screen height the centred type block owns the middle, so the margin is the only empty band running the full height.",
+  "At rest — after settling, and whenever reduced motion is active — the thread is fully drawn with its wisp at its natural terminals, rather than hidden or partially revealed.",
   "Anchors to meaningful points — the two family sides and each ritual node — rather than floating.",
-  "Stroke is 1.8px above the lg breakpoint and 1.6px below it.",
+  "The overlay spans the DOCUMENT, not the viewport: absolutely positioned at full document height so it can anchor to content, with masks driven by measured sheet bounds. A viewport-fixed overlay structurally cannot.",
   "Paths are predefined per layout; the timeline spine is the one segment generated to fit measured node positions.",
+  "KNOWN DRIFT: the component in code is still the position:fixed version and renders as disconnected decorations. The rebuild is Phase 5 — this section renders the specification, not a claim about the current code.",
 ];
 
 const THREAD_POSES = [0.25, 0.6, 1];
@@ -126,7 +129,7 @@ export function ComponentsSections() {
           id="ui-button-action"
           name="button-action"
           source="@/components/ui/button-action"
-          spec="Fill ink with the action type role, radius-sm, padding space-sm to space-md · minimum hit area 44px regardless of visual size · hands off to an external destination — Google Maps, phone, or WhatsApp — and never opens an in-page view · pill shape is declined here, the soft rectangle being the default action shape. Both documented instances are anchors, live under the page-level guard that cancels the navigation. The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page."
+          spec="An engraved rule, not a button: two --stroke-divider hairlines in accent-gold above and below the action type role in the same gold, with no fill, no side border and no radius. Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it. Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline. Minimum hit area 44px regardless of visual size. THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1, below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them. Both documented instances are anchors, live under the page-level guard that cancels the navigation. The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page."
         >
           <div className="flex flex-wrap gap-space-lg">
             <Variant
