@@ -36,6 +36,11 @@ const MOUNT_REVEAL = {
   section: "bg-transparent p-0 md:bg-surface-mount md:p-space-xs lg:p-space-sm",
 } as const;
 
+/* Foundations → Spacing. The sheet owns its padding rather than each caller choosing one: a
+   caller-chosen constant is how the sheet came to hold 32px at every width, which overran its own
+   margin at 320px. Climbs with the sheet so the margin stays near a tenth of its width. */
+const SHEET_PADDING = "p-space-lg md:p-space-2xl lg:p-space-3xl";
+
 const SHEET: Record<Stock, string> = {
   paper: "bg-surface-elevated shadow-sheet",
   contrast:
@@ -52,7 +57,9 @@ export function MountedSheet({
     <div
       className={`${MOUNT_BASE} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
-      <div className={`${SHEET[stock]} ${className ?? ""}`}>{children}</div>
+      <div className={`${SHEET[stock]} ${SHEET_PADDING} ${className ?? ""}`}>
+        {children}
+      </div>
     </div>
   );
 }

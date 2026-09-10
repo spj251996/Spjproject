@@ -27,7 +27,8 @@
   /* The tint every paper-landing shadow is drawn in. Declared so the colour is greppable and
      documented; the shadow tokens below still carry it as literal rgba, because a `color-mix()`
      that an engine does not support invalidates the whole box-shadow and drops the card's lift
-     entirely. Single-sourcing it is an open call — see tasks.md. */
+     entirely. Single-sourcing it was measured and rejected on that basis; if the tint ever changes
+     it is six edits, and that cost is accepted. DESIGN.md → Elevation & Depth carries the decision. */
   --color-shadow-warm: #3a301e;
 
   /* Foundations → Typography. Size, weight, tracking and leading ride the `--text-*` modifiers;
@@ -43,9 +44,14 @@
   --text-heading-xl--font-weight: 700;
   --text-heading-lg: 30px;
   --text-heading-lg--font-weight: 700;
+  --text-heading-lg-mobile: 24px;
+  --text-heading-lg-mobile--font-weight: 700;
   --text-date-primary: 30px;
   --text-date-primary--font-weight: 400;
   --text-date-primary--letter-spacing: 0.06em;
+  --text-date-primary-mobile: 24px;
+  --text-date-primary-mobile--font-weight: 400;
+  --text-date-primary-mobile--letter-spacing: 0.06em;
   --text-body: 17px;
   --text-body--font-weight: 400;
   --text-body--line-height: 1.7;
@@ -122,6 +128,24 @@
   --stroke-icon-lg: 1.5px;
   --stroke-thread: 1.6px;
   --stroke-thread-wisp: 1.2px;
+
+  /* Foundations → Layout → `mounted-pair`. The mount is one card creased down the middle, and this
+     is that fold. Carried as a literal gradient for the same reason the shadow recipes are. Lit from
+     the right — the system's single departure from light falling straight down, which Elevation &
+     Depth states. */
+  --crease-width: 22px;
+  --crease-fill: linear-gradient(
+    to right,
+    rgba(58, 48, 30, 0) 0px,
+    rgba(58, 48, 30, 0.03) 5px,
+    rgba(58, 48, 30, 0.08) 9px,
+    rgba(58, 48, 30, 0.12) 10.5px,
+    rgba(58, 48, 30, 0.05) 12px,
+    rgba(255, 255, 255, 0.06) 13px,
+    rgba(255, 255, 255, 0.18) 16px,
+    rgba(255, 255, 255, 0.09) 19px,
+    rgba(255, 255, 255, 0) 22px
+  );
 
   /* Foundations → Motion */
   --duration-fast: 200ms;

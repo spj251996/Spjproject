@@ -144,13 +144,15 @@ const TYPE_TOKENS: TypeToken[] = [
     size: 30,
     weight: 700,
     sample: "H2 and event names.",
+    responsive: { tablet: 30, mobile: 24 },
   },
   {
     token: "type-date-primary",
     family: "Cormorant Garamond",
     size: 30,
     weight: 400,
-    sample: "The major date line on the invite and event cards.",
+    sample: "The major date line on the invite and the event sheets.",
+    responsive: { tablet: 30, mobile: 24 },
   },
   {
     token: "type-body",
@@ -181,7 +183,8 @@ const TYPE_RULES = [
   "The script face appears only on couple names — never on body copy, headings, labels, or buttons.",
   "Long-form and functional information stays in Cormorant Garamond and Source Sans 3.",
   "Both serif and sans carry regular and bold only. Bold marks structural headings and actions; everything else sits at regular, including the date line, which separates from heading-lg at the same size by weight rather than by scale.",
-  "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. display-name is the only role that steps.",
+  "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. Three roles step: display-name across all three tiers, and heading-lg and date-primary together at md.",
+  "heading-lg and date-primary step together below md, both to 24px, never one alone — they are one size separated by weight, so moving either on its own would make the date read as subordinate to the event name above it. Koothattukulam at date-primary measures 224px against the 184px column a mounted section leaves at 320px.",
   "Body sizing is set for a mixed-age audience; it does not shrink below 17px at any viewport.",
   "Tracking and casing ride the class rather than the metadata column: date-primary 0.06em, eyebrow 0.2em uppercase, action 0.16em uppercase.",
 ];
@@ -205,6 +208,8 @@ const SPACING_RULES = [
   "Tight grouping uses space-2xs (8px) to space-sm (16px).",
   "Component padding uses space-sm (16px) to space-md (24px).",
   "Section spacing uses space-2xl (64px) to space-3xl (96px).",
+  "A section sheet's own padding is a three-step ladder, not one value: space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above it. It climbs with the sheet so the margin holds near a tenth of the sheet's width — measured at 11.8%, 9.2% and 8.7%.",
+  "The page holds space-md (24px) between the viewport edge and the mount at every tier, and does not climb: past the 1200px content cap the ground itself supplies the margin.",
   "Content never hugs the viewport edge; vertical rhythm stays consistent across sections.",
   "Named steps carry a space- prefix: the bare t-shirt keys double as the styling framework's width-scale keys, and the spacing value silently wins — a width cap named lg resolved to 32px.",
   "The zero step keeps the bare name 0 — it collides with nothing, and prefixing it stops every zero-valued step resolving. Its bar is correctly invisible.",
@@ -303,6 +308,7 @@ const SHAPE_RULES = [
   "Circles are containers for portraits only.",
   "Dividers are --stroke-divider (1px) lines in accent-gold — rendered under Foundations · Layout.",
   "event-card is retired: once every section is a mounted sheet, an elevated card INSIDE a section is a second elevation the system no longer needs. Two events now share one mount — see Foundations · Layout → mounted-pair.",
+  "Light falls from directly above: none of the three recipes carries a horizontal offset, so every surface darkens evenly on both sides. The mount's crease is the one exception — a fold only reads as a fold under a lateral light, so it is lit from the right.",
 ];
 
 /* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
@@ -442,7 +448,7 @@ export function FoundationsSections() {
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
-              <div className="flex flex-col gap-space-2xs p-space-lg">
+              <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">The invitation</p>
                 <p className="type-body text-ink">
                   Paper stock, hero — the one section that keeps its mount below
@@ -451,7 +457,7 @@ export function FoundationsSections() {
               </div>
             </MountedSheet>
             <MountedSheet>
-              <div className="flex flex-col gap-space-2xs p-space-lg">
+              <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">Where and when</p>
                 <p className="type-body text-ink">
                   Paper stock, ordinary section — its mount disappears below the
@@ -460,7 +466,7 @@ export function FoundationsSections() {
               </div>
             </MountedSheet>
             <MountedSheet stock="contrast">
-              <div className="flex flex-col gap-space-2xs p-space-lg">
+              <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">With all our love</p>
                 <p className="type-body">
                   Green stock — a real drop shadow and no inset highlight, and
@@ -472,18 +478,18 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Two sheets sharing one mount — the layout the two events take, replacing the retired event-card."
+          description="Two sheets pasted onto one mount — the layout the two events take, replacing the retired event-card. The mount is a single card creased down the middle and opened flat."
           id="layout-mounted-pair"
           name="mounted-pair"
           source="@/components/layout/mounted-pair"
-          spec="Same mount as mounted-sheet, on the same reveal ladder, with the reveal showing BETWEEN the two sheets as well as around them · the gap equals the mount's own reveal at every step — 16px above lg, 12px below — because an uneven gap reads as two cards set near each other while an even one reads as two leaves of one mounted card · below md the mount goes and the sheets stack, and each sheet takes shadow-mount in place of shadow-sheet, since standing on the ground it has to do the lifting the mount was doing. Resize the window to watch both changes happen together."
+          spec="Same mount as mounted-sheet, on the same reveal ladder, and the sheets take the same padding ladder too — one rule across both layouts · the gap is TWICE the reveal, 32px above lg and 24px below, because each sheet is centred on its own leaf of the opened card: the sheet's reveal on the fold side meets the other sheet's at the crease, so half the gap equals the outer reveal exactly · the mount carries its crease at the fold, 22px wide, lit from the right, hidden wherever a sheet covers it · below md the mount goes and the sheets stack, the crease goes with it since an unfolded card has no fold, and each sheet takes shadow-mount in place of shadow-sheet because standing on the ground it does the lifting the mount was doing. Resize the window to watch all of it happen together."
         >
           <MountedPair>
-            <div className="flex flex-col gap-space-2xs p-space-lg">
+            <div className="flex flex-col gap-space-2xs">
               <p className="type-eyebrow">The betrothal</p>
               <p className="type-body text-ink">4 January 2027 · Kozhikode</p>
             </div>
-            <div className="flex flex-col gap-space-2xs p-space-lg">
+            <div className="flex flex-col gap-space-2xs">
               <p className="type-eyebrow">The wedding</p>
               <p className="type-body text-ink">9 January 2027 · Ernakulam</p>
             </div>

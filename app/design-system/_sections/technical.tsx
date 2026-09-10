@@ -131,7 +131,7 @@ export function TechnicalSections() {
   return (
     <GallerySection
       id="responsive"
-      intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it — with one named exception: couple names step up in size at breakpoints.md too, since they would otherwise read as undersized once the tablet tier's wider gutters land."
+      intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it — with two named exceptions, both typographic. Couple names step up in size at breakpoints.md, since they would otherwise read as undersized once the tablet tier's wider gutters land. heading-lg and date-primary step up there together, having been held at 24px below it so the wedding city fits the narrower column."
       mapsTo="Interaction Rules → Responsive Behavior"
       source="--breakpoint-* / --touch-target"
       title="Interaction · Responsive Behavior"
