@@ -470,7 +470,7 @@ export function FoundationsSections() {
           id="layout-mounted-pair"
           name="mounted-pair"
           source="@/components/layout/mounted-pair"
-          spec="The reveal shows BETWEEN the two sheets as well as around them, so the gap equals the mount's padding at every step of the ladder — that is what makes the pair read as two leaves of one card rather than two cards side by side. Below md the mount goes, the sheets stack, and each sheet swaps shadow-sheet for shadow-mount so it does the lifting the mount was doing. Resize the window to watch both changes happen together."
+          spec="Same mount as mounted-sheet, on the same reveal ladder, with the reveal showing BETWEEN the two sheets as well as around them · the gap equals the mount's own reveal at every step — 16px above lg, 12px below — because an uneven gap reads as two cards set near each other while an even one reads as two leaves of one mounted card · below md the mount goes and the sheets stack, and each sheet takes shadow-mount in place of shadow-sheet, since standing on the ground it has to do the lifting the mount was doing. Resize the window to watch both changes happen together."
         >
           <MountedPair>
             <div className="flex flex-col gap-space-2xs p-space-lg">
