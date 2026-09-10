@@ -48,7 +48,7 @@ export function EventCard({
 }: EventCardProps) {
   return (
     <article
-      className={`relative z-(--z-elevated) flex flex-col gap-space-md rounded-lg bg-surface-elevated p-space-md shadow-[var(--shadow-elevated-near),var(--shadow-elevated-far)] ${className ?? ""}`}
+      className={`relative z-(--z-elevated) flex flex-col gap-space-md rounded-lg bg-surface-elevated p-space-md shadow-sheet ${className ?? ""}`}
     >
       <div className="flex flex-col gap-space-2xs">
         <h3 className="type-heading-lg text-ink">

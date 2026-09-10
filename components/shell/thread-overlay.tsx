@@ -70,13 +70,13 @@ export function ThreadOverlay({ demoProgress, className }: ThreadOverlayProps) {
         />
       </mask>
       <path
-        className={`${styles.path} stroke-(length:--stroke-thread-mobile) lg:hidden`}
+        className={`${styles.path} stroke-(length:--stroke-thread) lg:hidden`}
         d={MOBILE_PATH}
         mask={`url(#${maskId})`}
         vectorEffect="non-scaling-stroke"
       />
       <path
-        className={`${styles.path} hidden stroke-(length:--stroke-thread-desktop) lg:inline`}
+        className={`${styles.path} hidden stroke-(length:--stroke-thread) lg:inline`}
         d={DESKTOP_PATH}
         mask={`url(#${maskId})`}
         vectorEffect="non-scaling-stroke"

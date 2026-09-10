@@ -174,13 +174,13 @@ export function Family({ groups, className }: FamilyProps) {
           <path className={styles.reveal} d={DESKTOP_PATH} pathLength="1" />
         </mask>
         <path
-          className={`${styles.path} stroke-(length:--stroke-thread-mobile) lg:hidden`}
+          className={`${styles.path} stroke-(length:--stroke-thread) lg:hidden`}
           d={MOBILE_PATH}
           mask={`url(#${mobileMaskId})`}
           vectorEffect="non-scaling-stroke"
         />
         <path
-          className={`${styles.path} hidden stroke-(length:--stroke-thread-desktop) lg:inline`}
+          className={`${styles.path} hidden stroke-(length:--stroke-thread) lg:inline`}
           d={DESKTOP_PATH}
           mask={`url(#${desktopMaskId})`}
           vectorEffect="non-scaling-stroke"

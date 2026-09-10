@@ -82,7 +82,7 @@ export function Timeline({ title, rituals, className }: TimelineProps) {
             />
           </mask>
           <path
-            className={`${styles.line} stroke-(length:--stroke-thread-mobile) lg:stroke-(length:--stroke-thread-desktop)`}
+            className={`${styles.line} stroke-(length:--stroke-thread)`}
             d={SPINE_PATH}
             mask={`url(#${maskId})`}
             vectorEffect="non-scaling-stroke"

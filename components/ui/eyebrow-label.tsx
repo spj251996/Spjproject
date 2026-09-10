@@ -2,24 +2,18 @@ import type { ReactNode } from "react";
 
 /* DESIGN.md → Components → UI → `eyebrow-label`.
 
-   The two grounds the doc names are the ivory base and the deep-green contrast section; `onContrast`
-   selects between the two gold tokens rather than letting a caller pass a color. */
+   The `onContrast` prop is gone: it existed only to pick between two gold tokens, and there is now
+   one gold that does not vary by ground. DESIGN.md → Foundations → Colors states the eyebrow is
+   always gold and never ink, so this component takes no color decision at all. */
 
 interface EyebrowLabelProps {
   children: ReactNode;
-  onContrast?: boolean;
   className?: string;
 }
 
-export function EyebrowLabel({
-  children,
-  onContrast = false,
-  className,
-}: EyebrowLabelProps) {
+export function EyebrowLabel({ children, className }: EyebrowLabelProps) {
   return (
-    <p
-      className={`type-eyebrow ${onContrast ? "text-accent-gold" : "text-accent-gold-on-base"} ${className ?? ""}`}
-    >
+    <p className={`type-eyebrow text-accent-gold ${className ?? ""}`}>
       {children}
     </p>
   );

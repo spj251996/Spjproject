@@ -10,7 +10,7 @@ interface DividerProps {
 export function Divider({ className }: DividerProps) {
   return (
     <hr
-      className={`border-t-(length:--stroke-divider) border-accent-gold-on-base ${className ?? ""}`}
+      className={`border-t-(length:--stroke-divider) border-accent-gold ${className ?? ""}`}
     />
   );
 }

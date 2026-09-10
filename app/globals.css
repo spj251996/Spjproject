@@ -15,6 +15,17 @@ body {
   color: var(--color-ink);
 }
 
+/* Interaction Rules → Text selection: nothing on the site is selectable. The webkit property is
+   not redundant — iOS Safari needs it — and the callout suppression is separate again, without which
+   the long-press selection menu still appears there. Applied to `html` so it inherits everywhere,
+   including into the fixed background layer. Selection is not focus: nothing here weakens keyboard
+   reachability or the ring below. */
+html {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* Interaction Rules → Focus. One rule reading one variable: a component that establishes a
    contrast ground rebinds `--focus-ring-color` on its own subtree rather than adding a second
    ring definition. */
