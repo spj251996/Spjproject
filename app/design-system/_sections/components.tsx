@@ -7,7 +7,6 @@ import {
   sampleTimelineNodes,
 } from "@/app/design-system/_data/ui-samples";
 import {
-  Card,
   ChromeFrame,
   GallerySection,
   RuleList,
@@ -16,7 +15,6 @@ import {
 import { ThreadOverlay } from "@/components/shell/thread-overlay";
 import { ButtonAction } from "@/components/ui/button-action";
 import { EventCard } from "@/components/ui/event-card";
-import { EyebrowLabel } from "@/components/ui/eyebrow-label";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
 import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { Portrait } from "@/components/ui/portrait";
@@ -223,26 +221,6 @@ export function ComponentsSections() {
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />
           </ChromeFrame>
-        </Specimen>
-
-        <Specimen
-          description="Small uppercase label establishing what the content beneath it is."
-          id="ui-eyebrow-label"
-          name="eyebrow-label"
-          source="@/components/ui/eyebrow-label"
-          spec="The eyebrow type role in accent-gold on the ivory base, or accent-gold on the deep-green contrast section · used above event card fields, family group headings, and section headings. Both grounds are painted demo wells: whether the closing section takes the contrast treatment is an Open Decision, so that ground appears nowhere in the page itself yet."
-        >
-          <div className="grid gap-space-md md:grid-cols-2">
-            <Card label="On the ivory base — accent-gold">
-              <EyebrowLabel>Venue</EyebrowLabel>
-            </Card>
-            <Card
-              className="bg-surface-contrast"
-              label="On the contrast section — accent-gold"
-            >
-              <EyebrowLabel>Venue</EyebrowLabel>
-            </Card>
-          </div>
         </Specimen>
 
         <Specimen

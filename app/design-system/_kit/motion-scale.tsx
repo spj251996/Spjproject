@@ -3,12 +3,15 @@
    Both are static: neither animates, so `prefers-reduced-motion` is satisfied by construction rather
    than by a gate a later edit could drop.
 
-   P2 colour split follows DESIGN.md → Colors' own rule about the two golds. The bar fill and the
-   bezier curve are meaning-bearing marks, so they take `{colors.accent-gold}`; the empty
-   track, the reference diagonal, the control handles and the control-point rings are decorative
-   scaffolding that carries no meaning on its own, which is exactly what `{colors.accent-gold}` is
-   for. The plot well uses the sunken fallback (deepest surface + the documented divider) — this
-   system defines no recessed level. */
+   The split used to be two golds — one meaning-bearing, one decorative. There is now ONE gold, so
+   the distinction moved to a different axis: the bar fill and the bezier curve stay
+   `{colors.accent-gold}` because they carry the measurement, while the empty track, the reference
+   diagonal, the control handles and the control-point rings take `{colors.surface-mount}` — a real
+   token that reads as quiet ground against the base.
+
+   This matters more than it looks: while both were gold, all three duration bars rendered as one
+   solid bar and the scale conveyed nothing at all. The plot well uses the sunken fallback (deepest
+   surface + the documented divider) — this system defines no recessed level. */
 
 /* Gallery layout constants (skill → visualizer-kit.md → documented bare-px exceptions). */
 const TRACK_W = 280;
@@ -57,7 +60,7 @@ export function DurationScale({ items }: DurationScaleProps) {
                   {ms}ms
                 </span>
 
-                <div className="h-[6px] w-full bg-accent-gold">
+                <div className="h-[6px] w-full bg-surface-mount">
                   <div
                     className="h-full bg-accent-gold"
                     style={{ width: barPx }}
@@ -100,7 +103,7 @@ function EasingPlot({ token, curve }: EasingToken) {
           width={CANVAS}
         >
           <line
-            className="stroke-accent-gold"
+            className="stroke-surface-mount"
             strokeDasharray="2 2"
             x1={sx(0)}
             x2={sx(1)}
@@ -108,14 +111,14 @@ function EasingPlot({ token, curve }: EasingToken) {
             y2={sy(1)}
           />
           <line
-            className="stroke-accent-gold"
+            className="stroke-surface-mount"
             x1={sx(0)}
             x2={sx(x1)}
             y1={sy(0)}
             y2={sy(y1)}
           />
           <line
-            className="stroke-accent-gold"
+            className="stroke-surface-mount"
             x1={sx(1)}
             x2={sx(x2)}
             y1={sy(1)}

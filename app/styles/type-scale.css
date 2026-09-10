@@ -53,12 +53,16 @@
     line-height: var(--text-body--line-height);
   }
 
+  /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
+     ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
+     caller pairing the class with a token and being able to get it wrong. */
   .type-eyebrow {
     font-family: var(--font-sans);
     font-size: var(--text-eyebrow);
     font-weight: var(--text-eyebrow--font-weight);
     letter-spacing: var(--text-eyebrow--letter-spacing);
     text-transform: uppercase;
+    color: var(--color-accent-gold);
   }
 
   .type-action {

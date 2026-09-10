@@ -1,6 +1,5 @@
 import { Divider } from "../layout/divider";
 import { ButtonAction } from "./button-action";
-import { EyebrowLabel } from "./eyebrow-label";
 
 /* DESIGN.md → Components → UI → `event-card`.
 
@@ -29,7 +28,7 @@ interface EventCardProps {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-space-3xs">
-      <EyebrowLabel>{label}</EyebrowLabel>
+      <p className="type-eyebrow">{label}</p>
       <p className="type-body text-ink">{value}</p>
     </div>
   );

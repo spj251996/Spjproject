@@ -22,7 +22,6 @@ import {
 } from "@/app/design-system/_kit";
 import { Divider } from "@/components/layout/divider";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { EyebrowLabel } from "@/components/ui/eyebrow-label";
 
 /* curate-gallery — Bucket 1, the nine Foundations sections, in DESIGN.md document order
    (gallery-spine.md § 1–9). One module for the whole bucket, per the skill's pinned `sections/`
@@ -159,7 +158,8 @@ const TYPE_TOKENS: TypeToken[] = [
     family: "Source Sans 3",
     size: 12,
     weight: 500,
-    sample: "Always gold, never ink — on both stocks, in every section.",
+    sample:
+      "ALWAYS GOLD — the one type role that carries its own color, on both stocks, in every section. There is no eyebrow component: the class is the whole thing.",
   },
   {
     token: "type-action",
@@ -436,7 +436,7 @@ export function FoundationsSections() {
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
               <div className="flex flex-col gap-space-2xs p-space-lg">
-                <EyebrowLabel>The invitation</EyebrowLabel>
+                <p className="type-eyebrow">The invitation</p>
                 <p className="type-body text-ink">
                   Paper stock, hero — the one section that keeps its mount below
                   the md breakpoint.
@@ -445,7 +445,7 @@ export function FoundationsSections() {
             </MountedSheet>
             <MountedSheet>
               <div className="flex flex-col gap-space-2xs p-space-lg">
-                <EyebrowLabel>Where and when</EyebrowLabel>
+                <p className="type-eyebrow">Where and when</p>
                 <p className="type-body text-ink">
                   Paper stock, ordinary section — its mount disappears below the
                   md breakpoint.
@@ -454,7 +454,7 @@ export function FoundationsSections() {
             </MountedSheet>
             <MountedSheet stock="contrast">
               <div className="flex flex-col gap-space-2xs p-space-lg">
-                <EyebrowLabel>With all our love</EyebrowLabel>
+                <p className="type-eyebrow">With all our love</p>
                 <p className="type-body">
                   Green stock — a real drop shadow and no inset highlight, and
                   it rebinds the focus ring on its own subtree.
