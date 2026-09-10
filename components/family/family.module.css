@@ -1,0 +1,93 @@
+/* DESIGN.md → Domain Components → Family, thread choreography.
+
+   Reveal mechanism. Masking, as settled for `thread-overlay`: the token stroke widths
+   ({stroke.thread-*}) are screen-pixel values, so the visible stroke must carry
+   `vector-effect: non-scaling-stroke`, which moves its geometry — dash pattern included — out of the
+   user space `stroke-dasharray` is authored in. A mask is measured in the SVG's own coordinate
+   system, which that opt-out does not touch, so masking is what survives the token constraint.
+
+   What differs from the overlay is the mask's CONTENT, and the path's own geometry forces it. The
+   overlay wipes a rectangle top-to-bottom because both of its curves descend monotonically, so the
+   wipe front crosses the thread exactly once. This gesture "wraps the bride side" — it doubles back
+   on itself by definition — so a wipe front would cross it more than once and paint the far side of
+   the loop before the near side. The mask is therefore a stroked copy of the same path, revealed
+   along its own arc length. The dash pattern rides the MASK path, which carries no
+   `vector-effect`, so its arithmetic stays exact in the SVG's own coordinate system: this is the
+   masking mechanism, not the eliminated one.
+
+   `pathLength="1"` normalizes the mask path, so `stroke-dasharray: 1 2` puts one dash the exact
+   length of the path against a gap twice that: offset 0 paints the whole path, offset 1 paints
+   nothing. The gap is 2 rather than 1 because an exactly-1 gap ends where the next dash begins, and
+   that boundary landed on the path's own end — measured as a 9 px sliver still painted at zero
+   progress.
+
+   `#fff` is mask luminance, not a design color. The 6-unit mask stroke is coverage in the SVG's own
+   user space, wide enough to blanket the visible stroke under the non-uniform stretch; it carries no
+   design value and no token exists for it. Its cap is butt, not round: a round cap extends the dash
+   by half the mask stroke width in real user units, which `pathLength` does not normalize, so it
+   leaked a painted stub at zero progress (measured: 49 px still painted at offset 1).
+
+   Per-case defaults (the base state is a claim about the first paint):
+   - base — fully drawn. Correct for reduced motion, which DESIGN.md requires to render the thread
+     complete and static, and correct before any script runs.
+   - `prefers-reduced-motion: no-preference` — undrawn until the section activates, so the gesture
+     has somewhere to start. Declared INSIDE the query, so it is never attached when the preference
+     is set; there is no global kill-switch to fall back on.
+   - `scripting: none` — back to fully drawn. Without it, an engine that never runs the activation
+     effect would hold the no-preference undrawn state forever, which is the one case where a missed
+     default renders nothing rather than something plain.
+
+   The glow emphasis the entry ends on is delayed by {motion.duration.slow} so it lands as the draw
+   finishes rather than as it starts. It is scoped to the no-preference query on purpose: the doc
+   puts the thread at its RESTING glow level whenever reduced motion is active. Its radius and
+   opacity are inferred — "slight glow emphasis" names no value. */
+
+.thread {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-thread);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.path {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  filter: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color-thread-red) 40%, transparent)
+  );
+}
+
+.reveal {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 6;
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    transition: stroke-dashoffset var(--duration-slow) var(--ease-settle);
+  }
+
+  .thread[data-activated="false"] .reveal {
+    stroke-dashoffset: 1;
+  }
+
+  .thread[data-activated="true"] .path {
+    filter: drop-shadow(
+      0 0 4px color-mix(in srgb, var(--color-thread-red) 55%, transparent)
+    );
+    transition: filter var(--duration-fast) var(--ease-settle)
+      var(--duration-slow);
+  }
+}
+
+@media (scripting: none) {
+  .thread[data-activated="false"] .reveal {
+    stroke-dashoffset: 0;
+  }
+}

@@ -1,0 +1,74 @@
+/* DESIGN.md → Components → Shell → `thread-overlay`.
+
+   Reveal mechanism. The doc sanctions "stroke-dashoffset or masking"; stroke-dashoffset is
+   eliminated by this component's own tokens rather than by preference. The token stroke widths
+   ({stroke.thread-*}) are screen-pixel values, which a viewBox stretched to the viewport can only
+   honor through `vector-effect: non-scaling-stroke` — and that moves the stroke's geometry, dash
+   pattern included, out of the user space `stroke-dasharray` is authored in, so the dash pattern
+   and the path desynchronize and a partial reveal paints as disconnected fragments. Measured in
+   Chromium under a 4x-by-2x stretch: dashoffset at half the path length painted down to row
+   1005/2000 without the scaling opt-out but 1999/2000 with it, while a mask at half height painted
+   to 999/2000. A mask is measured in the SVG's own coordinate system, which `non-scaling-stroke`
+   does not opt out of, so masking is what survives the token constraint. Verified by render.
+
+   The mask is a rectangle wiped top to bottom rather than a stroke drawn along the path: both
+   curves descend monotonically, so the wipe front crosses the thread exactly once and the two
+   reveals are equivalent.
+
+   Drive mechanism. Scroll progress is a state the platform expresses declaratively, so the reveal is
+   a scroll-progress-timeline animation and this component ships no JavaScript. Two consequences the
+   scripted form would have owned: the reduced-motion gate is structural (the animation is *declared*
+   inside the no-preference query, so it cannot be attached when the preference is set), and there is
+   no pre-script default to reconcile on the first client frame.
+
+   The base state is the rest state the doc requires — fully drawn at its resting glow level — so an
+   engine without scroll-driven animations, or a reader with reduced motion, falls through to a
+   correct static render rather than a hidden thread.
+
+   Glow is inferred: "minimal to absent on the ivory base" is a range, not a value. The three stacked
+   shadows are scoped to the deep-green contrast section, which DESIGN.md → Open Decisions leaves
+   untaken, so that variant is deliberately not emitted. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-thread);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.path {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  filter: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color-thread-red) 40%, transparent)
+  );
+}
+
+/* `#fff` here is mask luminance, not a design color — the mask carries no palette value. */
+.reveal {
+  fill: #fff;
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transform: scaleY(var(--thread-progress, 1));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll(root block)) {
+    .overlay:not([data-posed]) .reveal {
+      animation: thread-draw linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes thread-draw {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}

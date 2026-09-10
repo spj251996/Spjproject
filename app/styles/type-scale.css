@@ -1,0 +1,75 @@
+/* Foundations → Typography, the class half of the type scale.
+
+   The `--text-*` tokens carry size, weight, letter-spacing and line-height, but the framework has
+   no `--text-*` modifier for `font-family` or `text-transform`. A size utility alone therefore
+   cannot express a semantic role, which is why each role gets a class rather than being consumed
+   as a bare `text-<role>` utility. The classes read their metrics back out of the tokens instead of
+   restating values, and sit in the components layer so ordinary utilities still win on override. */
+
+@layer components {
+  /* Couple names only. This is the one role that steps across viewports; it steps at `md` as well
+     as `lg` (Responsive Behavior names it as the single exception to `lg` being the layout switch),
+     inside framework variants so the token references survive. */
+  .type-display-name {
+    font-family: var(--font-script);
+    font-size: var(--text-display-name-mobile);
+    font-weight: var(--text-display-name-mobile--font-weight);
+
+    @variant md {
+      font-size: var(--text-display-name-tablet);
+      font-weight: var(--text-display-name-tablet--font-weight);
+    }
+
+    @variant lg {
+      font-size: var(--text-display-name-desktop);
+      font-weight: var(--text-display-name-desktop--font-weight);
+    }
+  }
+
+  .type-heading-xl {
+    font-family: var(--font-serif);
+    font-size: var(--text-heading-xl);
+    font-weight: var(--text-heading-xl--font-weight);
+  }
+
+  .type-heading-lg {
+    font-family: var(--font-serif);
+    font-size: var(--text-heading-lg);
+    font-weight: var(--text-heading-lg--font-weight);
+  }
+
+  /* Separates from `.type-heading-lg` at the same size by weight, not by scale. */
+  .type-date-primary {
+    font-family: var(--font-serif);
+    font-size: var(--text-date-primary);
+    font-weight: var(--text-date-primary--font-weight);
+    letter-spacing: var(--text-date-primary--letter-spacing);
+  }
+
+  .type-body {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: var(--text-body--font-weight);
+    line-height: var(--text-body--line-height);
+  }
+
+  /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
+     ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
+     caller pairing the class with a token and being able to get it wrong. */
+  .type-eyebrow {
+    font-family: var(--font-sans);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--text-eyebrow--font-weight);
+    letter-spacing: var(--text-eyebrow--letter-spacing);
+    text-transform: uppercase;
+    color: var(--color-accent-gold);
+  }
+
+  .type-action {
+    font-family: var(--font-sans);
+    font-size: var(--text-action);
+    font-weight: var(--text-action--font-weight);
+    letter-spacing: var(--text-action--letter-spacing);
+    text-transform: uppercase;
+  }
+}

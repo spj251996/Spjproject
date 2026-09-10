@@ -1,0 +1,34 @@
+{
+  "name": "sf-wedding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SF Wedding — a single-page, red-thread wedding invitation for Flemy and Sebastian, built with Next.js.",
+  "scripts": {
+    "dev": "next dev",
+    "prebuild": "node content/verify.ts",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "test": "node --test content/*.test.ts",
+    "validate:content": "node content/verify.ts"
+  },
+  "dependencies": {
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2",
+    "@playwright/cli": "^0.1.17",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}
