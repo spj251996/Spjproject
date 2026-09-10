@@ -36,17 +36,8 @@ npm run lint    # lint
 ```
 app/                    Next.js App Router routes and layout
 public/                 Static assets served as-is
-.claude/docs/           Project docs (see below)
 legacy-html/            Archived pre-Next.js static-HTML build — reference-only, not served
 ```
-
-## Docs
-
-Scope, build order, and design system live in `.claude/docs/`:
-
-- [`PROJECT.md`](.claude/docs/PROJECT.md) — what the site is and why: audience, scope, requirements, non-goals.
-- [`IMPLEMENTATION-PLAN.md`](.claude/docs/IMPLEMENTATION-PLAN.md) — build order, phases, and the gate that closes each one.
-- [`DESIGN.md`](.claude/docs/DESIGN.md) — tokens, foundations, and components; the single source of truth for every visual value.
 
 ## Deployment
 
