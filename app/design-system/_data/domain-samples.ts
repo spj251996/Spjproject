@@ -19,9 +19,10 @@ export const sampleInvite = {
     "A placeholder summary of the engagement — the date, the city, and a single sentence of context, at the length the real copy will run to.",
 };
 
-/** Both sides, three members each — the arrangement the family section is composed around. Every
-    `portrait` is null so each renders its designed missing-image state; portrait assets are carried
-    to the sample-asset ask rather than invented. */
+/** Both sides, three top-level members each; the groom's sibling additionally nests a spouse and a
+    child, so the samples exercise the nested shape rather than only the flat one. Five people are
+    reachable on the groom's side, three at the top level. Every `portrait` is null so each renders its
+    designed missing-image state; portrait assets are carried to the sample-asset ask, not invented. */
 export const sampleFamilyGroups: FamilyGroup[] = [
   {
     id: "placeholder-bride-family",
@@ -75,7 +76,25 @@ export const sampleFamilyGroups: FamilyGroup[] = [
         name: "Placeholder Sibling Name",
         relationship: "Placeholder Relation",
         portrait: null,
-        family: [],
+        /* The ONLY non-empty `family` in the samples, and deliberately so: with every sample flat, the
+           gallery renders correctly and cannot show that `family` is dropped. This one makes the gap
+           visible — until the Family section descends into it, two members below simply do not appear. */
+        family: [
+          {
+            id: "placeholder-groom-sibling-spouse",
+            name: "Placeholder Spouse Name",
+            relationship: "Placeholder Relation",
+            portrait: null,
+            family: [],
+          },
+          {
+            id: "placeholder-groom-sibling-child",
+            name: "Placeholder Child Name",
+            relationship: "Placeholder Relation",
+            portrait: null,
+            family: [],
+          },
+        ],
       },
     ],
   },
