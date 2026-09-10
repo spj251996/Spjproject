@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 /* curate-gallery visualizer kit — SwatchGrid (skill → references/visualizer-kit.md § 1).
 
    P2: the ColorCard adopts this project's only raised level — elevated paper (surface-elevated plus
-   the two green-tinted shadows composed into ONE box-shadow, as `event-card` does; two utilities
+   one complete box-shadow per layer, as `mounted-sheet` does; two utilities
    would overwrite each other). That level defines no border, so the card frame carries the shadow
    pair instead of a stroke, and the documented divider separates swatch from text. Radius is the
    project's card radius, `{rounded.lg}`. */

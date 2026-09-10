@@ -5,7 +5,7 @@
    Numerals in placeholder dates, times and phone numbers are zeroed so no reader mistakes demo data
    for the real invitation, while the character count stays true to the real string.
 
-   Props were read from each component, not inferred from a type name: `event-card`, `portrait` and
+   Props were read from each component, not inferred from a type name: `portrait` and
    `timeline-node` all take FLAT SCALARS, not a `WeddingEvent` / `FamilyMember` / `Ritual` object,
    because the portable layer may not name a domain type. The object-shaped samples the domain
    components consume live in `./domain-samples`. */
@@ -13,8 +13,8 @@
 import type { RitualStatus } from "@/content/types";
 
 /** Every optional field present. Field set matches `WeddingEvent` minus `id`, which the card,
-    being portable, does not take. Consumed by Components → UI → `event-card`. */
-export const sampleEventCard = {
+    being portable, does not take. Consumed by the `button-action` specimen for real action targets. */
+export const sampleEvent = {
   name: "Placeholder Ceremony",
   city: "Placeholder City",
   date: "Saturday, 00 Month 0000",
@@ -29,7 +29,7 @@ export const sampleEventCard = {
 /** Same card with every optional field absent — demonstrates the documented behavior that a missing
     venue, time, address or action target renders nothing rather than a placeholder label
     (rules/data-integrity.md → Missing values). */
-export const sampleEventCardMinimal = {
+export const sampleEventMinimal = {
   name: "Placeholder Reception",
   city: "Placeholder City",
   date: "Saturday, 00 Month 0000",

@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
    "meaning-bearing marks on ivory", which is exactly what those lines are.
 
    Specimen headings take `type-heading-lg` at h3/h4 following the project's own precedent:
-   `event-card` renders its `<h3>` name at that role, which DESIGN.md → Typography defines as "H2 and
+   A domain section renders its `<h3>` name at that role, which DESIGN.md → Typography defines as "H2 and
    event names" — a name role, not a level role. */
 
 interface GallerySectionProps {

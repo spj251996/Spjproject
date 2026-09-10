@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import {
-  sampleEventCard,
-  sampleEventCardMinimal,
+  sampleEvent,
   sampleGalleryPanel,
   samplePortrait,
   sampleTimelineNodes,
@@ -14,7 +13,6 @@ import {
 } from "@/app/design-system/_kit";
 import { ThreadOverlay } from "@/components/shell/thread-overlay";
 import { ButtonAction } from "@/components/ui/button-action";
-import { EventCard } from "@/components/ui/event-card";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
 import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { Portrait } from "@/components/ui/portrait";
@@ -134,32 +132,15 @@ export function ComponentsSections() {
               className="items-start"
               label="Map — hands off to an external map destination"
             >
-              <ButtonAction href={sampleEventCard.mapUrl}>Map</ButtonAction>
+              <ButtonAction href={sampleEvent.mapUrl}>Map</ButtonAction>
             </Variant>
             <Variant
               className="items-start"
               label="Contact — hands off to phone or WhatsApp"
             >
-              <ButtonAction href={`tel:${sampleEventCard.contactPhone}`}>
+              <ButtonAction href={`tel:${sampleEvent.contactPhone}`}>
                 Contact
               </ButtonAction>
-            </Variant>
-          </div>
-        </Specimen>
-
-        <Specimen
-          description="Elevated paper container holding one complete event, used twice — engagement and wedding."
-          id="ui-event-card"
-          name="event-card"
-          source="@/components/ui/event-card"
-          spec="Sits on z-elevated in the ivory family at radius-lg, separated from the base by paper edge and a slight shadow rather than a color change · event name and city in heading-lg, date in date-primary, and venue, time and address in body under eyebrow labels · every field is visible at rest, none behind a disclosure control · carries two button-action instances, map and contact. The second card is the same component with every optional field absent: a missing venue, time, address or action target renders nothing, never a placeholder label."
-        >
-          <div className="grid gap-space-lg md:grid-cols-2">
-            <Variant label="Every optional field present">
-              <EventCard {...sampleEventCard} />
-            </Variant>
-            <Variant label="Every optional field absent">
-              <EventCard {...sampleEventCardMinimal} />
             </Variant>
           </div>
         </Specimen>

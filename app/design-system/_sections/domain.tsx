@@ -67,8 +67,8 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     name: "Event Info",
     home: "app/page.tsx",
     composes:
-      "Two event-card instances — engagement, then wedding. Cards reveal independently with fade and translate as they enter; the thread continues through as a quiet connector with no dramatic motion of its own.",
-    note: "Not yet composed — app/page.tsx is a holding page today (gallery-spine.md → D3), later-phase work rather than a defect. Both event-card instances already render live at Components · UI.",
+      "One mounted-pair holding the two events — engagement, then wedding. The two sheets reveal independently with fade and translate as they enter; the thread continues through as a quiet connector with no dramatic motion of its own.",
+    note: "Not yet composed — app/page.tsx is a holding page today (gallery-spine.md → D3), later-phase work rather than a defect. The pair itself renders live at Foundations · Layout.",
   },
 ];
 
@@ -125,7 +125,7 @@ export function DomainSections() {
 
       <GallerySection
         id="event-info"
-        intro="Dense composition. Two event-card instances side by side on desktop, stacked as two screen-feel segments on mobile with engagement first."
+        intro="Dense composition. One mounted-pair holding the two events side by side on desktop, stacking to two sheets on mobile with engagement first."
         mapsTo="Domain Components → Event Info"
         title="Domain · Event Info"
       >

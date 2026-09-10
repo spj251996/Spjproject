@@ -21,6 +21,7 @@ import {
   type TypeToken,
 } from "@/app/design-system/_kit";
 import { Divider } from "@/components/layout/divider";
+import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 
 /* curate-gallery — Bucket 1, the nine Foundations sections, in DESIGN.md document order
@@ -272,7 +273,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     radius: "var(--radius-lg)",
     value: "16px",
     usage:
-      "Retained, but no longer the shape of a card. KNOWN DRIFT: event-card still carries it — see the rules below.",
+      "Retained for the gallery modal. Nothing at section scale uses it, and the one component that still carried it — event-card — has been retired rather than restyled.",
   },
   {
     token: "circle",
@@ -295,7 +296,7 @@ const SHAPE_RULES = [
   "The radius tokens remain for the few elements that still take one — image-placeholder and the gallery modal. Nothing at section scale uses them.",
   "Circles are containers for portraits only.",
   "Dividers are --stroke-divider (1px) lines in accent-gold — rendered under Foundations · Layout.",
-  "KNOWN DRIFT: event-card still carries radius-lg, which the doc no longer sanctions at that scale. Left to Phase 3, which owns the card's redesign.",
+  "event-card is retired: once every section is a mounted sheet, an elevated card INSIDE a section is a second elevation the system no longer needs. Two events now share one mount — see Foundations · Layout → mounted-pair.",
 ];
 
 /* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
@@ -462,6 +463,25 @@ export function FoundationsSections() {
               </div>
             </MountedSheet>
           </div>
+        </Specimen>
+
+        <Specimen
+          description="Two sheets sharing one mount — the layout the two events take, replacing the retired event-card."
+          id="layout-mounted-pair"
+          name="mounted-pair"
+          source="@/components/layout/mounted-pair"
+          spec="The reveal shows BETWEEN the two sheets as well as around them, so the gap equals the mount's padding at every step of the ladder — that is what makes the pair read as two leaves of one card rather than two cards side by side. Below md the mount goes, the sheets stack, and each sheet swaps shadow-sheet for shadow-mount so it does the lifting the mount was doing. Resize the window to watch both changes happen together."
+        >
+          <MountedPair>
+            <div className="flex flex-col gap-space-2xs p-space-lg">
+              <p className="type-eyebrow">The betrothal</p>
+              <p className="type-body text-ink">4 January 2027 · Kozhikode</p>
+            </div>
+            <div className="flex flex-col gap-space-2xs p-space-lg">
+              <p className="type-eyebrow">The wedding</p>
+              <p className="type-body text-ink">9 January 2027 · Ernakulam</p>
+            </div>
+          </MountedPair>
         </Specimen>
 
         <Specimen
