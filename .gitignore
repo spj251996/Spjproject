@@ -18,6 +18,7 @@ next-env.d.ts
 tmp/
 .playwright/
 .playwright-cli/
+.superpowers/
 
 # OS
 .DS_Store
