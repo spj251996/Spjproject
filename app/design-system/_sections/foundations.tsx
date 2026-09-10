@@ -105,6 +105,12 @@ const COLOR_GROUPS: SwatchGroup[] = [
           "The thread and its wisp, at one colour on both stocks — a real thread does not change colour, it catches light differently.",
       },
       {
+        token: "--color-shadow-warm",
+        name: "shadow-warm",
+        usage:
+          "The tint every shadow that lands on paper is drawn in — all three elevation recipes, at different alphas. Never a fill, never text.",
+      },
+      {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
         usage:

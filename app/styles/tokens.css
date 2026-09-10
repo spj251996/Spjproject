@@ -24,6 +24,11 @@
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
+  /* The tint every paper-landing shadow is drawn in. Declared so the colour is greppable and
+     documented; the shadow tokens below still carry it as literal rgba, because a `color-mix()`
+     that an engine does not support invalidates the whole box-shadow and drops the card's lift
+     entirely. Single-sourcing it is an open call — see tasks.md. */
+  --color-shadow-warm: #3a301e;
 
   /* Foundations → Typography. Size, weight, tracking and leading ride the `--text-*` modifiers;
      family and text-transform have no modifier, which is what forces the `.type-*` class layer
