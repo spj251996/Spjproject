@@ -30,14 +30,12 @@ export function TypeScaleList({ tokens }: TypeScaleListProps) {
       {tokens.map((token) => (
         /* 280px metadata column is a gallery layout constant, not a design token. */
         <div
-          className="grid grid-cols-1 gap-space-2xs border-b-(length:--stroke-divider) border-accent-gold-on-base py-space-md last:border-b-0 md:grid-cols-[280px_1fr] md:items-baseline md:gap-space-md"
+          className="grid grid-cols-1 gap-space-2xs border-b-(length:--stroke-divider) border-accent-gold py-space-md last:border-b-0 md:grid-cols-[280px_1fr] md:items-baseline md:gap-space-md"
           key={token.token}
         >
           <div className="flex flex-col gap-space-3xs">
-            <span className="type-body text-accent-gold-on-base">
-              .{token.token}
-            </span>
-            <span className="type-eyebrow text-accent-gold-on-base">
+            <span className="type-body text-accent-gold">.{token.token}</span>
+            <span className="type-eyebrow text-accent-gold">
               {token.family} · {token.size}px / {token.weight}
               {token.lh === undefined ? "" : ` / lh ${token.lh}`}
             </span>

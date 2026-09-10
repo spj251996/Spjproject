@@ -28,9 +28,7 @@ export function DepthGrid({ levels }: DepthGridProps) {
         >
           <span className="type-body text-ink">{name}</span>
           <div className="flex flex-col gap-space-3xs">
-            <span className="type-eyebrow text-accent-gold-on-base">
-              {spec}
-            </span>
+            <span className="type-eyebrow text-accent-gold">{spec}</span>
             <span className="type-body text-ink">{usage}</span>
           </div>
         </div>

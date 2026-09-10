@@ -40,7 +40,7 @@ function SuppressionTip({ position }: { position: TipPosition | null }) {
     <div
       /* max-w is a gallery layout constant (skill → visualizer-kit.md → documented bare-px
          exceptions); the offset keeps the tip clear of the cursor. */
-      className="type-body pointer-events-none fixed z-(--z-modal) max-w-[240px] rounded-sm border-(length:--stroke-divider) border-accent-gold-on-base bg-surface-elevated px-space-sm py-space-xs text-ink"
+      className="type-body pointer-events-none fixed z-(--z-modal) max-w-[240px] rounded-sm border-(length:--stroke-divider) border-accent-gold bg-surface-elevated px-space-sm py-space-xs text-ink"
       role="status"
       style={{ left: position.x + 12, top: position.y + 12 }}
     >

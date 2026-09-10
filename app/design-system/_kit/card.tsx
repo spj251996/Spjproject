@@ -27,13 +27,13 @@ export function Card({ label, className, children }: CardProps) {
   return (
     <div className="flex flex-col gap-space-2xs">
       <div
-        className={`flex min-h-space-3xl items-center justify-center border-(length:--stroke-divider) border-accent-gold-on-base bg-surface-base p-space-md ${className ?? ""}`}
+        className={`flex min-h-space-3xl items-center justify-center border-(length:--stroke-divider) border-accent-gold bg-surface-base p-space-md ${className ?? ""}`}
       >
         {children}
       </div>
 
       {label === undefined ? null : (
-        <span className="type-body text-accent-gold-on-base">{label}</span>
+        <span className="type-body text-accent-gold">{label}</span>
       )}
     </div>
   );

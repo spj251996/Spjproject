@@ -27,7 +27,7 @@ export default function DesignSystemPage() {
           Every sub-section of DESIGN.md, rendered with the design system it
           documents.
         </p>
-        <p className="type-body text-accent-gold-on-base">
+        <p className="type-body text-accent-gold">
           Dev-only reference, excluded from the production build.
         </p>
       </header>

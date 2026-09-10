@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
    token names. This project's type scale has 7 roles and no mono/code, caption or emphasis role, so
    several of the skill's label roles fall back to `type-body` per visualizer-kit.md → Generic
    fallbacks. Hierarchy is carried by color instead: `text-ink` for content (headings, names, prose)
-   and `text-accent-gold-on-base` for reference marks (doc paths, code paths, token names, spec
+   and `text-accent-gold` for reference marks (doc paths, code paths, token names, spec
    notes) — DESIGN.md → Colors assigns gold to "eyebrow labels ... and link accent details" and to
    "meaning-bearing marks on ivory", which is exactly what those lines are.
 
@@ -41,11 +41,9 @@ export function GallerySection({
     >
       <div className="flex flex-col gap-space-2xs">
         <h2 className="type-heading-lg text-ink">{title}</h2>
-        <p className="type-body text-accent-gold-on-base">
-          → DESIGN.md → {mapsTo}
-        </p>
+        <p className="type-body text-accent-gold">→ DESIGN.md → {mapsTo}</p>
         {source === undefined ? null : (
-          <p className="type-body text-accent-gold-on-base">{source}</p>
+          <p className="type-body text-accent-gold">{source}</p>
         )}
         <p className="type-body text-ink">{intro}</p>
       </div>
@@ -64,7 +62,7 @@ interface SpecimenGroupProps {
 export function SpecimenGroup({ title, children }: SpecimenGroupProps) {
   return (
     <div className="flex flex-col gap-space-md">
-      <h3 className="type-eyebrow text-accent-gold-on-base">{title}</h3>
+      <h3 className="type-eyebrow text-accent-gold">{title}</h3>
       <div className="flex flex-col gap-space-lg">{children}</div>
     </div>
   );
@@ -100,7 +98,7 @@ export function Specimen({
       <Heading className="type-heading-lg text-ink">{name}</Heading>
 
       {source === undefined ? null : (
-        <p className="type-body text-accent-gold-on-base">{source}</p>
+        <p className="type-body text-accent-gold">{source}</p>
       )}
       {description === undefined ? null : (
         <p className="type-body text-ink">{description}</p>
@@ -109,7 +107,7 @@ export function Specimen({
       {children}
 
       {spec === undefined ? null : (
-        <p className="type-body text-accent-gold-on-base">{spec}</p>
+        <p className="type-body text-accent-gold">{spec}</p>
       )}
     </div>
   );

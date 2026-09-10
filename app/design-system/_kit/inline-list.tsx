@@ -27,9 +27,7 @@ export function InlineList({ entries }: InlineListProps) {
       {entries.map((entry) => (
         <li className="flex flex-col gap-space-3xs" key={entry.name}>
           <span className="type-body text-ink">{entry.name}</span>
-          <span className="type-body text-accent-gold-on-base">
-            {entry.home}
-          </span>
+          <span className="type-body text-accent-gold">{entry.home}</span>
           <span className="type-body text-ink">{entry.composes}</span>
           {entry.note === undefined ? null : (
             <span className="type-body text-ink">{entry.note}</span>

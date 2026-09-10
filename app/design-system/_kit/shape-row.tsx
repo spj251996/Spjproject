@@ -28,10 +28,10 @@ export function ShapeRow({ items }: ShapeRowProps) {
         >
           <span
             aria-hidden="true"
-            className="h-[64px] w-[64px] bg-surface-elevated shadow-[var(--shadow-elevated-near),var(--shadow-elevated-far)]"
+            className="h-[64px] w-[64px] bg-surface-elevated shadow-sheet"
             style={{ borderRadius: radius }}
           />
-          <span className="type-body whitespace-nowrap text-accent-gold-on-base">
+          <span className="type-body whitespace-nowrap text-accent-gold">
             {token} · {value}
           </span>
           <span className="type-body text-center text-ink">{usage}</span>

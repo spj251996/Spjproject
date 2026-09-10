@@ -43,7 +43,7 @@ function Variant({ label, className, children }: VariantProps) {
   return (
     <div className={`flex flex-col gap-space-2xs ${className ?? ""}`}>
       {children}
-      <span className="type-body text-accent-gold-on-base">{label}</span>
+      <span className="type-body text-accent-gold">{label}</span>
     </div>
   );
 }
@@ -227,17 +227,17 @@ export function ComponentsSections() {
           id="ui-eyebrow-label"
           name="eyebrow-label"
           source="@/components/ui/eyebrow-label"
-          spec="The eyebrow type role in accent-gold-on-base on the ivory base, or accent-gold on the deep-green contrast section · used above event card fields, family group headings, and section headings. Both grounds are painted demo wells: whether the closing section takes the contrast treatment is an Open Decision, so that ground appears nowhere in the page itself yet."
+          spec="The eyebrow type role in accent-gold on the ivory base, or accent-gold on the deep-green contrast section · used above event card fields, family group headings, and section headings. Both grounds are painted demo wells: whether the closing section takes the contrast treatment is an Open Decision, so that ground appears nowhere in the page itself yet."
         >
           <div className="grid gap-space-md md:grid-cols-2">
-            <Card label="On the ivory base — accent-gold-on-base">
+            <Card label="On the ivory base — accent-gold">
               <EyebrowLabel>Venue</EyebrowLabel>
             </Card>
             <Card
               className="bg-surface-contrast"
               label="On the contrast section — accent-gold"
             >
-              <EyebrowLabel onContrast>Venue</EyebrowLabel>
+              <EyebrowLabel>Venue</EyebrowLabel>
             </Card>
           </div>
         </Specimen>

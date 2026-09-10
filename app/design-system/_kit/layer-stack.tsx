@@ -42,7 +42,7 @@ export function LayerStack({ items }: LayerStackProps) {
       >
         {ordered.map((item, index) => (
           <div
-            className="absolute flex flex-col gap-space-3xs overflow-hidden rounded-none border-(length:--stroke-divider) border-accent-gold-on-base bg-surface-base p-space-sm"
+            className="absolute flex flex-col gap-space-3xs overflow-hidden rounded-none border-(length:--stroke-divider) border-accent-gold bg-surface-base p-space-sm"
             key={item.token}
             style={{
               top: index * OFFSET_Y,
@@ -53,12 +53,8 @@ export function LayerStack({ items }: LayerStackProps) {
             }}
           >
             <span className="type-body text-ink">{item.role}</span>
-            <span className="type-body text-accent-gold-on-base">
-              {item.token}
-            </span>
-            <span className="type-eyebrow text-accent-gold-on-base">
-              {item.value}
-            </span>
+            <span className="type-body text-accent-gold">{item.token}</span>
+            <span className="type-eyebrow text-accent-gold">{item.value}</span>
           </div>
         ))}
       </div>

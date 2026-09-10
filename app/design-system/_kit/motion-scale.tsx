@@ -4,7 +4,7 @@
    than by a gate a later edit could drop.
 
    P2 colour split follows DESIGN.md → Colors' own rule about the two golds. The bar fill and the
-   bezier curve are meaning-bearing marks, so they take `{colors.accent-gold-on-base}`; the empty
+   bezier curve are meaning-bearing marks, so they take `{colors.accent-gold}`; the empty
    track, the reference diagonal, the control handles and the control-point rings are decorative
    scaffolding that carries no meaning on its own, which is exactly what `{colors.accent-gold}` is
    for. The plot well uses the sunken fallback (deepest surface + the documented divider) — this
@@ -43,7 +43,7 @@ export function DurationScale({ items }: DurationScaleProps) {
           return (
             <div className="flex items-center gap-space-sm" key={token}>
               <span
-                className="type-body shrink-0 text-accent-gold-on-base"
+                className="type-body shrink-0 text-accent-gold"
                 style={{ width: LABEL_W }}
               >
                 {token}
@@ -51,7 +51,7 @@ export function DurationScale({ items }: DurationScaleProps) {
 
               <div className="relative shrink-0" style={{ width: TRACK_W }}>
                 <span
-                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+4px)] whitespace-nowrap text-accent-gold-on-base"
+                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+4px)] whitespace-nowrap text-accent-gold"
                   style={{ left: barPx }}
                 >
                   {ms}ms
@@ -59,15 +59,15 @@ export function DurationScale({ items }: DurationScaleProps) {
 
                 <div className="h-[6px] w-full bg-accent-gold">
                   <div
-                    className="h-full bg-accent-gold-on-base"
+                    className="h-full bg-accent-gold"
                     style={{ width: barPx }}
                   />
                 </div>
 
-                <span className="type-eyebrow absolute top-[calc(100%+4px)] left-0 text-accent-gold-on-base">
+                <span className="type-eyebrow absolute top-[calc(100%+4px)] left-0 text-accent-gold">
                   0ms
                 </span>
-                <span className="type-eyebrow absolute top-[calc(100%+4px)] right-0 text-accent-gold-on-base">
+                <span className="type-eyebrow absolute top-[calc(100%+4px)] right-0 text-accent-gold">
                   {maxMs}ms
                 </span>
               </div>
@@ -89,7 +89,7 @@ function EasingPlot({ token, curve }: EasingToken) {
   return (
     <div className="flex flex-col gap-space-3xs">
       <div
-        className="rounded-sm border-(length:--stroke-divider) border-accent-gold-on-base bg-surface-base"
+        className="rounded-sm border-(length:--stroke-divider) border-accent-gold bg-surface-base"
         style={{ width: CANVAS, height: CANVAS }}
       >
         <svg
@@ -122,7 +122,7 @@ function EasingPlot({ token, curve }: EasingToken) {
             y2={sy(y2)}
           />
           <path
-            className="fill-none stroke-accent-gold-on-base"
+            className="fill-none stroke-accent-gold"
             d={`M ${sx(0)} ${sy(0)} C ${sx(x1)} ${sy(y1)} ${sx(x2)} ${sy(y2)} ${sx(1)} ${sy(1)}`}
             strokeLinecap="round"
             strokeWidth={2}
@@ -144,7 +144,7 @@ function EasingPlot({ token, curve }: EasingToken) {
         </svg>
       </div>
 
-      <span className="type-body text-accent-gold-on-base">{token}</span>
+      <span className="type-body text-accent-gold">{token}</span>
       <span className="type-body text-ink">
         cubic-bezier({x1}, {y1}, {x2}, {y2})
       </span>

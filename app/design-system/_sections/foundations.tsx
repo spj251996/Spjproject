@@ -31,7 +31,7 @@ import { Divider } from "@/components/layout/divider";
    and spacing come from the `space-*` scale and list markers are omitted rather than designed. */
 
 /* § 1 — Colors. Four role groups covering all eight tokens, in the doc's table order. There is no
-   Borders group: DESIGN.md defines no border token, and the divider borrows accent-gold-on-base at
+   Borders group: DESIGN.md defines no border token, and the divider borrows accent-gold at
    `--stroke-divider`. Per-swatch `usage` carries the contrast ratios from Accessibility Rules — a
    sanctioned cross-reference (gallery-spine.md → Sanctioned cross-references). */
 const COLOR_GROUPS: SwatchGroup[] = [
@@ -76,7 +76,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "Gold marks eyebrow labels, dividers, active jump-link state, and link accent details. No border token exists — the divider borrows accent-gold-on-base at --stroke-divider.",
+    note: "Gold marks eyebrow labels, dividers, active jump-link state, and link accent details. No border token exists — the divider borrows accent-gold at --stroke-divider.",
     tokens: [
       {
         token: "--color-accent-gold",
@@ -85,8 +85,8 @@ const COLOR_GROUPS: SwatchGroup[] = [
           "Decorative gold on ivory at ~2.1:1, carrying no meaning on its own; legible gold on the contrast section at ~6.6:1.",
       },
       {
-        token: "--color-accent-gold-on-base",
-        name: "accent-gold-on-base",
+        token: "--color-accent-gold",
+        name: "accent-gold",
         usage:
           "Gold for text, icons, and meaning-bearing marks on ivory. ~4.7:1 — any gold that must be read or recognized uses this one.",
       },
@@ -276,7 +276,7 @@ const SHAPE_RULES = [
   "Primary shape is the soft rectangle, radius --radius-sm (8px) to --radius-lg (16px). Edges are clean and slightly softened, never exaggerated.",
   "Circles are containers for portraits only.",
   "Pill buttons are used sparingly rather than as a default.",
-  "Dividers are --stroke-divider (1px) lines in accent-gold-on-base — rendered under Foundations · Layout.",
+  "Dividers are --stroke-divider (1px) lines in accent-gold — rendered under Foundations · Layout.",
 ];
 
 /* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
@@ -288,14 +288,13 @@ const DEPTH_LEVELS: DepthLevel[] = [
     name: "Base paper",
     spec: "surface-base · no shadow · the hairline is the demo card's edge, not part of the level",
     className:
-      "border-(length:--stroke-divider) border-accent-gold-on-base bg-surface-base",
+      "border-(length:--stroke-divider) border-accent-gold bg-surface-base",
     usage: "The ivory page ground — the only page background.",
   },
   {
     name: "Elevated paper",
-    spec: "surface-elevated · shadow-elevated-near + shadow-elevated-far · radius-lg",
-    className:
-      "rounded-lg bg-surface-elevated shadow-[var(--shadow-elevated-near),var(--shadow-elevated-far)]",
+    spec: "surface-elevated · shadow-sheet · square",
+    className: "rounded-lg bg-surface-elevated shadow-sheet",
     usage:
       "Event cards and key containers — a sheet catching slightly more light, not a new surface.",
   },
@@ -339,7 +338,7 @@ const ELEVATION_RULES = [
 const ICON_RULES = [
   "All icons come from one consistent set — thin, stroke-based, with no fills, rounded stroke ends, and slightly organic curves rather than perfect geometry.",
   "Stroke is --stroke-icon (1.25px) to --stroke-icon-lg (1.5px), consistent across the set, aligned to the pixel grid so small sizes stay sharp.",
-  "Icons use accent-gold-on-base on the ivory base and ink-on-contrast on the contrast section.",
+  "Icons use accent-gold on the ivory base and ink-on-contrast on the contrast section.",
   "The intended feel is etched or engraved line work rather than UI iconography.",
   "The set is Lucide with a customized stroke. Individual bespoke SVGs may be drawn to match when Lucide has no suitable glyph.",
 ];
@@ -392,7 +391,7 @@ export function FoundationsSections() {
         <RuleList rules={LAYOUT_RULES} />
 
         <Specimen
-          description="Thin rule separating grouped content within a section — --stroke-divider (1px) in accent-gold-on-base."
+          description="Thin rule separating grouped content within a section — --stroke-divider (1px) in accent-gold."
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
@@ -454,7 +453,7 @@ export function FoundationsSections() {
         id="elevation"
         intro="Depth comes from paper edge, subtle shadow, slight tone difference, and overlap — never from strong 3D or skeuomorphic effects. This sub-section documents two token kinds, the paper-elevation treatment and the six-layer z-order, so both render here and the z-index scale gets no section of its own."
         mapsTo="Foundations → Elevation & Depth"
-        source="--shadow-elevated-* / --z-*"
+        source="--shadow-* / --z-*"
         title="Foundations · Elevation & Depth"
       >
         <SpecimenGroup title="Paper elevation">

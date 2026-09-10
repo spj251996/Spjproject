@@ -24,13 +24,13 @@ export function BarScale({ items, varPrefix }: BarScaleProps) {
     <div className="grid grid-cols-[auto_1fr] items-center gap-space-2xs">
       {items.map(({ token, px }) => (
         <Fragment key={token}>
-          <span className="type-body whitespace-nowrap text-accent-gold-on-base">
+          <span className="type-body whitespace-nowrap text-accent-gold">
             {token} · {px}px
           </span>
           {/* 20px bar height is a gallery layout constant; the WIDTH is the real token value. */}
           <span
             aria-hidden="true"
-            className="h-[20px] bg-accent-gold-on-base"
+            className="h-[20px] bg-accent-gold"
             style={{ width: `var(${varPrefix}${token})` }}
           />
         </Fragment>

@@ -26,10 +26,9 @@ interface DeviceRulerProps {
 }
 
 const USED_LEVEL =
-  "border-(length:--stroke-divider) border-accent-gold-on-base bg-surface-base";
+  "border-(length:--stroke-divider) border-accent-gold bg-surface-base";
 
-const UNUSED_LEVEL =
-  "bg-surface-elevated shadow-[var(--shadow-elevated-near),var(--shadow-elevated-far)]";
+const UNUSED_LEVEL = "bg-surface-elevated shadow-sheet";
 
 export function DeviceRuler({ stops }: DeviceRulerProps) {
   return (
@@ -40,9 +39,9 @@ export function DeviceRuler({ stops }: DeviceRulerProps) {
           key={token}
           style={{ width: boxW, height: boxH }}
         >
-          <span className="type-eyebrow text-accent-gold-on-base">{px}</span>
+          <span className="type-eyebrow text-accent-gold">{px}</span>
           <span className="type-eyebrow text-center text-ink">{device}</span>
-          <span className="type-body text-accent-gold-on-base">{token}</span>
+          <span className="type-body text-accent-gold">{token}</span>
         </div>
       ))}
     </div>

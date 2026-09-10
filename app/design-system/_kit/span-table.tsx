@@ -20,7 +20,7 @@ interface SpanTableProps {
 }
 
 const CELL =
-  "border-b-(length:--stroke-divider) border-accent-gold-on-base p-space-2xs text-left align-top";
+  "border-b-(length:--stroke-divider) border-accent-gold p-space-2xs text-left align-top";
 
 /* Gallery layout constant (skill → visualizer-kit.md → documented bare-px exceptions), the same
    allowance DurationScale's TRACK_W/LABEL_W take. Below this the Key-changes column is squeezed to a
@@ -43,13 +43,9 @@ export function SpanTable({ zones }: SpanTableProps) {
       >
         <thead>
           <tr>
-            <th className={`type-eyebrow text-accent-gold-on-base ${CELL}`}>
-              Name
-            </th>
-            <th className={`type-eyebrow text-accent-gold-on-base ${CELL}`}>
-              Width
-            </th>
-            <th className={`type-eyebrow text-accent-gold-on-base ${CELL}`}>
+            <th className={`type-eyebrow text-accent-gold ${CELL}`}>Name</th>
+            <th className={`type-eyebrow text-accent-gold ${CELL}`}>Width</th>
+            <th className={`type-eyebrow text-accent-gold ${CELL}`}>
               Key changes
             </th>
           </tr>
@@ -61,13 +57,13 @@ export function SpanTable({ zones }: SpanTableProps) {
                 {index === 0 ? (
                   <>
                     <td
-                      className={`type-eyebrow whitespace-nowrap text-accent-gold-on-base ${CELL}`}
+                      className={`type-eyebrow whitespace-nowrap text-accent-gold ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.name}
                     </td>
                     <td
-                      className={`type-eyebrow whitespace-nowrap text-accent-gold-on-base ${CELL}`}
+                      className={`type-eyebrow whitespace-nowrap text-accent-gold ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.width}
