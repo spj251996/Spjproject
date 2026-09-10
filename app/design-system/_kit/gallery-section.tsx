@@ -41,9 +41,9 @@ export function GallerySection({
     >
       <div className="flex flex-col gap-space-2xs">
         <h2 className="type-heading-lg text-ink">{title}</h2>
-        <p className="type-body text-accent-gold">→ DESIGN.md → {mapsTo}</p>
+        <p className="type-body text-ink">→ DESIGN.md → {mapsTo}</p>
         {source === undefined ? null : (
-          <p className="type-body text-accent-gold">{source}</p>
+          <p className="type-body text-ink">{source}</p>
         )}
         <p className="type-body text-ink">{intro}</p>
       </div>
@@ -98,7 +98,7 @@ export function Specimen({
       <Heading className="type-heading-lg text-ink">{name}</Heading>
 
       {source === undefined ? null : (
-        <p className="type-body text-accent-gold">{source}</p>
+        <p className="type-body text-ink">{source}</p>
       )}
       {description === undefined ? null : (
         <p className="type-body text-ink">{description}</p>
@@ -106,9 +106,7 @@ export function Specimen({
 
       {children}
 
-      {spec === undefined ? null : (
-        <p className="type-body text-accent-gold">{spec}</p>
-      )}
+      {spec === undefined ? null : <p className="type-body text-ink">{spec}</p>}
     </div>
   );
 }

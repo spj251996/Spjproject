@@ -41,7 +41,7 @@ export function DeviceRuler({ stops }: DeviceRulerProps) {
         >
           <span className="type-eyebrow text-accent-gold">{px}</span>
           <span className="type-eyebrow text-center text-ink">{device}</span>
-          <span className="type-body text-accent-gold">{token}</span>
+          <span className="type-body text-ink">{token}</span>
         </div>
       ))}
     </div>

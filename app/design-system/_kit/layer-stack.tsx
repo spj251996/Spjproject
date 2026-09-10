@@ -53,7 +53,7 @@ export function LayerStack({ items }: LayerStackProps) {
             }}
           >
             <span className="type-body text-ink">{item.role}</span>
-            <span className="type-body text-accent-gold">{item.token}</span>
+            <span className="type-body text-ink">{item.token}</span>
             <span className="type-eyebrow text-accent-gold">{item.value}</span>
           </div>
         ))}

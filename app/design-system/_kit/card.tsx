@@ -33,7 +33,7 @@ export function Card({ label, className, children }: CardProps) {
       </div>
 
       {label === undefined ? null : (
-        <span className="type-body text-accent-gold">{label}</span>
+        <span className="type-body text-ink">{label}</span>
       )}
     </div>
   );

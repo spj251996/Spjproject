@@ -46,7 +46,7 @@ function Variant({ label, children }: VariantProps) {
   return (
     <div className="flex flex-col gap-space-2xs">
       {children}
-      <span className="type-body text-accent-gold">{label}</span>
+      <span className="type-body text-ink">{label}</span>
     </div>
   );
 }

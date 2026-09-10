@@ -24,7 +24,7 @@ export function BarScale({ items, varPrefix }: BarScaleProps) {
     <div className="grid grid-cols-[auto_1fr] items-center gap-space-2xs">
       {items.map(({ token, px }) => (
         <Fragment key={token}>
-          <span className="type-body whitespace-nowrap text-accent-gold">
+          <span className="type-body whitespace-nowrap text-ink">
             {token} · {px}px
           </span>
           {/* 20px bar height is a gallery layout constant; the WIDTH is the real token value. */}

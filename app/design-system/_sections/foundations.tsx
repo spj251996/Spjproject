@@ -254,16 +254,25 @@ const MOTION_RULES = [
    the container they are applied to, not the value. */
 const SHAPE_ITEMS: ShapeItem[] = [
   {
+    token: "square",
+    radius: "0",
+    value: "no token",
+    usage:
+      "THE SECTION SHAPE. The mount and both stocks take no radius at all — this is what makes a section read as paper rather than as a dialog.",
+  },
+  {
     token: "--radius-sm",
     radius: "var(--radius-sm)",
     value: "8px",
-    usage: "Soft rectangle, lower bound — the primary shape.",
+    usage:
+      "Retained for the few elements that still take a radius — image-placeholder and the gallery modal. Nothing at section scale uses it.",
   },
   {
     token: "--radius-lg",
     radius: "var(--radius-lg)",
     value: "16px",
-    usage: "Soft rectangle, upper bound — cards and key containers.",
+    usage:
+      "Retained, but no longer the shape of a card. KNOWN DRIFT: event-card still carries it — see the rules below.",
   },
   {
     token: "circle",
@@ -277,7 +286,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     radius: "9999px",
     value: "no token",
     usage:
-      "Permitted sparingly rather than as a default. Currently unused — button-action explicitly declines it.",
+      "Unused, and now unusable at section scale. The action control has no box at all — it is an engraved rule.",
   },
 ];
 

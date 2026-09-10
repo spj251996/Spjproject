@@ -43,7 +43,7 @@ export function DurationScale({ items }: DurationScaleProps) {
           return (
             <div className="flex items-center gap-space-sm" key={token}>
               <span
-                className="type-body shrink-0 text-accent-gold"
+                className="type-body shrink-0 text-ink"
                 style={{ width: LABEL_W }}
               >
                 {token}
@@ -144,7 +144,7 @@ function EasingPlot({ token, curve }: EasingToken) {
         </svg>
       </div>
 
-      <span className="type-body text-accent-gold">{token}</span>
+      <span className="type-body text-ink">{token}</span>
       <span className="type-body text-ink">
         cubic-bezier({x1}, {y1}, {x2}, {y2})
       </span>

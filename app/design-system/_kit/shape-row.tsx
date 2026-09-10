@@ -31,7 +31,7 @@ export function ShapeRow({ items }: ShapeRowProps) {
             className="h-[64px] w-[64px] bg-surface-elevated shadow-sheet"
             style={{ borderRadius: radius }}
           />
-          <span className="type-body whitespace-nowrap text-accent-gold">
+          <span className="type-body whitespace-nowrap text-ink">
             {token} · {value}
           </span>
           <span className="type-body text-center text-ink">{usage}</span>

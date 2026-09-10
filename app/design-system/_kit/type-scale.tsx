@@ -34,7 +34,7 @@ export function TypeScaleList({ tokens }: TypeScaleListProps) {
           key={token.token}
         >
           <div className="flex flex-col gap-space-3xs">
-            <span className="type-body text-accent-gold">.{token.token}</span>
+            <span className="type-body text-ink">.{token.token}</span>
             <span className="type-eyebrow text-accent-gold">
               {token.family} · {token.size}px / {token.weight}
               {token.lh === undefined ? "" : ` / lh ${token.lh}`}

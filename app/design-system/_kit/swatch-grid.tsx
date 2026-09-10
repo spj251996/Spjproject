@@ -33,7 +33,7 @@ function ColorCard({ token, name, usage }: SwatchToken) {
 
       <div className="flex flex-1 flex-col gap-space-3xs bg-surface-elevated p-space-sm">
         <span className="type-body text-ink">{name}</span>
-        <span className="type-body text-accent-gold">{token}</span>
+        <span className="type-body text-ink">{token}</span>
         <span className="type-body text-ink">{usage}</span>
       </div>
     </div>
