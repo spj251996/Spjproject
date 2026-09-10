@@ -14,8 +14,7 @@ export const events: WeddingEvent[] = validateEvents([
         time: "10:00 AM",
         venue: "St. Antony's Syro-Malabar Church",
         address: "Paropady, Kozhikode, Keralam",
-        mapUrl:
-          "https://maps.google.com/?q=St+Antony+Church+Paropady+Calicut+Kerala",
+        mapUrl: "https://maps.app.goo.gl/MfHgyAGiCzPJD1rQ8",
       },
       {
         id: "engagement-reception",
@@ -23,7 +22,7 @@ export const events: WeddingEvent[] = validateEvents([
         time: "12:00 PM",
         venue: "St. Antony's Church Parish Hall",
         address: "Paropady, Kozhikode, Keralam",
-        mapUrl: "https://maps.app.goo.gl/MzLafcPRD1wS6t717",
+        mapUrl: "https://maps.app.goo.gl/zGrd6SAFTZk3gAEx9",
       },
     ],
   },
@@ -39,7 +38,7 @@ export const events: WeddingEvent[] = validateEvents([
         time: "10:00 AM",
         venue: "St. John the Baptist Holy Catholic Church",
         address: "Koothattukulam, Ernakulam, Keralam",
-        mapUrl: "https://maps.app.goo.gl/BBER36V36QARUMPt6",
+        mapUrl: "https://maps.app.goo.gl/Js7xUDTPfWqoeTc18",
       },
       {
         id: "wedding-reception",
@@ -47,8 +46,7 @@ export const events: WeddingEvent[] = validateEvents([
         time: "12:00 PM",
         venue: "Chinnas Auditorium",
         address: "Koothattukulam, Ernakulam, Keralam",
-        mapUrl:
-          "https://maps.google.com/?q=Chinnas+Auditorium+Koothattukulam+Ernakulam",
+        mapUrl: "https://maps.app.goo.gl/Pg9yYASjETXhZcA28",
       },
     ],
   },
