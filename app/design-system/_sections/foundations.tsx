@@ -108,13 +108,13 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-shadow-warm",
         name: "shadow-warm",
         usage:
-          "The tint every shadow that lands on paper is drawn in — all three elevation recipes, at different alphas. Never a fill, never text.",
+          "The tint every shadow that lands on paper is drawn in — 0.10/0.26 in shadow-mount, 0.16 in shadow-sheet, 0.14/0.34 in shadow-sheet-contrast. Carried as literal rgba on purpose: color-mix single-sources it but an engine without support drops the whole box-shadow and the sheet loses its lift.",
       },
       {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
         usage:
-          "The thread's glow only. Never a stroke, never text. A glow cannot exist on paper — ivory has 27x less room to add light than the green stock — so on paper this is an ink bleed made by darkening.",
+          "The thread's glow only — 0.68/0.44/0.30 on paper, 0.98/0.62/0.38 on the green stock, all literal for the same reason as the shadow tint. A glow cannot exist on paper: ivory has 27x less room to add light than the green stock, so on paper this is an ink bleed made by darkening.",
       },
     ],
   },
