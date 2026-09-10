@@ -163,6 +163,15 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Descriptions, addresses, wishes, all long-form copy.",
   },
   {
+    token: "type-caption",
+    family: "Source Sans 3",
+    size: 14,
+    weight: 400,
+    lh: 1.5,
+    sample:
+      "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading. Never long-form. Every reference line in this gallery is set in it.",
+  },
+  {
     token: "type-eyebrow",
     family: "Source Sans 3",
     size: 12,
@@ -186,6 +195,8 @@ const TYPE_RULES = [
   "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. Three roles step: display-name across all three tiers, and heading-lg and date-primary together at md.",
   "heading-lg and date-primary step together below md, both to 24px, never one alone — they are one size separated by weight, so moving either on its own would make the date read as subordinate to the event name above it. Koothattukulam at date-primary measures 224px against the 184px column a mounted section leaves at 320px.",
   "Body sizing is set for a mixed-age audience; it does not shrink below 17px at any viewport.",
+  "type-caption is the only role smaller than body, and the only one under that floor — legitimate because it never carries long-form copy, only a line read in a glance. Its tighter leading is part of that scoping, not a styling preference.",
+  "Unlike the eyebrow, type-caption owns no color: it takes ink at 11.74:1 on paper and ink-on-contrast at 12.55:1 on the green stock, so it is legal on both without an exception. Hierarchy here comes from size alone, which is what engraved stock does — one ink, struck once, the secondary line set smaller rather than lightened.",
   "Tracking and casing ride the class rather than the metadata column: date-primary 0.06em, eyebrow 0.2em uppercase, action 0.16em uppercase.",
 ];
 

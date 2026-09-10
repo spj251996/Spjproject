@@ -69,6 +69,18 @@
     line-height: var(--text-body--line-height);
   }
 
+  /* The only role smaller than body, and the one place the scale goes under the mixed-age floor —
+     legitimate because it never carries long-form copy. The tighter leading is part of that scoping:
+     it suits a line read in a glance and fights a paragraph read continuously. Unlike `.type-eyebrow`
+     this role owns no color, so it inherits ink on paper and ink-on-contrast on the green stock and
+     is legal on both without an exception. */
+  .type-caption {
+    font-family: var(--font-sans);
+    font-size: var(--text-caption);
+    font-weight: var(--text-caption--font-weight);
+    line-height: var(--text-caption--line-height);
+  }
+
   /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
      ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
      caller pairing the class with a token and being able to get it wrong. */

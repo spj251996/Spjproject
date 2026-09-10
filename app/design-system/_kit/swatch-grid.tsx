@@ -49,7 +49,7 @@ export function SwatchGrid({ groups }: SwatchGridProps) {
     <div className="flex flex-col gap-space-lg">
       {groups.map((group) => (
         <div className="flex flex-col gap-space-sm" key={group.label}>
-          <span className="type-eyebrow text-accent-gold">{group.label}</span>
+          <span className="type-eyebrow">{group.label}</span>
           {group.note === undefined ? null : (
             <div className="type-body text-ink">{group.note}</div>
           )}

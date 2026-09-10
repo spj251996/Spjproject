@@ -42,11 +42,9 @@ export function SpanTable({ zones }: SpanTableProps) {
       >
         <thead>
           <tr>
-            <th className={`type-eyebrow text-accent-gold ${CELL}`}>Name</th>
-            <th className={`type-eyebrow text-accent-gold ${CELL}`}>Width</th>
-            <th className={`type-eyebrow text-accent-gold ${CELL}`}>
-              Key changes
-            </th>
+            <th className={`type-eyebrow ${CELL}`}>Name</th>
+            <th className={`type-eyebrow ${CELL}`}>Width</th>
+            <th className={`type-eyebrow ${CELL}`}>Key changes</th>
           </tr>
         </thead>
         <tbody>
@@ -56,13 +54,13 @@ export function SpanTable({ zones }: SpanTableProps) {
                 {index === 0 ? (
                   <>
                     <td
-                      className={`type-eyebrow whitespace-nowrap text-accent-gold ${CELL}`}
+                      className={`type-eyebrow whitespace-nowrap ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.name}
                     </td>
                     <td
-                      className={`type-eyebrow whitespace-nowrap text-accent-gold ${CELL}`}
+                      className={`type-eyebrow whitespace-nowrap ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.width}

@@ -3,12 +3,15 @@ import type { ReactNode } from "react";
 /* curate-gallery scaffold kit — catalog primitives (skill → references/scaffold-kit.md).
 
    P2 alignment for the whole kit, resolved from DESIGN.md rather than the skill's portfolio example
-   token names. This project's type scale has 7 roles and no mono/code, caption or emphasis role, so
-   several of the skill's label roles fall back to `type-body` per visualizer-kit.md → Generic
-   fallbacks. Hierarchy is carried by color instead: `text-ink` for content (headings, names, prose)
-   and `text-accent-gold` for reference marks (doc paths, code paths, token names, spec
-   notes) — DESIGN.md → Colors assigns gold to "eyebrow labels ... and link accent details" and to
-   "meaning-bearing marks on ivory", which is exactly what those lines are.
+   token names. This project's type scale has no mono/code or emphasis role, so those of the skill's
+   label roles fall back to `type-body` per visualizer-kit.md → Generic fallbacks.
+
+   Hierarchy is carried by SIZE, not by color. Reference marks — the doc path, the code path, the
+   spec note — take `type-caption`; content — headings, names, prose, intros — stays at `type-body`.
+   An earlier pass carried this distinction in gold instead, which put 17 body-size texts at 2.39:1
+   and outside the exception's documented scope; the fix moved everything to ink and flattened the
+   hierarchy entirely until `type-caption` existed to restore it. Both texts are ink now, so both
+   measure 11.74:1 and the separation costs no contrast at all.
 
    Specimen headings take `type-heading-lg` at h3/h4 following the project's own precedent:
    A domain section renders its `<h3>` name at that role, which DESIGN.md → Typography defines as "H2 and
@@ -41,9 +44,9 @@ export function GallerySection({
     >
       <div className="flex flex-col gap-space-2xs">
         <h2 className="type-heading-lg text-ink">{title}</h2>
-        <p className="type-body text-ink">→ DESIGN.md → {mapsTo}</p>
+        <p className="type-caption text-ink">→ DESIGN.md → {mapsTo}</p>
         {source === undefined ? null : (
-          <p className="type-body text-ink">{source}</p>
+          <p className="type-caption text-ink">{source}</p>
         )}
         <p className="type-body text-ink">{intro}</p>
       </div>
@@ -62,7 +65,7 @@ interface SpecimenGroupProps {
 export function SpecimenGroup({ title, children }: SpecimenGroupProps) {
   return (
     <div className="flex flex-col gap-space-md">
-      <h3 className="type-eyebrow text-accent-gold">{title}</h3>
+      <h3 className="type-eyebrow">{title}</h3>
       <div className="flex flex-col gap-space-lg">{children}</div>
     </div>
   );
@@ -98,7 +101,7 @@ export function Specimen({
       <Heading className="type-heading-lg text-ink">{name}</Heading>
 
       {source === undefined ? null : (
-        <p className="type-body text-ink">{source}</p>
+        <p className="type-caption text-ink">{source}</p>
       )}
       {description === undefined ? null : (
         <p className="type-body text-ink">{description}</p>
@@ -106,7 +109,9 @@ export function Specimen({
 
       {children}
 
-      {spec === undefined ? null : <p className="type-body text-ink">{spec}</p>}
+      {spec === undefined ? null : (
+        <p className="type-caption text-ink">{spec}</p>
+      )}
     </div>
   );
 }

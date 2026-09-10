@@ -55,6 +55,9 @@
   --text-body: 17px;
   --text-body--font-weight: 400;
   --text-body--line-height: 1.7;
+  --text-caption: 14px;
+  --text-caption--font-weight: 400;
+  --text-caption--line-height: 1.5;
   --text-eyebrow: 12px;
   --text-eyebrow--font-weight: 500;
   --text-eyebrow--letter-spacing: 0.2em;

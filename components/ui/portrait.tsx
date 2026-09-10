@@ -55,7 +55,7 @@ export function Portrait({
       </div>
       <figcaption className="flex flex-col items-center gap-space-3xs text-center">
         <span className="type-body text-ink">{name}</span>
-        <span className="type-eyebrow text-accent-gold">{relationship}</span>
+        <span className="type-eyebrow">{relationship}</span>
       </figcaption>
     </figure>
   );

@@ -6,7 +6,14 @@
 
    P2: `used` takes the sunken fallback (deepest surface + the documented divider), `unused` takes
    elevated paper. Known weakness, reported rather than papered over: this palette's two ivories
-   differ by ~1%, so the two states read apart by their stroke-versus-shadow treatment, not by fill. */
+   differ by ~1%, so the two states read apart by their stroke-versus-shadow treatment, not by fill.
+
+   Three lines, three roles. The breakpoint value is the accent, so it takes `type-eyebrow` and the
+   gold that role owns. The device name is secondary, so it takes `type-caption` at ink. It used to
+   pair `type-eyebrow` with `text-ink`, which rendered six labels in ink against the doc's
+   without-exception always-gold rule — utilities beat the components layer, so the override won
+   silently. The fix keeps the value-versus-name distinction the ink was drawing, but draws it with a
+   role instead of by overriding one. */
 
 export interface RulerStop {
   /** Breakpoint floor in px, as a string. */
@@ -39,8 +46,8 @@ export function DeviceRuler({ stops }: DeviceRulerProps) {
           key={token}
           style={{ width: boxW, height: boxH }}
         >
-          <span className="type-eyebrow text-accent-gold">{px}</span>
-          <span className="type-eyebrow text-center text-ink">{device}</span>
+          <span className="type-eyebrow">{px}</span>
+          <span className="type-caption text-center text-ink">{device}</span>
           <span className="type-body text-ink">{token}</span>
         </div>
       ))}

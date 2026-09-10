@@ -54,7 +54,7 @@ export function DurationScale({ items }: DurationScaleProps) {
 
               <div className="relative shrink-0" style={{ width: TRACK_W }}>
                 <span
-                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+4px)] whitespace-nowrap text-accent-gold"
+                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+4px)] whitespace-nowrap"
                   style={{ left: barPx }}
                 >
                   {ms}ms
@@ -67,10 +67,10 @@ export function DurationScale({ items }: DurationScaleProps) {
                   />
                 </div>
 
-                <span className="type-eyebrow absolute top-[calc(100%+4px)] left-0 text-accent-gold">
+                <span className="type-eyebrow absolute top-[calc(100%+4px)] left-0">
                   0ms
                 </span>
-                <span className="type-eyebrow absolute top-[calc(100%+4px)] right-0 text-accent-gold">
+                <span className="type-eyebrow absolute top-[calc(100%+4px)] right-0">
                   {maxMs}ms
                 </span>
               </div>

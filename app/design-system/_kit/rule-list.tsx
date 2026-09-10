@@ -16,7 +16,7 @@ export function RuleList({ label, rules }: RuleListProps) {
   return (
     <div className="flex flex-col gap-space-2xs">
       {label === undefined ? null : (
-        <span className="type-eyebrow text-accent-gold">{label}</span>
+        <span className="type-eyebrow">{label}</span>
       )}
       <ul className="flex flex-col gap-space-2xs">
         {rules.map((rule) => (
