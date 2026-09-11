@@ -77,8 +77,10 @@ interface SpecimenProps {
   /** Real import/file path the demo renders from. */
   source?: string;
   description?: string;
-  /** Token list or variant note; always rendered LAST, because it annotates the demo above it. */
-  spec?: string;
+  /** Token list or variant note; always rendered LAST, because it annotates the demo above it.
+      An array renders one concept per line — the house convention — and is the right form for
+      anything multi-clause. A single string stays prose. */
+  spec?: string | string[];
   /** 3 at section level, 4 inside a SpecimenGroup. Never skips a level. */
   headingLevel?: 3 | 4;
   children: ReactNode;
@@ -108,7 +110,16 @@ export function Specimen({
 
       {children}
 
-      {spec === undefined ? null : (
+      {spec === undefined ? null : Array.isArray(spec) ? (
+        /* Marker-less list separated by gaps, matching RuleList — the gallery's one list shape. */
+        <ul className="flex flex-col gap-space-3xs">
+          {spec.map((line) => (
+            <li className="type-caption text-ink" key={line}>
+              {line}
+            </li>
+          ))}
+        </ul>
+      ) : (
         <p className="type-caption text-ink">{spec}</p>
       )}
     </div>
