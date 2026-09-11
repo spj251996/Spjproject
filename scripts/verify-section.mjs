@@ -175,14 +175,25 @@ try {
   }
 
   const consoleOut = cli("console", "error");
-  const errors = Number(consoleOut.match(/Errors: (\\d+)/)?.[1] ?? "0");
+  /* A real regex literal, so a single backslash. The PROBE above needs `\\d` only because it is a
+     template literal whose text is handed to another JS context; doubling it here would match a
+     literal backslash followed by the letter d, which never appears in the CLI's output — and the
+     check would report zero errors forever. */
+  const errors = Number(consoleOut.match(/Errors: (\d+)/)?.[1] ?? "0");
   console.log(`\npage errors  ${errors === 0 ? "ok" : `FAIL  ${errors}`}`);
   if (errors > 0) {
     console.log(cli("console", "error", "--raw"));
     clean = false;
   }
 } finally {
-  cli("close");
+  /* Cleanup must not supersede the original failure. A throw inside `finally` replaces whatever
+     `try` was throwing, so a close that fails because the page never opened would hide the reason
+     the page never opened. */
+  try {
+    cli("close");
+  } catch (error) {
+    console.log(`cleanup: close failed — ${error.message}`);
+  }
   if (server !== null) {
     process.kill(-server.pid);
   }
