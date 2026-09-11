@@ -34,8 +34,12 @@ function cli(...cliArgs) {
     },
   );
   if (result.status !== 0) {
+    /* A spawn-level failure (npx missing, ENOENT) leaves status null with both streams empty and
+       the reason only in `result.error` — without it the harness reports a blank cause, which is
+       the one thing a verification tool must never do. Parenthesised because mixing `??` and `||`
+       unparenthesised is a syntax error. */
     throw new Error(
-      `playwright-cli ${cliArgs[0]} failed:\n${result.stderr || result.stdout}`,
+      `playwright-cli ${cliArgs[0]} failed:\n${result.error?.message ?? (result.stderr || result.stdout)}`,
     );
   }
   return result.stdout.trim();
@@ -186,16 +190,21 @@ try {
     clean = false;
   }
 } finally {
-  /* Cleanup must not supersede the original failure. A throw inside `finally` replaces whatever
-     `try` was throwing, so a close that fails because the page never opened would hide the reason
-     the page never opened. */
+  /* EVERY cleanup call is guarded, not only the first. A throw inside `finally` replaces whatever
+     `try` was throwing, so any unguarded call here hides the reason the run failed. `process.kill`
+     throws ESRCH once the process group is gone, which is exactly the state a failing run is most
+     likely to be in — a dev server that died mid-loop is why the run failed in the first place. */
   try {
     cli("close");
   } catch (error) {
-    console.log(`cleanup: close failed — ${error.message}`);
+    console.error(`cleanup: close failed — ${error.message}`);
   }
   if (server !== null) {
-    process.kill(-server.pid);
+    try {
+      process.kill(-server.pid);
+    } catch (error) {
+      console.error(`cleanup: server kill failed — ${error.message}`);
+    }
   }
 }
 
