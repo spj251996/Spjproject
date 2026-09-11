@@ -460,8 +460,9 @@ const GRAIN_RULES = [
 const SEAL_RULES = [
   "Not a seventh member of the set. The six mark content and always sit beside a label; the seal stands alone as the site's identity and never appears inside a section.",
   "The one mark that is not gold. It carries thread-red because it is the thread, and because gold holds only 2.39:1 against a light browser tab.",
-  "Decided at 16px before it is judged at any other size. A mark that reads only when large has not been decided. At 16px it holds 51 of 256 pixels solid and 6.28:1 against a light tab.",
-  "The drawn line takes an added stroke in its own colour, the thickening wedding and betrothal also carry, landing the line at 1.27px on a 16-pixel grid.",
+  "Cropped tight — the mark fills 97% of the icon's width, 95% of its height. Air around it reads as a smaller mark; tighter and the notch between the lobes narrows before the margin runs out.",
+  "Decided at 16px before it is judged at any other size. A mark that reads only when large has not been decided. At 16px it holds 70 of 256 pixels solid and 7.05:1 against a light tab.",
+  "The drawn line takes an added stroke in its own colour, the thickening wedding and betrothal also carry, landing the line at 1.65px on a 16-pixel grid.",
   "That weight is bounded both ways: heavier closes the notch between the heart's lobes and fattens the thread into a ribbon; lighter dissolves into a pale smear at 16px.",
   "The thread's cut ends are angled, not square, so a trimmed filled outline reads as a thread rather than as a chop.",
   "One scalable drawing serves every size the browser asks for, rather than a raster resampled per size.",
