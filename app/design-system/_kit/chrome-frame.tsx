@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 
    `transform: translateZ(0)` is the entire mechanism: it makes the frame a CSS containing block, so
    `position: fixed` descendants resolve to the frame instead of the viewport. Without it
-   `thread-overlay` and `paper-base` — both `fixed inset-0` — escape any bounded demo and cover the
-   page. Frame surface + border come from DESIGN.md: the ivory base as the ground a chrome layer sits
-   over, outlined with the documented divider (`{stroke.divider}` 1px in `{colors.accent-gold}`),
-   which is this system's only stated hairline. */
+   `thread-overlay` — `fixed inset-0` — escapes any bounded demo and covers the page. Frame surface +
+   border come from DESIGN.md: the ivory base as the ground a chrome layer sits over, outlined with the
+   documented divider (`{stroke.divider}` 1px in `{colors.accent-gold}`), which is this system's only
+   stated hairline. */
 
 interface ChromeFrameProps {
   /** Explicit px height. REQUIRED whenever a `position: fixed` child must be bounded; omit for flow content. */

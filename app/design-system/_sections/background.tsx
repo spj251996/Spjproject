@@ -1,10 +1,4 @@
-import {
-  ChromeFrame,
-  GallerySection,
-  RuleList,
-  Specimen,
-} from "@/app/design-system/_kit";
-import { PaperBase } from "@/components/background/paper-base";
+import { GallerySection, RuleList } from "@/app/design-system/_kit";
 
 /* curate-gallery — Bucket 2, the two Background sections, in DESIGN.md document order
    (curate-gallery → section-spine.md § 10–11). One module for the whole bucket, per the skill's pinned `sections/`
@@ -17,12 +11,18 @@ import { PaperBase } from "@/components/background/paper-base";
    Prose renders through the semantic type classes directly — this project has no prose layer and
    the gallery may not invent one (DESIGN.md → Overview → No prose layer). */
 
-/* § 10 — Paper Base. All three of the doc's bullets; token names carry the values, which § 1 Colors
-   already renders as live swatches. */
+/* § 10 — Paper Base, tagged [no component]. All three of the doc's visual bullets; token names carry
+   the values, which § 1 Colors already renders as live swatches. */
 const PAPER_BASE_RULES = [
   "Fills the viewport at surface-base on z-base, and paints #F8F7F3 once its grain is applied — see Foundations → Paper Grain.",
   "The texture is static and low-contrast — it reads as material, never as pattern.",
   "The one exception is the deep-green contrast section, which takes surface-contrast as an intentional visual event.",
+];
+
+const PAPER_BASE_NO_COMPONENT_RULES = [
+  "The ground is painted by the document body in app/globals.css, not by a layer component — so there is nothing to render in isolation here.",
+  "Grain binds to the surface rather than to the caller, so a component layer over the body would be a second grained surface and apply the texture twice.",
+  "Reopens only if the botanical edge lands in Ship 2 and the background becomes a genuine multi-layer subsystem.",
 ];
 
 /* § 11 — Botanical Edge, tagged [no component]. Its four specification bullets. */
@@ -44,32 +44,12 @@ export function BackgroundSections() {
     <>
       <GallerySection
         id="paper-base"
-        intro="One layered-paper environment rendered behind all content: full-viewport ivory paper carrying the paper grain. The background does not change color between sections — section identity comes from composition, never from a background swap."
+        intro="Full-viewport ivory paper carrying the paper grain, painted directly on the page rather than by a dedicated layer. The background does not change color between sections — section identity comes from composition, never from a background swap. Tagged [no component] in DESIGN.md — a layer over the page would be a second grained surface, so this section renders its specification rather than a live sample."
         mapsTo="Background → Paper Base"
         title="Background · Paper Base"
       >
         <RuleList rules={PAPER_BASE_RULES} />
-
-        <Specimen
-          description="The addressable base of the background subsystem — a fixed, full-viewport ivory layer that every other layer and all page content sit above."
-          id="background-paper-base"
-          name="paper-base"
-          source="@/components/background/paper-base"
-          spec={[
-            "Live render, not a capture.",
-            "The frame's transform is the whole mechanism: it makes the frame a containing block, so this `fixed inset-0` layer resolves to the frame instead of the viewport.",
-            "The fill reads as the page ground because app/globals.css paints the same token on `body` — the sample line above it is positioned on z-content to make the stack visible.",
-            "The paper grain arrives with the surface token rather than being applied by this component.",
-          ]}
-        >
-          <ChromeFrame height={200}>
-            <PaperBase />
-            <p className="type-body relative z-(--z-content) p-space-md text-ink">
-              Content sits above the base on z-content. Everything behind this
-              line is the paper layer.
-            </p>
-          </ChromeFrame>
-        </Specimen>
+        <RuleList label="No component" rules={PAPER_BASE_NO_COMPONENT_RULES} />
       </GallerySection>
 
       <GallerySection
