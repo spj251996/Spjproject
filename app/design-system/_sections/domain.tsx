@@ -121,7 +121,12 @@ export function DomainSections() {
           id="domain-invite"
           name="invite"
           source="@/components/invite/invite"
-          spec="Server-rendered, no client boundary and no motion of its own — see the component's own header comment. Live, in flow, unframed: the section is not position: fixed, so no ChromeFrame is needed to contain it. This is the only Domain specimen carrying a real h1 (the section's own coupleNames heading), which duplicates the page's own h1 above it — a gallery-rendering artifact worth flagging, not a production defect. Sample copy is schema-valid placeholder text at real-copy length, never the couple's actual content."
+          spec={[
+            "Server-rendered, no client boundary and no motion of its own — see the component's own header comment.",
+            "Live, in flow, unframed: the section is not position: fixed, so no ChromeFrame is needed to contain it.",
+            "This is the only Domain specimen carrying a real h1 (the section's own coupleNames heading), which duplicates the page's own h1 above it — a gallery-rendering artifact worth flagging, not a production defect.",
+            "Sample copy is schema-valid placeholder text at real-copy length, never the couple's actual content.",
+          ]}
         >
           <Invite {...sampleInvite} />
         </Specimen>
@@ -149,7 +154,13 @@ export function DomainSections() {
           id="domain-family"
           name="family"
           source="@/components/family/family"
-          spec="Client boundary, forced by the one discrete-duration transition on the page (Foundations · Motion, duration-slow) firing once as the section enters view — full reasoning in the component's own header comment. Live, in flow, unframed: the section is not position: fixed. The thread reads as a squiggle passing under the group rather than wrapping bride-to-groom — the same knowingly deferred defect as Components · Shell, rendered honestly, not fixed here. Group headings show the relative side rather than a documented relationship, and member order follows the content array as-authored: both already recorded in the component's own header comment as schema gaps, not new here. Every sample portrait is null, so image-placeholder shows throughout — no portrait photography exists yet."
+          spec={[
+            "Client boundary, forced by the one discrete-duration transition on the page (Foundations · Motion, duration-slow) firing once as the section enters view — full reasoning in the component's own header comment.",
+            "Live, in flow, unframed: the section is not position: fixed.",
+            "The thread reads as a squiggle passing under the group rather than wrapping bride-to-groom — the same knowingly deferred defect as Components · Shell, rendered honestly, not fixed here.",
+            "Group headings show the relative side rather than a documented relationship, and member order follows the content array as-authored: both already recorded in the component's own header comment as schema gaps, not new here.",
+            "Every sample portrait is null, so image-placeholder shows throughout — no portrait photography exists yet.",
+          ]}
         >
           <Family groups={sampleFamilyGroups} />
         </Specimen>
@@ -168,7 +179,12 @@ export function DomainSections() {
           id="domain-timeline"
           name="timeline"
           source="@/components/timeline/timeline"
-          spec="Client boundary, forced by the open-gallery state shared between the node list and the modal — full reasoning in the component's own header comment. No min-h-dvh: the one section that scrolls to its natural length rather than composing around a viewport. The spine is section-anchored, the same knowingly deferred defect as Components · Shell and Family, rendered honestly, not fixed here. Neither sample below ever opens a gallery: a completed ritual with no images gets no gallery action, and no ritual photography exists yet to populate one."
+          spec={[
+            "Client boundary, forced by the open-gallery state shared between the node list and the modal — full reasoning in the component's own header comment.",
+            "No min-h-dvh: the one section that scrolls to its natural length rather than composing around a viewport.",
+            "The spine is section-anchored, the same knowingly deferred defect as Components · Shell and Family, rendered honestly, not fixed here.",
+            "Neither sample below ever opens a gallery: a completed ritual with no images gets no gallery action, and no ritual photography exists yet to populate one.",
+          ]}
         >
           <div className="flex flex-col gap-space-2xl">
             <Variant label="Four rituals, mixed status — 2 completed, 2 upcoming">

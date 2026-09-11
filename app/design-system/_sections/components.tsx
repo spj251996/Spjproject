@@ -96,7 +96,12 @@ export function ComponentsSections() {
           id="shell-thread-overlay"
           name="thread-overlay"
           source="@/components/shell/thread-overlay"
-          spec="Live render at three fixed draw positions, using the component's own demoProgress affordance — the prop suppresses the scroll binding, which a bounded frame with no scrolling root cannot drive. Each frame's transform bounds a `fixed inset-0` overlay; the frames are aria-hidden because the thread is decoration the component already hides from assistive technology. Two things this demo cannot show, both known and deferred: the geometry is provisional stand-in curves, because DESIGN.md supplies no path data for either layout, and in the page itself the thread reads as disconnected decorations rather than one spine — it is position: fixed, so it cannot anchor to page content. The rebuild is Phase 5, recorded in work/tasks.md → Backlog → Project follow-ups."
+          spec={[
+            "Live render at three fixed draw positions, using the component's own demoProgress affordance — the prop suppresses the scroll binding, which a bounded frame with no scrolling root cannot drive.",
+            "Each frame's transform bounds a `fixed inset-0` overlay; the frames are aria-hidden because the thread is decoration the component already hides from assistive technology.",
+            "Two things this demo cannot show, both known and deferred: the geometry is provisional stand-in curves, because DESIGN.md supplies no path data for either layout, and in the page itself the thread reads as disconnected decorations rather than one spine — it is position: fixed, so it cannot anchor to page content.",
+            "The rebuild is Phase 5, recorded in work/tasks.md → Backlog → Project follow-ups.",
+          ]}
         >
           <div className="grid gap-space-md md:grid-cols-3">
             {THREAD_POSES.map((progress) => (
@@ -125,7 +130,15 @@ export function ComponentsSections() {
           id="ui-button-action"
           name="button-action"
           source="@/components/ui/button-action"
-          spec="An engraved rule, not a button: two --stroke-divider hairlines in accent-gold above and below the action type role in the same gold, with no fill, no side border and no radius. Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it. Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline. Minimum hit area 44px regardless of visual size. THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1, below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them. The documented instance is an anchor, live under the page-level guard that cancels the navigation. The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page."
+          spec={[
+            "An engraved rule, not a button: two --stroke-divider hairlines in accent-gold above and below the action type role in the same gold, with no fill, no side border and no radius.",
+            "Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it.",
+            "Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline.",
+            "Minimum hit area 44px regardless of visual size.",
+            "THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1, below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them.",
+            "The documented instance is an anchor, live under the page-level guard that cancels the navigation.",
+            "The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page.",
+          ]}
         >
           <div className="flex flex-wrap gap-space-lg">
             <Variant
@@ -142,7 +155,13 @@ export function ComponentsSections() {
           id="ui-portrait"
           name="portrait"
           source="@/components/ui/portrait"
-          spec="Circular crop — the only circular container in the system · the name sits in body and the relationship label below it in eyebrow · missing images fall back to image-placeholder without collapsing the grouping. The rendered diameter has no token behind it: DESIGN.md states no portrait dimension, so the component's own inferred 128px default is what shows. The first sample is a generated placeholder SVG — this repo holds no portrait photography, so the with-image state has no real asset behind it."
+          spec={[
+            "Circular crop — the only circular container in the system.",
+            "The name sits in body and the relationship label below it in eyebrow.",
+            "Missing images fall back to image-placeholder without collapsing the grouping.",
+            "The rendered diameter has no token behind it: DESIGN.md states no portrait dimension, so the component's own inferred 128px default is what shows.",
+            "The first sample is a generated placeholder SVG — this repo holds no portrait photography, so the with-image state has no real asset behind it.",
+          ]}
         >
           <div className="flex flex-wrap gap-space-2xl">
             <Variant className="items-start" label="With an image">
@@ -166,7 +185,14 @@ export function ComponentsSections() {
           id="ui-timeline-node"
           name="timeline-node"
           source="@/components/ui/timeline-node"
-          spec="Title in heading-lg and description in body, attached to the thread on the side the alternation assigns · the upcoming state shows title and description only, while the completed state adds a 2–3 image preview and a button-action to open the gallery · activates with a thread glow once on entering the viewport, without repeating · upcoming nodes group three per viewport on desktop and two on mobile, and a completed node expands to its own viewport on both. Neither the preview strip nor the gallery action appears on the completed sample: no ritual photography exists yet, and the gallery handler belongs to the composing client section rather than to this server-rendered page. The anchor mark reads identically in both cells: it is thread-red in either state and carries only the activation glow, which tracks viewport entry rather than status."
+          spec={[
+            "Title in heading-lg and description in body, attached to the thread on the side the alternation assigns.",
+            "The upcoming state shows title and description only, while the completed state adds a 2–3 image preview and a button-action to open the gallery.",
+            "Activates with a thread glow once on entering the viewport, without repeating.",
+            "Upcoming nodes group three per viewport on desktop and two on mobile, and a completed node expands to its own viewport on both.",
+            "Neither the preview strip nor the gallery action appears on the completed sample: no ritual photography exists yet, and the gallery handler belongs to the composing client section rather than to this server-rendered page.",
+            "The anchor mark reads identically in both cells: it is thread-red in either state and carries only the activation glow, which tracks viewport entry rather than status.",
+          ]}
         >
           <div className="grid gap-space-lg md:grid-cols-2">
             {sampleTimelineNodes.map((node) => (
@@ -189,7 +215,15 @@ export function ComponentsSections() {
           id="ui-gallery-modal"
           name="gallery-modal"
           source="@/components/ui/gallery-modal"
-          spec="Sits on z-modal above the thread, with a masonry arrangement inside · swipe navigates between images, and closing returns the page to the same scroll position · images load only when the overlay opens · missing images degrade to image-placeholder without breaking the masonry · the scrim is surface-contrast at 0.92 opacity, which is this system's only realized deep-green ground. Demoed through gallery-modal-panel, the presentational half: the modal itself owns the focus trap, scroll lock, keyboard dismissal and swipe handling, none of which a bounded frame can exercise. The masonry is empty because no ritual photography exists, and the panel emits its own h2, which lands out of order beneath this h3."
+          spec={[
+            "Sits on z-modal above the thread, with a masonry arrangement inside.",
+            "Swipe navigates between images, and closing returns the page to the same scroll position.",
+            "Images load only when the overlay opens.",
+            "Missing images degrade to image-placeholder without breaking the masonry.",
+            "The scrim is surface-contrast at 0.92 opacity, which is this system's only realized deep-green ground.",
+            "Demoed through gallery-modal-panel, the presentational half: the modal itself owns the focus trap, scroll lock, keyboard dismissal and swipe handling, none of which a bounded frame can exercise.",
+            "The masonry is empty because no ritual photography exists, and the panel emits its own h2, which lands out of order beneath this h3.",
+          ]}
         >
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />
@@ -209,7 +243,13 @@ export function ComponentsSections() {
           id="ui-image-placeholder"
           name="image-placeholder"
           source="@/components/ui/image-placeholder"
-          spec="Holds the final dimensions of the image it replaces so nothing reflows on load · ivory-family tone with no icon or text · used by portrait, timeline-node previews, and gallery-modal. The tone is inferred, not transcribed: the doc names no token, so the component derives it from the elevated shadow's ink tint at 6%, which is why it reads as a tinted hold rather than as a second ivory. The two ratios are the ones its callers actually use; the 160px cell width is a gallery layout constant, not a design value."
+          spec={[
+            "Holds the final dimensions of the image it replaces so nothing reflows on load.",
+            "Ivory-family tone with no icon or text.",
+            "Used by portrait, timeline-node previews, and gallery-modal.",
+            "The tone is inferred, not transcribed: the doc names no token, so the component derives it from the elevated shadow's ink tint at 6%, which is why it reads as a tinted hold rather than as a second ivory.",
+            "The two ratios are the ones its callers actually use; the 160px cell width is a gallery layout constant, not a design value.",
+          ]}
         >
           <div className="flex flex-wrap gap-space-lg">
             <Variant className="w-[160px]" label="1:1 — the portrait crop">

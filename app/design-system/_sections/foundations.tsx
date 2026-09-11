@@ -515,7 +515,12 @@ export function FoundationsSections() {
           id="layout-mounted-sheet"
           name="mounted-sheet"
           source="@/components/layout/mounted-sheet"
-          spec="Two stocks, one mount. The mount never changes colour; only the inner stock does. Reveal is 16px at lg, 12px at md, and below md only the invite section keeps its mount — resize the window to watch the ladder. The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground. The mount carries no text."
+          spec={[
+            "Two stocks, one mount. The mount never changes colour; only the inner stock does.",
+            "Reveal is 16px at lg, 12px at md, and below md only the invite section keeps its mount — resize the window to watch the ladder.",
+            "The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground.",
+            "The mount carries no text.",
+          ]}
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
@@ -553,7 +558,13 @@ export function FoundationsSections() {
           id="layout-mounted-pair"
           name="mounted-pair"
           source="@/components/layout/mounted-pair"
-          spec="Same mount as mounted-sheet, on the same reveal ladder, and the sheets take the same padding ladder too — one rule across both layouts · the gap is TWICE the reveal, 32px above lg and 24px below, because each sheet is centred on its own leaf of the opened card: the sheet's reveal on the fold side meets the other sheet's at the crease, so half the gap equals the outer reveal exactly · the mount carries its crease at the fold, 22px wide, lit from the right, hidden wherever a sheet covers it · below md the mount goes and the sheets stack, the crease goes with it since an unfolded card has no fold, and each sheet takes shadow-mount in place of shadow-sheet because standing on the ground it does the lifting the mount was doing. Resize the window to watch all of it happen together."
+          spec={[
+            "Same mount as mounted-sheet, on the same reveal ladder, and the sheets take the same padding ladder too — one rule across both layouts.",
+            "The gap is TWICE the reveal, 32px above lg and 24px below, because each sheet is centred on its own leaf of the opened card: the sheet's reveal on the fold side meets the other sheet's at the crease, so half the gap equals the outer reveal exactly.",
+            "The mount carries its crease at the fold, 22px wide, lit from the right, hidden wherever a sheet covers it.",
+            "Below md the mount goes and the sheets stack, the crease goes with it since an unfolded card has no fold, and each sheet takes shadow-mount in place of shadow-sheet because standing on the ground it does the lifting the mount was doing.",
+            "Resize the window to watch all of it happen together.",
+          ]}
         >
           <MountedPair>
             <div className="flex flex-col gap-space-2xs">
@@ -691,7 +702,10 @@ export function FoundationsSections() {
           id="iconography-set"
           name="The set"
           source="@/components/icons"
-          spec="Sized on the diagonal so marks of very different proportion read at one span, then nudged per mark from measured ink density. wedding and betrothal carry an added same-colour stroke because a filled outline has no stroke width to raise."
+          spec={[
+            "Sized on the diagonal so marks of very different proportion read at one span, then nudged per mark from measured ink density.",
+            "wedding and betrothal carry an added same-colour stroke because a filled outline has no stroke width to raise.",
+          ]}
         >
           <div className="flex flex-col gap-space-md">
             <div className="flex flex-wrap items-center gap-space-lg bg-surface-elevated p-space-md text-accent-gold">

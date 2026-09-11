@@ -55,7 +55,12 @@ export function BackgroundSections() {
           id="background-paper-base"
           name="paper-base"
           source="@/components/background/paper-base"
-          spec="Live render, not a capture. The frame's transform is the whole mechanism: it makes the frame a containing block, so this `fixed inset-0` layer resolves to the frame instead of the viewport. The fill reads as the page ground because app/globals.css paints the same token on `body` — the sample line above it is positioned on z-content to make the stack visible. The paper grain arrives with the surface token rather than being applied by this component."
+          spec={[
+            "Live render, not a capture.",
+            "The frame's transform is the whole mechanism: it makes the frame a containing block, so this `fixed inset-0` layer resolves to the frame instead of the viewport.",
+            "The fill reads as the page ground because app/globals.css paints the same token on `body` — the sample line above it is positioned on z-content to make the stack visible.",
+            "The paper grain arrives with the surface token rather than being applied by this component.",
+          ]}
         >
           <ChromeFrame height={200}>
             <PaperBase />
