@@ -18,9 +18,14 @@ import type { WeddingEvent } from "@/content/types";
    which a flat string cannot express (content/format.ts).
 
    PROVISIONAL, awaiting the owner's tweak pass. DESIGN.md says the betrothal block "recedes by size,
-   weight, or tone" and picks none of the three. This renders the size route using the existing
-   caption role, which is the only token the system already carries for secondary text. It is a
-   baseline to judge, not a decision — see the plan's Task 3. */
+   weight, or tone" and picks none of the three, so the block below is a baseline to judge rather
+   than a decision — see the plan's Task 3.
+
+   It mixes two roles. The label takes `.type-eyebrow`, which Typography assigns to the fields inside
+   a sheet; the date and city take `.type-caption`, the only role the system carries below body. The
+   cost is that the label stays gold and uppercase, which pulls against the recession the block
+   exists to show, and Invite's own entry describes the eyebrow as opening the composition once.
+   Whether the label moves to caption is one of the questions the tweak pass puts to the owner. */
 
 interface InviteProps {
   eyebrow: string;
