@@ -70,7 +70,14 @@ async function ensureDevServer() {
       return child;
     }
   }
-  process.kill(-child.pid);
+  /* Guarded for the same reason as the cleanup block at the end of the file: the group may already
+     be gone — a dev server that crashed during startup is the likeliest reason this loop timed out —
+     and an ESRCH thrown here would replace the message that actually explains the failure. */
+  try {
+    process.kill(-child.pid);
+  } catch {
+    /* Already gone. The throw below carries the real cause. */
+  }
   throw new Error("dev server did not answer within 60s");
 }
 
