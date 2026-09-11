@@ -6,7 +6,8 @@ import { IconBase } from "./icon-base";
    surface. The mark is filled outline rather than stroked line, so its weight is the drawn line's
    own — see DESIGN.md → Foundations → Iconography.
 
-   Dropped from the source: path 2 is a full-width strip along the bottom edge, a scan artefact rather than part of the drawing. */
+   Intentionally excludes the source's path 2, a full-width strip along the bottom edge — a scan
+   artefact rather than part of the drawing. Do not re-add it if this mark is re-traced. */
 
 export function MapIcon({
   size,

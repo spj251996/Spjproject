@@ -50,7 +50,7 @@ function Variant({ label, className, children }: VariantProps) {
    values written literally because a data-URI SVG is a separate document and cannot read the CSS
    custom properties — these are asset content, not styling values. */
 const SAMPLE_PORTRAIT_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="#FFFEFA"/><circle cx="128" cy="96" r="46" fill="#E0A83C"/><path d="M32 256a96 96 0 0 1 192 0Z" fill="#8A6D22"/></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="#FFFEFA"/><circle cx="128" cy="96" r="46" fill="#D29B2F"/><path d="M32 256a96 96 0 0 1 192 0Z" fill="#0F3D2E"/></svg>';
 
 const SAMPLE_PORTRAIT_IMAGE = `data:image/svg+xml,${encodeURIComponent(SAMPLE_PORTRAIT_SVG)}`;
 
@@ -60,8 +60,8 @@ const THREAD_RULES = [
   "ONE colour and ONE width on both stocks — thread-red at --stroke-thread (1.6px) everywhere. A real thread does not change colour or thickness, it catches light differently. Only the glow differs between stocks.",
   "The wisp is the thread's ENDS, not an ornament: the tail that shows it has travelled on as it leaves the frame. --stroke-thread-wisp (1.2px), same thread-red, 0.7 opacity.",
   "Two modes, both real — a plain drawn line and a glowing one, each defined on each stock.",
-  "Glow is thread-vermilion and behaves differently per stock because the grounds are not symmetrical: ivory sits at 0.96 relative luminance against the green's 0.02, so there is 27x less room to add light. A glow cannot exist on paper — the paper treatment is an ink bleed, made by darkening.",
-  "The halo is masked to the green stock's own bounds, inset by the mount's reveal, so it never spills onto the mount or the ground.",
+  "Glow is thread-vermilion and behaves differently per stock because the two stocks are not symmetrical: ivory sits at 0.96 relative luminance against the green's 0.02, so there is 27x less room to add light. A glow cannot exist on paper — the paper treatment is an ink bleed, made by darkening.",
+  "The glow is masked to the green stock's own bounds, inset by the mount's reveal, so it never spills onto the mount or the ground.",
   "The thread runs down one margin per section and crosses the centre only in the gaps between sheets. It never passes under a glyph — at screen height the centred type block owns the middle, so the margin is the only empty band running the full height.",
   "At rest — after settling, and whenever reduced motion is active — the thread is fully drawn with its wisp at its natural terminals, rather than hidden or partially revealed.",
   "Anchors to meaningful points — the two family sides and each ritual node — rather than floating.",
@@ -96,7 +96,7 @@ export function ComponentsSections() {
           id="shell-thread-overlay"
           name="thread-overlay"
           source="@/components/shell/thread-overlay"
-          spec="Live render at three fixed draw positions, using the component's own demoProgress affordance — the prop suppresses the scroll binding, which a bounded frame with no scrolling root cannot drive. Each frame's transform bounds a `fixed inset-0` overlay; the frames are aria-hidden because the thread is decoration the component already hides from assistive technology. Two things this demo cannot show, both known and deferred: the geometry is provisional stand-in curves, because DESIGN.md supplies no path data for either layout, and in the page itself the thread reads as disconnected decorations rather than one spine — it is position: fixed, so it cannot anchor to page content. The rebuild is Phase 3 work, recorded in work/tasks.md → Project follow-ups."
+          spec="Live render at three fixed draw positions, using the component's own demoProgress affordance — the prop suppresses the scroll binding, which a bounded frame with no scrolling root cannot drive. Each frame's transform bounds a `fixed inset-0` overlay; the frames are aria-hidden because the thread is decoration the component already hides from assistive technology. Two things this demo cannot show, both known and deferred: the geometry is provisional stand-in curves, because DESIGN.md supplies no path data for either layout, and in the page itself the thread reads as disconnected decorations rather than one spine — it is position: fixed, so it cannot anchor to page content. The rebuild is Phase 5, recorded in work/tasks.md → Backlog → Project follow-ups."
         >
           <div className="grid gap-space-md md:grid-cols-3">
             {THREAD_POSES.map((progress) => (
@@ -115,17 +115,17 @@ export function ComponentsSections() {
 
       <GallerySection
         id="ui"
-        intro="The portable primitive layer — eight documented entries, seven of which have components. `scroll-cue` is documented as thread-overlay's own residual glow rather than an artifact of its own, so it renders its specification. `divider` is not listed here: the doc's Layout sub-section owns it, and it renders under Foundations · Layout."
+        intro="The portable primitive layer — six documented entries, five of which have components. `scroll-cue` is documented as thread-overlay's own residual glow rather than an artifact of its own, so it renders its specification. `divider` is not listed here: the doc's Layout sub-section owns it, and it renders under Foundations · Layout."
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
       >
         <Specimen
-          description="The only interactive control on the page, used for the map and contact actions on event cards."
+          description="The only interactive control on the page, used for the map action."
           id="ui-button-action"
           name="button-action"
           source="@/components/ui/button-action"
-          spec="An engraved rule, not a button: two --stroke-divider hairlines in accent-gold above and below the action type role in the same gold, with no fill, no side border and no radius. Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it. Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline. Minimum hit area 44px regardless of visual size. THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1, below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them. Both documented instances are anchors, live under the page-level guard that cancels the navigation. The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page."
+          spec="An engraved rule, not a button: two --stroke-divider hairlines in accent-gold above and below the action type role in the same gold, with no fill, no side border and no radius. Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it. Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline. Minimum hit area 44px regardless of visual size. THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1, below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them. The documented instance is an anchor, live under the page-level guard that cancels the navigation. The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page."
         >
           <div className="flex flex-wrap gap-space-lg">
             <Variant
@@ -133,14 +133,6 @@ export function ComponentsSections() {
               label="Map — hands off to an external map destination"
             >
               <ButtonAction href={sampleEvent.mapUrl}>Map</ButtonAction>
-            </Variant>
-            <Variant
-              className="items-start"
-              label="Contact — hands off to phone or WhatsApp"
-            >
-              <ButtonAction href={`tel:${sampleEvent.contactPhone}`}>
-                Contact
-              </ButtonAction>
             </Variant>
           </div>
         </Specimen>

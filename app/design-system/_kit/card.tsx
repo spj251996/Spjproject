@@ -2,8 +2,7 @@ import type { ReactNode } from "react";
 
 /* curate-gallery scaffold kit — Card (skill → references/scaffold-kit.md → catalog).
 
-   Deferred by G3 because no sanctioned use existed then; built here for the one that does —
-   The eyebrow role documents two grounds, and rendering the gold that belongs on the deep-green
+   The eyebrow role documents two stocks, and rendering the gold that belongs on the deep-green
    contrast section requires a painted panel. Hand-rolling that panel is the dogfood violation the
    primitive exists to prevent.
 

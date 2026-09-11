@@ -9,11 +9,10 @@
    differ by ~1%, so the two states read apart by their stroke-versus-shadow treatment, not by fill.
 
    Three lines, three roles. The breakpoint value is the accent, so it takes `type-eyebrow` and the
-   gold that role owns. The device name is secondary, so it takes `type-caption` at ink. It used to
-   pair `type-eyebrow` with `text-ink`, which rendered six labels in ink against the doc's
-   without-exception always-gold rule — utilities beat the components layer, so the override won
-   silently. The fix keeps the value-versus-name distinction the ink was drawing, but draws it with a
-   role instead of by overriding one. */
+   gold that role owns. The device name is secondary, so it takes `type-caption` at ink. Never pair
+   `type-eyebrow` with `text-ink` to get that: a utility beats the components layer, so the override
+   wins silently and renders the label in ink against the doc's without-exception always-gold rule.
+   The distinction is drawn with a role rather than by overriding one. */
 
 export interface RulerStop {
   /** Breakpoint floor in px, as a string. */

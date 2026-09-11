@@ -8,10 +8,9 @@ import type { ReactNode } from "react";
 
    Hierarchy is carried by SIZE, not by color. Reference marks — the doc path, the code path, the
    spec note — take `type-caption`; content — headings, names, prose, intros — stays at `type-body`.
-   An earlier pass carried this distinction in gold instead, which put 17 body-size texts at 2.39:1
-   and outside the exception's documented scope; the fix moved everything to ink and flattened the
-   hierarchy entirely until `type-caption` existed to restore it. Both texts are ink now, so both
-   measure 11.74:1 and the separation costs no contrast at all.
+   Never carry this distinction in `{colors.accent-gold}`: gold on body-size text falls outside the
+   exception's documented scope and measures 2.39:1 against the 4.5:1 floor. Both roles are ink, so
+   both measure 11.74:1 and the separation costs no contrast at all.
 
    Specimen headings take `type-heading-lg` at h3/h4 following the project's own precedent:
    A domain section renders its `<h3>` name at that role, which DESIGN.md → Typography defines as "H2 and

@@ -76,9 +76,9 @@ export const sampleFamilyGroups: FamilyGroup[] = [
         name: "Placeholder Sibling Name",
         relationship: "Placeholder Relation",
         portrait: null,
-        /* The ONLY non-empty `family` in the samples, and deliberately so: with every sample flat, the
-           gallery renders correctly and cannot show that `family` is dropped. This one makes the gap
-           visible — until the Family section descends into it, two members below simply do not appear. */
+        /* Keep this the only non-empty `family` sample. With every sample flat the gallery renders
+           cleanly and hides that `Family` drops nested members; this one keeps that gap visible —
+           until the section descends into it, the two members below simply do not appear. */
         family: [
           {
             id: "placeholder-groom-sibling-spouse",

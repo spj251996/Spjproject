@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   type BarItem,
   BarScale,
@@ -32,8 +33,8 @@ import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 
-/* curate-gallery — Bucket 1, the nine Foundations sections, in DESIGN.md document order
-   (curate-gallery → section-spine.md § 1–9). One module for the whole bucket, per the skill's pinned `sections/`
+/* curate-gallery — Bucket 1, the ten Foundations sections, in DESIGN.md document order
+   (curate-gallery → section-spine.md § 1–10). One module for the whole bucket, per the skill's pinned `sections/`
    structure; the spine restates it as "exactly 5 files (foundations.tsx 9 · …)".
 
    Prose renders through the semantic type classes directly. This project has no prose layer and the
@@ -59,7 +60,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-surface-mount",
         name: "surface-mount",
         usage:
-          "The mount — the backing sheet of every mounted section. Carries no text, which is why gold's 3.93:1 on it never occurs.",
+          "The mount — the backing layer of every mounted section. Carries no text, so no text pairing on it is ever measured.",
       },
       {
         token: "--color-surface-elevated",
@@ -92,7 +93,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "ONE gold, and it does not vary by ground. It marks eyebrows, the engraved rule, dividers and active states on both stocks. RECORDED EXCEPTION: 2.39:1 on paper against AA's 4.5:1 — a deliberate decision scoped to the eyebrow and the engraved rule's label only. Every other text role uses ink. Do not 'fix' it. On the green stock the same gold measures 5.72:1 and is compliant.",
+    note: "ONE gold, and it does not vary by ground. It marks eyebrows, the engraved rule, dividers and active states on both stocks. RECORDED EXCEPTION: 2.39:1 on paper against AA's 4.5:1 — a deliberate decision scoped to the eyebrow, the engraved rule's label, and the six iconography marks. Every other text role uses ink. Do not 'fix' it. On the green stock the same gold measures 5.72:1 and is compliant.",
     tokens: [
       {
         token: "--color-accent-gold",
@@ -104,7 +105,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Thread reserved",
-    note: "Exclusive to the thread. Buttons, headings, icons, error states and decorative accents never use either. The thread is decorative and never the sole carrier of meaning, which is what keeps its 1.87:1 on the green stock out of scope for contrast requirements.",
+    note: "Exclusive to the thread, and the seal mark is the thread. Buttons, headings, section marks, error states and decorative accents never use either. The thread is decorative and never the sole carrier of meaning, which is what keeps its 1.87:1 on the green stock out of scope for contrast requirements.",
     tokens: [
       {
         token: "--color-thread-red",
@@ -197,7 +198,7 @@ const TYPE_TOKENS: TypeToken[] = [
 ];
 
 const TYPE_RULES = [
-  "The script face appears only on couple names — never on body copy, headings, labels, or buttons.",
+  "The script face is decorative. It carries the couple names today and may take other display text later, but never body copy, headings, labels, or buttons.",
   "Long-form and functional information stays in Cormorant Garamond and Source Sans 3.",
   "Both serif and sans carry regular and bold only. Bold marks structural headings and actions; everything else sits at regular, including the date line, which separates from heading-lg at the same size by weight rather than by scale.",
   "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. Three roles step: display-name across all three tiers, and heading-lg and date-primary together at md.",
@@ -227,8 +228,8 @@ const SPACING_RULES = [
   "Tight grouping uses space-2xs (8px) to space-sm (16px).",
   "Component padding uses space-sm (16px) to space-md (24px).",
   "Section spacing uses space-2xl (64px) to space-3xl (96px).",
-  "A section sheet's own padding is a three-step ladder, not one value: space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above it. It climbs with the sheet so the margin holds near a tenth of the sheet's width — measured at 11.8%, 9.2% and 8.7%.",
-  "The page holds space-md (24px) between the viewport edge and the mount at every tier, and does not climb: past the 1200px content cap the ground itself supplies the margin.",
+  "The sheet's padding is a ladder because one constant cannot do both jobs — 32px is a card margin on a phone and a hairline on a 1200px sheet: space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above it. It climbs with the sheet so the margin holds near a tenth of its width — measured at 11.8%, 9.2% and 8.7%.",
+  "The page margin holds space-md (24px) between the viewport edge and the mount at every tier and does not climb: past the 1200px content cap the ground itself supplies the margin.",
   "Content never hugs the viewport edge; vertical rhythm stays consistent across sections.",
   "Named steps carry a space- prefix: the bare t-shirt keys double as the styling framework's width-scale keys, and the spacing value silently wins — a width cap named lg resolved to 32px.",
   "The zero step keeps the bare name 0 — it collides with nothing, and prefixing it stops every zero-valued step resolving. Its bar is correctly invisible.",
@@ -236,7 +237,7 @@ const SPACING_RULES = [
 
 const LAYOUT_RULES = [
   "Each major section is composed around one viewport height, with the timeline as the deliberate exception.",
-  "Content width caps at 1200px and text blocks at 600px; cards flex within the grid.",
+  "Content width caps at 1200px and text blocks at 600px; sheets flex within the grid.",
   "Sections alternate between dense composition (event info) and airy composition (invite, wishes) so no two adjacent sections carry equal visual weight.",
   "Whitespace is structural, not leftover space.",
   "Both caps are stated only in DESIGN.md prose, in no token block; the token layer emits them as --container-content and --container-text.",
@@ -258,7 +259,7 @@ const DURATION_TOKENS: DurationToken[] = [
 
 const DURATION_RULES = [
   "--duration-fast (200ms) for state changes: node activation glow, action feedback.",
-  "--duration-base (400ms) for section entry reveals, card reveals, and modal open and close.",
+  "--duration-base (400ms) for section entry reveals, sheet reveals, and modal open and close.",
   "--duration-slow (700ms) for the two set pieces: the invite thread draw-in and the family thread wrap.",
 ];
 
@@ -302,8 +303,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     token: "--radius-lg",
     radius: "var(--radius-lg)",
     value: "16px",
-    usage:
-      "Retained for the gallery modal. Nothing at section scale uses it, and the one component that still carried it — event-card — has been retired rather than restyled.",
+    usage: "Retained for the gallery modal. Nothing at section scale uses it.",
   },
   {
     token: "circle",
@@ -422,6 +422,51 @@ const ICON_RULES = [
   "wedding and betrothal carry an added stroke in their own colour. A filled outline has no stroke width to raise, so a same-colour stroke is the only way to thicken one; the other four take none.",
 ];
 
+/* § Paper Grain. Each tile is painted with the real surface class, so the grain shown is the grain
+   the system applies rather than a reproduction of it. Captions carry the measured painted value,
+   which is not the surface token for three of the four. */
+const GRAIN_SURFACES = [
+  {
+    caption: "multiply 0.03 · paints #F8F7F3",
+    label: "Ground",
+    surface: "bg-surface-base",
+  },
+  {
+    caption: "overlay 0.40 · paints #ECE6D7",
+    label: "Mount",
+    surface: "bg-surface-mount",
+  },
+  {
+    caption: "hard-light 0.05 · paints #FDFCF8",
+    label: "Paper stock",
+    surface: "bg-surface-elevated",
+  },
+  {
+    caption: "hard-light 0.10 · paints #0D3226",
+    label: "Green stock",
+    surface: "bg-surface-contrast",
+  },
+];
+
+const GRAIN_RULES = [
+  "A surface takes the treatment its own lightness allows, which is why the four differ rather than sharing one. A mid-tone has room in both directions and keeps its colour exactly; a near-white has room only below, so its texture can only come from darkening; a dark stock has room only above.",
+  "Both stocks share one treatment and differ only in strength — it textures the ivory downward and the green upward, so the ivory keeps its highlights and the green keeps its shadows.",
+  "The ground is deliberately off its token, painting #F8F7F3 rather than #FCFBF7. That is what separates it from the sheet laid on it. This is a decision, not drift.",
+  "A surface grains only itself: the noise blends against that surface's own fill, so a sheet never tints the ground it covers.",
+  "The fibre is one repeating tile at 200px, resolved at the screen's own density — left at its own size it is upscaled on a high-density display and reads as blotches rather than fibre.",
+  "The grain is static, never animated, and carries no meaning. Every contrast pair was re-measured against the grained surfaces and all hold.",
+];
+
+const SEAL_RULES = [
+  "Not a seventh member of the set. The six mark content and always sit beside a label; the seal stands alone as the site's identity and never appears inside a section.",
+  "The one mark that is not gold. It carries thread-red because it is the thread, and because gold holds only 2.39:1 against a light browser tab.",
+  "Decided at 16px before it is judged at any other size. A mark that reads only when large has not been decided. At 16px it holds 51 of 256 pixels solid and 6.28:1 against a light tab.",
+  "The drawn line takes an added stroke in its own colour, the thickening wedding and betrothal also carry, landing the line at 1.27px on a 16-pixel grid.",
+  "That weight is bounded both ways: heavier closes the notch between the heart's lobes and fattens the thread into a ribbon; lighter dissolves into a pale smear at 16px.",
+  "The thread's cut ends are angled, not square, so a trimmed filled outline reads as a thread rather than as a chop.",
+  "One scalable drawing serves every size the browser asks for, rather than a raster resampled per size.",
+];
+
 export function FoundationsSections() {
   return (
     <>
@@ -459,7 +504,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="layout"
-        intro="Desktop composes in parallel splits; mobile flows vertically and splits the event and family sections into separate screen-feel segments. The layout layer itself is one primitive — the divider; the width caps are composition rules, not isolable primitives."
+        intro="Desktop composes in parallel splits; mobile flows vertically and splits the event and family sections into separate screen-feel panels. The layout layer itself is one primitive — the divider; the width caps are composition rules, not isolable primitives."
         mapsTo="Foundations → Layout"
         title="Foundations · Layout"
       >
@@ -470,15 +515,15 @@ export function FoundationsSections() {
           id="layout-mounted-sheet"
           name="mounted-sheet"
           source="@/components/layout/mounted-sheet"
-          spec="Two stocks, one mount. The mount never changes colour; only the inner stock does. Reveal is 16px at lg, 12px at md, and below md only the hero keeps its mount — resize the window to watch the ladder. The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground. The mount carries no text."
+          spec="Two stocks, one mount. The mount never changes colour; only the inner stock does. Reveal is 16px at lg, 12px at md, and below md only the invite section keeps its mount — resize the window to watch the ladder. The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground. The mount carries no text."
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
               <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">The invitation</p>
                 <p className="type-body text-ink">
-                  Paper stock, hero — the one section that keeps its mount below
-                  the md breakpoint.
+                  Paper stock, the invite — the one section that keeps its mount
+                  below the md breakpoint.
                 </p>
               </div>
             </MountedSheet>
@@ -504,7 +549,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Two sheets pasted onto one mount — the layout the two events take, replacing the retired event-card. The mount is a single card creased down the middle and opened flat."
+          description="Two sheets pasted onto one mount — the layout the two events take. The mount is a single card creased down the middle and opened flat."
           id="layout-mounted-pair"
           name="mounted-pair"
           source="@/components/layout/mounted-pair"
@@ -572,7 +617,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="shapes"
-        intro="The soft rectangle is the primary shape, with the circle reserved for portraits and the pill permitted but currently unused."
+        intro="Section surfaces are square — the mount and both stocks take no radius at all. The soft rectangle belongs to smaller elements, the circle is reserved for portraits, and the pill is unusable at section scale."
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"
@@ -600,8 +645,43 @@ export function FoundationsSections() {
       </GallerySection>
 
       <GallerySection
+        id="paper-grain"
+        intro="A static noise laid into every surface so the stocks read as material rather than as flat fill. It is generated rather than an asset, so it adds no image, no element, and nothing to load. View at full size — any downscaling averages the grain away."
+        mapsTo="Foundations → Paper Grain"
+        source="--grain-*"
+        title="Foundations · Paper Grain"
+      >
+        <Specimen
+          description="Every grained surface, each tile painted with the real surface class rather than a copy of it."
+          id="paper-grain-surfaces"
+          name="The four surfaces"
+          spec="Live render. The grain arrives with the surface token, so these tiles are grained by being that surface — nothing here applies a texture of its own."
+        >
+          <div className="flex flex-wrap gap-space-md">
+            {GRAIN_SURFACES.map((item) => (
+              <figure className="m-0" key={item.surface}>
+                {/* The tile needs a bound because the page itself is painted with the ground
+                    surface, so that one is otherwise invisible. It takes the documented divider,
+                    this system's only stated hairline, as ColorCard and Card already do — not a
+                    stroke of its own. 220x132 is a gallery layout constant, not a design token. */}
+                <div
+                  className={`h-[132px] w-[220px] border-(length:--stroke-divider) border-accent-gold ${item.surface}`}
+                />
+                <figcaption className="mt-space-xs flex flex-col gap-space-3xs">
+                  <span className="type-caption text-ink">{item.label}</span>
+                  <span className="type-caption text-ink">{item.caption}</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </Specimen>
+
+        <RuleList label="Grain rules" rules={GRAIN_RULES} />
+      </GallerySection>
+
+      <GallerySection
         id="iconography"
-        intro="Six marks drawn for this invitation. Shown on both stocks because they take the same gold on each, and at label size beneath, because they are never shown without a label."
+        intro="Six marks drawn for this invitation, plus the seal mark, which is the site's icon rather than a member of the set. The six are shown on both stocks because they take the same gold on each, and at label size beneath, because they are never shown without a label."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -648,6 +728,28 @@ export function FoundationsSections() {
         </Specimen>
 
         <RuleList label="Rules" rules={ICON_RULES} />
+
+        <Specimen
+          description="The site's browser icon, at the sizes a browser actually asks for and large enough to read the drawing."
+          id="iconography-seal"
+          name="The seal mark"
+          source="app/icon.svg"
+          spec="Served from the shipped asset, not a copy — what renders here is the file the browser gets. It is the one mark outside the closed set of six, and the one that is not gold."
+        >
+          <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
+            {[16, 32, 48, 128].map((px) => (
+              <span
+                className="flex flex-col items-center gap-space-2xs"
+                key={px}
+              >
+                <Image alt="" height={px} src="/icon.svg" width={px} />
+                <span className="type-caption text-ink">{px}px</span>
+              </span>
+            ))}
+          </div>
+        </Specimen>
+
+        <RuleList label="Seal rules" rules={SEAL_RULES} />
       </GallerySection>
     </>
   );

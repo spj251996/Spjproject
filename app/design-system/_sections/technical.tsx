@@ -16,6 +16,11 @@ import {
    `Technical Conventions`, `Accessibility Rules`, `Cross-Cutting Rules` and `Iteration Notes` are
    excluded per the spine's settled derivation — not re-derived here.
 
+   DEVIATION FROM THE SPINE, on the owner's call: `Interaction Rules`' own global-default bullets are
+   rendered rather than left to a single cross-reference. The spine treats them as excluded and keeps
+   only the touch-target line; the focus ring and the document-wide selection rule are load-bearing
+   behaviour with no other surface in the gallery, so they are rendered here in document order.
+
    Prose renders through RuleList (semantic type classes directly) — this project has no prose layer
    and the gallery may not invent one (DESIGN.md → Overview → No prose layer). No
    Specimen/SpecimenGroup wrapper: SpanTable and DeviceRuler render directly inside GallerySection, the
@@ -33,7 +38,7 @@ const ZONES: SpanZone[] = [
     name: "Mobile",
     width: "< 48rem (768px)",
     changes: [
-      "Vertical flow; event info and family each split into two screen-feel segments.",
+      "Vertical flow; event info and family each split into two screen-feel panels.",
       "Couple names at display-name-mobile (56px).",
       "Thread follows the mobile-system path.",
     ],
@@ -113,11 +118,20 @@ const ZONE_BARS: RulerStop[] = [
   },
 ];
 
-/* Sanctioned cross-reference (curate-gallery → section-spine.md): touch-target 44px,
-   from the excluded Interaction Rules → Tap bullet. Not double-counting — the spine requires it here. */
-const TOUCH_TARGET_RULES = [
-  "Every interaction is touch-first with a minimum touch-target (44px) hit area.",
-  "Nothing critical depends on hover.",
+/* The touch-target and hover lines now live in GLOBAL_DEFAULTS above, where the doc puts them, so
+   this section no longer restates them — a reader would otherwise meet the same rule twice. */
+
+/* § Interaction Rules — the chapter's own global defaults, in DESIGN.md document order. Component
+   sections carry only their deviations from these. */
+const GLOBAL_DEFAULTS = [
+  "Scroll — scroll is user-controlled at all times. No snapping, no hijacking, no easing that fights input. Spacing and composition align sections to the viewport instead.",
+  "Section entry — content reveals with fade and translate bound to scroll position. Content is present and readable before its reveal completes.",
+  "Tap — every interaction is touch-first with a minimum touch-target (44px) hit area. Nothing critical depends on hover.",
+  "Hover — a subtle enhancement on pointer devices only, and never reveals information.",
+  "Focus — every interactive element takes a focus-ring indicator: 2px at 2px offset, in ink on paper surfaces and accent-gold on the green stock. The ring is a functional indicator, so it is the one place gold gives way to ink — gold measures 2.39:1 on paper against the 3:1 an indicator needs, while ink measures 11.74:1. On the green stock the reverse holds.",
+  "Text selection — nothing on the site is selectable. user-select: none applies to the whole document, with the vendor-prefixed form and the long-press callout suppressed so the selection menu does not appear on iOS either. The cost is accepted: a guest cannot copy the venue address or the date, and the map action is the route to the venue instead. Selection is not focus — nothing in this rule weakens keyboard reachability or the focus ring.",
+  "Modal — the gallery modal opens over the page without unmounting it, and restores scroll position on close.",
+  "Loading — images reserve their final dimensions through image-placeholder so nothing reflows.",
 ];
 
 /* The layout-switch rule itself is NOT repeated here — the section intro states it, and a bullet
@@ -129,17 +143,30 @@ const COLLAPSING_STRATEGY_RULES = [
 
 export function TechnicalSections() {
   return (
-    <GallerySection
-      id="responsive"
-      intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it — with two named exceptions, both typographic. Couple names step up in size at breakpoints.md, since they would otherwise read as undersized once the tablet tier's wider gutters land. heading-lg and date-primary step up there together, having been held at 24px below it so the wedding city fits the narrower column."
-      mapsTo="Interaction Rules → Responsive Behavior"
-      source="--breakpoint-* / --touch-target"
-      title="Interaction · Responsive Behavior"
-    >
-      <SpanTable zones={ZONES} />
-      <DeviceRuler stops={ZONE_BARS} />
-      <RuleList label="Touch targets" rules={TOUCH_TARGET_RULES} />
-      <RuleList label="Collapsing strategy" rules={COLLAPSING_STRATEGY_RULES} />
-    </GallerySection>
+    <>
+      <GallerySection
+        id="interaction-defaults"
+        intro="Global behavioral defaults. Component sections carry only their deviations from these."
+        mapsTo="Interaction Rules"
+        title="Interaction · Global Defaults"
+      >
+        <RuleList rules={GLOBAL_DEFAULTS} />
+      </GallerySection>
+
+      <GallerySection
+        id="responsive"
+        intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it — with two named exceptions, both typographic. Couple names step up in size at breakpoints.md, since they would otherwise read as undersized once the tablet tier's wider gutters land. heading-lg and date-primary step up there together, having been held at 24px below it so the wedding city fits the narrower column."
+        mapsTo="Interaction Rules → Responsive Behavior"
+        source="--breakpoint-* / --touch-target"
+        title="Interaction · Responsive Behavior"
+      >
+        <SpanTable zones={ZONES} />
+        <DeviceRuler stops={ZONE_BARS} />
+        <RuleList
+          label="Collapsing strategy"
+          rules={COLLAPSING_STRATEGY_RULES}
+        />
+      </GallerySection>
+    </>
   );
 }

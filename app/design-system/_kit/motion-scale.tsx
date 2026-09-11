@@ -3,15 +3,12 @@
    Both are static: neither animates, so `prefers-reduced-motion` is satisfied by construction rather
    than by a gate a later edit could drop.
 
-   The split used to be two golds — one meaning-bearing, one decorative. There is now ONE gold, so
-   the distinction moved to a different axis: the bar fill and the bezier curve stay
-   `{colors.accent-gold}` because they carry the measurement, while the empty track, the reference
-   diagonal, the control handles and the control-point rings take `{colors.surface-mount}` — a real
-   token that reads as quiet ground against the base.
-
-   This matters more than it looks: while both were gold, all three duration bars rendered as one
-   solid bar and the scale conveyed nothing at all. The plot well uses the sunken fallback (deepest
-   surface + the documented divider) — this system defines no recessed level. */
+   The bar fill and the bezier curve take `{colors.accent-gold}` because they carry the measurement;
+   the empty track, the reference diagonal, the control handles and the control-point rings take
+   `{colors.surface-mount}`, a real token that reads as quiet ground against the base. Never use gold
+   for both: the system has one gold, and gold on gold renders all three duration bars as one solid
+   bar, erasing the scale entirely. The plot well uses the sunken fallback (deepest surface + the
+   documented divider) — this system defines no recessed level. */
 
 /* Gallery layout constants (skill → visualizer-kit.md → documented bare-px exceptions). */
 const TRACK_W = 280;

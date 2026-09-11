@@ -6,7 +6,8 @@ import { IconBase } from "./icon-base";
    surface. The mark is filled outline rather than stroked line, so its weight is the drawn line's
    own — see DESIGN.md → Foundations → Iconography.
 
-   Dropped from the source: the four bubbles inside the flutes are dropped; the sparkle marks and the wine lines stay. */
+   Intentionally excludes the source's four bubbles inside the flutes — do not re-add them if this
+   mark is re-traced. The sparkle marks and the wine lines are kept. */
 
 export function ReceptionIcon({
   size,

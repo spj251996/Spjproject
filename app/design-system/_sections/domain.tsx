@@ -32,8 +32,8 @@ import { Timeline } from "@/components/timeline/timeline";
    fixed-position child, which none of these are; they render at their natural in-flow height instead.
    Family and Timeline each carry a section-anchored thread segment for the documented reason both
    components' own comments give: thread-overlay is position: fixed and cannot anchor to page content,
-   so the thread reads as a disconnected decoration here — a knowingly deferred Phase-3 defect
-   (work/tasks.md → Project follow-ups), rendered honestly, not fixed or worked
+   so the thread reads as a disconnected decoration here — a knowingly deferred defect, owning phase
+   per work/tasks.md → Backlog → Project follow-ups, rendered honestly, not fixed or worked
    around. */
 
 interface VariantProps {
@@ -56,8 +56,9 @@ function Variant({ label, children }: VariantProps) {
    twice. The thread draw-in and scroll-cue this section is credited with belong to thread-overlay
    and scroll-cue, both already demoed at Components · Shell and Components · UI. */
 const INVITE_RULES = [
-  "Couple names in the display face are the focal element; the wedding date and city follow in date-primary at primary weight, not as a subordinate line.",
-  "Engagement summary sits below in body; an optional short quote sits above the names.",
+  "Couple names in the script face are the focal element; the wedding date and city follow in date-primary at primary weight, not as a subordinate line.",
+  "An eyebrow opens the composition above the couple names. No quote — the closing passage in Wishes carries that role.",
+  "The engagement summary sits below in body; the betrothal block recedes beneath the wedding, secondary in scale and weight.",
   "The thread draws into view along a predefined curve, settles near the lower portion of the screen, and leaves scroll-cue behind, continuing past the viewport rather than disappearing — the one major animated gesture on the page. Both belong to thread-overlay and scroll-cue, demoed at Components · Shell and Components · UI; this section owns no thread markup of its own to render.",
 ];
 
@@ -75,7 +76,9 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
 /* § 16 — Family. The doc's four bullets, its last two merged. Its lead line is NOT repeated here —
    the section intro carries it. */
 const FAMILY_RULES = [
-  "Each group heads with the relationship in heading-lg, the family name directly beneath, then parents, then the couple member with siblings; a sibling's spouse and child sit inline.",
+  "Each group heads with the relationship in heading-lg, the family name directly beneath, then the members in roster order, bride group first.",
+  "A sibling's cluster ALWAYS wraps, at every viewport and not as a responsive behaviour: sibling and spouse share one row, the child centres beneath them. Three-in-a-row reads as three peers and hides the relationship the wrap draws.",
+  "Every portrait renders at one scale; the groom's column runs taller because his roster is longer, and that asymmetry is accepted rather than balanced.",
   "Grouping and text labels carry the relationships — no drawn connectors, no tree lines.",
   "portrait instances appear first with no thread interaction; as names resolve, the thread wraps the bride side, then extends to connect the groom side, ending with both sides joined under slight glow emphasis — the one key interaction on the page.",
 ];
@@ -85,7 +88,8 @@ const FAMILY_RULES = [
    line is NOT repeated here — the section intro carries it. */
 const TIMELINE_RULES = [
   "timeline-node instances alternate left and right on desktop and stack single-column on mobile.",
-  "The thread becomes the vertical spine, extending downward as the reader scrolls, with nodes appearing progressively and activating as they enter view.",
+  "INTERIM until Phase 5: the spine is a plain vertical line in accent-gold at stroke-divider, NOT the thread — a structural rule on the content layer. Phase 5 replaces it with the thread's own generated segment.",
+  "Nodes appear progressively and activate as they enter view.",
   "Density balances readability against total scroll length — neither compact stacking nor whitespace that breaks flow.",
   "Node count is not fixed; the composition takes however many rituals exist.",
 ];
@@ -96,7 +100,7 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/page.tsx",
     composes:
-      "A quotation and the couple names in heading-xl and the display face, an attributed wishes line in body, and a couple illustration entering once with a subtle fade or scale. The thread slows and settles, looping loosely around the illustration, then rests with glow faded to subtle — no continuous motion remains. Candidate for the optional deep-green contrast treatment, already catalogued at Foundations · Colors; the section reads correctly on the ivory base if it is never applied.",
+      "A single centred stack, in order: passage, attribution, illustration, couple names, wishes line — the same shape on desktop and mobile. Quotation and couple names in heading-xl and the script face; the passage carries a rendered attribution beneath it in caption, never unattributed and never at the size of the passage it attributes; the wishes line in body. Carries no date and no city, both of which appear in Invite and Event Info — this section is emotional closure rather than information. A couple illustration enters once with a subtle fade or scale. The thread slows and settles, looping loosely around the illustration, then rests with glow faded to subtle — no continuous motion remains. This section takes the contrast treatment, already catalogued at Foundations · Colors: its base is surface-contrast, its text ink-on-contrast, and its thread the three-layer glow.",
     note: "Not yet composed — app/page.tsx is a holding page today (work/tasks.md → Event Info and Wishes not yet composed), later-phase work rather than a defect. The couple illustration itself has no component or asset anywhere in code yet, so nothing exists to list beyond the page it would compose into.",
   },
 ];
@@ -113,7 +117,7 @@ export function DomainSections() {
         <RuleList rules={INVITE_RULES} />
 
         <Specimen
-          description="Full-viewport opening — couple names in the display face, the date and city, an optional quote, and the engagement summary."
+          description="Full-viewport opening — an eyebrow, couple names in the script face, the date and city, and the engagement summary."
           id="domain-invite"
           name="invite"
           source="@/components/invite/invite"
@@ -134,7 +138,7 @@ export function DomainSections() {
 
       <GallerySection
         id="family"
-        intro="Two family groups in a two-column split on desktop, two screen-feel segments on mobile."
+        intro="Two family groups in a two-column split on desktop, two screen-feel panels on mobile."
         mapsTo="Domain Components → Family"
         title="Domain · Family"
       >
@@ -145,7 +149,7 @@ export function DomainSections() {
           id="domain-family"
           name="family"
           source="@/components/family/family"
-          spec="Client boundary, forced by the one discrete-duration transition on the page (Foundations · Motion, duration-slow) firing once as the section enters view — full reasoning in the component's own header comment. Live, in flow, unframed: the section is not position: fixed. The thread reads as a squiggle passing under the group rather than wrapping bride-to-groom — the same knowingly deferred Phase-3 defect as Components · Shell, rendered honestly, not fixed here. Group headings show the relative side rather than a documented relationship, and member order follows the content array as-authored: both already recorded in the component's own header comment as schema gaps, not new here. Every sample portrait is null, so image-placeholder shows throughout — no portrait photography exists yet."
+          spec="Client boundary, forced by the one discrete-duration transition on the page (Foundations · Motion, duration-slow) firing once as the section enters view — full reasoning in the component's own header comment. Live, in flow, unframed: the section is not position: fixed. The thread reads as a squiggle passing under the group rather than wrapping bride-to-groom — the same knowingly deferred defect as Components · Shell, rendered honestly, not fixed here. Group headings show the relative side rather than a documented relationship, and member order follows the content array as-authored: both already recorded in the component's own header comment as schema gaps, not new here. Every sample portrait is null, so image-placeholder shows throughout — no portrait photography exists yet."
         >
           <Family groups={sampleFamilyGroups} />
         </Specimen>
@@ -164,7 +168,7 @@ export function DomainSections() {
           id="domain-timeline"
           name="timeline"
           source="@/components/timeline/timeline"
-          spec="Client boundary, forced by the open-gallery state shared between the node list and the modal — full reasoning in the component's own header comment. No min-h-dvh: the one section that scrolls to its natural length rather than composing around a viewport. The spine is section-anchored, the same knowingly deferred Phase-3 defect as Components · Shell and Family, rendered honestly, not fixed here. Neither sample below ever opens a gallery: a completed ritual with no images gets no gallery action, and no ritual photography exists yet to populate one."
+          spec="Client boundary, forced by the open-gallery state shared between the node list and the modal — full reasoning in the component's own header comment. No min-h-dvh: the one section that scrolls to its natural length rather than composing around a viewport. The spine is section-anchored, the same knowingly deferred defect as Components · Shell and Family, rendered honestly, not fixed here. Neither sample below ever opens a gallery: a completed ritual with no images gets no gallery action, and no ritual photography exists yet to populate one."
         >
           <div className="flex flex-col gap-space-2xl">
             <Variant label="Four rituals, mixed status — 2 completed, 2 upcoming">

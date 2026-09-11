@@ -23,11 +23,10 @@ export const sampleEvent = {
   address:
     "Placeholder Cathedral, 00 Sample Church Road, Placeholder District, Placeholder State 000000",
   mapUrl: "https://example.com/placeholder-map-location",
-  contactPhone: "+00 00000 00000",
 };
 
 /** Same card with every optional field absent — demonstrates the documented behavior that a missing
-    venue, time, address or action target renders nothing rather than a placeholder label
+    venue, time, address or map target renders nothing rather than a placeholder label
     (rules/data-integrity.md → Missing values). */
 export const sampleEventMinimal = {
   name: "Placeholder Reception",
@@ -37,7 +36,6 @@ export const sampleEventMinimal = {
   time: null,
   address: null,
   mapUrl: null,
-  contactPhone: null,
 };
 
 /** `portrait` with `src: null` — the component's designed missing-image state, where
