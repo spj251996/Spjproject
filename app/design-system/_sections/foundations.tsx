@@ -400,9 +400,9 @@ const ELEVATION_RULES = [
   "Layering adds no heavy assets and does not affect scroll performance.",
 ];
 
-/* § 9 — Iconography. The set exists now, so this renders the real marks rather than its spec. Every
-   rule below changed when it did: the marks are filled outline rather than stroked line, they take
-   gold on BOTH stocks rather than swapping to ivory ink on the green, and there is no Lucide. */
+/* § 9 — Iconography. The six marks as the real components, on both stocks because they take the same
+   gold on each, then again at label size because they are never shown without one. The seal follows
+   them as the site's icon rather than a member of the set. */
 const ICONS = [
   { name: "wedding", marks: "the church ceremony", Icon: WeddingIcon },
   { name: "betrothal", marks: "the betrothal", Icon: BetrothalIcon },
@@ -415,11 +415,11 @@ const ICONS = [
 const ICON_RULES = [
   "Six marks drawn for this invitation, traced from those drawings. A closed set, not an icon library — there is no Lucide, no icon dependency, and a seventh mark means drawing one.",
   "The marks are filled outline, not stroked line. Their weight is the drawn line's own, so they carry no stroke token and the line stays proportional as a mark scales rather than holding a hairline. None should be added for the set.",
-  "accent-gold on BOTH stocks, taken from the surface rather than set on the mark, so one file serves the ivory and the green.",
-  "Decorative and never shown without a text label beside them. That is what keeps them clear of the 3:1 a meaning-bearing mark would owe — a mark used alone leaves the exception and needs ink.",
+  "accent-gold on BOTH stocks, taken from the surface rather than set on the mark, so one file serves the ivory and the green. Measures 2.39:1 on paper and 5.72:1 on the green stock.",
+  "Decorative and never shown without a text label beside them. That is what keeps them clear of the 3:1 a meaning-bearing mark would owe — a constraint on every use, not a description of the current ones. A mark used alone leaves the exception and needs ink.",
   "Sizing matches the diagonal, not width or height: the plate is 1.28 wide to tall and the map pin 0.65, so matching either dimension makes some read large and others small.",
   "Each mark carries an optical nudge on top of that span, from measured ink density rather than eye — at an equal span the church lays down 8.2% ink and the plate 21%. The nudges run 0.88 to 1.03.",
-  "wedding and betrothal carry an added stroke in their own colour. A filled outline has no stroke width to raise, so a same-colour stroke is the only way to thicken one; the other four take none.",
+  "wedding and betrothal carry an added stroke in their own colour, because they read lighter than the rest. A filled outline has no stroke width to raise, so a same-colour stroke is the only way to thicken one; the other four take none.",
   "Each mark is cropped to its own content. The sources carried very different amounts of empty padding, which is what made them read at different sizes before cropping.",
   "The intended feel is etched line work rather than UI iconography.",
 ];
@@ -747,7 +747,7 @@ export function FoundationsSections() {
         <RuleList label="Rules" rules={ICON_RULES} />
 
         <Specimen
-          description="The site's browser icon, at the sizes a browser actually asks for and large enough to read the drawing."
+          description="The site's browser icon: a thread drawn into a heart where it crosses itself, cropped to the heart with a short length of thread either side. Shown at the sizes a browser actually asks for, and large enough to read the drawing."
           id="iconography-seal"
           name="The seal mark"
           source="app/icon.svg"
