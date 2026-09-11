@@ -20,9 +20,9 @@ const PAPER_BASE_RULES = [
 ];
 
 const PAPER_BASE_NO_COMPONENT_RULES = [
-  "The ground is painted by the document body in app/globals.css, not by a layer component — so there is nothing to render in isolation here.",
-  "Grain binds to the surface rather than to the caller, so a component layer over the body would be a second grained surface and apply the texture twice.",
-  "Reopens only if the botanical edge lands in Ship 2 and the background becomes a genuine multi-layer subsystem.",
+  "The ground is painted directly on the page rather than by a dedicated layer, so there is nothing to render in isolation here.",
+  "Grain binds to the surface rather than to the caller, so a component layer over the page ground would be a second grained surface and apply the texture twice.",
+  "Reopens only if the botanical edge lands and the background becomes a genuine multi-layer subsystem.",
 ];
 
 /* § 11 — Botanical Edge, tagged [no component]. Its four specification bullets. */
