@@ -1,0 +1,31 @@
+import { IconBase } from "./icon-base";
+
+/* Marks a venue map link.
+
+   Traced from the owner's drawing, cropped to its own content and recoloured to inherit its
+   surface. The mark is filled outline rather than stroked line, so its weight is the drawn line's
+   own — see DESIGN.md → Foundations → Iconography.
+
+   Dropped from the source: path 2 is a full-width strip along the bottom edge, a scan artefact rather than part of the drawing. */
+
+export function MapIcon({
+  size,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <IconBase
+      className={className}
+      nudge={0.88}
+      size={size}
+      viewBox="25.4 31.7 169.1 261.3"
+    >
+      <g transform="translate(0.000000,300.000000) scale(0.050000,-0.050000)">
+        <path d="M1800 5319 c-1028 -268 -1576 -1390 -1144 -2342 61 -137 136 -259 748 -1224 209 -328 376 -600 372 -603 -4 -4 -93 -25 -199 -48 -1162 -242 -702 -960 617 -962 1411 -2 1819 776 519 990 -97 16 -140 -68 442 853 749 1182 733 1145 734 1667 1 362 -11 428 -123 700 -301 726 -1199 1168 -1966 969z m723 -108 c704 -149 1214 -745 1251 -1462 22 -423 -43 -614 -402 -1186 -786 -1251 -1145 -1811 -1164 -1816 -16 -4 -540 813 -1213 1889 -300 480 -367 692 -350 1098 43 974 936 1677 1878 1477z m-506 -4421 c202 -316 182 -316 382 1 164 260 137 247 413 188 996 -216 570 -708 -612 -707 -1108 1 -1573 463 -690 686 364 91 335 101 507 -168z" />
+        <path d="M1545 4369 c-592 -295 -396 -1018 424 -1567 249 -166 231 -165 462 -11 639 427 899 889 721 1282 -164 362 -638 467 -891 198 l-46 -49 -84 69 c-170 139 -401 170 -586 78z m363 -93 c54 -16 117 -61 186 -132 115 -119 121 -119 224 0 278 320 761 107 762 -336 0 -286 -341 -691 -832 -989 -108 -65 -716 461 -852 736 -199 405 109 839 512 721z" />
+      </g>
+    </IconBase>
+  );
+}

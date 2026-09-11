@@ -123,12 +123,13 @@
   /* Interaction Rules → Tap; Accessibility Rules */
   --touch-target: 44px;
 
-  /* Foundations → Iconography, Layout → divider, and thread-overlay. These are SVG stroke widths
-     and one border width; they are not rehomed into `--border-width-*`, whose `border-*` utilities
-     would misdescribe the icon and thread strokes. */
+  /* Foundations → Layout → divider, and thread-overlay. These are SVG stroke widths and one border
+     width; they are not rehomed into `--border-width-*`, whose `border-*` utilities would misdescribe
+     the thread strokes.
+
+     The two icon stroke tokens are gone. The iconography marks are filled outline rather than stroked
+     line, so nothing consumed them — see DESIGN.md → Foundations → Iconography. */
   --stroke-divider: 1px;
-  --stroke-icon: 1.25px;
-  --stroke-icon-lg: 1.5px;
   --stroke-thread: 1.6px;
   --stroke-thread-wisp: 1.2px;
 

@@ -20,6 +20,14 @@ import {
   TypeScaleList,
   type TypeToken,
 } from "@/app/design-system/_kit";
+import {
+  BetrothalIcon,
+  LoveIcon,
+  LunchIcon,
+  MapIcon,
+  ReceptionIcon,
+  WeddingIcon,
+} from "@/components/icons";
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
@@ -392,19 +400,26 @@ const ELEVATION_RULES = [
   "Layering adds no heavy assets and does not affect scroll performance.",
 ];
 
-/* § 9 — Iconography. Spec prose only: the doc specifies a full icon system, but no icon library is
-   installed, no components/icons/ exists, and no component renders an icon, so there is nothing to
-   catalog and no grid may be invented (DESIGN.md → Foundations → Iconography). */
-const ICON_RULES = [
-  "All icons come from one consistent set — thin, stroke-based, with no fills, rounded stroke ends, and slightly organic curves rather than perfect geometry.",
-  "Stroke is --stroke-icon (1.25px) to --stroke-icon-lg (1.5px), consistent across the set, aligned to the pixel grid so small sizes stay sharp.",
-  "Icons use accent-gold on the ivory base and ink-on-contrast on the contrast section.",
-  "The intended feel is etched or engraved line work rather than UI iconography.",
-  "The set is Lucide with a customized stroke. Individual bespoke SVGs may be drawn to match when Lucide has no suitable glyph.",
+/* § 9 — Iconography. The set exists now, so this renders the real marks rather than its spec. Every
+   rule below changed when it did: the marks are filled outline rather than stroked line, they take
+   gold on BOTH stocks rather than swapping to ivory ink on the green, and there is no Lucide. */
+const ICONS = [
+  { name: "wedding", marks: "the church ceremony", Icon: WeddingIcon },
+  { name: "betrothal", marks: "the betrothal", Icon: BetrothalIcon },
+  { name: "reception", marks: "the reception", Icon: ReceptionIcon },
+  { name: "lunch", marks: "the reception lunch", Icon: LunchIcon },
+  { name: "love", marks: "the closing wishes", Icon: LoveIcon },
+  { name: "map", marks: "a venue's map link", Icon: MapIcon },
 ];
 
-const ICON_GAP_RULES = [
-  "No icon library is installed, no components/icons/ exists, and no component renders an icon — there are zero icons to catalog, so this section renders its spec rather than an icon grid.",
+const ICON_RULES = [
+  "Six marks drawn for this invitation, traced from those drawings. A closed set, not an icon library — there is no Lucide, no icon dependency, and a seventh mark means drawing one.",
+  "The marks are filled outline, not stroked line, so they carry no stroke token and their weight is the drawn line's own. The two icon stroke tokens were retired when nothing was left to consume them.",
+  "accent-gold on BOTH stocks, taken from the surface rather than set on the mark, so one file serves the ivory and the green.",
+  "Decorative and never shown without a text label beside them. That is what keeps them clear of the 3:1 a meaning-bearing mark would owe — a mark used alone leaves the exception and needs ink.",
+  "Sizing matches the diagonal, not width or height: the plate is 1.28 wide to tall and the map pin 0.65, so matching either dimension makes some read large and others small.",
+  "Each mark carries an optical nudge on top of that span, from measured ink density rather than eye — at an equal span the church lays down 8.2% ink and the plate 21%. The nudges run 0.88 to 1.03.",
+  "wedding and betrothal carry an added stroke in their own colour. A filled outline has no stroke width to raise, so a same-colour stroke is the only way to thicken one; the other four take none.",
 ];
 
 export function FoundationsSections() {
@@ -586,12 +601,53 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="The icon system is fully specified in DESIGN.md but wholly unimplemented, so this section renders its spec rather than an icon grid."
+        intro="Six marks drawn for this invitation. Shown on both stocks because they take the same gold on each, and at label size beneath, because they are never shown without a label."
         mapsTo="Foundations → Iconography"
+        source="@/components/icons"
         title="Foundations · Iconography"
       >
-        <RuleList label="Specification" rules={ICON_RULES} />
-        <RuleList label="Not yet implemented" rules={ICON_GAP_RULES} />
+        <Specimen
+          description="Every mark in the set, at an optical span of 96px."
+          id="iconography-set"
+          name="The set"
+          source="@/components/icons"
+          spec="Sized on the diagonal so marks of very different proportion read at one span, then nudged per mark from measured ink density. wedding and betrothal carry an added same-colour stroke because a filled outline has no stroke width to raise."
+        >
+          <div className="flex flex-col gap-space-md">
+            <div className="flex flex-wrap items-center gap-space-lg bg-surface-elevated p-space-md text-accent-gold">
+              {ICONS.map(({ name, Icon }) => (
+                <Icon key={name} size={96} />
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-space-lg bg-surface-contrast p-space-md text-accent-gold">
+              {ICONS.map(({ name, Icon }) => (
+                <Icon key={name} size={96} />
+              ))}
+            </div>
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="Each mark with the label it never appears without."
+          id="iconography-labelled"
+          name="Marks and what they mark"
+          spec="The label is what keeps the mark decorative. Alone, a mark would owe 3:1 and gold's 2.39:1 on paper would fail it."
+        >
+          <div className="flex flex-wrap gap-space-lg bg-surface-elevated p-space-md">
+            {ICONS.map(({ name, marks, Icon }) => (
+              <span className="flex items-center gap-space-2xs" key={name}>
+                <span className="text-accent-gold">
+                  <Icon size={32} />
+                </span>
+                <span className="type-caption text-ink">
+                  {name} — {marks}
+                </span>
+              </span>
+            ))}
+          </div>
+        </Specimen>
+
+        <RuleList label="Rules" rules={ICON_RULES} />
       </GallerySection>
     </>
   );
