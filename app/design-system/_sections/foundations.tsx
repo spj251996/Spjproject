@@ -414,12 +414,14 @@ const ICONS = [
 
 const ICON_RULES = [
   "Six marks drawn for this invitation, traced from those drawings. A closed set, not an icon library — there is no Lucide, no icon dependency, and a seventh mark means drawing one.",
-  "The marks are filled outline, not stroked line, so they carry no stroke token and their weight is the drawn line's own. The two icon stroke tokens were retired when nothing was left to consume them.",
+  "The marks are filled outline, not stroked line. Their weight is the drawn line's own, so they carry no stroke token and the line stays proportional as a mark scales rather than holding a hairline. None should be added for the set.",
   "accent-gold on BOTH stocks, taken from the surface rather than set on the mark, so one file serves the ivory and the green.",
   "Decorative and never shown without a text label beside them. That is what keeps them clear of the 3:1 a meaning-bearing mark would owe — a mark used alone leaves the exception and needs ink.",
   "Sizing matches the diagonal, not width or height: the plate is 1.28 wide to tall and the map pin 0.65, so matching either dimension makes some read large and others small.",
   "Each mark carries an optical nudge on top of that span, from measured ink density rather than eye — at an equal span the church lays down 8.2% ink and the plate 21%. The nudges run 0.88 to 1.03.",
   "wedding and betrothal carry an added stroke in their own colour. A filled outline has no stroke width to raise, so a same-colour stroke is the only way to thicken one; the other four take none.",
+  "Each mark is cropped to its own content. The sources carried very different amounts of empty padding, which is what made them read at different sizes before cropping.",
+  "The intended feel is etched line work rather than UI iconography.",
 ];
 
 /* § Paper Grain. Each tile is painted with the real surface class, so the grain shown is the grain
