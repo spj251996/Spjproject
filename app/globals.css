@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 @import "./styles/type-scale.css";
+@import "./styles/surfaces.css";
 
 /* The starter's own theme layer is gone rather than left beside the real tokens, where it would
    read as sanctioned: `--background`/`--foreground`, the `--color-background`/`--color-foreground`
@@ -8,8 +9,9 @@
    block. DESIGN.md defines one scheme, declared as `color-scheme: light` alongside the tokens.
    What still consumes those identifiers outside this layer is named in the run report. */
 
-/* Background → Paper Base: the ivory base is the only page background. Its static paper texture
-   has no asset in the doc, so no texture is declared here. */
+/* Background → Paper Base: the ivory base is the only page background. Its grain is bound to the
+   surface in the surfaces layer rather than declared here, so `body` and the background layer are
+   grained by the same rule. */
 body {
   background-color: var(--color-surface-base);
   color: var(--color-ink);

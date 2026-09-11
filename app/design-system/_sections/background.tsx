@@ -20,8 +20,8 @@ import { PaperBase } from "@/components/background/paper-base";
 /* § 10 — Paper Base. All three of the doc's bullets; token names carry the values, which § 1 Colors
    already renders as live swatches. */
 const PAPER_BASE_RULES = [
-  "Fills the viewport at surface-base on z-base.",
-  "Texture is static and low-contrast — it reads as material, never as pattern.",
+  "Fills the viewport at surface-base on z-base, and paints #F8F7F3 once its grain is applied — see Foundations → Paper Grain.",
+  "The texture is static and low-contrast — it reads as material, never as pattern.",
   "The one exception is the deep-green contrast section, which takes surface-contrast as an intentional visual event.",
 ];
 
@@ -44,7 +44,7 @@ export function BackgroundSections() {
     <>
       <GallerySection
         id="paper-base"
-        intro="One layered-paper environment rendered behind all content: full-viewport ivory paper carrying a static, minimal paper or satin texture. The background does not change color between sections — section identity comes from composition, never from a background swap."
+        intro="One layered-paper environment rendered behind all content: full-viewport ivory paper carrying the paper grain. The background does not change color between sections — section identity comes from composition, never from a background swap."
         mapsTo="Background → Paper Base"
         title="Background · Paper Base"
       >
@@ -55,7 +55,7 @@ export function BackgroundSections() {
           id="background-paper-base"
           name="paper-base"
           source="@/components/background/paper-base"
-          spec="Live render, not a capture. The frame's transform is the whole mechanism: it makes the frame a containing block, so this `fixed inset-0` layer resolves to the frame instead of the viewport. The fill reads as the page ground because app/globals.css paints the same token on `body` — the sample line above it is positioned on z-content to make the stack visible. The static paper or satin texture the doc names has no asset, tone token, or technique, so none is rendered."
+          spec="Live render, not a capture. The frame's transform is the whole mechanism: it makes the frame a containing block, so this `fixed inset-0` layer resolves to the frame instead of the viewport. The fill reads as the page ground because app/globals.css paints the same token on `body` — the sample line above it is positioned on z-content to make the stack visible. The paper grain arrives with the surface token rather than being applied by this component."
         >
           <ChromeFrame height={200}>
             <PaperBase />

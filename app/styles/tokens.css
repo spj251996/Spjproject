@@ -127,11 +127,26 @@
      width; they are not rehomed into `--border-width-*`, whose `border-*` utilities would misdescribe
      the thread strokes.
 
-     The two icon stroke tokens are gone. The iconography marks are filled outline rather than stroked
-     line, so nothing consumed them — see DESIGN.md → Foundations → Iconography. */
+     Iconography marks are filled outline, not stroked line, so they carry no stroke token — do not
+     add one; see DESIGN.md → Foundations → Iconography. */
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
   --stroke-thread-wisp: 1.2px;
+
+  /* Foundations → Paper Grain. One noise per surface, generated rather than an asset: nothing to
+     load, no element, and one declaration per surface. The tile is drawn at three times its CSS
+     size so the fibre resolves at the screen’s own density — at 1:1 it is upscaled on a
+     high-density display and reads as blotches. Each surface takes the blend its own lightness
+     allows, which is why the four differ; the reasoning is in the doc, not repeated here. */
+  --grain-tile: 200px;
+  --grain-ground-blend: multiply;
+  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.03' intercept='0.97'/><feFuncG type='linear' slope='0.03' intercept='0.97'/><feFuncB type='linear' slope='0.03' intercept='0.97'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-mount-blend: overlay;
+  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.4' intercept='0.3'/><feFuncG type='linear' slope='0.4' intercept='0.3'/><feFuncB type='linear' slope='0.4' intercept='0.3'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-stock-paper-blend: hard-light;
+  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.05' intercept='0.475'/><feFuncG type='linear' slope='0.05' intercept='0.475'/><feFuncB type='linear' slope='0.05' intercept='0.475'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-stock-contrast-blend: hard-light;
+  --grain-stock-contrast: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.1' intercept='0.45'/><feFuncG type='linear' slope='0.1' intercept='0.45'/><feFuncB type='linear' slope='0.1' intercept='0.45'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
 
   /* Foundations → Layout → `mounted-pair`. The mount is one card creased down the middle, and this
      is that fold. Carried as a literal gradient for the same reason the shadow recipes are. Lit from
