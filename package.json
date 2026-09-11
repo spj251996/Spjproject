@@ -11,7 +11,8 @@
     "lint": "biome check",
     "format": "biome format --write",
     "test": "node --test content/*.test.ts",
-    "validate:content": "node content/verify.ts"
+    "validate:content": "node content/verify.ts",
+    "verify:section": "node scripts/verify-section.mjs"
   },
   "dependencies": {
     "next": "16.3.4",
