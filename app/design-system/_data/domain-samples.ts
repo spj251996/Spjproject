@@ -7,16 +7,25 @@
 
 import type { FamilyGroup, Ritual } from "@/content/types";
 
-/** `invite` takes flat scalars, not a domain type. `quote` is present here; passing `null` is the
-    documented way to render no quote line at all. */
+/** `invite` takes the two `WeddingEvent` records, not flat scalars — a corrected date or venue
+    cannot drift between this section and Event Info. */
 export const sampleInvite = {
-  quote:
-    "A placeholder scripture or blessing line, set at the length the real quote will occupy.",
+  eyebrow: "Placeholder eyebrow line",
   coupleNames: "Placeholder & Placeholder",
-  date: "Saturday, 00 Month 0000",
-  city: "Placeholder City",
-  engagementSummary:
-    "A placeholder summary of the engagement — the date, the city, and a single sentence of context, at the length the real copy will run to.",
+  wedding: {
+    id: "sample-wedding",
+    name: "Wedding Ceremony",
+    cityTown: "Placeholder City",
+    date: "2027-01-09",
+    segments: [],
+  },
+  betrothal: {
+    id: "sample-betrothal",
+    name: "Betrothal Ceremony",
+    cityTown: "Placeholder Town",
+    date: "2027-01-04",
+    segments: [],
+  },
 };
 
 /** Both sides, three top-level members each; the groom's sibling additionally nests a spouse and a
