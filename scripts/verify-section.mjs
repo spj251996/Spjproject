@@ -25,12 +25,33 @@ const widths = widthsArg
   ? widthsArg.slice("--widths=".length).split(",").map(Number)
   : DEFAULT_WIDTHS;
 
+/* A hung CLI call would block forever with no error and no exit code, which is a worse outcome for
+   a verification tool than a wrong answer: nothing reports and nothing fails. The timeout converts
+   that into a normal spawn-level failure, which `cli()` already surfaces through `result.error`. */
+const CLI_TIMEOUT_MS = 120_000;
+
+/* One guarded kill, used by both call sites. They are near-identical by nature and already drifted
+   apart once during review — one logging its failure, one silent — so this helper makes that
+   divergence structurally impossible rather than a matter of remembering. ESRCH means the group is
+   already gone, which is the expected case on a failing run; anything else is a real cleanup
+   failure and is surfaced rather than swallowed. */
+function safeKill(pid, label) {
+  try {
+    process.kill(-pid);
+  } catch (error) {
+    if (error.code !== "ESRCH") {
+      console.error(`cleanup: ${label} kill failed — ${error.message}`);
+    }
+  }
+}
+
 function cli(...cliArgs) {
   const result = spawnSync(
     "npx",
     ["playwright-cli", `-s=${SESSION}`, ...cliArgs],
     {
       encoding: "utf8",
+      timeout: CLI_TIMEOUT_MS,
     },
   );
   if (result.status !== 0) {
@@ -70,14 +91,7 @@ async function ensureDevServer() {
       return child;
     }
   }
-  /* Guarded for the same reason as the cleanup block at the end of the file: the group may already
-     be gone — a dev server that crashed during startup is the likeliest reason this loop timed out —
-     and an ESRCH thrown here would replace the message that actually explains the failure. */
-  try {
-    process.kill(-child.pid);
-  } catch {
-    /* Already gone. The throw below carries the real cause. */
-  }
+  safeKill(child.pid, "startup dev server");
   throw new Error("dev server did not answer within 60s");
 }
 
@@ -207,11 +221,7 @@ try {
     console.error(`cleanup: close failed — ${error.message}`);
   }
   if (server !== null) {
-    try {
-      process.kill(-server.pid);
-    } catch (error) {
-      console.error(`cleanup: server kill failed — ${error.message}`);
-    }
+    safeKill(server.pid, "dev server");
   }
 }
 
