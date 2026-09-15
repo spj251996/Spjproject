@@ -42,6 +42,12 @@ export function frameScopeClass(fit: MeasuredFit): string {
 }
 
 const GROUND = "--mounted-sheet-ground";
+const GROUND_VALUE = `var(${GROUND})`;
+
+/* The card's height from the window: every viewport-height term is `svh`, so nothing in the frame
+   moves as a phone's toolbar hides. A landscape card is also capped. */
+const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
+const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 
 /* Foundations → Spacing. Every ground, halved ground, reveal and padding the frame emits must be a
    step on the scale; one that is not fails generation instead of shipping. */
@@ -228,12 +234,48 @@ function paddingRules(
   return `@media ${windowClass.media} {\n${rules.filter(Boolean).join("\n")}\n}`;
 }
 
+/* Where nothing fits — full ground or halved, at the smallest padding — the card is taller than its
+   box. A size container never grows with its content, so the card would paint over whatever section
+   follows. In exactly those windows the box stops being a container and takes the card's height,
+   keeping the window-derived card height as its minimum, and the section grows with it. The box
+   turns flex so the mount still fills that minimum where a fit overstates its content.
+
+   With no container, no `@container` rule can match and the sheet would fall back to the largest
+   padding. The spill takes the smallest, so it is set here, after the padding rules, to win. */
+function spillRules(
+  section: string,
+  windowClass: WindowClass,
+  hero: boolean,
+  scope: string,
+): string {
+  const ground = windowClass.groundTier.ground;
+  const halved = ground * GROUND_HALVING;
+  const box = `${scope} > .${FRAME_CLASS.box}`;
+  const mount = `${box} > .${FRAME_CLASS.mount}`;
+  const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
+  const orientations = windowClass.portraitPossible ? [false, true] : [true];
+  return orientations
+    .map((landscape) =>
+      mediaRule(
+        `@media ${windowClass.media} and (orientation: ${landscape ? "landscape" : "portrait"})`,
+        all(
+          not(windowFits(section, windowClass, hero, ground, landscape)),
+          not(windowFits(section, windowClass, hero, halved, landscape)),
+        ),
+        `${box} { container-type: normal; display: flex; flex-direction: column; height: auto; min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; }
+${mount} { flex: 1 0 auto; }
+${sheet} { padding: ${spacing(smallestPadding(windowClass.groundTier))}; }`,
+      ),
+    )
+    .filter(Boolean)
+    .join("\n");
+}
+
 function frameRules(scope: string): string {
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
-  const ground = `var(${GROUND})`;
-  const cardHeight = `calc(100svh - 2 * ${ground})`;
+  const ground = GROUND_VALUE;
 
   /* Plain `center` first is the fallback for an engine that drops the `safe` declaration. `safe`
      keeps content that outgrows its box on the side the page can scroll to. */
@@ -242,12 +284,10 @@ function frameRules(scope: string): string {
   align-items: center;
   align-items: safe center;`;
 
-  /* Every viewport-height term is `svh`, so nothing in the frame moves as a phone's toolbar hides.
-
-     The mount's `::after` reaches past the box only when the content has grown the card beyond it,
-     and keeps the ground below the card inside the scrollable area then. 1px wide because a
-     zero-width box adds no scrollable overflow in Chromium. It carries no content, so the mount
-     still carries no text. */
+  /* The mount's `::after` reaches past the box only when the content outgrows a card its measured fit
+     said would hold it — a stale fit, which the spill rules cannot see — and keeps the ground below
+     the card inside the scrollable area then. 1px wide because a zero-width box adds no scrollable
+     overflow in Chromium. It carries no content, so the mount still carries no text. */
   return `${scope} {
   display: flex;
   flex-direction: column;
@@ -263,12 +303,12 @@ ${box} {
   container-type: size;
   flex: none;
   width: 100%;
-  height: ${cardHeight};
+  height: ${CARD_HEIGHT};
 }
 @media (orientation: landscape) {
 ${box} {
   width: min(var(--container-content), 100%);
-  height: min(var(--card-height-cap), ${cardHeight});
+  height: ${CAPPED_CARD_HEIGHT};
 }
 }
 ${mount} {
@@ -306,6 +346,7 @@ export function mountedSheetFrameCss(fit: MeasuredFit, hero: boolean): string {
       groundRules(fit.section, windowClass, hero, scope),
       mountRules(windowClass, hero, scope),
       paddingRules(windowClass, hero, scope),
+      spillRules(fit.section, windowClass, hero, scope),
     ]),
   ].join("\n");
 }
