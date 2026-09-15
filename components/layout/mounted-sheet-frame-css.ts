@@ -1,4 +1,5 @@
-/* Extension-qualified, unlike the rest of components/, so node can run this module directly. */
+/* Extension-qualified, unlike the rest of components/: plain node resolves a relative import only
+   with its extension, and this module stays importable outside the app's bundler. */
 import {
   CARD_HEIGHT_CAP,
   CARD_WIDTH_CAP,
@@ -53,7 +54,9 @@ const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 
 /* Foundations → Spacing. Every ground, halved ground, reveal and padding the frame emits must be a
-   step on the scale; one that is not fails generation instead of shipping. */
+   step on the scale; one that is not fails generation instead of shipping. Keyed by each step's pixel
+   value, because the arithmetic that picks a step needs the number a media query cannot read from
+   the token, so a spacing token change must change this map too. */
 const SPACING_TOKEN: Readonly<Record<number, string>> = {
   0: "--spacing-0",
   4: "--spacing-space-3xs",
@@ -127,7 +130,9 @@ function orientationQuery(landscape: boolean): string {
 }
 
 /* Does this window's card, at the given ground, hold the content at the smallest padding? Stated in
-   window terms, so it can decide the ground for a card that is not on screen.
+   window terms, so it can decide the ground for a card that is not on screen. It assumes the frame
+   spans the full window width, which a classic scrollbar narrows — DESIGN.md → Iteration Notes →
+   Known Gaps.
 
    A portrait card is the window less the ground on every side. A landscape card is
    min(width cap, window width − 2 × max(double the ground, (window height − height cap) / 2)) wide
@@ -223,8 +228,8 @@ function mountRules(
 /* The largest padding step at which the card clears one of the fit's rectangles; the smallest
    where none is cleared.
 
-   The card's height is the window height less the ground, capped in landscape, so it is a media
-   query; a rectangle taller than the cap is reachable only in portrait. The card's width is read from
+   The height the window gives the card is the window height less the ground, capped in landscape,
+   so it is a media query; a rectangle taller than the cap is reachable only in portrait. The card's width is read from
    the box, an inline-size container: a landscape card narrows by the window's height as well as its
    width once the height cap binds, which no media query can state, and the box's width is exactly
    the card's. Inline-size containment leaves the box's height to its content.
@@ -299,8 +304,8 @@ function frameRules(scope: string): string {
   align-items: center;
   align-items: safe center;`;
 
-  /* The box, the mount and the sheet are flex columns that grow, so each fills the minimum height
-     above it and every one of them lengthens with content taller than that. */
+  /* The box holds the card's minimum height and lengthens past it with its content. The mount and the
+     sheet grow inside it as flex items, so each fills the height above it. */
   return `${scope} {
   display: flex;
   flex-direction: column;
@@ -340,8 +345,8 @@ ${sheet} {
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no tier
-   line, a tier line not below its narrowest window, a card rectangle wider than the height cap, or a
-   value off the spacing scale. */
+   line, a tier line not below its narrowest window, a reachable card rectangle wider than the height
+   cap at the smallest padding, or a value off the spacing scale. */
 export function mountedSheetFrameCss(fit: MeasuredFit, hero: boolean): string {
   const scope = `.${frameScopeClass(fit)}`;
   const classes = windowClasses(fit);

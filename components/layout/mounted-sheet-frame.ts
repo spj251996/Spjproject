@@ -6,8 +6,8 @@
    into card rectangles, and the tier lines derived from it. A section supplies its content as a
    `MeasuredFit`; mounted-sheet-frame-css.ts turns the two into that section's stylesheet.
 
-   Plain data and arithmetic, with no React and no DOM, so a node script — the section measuring
-   script — can import it. */
+   Plain data and arithmetic, with no React and no DOM, so plain node can import it as well as the
+   app's bundler. */
 
 /* Type follows these alone (Interaction Rules → Responsive Behavior). */
 export type WidthTier = "mobile" | "tablet" | "desktop";
@@ -29,8 +29,10 @@ export interface FitRegime {
    `section` names the section's stylesheet scope, so it must be stable and unique on the page:
    lowercase letters, digits and hyphens, starting with a letter.
 
-   Each width tier's regimes are ordered by ascending `minContentWidth`. Below a tier's first regime
-   nothing was measured, and the frame treats that as not fitting. */
+   Each width tier's regimes are ordered by ascending `minContentWidth`, and `contentHeight` never
+   rises from one to the next: a card fits when it clears any one regime's rectangle, which holds only
+   while a wider column never stands taller. Below a tier's first regime nothing was measured, and
+   the frame treats that as not fitting. */
 export interface MeasuredFit {
   section: string;
   regimes: Readonly<Record<WidthTier, readonly FitRegime[]>>;
@@ -43,6 +45,9 @@ interface GroundTier {
   paddingSteps: readonly number[];
 }
 
+/* `{spacing.*}` steps held as numbers, like the reveal ladder and the caps below, because a media
+   query cannot read a custom property. A spacing token change must change them here, and the
+   pixel-keyed spacing map in mounted-sheet-frame-css.ts. */
 const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
   phone: { name: "phone", ground: 16, paddingSteps: [32, 24, 16] },
   tablet: { name: "tablet", ground: 48, paddingSteps: [64, 48, 32] },
@@ -173,17 +178,53 @@ function tierLine(
 }
 
 const SECTION_NAME = /^[a-z][a-z0-9-]*$/;
+const FIT_KEYS: readonly string[] = ["section", "regimes"];
+const WIDTH_TIERS: readonly WidthTier[] = ["mobile", "tablet", "desktop"];
 
+/* A fit is data a script writes, so its shape is checked here rather than trusted to the type. */
 function assertValidFit(fit: MeasuredFit): void {
-  if (!SECTION_NAME.test(fit.section)) {
+  const record = fit as unknown as Record<string, unknown>;
+  const label = `section "${String(record.section)}"`;
+  for (const key of Object.keys(record)) {
+    if (!FIT_KEYS.includes(key)) {
+      throw new Error(
+        `mounted-sheet-frame: ${label} has an unknown key "${key}". A measured fit carries only section and regimes.`,
+      );
+    }
+  }
+  if (
+    typeof record.section !== "string" ||
+    !SECTION_NAME.test(record.section)
+  ) {
     throw new Error(
-      `mounted-sheet-frame: section name "${fit.section}" must be lowercase letters, digits and hyphens, starting with a letter, because it becomes a class name.`,
+      `mounted-sheet-frame: section name "${String(record.section)}" must be lowercase letters, digits and hyphens, starting with a letter, because it becomes a class name.`,
     );
   }
-  for (const [widthTier, regimes] of Object.entries(fit.regimes)) {
+  const byTier = record.regimes;
+  if (typeof byTier !== "object" || byTier === null) {
+    throw new Error(
+      `mounted-sheet-frame: ${label} has no regimes. A measured fit needs regimes for mobile, tablet and desktop type.`,
+    );
+  }
+  for (const key of Object.keys(byTier)) {
+    if (!(WIDTH_TIERS as readonly string[]).includes(key)) {
+      throw new Error(
+        `mounted-sheet-frame: ${label} has an unknown width tier "${key}". The width tiers are mobile, tablet and desktop.`,
+      );
+    }
+  }
+  for (const widthTier of WIDTH_TIERS) {
+    const regimes = (byTier as Partial<Record<WidthTier, FitRegime[]>>)[
+      widthTier
+    ];
+    if (!Array.isArray(regimes)) {
+      throw new Error(
+        `mounted-sheet-frame: ${label} has no ${widthTier} regimes. Every width tier needs its measured fit.`,
+      );
+    }
     if (regimes.length === 0) {
       throw new Error(
-        `mounted-sheet-frame: section "${fit.section}" has no measured regimes for ${widthTier} type.`,
+        `mounted-sheet-frame: ${label} has no measured regimes for ${widthTier} type.`,
       );
     }
     regimes.forEach((regime, index) => {
@@ -196,7 +237,15 @@ function assertValidFit(fit: MeasuredFit): void {
           regime.minContentWidth > regimes[index - 1].minContentWidth);
       if (!valid) {
         throw new Error(
-          `mounted-sheet-frame: section "${fit.section}", ${widthTier} regime ${index} is invalid. Widths and heights must be positive, and widths strictly ascending.`,
+          `mounted-sheet-frame: ${label}, ${widthTier} regime ${index} is invalid. Widths and heights must be positive, and widths strictly ascending.`,
+        );
+      }
+      if (
+        index > 0 &&
+        regime.contentHeight > regimes[index - 1].contentHeight
+      ) {
+        throw new Error(
+          `mounted-sheet-frame: ${label}, ${widthTier} regime ${index} stands ${formatPx(regime.contentHeight)} tall, taller than regime ${index - 1} (${formatPx(regimes[index - 1].contentHeight)}) at a narrower width. A regime's height must never rise as its width grows. Re-measure the section.`,
         );
       }
     });

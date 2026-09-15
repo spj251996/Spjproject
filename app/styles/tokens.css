@@ -71,7 +71,9 @@
      the doc's own zero step reopens exactly the zero utilities (p-0, gap-0, inset-0) and nothing
      else. The named steps keep their `space-` prefix because bare t-shirt keys shadow the
      container scale across max-w-/min-w-/basis-/w-/h-; the zero step stays bare because prefixing
-     it is what would break those zero utilities. */
+     it is what would break those zero utilities.
+     The card frame holds these steps as numbers in components/layout/mounted-sheet-frame*.ts, because
+     a media query cannot read a custom property — a change here must change them there too. */
   --spacing: initial;
   --spacing-0: 0px;
   --spacing-space-3xs: 4px;

@@ -8,14 +8,22 @@ import {
 
 /* DESIGN.md → Foundations → Layout → `mounted-sheet`.
 
-   Two elements because there are two sheets: the mount, and the stock laid onto it. No state, no
-   effects, no handlers, so no client boundary.
+   The card is two elements because there are two sheets: the mount, and the stock laid onto it. No
+   state, no effects, no handlers, so no client boundary.
 
    Given a section's measured fit, the card is framed to the window: a ground wrapper, a box the
    card's padding queries, the mount and the sheet, plus that section's generated stylesheet. Every
    step of the frame is in that stylesheet. The composing section supplies the `<section>` element
    and the content. Without a fit the card is the static card below, for a surface with no window to
    fit — a specimen box, or a long scrolling section.
+
+   Two contracts bind a framed card's caller:
+   - The frame must span the full viewport width, with no horizontal padding, margin or width cap
+     around it, because its ground is decided against the window's width. A classic scrollbar already
+     narrows it slightly — DESIGN.md → Iteration Notes → Known Gaps.
+   - The frame's unlayered sheet rules set `display`, `flex-direction`, `flex`, `justify-content`,
+     `align-items` and `padding`, so a `className` utility for any of them — per-side padding and
+     flex grow, shrink or basis included — is discarded.
 
    The mount keeps `shadow-mount` at every width even where it loses its fill and reveal. A non-hero
    section has no mount below the md breakpoint unframed, or in the phone ground tier framed, but the
