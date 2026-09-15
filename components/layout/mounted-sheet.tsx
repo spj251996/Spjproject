@@ -1,13 +1,26 @@
 import type { ReactNode } from "react";
+import type { MeasuredFit } from "./mounted-sheet-frame";
+import {
+  FRAME_CLASS,
+  frameScopeClass,
+  mountedSheetFrameCss,
+} from "./mounted-sheet-frame-css";
 
 /* DESIGN.md → Foundations → Layout → `mounted-sheet`.
 
    Two elements because there are two sheets: the mount, and the stock laid onto it. No state, no
    effects, no handlers, so no client boundary.
 
-   The mount keeps `shadow-mount` at every width even where it loses its fill and reveal. Below the
-   md breakpoint a non-hero section has no mount, but the sheet still has to lift off the ground —
-   the wrapper stops being a visible mount and goes on casting.
+   Given a section's measured fit, the card is framed to the window: a ground wrapper, a box the
+   card's padding queries, the mount and the sheet, plus that section's generated stylesheet. Every
+   step of the frame is in that stylesheet. The composing section supplies the `<section>` element
+   and the content. Without a fit the card is the static card below, for a surface with no window to
+   fit — a specimen box, or a long scrolling section.
+
+   The mount keeps `shadow-mount` at every width even where it loses its fill and reveal. A non-hero
+   section has no mount below the md breakpoint unframed, or in the phone ground tier framed, but the
+   sheet still has to lift off the ground — the wrapper stops being a visible mount and goes on
+   casting.
 
    The reveal resolves at the point of use rather than through `{reveal.*}` tokens: those keys are
    aliases of `{spacing.space-sm}` and `{spacing.space-xs}`, and a token that only aliases another
@@ -22,8 +35,10 @@ type Stock = "paper" | "contrast";
 interface MountedSheetProps {
   children: ReactNode;
   stock?: Stock;
-  /* The opening section is the one that keeps its mount below the md breakpoint. */
+  /* The opening section is the one that keeps its mount at every width. */
   hero?: boolean;
+  /* The section's measured fit, which frames the card to the window. */
+  fit?: MeasuredFit;
   className?: string;
 }
 
@@ -51,8 +66,32 @@ export function MountedSheet({
   children,
   stock = "paper",
   hero = false,
+  fit,
   className,
 }: MountedSheetProps) {
+  if (fit !== undefined) {
+    /* The frame's stylesheet sets the mount's reveal and the sheet's padding, and removes the
+       mount's fill where it does not show, so neither element carries a padding utility here. */
+    return (
+      <>
+        <style>{mountedSheetFrameCss(fit, hero)}</style>
+        <div className={frameScopeClass(fit)}>
+          <div className={FRAME_CLASS.box}>
+            <div
+              className={`${FRAME_CLASS.mount} ${MOUNT_BASE} bg-surface-mount`}
+            >
+              <div
+                className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
+              >
+                {children}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <div
       className={`${MOUNT_BASE} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}

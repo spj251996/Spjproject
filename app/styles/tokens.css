@@ -108,7 +108,8 @@
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
 
-  /* Foundations → Layout. Both caps are stated only in prose in DESIGN.md — reported as drift. */
+  /* Foundations → Layout. These two width caps are stated only in prose in DESIGN.md — reported as
+     drift. The card's height cap has a YAML entry and sits in :root below, outside this namespace. */
   --container-content: 1200px;
   --container-text: 600px;
 }
@@ -122,6 +123,12 @@
 
   /* Interaction Rules → Tap; Accessibility Rules */
   --touch-target: 44px;
+
+  /* Foundations → Layout → `mounted-sheet` → The frame. A height, so it stays out of the
+     `--container-*` namespace, whose utilities are widths. The frame's thresholds are derived from
+     the same number in components/layout/mounted-sheet-frame.ts, because a media query cannot read
+     this variable — a change here must change it there too. */
+  --card-height-cap: 720px;
 
   /* Foundations → Layout → divider, and thread-overlay. These are SVG stroke widths and one border
      width; they are not rehomed into `--border-width-*`, whose `border-*` utilities would misdescribe
@@ -173,7 +180,8 @@
 
   /* Interaction Rules → Focus. The colors stay references, never copied literals. The ring is a
      functional indicator needing 3:1, which is the one place gold gives way to ink: gold measures
-     2.39:1 on paper against ink's 11.74:1. On the green stock the reverse holds. */
+     2.39:1 on the ground and 2.46:1 on the paper stock, against ink's 11.74:1 and 12.05:1. On the
+     green stock the reverse holds. */
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--color-ink);
