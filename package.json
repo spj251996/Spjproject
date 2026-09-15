@@ -12,7 +12,8 @@
     "format": "biome format --write",
     "test": "node --test content/*.test.ts",
     "validate:content": "node content/verify.ts",
-    "verify:section": "node scripts/verify-section.mjs"
+    "verify:section": "node scripts/verify-section.mjs",
+    "measure:fit": "node scripts/measure-section-fit.mjs"
   },
   "dependencies": {
     "next": "16.3.4",
