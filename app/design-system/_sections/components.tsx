@@ -135,7 +135,7 @@ export function ComponentsSections() {
             "Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it.",
             "Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline.",
             "Minimum hit area 44px regardless of visual size.",
-            "THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1, below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them.",
+            "THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1 on the ground and 2.46:1 on the paper stock — both below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them.",
             "The documented instance is an anchor, live under the page-level guard that cancels the navigation.",
             "The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page.",
           ]}

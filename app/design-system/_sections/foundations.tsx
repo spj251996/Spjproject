@@ -93,13 +93,13 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "ONE gold, and it does not vary by ground. It marks eyebrows, the engraved rule, dividers and active states on both stocks. RECORDED EXCEPTION: 2.39:1 on paper against AA's 4.5:1 — a deliberate decision scoped to the eyebrow, the engraved rule's label, and the six iconography marks. Every other text role uses ink. Do not 'fix' it. On the green stock the same gold measures 5.72:1 and is compliant.",
+    note: "ONE gold, and it does not vary by ground. It marks eyebrows, the engraved rule, dividers and active states on both stocks. RECORDED EXCEPTION: 2.39:1 on the ground and 2.46:1 on the paper stock, against AA's 4.5:1 — which of the two applies depends only on the surface beneath the gold. A deliberate decision scoped to the eyebrow, the engraved rule's label, and the six iconography marks. Every other text role uses ink. Do not 'fix' it. On the green stock the same gold measures 5.72:1 and is compliant.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "The single gold. 2.39:1 on paper (the recorded exception), 5.72:1 on the green stock. Never used for the focus ring on paper, where it falls under the 3:1 an indicator needs.",
+          "The single gold. 2.39:1 on the ground and 2.46:1 on the paper stock (the recorded exception), 5.72:1 on the green stock. Never used for the focus ring on paper, where both fall under the 3:1 an indicator needs.",
       },
     ],
   },
@@ -205,7 +205,7 @@ const TYPE_RULES = [
   "heading-lg and date-primary step together below md, both to 24px, never one alone — they are one size separated by weight, so moving either on its own would make the date read as subordinate to the event name above it. Koothattukulam at date-primary measures 224px against the 184px column a mounted section leaves at 320px.",
   "Body sizing is set for a mixed-age audience; it does not shrink below 17px at any viewport.",
   "type-caption is the only role smaller than body, and the only one under that floor — legitimate because it never carries long-form copy, only a line read in a glance. Its tighter leading is part of that scoping, not a styling preference.",
-  "Unlike the eyebrow, type-caption owns no color: it takes ink at 11.74:1 on paper and ink-on-contrast at 12.55:1 on the green stock, so it is legal on both without an exception. Hierarchy here comes from size alone, which is what engraved stock does — one ink, struck once, the secondary line set smaller rather than lightened.",
+  "Unlike the eyebrow, type-caption owns no color: it takes ink on paper — 11.74:1 on the ground, 12.05:1 on the paper stock — and ink-on-contrast at 12.55:1 on the green stock, so it is legal on both without an exception. Hierarchy here comes from size alone, which is what engraved stock does — one ink, struck once, the secondary line set smaller rather than lightened.",
   "Tracking and casing ride the class rather than the metadata column: date-primary 0.06em, eyebrow 0.2em uppercase, action 0.16em uppercase.",
 ];
 
@@ -227,9 +227,13 @@ const SPACING_STEPS: BarItem[] = [
 const SPACING_RULES = [
   "Tight grouping uses space-2xs (8px) to space-sm (16px).",
   "Component padding uses space-sm (16px) to space-md (24px).",
-  "Section spacing uses space-2xl (64px) to space-3xl (96px).",
-  "The sheet's padding is a ladder because one constant cannot do both jobs — 32px is a card margin on a phone and a hairline on a 1200px sheet: space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above it. It climbs with the sheet so the margin holds near a tenth of its width — measured at 11.8%, 9.2% and 8.7%.",
-  "The page margin holds space-md (24px) between the viewport edge and the mount at every tier and does not climb: past the 1200px content cap the ground itself supplies the margin.",
+  "Between two unframed sections back to back: space-2xl (64px) to space-3xl (96px).",
+  "Sections without a frame — the timeline, and Event Info's mounted-pair — keep the viewport-edge step, space-md (24px) at every tier, until each one's own pass decides its edge.",
+  "A framed section takes its ground from the window instead of a fixed step: space-sm (16px) at the phone tier, space-xl (48px) at tablet, space-3xl (96px) at laptop — how ground and the sheet's padding give way when space runs out is owned by Foundations · Layout → mounted-sheet.",
+  "Two framed sections back to back are separated by their own ground rather than the between-sections step — at least 32px, 96px and 192px apart at full phone, tablet and laptop ground.",
+  "A landscape window's side ground is a layout value, not a spacing step, with its own rule in mounted-sheet → The frame; its 192px minimum at full laptop ground is off the scale by design.",
+  "Halved grounds — space-2xs (8px), space-md (24px), space-xl (48px) — are all on the scale.",
+  "The ground stops climbing at the laptop tier: past the card's caps a bigger landscape window turns its extra space into ground on its own.",
   "Content never hugs the viewport edge; vertical rhythm stays consistent across sections.",
   "Named steps carry a space- prefix: the bare t-shirt keys double as the styling framework's width-scale keys, and the spacing value silently wins — a width cap named lg resolved to 32px.",
   "The zero step keeps the bare name 0 — it collides with nothing, and prefixing it stops every zero-valued step resolving. Its bar is correctly invisible.",
@@ -238,9 +242,10 @@ const SPACING_RULES = [
 const LAYOUT_RULES = [
   "Each major section is composed around one viewport height, with the timeline as the deliberate exception.",
   "Content width caps at 1200px and text blocks at 600px; sheets flex within the grid.",
+  "A card framed by mounted-sheet caps at 1200px wide and --card-height-cap (720px) tall — the width cap is the content cap above. Both bind landscape windows only; a portrait window's card is never capped.",
   "Sections alternate between dense composition (event info) and airy composition (invite, wishes) so no two adjacent sections carry equal visual weight.",
   "Whitespace is structural, not leftover space.",
-  "Both caps are stated only in DESIGN.md prose, in no token block; the token layer emits them as --container-content and --container-text.",
+  "The two width caps are stated only in DESIGN.md prose, reported as drift; the token layer emits them as --container-content and --container-text. The height cap has a real YAML entry and sits outside that namespace as --card-height-cap — a height rather than a width, so it mints no width utility.",
 ];
 
 const IMAGERY_RULES = [
@@ -415,7 +420,7 @@ const ICONS = [
 const ICON_RULES = [
   "Six marks drawn for this invitation, traced from those drawings. A closed set, not an icon library — there is no Lucide, no icon dependency, and a seventh mark means drawing one.",
   "The marks are filled outline, not stroked line. Their weight is the drawn line's own, so they carry no stroke token and the line stays proportional as a mark scales rather than holding a hairline. None should be added for the set.",
-  "accent-gold on BOTH stocks, taken from the surface rather than set on the mark, so one file serves the ivory and the green. Measures 2.39:1 on paper and 5.72:1 on the green stock.",
+  "accent-gold on BOTH stocks, taken from the surface rather than set on the mark, so one file serves the ivory and the green. Measures 2.46:1 on the paper stock and 5.72:1 on the green stock.",
   "Decorative and never shown without a text label beside them. That is what keeps them clear of the 3:1 a meaning-bearing mark would owe — a constraint on every use, not a description of the current ones. A mark used alone leaves the exception and needs ink.",
   "Sizing matches the diagonal, not width or height: the plate is 1.28 wide to tall and the map pin 0.65, so matching either dimension makes some read large and others small.",
   "Each mark carries an optical nudge on top of that span, from measured ink density rather than eye — at an equal span the church lays down 8.2% ink and the plate 21%. The nudges run 0.88 to 1.03.",
@@ -514,15 +519,18 @@ export function FoundationsSections() {
         <RuleList rules={LAYOUT_RULES} />
 
         <Specimen
-          description="The card layout every section is built on — a backing mount with an inner sheet laid onto it."
+          description="The card every section is built on — a backing mount with an inner sheet laid onto it, framed to fill the window wherever a section supplies its measured fit. Shown here WITHOUT a fit, exactly as a specimen box always renders it."
           id="layout-mounted-sheet"
           name="mounted-sheet"
           source="@/components/layout/mounted-sheet"
           spec={[
-            "Two stocks, one mount. The mount never changes colour; only the inner stock does.",
-            "Reveal is 16px at lg, 12px at md, and below md only the invite section keeps its mount — resize the window to watch the ladder.",
+            "Two stocks, one mount, square on both layers. The mount never changes colour — only the inner stock does — and carries no text.",
+            "Rendered here without a measured fit, the same way a specimen box or a long scrolling section is: the sheet's padding climbs with width instead of the ground — space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above — and a non-hero mount drops its fill and reveal below the md breakpoint rather than at a ground tier. Resize the window to watch it.",
+            "The reveal ladder still applies wherever the mount shows — 16px at lg and above, 12px below it.",
             "The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground.",
-            "The mount carries no text.",
+            "GIVEN a section's measured fit, this same component frames instead: the card fills the window inside its ground — phone 16px, tablet 48px, laptop 96px — up to 1200 x 720px on landscape windows only, always centred and centred safely. Padding gives way before the ground halves, and content is never hidden.",
+            "A framed window drops to the phone ground tier below its own tier line, derived per section from that section's measured content by a committed script, never typed — two sections can change tier at different heights.",
+            "None of that answers to a specimen box, which has no window to fit — it is demonstrated on the page itself, at /, where the invite is the one framed section Phase 4 ships today.",
           ]}
         >
           <div className="flex flex-col gap-space-lg">
@@ -562,7 +570,7 @@ export function FoundationsSections() {
           name="mounted-pair"
           source="@/components/layout/mounted-pair"
           spec={[
-            "Same mount as mounted-sheet, on the same reveal ladder, and the sheets take the same padding ladder too — one rule across both layouts.",
+            "Same mount as mounted-sheet, on the same reveal ladder. The pair keeps its OWN padding ladder — space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above — which happens to match mounted-sheet's unframed ladder today, and its current mount behaviour, until the Event Info pass designs how a pair fits the window frame.",
             "The gap is TWICE the reveal, 32px above lg and 24px below, because each sheet is centred on its own leaf of the opened card: the sheet's reveal on the fold side meets the other sheet's at the crease, so half the gap equals the outer reveal exactly.",
             "The mount carries its crease at the fold, 22px wide, lit from the right, hidden wherever a sheet covers it.",
             "Below md the mount goes and the sheets stack, the crease goes with it since an unfolded card has no fold, and each sheet takes shadow-mount in place of shadow-sheet because standing on the ground it does the lifting the mount was doing.",
@@ -728,7 +736,7 @@ export function FoundationsSections() {
           description="Each mark with the label it never appears without."
           id="iconography-labelled"
           name="Marks and what they mark"
-          spec="The label is what keeps the mark decorative. Alone, a mark would owe 3:1 and gold's 2.39:1 on paper would fail it."
+          spec="The label is what keeps the mark decorative. Alone, a mark would owe 3:1 and gold's 2.46:1 on the paper stock would fail it."
         >
           <div className="flex flex-wrap gap-space-lg bg-surface-elevated p-space-md">
             {ICONS.map(({ name, marks, Icon }) => (
