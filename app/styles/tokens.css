@@ -72,8 +72,9 @@
      else. The named steps keep their `space-` prefix because bare t-shirt keys shadow the
      container scale across max-w-/min-w-/basis-/w-/h-; the zero step stays bare because prefixing
      it is what would break those zero utilities.
-     The card frame holds these steps as numbers in components/layout/mounted-sheet-frame*.ts, because
-     a media query cannot read a custom property — a change here must change them there too. */
+     The card frame holds these steps as numbers in components/layout/mounted-sheet-frame*.ts,
+     because a media query cannot read a custom property — a change here must change them there
+     too. */
   --spacing: initial;
   --spacing-0: 0px;
   --spacing-space-3xs: 4px;
@@ -106,12 +107,17 @@
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
   --ease-settle: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Responsive Behavior */
+  /* Responsive Behavior. The card frame holds these as numbers in
+     components/layout/mounted-sheet-frame.ts, because a media query cannot read a custom property —
+     a change here must change them there too. */
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
 
   /* Foundations → Layout. These two width caps are stated only in prose in DESIGN.md — reported as
-     drift. The card's height cap has a YAML entry and sits in :root below, outside this namespace. */
+     drift. The card's height cap has a YAML entry and sits in :root below, outside this namespace.
+     The card frame holds `--container-content` as a number in
+     components/layout/mounted-sheet-frame*.ts, because a media query cannot read a custom
+     property — a change here must change it there too. */
   --container-content: 1200px;
   --container-text: 600px;
 }
@@ -128,7 +134,7 @@
 
   /* Foundations → Layout → `mounted-sheet` → The frame. A height, so it stays out of the
      `--container-*` namespace, whose utilities are widths. The frame's thresholds are derived from
-     the same number in components/layout/mounted-sheet-frame.ts, because a media query cannot read
+     the same number in components/layout/mounted-sheet-frame*.ts, because a media query cannot read
      this variable — a change here must change it there too. */
   --card-height-cap: 720px;
 

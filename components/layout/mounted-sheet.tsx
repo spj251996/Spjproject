@@ -19,15 +19,15 @@ import {
 
    Two contracts bind a framed card's caller:
    - The frame must span the full viewport width, with no horizontal padding, margin or width cap
-     around it, because its ground is decided against the window's width. A classic scrollbar already
-     narrows it slightly — DESIGN.md → Iteration Notes → Known Gaps.
+     around it, because its ground is decided against the window's width. A classic scrollbar
+     already narrows it slightly — DESIGN.md → Iteration Notes → Known Gaps.
    - The frame's unlayered sheet rules set `display`, `flex-direction`, `flex`, `justify-content`,
      `align-items` and `padding`, so a `className` utility for any of them — per-side padding and
      flex grow, shrink or basis included — is discarded.
 
    The mount keeps `shadow-mount` at every width even where it loses its fill and reveal. A non-hero
-   section has no mount below the md breakpoint unframed, or in the phone ground tier framed, but the
-   sheet still has to lift off the ground — the wrapper stops being a visible mount and goes on
+   section has no mount below the md breakpoint unframed, or in the phone ground tier framed, but
+   the sheet still has to lift off the ground — the wrapper stops being a visible mount and goes on
    casting.
 
    The reveal resolves at the point of use rather than through `{reveal.*}` tokens: those keys are
@@ -35,8 +35,8 @@ import {
    token earns nothing (foundations-mapping → Which keys become tokens).
 
    `contrast` establishes the deep-green ground, so it rebinds `--focus-ring-color` on its own
-   subtree; the global `:focus-visible` rule reads the variable and inherits it. One rebinding, not a
-   second ring definition. */
+   subtree; the global `:focus-visible` rule reads the variable and inherits it. One rebinding, not
+   a second ring definition. */
 
 type Stock = "paper" | "contrast";
 

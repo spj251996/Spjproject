@@ -54,9 +54,9 @@ const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 
 /* Foundations → Spacing. Every ground, halved ground, reveal and padding the frame emits must be a
-   step on the scale; one that is not fails generation instead of shipping. Keyed by each step's pixel
-   value, because the arithmetic that picks a step needs the number a media query cannot read from
-   the token, so a spacing token change must change this map too. */
+   step on the scale; one that is not fails generation instead of shipping. Keyed by each step's
+   pixel value, because the arithmetic that picks a step needs the number a media query cannot read
+   from the token, so a spacing token change must change this map too. */
 const SPACING_TOKEN: Readonly<Record<number, string>> = {
   0: "--spacing-0",
   4: "--spacing-space-3xs",
@@ -212,7 +212,9 @@ function groundRules(
 }
 
 /* The mount's reveal comes from the same number the fit arithmetic used, so the two cannot drift.
-   Where the mount does not show it loses its fill and its grain, and keeps `shadow-mount`. */
+   Where the mount does not show it loses its fill and its grain, and keeps `shadow-mount`. The
+   grain is the surface's background image (app/styles/surfaces.css), which is why clearing
+   `background-image` removes it; a grain drawn any other way would need a matching change here. */
 function mountRules(
   windowClass: WindowClass,
   hero: boolean,
@@ -229,10 +231,11 @@ function mountRules(
    where none is cleared.
 
    The height the window gives the card is the window height less the ground, capped in landscape,
-   so it is a media query; a rectangle taller than the cap is reachable only in portrait. The card's width is read from
-   the box, an inline-size container: a landscape card narrows by the window's height as well as its
-   width once the height cap binds, which no media query can state, and the box's width is exactly
-   the card's. Inline-size containment leaves the box's height to its content.
+   so it is a media query; a rectangle taller than the cap is reachable only in portrait. The card's
+   width is read from the box, an inline-size container: a landscape card narrows by the window's
+   height as well as its width once the height cap binds, which no media query can state, and the
+   box's width is exactly the card's. Inline-size containment leaves the box's height to its
+   content.
 
    Each rule sets one step for one rectangle, so a step's rectangles are alternatives, and larger
    steps come later and win — the cascade takes the largest step that fits, with no negation.
@@ -304,8 +307,8 @@ function frameRules(scope: string): string {
   align-items: center;
   align-items: safe center;`;
 
-  /* The box holds the card's minimum height and lengthens past it with its content. The mount and the
-     sheet grow inside it as flex items, so each fills the height above it. */
+  /* The box holds the card's minimum height and lengthens past it with its content. The mount and
+     the sheet grow inside it as flex items, so each fills the height above it. */
   return `${scope} {
   display: flex;
   flex-direction: column;
@@ -344,12 +347,13 @@ ${sheet} {
 }`;
 }
 
-/* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no tier
-   line, a tier line not below its narrowest window, a reachable card rectangle wider than the height
-   cap at the smallest padding, or a value off the spacing scale. */
+/* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
+   tier line, a tier line not below its narrowest window, a reachable card rectangle wider than the
+   height cap at the smallest padding, or a value off the spacing scale. */
 export function mountedSheetFrameCss(fit: MeasuredFit, hero: boolean): string {
-  const scope = `.${frameScopeClass(fit)}`;
+  /* Validates the fit, so it runs before anything reads the fit's section name. */
   const classes = windowClasses(fit);
+  const scope = `.${frameScopeClass(fit)}`;
   return [
     frameRules(scope),
     ...classes.flatMap((windowClass) => [

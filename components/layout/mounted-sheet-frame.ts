@@ -30,9 +30,9 @@ export interface FitRegime {
    lowercase letters, digits and hyphens, starting with a letter.
 
    Each width tier's regimes are ordered by ascending `minContentWidth`, and `contentHeight` never
-   rises from one to the next: a card fits when it clears any one regime's rectangle, which holds only
-   while a wider column never stands taller. Below a tier's first regime nothing was measured, and
-   the frame treats that as not fitting. */
+   rises from one to the next: a card fits when it clears any one regime's rectangle, which holds
+   only while a wider column never stands taller. Below a tier's first regime nothing was measured,
+   and the frame treats that as not fitting. */
 export interface MeasuredFit {
   section: string;
   regimes: Readonly<Record<WidthTier, readonly FitRegime[]>>;
@@ -56,7 +56,9 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
 
 /* `{breakpoints.md}` and `{breakpoints.lg}`. The media queries use the rem form, as the type's own
    breakpoint variants do, so a window changes ground tier exactly where it changes type. The
-   arithmetic needs pixels, and the two agree at the default 16px root. */
+   arithmetic needs pixels, and the two agree at the default 16px root. Held as numbers because a
+   media query cannot read a custom property — a change to `--breakpoint-md` or `--breakpoint-lg`
+   in app/styles/tokens.css must change them here too. */
 const DEFAULT_ROOT_FONT_SIZE = 16;
 const BREAKPOINT_REM = { md: 48, lg: 64 } as const;
 
@@ -179,11 +181,30 @@ function tierLine(
 
 const SECTION_NAME = /^[a-z][a-z0-9-]*$/;
 const FIT_KEYS: readonly string[] = ["section", "regimes"];
+const REGIME_KEYS = ["minContentWidth", "contentHeight"] as const;
 const WIDTH_TIERS: readonly WidthTier[] = ["mobile", "tablet", "desktop"];
 
-/* A fit is data a script writes, so its shape is checked here rather than trusted to the type. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function describe(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "an array";
+  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number") return String(value);
+  return typeof value;
+}
+
+/* A fit arrives as data, so its shape is checked here rather than trusted to the type. Equal
+   heights in consecutive regimes pass: only a rise breaks the fits-any-rectangle rule. */
 function assertValidFit(fit: MeasuredFit): void {
-  const record = fit as unknown as Record<string, unknown>;
+  if (!isPlainObject(fit)) {
+    throw new Error(
+      `mounted-sheet-frame: a measured fit must be an object carrying section and regimes; got ${describe(fit)}.`,
+    );
+  }
+  const record: Record<string, unknown> = fit;
   const label = `section "${String(record.section)}"`;
   for (const key of Object.keys(record)) {
     if (!FIT_KEYS.includes(key)) {
@@ -201,7 +222,7 @@ function assertValidFit(fit: MeasuredFit): void {
     );
   }
   const byTier = record.regimes;
-  if (typeof byTier !== "object" || byTier === null) {
+  if (!isPlainObject(byTier)) {
     throw new Error(
       `mounted-sheet-frame: ${label} has no regimes. A measured fit needs regimes for mobile, tablet and desktop type.`,
     );
@@ -214,9 +235,7 @@ function assertValidFit(fit: MeasuredFit): void {
     }
   }
   for (const widthTier of WIDTH_TIERS) {
-    const regimes = (byTier as Partial<Record<WidthTier, FitRegime[]>>)[
-      widthTier
-    ];
+    const regimes: unknown = byTier[widthTier];
     if (!Array.isArray(regimes)) {
       throw new Error(
         `mounted-sheet-frame: ${label} has no ${widthTier} regimes. Every width tier needs its measured fit.`,
@@ -227,25 +246,43 @@ function assertValidFit(fit: MeasuredFit): void {
         `mounted-sheet-frame: ${label} has no measured regimes for ${widthTier} type.`,
       );
     }
-    regimes.forEach((regime, index) => {
-      const valid =
-        Number.isFinite(regime.minContentWidth) &&
-        Number.isFinite(regime.contentHeight) &&
-        regime.minContentWidth > 0 &&
-        regime.contentHeight > 0 &&
-        (index === 0 ||
-          regime.minContentWidth > regimes[index - 1].minContentWidth);
-      if (!valid) {
+    regimes.forEach((regime: unknown, index) => {
+      const at = `${label}, ${widthTier} regime ${index}`;
+      if (!isPlainObject(regime)) {
         throw new Error(
-          `mounted-sheet-frame: ${label}, ${widthTier} regime ${index} is invalid. Widths and heights must be positive, and widths strictly ascending.`,
+          `mounted-sheet-frame: ${at} must be an object carrying minContentWidth and contentHeight; got ${describe(regime)}.`,
         );
       }
-      if (
-        index > 0 &&
-        regime.contentHeight > regimes[index - 1].contentHeight
-      ) {
+      for (const key of Object.keys(regime)) {
+        if (!(REGIME_KEYS as readonly string[]).includes(key)) {
+          throw new Error(
+            `mounted-sheet-frame: ${at} has an unknown key "${key}". A regime carries only minContentWidth and contentHeight.`,
+          );
+        }
+      }
+      for (const field of REGIME_KEYS) {
+        const value = regime[field];
+        if (
+          typeof value !== "number" ||
+          !Number.isFinite(value) ||
+          value <= 0
+        ) {
+          throw new Error(
+            `mounted-sheet-frame: ${at} has ${field} ${describe(value)}. It must be a positive, finite number of pixels.`,
+          );
+        }
+      }
+      if (index === 0) return;
+      const previous = regimes[index - 1] as FitRegime;
+      const current = regime as unknown as FitRegime;
+      if (!(current.minContentWidth > previous.minContentWidth)) {
         throw new Error(
-          `mounted-sheet-frame: ${label}, ${widthTier} regime ${index} stands ${formatPx(regime.contentHeight)} tall, taller than regime ${index - 1} (${formatPx(regimes[index - 1].contentHeight)}) at a narrower width. A regime's height must never rise as its width grows. Re-measure the section.`,
+          `mounted-sheet-frame: ${at} starts at ${formatPx(current.minContentWidth)}, not wider than regime ${index - 1} (${formatPx(previous.minContentWidth)}). Regime widths must strictly ascend.`,
+        );
+      }
+      if (current.contentHeight > previous.contentHeight) {
+        throw new Error(
+          `mounted-sheet-frame: ${at} stands ${formatPx(current.contentHeight)} tall, taller than regime ${index - 1} (${formatPx(previous.contentHeight)}) at a narrower width. A regime's height must never rise as its width grows. Re-measure the section.`,
         );
       }
     });
@@ -265,7 +302,8 @@ function tierLines(fit: MeasuredFit): TierLines {
   return {
     tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md),
     laptop: tierLine(fit, "desktop", GROUND_TIERS.laptop, lg),
-    /* A touchscreen window at `{breakpoints.lg}` and wider takes tablet ground with desktop type. */
+    /* A touchscreen window at `{breakpoints.lg}` and wider takes tablet ground with desktop
+       type. */
     laptopTouchscreen: tierLine(fit, "desktop", GROUND_TIERS.tablet, lg),
   };
 }
