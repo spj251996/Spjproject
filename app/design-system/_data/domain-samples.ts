@@ -7,27 +7,6 @@
 
 import type { FamilyGroup, Ritual } from "@/content/types";
 
-/** `invite` takes the two `WeddingEvent` records, not flat scalars — a corrected date or venue
-    cannot drift between this section and Event Info. */
-export const sampleInvite = {
-  eyebrow: "Placeholder eyebrow line",
-  coupleNames: "Placeholder & Placeholder",
-  wedding: {
-    id: "sample-wedding",
-    name: "Wedding Ceremony",
-    cityTown: "Placeholder City",
-    date: "2027-01-09",
-    segments: [],
-  },
-  betrothal: {
-    id: "sample-betrothal",
-    name: "Betrothal Ceremony",
-    cityTown: "Placeholder Town",
-    date: "2027-01-04",
-    segments: [],
-  },
-};
-
 /** Both sides, three top-level members each; the groom's sibling additionally nests a spouse and a
     child, so the samples exercise the nested shape rather than only the flat one. Five people are
     reachable on the groom's side, three at the top level. Every `portrait` is null so each renders its

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import {
   sampleFamilyGroups,
-  sampleInvite,
   sampleRituals,
   sampleRitualsAllUpcoming,
 } from "@/app/design-system/_data/domain-samples";
@@ -13,23 +12,25 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import { Family } from "@/components/family/family";
-import { Invite } from "@/components/invite/invite";
 import { Timeline } from "@/components/timeline/timeline";
 
 /* curate-gallery — Bucket 4, the five Domain sections, in DESIGN.md document order
    (curate-gallery → section-spine.md § 14–18). One module for the whole bucket, per the skill's pinned `sections/`
    structure ("exactly 5 files — the count is law").
 
-   Three [standalone] entries (Invite, Family, Timeline) render the real production component live,
-   fed placeholder data from _data/domain-samples.ts. The two [inline] entries (Event Info, Wishes)
-   are page-bound compositions with no component file of their own — LISTED via InlineList, never
-   recreated (verification.md: "[inline] compositions are listed in an InlineList (never recreated)").
-   Both name app/page.tsx as their documented home; neither is composed there yet — an already-recorded
-   drift (work/tasks.md → Event Info and Wishes not yet composed), not fixed here.
+   Two [standalone] entries (Family, Timeline) render the real production component live, fed
+   placeholder data from _data/domain-samples.ts. The three [inline] entries (Invite, Event Info,
+   Wishes) are page-bound compositions with no component file of their own — LISTED via InlineList,
+   never recreated (verification.md: "[inline] compositions are listed in an InlineList (never
+   recreated)"). Invite names app/_composition/sections.tsx as its home, where it renders live in the
+   real page composition (interlude, 2026-09-15 — the frame moved into `mounted-sheet` itself, and the
+   section became a short stack of text with no state or behaviour of its own to justify a component
+   file). Event Info and Wishes still name app/page.tsx and are not yet composed there — an
+   already-recorded drift (work/tasks.md → Event Info and Wishes not yet composed), not fixed here.
 
-   None of the three live components is position: fixed, so none is wrapped in a ChromeFrame — per its
+   Neither live component is position: fixed, so neither is wrapped in a ChromeFrame — per its
    own contract ("omit for flow content"), the frame's translateZ(0) trick exists only to contain a
-   fixed-position child, which none of these are; they render at their natural in-flow height instead.
+   fixed-position child, which neither is; they render at their natural in-flow height instead.
    Family and Timeline each carry a section-anchored thread segment for the documented reason both
    components' own comments give: thread-overlay is position: fixed and cannot anchor to page content,
    so the thread reads as a disconnected decoration here — a knowingly deferred defect, owning phase
@@ -51,15 +52,16 @@ function Variant({ label, children }: VariantProps) {
   );
 }
 
-/* § 14 — Invite. The doc's four bullets, its last two merged. Its lead line is NOT repeated here —
-   the section intro carries it, and a bullet restating it makes a reader meet the same sentence
-   twice. The thread draw-in and scroll-cue this section is credited with belong to thread-overlay
-   and scroll-cue, both already demoed at Components · Shell and Components · UI. */
-const INVITE_RULES = [
-  "Couple names in the script face are the focal element; the wedding date and city follow in date-primary at primary weight, not as a subordinate line.",
-  "An eyebrow opens the composition above the couple names. No quote — the closing passage in Wishes carries that role.",
-  "The engagement summary sits below in body; the betrothal block recedes beneath the wedding, secondary in scale and weight.",
-  "The thread draws into view along a predefined curve, settles near the lower portion of the screen, and leaves scroll-cue behind, continuing past the viewport rather than disappearing — the one major animated gesture on the page. Both belong to thread-overlay and scroll-cue, demoed at Components · Shell and Components · UI; this section owns no thread markup of its own to render.",
+/* § 14 — Invite, tagged [inline] since the interlude (2026-09-15). Listed only, per the settled
+   treatment — never recreated. Its lead line is NOT repeated here — the section intro carries it. */
+const INVITE_ENTRIES: InlineEntry[] = [
+  {
+    name: "Invite",
+    home: "app/_composition/sections.tsx",
+    composes:
+      "Fills the first screen on every upright phone, tablet and laptop window through the frame mounted-sheet carries, with the hero setting. An eyebrow opens the composition above the couple names in the script face; the wedding date and city follow in date-primary at primary weight, not as a subordinate line. The betrothal block sits beneath as a labelled three-line unit — ceremony name, date, city — carrying less visual weight than the wedding block, receding by size, weight or tone; the two must never read as equally weighted. Nothing is ever hidden to make the section fit, the betrothal block included: a window too short for the content scrolls the page rather than the section scrolling internally. The thread draws into view along a predefined curve, settles near the lower portion of the screen, and leaves scroll-cue behind, continuing past the viewport rather than disappearing — the one major animated gesture on the page.",
+    note: "The thread is not mounted during Phase 4 (work/tasks.md), so the section carries no scroll cue until Phase 5 — a dated, recorded gap, not an oversight. The frame itself, mounted-sheet, renders live at Foundations · Layout.",
+  },
 ];
 
 /* § 15 — Event Info, tagged [inline]. Listed only, per the settled treatment — never recreated. */
@@ -110,26 +112,11 @@ export function DomainSections() {
     <>
       <GallerySection
         id="invite"
-        intro="Full-viewport opening, airy composition, no internal scrolling."
+        intro="Full-viewport opening, airy composition, framed to the window. No internal scrolling — a window too short for the content scrolls the page instead."
         mapsTo="Domain Components → Invite"
         title="Domain · Invite"
       >
-        <RuleList rules={INVITE_RULES} />
-
-        <Specimen
-          description="Full-viewport opening — an eyebrow, couple names in the script face, the date and city, and the engagement summary."
-          id="domain-invite"
-          name="invite"
-          source="@/components/invite/invite"
-          spec={[
-            "Server-rendered, no client boundary and no motion of its own — see the component's own header comment.",
-            "Live, in flow, unframed: the section is not position: fixed, so no ChromeFrame is needed to contain it.",
-            "This is the only Domain specimen carrying a real h1 (the section's own coupleNames heading), which duplicates the page's own h1 above it — a gallery-rendering artifact worth flagging, not a production defect.",
-            "Sample copy is schema-valid placeholder text at real-copy length, never the couple's actual content.",
-          ]}
-        >
-          <Invite {...sampleInvite} />
-        </Specimen>
+        <InlineList entries={INVITE_ENTRIES} />
       </GallerySection>
 
       <GallerySection
