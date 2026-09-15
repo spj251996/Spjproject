@@ -21,11 +21,14 @@ import {
    is hand arithmetic. Nothing here reads the page: the output is plain CSS that paints the final
    state on first render.
 
-   Split by mechanism:
-   - The ground is a media query per window class. It needs the window rather than the card,
-     because it asks whether a card that is not on screen — the full-ground one — would hold the
-     content.
-   - The padding is a container query on the card's box, keyed to the card's own size.
+   The window decides every step:
+   - The ground is a media query per window class, because it asks whether a card that is not on
+     screen — the full-ground one — would hold the content.
+   - The padding is decided by the card the window gives: its height as a media query, its width
+     read from the box.
+
+   The box and the card only set minimum heights, so content taller than its fit predicts lengthens
+   the card and its section instead of covering the section below.
 
    Every selector starts from the section's scope class, so two framed sections on one page never
    share a threshold. The stylesheet is unlayered, so it wins over the utility and component layers
@@ -44,8 +47,8 @@ export function frameScopeClass(fit: MeasuredFit): string {
 const GROUND = "--mounted-sheet-ground";
 const GROUND_VALUE = `var(${GROUND})`;
 
-/* The card's height from the window: every viewport-height term is `svh`, so nothing in the frame
-   moves as a phone's toolbar hides. A landscape card is also capped. */
+/* The card's minimum height from the window: every viewport-height term is `svh`, so nothing in the
+   frame moves as a phone's toolbar hides. A landscape card's is also capped. */
 const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 
@@ -119,9 +122,8 @@ function mediaRule(
   return `${query} {\n${body}\n}`;
 }
 
-function containerRule(condition: Condition, body: string): string {
-  if (condition === false) return "";
-  return condition === true ? body : `@container ${condition} {\n${body}\n}`;
+function orientationQuery(landscape: boolean): string {
+  return `(orientation: ${landscape ? "landscape" : "portrait"})`;
 }
 
 /* Does this window's card, at the given ground, hold the content at the smallest padding? Stated in
@@ -165,6 +167,23 @@ function windowFits(
 
 /* Full ground wins. The ground halves only where the full-ground card does not fit and the halved
    one does; a window where neither fits keeps full ground and the page scrolls. */
+function halvingCondition(
+  section: string,
+  windowClass: WindowClass,
+  hero: boolean,
+  landscape: boolean,
+): Condition {
+  const ground = windowClass.groundTier.ground;
+  return all(
+    not(windowFits(section, windowClass, hero, ground, landscape)),
+    windowFits(section, windowClass, hero, ground * GROUND_HALVING, landscape),
+  );
+}
+
+function orientationsOf(windowClass: WindowClass): boolean[] {
+  return windowClass.portraitPossible ? [false, true] : [true];
+}
+
 function groundRules(
   section: string,
   windowClass: WindowClass,
@@ -172,20 +191,15 @@ function groundRules(
   scope: string,
 ): string {
   const ground = windowClass.groundTier.ground;
-  const halved = ground * GROUND_HALVING;
   const rules = [
     `@media ${windowClass.media} {\n${scope} { ${GROUND}: ${spacing(ground)}; }\n}`,
   ];
-  const orientations = windowClass.portraitPossible ? [false, true] : [true];
-  for (const landscape of orientations) {
+  for (const landscape of orientationsOf(windowClass)) {
     rules.push(
       mediaRule(
-        `@media ${windowClass.media} and (orientation: ${landscape ? "landscape" : "portrait"})`,
-        all(
-          not(windowFits(section, windowClass, hero, ground, landscape)),
-          windowFits(section, windowClass, hero, halved, landscape),
-        ),
-        `${scope} { ${GROUND}: ${spacing(halved)}; }`,
+        `@media ${windowClass.media} and ${orientationQuery(landscape)}`,
+        halvingCondition(section, windowClass, hero, landscape),
+        `${scope} { ${GROUND}: ${spacing(ground * GROUND_HALVING)}; }`,
       ),
     );
   }
@@ -206,76 +220,77 @@ function mountRules(
   return `@media ${windowClass.media} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero))};${fill} }\n}`;
 }
 
-/* The padding steps down while the card does not clear the previous step. Later rules win, so the
-   largest padding that fits applies — which is also how padding climbs back once the ground halves. */
+/* The largest padding step at which the card clears one of the fit's rectangles; the smallest
+   where none is cleared.
+
+   The card's height is the window height less the ground, capped in landscape, so it is a media
+   query; a rectangle taller than the cap is reachable only in portrait. The card's width is read from
+   the box, an inline-size container: a landscape card narrows by the window's height as well as its
+   width once the height cap binds, which no media query can state, and the box's width is exactly
+   the card's. Inline-size containment leaves the box's height to its content.
+
+   Each rule sets one step for one rectangle, so a step's rectangles are alternatives, and larger
+   steps come later and win — the cascade takes the largest step that fits, with no negation.
+
+   The full-ground chain applies first. Where the ground halves, a second chain under the halving
+   condition resets to the smallest step and climbs again against the halved card. */
 function paddingRules(
-  windowClass: WindowClass,
-  hero: boolean,
-  scope: string,
-): string {
-  const { paddingSteps } = windowClass.groundTier;
-  const reveal = revealFor(windowClass, hero);
-  const sheet = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount} > .${FRAME_CLASS.sheet}`;
-  const rules = [`${sheet} { padding: ${spacing(paddingSteps[0])}; }`];
-  for (let step = 1; step < paddingSteps.length; step++) {
-    rules.push(
-      containerRule(
-        not(
-          clears(
-            fitRectangles(windowClass.regimes, reveal, paddingSteps[step - 1]),
-            0,
-            0,
-          ),
-        ),
-        `${sheet} { padding: ${spacing(paddingSteps[step])}; }`,
-      ),
-    );
-  }
-  return `@media ${windowClass.media} {\n${rules.filter(Boolean).join("\n")}\n}`;
-}
-
-/* Where nothing fits — full ground or halved, at the smallest padding — the card is taller than its
-   box. A size container never grows with its content, so the card would paint over whatever section
-   follows. In exactly those windows the box stops being a container and takes the card's height,
-   keeping the window-derived card height as its minimum, and the section grows with it. The box
-   turns flex so the mount still fills that minimum where a fit overstates its content.
-
-   With no container, no `@container` rule can match and the sheet would fall back to the largest
-   padding. The spill takes the smallest, so it is set here, after the padding rules, to win. */
-function spillRules(
   section: string,
   windowClass: WindowClass,
   hero: boolean,
   scope: string,
 ): string {
+  const sheet = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount} > .${FRAME_CLASS.sheet}`;
+  const ascending = [...windowClass.groundTier.paddingSteps].reverse();
+  const reveal = revealFor(windowClass, hero);
+
+  /* One block per chain, so its condition is stated once and each rectangle nests inside it. */
+  const chain = (
+    prelude: string,
+    ground: number,
+    landscape: boolean | null,
+  ): string => {
+    const rules = [`${sheet} { padding: ${spacing(ascending[0])}; }`];
+    for (const padding of ascending.slice(1)) {
+      for (const rectangle of fitRectangles(
+        windowClass.regimes,
+        reveal,
+        padding,
+      )) {
+        const portraitOnly = rectangle.minCardHeight > CARD_HEIGHT_CAP;
+        if (
+          portraitOnly &&
+          (landscape === true || !windowClass.portraitPossible)
+        ) {
+          continue;
+        }
+        const orientation =
+          portraitOnly && landscape === null
+            ? `${orientationQuery(false)} and `
+            : "";
+        rules.push(
+          `@media ${orientation}(height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
+        );
+      }
+    }
+    return `${prelude} {\n${rules.join("\n")}\n}`;
+  };
+
   const ground = windowClass.groundTier.ground;
-  const halved = ground * GROUND_HALVING;
-  const box = `${scope} > .${FRAME_CLASS.box}`;
-  const mount = `${box} > .${FRAME_CLASS.mount}`;
-  const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
-  const orientations = windowClass.portraitPossible ? [false, true] : [true];
-  return orientations
-    .map((landscape) =>
-      mediaRule(
-        `@media ${windowClass.media} and (orientation: ${landscape ? "landscape" : "portrait"})`,
-        all(
-          not(windowFits(section, windowClass, hero, ground, landscape)),
-          not(windowFits(section, windowClass, hero, halved, landscape)),
-        ),
-        `${box} { container-type: normal; display: flex; flex-direction: column; height: auto; min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; }
-${mount} { flex: 1 0 auto; }
-${sheet} { padding: ${spacing(smallestPadding(windowClass.groundTier))}; }`,
-      ),
-    )
-    .filter(Boolean)
-    .join("\n");
+  const rules = [chain(`@media ${windowClass.media}`, ground, null)];
+  for (const landscape of orientationsOf(windowClass)) {
+    const halving = halvingCondition(section, windowClass, hero, landscape);
+    if (halving === false) continue;
+    const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}${halving === true ? "" : ` and ${halving}`}`;
+    rules.push(chain(prelude, ground * GROUND_HALVING, landscape));
+  }
+  return rules.join("\n");
 }
 
 function frameRules(scope: string): string {
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
-  const ground = GROUND_VALUE;
 
   /* Plain `center` first is the fallback for an engine that drops the `safe` declaration. `safe`
      keeps content that outgrows its box on the side the page can scroll to. */
@@ -284,47 +299,37 @@ function frameRules(scope: string): string {
   align-items: center;
   align-items: safe center;`;
 
-  /* The mount's `::after` reaches past the box only when the content outgrows a card its measured fit
-     said would hold it — a stale fit, which the spill rules cannot see — and keeps the ground below
-     the card inside the scrollable area then. 1px wide because a zero-width box adds no scrollable
-     overflow in Chromium. It carries no content, so the mount still carries no text. */
+  /* The box, the mount and the sheet are flex columns that grow, so each fills the minimum height
+     above it and every one of them lengthens with content taller than that. */
   return `${scope} {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  padding-block: ${ground};
-  padding-inline: ${ground};
+  padding-block: ${GROUND_VALUE};
+  padding-inline: ${GROUND_VALUE};
   ${safeCentre}
 }
 @media (orientation: landscape) {
-${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${ground}), calc((100svh - var(--card-height-cap)) / 2)); }
+${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap)) / 2)); }
 }
 ${box} {
-  container-type: size;
+  container-type: inline-size;
   flex: none;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: ${CARD_HEIGHT};
+  min-height: ${CARD_HEIGHT};
 }
 @media (orientation: landscape) {
 ${box} {
   width: min(var(--container-content), 100%);
-  height: ${CAPPED_CARD_HEIGHT};
+  min-height: ${CAPPED_CARD_HEIGHT};
 }
 }
 ${mount} {
-  position: relative;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-}
-${mount}::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 1px;
-  height: ${ground};
-  pointer-events: none;
 }
 ${sheet} {
   flex: 1 0 auto;
@@ -345,8 +350,7 @@ export function mountedSheetFrameCss(fit: MeasuredFit, hero: boolean): string {
     ...classes.flatMap((windowClass) => [
       groundRules(fit.section, windowClass, hero, scope),
       mountRules(windowClass, hero, scope),
-      paddingRules(windowClass, hero, scope),
-      spillRules(fit.section, windowClass, hero, scope),
+      paddingRules(fit.section, windowClass, hero, scope),
     ]),
   ].join("\n");
 }
