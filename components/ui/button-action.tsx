@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 /* DESIGN.md → Components → UI → `button-action`.
 
    Element choice follows the described behavior, not the name: the entry specifies handing off to
-   an external destination (Google Maps, phone, WhatsApp), which is navigation — so the `href` form
+   an external destination (Google Maps), which is navigation — so the `href` form
    renders an anchor with no handler and needs no client boundary.
 
    The `onClick` form exists because DESIGN.md → `timeline-node` composes "a `button-action` to open
@@ -31,7 +31,7 @@ import type { ReactNode } from "react";
    3:1 an indicator needs. Hover colors transition; the ring does not. */
 
 const actionClassName = [
-  "type-action inline-flex items-center justify-center text-center",
+  "type-action inline-flex items-center justify-center gap-space-2xs text-center",
   "min-h-(--touch-target) min-w-(--touch-target)",
   "border-y-(length:--stroke-divider) border-accent-gold text-accent-gold",
   "px-space-sm py-space-xs",
@@ -42,26 +42,48 @@ const actionClassName = [
 type ButtonActionProps = {
   children: ReactNode;
   className?: string;
+  /* One section mark set before the label, which takes the label's colour. The marks are already
+     hidden from assistive technology (components/icons/icon-base.tsx), so the name stays the label. */
+  mark?: ReactNode;
+  /* For actions that share a visible label, such as the four map links. It must begin with that
+     label, so a speech user saying what they see still reaches the control. */
+  "aria-label"?: string;
 } & ({ href: string; onClick?: never } | { href?: never; onClick: () => void });
 
 export function ButtonAction({
   children,
   className,
+  mark,
+  "aria-label": accessibleName,
   href,
   onClick,
 }: ButtonActionProps) {
   const composed = `${actionClassName} ${className ?? ""}`;
 
   if (href !== undefined) {
+    /* An external hand-off, so a new tab keeps the invitation open behind it. */
     return (
-      <a className={composed} href={href}>
+      <a
+        aria-label={accessibleName}
+        className={composed}
+        href={href}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {mark}
         {children}
       </a>
     );
   }
 
   return (
-    <button className={composed} onClick={onClick} type="button">
+    <button
+      aria-label={accessibleName}
+      className={composed}
+      onClick={onClick}
+      type="button"
+    >
+      {mark}
       {children}
     </button>
   );
