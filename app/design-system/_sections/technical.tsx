@@ -39,7 +39,7 @@ const ZONES: SpanZone[] = [
     width: "< 48rem (768px)",
     changes: [
       "Vertical flow; event info and family each split into two screen-feel panels.",
-      "Couple names at display-name-mobile (56px).",
+      "Every role at its mobile size — couple names at display-name-mobile (72px), heading-lg and date-primary at their mobile size (22px).",
       "Thread follows the mobile-system path.",
     ],
   },
@@ -48,7 +48,7 @@ const ZONES: SpanZone[] = [
     width: "48rem – 64rem (768px – 1023px)",
     changes: [
       "The mobile system continues, with wider gutters.",
-      "Couple names step up to display-name-tablet (72px) — the one exception to lg being the layout switch.",
+      "Every role steps to its tablet size — couple names to display-name-tablet (104px).",
       "Thread stays on the mobile-system path; no third path is authored.",
     ],
   },
@@ -57,7 +57,7 @@ const ZONES: SpanZone[] = [
     width: "≥ 64rem (1024px)",
     changes: [
       "Parallel splits; the timeline alternates sides.",
-      "Couple names at display-name-desktop (96px).",
+      "Every role at its desktop size — couple names at display-name-desktop (120px).",
       "Thread switches to its desktop-system path — the layout switch point.",
     ],
   },
@@ -155,7 +155,7 @@ export function TechnicalSections() {
 
       <GallerySection
         id="responsive"
-        intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it — with two named exceptions, both typographic. Couple names step up in size at breakpoints.md, since they would otherwise read as undersized once the tablet tier's wider gutters land. heading-lg and date-primary step up there together, having been held at 24px below it so the wedding city fits the narrower column."
+        intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it, and also carries every typographic role's phone-to-tablet step — the full type ladder in Foundations · Typography steps at both breakpoints.md and breakpoints.lg, not spacing and columns alone."
         mapsTo="Interaction Rules → Responsive Behavior"
         source="--breakpoint-* / --touch-target"
         title="Interaction · Responsive Behavior"

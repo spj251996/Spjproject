@@ -129,16 +129,17 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
 ];
 
-/* § 2 — Typography. Seven rows, matching the doc's seven-row role table and the seven `.type-*`
-   classes. `display-name` is ONE role that steps across viewports, not three roles. */
+/* § 2 — Typography. Eight rows, matching the doc's eight-row role table and the eight `.type-*`
+   classes. `display-name` is ONE role that steps across viewports, not three roles; every role now
+   steps across all three width tiers, not display-name alone. */
 const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-display-name",
     family: "Corinthia",
-    size: 96,
+    size: 120,
     weight: 400,
     sample: "Couple names only.",
-    responsive: { tablet: 72, mobile: 56 },
+    responsive: { tablet: 104, mobile: 72 },
   },
   {
     token: "type-heading-xl",
@@ -146,67 +147,77 @@ const TYPE_TOKENS: TypeToken[] = [
     size: 48,
     weight: 700,
     sample: "Section-level H1.",
+    responsive: { tablet: 42, mobile: 34 },
   },
   {
     token: "type-heading-lg",
     family: "Cormorant Garamond",
-    size: 30,
+    size: 26,
     weight: 700,
     sample: "H2 and event names.",
-    responsive: { tablet: 30, mobile: 24 },
+    responsive: { tablet: 26, mobile: 22 },
   },
   {
     token: "type-date-primary",
     family: "Cormorant Garamond",
-    size: 30,
-    weight: 400,
+    size: 26,
+    weight: 500,
     sample: "The major date line on the invite and the event sheets.",
-    responsive: { tablet: 30, mobile: 24 },
+    responsive: { tablet: 26, mobile: 22 },
   },
   {
     token: "type-body",
     family: "Source Sans 3",
-    size: 17,
+    size: 20,
     weight: 400,
     lh: 1.7,
     sample: "Descriptions, addresses, wishes, all long-form copy.",
+    responsive: { tablet: 19, mobile: 18 },
   },
   {
     token: "type-caption",
     family: "Source Sans 3",
-    size: 14,
+    size: 17,
     weight: 400,
     lh: 1.5,
     sample:
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading. Never long-form. Every reference line in this gallery is set in it.",
+    responsive: { tablet: 16, mobile: 15 },
   },
   {
     token: "type-eyebrow",
     family: "Source Sans 3",
-    size: 12,
+    size: 16,
     weight: 500,
     sample:
       "ALWAYS GOLD — the one type role that carries its own color, on both stocks, in every section. There is no eyebrow component: the class is the whole thing.",
+    responsive: { tablet: 15, mobile: 14 },
   },
   {
     token: "type-action",
     family: "Source Sans 3",
-    size: 13,
+    size: 17,
     weight: 700,
     sample: "Buttons and calls to action.",
+    responsive: { tablet: 16, mobile: 15 },
   },
 ];
 
 const TYPE_RULES = [
   "The script face is decorative. It carries the couple names today and may take other display text later, but never body copy, headings, labels, or buttons.",
+  "Couple names stay regular weight at every tier. Corinthia's true bold cut was rendered and rejected: it is 1.28x wider than regular — a full name pair measures 6.48x the font size against 5.08x — which the frame cannot hold on one line at the tablet and laptop sizes.",
+  'The couple-names role sets three lines in portrait windows — each name on its own line with "&" between them at 0.5em, 0.9 line spacing across the block — and stays one line at normal spacing in landscape. The split is a property of the role wherever it is used, not a one-off in a section.',
   "Long-form and functional information stays in Cormorant Garamond and Source Sans 3.",
-  "Both serif and sans carry regular and bold only. Bold marks structural headings and actions; everything else sits at regular, including the date line, which separates from heading-lg at the same size by weight rather than by scale.",
-  "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. Three roles step: display-name across all three tiers, and heading-lg and date-primary together at md.",
-  "heading-lg and date-primary step together below md, both to 24px, never one alone — they are one size separated by weight, so moving either on its own would make the date read as subordinate to the event name above it. Koothattukulam at date-primary measures 224px against the 184px column a mounted section leaves at 320px.",
-  "Body sizing is set for a mixed-age audience; it does not shrink below 17px at any viewport.",
-  "type-caption is the only role smaller than body, and the only one under that floor — legitimate because it never carries long-form copy, only a line read in a glance. Its tighter leading is part of that scoping, not a styling preference.",
+  "Both serif and sans carry regular, medium and bold weights. Bold marks structural headings and actions; medium marks the eyebrow and the date line; couple names and body copy stay regular. The date line separates from heading-lg at the same size by weight — medium beside heading-lg's bold — rather than by scale.",
+  "heading-lg and date-primary step together at every tier — 22 / 26 / 26 across phone, tablet and laptop — one size separated by weight, never by scale. The pair flattens at the top, tablet and laptop sharing 26, because the couple names now dominate the composition at 120px there.",
+  'The date line carries no letterspacing and sits at medium weight (500). Zero tracking replaces the previous 0.06em, which read "off" on a mixed-case serif and narrowed the line 13% at 26px (301px to 261px). Weight 500 answers Cormorant reading thin beside the 120px couple names.',
+  "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports.",
+  "Body now steps with width — the mobile floor (18px) rises to the tablet size (19px) and the desktop size (20px). The floor itself rose from a flat 17px: a mixed-age audience read the sans as too small at every size tested, so the floor is now set at the phone tier rather than as one fixed value.",
+  "type-caption is the only role smaller than body, and it is scoped away from long-form — text that accompanies something else, read in a glance, never a paragraph read continuously.",
   "Unlike the eyebrow, type-caption owns no color: it takes ink on paper — 11.74:1 on the ground, 12.05:1 on the paper stock — and ink-on-contrast at 12.55:1 on the green stock, so it is legal on both without an exception. Hierarchy here comes from size alone, which is what engraved stock does — one ink, struck once, the secondary line set smaller rather than lightened.",
-  "Tracking and casing ride the class rather than the metadata column: date-primary 0.06em, eyebrow 0.2em uppercase, action 0.16em uppercase.",
+  "The eyebrow is the one type role that carries its own color, so there is no eyebrow component. Always gold, never ink, on every stock, in every section.",
+  "The eyebrow sits one size step below the caption at every tier — 16 / 15 / 14px against caption's 17 / 16 / 15px. Tried at caption's own size and rejected: uppercase and widely letterspaced, it read larger than its number.",
+  "Tracking and casing ride the class rather than the metadata column: eyebrow 0.2em uppercase, action 0.16em uppercase. The date line carries none.",
 ];
 
 /* § 3 — Spacing. One group of ten steps: the bare zero step plus space-3xs…space-3xl. This project
@@ -530,6 +541,7 @@ export function FoundationsSections() {
             "The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground.",
             "GIVEN a section's measured fit, this same component frames instead: the card fills the window inside its ground — phone 16px, tablet 48px, laptop 96px — up to 1200 x 720px on landscape windows only, always centred and centred safely. Padding gives way before the ground halves, and content is never hidden.",
             "A framed window drops to the phone ground tier below its own tier line, derived per section from that section's measured content by a committed script, never typed — two sections can change tier at different heights.",
+            "A section's measured fit carries heights per width tier AND per orientation, not one set per tier — a section whose content differs by orientation, the invite's three-line portrait names among them, needs both, or its portrait content is judged against the landscape card's height cap and refused. A tier line always reads the section's landscape fit, because every tier line sits below its narrowest width, which the rule above already places in landscape. The cost is the generated stylesheet's size, which roughly doubles once a section measures per orientation — about 2KB to 4KB compressed.",
             "None of that answers to a specimen box, which has no window to fit — it is demonstrated on the page itself, at /, where the invite is the one framed section Phase 4 ships today.",
           ]}
         >
