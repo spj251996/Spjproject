@@ -17,6 +17,10 @@ export type WidthTier = "mobile" | "tablet" | "desktop";
    terms rather than judging one against the other's card (DESIGN.md → Measured per section). */
 export type Orientation = "portrait" | "landscape";
 
+/* A framed card holds one sheet, or two sheets pasted onto one mount (DESIGN.md → Foundations →
+   Layout → `mounted-pair`). */
+export type FrameLayout = "single" | "pair";
+
 /* Ground and padding follow these. A window's ground tier starts from its width tier and is moved
    only by its height and its primary pointer. */
 type GroundTierName = "phone" | "tablet" | "laptop";
@@ -142,18 +146,37 @@ export function revealFor(windowClass: WindowClass, hero: boolean): number {
   return mountShows(windowClass, hero) ? REVEAL[windowClass.widthTier] : 0;
 }
 
+/* A pair sits side by side only in a landscape window whose mount shows; everywhere else its two
+   sheets stack, each its own card. A pair is never the hero, so its mount goes wherever the window
+   takes the phone ground tier. */
+export function pairsSideBySide(
+  layout: FrameLayout,
+  windowClass: WindowClass,
+  landscape: boolean,
+): boolean {
+  return layout === "pair" && landscape && mountShows(windowClass, false);
+}
+
 /* The smallest card that holds the content at one padding: one rectangle per regime, because a
-   wider card buys a shorter stack. A card fits when it clears any one of them. */
+   wider card buys a shorter stack. A card fits when it clears any one of them.
+
+   Side by side, two sheets of that content share the card: the reveal shows around the pair and
+   twice between the sheets, which is what centres each sheet on its own leaf of the mount. */
 export function fitRectangles(
   regimes: readonly FitRegime[],
   reveal: number,
   padding: number,
+  sideBySide = false,
 ): CardRectangle[] {
-  const chrome = 2 * reveal + 2 * padding;
-  return regimes.map((regime) => ({
-    minCardWidth: regime.minContentWidth + chrome,
-    minCardHeight: regime.contentHeight + chrome,
-  }));
+  return regimes.map((regime) => {
+    const sheetWidth = regime.minContentWidth + 2 * padding;
+    return {
+      minCardWidth: sideBySide
+        ? 2 * sheetWidth + 4 * reveal
+        : sheetWidth + 2 * reveal,
+      minCardHeight: regime.contentHeight + 2 * padding + 2 * reveal,
+    };
+  });
 }
 
 /* The height from which the larger ground tier fits the section's content at halved ground and
@@ -168,15 +191,18 @@ function tierLine(
   widthTier: WidthTier,
   groundTier: GroundTier,
   narrowestWindow: number,
+  layout: FrameLayout,
 ): number {
   const halved = groundTier.ground * GROUND_HALVING;
   const padding = smallestPadding(groundTier);
   /* A tier line only ever decides a landscape window (this function's own doc above), so it reads
-     the landscape regimes even for a width tier whose windows can also be portrait. */
+     the landscape regimes even for a width tier whose windows can also be portrait. The larger
+     tier always shows the mount, so a pair is side by side there. */
   const heights = fitRectangles(
     regimesFor(fit.regimes[widthTier], "landscape"),
     REVEAL[widthTier],
     padding,
+    layout === "pair",
   )
     .filter(
       (rectangle) =>
@@ -334,23 +360,32 @@ interface TierLines {
   laptopTouchscreen: number;
 }
 
-function tierLines(fit: MeasuredFit): TierLines {
+function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
   assertValidFit(fit);
   const md = breakpointPx(BREAKPOINT_REM.md);
   const lg = breakpointPx(BREAKPOINT_REM.lg);
   return {
-    tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md),
-    laptop: tierLine(fit, "desktop", GROUND_TIERS.laptop, lg),
+    tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout),
+    laptop: tierLine(fit, "desktop", GROUND_TIERS.laptop, lg, layout),
     /* A touchscreen window at `{breakpoints.lg}` and wider takes tablet ground with desktop
        type. */
-    laptopTouchscreen: tierLine(fit, "desktop", GROUND_TIERS.tablet, lg),
+    laptopTouchscreen: tierLine(
+      fit,
+      "desktop",
+      GROUND_TIERS.tablet,
+      lg,
+      layout,
+    ),
   };
 }
 
 /* Every window falls in exactly one class: three width tiers, split by height at each tier line,
    and at `{breakpoints.lg}` and wider split by primary pointer as well. */
-export function windowClasses(fit: MeasuredFit): WindowClass[] {
-  const lines = tierLines(fit);
+export function windowClasses(
+  fit: MeasuredFit,
+  layout: FrameLayout = "single",
+): WindowClass[] {
+  const lines = tierLines(fit, layout);
   const md = `${BREAKPOINT_REM.md}rem`;
   const lg = `${BREAKPOINT_REM.lg}rem`;
   const tabletWidth = `(${md} <= width < ${lg})`;

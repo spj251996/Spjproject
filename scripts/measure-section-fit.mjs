@@ -8,17 +8,24 @@
    tier (mobile < 768px, tablet 768–1023px, desktop >= 1024px) the window is swept in BOTH
    orientations — portrait at height = round(width x 1.5), landscape at round(width x 0.6) — so a
    section whose content differs by orientation, such as the invite's three-line portrait names,
-   is measured as it actually renders rather than judged by one figure shared across both. Within
-   each tier-orientation pair the window is resized so the section's type resolves to that tier's
-   sizes, web fonts are confirmed loaded, the content stack is cloned into a detached flex-column
-   host, and the host's width is swept from 120 to 1300px. Height is a step function of width —
-   each line of the stack wraps at its own width — so every width where the measured height changes
-   is a regime boundary, bisected to 1/1024px. The sweep and the bisection both run inside the page
-   in one `page.evaluate` call per tier-orientation pair: no per-pixel round trip to the CLI.
+   is measured as it actually renders rather than judged by one figure shared across both. The
+   selector may match several stacks — a `mounted-pair` section's two sheets — in which case each
+   gets its own detached host and the measured height at a width is the tallest of them, matching
+   the frame's own rule that a pair fits both sheets to the taller. Within each tier-orientation
+   pair the window is resized so the section's type resolves to that tier's sizes, web fonts are
+   confirmed loaded, every matched stack is cloned into its own detached flex-column host, and each
+   host's width is swept from 120 to 1300px. Height is a step function of width — each line of a
+   stack wraps at its own width, and the max of non-rising step functions is itself non-rising — so
+   every width where the measured height changes is a regime boundary, bisected to 1/1024px. The
+   sweep and the bisection both run inside the page in one `page.evaluate` call per tier-orientation
+   pair: no per-pixel round trip to the CLI.
 
    Usage:
      node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
        --section=invite --out=app/_composition/invite-fit.ts
+
+   `--out` sits beside the page's composition module that supplies the section's fit, e.g.
+   `app/_composition/invite-fit.ts` for the invite.
 
    Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
    landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending
@@ -152,23 +159,33 @@ function sweepScript(cssSelector, mutateContent) {
   const SELECTOR = ${selectorLiteral};
   await document.fonts.ready;
   ${mutate}
-  const source = document.querySelector(SELECTOR);
-  if (!source) {
+  const sources = [...document.querySelectorAll(SELECTOR)];
+  if (sources.length === 0) {
     return { error: "selector not found: " + SELECTOR };
   }
 
-  const host = document.createElement("div");
-  host.style.cssText =
-    "position:fixed;top:-100000px;left:-100000px;visibility:hidden;display:flex;flex-direction:column;pointer-events:none;";
-  const clone = source.cloneNode(true);
-  clone.style.width = "100%";
-  clone.style.maxWidth = "none";
-  host.appendChild(clone);
-  document.body.appendChild(host);
+  /* A pair's two sheets stand at different heights; the frame is fitted to the taller at every
+     width (DESIGN.md → mounted-pair), so each stack gets its own host and the sweep reads the max.
+     A maximum of non-rising step functions is itself non-rising, so validation still holds. */
+  const measured = sources.map((source) => {
+    const host = document.createElement("div");
+    host.style.cssText =
+      "position:fixed;top:-100000px;left:-100000px;visibility:hidden;display:flex;flex-direction:column;pointer-events:none;";
+    const clone = source.cloneNode(true);
+    clone.style.width = "100%";
+    clone.style.maxWidth = "none";
+    host.appendChild(clone);
+    document.body.appendChild(host);
+    return { host, clone };
+  });
 
   function heightAt(width) {
-    host.style.width = width + "px";
-    return clone.getBoundingClientRect().height;
+    let tallest = 0;
+    for (const { host, clone } of measured) {
+      host.style.width = width + "px";
+      tallest = Math.max(tallest, clone.getBoundingClientRect().height);
+    }
+    return tallest;
   }
 
   const MIN_WIDTH = ${MIN_WIDTH};
@@ -200,7 +217,9 @@ function sweepScript(cssSelector, mutateContent) {
     }
   }
 
-  document.body.removeChild(host);
+  for (const { host } of measured) {
+    document.body.removeChild(host);
+  }
   return { regimes };
 })`;
 }

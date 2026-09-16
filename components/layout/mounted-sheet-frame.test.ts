@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   type FitRegime,
   type MeasuredFit,
+  pairsSideBySide,
   regimesFor,
   windowClasses,
 } from "./mounted-sheet-frame.ts";
@@ -109,16 +110,89 @@ test("a landscape rectangle taller than the height cap is dropped, not thrown", 
   );
 });
 
-test("a landscape rectangle wider than the height cap fails the build", () => {
-  /* Wide enough to clear the height cap horizontally at the smallest phone padding, short enough
-     to clear it vertically — the one combination `windowFits` cannot state as a media query. */
-  const tooWide = makeFit({
-    mobile: { landscape: [{ minContentWidth: 800, contentHeight: 50 }] },
+test("a landscape rectangle wider than the height cap is decided below the centring band", () => {
+  /* 700 + 2 x 32 + 2 x 16 = 796px wide at the laptop tier's smallest padding: wider than the
+     720px height cap, which used to fail the build. Now it counts only up to cap + 4 x ground,
+     the height past which the centring gap could bind — 1104px at full laptop ground, 816px at
+     halved tablet ground. */
+  const wide = makeFit({
+    desktop: { landscape: [{ minContentWidth: 700, contentHeight: 100 }] },
   });
-  assert.throws(
-    () => mountedSheetFrameCss(tooWide, false),
-    /cannot be framed[\s\S]*wider than the[\s\S]*height cap/,
+  const css = mountedSheetFrameCss(wide, false);
+  assert.ok(css.includes("(height <= 1104px)"), "full laptop ground band");
+  assert.ok(
+    css.includes("(height <= 816px)"),
+    "halved touchscreen ground band",
   );
+  assert.ok(
+    !mountedSheetFrameCss(makeFit(), false).includes("height <="),
+    "a fit with no wide rectangle carries no band",
+  );
+});
+
+test("a pair is never the hero", () => {
+  assert.throws(
+    () => mountedSheetFrameCss(makeFit(), true, "pair"),
+    /a pair is never the hero/,
+  );
+});
+
+test("a pair's tier line is worked out side by side", () => {
+  /* Tablet: narrowest window 768, halved ground 24, so a rectangle may be 672px wide. Single at
+     content 300: 300 + 64 + 24 = 388 — fits. Side by side: 2 x (300 + 64) + 48 = 776 — does not. */
+  const fit = makeFit({
+    tablet: { landscape: [{ minContentWidth: 300, contentHeight: 100 }] },
+  });
+  assert.doesNotThrow(() => windowClasses(fit));
+  assert.throws(
+    () => windowClasses(fit, "pair"),
+    /cannot be framed[\s\S]*tablet ground tier fit its tablet content/,
+  );
+});
+
+test("side by side only in landscape where the mount shows", () => {
+  const classes = windowClasses(makeFit(), "pair");
+  const sideBySide = classes.filter((windowClass) =>
+    pairsSideBySide("pair", windowClass, true),
+  );
+  assert.equal(sideBySide.length, 3);
+  for (const windowClass of sideBySide) {
+    assert.notEqual(windowClass.groundTier.name, "phone");
+  }
+  for (const windowClass of classes) {
+    assert.equal(pairsSideBySide("pair", windowClass, false), false);
+    assert.equal(pairsSideBySide("single", windowClass, true), false);
+  }
+});
+
+test("a pair's landscape padding chain uses side-by-side widths", () => {
+  /* Tablet content 200: side by side at padding 48 is 2 x (200 + 96) + 48 = 640, at 64 is
+     2 x (200 + 128) + 48 = 704. Stacked portrait keeps single widths: 200 + 128 + 24 = 352. */
+  const fit = makeFit({
+    tablet: {
+      portrait: [{ minContentWidth: 200, contentHeight: 100 }],
+      landscape: [{ minContentWidth: 200, contentHeight: 100 }],
+    },
+  });
+  const pair = mountedSheetFrameCss(fit, false, "pair");
+  const single = mountedSheetFrameCss(fit, false);
+  assert.ok(pair.includes("@container (width >= 640px)"));
+  assert.ok(pair.includes("@container (width >= 704px)"));
+  assert.ok(pair.includes("@container (width >= 352px)"));
+  assert.ok(!single.includes("@container (width >= 640px)"));
+});
+
+test("every pair window and orientation gets exactly one layout block", () => {
+  const pair = mountedSheetFrameCss(makeFit(), false, "pair");
+  /* Three side-by-side (class, landscape) pairs; the other eight window-orientation blocks stack. */
+  assert.equal((pair.match(/flex-direction: row;/g) ?? []).length, 3);
+  assert.equal(
+    (pair.match(/gap: calc\(2 \* var\(--mounted-sheet-ground\)\);/g) ?? [])
+      .length,
+    8,
+  );
+  assert.ok(pair.includes(".mounted-sheet-frame__leaf"));
+  assert.ok(!mountedSheetFrameCss(makeFit(), false).includes("__leaf"));
 });
 
 test("rejects a fit that is not an object", () => {

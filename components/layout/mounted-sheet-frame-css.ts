@@ -5,12 +5,14 @@ import {
   CARD_WIDTH_CAP,
   type CardRectangle,
   type FitRegime,
+  type FrameLayout,
   fitRectangles,
   formatPx,
   GROUND_HALVING,
   type MeasuredFit,
   mountShows,
   type Orientation,
+  pairsSideBySide,
   regimesFor,
   revealFor,
   SIDE_GROUND_MULTIPLE,
@@ -41,6 +43,8 @@ import {
 export const FRAME_CLASS = {
   box: "mounted-sheet-frame__box",
   mount: "mounted-sheet-frame__mount",
+  leaf: "mounted-sheet-frame__leaf",
+  crease: "mounted-sheet-frame__crease",
   sheet: "mounted-sheet-frame__sheet",
 } as const;
 
@@ -143,14 +147,18 @@ function orientationName(landscape: boolean): Orientation {
 
    A portrait card is the window less the ground on every side. A landscape card is
    min(width cap, window width − 2 × max(double the ground, (window height − height cap) / 2)) wide
-   and min(height cap, window height − 2 × ground) tall. The centring term only exceeds double the
-   ground once the window is taller than the height cap, and a landscape window is wider still, so a
-   rectangle no wider than the height cap is decided by the ground term alone — which a media query
-   can state and a width-minus-height term cannot. */
+   and min(height cap, window height − 2 × ground) tall. Up to height cap + 4 × ground the centring
+   term never exceeds double the ground, so the ground term alone decides the width, and a media
+   query can state it. Above that band the centring term decides, and that needs window width minus
+   window height, which CSS cannot state. A rectangle no wider than the height cap still clears
+   there, because a landscape window is at least as wide as it is tall. A wider one is counted only
+   inside the band (DESIGN.md → Measured per section): conservative, since a window above the band
+   may keep full ground where halving would have fitted, and nothing is hidden, because the padding
+   chain reads the card's real width. */
 function windowFits(
-  section: string,
   windowClass: WindowClass,
   hero: boolean,
+  layout: FrameLayout,
   ground: number,
   landscape: boolean,
 ): Condition {
@@ -158,37 +166,40 @@ function windowFits(
     regimesFor(windowClass.regimes, orientationName(landscape)),
     revealFor(windowClass, hero),
     smallestPadding(windowClass.groundTier),
+    pairsSideBySide(layout, windowClass, landscape),
   );
   if (!landscape) return clears(rectangles, 2 * ground, 2 * ground);
 
-  const reachable = rectangles.filter(
-    (rectangle) =>
-      rectangle.minCardWidth <= CARD_WIDTH_CAP &&
-      rectangle.minCardHeight <= CARD_HEIGHT_CAP,
+  const band = `(height <= ${formatPx(CARD_HEIGHT_CAP + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
+  return any(
+    ...rectangles
+      .filter(
+        (rectangle) =>
+          rectangle.minCardWidth <= CARD_WIDTH_CAP &&
+          rectangle.minCardHeight <= CARD_HEIGHT_CAP,
+      )
+      .map((rectangle) =>
+        all(
+          `(width >= ${formatPx(rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * ground)})`,
+          `(height >= ${formatPx(rectangle.minCardHeight + 2 * ground)})`,
+          rectangle.minCardWidth > CARD_HEIGHT_CAP ? band : true,
+        ),
+      ),
   );
-  const tooWide = reachable.find(
-    (rectangle) => rectangle.minCardWidth > CARD_HEIGHT_CAP,
-  );
-  if (tooWide !== undefined) {
-    throw new Error(
-      `mounted-sheet-frame-css: section "${section}" cannot be framed. A ${windowClass.widthTier} card rectangle is ${formatPx(tooWide.minCardWidth)} wide, wider than the ${formatPx(CARD_HEIGHT_CAP)} height cap. Deciding its landscape ground would need a width-minus-height media query, which CSS cannot state.`,
-    );
-  }
-  return clears(reachable, 2 * SIDE_GROUND_MULTIPLE * ground, 2 * ground);
 }
 
 /* Full ground wins. The ground halves only where the full-ground card does not fit and the halved
    one does; a window where neither fits keeps full ground and the page scrolls. */
 function halvingCondition(
-  section: string,
   windowClass: WindowClass,
   hero: boolean,
+  layout: FrameLayout,
   landscape: boolean,
 ): Condition {
   const ground = windowClass.groundTier.ground;
   return all(
-    not(windowFits(section, windowClass, hero, ground, landscape)),
-    windowFits(section, windowClass, hero, ground * GROUND_HALVING, landscape),
+    not(windowFits(windowClass, hero, layout, ground, landscape)),
+    windowFits(windowClass, hero, layout, ground * GROUND_HALVING, landscape),
   );
 }
 
@@ -197,9 +208,9 @@ function orientationsOf(windowClass: WindowClass): boolean[] {
 }
 
 function groundRules(
-  section: string,
   windowClass: WindowClass,
   hero: boolean,
+  layout: FrameLayout,
   scope: string,
 ): string {
   const ground = windowClass.groundTier.ground;
@@ -210,7 +221,7 @@ function groundRules(
     rules.push(
       mediaRule(
         `@media ${windowClass.media} and ${orientationQuery(landscape)}`,
-        halvingCondition(section, windowClass, hero, landscape),
+        halvingCondition(windowClass, hero, layout, landscape),
         `${scope} { ${GROUND}: ${spacing(ground * GROUND_HALVING)}; }`,
       ),
     );
@@ -234,6 +245,50 @@ function mountRules(
   return `@media ${windowClass.media} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero))};${fill} }\n}`;
 }
 
+function sheetSelector(scope: string, layout: FrameLayout): string {
+  const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
+  return layout === "pair"
+    ? `${mount} > .${FRAME_CLASS.leaf} > .${FRAME_CLASS.sheet}`
+    : `${mount} > .${FRAME_CLASS.sheet}`;
+}
+
+/* DESIGN.md → Foundations → Layout → `mounted-pair`. Each window class and orientation takes
+   exactly one of two blocks, so neither has to undo the other.
+
+   Side by side, the shared mount is the card: it takes the reveal, lays the leaves in a row twice
+   the reveal apart, and shows its crease; each leaf is only a column holding its sheet.
+
+   Stacked, the shared mount stops being a surface, loses its fill, grain and shadow, and spaces
+   its leaves by the ground below one card plus the ground above the next. Each leaf is then the
+   card's mount, exactly as `mountRules` treats a single card's: the reveal and the fill where the
+   mount shows, neither at the phone ground tier, and `shadow-mount` kept either way. Each leaf
+   takes a card's minimum height, so each stacked card fills its own screen. */
+function pairLayoutRules(windowClass: WindowClass, scope: string): string {
+  const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
+  const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
+  const crease = `${mount} > .${FRAME_CLASS.crease}`;
+  const reveal = revealFor(windowClass, false);
+  const strip = "background-color: transparent; background-image: none;";
+
+  return orientationsOf(windowClass)
+    .map((landscape) => {
+      const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
+      if (pairsSideBySide("pair", windowClass, landscape)) {
+        return `${prelude} {
+${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
+${leaf} { flex: 1 1 0; min-width: 0; padding: 0; ${strip} box-shadow: none; }
+${crease} { display: block; }
+}`;
+      }
+      const fill = mountShows(windowClass, false) ? "" : ` ${strip}`;
+      return `${prelude} {
+${mount} { gap: calc(2 * ${GROUND_VALUE}); padding: 0; ${strip} box-shadow: none; }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(reveal)};${fill} }
+}`;
+    })
+    .join("\n");
+}
+
 /* The largest padding step at which the card clears one of the fit's rectangles; the smallest
    where none is cleared.
 
@@ -255,12 +310,12 @@ function mountRules(
    Where the ground halves, a second chain under the halving condition resets to the smallest step
    and climbs again against the halved card. */
 function paddingRules(
-  section: string,
   windowClass: WindowClass,
   hero: boolean,
+  layout: FrameLayout,
   scope: string,
 ): string {
-  const sheet = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount} > .${FRAME_CLASS.sheet}`;
+  const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
   const reveal = revealFor(windowClass, hero);
 
@@ -274,10 +329,16 @@ function paddingRules(
     ground: number,
     landscape: boolean,
     regimes: readonly FitRegime[],
+    sideBySide: boolean,
   ): string => {
     const rules = [`${sheet} { padding: ${spacing(ascending[0])}; }`];
     for (const padding of ascending.slice(1)) {
-      for (const rectangle of fitRectangles(regimes, reveal, padding)) {
+      for (const rectangle of fitRectangles(
+        regimes,
+        reveal,
+        padding,
+        sideBySide,
+      )) {
         if (landscape && rectangle.minCardHeight > CARD_HEIGHT_CAP) continue;
         rules.push(
           `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
@@ -291,21 +352,24 @@ function paddingRules(
   const rules: string[] = [];
   for (const landscape of orientationsOf(windowClass)) {
     const regimes = regimesFor(windowClass.regimes, orientationName(landscape));
+    const sideBySide = pairsSideBySide(layout, windowClass, landscape);
     const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
-    rules.push(chain(base, ground, landscape, regimes));
+    rules.push(chain(base, ground, landscape, regimes, sideBySide));
 
-    const halving = halvingCondition(section, windowClass, hero, landscape);
+    const halving = halvingCondition(windowClass, hero, layout, landscape);
     if (halving === false) continue;
     const prelude = halving === true ? base : `${base} and ${halving}`;
-    rules.push(chain(prelude, ground * GROUND_HALVING, landscape, regimes));
+    rules.push(
+      chain(prelude, ground * GROUND_HALVING, landscape, regimes, sideBySide),
+    );
   }
   return rules.join("\n");
 }
 
-function frameRules(scope: string): string {
+function frameRules(scope: string, layout: FrameLayout): string {
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
-  const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
+  const sheet = sheetSelector(scope, layout);
 
   /* Plain `center` first is the fallback for an engine that drops the `safe` declaration. `safe`
      keeps content that outgrows its box on the side the page can scroll to. */
@@ -313,6 +377,17 @@ function frameRules(scope: string): string {
   justify-content: safe center;
   align-items: center;
   align-items: safe center;`;
+
+  const pairBase =
+    layout === "pair"
+      ? `
+${mount} > .${FRAME_CLASS.leaf} {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+}
+${mount} > .${FRAME_CLASS.crease} { display: none; }`
+      : "";
 
   /* The box holds the card's minimum height and lengthens past it with its content. The mount and
      the sheet grow inside it as flex items, so each fills the height above it. */
@@ -351,22 +426,33 @@ ${sheet} {
   display: flex;
   flex-direction: column;
   ${safeCentre}
-}`;
+}${pairBase}`;
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
-   tier line, a tier line not below its narrowest window, a reachable card rectangle wider than the
-   height cap at the smallest padding, or a value off the spacing scale. */
-export function mountedSheetFrameCss(fit: MeasuredFit, hero: boolean): string {
+   tier line, a tier line not below its narrowest window, a value off the spacing scale, or a pair
+   asked to be the hero. */
+export function mountedSheetFrameCss(
+  fit: MeasuredFit,
+  hero: boolean,
+  layout: FrameLayout = "single",
+): string {
+  if (layout === "pair" && hero) {
+    throw new Error(
+      `mounted-sheet-frame-css: section "${fit.section}" asks for a hero pair, but a pair is never the hero — the opening section is a single card.`,
+    );
+  }
   /* Validates the fit, so it runs before anything reads the fit's section name. */
-  const classes = windowClasses(fit);
+  const classes = windowClasses(fit, layout);
   const scope = `.${frameScopeClass(fit)}`;
   return [
-    frameRules(scope),
+    frameRules(scope, layout),
     ...classes.flatMap((windowClass) => [
-      groundRules(fit.section, windowClass, hero, scope),
-      mountRules(windowClass, hero, scope),
-      paddingRules(fit.section, windowClass, hero, scope),
+      groundRules(windowClass, hero, layout, scope),
+      layout === "pair"
+        ? pairLayoutRules(windowClass, scope)
+        : mountRules(windowClass, hero, scope),
+      paddingRules(windowClass, hero, layout, scope),
     ]),
   ].join("\n");
 }
