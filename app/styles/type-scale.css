@@ -7,10 +7,14 @@
    restating values, and sit in the components layer so ordinary utilities still win on override. */
 
 @layer components {
-  /* Couple names only, and the only role that steps at all three tiers. It steps at `md` as well as
-     `lg`; Responsive Behavior names two typographic exceptions to `lg` being the layout switch, this
-     being one and the heading-lg / date-primary pair the other. Steps sit inside framework variants
-     so the token references survive — a raw media query cannot read a variable. */
+  /* Couple names only. Every role in this file now steps at both `md` and `lg` — Responsive
+     Behavior states the full ladder covers all three tiers, not just this pair of breakpoints —
+     so display-name is no longer singled out for stepping at all three; `heading-lg` and
+     `date-primary` below are the only roles that still don't. This role also keeps its
+     established `-desktop` suffix rather than moving to the bare name every other role's top tier
+     now uses, for continuity with how it was already named before the ladder widened. Steps sit
+     inside framework variants so the token references survive — a raw media query cannot read a
+     variable. */
   .type-display-name {
     font-family: var(--font-script);
     font-size: var(--text-display-name-mobile);
@@ -29,12 +33,27 @@
 
   .type-heading-xl {
     font-family: var(--font-serif);
-    font-size: var(--text-heading-xl);
-    font-weight: var(--text-heading-xl--font-weight);
+    font-size: var(--text-heading-xl-mobile);
+    font-weight: var(--text-heading-xl-mobile--font-weight);
+
+    @variant md {
+      font-size: var(--text-heading-xl-tablet);
+      font-weight: var(--text-heading-xl-tablet--font-weight);
+    }
+
+    @variant lg {
+      font-size: var(--text-heading-xl);
+      font-weight: var(--text-heading-xl--font-weight);
+    }
   }
 
   /* Steps with `.type-date-primary`, never alone — the two are one size separated by weight, so
-     moving either on its own makes the date read as subordinate to the event name above it. */
+     moving either on its own makes the date read as subordinate to the event name above it. Every
+     other role in this file now carries a distinct tablet value, but this pair flattens at the
+     top: tablet and laptop share this one size, because the 120px couple names dominate the
+     composition there and a third step would only compete with them. That is why there is no
+     `-tablet` token and no `@variant lg` block here — the `md` step already covers both wider
+     tiers. */
   .type-heading-lg {
     font-family: var(--font-serif);
     font-size: var(--text-heading-lg-mobile);
@@ -46,58 +65,113 @@
     }
   }
 
-  /* Separates from `.type-heading-lg` at the same size by weight, not by scale, at both steps. Held
-     at the mobile size below `md` because the longest place name in the content overruns the column a
-     mounted section leaves at 320px. */
+  /* Separates from `.type-heading-lg` at the same size by weight, not by scale, and flattens at
+     the top the same way and for the same reason. Held at the mobile size below `md` because the
+     longest place name in the content overruns the column a mounted section leaves at 320px.
+     Carries no letter-spacing: the previous 0.06em was a display-caps amount that read "off" on a
+     mixed-case serif and narrowed the line 13% at 26px, and weight 500 (up from 400) answers the
+     serif reading thin beside the 120px names. */
   .type-date-primary {
     font-family: var(--font-serif);
     font-size: var(--text-date-primary-mobile);
     font-weight: var(--text-date-primary-mobile--font-weight);
-    letter-spacing: var(--text-date-primary-mobile--letter-spacing);
 
     @variant md {
       font-size: var(--text-date-primary);
       font-weight: var(--text-date-primary--font-weight);
-      letter-spacing: var(--text-date-primary--letter-spacing);
     }
   }
 
+  /* Steps with width for the first time — previously one flat 17px. The floor itself rose too: a
+     mixed-age audience read the sans as too small at every size tested, so 18px is now the phone
+     floor rather than a single fixed value across the site. */
   .type-body {
     font-family: var(--font-sans);
-    font-size: var(--text-body);
-    font-weight: var(--text-body--font-weight);
-    line-height: var(--text-body--line-height);
+    font-size: var(--text-body-mobile);
+    font-weight: var(--text-body-mobile--font-weight);
+    line-height: var(--text-body-mobile--line-height);
+
+    @variant md {
+      font-size: var(--text-body-tablet);
+      font-weight: var(--text-body-tablet--font-weight);
+      line-height: var(--text-body-tablet--line-height);
+    }
+
+    @variant lg {
+      font-size: var(--text-body);
+      font-weight: var(--text-body--font-weight);
+      line-height: var(--text-body--line-height);
+    }
   }
 
-  /* The only role smaller than body, and the one place the scale goes under the mixed-age floor —
-     legitimate because it never carries long-form copy. The tighter leading is part of that scoping:
-     it suits a line read in a glance and fights a paragraph read continuously. Unlike `.type-eyebrow`
-     this role owns no color, so it inherits ink on paper and ink-on-contrast on the green stock and
-     is legal on both without an exception. */
+  /* The only role smaller than body at every tier, and the one place the scale goes under the
+     mixed-age floor — legitimate because it never carries long-form copy. The tighter leading is
+     part of that scoping: it suits a line read in a glance and fights a paragraph read
+     continuously. Unlike `.type-eyebrow` this role owns no color, so it inherits ink on paper and
+     ink-on-contrast on the green stock and is legal on both without an exception. */
   .type-caption {
     font-family: var(--font-sans);
-    font-size: var(--text-caption);
-    font-weight: var(--text-caption--font-weight);
-    line-height: var(--text-caption--line-height);
+    font-size: var(--text-caption-mobile);
+    font-weight: var(--text-caption-mobile--font-weight);
+    line-height: var(--text-caption-mobile--line-height);
+
+    @variant md {
+      font-size: var(--text-caption-tablet);
+      font-weight: var(--text-caption-tablet--font-weight);
+      line-height: var(--text-caption-tablet--line-height);
+    }
+
+    @variant lg {
+      font-size: var(--text-caption);
+      font-weight: var(--text-caption--font-weight);
+      line-height: var(--text-caption--line-height);
+    }
   }
 
   /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
      ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
-     caller pairing the class with a token and being able to get it wrong. */
+     caller pairing the class with a token and being able to get it wrong. Sized one step below
+     `.type-caption` at every tier, deliberately: tried at caption's own size and rejected, because
+     uppercase and widely letterspaced text reads larger than its number, so the step down is what
+     keeps the two roles visually distinct. */
   .type-eyebrow {
     font-family: var(--font-sans);
-    font-size: var(--text-eyebrow);
-    font-weight: var(--text-eyebrow--font-weight);
-    letter-spacing: var(--text-eyebrow--letter-spacing);
+    font-size: var(--text-eyebrow-mobile);
+    font-weight: var(--text-eyebrow-mobile--font-weight);
+    letter-spacing: var(--text-eyebrow-mobile--letter-spacing);
     text-transform: uppercase;
     color: var(--color-accent-gold);
+
+    @variant md {
+      font-size: var(--text-eyebrow-tablet);
+      font-weight: var(--text-eyebrow-tablet--font-weight);
+      letter-spacing: var(--text-eyebrow-tablet--letter-spacing);
+    }
+
+    @variant lg {
+      font-size: var(--text-eyebrow);
+      font-weight: var(--text-eyebrow--font-weight);
+      letter-spacing: var(--text-eyebrow--letter-spacing);
+    }
   }
 
   .type-action {
     font-family: var(--font-sans);
-    font-size: var(--text-action);
-    font-weight: var(--text-action--font-weight);
-    letter-spacing: var(--text-action--letter-spacing);
+    font-size: var(--text-action-mobile);
+    font-weight: var(--text-action-mobile--font-weight);
+    letter-spacing: var(--text-action-mobile--letter-spacing);
     text-transform: uppercase;
+
+    @variant md {
+      font-size: var(--text-action-tablet);
+      font-weight: var(--text-action-tablet--font-weight);
+      letter-spacing: var(--text-action-tablet--letter-spacing);
+    }
+
+    @variant lg {
+      font-size: var(--text-action);
+      font-weight: var(--text-action--font-weight);
+      letter-spacing: var(--text-action--letter-spacing);
+    }
   }
 }
