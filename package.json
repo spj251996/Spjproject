@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "test": "node --test content/*.test.ts",
+    "test": "node --test content/*.test.ts components/**/*.test.ts",
     "validate:content": "node content/verify.ts",
     "verify:section": "node scripts/verify-section.mjs",
     "measure:fit": "node scripts/measure-section-fit.mjs"

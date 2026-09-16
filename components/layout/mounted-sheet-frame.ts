@@ -12,6 +12,11 @@
 /* Type follows these alone (Interaction Rules → Responsive Behavior). */
 export type WidthTier = "mobile" | "tablet" | "desktop";
 
+/* A section's content can stand a different height by orientation — the invite's couple names are
+   three lines in portrait and one in landscape — so the frame measures and fits each on its own
+   terms rather than judging one against the other's card (DESIGN.md → Measured per section). */
+export type Orientation = "portrait" | "landscape";
+
 /* Ground and padding follow these. A window's ground tier starts from its width tier and is moved
    only by its height and its primary pointer. */
 type GroundTierName = "phone" | "tablet" | "laptop";
@@ -29,13 +34,26 @@ export interface FitRegime {
    `section` names the section's stylesheet scope, so it must be stable and unique on the page:
    lowercase letters, digits and hyphens, starting with a letter.
 
-   Each width tier's regimes are ordered by ascending `minContentWidth`, and `contentHeight` never
-   rises from one to the next: a card fits when it clears any one regime's rectangle, which holds
-   only while a wider column never stands taller. Below a tier's first regime nothing was measured,
-   and the frame treats that as not fitting. */
+   Each width tier carries its own portrait and landscape regimes, ordered by ascending
+   `minContentWidth`, with `contentHeight` never rising from one to the next: a card fits when it
+   clears any one regime's rectangle, which holds only while a wider column never stands taller.
+   Below a tier's first regime nothing was measured, and the frame treats that as not fitting. */
 export interface MeasuredFit {
   section: string;
-  regimes: Readonly<Record<WidthTier, readonly FitRegime[]>>;
+  regimes: Readonly<
+    Record<WidthTier, Readonly<Record<Orientation, readonly FitRegime[]>>>
+  >;
+}
+
+/* Every consumer reads a width tier's regimes through this rather than indexing the record
+   directly, so the orientation split has one seam. Takes a width tier's own record
+   (`fit.regimes[tier]`, or a `WindowClass`'s, which carries the same shape straight through) rather
+   than the whole fit, because `tierLine` picks an orientation before any `WindowClass` exists. */
+export function regimesFor(
+  regimes: Readonly<Record<Orientation, readonly FitRegime[]>>,
+  orientation: Orientation,
+): readonly FitRegime[] {
+  return regimes[orientation];
 }
 
 interface GroundTier {
@@ -93,7 +111,9 @@ export interface WindowClass {
   media: string;
   widthTier: WidthTier;
   groundTier: GroundTier;
-  regimes: readonly FitRegime[];
+  /* Both orientations' regimes for this class's width tier — never just the one a class happens to
+     render, since a class above its tier line covers both. */
+  regimes: Readonly<Record<Orientation, readonly FitRegime[]>>;
   /* A class below a tier line has no portrait windows, because every tier line sits below the
      narrowest width it applies to — `tierLine` refuses one that does not. */
   portraitPossible: boolean;
@@ -151,8 +171,10 @@ function tierLine(
 ): number {
   const halved = groundTier.ground * GROUND_HALVING;
   const padding = smallestPadding(groundTier);
+  /* A tier line only ever decides a landscape window (this function's own doc above), so it reads
+     the landscape regimes even for a width tier whose windows can also be portrait. */
   const heights = fitRectangles(
-    fit.regimes[widthTier],
+    regimesFor(fit.regimes[widthTier], "landscape"),
     REVEAL[widthTier],
     padding,
   )
@@ -183,6 +205,7 @@ const SECTION_NAME = /^[a-z][a-z0-9-]*$/;
 const FIT_KEYS: readonly string[] = ["section", "regimes"];
 const REGIME_KEYS = ["minContentWidth", "contentHeight"] as const;
 const WIDTH_TIERS: readonly WidthTier[] = ["mobile", "tablet", "desktop"];
+const ORIENTATIONS: readonly Orientation[] = ["portrait", "landscape"];
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -224,7 +247,7 @@ function assertValidFit(fit: MeasuredFit): void {
   const byTier = record.regimes;
   if (!isPlainObject(byTier)) {
     throw new Error(
-      `mounted-sheet-frame: ${label} has no regimes. A measured fit needs regimes for mobile, tablet and desktop type.`,
+      `mounted-sheet-frame: ${label} has no regimes. A measured fit needs a portrait and a landscape set for mobile, tablet and desktop type.`,
     );
   }
   for (const key of Object.keys(byTier)) {
@@ -235,57 +258,73 @@ function assertValidFit(fit: MeasuredFit): void {
     }
   }
   for (const widthTier of WIDTH_TIERS) {
-    const regimes: unknown = byTier[widthTier];
-    if (!Array.isArray(regimes)) {
+    const byOrientation: unknown = byTier[widthTier];
+    if (!isPlainObject(byOrientation)) {
       throw new Error(
-        `mounted-sheet-frame: ${label} has no ${widthTier} regimes. Every width tier needs its measured fit.`,
+        `mounted-sheet-frame: ${label} has no ${widthTier} regimes. Every width tier needs a portrait and a landscape set.`,
       );
     }
-    if (regimes.length === 0) {
-      throw new Error(
-        `mounted-sheet-frame: ${label} has no measured regimes for ${widthTier} type.`,
-      );
+    for (const key of Object.keys(byOrientation)) {
+      if (!(ORIENTATIONS as readonly string[]).includes(key)) {
+        throw new Error(
+          `mounted-sheet-frame: ${label} has an unknown orientation "${key}" under ${widthTier}. The orientations are portrait and landscape.`,
+        );
+      }
     }
-    regimes.forEach((regime: unknown, index) => {
-      const at = `${label}, ${widthTier} regime ${index}`;
-      if (!isPlainObject(regime)) {
+    for (const orientation of ORIENTATIONS) {
+      const regimes: unknown = byOrientation[orientation];
+      const orientationLabel = `${label}, ${widthTier} ${orientation}`;
+      if (!Array.isArray(regimes)) {
         throw new Error(
-          `mounted-sheet-frame: ${at} must be an object carrying minContentWidth and contentHeight; got ${describe(regime)}.`,
+          `mounted-sheet-frame: ${orientationLabel} has no regimes. Every width tier needs its measured fit for both orientations.`,
         );
       }
-      for (const key of Object.keys(regime)) {
-        if (!(REGIME_KEYS as readonly string[]).includes(key)) {
+      if (regimes.length === 0) {
+        throw new Error(
+          `mounted-sheet-frame: ${orientationLabel} has no measured regimes.`,
+        );
+      }
+      regimes.forEach((regime: unknown, index) => {
+        const at = `${orientationLabel} regime ${index}`;
+        if (!isPlainObject(regime)) {
           throw new Error(
-            `mounted-sheet-frame: ${at} has an unknown key "${key}". A regime carries only minContentWidth and contentHeight.`,
+            `mounted-sheet-frame: ${at} must be an object carrying minContentWidth and contentHeight; got ${describe(regime)}.`,
           );
         }
-      }
-      for (const field of REGIME_KEYS) {
-        const value = regime[field];
-        if (
-          typeof value !== "number" ||
-          !Number.isFinite(value) ||
-          value <= 0
-        ) {
+        for (const key of Object.keys(regime)) {
+          if (!(REGIME_KEYS as readonly string[]).includes(key)) {
+            throw new Error(
+              `mounted-sheet-frame: ${at} has an unknown key "${key}". A regime carries only minContentWidth and contentHeight.`,
+            );
+          }
+        }
+        for (const field of REGIME_KEYS) {
+          const value = regime[field];
+          if (
+            typeof value !== "number" ||
+            !Number.isFinite(value) ||
+            value <= 0
+          ) {
+            throw new Error(
+              `mounted-sheet-frame: ${at} has ${field} ${describe(value)}. It must be a positive, finite number of pixels.`,
+            );
+          }
+        }
+        if (index === 0) return;
+        const previous = regimes[index - 1] as FitRegime;
+        const current = regime as unknown as FitRegime;
+        if (!(current.minContentWidth > previous.minContentWidth)) {
           throw new Error(
-            `mounted-sheet-frame: ${at} has ${field} ${describe(value)}. It must be a positive, finite number of pixels.`,
+            `mounted-sheet-frame: ${at} starts at ${formatPx(current.minContentWidth)}, not wider than regime ${index - 1} (${formatPx(previous.minContentWidth)}). Regime widths must strictly ascend.`,
           );
         }
-      }
-      if (index === 0) return;
-      const previous = regimes[index - 1] as FitRegime;
-      const current = regime as unknown as FitRegime;
-      if (!(current.minContentWidth > previous.minContentWidth)) {
-        throw new Error(
-          `mounted-sheet-frame: ${at} starts at ${formatPx(current.minContentWidth)}, not wider than regime ${index - 1} (${formatPx(previous.minContentWidth)}). Regime widths must strictly ascend.`,
-        );
-      }
-      if (current.contentHeight > previous.contentHeight) {
-        throw new Error(
-          `mounted-sheet-frame: ${at} stands ${formatPx(current.contentHeight)} tall, taller than regime ${index - 1} (${formatPx(previous.contentHeight)}) at a narrower width. A regime's height must never rise as its width grows. Re-measure the section.`,
-        );
-      }
-    });
+        if (current.contentHeight > previous.contentHeight) {
+          throw new Error(
+            `mounted-sheet-frame: ${at} stands ${formatPx(current.contentHeight)} tall, taller than regime ${index - 1} (${formatPx(previous.contentHeight)}) at a narrower width. A regime's height must never rise as its width grows. Re-measure the section.`,
+          );
+        }
+      });
+    }
   }
 }
 

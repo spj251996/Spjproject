@@ -4,11 +4,14 @@ import {
   CARD_HEIGHT_CAP,
   CARD_WIDTH_CAP,
   type CardRectangle,
+  type FitRegime,
   fitRectangles,
   formatPx,
   GROUND_HALVING,
   type MeasuredFit,
   mountShows,
+  type Orientation,
+  regimesFor,
   revealFor,
   SIDE_GROUND_MULTIPLE,
   smallestPadding,
@@ -129,6 +132,10 @@ function orientationQuery(landscape: boolean): string {
   return `(orientation: ${landscape ? "landscape" : "portrait"})`;
 }
 
+function orientationName(landscape: boolean): Orientation {
+  return landscape ? "landscape" : "portrait";
+}
+
 /* Does this window's card, at the given ground, hold the content at the smallest padding? Stated in
    window terms, so it can decide the ground for a card that is not on screen. It assumes the frame
    spans the full window width, which a classic scrollbar narrows — DESIGN.md → Iteration Notes →
@@ -148,7 +155,7 @@ function windowFits(
   landscape: boolean,
 ): Condition {
   const rectangles = fitRectangles(
-    windowClass.regimes,
+    regimesFor(windowClass.regimes, orientationName(landscape)),
     revealFor(windowClass, hero),
     smallestPadding(windowClass.groundTier),
   );
@@ -240,8 +247,13 @@ function mountRules(
    Each rule sets one step for one rectangle, so a step's rectangles are alternatives, and larger
    steps come later and win — the cascade takes the largest step that fits, with no negation.
 
-   The full-ground chain applies first. Where the ground halves, a second chain under the halving
-   condition resets to the smallest step and climbs again against the halved card. */
+   One chain per orientation, each wrapped in its own `(orientation: …)` query and built from that
+   orientation's own regimes — a portrait and a landscape window at the same width and height can
+   need different padding, since their content differs. A class with no portrait windows
+   (`!windowClass.portraitPossible`) gets no portrait chain at all, which is what used to need an
+   explicit "portrait-only rectangle" exception when one chain covered both orientations at once.
+   Where the ground halves, a second chain under the halving condition resets to the smallest step
+   and climbs again against the halved card. */
 function paddingRules(
   section: string,
   windowClass: WindowClass,
@@ -252,32 +264,23 @@ function paddingRules(
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
   const reveal = revealFor(windowClass, hero);
 
-  /* One block per chain, so its condition is stated once and each rectangle nests inside it. */
+  /* One block per chain, so its condition is stated once and each rectangle nests inside it. A
+     landscape chain skips a rectangle taller than the height cap: the box's landscape height is
+     capped (frameRules), so no window is tall enough to actually hand the sheet that much room even
+     though the rule's own height query could still be satisfied. Portrait's box is never capped, so
+     its chain keeps every rectangle. */
   const chain = (
     prelude: string,
     ground: number,
-    landscape: boolean | null,
+    landscape: boolean,
+    regimes: readonly FitRegime[],
   ): string => {
     const rules = [`${sheet} { padding: ${spacing(ascending[0])}; }`];
     for (const padding of ascending.slice(1)) {
-      for (const rectangle of fitRectangles(
-        windowClass.regimes,
-        reveal,
-        padding,
-      )) {
-        const portraitOnly = rectangle.minCardHeight > CARD_HEIGHT_CAP;
-        if (
-          portraitOnly &&
-          (landscape === true || !windowClass.portraitPossible)
-        ) {
-          continue;
-        }
-        const orientation =
-          portraitOnly && landscape === null
-            ? `${orientationQuery(false)} and `
-            : "";
+      for (const rectangle of fitRectangles(regimes, reveal, padding)) {
+        if (landscape && rectangle.minCardHeight > CARD_HEIGHT_CAP) continue;
         rules.push(
-          `@media ${orientation}(height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
+          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
         );
       }
     }
@@ -285,12 +288,16 @@ function paddingRules(
   };
 
   const ground = windowClass.groundTier.ground;
-  const rules = [chain(`@media ${windowClass.media}`, ground, null)];
+  const rules: string[] = [];
   for (const landscape of orientationsOf(windowClass)) {
+    const regimes = regimesFor(windowClass.regimes, orientationName(landscape));
+    const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
+    rules.push(chain(base, ground, landscape, regimes));
+
     const halving = halvingCondition(section, windowClass, hero, landscape);
     if (halving === false) continue;
-    const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}${halving === true ? "" : ` and ${halving}`}`;
-    rules.push(chain(prelude, ground * GROUND_HALVING, landscape));
+    const prelude = halving === true ? base : `${base} and ${halving}`;
+    rules.push(chain(prelude, ground * GROUND_HALVING, landscape, regimes));
   }
   return rules.join("\n");
 }

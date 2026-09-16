@@ -5,22 +5,26 @@
    playwright-cli`, never `playwright-core` directly.
 
    Method (`.superpowers/sdd/ground-frame-report.md` → Measured content heights): for each width
-   tier (mobile < 768px, tablet 768–1023px, desktop >= 1024px) the window is resized inside that
-   tier so the section's type resolves to that tier's sizes, web fonts are confirmed loaded, the
-   content stack is cloned into a detached flex-column host, and the host's width is swept from
-   120 to 1300px. Height is a step function of width — each line of the stack wraps at its own
-   width — so every width where the measured height changes is a regime boundary, bisected to
-   1/1024px. The sweep and the bisection both run inside the page in one `page.evaluate` call per
-   tier: no per-pixel round trip to the CLI.
+   tier (mobile < 768px, tablet 768–1023px, desktop >= 1024px) the window is swept in BOTH
+   orientations — portrait at height = round(width x 1.5), landscape at round(width x 0.6) — so a
+   section whose content differs by orientation, such as the invite's three-line portrait names,
+   is measured as it actually renders rather than judged by one figure shared across both. Within
+   each tier-orientation pair the window is resized so the section's type resolves to that tier's
+   sizes, web fonts are confirmed loaded, the content stack is cloned into a detached flex-column
+   host, and the host's width is swept from 120 to 1300px. Height is a step function of width —
+   each line of the stack wraps at its own width — so every width where the measured height changes
+   is a regime boundary, bisected to 1/1024px. The sweep and the bisection both run inside the page
+   in one `page.evaluate` call per tier-orientation pair: no per-pixel round trip to the CLI.
 
    Usage:
      node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
        --section=invite --out=app/_composition/invite-fit.ts
 
-   Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module. The frame's own
-   `assertValidFit` — ascending regime widths, non-rising heights — validates the file at the
-   point of use; this script performs the same check before writing, so a malformed sweep is
-   caught here rather than at render time. */
+   Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
+   landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending
+   regime widths, non-rising heights, both orientations present — validates the file at the point
+   of use; this script performs the same check before writing, so a malformed sweep is caught here
+   rather than at render time. */
 
 import { spawn, spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -33,13 +37,23 @@ const CLI_TIMEOUT_MS = 120_000;
 const MIN_WIDTH = 120;
 const MAX_WIDTH = 1300;
 
-/* One width safely inside each width tier, away from the 768/1024 breakpoints, plus a generous
-   height so the tier's own frame never scrolls the window during measurement — irrelevant to the
-   clone, which is measured off-screen, but kept large for a clean render. */
+/* One width safely inside each width tier, away from the 768/1024 breakpoints. Each is swept at
+   both orientations' heights below — irrelevant to the clone, which is measured off-screen in a
+   detached host, but the window itself must actually be portrait or landscape for the section's
+   own on-screen layout (and so `document.fonts.ready`, loaded before the clone is taken) to
+   resolve as a guest would see it. */
 const TIERS = [
-  { key: "mobile", width: 400, height: 1600 },
-  { key: "tablet", width: 900, height: 1600 },
-  { key: "desktop", width: 1280, height: 1600 },
+  { key: "mobile", width: 400 },
+  { key: "tablet", width: 900 },
+  { key: "desktop", width: 1280 },
+];
+
+/* Mirrors `app/preview/_kit/live-fit.tsx`'s `probeHeight`: a height that sets the orientation
+   without pretending to be a real device, since the sweep only needs the window tall or short
+   enough to resolve the section's type at that tier and orientation. */
+const ORIENTATIONS = [
+  { key: "portrait", heightFor: (width) => Math.round(width * 1.5) },
+  { key: "landscape", heightFor: (width) => Math.round(width * 0.6) },
 ];
 
 function parseArgs(argv) {
@@ -216,19 +230,20 @@ function validateRegimes(tier, regimes) {
   }
 }
 
-async function measureTier(tier, mutateContent) {
-  cli("resize", String(tier.width), String(tier.height));
+async function measureTierOrientation(tier, orientation, mutateContent) {
+  const label = `${tier.key} ${orientation.key}`;
+  cli("resize", String(tier.width), String(orientation.heightFor(tier.width)));
   cli("reload");
   const raw = cli("run-code", "--raw", sweepScript(selector, mutateContent));
   const result = JSON.parse(raw);
   if (result.error) {
-    throw new Error(`measure-section-fit: ${tier.key} — ${result.error}`);
+    throw new Error(`measure-section-fit: ${label} — ${result.error}`);
   }
   const regimes = result.regimes.map((regime) => ({
     minContentWidth: round6(regime.minContentWidth),
     contentHeight: round6(regime.contentHeight),
   }));
-  validateRegimes(tier.key, regimes);
+  validateRegimes(label, regimes);
   return regimes;
 }
 
@@ -241,6 +256,14 @@ function formatRegimes(regimes) {
     .join("\n");
 }
 
+function formatOrientation(byOrientation) {
+  return ORIENTATIONS.map(
+    (orientation) => `      ${orientation.key}: [
+${formatRegimes(byOrientation[orientation.key])}
+      ],`,
+  ).join("\n");
+}
+
 function renderFile(fit) {
   return `/* Generated by \`npm run measure:fit\` — DO NOT hand-edit; re-run the script instead.
    Source: ${route}, selector ${JSON.stringify(selector)}.
@@ -251,15 +274,15 @@ import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
 export const ${exportName}: MeasuredFit = {
   section: ${JSON.stringify(section)},
   regimes: {
-    mobile: [
-${formatRegimes(fit.mobile)}
-    ],
-    tablet: [
-${formatRegimes(fit.tablet)}
-    ],
-    desktop: [
-${formatRegimes(fit.desktop)}
-    ],
+    mobile: {
+${formatOrientation(fit.mobile)}
+    },
+    tablet: {
+${formatOrientation(fit.tablet)}
+    },
+    desktop: {
+${formatOrientation(fit.desktop)}
+    },
   },
 };
 `;
@@ -272,14 +295,27 @@ try {
 
   const fit = {};
   for (const tier of TIERS) {
-    fit[tier.key] = await measureTier(tier, falsify && tier.key === "mobile");
+    fit[tier.key] = {};
+    for (const orientation of ORIENTATIONS) {
+      /* Falsified only on mobile, in both orientations, matching the coverage of the single-set
+         sweep this replaces: proving the bisection catches a real content change, not sweeping
+         every tier-orientation pair for it. */
+      const mutateContent = falsify && tier.key === "mobile";
+      fit[tier.key][orientation.key] = await measureTierOrientation(
+        tier,
+        orientation,
+        mutateContent,
+      );
+    }
   }
 
   console.log(`\nMeasured fit for "${section}" (${route}, ${selector}):`);
   for (const tier of TIERS) {
-    console.log(`  ${tier.key}:`);
-    for (const regime of fit[tier.key]) {
-      console.log(`    ${regime.minContentWidth} -> ${regime.contentHeight}`);
+    for (const orientation of ORIENTATIONS) {
+      console.log(`  ${tier.key} ${orientation.key}:`);
+      for (const regime of fit[tier.key][orientation.key]) {
+        console.log(`    ${regime.minContentWidth} -> ${regime.contentHeight}`);
+      }
     }
   }
 
