@@ -18,7 +18,7 @@ export const events: WeddingEvent[] = validateEvents([
       },
       {
         id: "engagement-reception",
-        label: "Reception Lunch",
+        label: "Betrothal Lunch",
         time: "12:00 PM",
         venue: "St. Antony's Church Parish Hall",
         address: "Paropady, Kozhikode, Keralam",
@@ -42,7 +42,7 @@ export const events: WeddingEvent[] = validateEvents([
       },
       {
         id: "wedding-reception",
-        label: "Reception Lunch",
+        label: "Reception",
         time: "12:00 PM",
         venue: "Chinnas Auditorium",
         address: "Koothattukulam, Ernakulam, Keralam",
