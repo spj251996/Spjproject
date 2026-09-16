@@ -8,6 +8,7 @@ test("formats the wedding date", () => {
     day: "9",
     ordinal: "th",
     month: "January",
+    monthShort: "Jan",
     year: "2027",
   });
 });
@@ -18,8 +19,29 @@ test("formats the engagement date", () => {
     day: "4",
     ordinal: "th",
     month: "January",
+    monthShort: "Jan",
     year: "2027",
   });
+});
+
+/* `monthShort` is a second formatter reading the same parsed date, not a substring of `month` — so
+   this checks every month name's abbreviation, not just January, which is all the two real events
+   exercise. */
+test("derives the abbreviated month from the same date as the long month", () => {
+  const cases: { iso: string; month: string; monthShort: string }[] = [
+    { iso: "2027-01-09", month: "January", monthShort: "Jan" },
+    { iso: "2027-02-14", month: "February", monthShort: "Feb" },
+    { iso: "2027-03-20", month: "March", monthShort: "Mar" },
+    { iso: "2027-05-01", month: "May", monthShort: "May" },
+    { iso: "2027-06-15", month: "June", monthShort: "Jun" },
+    { iso: "2027-09-30", month: "September", monthShort: "Sept" },
+    { iso: "2027-12-25", month: "December", monthShort: "Dec" },
+  ];
+  for (const { iso, month, monthShort } of cases) {
+    const formatted = formatEventDate(iso);
+    assert.equal(formatted.month, month, `${iso}: month`);
+    assert.equal(formatted.monthShort, monthShort, `${iso}: monthShort`);
+  }
 });
 
 test("picks the right ordinal for every irregular case", () => {

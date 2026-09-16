@@ -64,5 +64,9 @@ export interface FormattedDate {
   day: string;
   ordinal: string;
   month: string;
+  /** The month abbreviated ("Jan"), derived from the same date as `month`. Both render and CSS
+      shows one (DESIGN.md → Domain Components → Invite), so the hidden spelling still needs to
+      exist at first paint rather than being computed client-side after the breakpoint is known. */
+  monthShort: string;
   year: string;
 }

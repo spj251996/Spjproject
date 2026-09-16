@@ -31,6 +31,23 @@
     }
   }
 
+  /* Foundations → Typography: the role sets three lines in portrait windows — each name on its own
+     line, the joiner between them at half the name size, 0.9 line spacing across the block — and
+     stays one line at normal spacing in landscape. Orientation decides it rather than width because
+     one width tier covers both, which is the same reason the card frame queries orientation. */
+  @media (orientation: portrait) {
+    .type-display-name {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 0.9;
+    }
+
+    .type-display-name__joiner {
+      font-size: 0.5em;
+    }
+  }
+
   .type-heading-xl {
     font-family: var(--font-serif);
     font-size: var(--text-heading-xl-mobile);
