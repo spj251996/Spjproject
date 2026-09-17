@@ -1,8 +1,8 @@
 /* Extension-qualified, unlike the rest of components/: plain node resolves a relative import only
    with its extension, and this module stays importable outside the app's bundler. */
 import {
-  CARD_HEIGHT_CAP,
-  CARD_WIDTH_CAP,
+  BREAKPOINT_REM,
+  CAPS,
   type CardRectangle,
   cardReveal,
   type FitRegime,
@@ -56,9 +56,13 @@ const GROUND = "--mounted-sheet-ground";
 const GROUND_VALUE = `var(${GROUND})`;
 
 /* The card's minimum height from the window: every viewport-height term is `svh`, so nothing in the
-   frame moves as a phone's toolbar hides. A landscape card's is also capped. */
+   frame moves as a phone's toolbar hides. A landscape card's is also capped — at the compact
+   laptop tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
+   everywhere else (mobile, tablet, wide). */
 const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
+const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-compact), ${CARD_HEIGHT})`;
+const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
 
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
    value, because the arithmetic needs the number a media query cannot read from the token — a
@@ -168,19 +172,20 @@ function windowFits(
   );
   if (!landscape) return clears(rectangles, 2 * ground, 2 * ground);
 
-  const band = `(height <= ${formatPx(CARD_HEIGHT_CAP + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
+  const cap = CAPS[windowClass.widthTier];
+  const band = `(height <= ${formatPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
   return any(
     ...rectangles
       .filter(
         (rectangle) =>
-          rectangle.minCardWidth <= CARD_WIDTH_CAP &&
-          rectangle.minCardHeight <= CARD_HEIGHT_CAP,
+          rectangle.minCardWidth <= cap.width &&
+          rectangle.minCardHeight <= cap.height,
       )
       .map((rectangle) =>
         all(
           `(width >= ${formatPx(rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * ground)})`,
           `(height >= ${formatPx(rectangle.minCardHeight + 2 * ground)})`,
-          rectangle.minCardWidth > CARD_HEIGHT_CAP ? band : true,
+          rectangle.minCardWidth > cap.height ? band : true,
         ),
       ),
   );
@@ -342,7 +347,11 @@ function paddingRules(
         padding,
         sideBySide,
       )) {
-        if (landscape && rectangle.minCardHeight > CARD_HEIGHT_CAP) continue;
+        if (
+          landscape &&
+          rectangle.minCardHeight > CAPS[windowClass.widthTier].height
+        )
+          continue;
         rules.push(
           `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
         );
@@ -422,6 +431,9 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
 @media (orientation: landscape) {
 ${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap)) / 2)); }
 }
+@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap-compact)) / 2)); }
+}
 ${box} {
   container-type: inline-size;
   flex: none;
@@ -434,6 +446,12 @@ ${box} {
 ${box} {
   width: min(var(--container-content), 100%);
   min-height: ${CAPPED_CARD_HEIGHT};
+}
+}
+@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+${box} {
+  width: min(var(--container-content-compact), 100%);
+  min-height: ${COMPACT_CAPPED_CARD_HEIGHT};
 }
 }
 ${mount} {
