@@ -56,8 +56,10 @@ export function Portrait({
             height={1}
             width={1}
           />
+          {/* Empty alt: the figcaption below already names the person, so a screen reader
+              would otherwise announce the name twice. */}
           {src === null ? null : (
-            <Image alt={name} className="object-cover" fill src={src} />
+            <Image alt="" className="object-cover" fill src={src} />
           )}
         </div>
       </div>
