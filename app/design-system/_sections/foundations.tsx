@@ -129,95 +129,119 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
 ];
 
-/* § 2 — Typography. Eight rows, matching the doc's eight-row role table and the eight `.type-*`
-   classes. `display-name` is ONE role that steps across viewports, not three roles; every role now
-   steps across all three width tiers, not display-name alone. */
+/* § 2 — Typography. Nine rows, matching the doc's nine-row role table and the nine `.type-*` role
+   classes. `display-name` is ONE role that steps across viewports, not three roles; every role steps
+   across all three width tiers, each tier on its own pixel line height (DESIGN.md → Typography → The
+   scale). The date line's raised ordinal, `.type-date-ordinal`, is a modifier rather than a role, so
+   it is a rule below, not a row. */
 const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-display-name",
     family: "Corinthia",
     size: 120,
     weight: 400,
+    lh: 180,
     sample: "Couple names only.",
-    responsive: { tablet: 104, mobile: 72 },
+    responsive: { tablet: 104, mobile: 72, tabletLh: 156, mobileLh: 108 },
+  },
+  {
+    token: "type-heading-script",
+    family: "Corinthia",
+    size: 80,
+    weight: 400,
+    lh: 80,
+    sample: 'The Event Info sheet headings — "Betrothal", "Wedding".',
+    responsive: { tablet: 72, mobile: 56, tabletLh: 72, mobileLh: 56 },
   },
   {
     token: "type-heading-xl",
     family: "Cormorant Garamond",
     size: 48,
     weight: 700,
+    lh: 56,
     sample: "Section-level H1.",
-    responsive: { tablet: 42, mobile: 34 },
+    responsive: { tablet: 42, mobile: 34, tabletLh: 48, mobileLh: 40 },
   },
   {
     token: "type-heading-lg",
     family: "Cormorant Garamond",
     size: 26,
     weight: 700,
-    sample: "H2 and event names.",
-    responsive: { tablet: 26, mobile: 22 },
+    lh: 32,
+    sample:
+      "Serif sub-headings, and the event sheets' address line and segment line.",
+    responsive: { tablet: 24, mobile: 22, tabletLh: 30, mobileLh: 28 },
   },
   {
     token: "type-date-primary",
     family: "Cormorant Garamond",
     size: 26,
     weight: 500,
+    lh: 32,
     sample: "The major date line on the invite and the event sheets.",
-    responsive: { tablet: 26, mobile: 22 },
+    responsive: { tablet: 24, mobile: 22, tabletLh: 30, mobileLh: 28 },
   },
   {
     token: "type-body",
     family: "Source Sans 3",
     size: 20,
     weight: 400,
-    lh: 1.7,
+    lh: 32,
     sample: "Descriptions, addresses, wishes, all long-form copy.",
-    responsive: { tablet: 19, mobile: 18 },
+    responsive: { tablet: 18, mobile: 17, tabletLh: 28, mobileLh: 26 },
   },
   {
     token: "type-caption",
     family: "Source Sans 3",
     size: 17,
     weight: 400,
-    lh: 1.5,
+    lh: 24,
     sample:
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading. Never long-form. Every reference line in this gallery is set in it.",
-    responsive: { tablet: 16, mobile: 15 },
+    responsive: { tablet: 16, mobile: 15, tabletLh: 24, mobileLh: 22 },
   },
   {
     token: "type-eyebrow",
     family: "Source Sans 3",
     size: 16,
     weight: 500,
+    lh: 22,
     sample:
       "ALWAYS GOLD — the one type role that carries its own color, on both stocks, in every section. There is no eyebrow component: the class is the whole thing.",
-    responsive: { tablet: 15, mobile: 14 },
+    responsive: { tablet: 15, mobile: 14, tabletLh: 20, mobileLh: 20 },
   },
   {
     token: "type-action",
     family: "Source Sans 3",
     size: 17,
     weight: 700,
+    lh: 24,
     sample: "Buttons and calls to action.",
-    responsive: { tablet: 16, mobile: 15 },
+    responsive: { tablet: 16, mobile: 15, tabletLh: 20, mobileLh: 20 },
   },
 ];
 
 const TYPE_RULES = [
-  "The script face is decorative. It carries the couple names today and may take other display text later, but never body copy, headings, labels, or buttons.",
+  "The script face is decorative. It carries the couple names and the Event Info sheet headings, and may take other display text later, but never body copy, labels, buttons, or any other heading.",
+  "heading-script is the one heading the script face sets — the Event Info sheet names, Corinthia 400, set solid (line height equal to size). An owner decision that narrows the rule above to this one role.",
   "Couple names stay regular weight at every tier. Corinthia's true bold cut was rendered and rejected: it is 1.28x wider than regular — a full name pair measures 6.48x the font size against 5.08x — which the frame cannot hold on one line at the tablet and laptop sizes.",
   'The couple-names role sets three lines in portrait windows — each name on its own line with "&" between them at 0.5em, 0.9 line spacing across the block — and stays one line at normal spacing in landscape. The split is a property of the role wherever it is used, not a one-off in a section.',
-  "Long-form and functional information stays in Cormorant Garamond and Source Sans 3.",
+  "Long-form copy and all other functional information stays in Cormorant Garamond and Source Sans 3.",
   "Both serif and sans carry regular, medium and bold weights. Bold marks structural headings and actions; medium marks the eyebrow and the date line; couple names and body copy stay regular. The date line separates from heading-lg at the same size by weight — medium beside heading-lg's bold — rather than by scale.",
-  "heading-lg and date-primary step together at every tier — 22 / 26 / 26 across phone, tablet and laptop — one size separated by weight, never by scale. The pair flattens at the top, tablet and laptop sharing 26, because the couple names now dominate the composition at 120px there.",
-  'The date line carries no letterspacing and sits at medium weight (500). Zero tracking replaces the previous 0.06em, which read "off" on a mixed-case serif and narrowed the line 13% at 26px (301px to 261px). Weight 500 answers Cormorant reading thin beside the 120px couple names.',
+  "heading-lg and date-primary step together at every tier — 22 / 24 / 26 across phone, tablet and laptop — one size separated by weight, never by scale, so moving either alone would make the date read as subordinate to the bold line beside it. The tablet step of 24 replaces the earlier ladder in which tablet and laptop shared 26.",
+  'The date line carries no letterspacing and sits at medium weight (500). Zero tracking replaces the previous 0.06em, a display-caps amount that read "off" on a mixed-case serif and narrowed the line 13% at 26px (301px to 261px). Weight 500 answers Cormorant reading thin beside the 120px couple names.',
   "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports.",
-  "Body now steps with width — the mobile floor (18px) rises to the tablet size (19px) and the desktop size (20px). The floor itself rose from a flat 17px: a mixed-age audience read the sans as too small at every size tested, so the floor is now set at the phone tier rather than as one fixed value.",
-  "type-caption is the only role smaller than body, and it is scoped away from long-form — text that accompanies something else, read in a glance, never a paragraph read continuously.",
+  "Body steps with width — 17px at the phone tier is the floor, rising to 18px at tablet and 20px at laptop, on line heights of 26 / 28 / 32px. This site-wide scale supersedes the 18 / 19 / 20 ladder at a fixed 1.7 leading. The phone step stayed at 17 because the sans had earlier read too small at every size below the old flat 17, so the floor holds at 17 while its line height tightens to 26.",
+  "Every role sets an explicit line height at every tier, in pixels — nothing inherits its leading. The rows above carry each tier as size / line height.",
+  "The couple names keep 1.5 leading on one line (108 / 156 / 180px); the three-line portrait form keeps its 0.9, a ratio of the name size rather than a pixel value, applied only in portrait windows.",
+  "The date line's raised ordinal takes no line height. It is set in caption and raised; left to its own leading it pushed the date line past its line height (30.3 against 28px on phones), so the line's box is exactly the role's line height at every tier — on the invite and the event sheets alike.",
+  "Every value in the scale was confirmed by the owner as one site-wide scale, rendered with the invite and Event Info together before it was accepted.",
+  "type-caption is the only role smaller than body, and it is scoped away from long-form — text that accompanies something else, read in a glance, never a paragraph read continuously. Its tighter line height is part of that scoping rather than a styling preference.",
   "Unlike the eyebrow, type-caption owns no color: it takes ink on paper — 11.74:1 on the ground, 12.05:1 on the paper stock — and ink-on-contrast at 12.55:1 on the green stock, so it is legal on both without an exception. Hierarchy here comes from size alone, which is what engraved stock does — one ink, struck once, the secondary line set smaller rather than lightened.",
   "The eyebrow is the one type role that carries its own color, so there is no eyebrow component. Always gold, never ink, on every stock, in every section.",
   "The eyebrow sits one size step below the caption at every tier — 16 / 15 / 14px against caption's 17 / 16 / 15px. Tried at caption's own size and rejected: uppercase and widely letterspaced, it read larger than its number.",
-  "Tracking and casing ride the class rather than the metadata column: eyebrow 0.2em uppercase, action 0.16em uppercase. The date line carries none.",
+  "The eyebrow is used above family group headings, section headings, and the fields inside a sheet.",
+  "Tracking and casing sit in the token registry rather than the metadata column: eyebrow 0.2em uppercase, action 0.16em uppercase. The date line carries none.",
 ];
 
 /* § 3 — Spacing. One group of ten steps: the bare zero step plus space-3xs…space-3xl. This project
@@ -239,7 +263,7 @@ const SPACING_RULES = [
   "Tight grouping uses space-2xs (8px) to space-sm (16px).",
   "Component padding uses space-sm (16px) to space-md (24px).",
   "Between two unframed sections back to back: space-2xl (64px) to space-3xl (96px).",
-  "Sections without a frame — the timeline, and Event Info's mounted-pair — keep the viewport-edge step, space-md (24px) at every tier, until each one's own pass decides its edge.",
+  "Sections without a frame keep the viewport-edge step, space-md (24px) at every tier — the timeline — until its own pass decides its edge.",
   "A framed section takes its ground from the window instead of a fixed step: space-sm (16px) at the phone tier, space-xl (48px) at tablet, space-3xl (96px) at laptop — how ground and the sheet's padding give way when space runs out is owned by Foundations · Layout → mounted-sheet.",
   "Two framed sections back to back are separated by their own ground rather than the between-sections step — at least 32px, 96px and 192px apart at full phone, tablet and laptop ground.",
   "A landscape window's side ground is a layout value, not a spacing step, with its own rule in mounted-sheet → The frame; its 192px minimum at full laptop ground is off the scale by design.",
@@ -342,8 +366,6 @@ const SHAPE_RULES = [
   "The radius tokens remain for the few elements that still take one — image-placeholder and the gallery modal. Nothing at section scale uses them.",
   "Circles are containers for portraits only.",
   "Dividers are --stroke-divider (1px) lines in accent-gold — rendered under Foundations · Layout.",
-  "event-card is retired: once every section is a mounted sheet, an elevated card INSIDE a section is a second elevation the system no longer needs. Two events now share one mount — see Foundations · Layout → mounted-pair.",
-  "Light falls from directly above: none of the three recipes carries a horizontal offset, so every surface darkens evenly on both sides. The mount's crease is the one exception — a fold only reads as a fold under a lateral light, so it is lit from the right.",
 ];
 
 /* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
@@ -365,7 +387,7 @@ const DEPTH_LEVELS: DepthLevel[] = [
     spec: "surface-mount · shadow-mount · square",
     className: "bg-surface-mount shadow-mount",
     usage:
-      "Lifts the whole mounted section off the ground. Keeps its shadow at every width, including where it loses its fill below the md breakpoint.",
+      "Lifts the whole mounted section off the ground. Keeps its shadow at every width, including where it loses its fill and reveal.",
   },
   {
     name: "Paper stock on the mount",
@@ -411,8 +433,9 @@ const Z_LAYERS: LayerItem[] = [
 const ELEVATION_RULES = [
   "Layering must be achievable with simple stacking contexts so the thread overlay never fights nested stacking.",
   "A shadow takes the tint of the surface it FALLS ON, because a shadow is that surface darkened. Shadows landing on paper — the ground, the mount, the paper stock — are warm; shadows landing on the green stock are green ink. Neither is ever black.",
-  "All three recipes above are warm, because all three fall on paper. The green-ink case belongs to whatever lands on the green stock, which nothing in this layer does yet.",
+  "All three recipes above are warm, because all three land on paper.",
   "The paper stock and the green stock need different CONSTRUCTIONS, not different strengths — a light sheet on a light mount barely casts, a dark sheet on a light mount genuinely does.",
+  "Light falls from directly above: none of the three recipes carries a horizontal offset, so every surface darkens evenly on both sides. The mount's crease is the one exception — a fold reads as a fold only under a lateral light, so it is lit from the right, shadowed face to the left of the fold and lit face to the right. Nothing else assumes a side light, and any later treatment that needs one takes this direction rather than picking its own.",
   "Layering adds no heavy assets and does not affect scroll performance.",
 ];
 
@@ -423,7 +446,7 @@ const ICONS = [
   { name: "wedding", marks: "the church ceremony", Icon: WeddingIcon },
   { name: "betrothal", marks: "the betrothal", Icon: BetrothalIcon },
   { name: "reception", marks: "the reception", Icon: ReceptionIcon },
-  { name: "lunch", marks: "the reception lunch", Icon: LunchIcon },
+  { name: "lunch", marks: "the betrothal lunch", Icon: LunchIcon },
   { name: "love", marks: "the closing wishes", Icon: LoveIcon },
   { name: "map", marks: "a venue's map link", Icon: MapIcon },
 ];
@@ -501,7 +524,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families with strictly divided roles. The script face is decorative and never carries functional information."
+        intro="Three families with strictly divided roles. The script face is decorative; outside the Event Info sheet headings it never carries functional information."
         mapsTo="Foundations → Typography"
         source="app/styles/type-scale.css"
         title="Foundations · Typography"
@@ -523,7 +546,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="layout"
-        intro="Desktop composes in parallel splits; mobile flows vertically and splits the event and family sections into separate screen-feel panels. The layout layer itself is one primitive — the divider; the width caps are composition rules, not isolable primitives."
+        intro="Desktop composes in parallel splits; mobile flows vertically and splits the family section into separate screen-feel panels. Event Info sits side by side in landscape windows at breakpoints.lg and wider, and stacks otherwise, per mounted-pair below."
         mapsTo="Foundations → Layout"
         title="Foundations · Layout"
       >
@@ -540,9 +563,12 @@ export function FoundationsSections() {
             "The reveal ladder still applies wherever the mount shows — 16px at lg and above, 12px below it.",
             "The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground.",
             "GIVEN a section's measured fit, this same component frames instead: the card fills the window inside its ground — phone 16px, tablet 48px, laptop 96px — up to 1200 x 720px on landscape windows only, always centred and centred safely. Padding gives way before the ground halves, and content is never hidden.",
+            "A touchscreen-first window — primary pointer coarse — never takes laptop ground: at lg and wider it takes tablet ground with desktop type. Type follows the width tiers alone and never shrinks.",
             "A framed window drops to the phone ground tier below its own tier line, derived per section from that section's measured content by a committed script, never typed — two sections can change tier at different heights.",
+            "A tier line must exist. If no height lets the larger tier fit the section's content, or the only such height is not below the narrowest window its class covers, the build fails rather than shipping a guess; this is the frame's one layout failure. A card wider than 720px at its tier's smallest padding is not refused; a conservative height bound decides whether the ground halves.",
             "A section's measured fit carries heights per width tier AND per orientation, not one set per tier — a section whose content differs by orientation, the invite's three-line portrait names among them, needs both, or its portrait content is judged against the landscape card's height cap and refused. A tier line always reads the section's landscape fit, because every tier line sits below its narrowest width, which the rule above already places in landscape. The cost is the generated stylesheet's size, which roughly doubles once a section measures per orientation — about 2KB to 4KB compressed.",
-            "None of that answers to a specimen box, which has no window to fit — it is demonstrated on the page itself, at /, where the invite is the one framed section Phase 4 ships today.",
+            "A pair frames through the same mechanism with its own rules — see mounted-pair below.",
+            "None of that answers to a specimen box, which has no window to fit — it is demonstrated on the page itself, at /, where the invite and Event Info take the frame.",
           ]}
         >
           <div className="flex flex-col gap-space-lg">
@@ -582,21 +608,32 @@ export function FoundationsSections() {
           name="mounted-pair"
           source="@/components/layout/mounted-pair"
           spec={[
-            "Same mount as mounted-sheet, on the same reveal ladder. The pair keeps its OWN padding ladder — space-lg (32px) below md, space-2xl (64px) to lg, space-3xl (96px) above — which happens to match mounted-sheet's unframed ladder today, and its current mount behaviour, until the Event Info pass designs how a pair fits the window frame.",
-            "The gap is TWICE the reveal, 32px above lg and 24px below, because each sheet is centred on its own leaf of the opened card: the sheet's reveal on the fold side meets the other sheet's at the crease, so half the gap equals the outer reveal exactly.",
-            "The mount carries its crease at the fold, 22px wide, lit from the right, hidden wherever a sheet covers it.",
-            "Below md the mount goes and the sheets stack, the crease goes with it since an unfolded card has no fold, and each sheet takes shadow-mount in place of shadow-sheet because standing on the ground it does the lifting the mount was doing.",
+            "Same mount as mounted-sheet, on its reveal ladder wherever the mount shows, and the reveal shows BETWEEN the two sheets as well as around them.",
+            "Given a section's measured fit, the pair takes the frame as mounted-sheet does — the same ground tiers, caps, give-way order and tier lines. A pair is never the hero.",
+            "The sheets sit side by side in every landscape window at lg and wider, at any height. Everywhere else they stack: every phone, sideways ones included, every tablet, and portrait laptop-width windows. Width and orientation alone decide the switch; the tier lines decide only ground and padding.",
+            "Side by side, the shared mount stays at every ground tier at a 16px reveal, even where the window takes the phone ground tier, and the padding is the largest step that fits the section's own content. Each sheet aligns its content to the top: the sheets share one height, and centred content of different heights set the headings about 16px apart across the fold at 1440px.",
+            "Stacked, no sheet carries a mount at any width — no fill, no reveal, no grain — and each card keeps shadow-mount so it still lifts off the ground. Stacked cards sit twice the ground apart, and stay centred, as single cards do.",
+            "Stacked sheets take the invite's padding, so a stacked event card reads like the invite card: the chain is judged against the invite's measured fit and the hero reveal, while the ground, its halving, the padding steps and the landscape cap stay the event card's own. Wherever the two sections share a ground, the stacked padding matches the invite's. Event content taller than that card grows the card rather than stepping the padding down.",
+            "A pair's sheet is roughly half the width of a full-width one, so its margin runs proportionally heavier than a single sheet's — accepted.",
+            "A pair works its laptop and touchscreen tier lines out side by side at 1280px, not at lg, and applies them only from 1280px up: every pair window from lg to 1280px takes the phone ground tier at desktop type, whatever its height or primary pointer. Its tablet tier line reads a stacked sheet with no reveal.",
+            "Side by side, a card at content width c and padding p is 2 × (c + 2p) + 4 × the reveal wide. The fit is the taller of the two sheets at each content width, so both stacked cards change ground and padding at the same window sizes.",
+            "The gap is TWICE the reveal — 32px wherever the framed pair sits side by side; the unframed form shown here, side by side from md, takes 24px below lg — because each sheet is centred on its own leaf of the opened card: the sheet's reveal on the fold side meets the other sheet's at the crease, so half the gap equals the outer reveal exactly.",
+            "The mount carries its crease at the fold, 22px wide, lit from the right, hidden wherever a sheet covers it — and only side by side, since an unfolded card has no fold.",
+            "A section is a single elevation: the mount and its sheet. Never nest a second elevated card inside one — two co-equal items share one mount through this component rather than doubling the lift.",
+            "Rendered here WITHOUT a fit, the form that serves specimen boxes only: below md the mount goes and the sheets stack, each taking shadow-mount in place of shadow-sheet because standing on the ground it does the lifting the mount was doing; from md the sheets sit side by side on the shared mount. The framed form is on the page itself, at /, as Event Info.",
             "Resize the window to watch all of it happen together.",
           ]}
         >
           <MountedPair>
             <div className="flex flex-col gap-space-2xs">
-              <p className="type-eyebrow">The betrothal</p>
+              <p className="type-heading-script text-ink">Betrothal</p>
               <p className="type-body text-ink">4 January 2027 · Kozhikode</p>
             </div>
             <div className="flex flex-col gap-space-2xs">
-              <p className="type-eyebrow">The wedding</p>
-              <p className="type-body text-ink">9 January 2027 · Ernakulam</p>
+              <p className="type-heading-script text-ink">Wedding</p>
+              <p className="type-body text-ink">
+                9 January 2027 · Koothattukulam
+              </p>
             </div>
           </MountedPair>
         </Specimen>
@@ -606,7 +643,7 @@ export function FoundationsSections() {
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
-          spec="Used inside event cards and between family groupings, not between sections — section separation is spatial."
+          spec="Used as the short rule after an event sheet's heading block and between family groupings, not between sections — section separation is spatial. The event segments carry none between them."
         >
           <div className="flex flex-col gap-space-sm">
             <p className="type-body text-ink">

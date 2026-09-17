@@ -2,41 +2,20 @@
 
    Convention: every string names what it is and is written at the length real copy will have — a
    specimen validated against short stubs proves nothing about wrapping, truncation or card height.
-   Numerals in placeholder dates, times and phone numbers are zeroed so no reader mistakes demo data
-   for the real invitation, while the character count stays true to the real string.
 
    Props were read from each component, not inferred from a type name: `portrait` and
-   `timeline-node` all take FLAT SCALARS, not a `WeddingEvent` / `FamilyMember` / `Ritual` object,
+   `timeline-node` take FLAT SCALARS, not a `WeddingEvent` / `FamilyMember` / `Ritual` object,
    because the portable layer may not name a domain type. The object-shaped samples the domain
    components consume live in `./domain-samples`. */
 
-import type { RitualStatus } from "@/content/types";
+import type { EventSegment, RitualStatus } from "@/content/types";
 
-/** Every optional field present. Field set matches `WeddingEvent` minus `id`, which the card,
-    being portable, does not take. Consumed by the `button-action` specimen for real action targets. */
+/** The two `EventSegment` fields the `button-action` specimen needs — the venue its accessible name
+    carries and the map target it hands off to — with no field the schema lacks. */
 export const sampleEvent = {
-  name: "Placeholder Ceremony",
-  city: "Placeholder City",
-  date: "Saturday, 00 Month 0000",
   venue: "Placeholder Cathedral of the Sample Parish",
-  time: "00:00 AM onwards",
-  address:
-    "Placeholder Cathedral, 00 Sample Church Road, Placeholder District, Placeholder State 000000",
   mapUrl: "https://example.com/placeholder-map-location",
-};
-
-/** Same card with every optional field absent — demonstrates the documented behavior that a missing
-    venue, time, address or map target renders nothing rather than a placeholder label
-    (rules/data-integrity.md → Missing values). */
-export const sampleEventMinimal = {
-  name: "Placeholder Reception",
-  city: "Placeholder City",
-  date: "Saturday, 00 Month 0000",
-  venue: null,
-  time: null,
-  address: null,
-  mapUrl: null,
-};
+} satisfies Pick<EventSegment, "venue" | "mapUrl">;
 
 /** `portrait` with `src: null` — the component's designed missing-image state, where
     `image-placeholder` shows through as the base layer. No portrait assets exist in this repo yet;

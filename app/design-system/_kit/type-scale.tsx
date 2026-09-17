@@ -16,8 +16,19 @@ export interface TypeToken {
   lh?: number;
   /** Where the role is used in the product, from DESIGN.md → Typography's Role column. */
   sample: string;
-  /** Only for roles that step across viewports. */
-  responsive?: { tablet: number; mobile: number };
+  /** Only for roles that step across viewports. The line heights are optional for the same reason
+      `lh` is. */
+  responsive?: {
+    tablet: number;
+    mobile: number;
+    tabletLh?: number;
+    mobileLh?: number;
+  };
+}
+
+/** `size` alone, or `size / lh` when the tier declares a line height. */
+function tierMetric(size: number, lh: number | undefined): string {
+  return lh === undefined ? `${size}px` : `${size} / ${lh}px`;
 }
 
 interface TypeScaleListProps {
@@ -41,8 +52,10 @@ export function TypeScaleList({ tokens }: TypeScaleListProps) {
             </span>
             {token.responsive === undefined ? null : (
               <span className="type-body text-ink">
-                ↘ desktop {token.size}px → tablet {token.responsive.tablet}px →
-                mobile {token.responsive.mobile}px
+                ↘ desktop {tierMetric(token.size, token.lh)} → tablet{" "}
+                {tierMetric(token.responsive.tablet, token.responsive.tabletLh)}{" "}
+                → mobile{" "}
+                {tierMetric(token.responsive.mobile, token.responsive.mobileLh)}
               </span>
             )}
           </div>

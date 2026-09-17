@@ -38,7 +38,7 @@ const ZONES: SpanZone[] = [
     name: "Mobile",
     width: "< 48rem (768px)",
     changes: [
-      "Vertical flow; event info and family each split into two screen-feel panels.",
+      "Vertical flow; family split into screen-feel panels.",
       "Every role at its mobile size — couple names at display-name-mobile (72px), heading-lg and date-primary at their mobile size (22px).",
       "Thread follows the mobile-system path.",
     ],
@@ -136,8 +136,10 @@ const GLOBAL_DEFAULTS = [
 
 /* The layout-switch rule itself is NOT repeated here — the section intro states it, and a bullet
    restating it makes a reader meet the same sentence twice. This list carries only what the intro
-   does not: DESIGN.md's horizontal-scroll floor. */
+   and the zones do not: the two framed-layout rules and DESIGN.md's horizontal-scroll floor. */
 const COLLAPSING_STRATEGY_RULES = [
+  "Event Info sits side by side in landscape windows at breakpoints.lg and wider, at any height, and stacks otherwise — width and orientation decide it together, never height. See Foundations · Layout → mounted-pair.",
+  "A section framed by mounted-sheet takes its ground and padding from the window's height and primary pointer as well as its width; type answers to width alone. See Foundations · Layout → mounted-sheet.",
   "Layout holds without horizontal scroll from 320px upward.",
 ];
 

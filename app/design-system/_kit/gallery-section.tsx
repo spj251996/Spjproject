@@ -13,8 +13,8 @@ import type { ReactNode } from "react";
    both measure 11.74:1 and the separation costs no contrast at all.
 
    Specimen headings take `type-heading-lg` at h3/h4 following the project's own precedent:
-   A domain section renders its `<h3>` name at that role, which DESIGN.md → Typography defines as "H2 and
-   event names" — a name role, not a level role. */
+   DESIGN.md → Typography defines that role as "Serif sub-headings", with the event sheets' address
+   and segment lines — a sub-heading role, not a level role. */
 
 interface GallerySectionProps {
   /** Section slug WITHOUT the `ds-` prefix; the rendered id is always `ds-{id}`. */

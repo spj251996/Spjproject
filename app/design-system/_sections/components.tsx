@@ -11,6 +11,7 @@ import {
   RuleList,
   Specimen,
 } from "@/app/design-system/_kit";
+import { MapIcon } from "@/components/icons";
 import { ThreadOverlay } from "@/components/shell/thread-overlay";
 import { ButtonAction } from "@/components/ui/button-action";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
@@ -100,7 +101,7 @@ export function ComponentsSections() {
             "Live render at three fixed draw positions, using the component's own demoProgress affordance — the prop suppresses the scroll binding, which a bounded frame with no scrolling root cannot drive.",
             "Each frame's transform bounds a `fixed inset-0` overlay; the frames are aria-hidden because the thread is decoration the component already hides from assistive technology.",
             "Two things this demo cannot show, both known and deferred: the geometry is provisional stand-in curves, because DESIGN.md supplies no path data for either layout, and in the page itself the thread reads as disconnected decorations rather than one spine — it is position: fixed, so it cannot anchor to page content.",
-            "The rebuild is Phase 5, recorded in work/tasks.md → Backlog → Project follow-ups.",
+            "The rebuild is Phase 5 work.",
           ]}
         >
           <div className="grid gap-space-md md:grid-cols-3">
@@ -132,10 +133,13 @@ export function ComponentsSections() {
           source="@/components/ui/button-action"
           spec={[
             "An engraved rule, not a button: two --stroke-divider hairlines in accent-gold above and below the action type role in the same gold, with no fill, no side border and no radius.",
-            "Hover turns the rules and the label to ink and warms the space between them — pointer over one to see it.",
-            "Padding is space-sm horizontal and space-xs vertical, so the rules overrun the label rather than sitting tight against it, which is what makes them read as rules and not an underline.",
-            "Minimum hit area 44px regardless of visual size.",
+            "Hover turns the rules and the label to ink and warms the space between them — pointer anywhere over the target to see it, since hover is read off the whole control, not only the rules.",
+            "The control is the hit area and nothing else — transparent, borderless, at least 44px each way. The rules, the mark and the label sit on an inner span inside it, so the hairlines hug the word while the target stays full size; the focus ring sits on the control itself.",
+            "The inner span's padding is space-sm (16px) horizontal, so the rules overrun the label — which is what makes them read as rules and not an underline — and space-3xs (4px) vertical, so the rules sit close to the word.",
             "THE FOCUS RING NEVER TRANSITIONS: hover colours do, but a ring that fades in from the label's own gold spends that fade at 2.39:1 on the ground and 2.46:1 on the paper stock — both below the 3:1 an indicator needs — so the transitioned properties are named rather than using transition-colors, which in Tailwind v4 sweeps outline-color in with them.",
+            "Hands off to an external destination — Google Maps — in a new tab, and never opens an in-page view.",
+            "It may carry one section mark before its label, in the label's colour. The map action carries map, decorative beside the visible label.",
+            "Where several actions share a label, each takes an accessible name that begins with the visible label and names its destination — Map, <venue> — so the links read apart to assistive technology.",
             "The documented instance is an anchor, live under the page-level guard that cancels the navigation.",
             "The component's second element form, an onClick button, exists only because DESIGN.md → timeline-node composes a button-action to open the gallery — which this entry's own rule contradicts, and which is reported as drift rather than resolved. It takes a handler, so it cannot be posed from this server-rendered page.",
           ]}
@@ -143,9 +147,15 @@ export function ComponentsSections() {
           <div className="flex flex-wrap gap-space-lg">
             <Variant
               className="items-start"
-              label="Map — hands off to an external map destination"
+              label="The map action — map mark, named Map, <venue>, opens in a new tab"
             >
-              <ButtonAction href={sampleEvent.mapUrl}>Map</ButtonAction>
+              <ButtonAction
+                aria-label={`Map, ${sampleEvent.venue}`}
+                href={sampleEvent.mapUrl}
+                mark={<MapIcon size={24} />}
+              >
+                Map
+              </ButtonAction>
             </Variant>
           </div>
         </Specimen>
