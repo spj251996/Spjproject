@@ -88,11 +88,20 @@ export function DomainSections() {
           description="The bride's and groom's groups, each a heading, family name and its portraits."
           id="domain-family"
           name="family"
-          note="Known gaps: the groom sibling's nested spouse and child do not render yet; group headings come from the family side, as the schema has no relationship field; the thread reads as loose decoration until Phase 5."
           source="@/components/family/family"
-          spec="heading-lg group heading · portrait at one scale · bride group first"
+          spec="eyebrow · heading-script family name · portrait at one scale · bride sheet first"
         >
-          <Family groups={sampleFamilyGroups} />
+          <div className="flex flex-col gap-space-2xl">
+            {sampleFamilyGroups.map((group) => (
+              <Family
+                eyebrow={
+                  group.side === "bride" ? "Bride's Family" : "Groom's Family"
+                }
+                group={group}
+                key={group.id}
+              />
+            ))}
+          </div>
         </Specimen>
       </GallerySection>
 

@@ -1,51 +1,71 @@
-import { Fragment } from "react";
-import type { FamilyGroup } from "@/content/types";
-import { Divider } from "../layout/divider";
+import type { FamilyGroup, FamilyMember } from "@/content/types";
 import { Portrait } from "../ui/portrait";
+import { splitCluster } from "./family-cluster";
 
-/* `FamilyGroup` has no relationship field, so the group heading is mapped from `side`. */
-
-const GROUP_HEADING: Record<FamilyGroup["side"], string> = {
-  bride: "Bride's Family",
-  groom: "Groom's Family",
-};
+/* One group's sheet. `measure:fit` finds each sheet by the `h2` that is a direct child of this root. */
 
 interface FamilyProps {
-  groups: FamilyGroup[];
-  className?: string;
+  group: FamilyGroup;
+  eyebrow: string;
 }
 
-export function Family({ groups, className }: FamilyProps) {
+export function Family({ group, eyebrow }: FamilyProps) {
   return (
-    <section
-      className={`z-(--z-content) flex flex-col px-space-md py-space-3xl lg:min-h-dvh lg:justify-center ${className ?? ""}`}
-    >
-      <div className="mx-auto flex w-full max-w-content flex-col lg:flex-row lg:gap-space-3xl">
-        {groups.map((group, index) => (
-          <Fragment key={group.id}>
-            {index === 0 ? null : (
-              <Divider className="w-full max-w-text self-center lg:hidden" />
-            )}
-            <div className="flex min-h-dvh flex-1 flex-col items-center justify-center gap-space-md lg:min-h-0">
-              <h2 className="type-heading-lg text-ink">
-                {GROUP_HEADING[group.side]}
-              </h2>
-              <p className="type-body text-ink">{group.familyName}</p>
-              <ul className="flex flex-wrap justify-center gap-space-md">
-                {group.members.map((member) => (
-                  <li key={member.id}>
-                    <Portrait
-                      name={member.name}
-                      relationship={member.relationship}
-                      src={member.portrait}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Fragment>
+    <div className="flex w-full flex-col items-center text-center">
+      <p className="type-eyebrow">{eyebrow}</p>
+      <h2 className="type-heading-script text-ink mt-space-2xs">
+        {group.familyName}
+      </h2>
+      <MemberList members={group.members} />
+    </div>
+  );
+}
+
+const MEMBER_LIST_CLASS =
+  "mt-space-lg flex list-none flex-wrap justify-center gap-space-md";
+
+function MemberList({ members }: { members: FamilyMember[] }) {
+  return (
+    // biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none
+    <ul className={MEMBER_LIST_CLASS} role="list">
+      {members.map((member) => (
+        <li key={member.id}>
+          <MemberSlot member={member} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function MemberPortrait({ member }: { member: FamilyMember }) {
+  return (
+    <Portrait
+      name={member.name}
+      relationship={member.relationship}
+      src={member.portrait}
+    />
+  );
+}
+
+function MemberSlot({ member }: { member: FamilyMember }) {
+  const { row, children } = splitCluster(member);
+  if (row.length === 1 && children.length === 0) {
+    return <MemberPortrait member={member} />;
+  }
+  return (
+    <div className="flex flex-col items-center gap-space-md">
+      <div className="flex justify-center gap-space-md">
+        {row.map((person) => (
+          <MemberPortrait key={person.id} member={person} />
         ))}
       </div>
-    </section>
+      {children.length === 0 ? null : (
+        <div className="flex justify-center gap-space-md">
+          {children.map((person) => (
+            <MemberPortrait key={person.id} member={person} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -53,8 +53,7 @@ export const sampleFamilyGroups: FamilyGroup[] = [
         name: "Placeholder Sibling Name",
         relationship: "Placeholder Relation",
         portrait: null,
-        /* Keep this nested sample: with every member flat, the gallery would hide that `Family`
-           does not render nested members yet. */
+        /* Keep this nested sample: it is the gallery's only view of the wrapped cluster. */
         family: [
           {
             id: "placeholder-groom-sibling-spouse",
