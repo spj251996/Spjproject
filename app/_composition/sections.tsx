@@ -1,6 +1,25 @@
+import type { ComponentType } from "react";
+import { eventInfoFit } from "@/app/_composition/event-info-fit";
 import { inviteFit } from "@/app/_composition/invite-fit";
+import {
+  BetrothalIcon,
+  LunchIcon,
+  MapIcon,
+  ReceptionIcon,
+  WeddingIcon,
+} from "@/components/icons";
+import { Divider } from "@/components/layout/divider";
+import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { events, formatEventDate, invite } from "@/content";
+import { ButtonAction } from "@/components/ui/button-action";
+import {
+  type EventSegment,
+  events,
+  type FormattedDate,
+  formatEventDate,
+  invite,
+  type WeddingEvent,
+} from "@/content";
 
 /* The page and the dev-only preview route both render these. Sharing the WIRING is the point: a
    stale prop on the preview would poison the design judgement the preview exists to support, and
@@ -27,6 +46,22 @@ function eventById(id: string) {
 function splitCoupleNames(coupleNames: string): [string, string] | null {
   const parts = coupleNames.split(" & ");
   return parts.length === 2 ? [parts[0], parts[1]] : null;
+}
+
+/* The primary date line's content: the ordinal set small and raised, and both month spellings with
+   CSS showing one by `{breakpoints.md}` — first paint is already right, and `display: none` keeps
+   the hidden spelling out of the accessibility tree. Shared by the invite and both event sheets. */
+function PrimaryDate({ date }: { date: FormattedDate }) {
+  return (
+    <>
+      {date.weekday}, {date.day}
+      <span className="type-caption type-date-ordinal align-super">
+        {date.ordinal}
+      </span>{" "}
+      <span className="md:hidden">{date.monthShort}</span>
+      <span className="hidden md:inline">{date.month}</span> {date.year}
+    </>
+  );
 }
 
 /* DESIGN.md → Domain Components → Invite [inline]. Moved inline from the retired
@@ -94,13 +129,7 @@ export function InviteSection() {
 
           <div className="flex flex-col items-center gap-space-3xs mt-space-lg lg:mt-space-sm">
             <p className="type-date-primary text-ink">
-              {weddingDate.weekday}, {weddingDate.day}
-              <span className="type-caption align-super">
-                {weddingDate.ordinal}
-              </span>{" "}
-              <span className="md:hidden">{weddingDate.monthShort}</span>
-              <span className="hidden md:inline">{weddingDate.month}</span>{" "}
-              {weddingDate.year}
+              <PrimaryDate date={weddingDate} />
             </p>
             <p className="type-date-primary text-ink">{wedding.cityTown}</p>
           </div>
@@ -118,6 +147,259 @@ export function InviteSection() {
           </div>
         </div>
       </MountedSheet>
+    </section>
+  );
+}
+
+/* The sheet's script heading names the event the way the couple speak of it, shorter than the
+   content model's formal name. Keyed by event id; a missing id fails the build. */
+const EVENT_HEADINGS: Readonly<Record<string, string>> = {
+  engagement: "Betrothal",
+  wedding: "Wedding",
+};
+
+function headingFor(eventId: string): string {
+  const heading = EVENT_HEADINGS[eventId];
+  if (heading === undefined) {
+    throw new Error(
+      `sections: event "${eventId}" has no heading. Add it to EVENT_HEADINGS in app/_composition/sections.tsx.`,
+    );
+  }
+  return heading;
+}
+
+/* Which mark a segment carries is presentation, not a fact about the event, so it lives here rather
+   than in the content model (DESIGN.md → Domain Components → Event Info). Keyed by segment id, so
+   renaming a label cannot silently repoint a mark; a segment missing here fails the build rather
+   than rendering a label with no mark beside it. */
+const SEGMENT_MARKS: Readonly<
+  Record<string, ComponentType<{ size?: number }>>
+> = {
+  "engagement-church": BetrothalIcon,
+  "engagement-reception": LunchIcon,
+  "wedding-church": WeddingIcon,
+  "wedding-reception": ReceptionIcon,
+};
+
+function markFor(segmentId: string) {
+  const mark = SEGMENT_MARKS[segmentId];
+  if (mark === undefined) {
+    throw new Error(
+      `sections: segment "${segmentId}" has no mark. Add it to SEGMENT_MARKS in app/_composition/sections.tsx (DESIGN.md → Domain Components → Event Info).`,
+    );
+  }
+  return mark;
+}
+
+/* Both segments of an event sit at one address today, so the sheet names it once, beneath the
+   heading, and each segment keeps only its venue and map link. If the segments ever diverge the
+   build fails here rather than printing one address for two places. The content model allows a
+   null address, but the header has no form without one, so a missing address fails the build too. */
+function sharedAddress(event: WeddingEvent): string {
+  const addresses = new Set(event.segments.map((segment) => segment.address));
+  if (addresses.size !== 1) {
+    throw new Error(
+      `sections: event "${event.id}" has segments at different addresses; the sheet header can only name one.`,
+    );
+  }
+  const [address] = addresses;
+  if (address === undefined || address === null) {
+    throw new Error(
+      `sections: event "${event.id}" has no address; the sheet header needs one.`,
+    );
+  }
+  return address;
+}
+
+/* One line where it fits. Where it does not, it breaks only after the locality — "Paroppadi, /
+   Kozhikode, Keralam" — because everything after the first comma never wraps, so the state is
+   never left alone on a line. */
+function AddressLine({ address }: { address: string }) {
+  const comma = address.indexOf(", ");
+  if (comma === -1) return address;
+  return (
+    <>
+      {address.slice(0, comma + 2)}
+      <span className="whitespace-nowrap">{address.slice(comma + 2)}</span>
+    </>
+  );
+}
+
+/* The heading block: the script name, then the date line and the event's address, which separate
+   by weight alone at one size. */
+function EventSheetHeading({ event }: { event: WeddingEvent }) {
+  const date = formatEventDate(event.date);
+  return (
+    <>
+      <h2 className="type-heading-script text-ink">{headingFor(event.id)}</h2>
+      <div className="flex flex-col items-center gap-space-3xs mt-space-2xs">
+        <p className="type-date-primary text-ink">
+          <PrimaryDate date={date} />
+        </p>
+        <p className="type-heading-lg text-ink">
+          <AddressLine address={sharedAddress(event)} />
+        </p>
+      </div>
+    </>
+  );
+}
+
+/* Every class below that carries the arbitrary variant
+   `[@media(width>=64rem)_and_(orientation:landscape)]:` applies only where the pair sits side by
+   side — the frame's own `pairsSideBySide` condition, a landscape window at `{breakpoints.lg}` and
+   wider. One window media condition drives the whole side-by-side form, so first paint is already
+   right and `measure:fit`, which sets each window's orientation, measures what the window shows.
+   Tailwind emits this variant after its `md:` and `lg:` rules, so it overrides them. Tailwind finds
+   classes by scanning source, so each is written out whole. */
+
+/* Stacked, the mark steps with the type tiers; side by side it takes one size of its own.
+   `IconBase` takes a number rather than a class, so each size renders once and CSS shows exactly
+   one. */
+const PLATE_MARKS = [
+  {
+    size: 72,
+    show: "block md:hidden [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
+  },
+  {
+    size: 96,
+    show: "hidden md:block lg:hidden [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
+  },
+  {
+    size: 112,
+    show: "hidden lg:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
+  },
+  {
+    size: 88,
+    show: "hidden [@media(width>=64rem)_and_(orientation:landscape)]:block",
+  },
+] as const;
+
+function PlateMark({ segmentId }: { segmentId: string }) {
+  const Mark = markFor(segmentId);
+  return PLATE_MARKS.map(({ size, show }) => (
+    <span className={`${show} *:block`} key={size}>
+      <Mark size={size} />
+    </span>
+  ));
+}
+
+/* A square turned on its point, drawn as a path so it needs no transform. */
+function Diamond() {
+  return (
+    <svg
+      aria-hidden
+      className="me-space-2xs inline-block align-middle text-accent-gold"
+      fill="currentColor"
+      height="6"
+      viewBox="0 0 8 8"
+      width="6"
+    >
+      <path d="M4 0 8 4 4 8 0 4Z" />
+    </svg>
+  );
+}
+
+/* The time, a gold diamond and the label on one line. The diamond, the hidden comma and the whole
+   label are one unbreakable run, so the only break is the `<wbr>` after the time: a wrapped line
+   reads "10:00 AM / ◆ Church Ceremony" and the diamond never ends a line. The time's gap to the
+   diamond is its own trailing margin, so a wrapped second line starts flush with the diamond. A
+   screen reader hears the hidden comma in the diamond's place: "10:00 AM, Church Betrothal". */
+function SegmentLine({ segment }: { segment: EventSegment }) {
+  return (
+    <p className="type-heading-lg text-ink text-balance">
+      <span className="me-space-2xs whitespace-nowrap">{segment.time}</span>
+      <wbr />
+      <span className="whitespace-nowrap">
+        <span className="sr-only">, </span>
+        <Diamond />
+        {segment.label}
+      </span>
+    </p>
+  );
+}
+
+/* A hyphenated word never breaks at its hyphen: "Syro-Malabar" stays whole. The venue is set
+   `pretty` rather than balanced, because balancing broke that word. */
+function VenueName({ venue }: { venue: string }) {
+  const hyphenated = venue.match(/\S+-\S+/);
+  if (hyphenated?.index === undefined) return venue;
+  const end = hyphenated.index + hyphenated[0].length;
+  return (
+    <>
+      {venue.slice(0, hyphenated.index)}
+      <span className="whitespace-nowrap">{hyphenated[0]}</span>
+      <VenueName venue={venue.slice(end)} />
+    </>
+  );
+}
+
+/* The segments as engraved plates, an ordered list centred in the sheet at its own width. Each
+   entry is a column subgrid: stacked, one column, so the mark leads and the centred details follow
+   it; side by side, the mark stands in an `auto` column shared by both entries, so it is as wide as
+   the sheet's widest mark and both entries' text starts at one edge. Side by side the mark drops to
+   meet the segment line's cap height. Below `{breakpoints.md}` and side by side there is no rule
+   after the heading, so the list stands `space-lg` off it; on stacked sheets from `md` up the
+   rule's own margins set the gap. */
+function PlateSegments({ segments }: { segments: EventSegment[] }) {
+  return (
+    <ol className="mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr]">
+      {segments.map((segment) => (
+        <li
+          className="col-span-full grid grid-cols-subgrid items-start gap-y-space-sm"
+          key={segment.id}
+        >
+          <div className="flex shrink-0 justify-center text-accent-gold [@media(width>=64rem)_and_(orientation:landscape)]:pt-space-xs">
+            <PlateMark segmentId={segment.id} />
+          </div>
+          <div className="flex min-w-0 flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:text-left">
+            <SegmentLine segment={segment} />
+            {segment.venue !== null && (
+              <p className="type-body text-ink text-pretty">
+                <VenueName venue={segment.venue} />
+              </p>
+            )}
+            {segment.mapUrl !== null && (
+              <ButtonAction
+                aria-label={`Map, ${segment.venue}`}
+                className="mt-space-2xs"
+                href={segment.mapUrl}
+                mark={<MapIcon size={24} />}
+              >
+                Map
+              </ButtonAction>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/* One event's sheet. The `h2` stays a direct child of this root `div`: `measure:fit` finds each
+   sheet by it. The rule after the heading is the `divider`, cut to `space-2xl`. Measured by
+   `eventInfoFit` — any content or type change re-runs `npm run measure:fit`. */
+function EventSheet({ event }: { event: WeddingEvent }) {
+  return (
+    <div className="flex w-full flex-col items-center text-center">
+      <EventSheetHeading event={event} />
+      <Divider className="my-space-lg hidden w-space-2xl md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden" />
+      <PlateSegments segments={event.segments} />
+    </div>
+  );
+}
+
+/* DESIGN.md → Domain Components → Event Info [inline]. Server-rendered, no client boundary. No
+   section heading: each sheet leads with its event name. The id scopes `measure:fit`'s selector to
+   this section, so a later section's `h2` stacks cannot leak into its fit. Stacked cards take the
+   invite's padding. Entrance motion and the thread's passage are Phase 5 (DESIGN.md → Iteration
+   Notes → Open Decisions). */
+export function EventInfoSection() {
+  return (
+    <section className="relative z-(--z-content)" id="event-info">
+      <MountedPair fit={eventInfoFit} stackedPadding={inviteFit}>
+        <EventSheet event={eventById("engagement")} />
+        <EventSheet event={eventById("wedding")} />
+      </MountedPair>
     </section>
   );
 }

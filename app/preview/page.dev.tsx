@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { InviteSection } from "@/app/_composition/sections";
+import { EventInfoSection, InviteSection } from "@/app/_composition/sections";
 
 /* Dev-only tweak surface for Phase 4. Carries every section confirmed so far, plus the one under
    tweak, so a section is judged while scrolling past its real neighbours rather than in isolation.
@@ -24,6 +24,7 @@ export default function PreviewPage() {
   return (
     <main className="flex flex-1 flex-col">
       <InviteSection />
+      <EventInfoSection />
     </main>
   );
 }
