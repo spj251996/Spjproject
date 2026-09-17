@@ -422,8 +422,8 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
   };
   /* A portrait pair window from `{breakpoints.lg}` to `PAIR_TIER_LINE_WIDTH_REM` is taller than its
      1024px or more of width, so it stands above a compact tier line only while the line sits below
-     `{breakpoints.lg}`. The height cap keeps every line at 816px or less; this guards a change to
-     the caps or ground tiers. Only the compact tier line moves for a pair — the wide tier line
+     `{breakpoints.lg}`. The compact cap and ground keep every line at 640px or less; this guards a
+     change to the caps or ground tiers. Only the compact tier line moves for a pair — the wide line
      always sits at `{breakpoints.xl}`, so it needs no such guard. */
   if (layout === "pair") {
     for (const line of [lines.compact, lines.compactTouchscreen]) {
