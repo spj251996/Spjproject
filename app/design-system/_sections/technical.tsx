@@ -47,10 +47,18 @@ const ZONES: SpanZone[] = [
   },
 ];
 
-/* Silhouette geometry is the visualizer's fixed standard; only the breakpoints DESIGN.md defines
-   are shown. */
+/* Silhouette geometry is the visualizer's fixed standard. Every common device width is shown;
+   `used` marks the breakpoints DESIGN.md defines. */
 const ZONE_BARS: RulerStop[] = [
   { px: "0", device: "Mobile", token: "base", used: true, boxW: 64, boxH: 128 },
+  {
+    px: "640",
+    device: "Large mobile",
+    token: "sm",
+    used: false,
+    boxW: 76,
+    boxH: 138,
+  },
   {
     px: "768",
     device: "Tablet",
@@ -66,6 +74,22 @@ const ZONE_BARS: RulerStop[] = [
     used: true,
     boxW: 168,
     boxH: 140,
+  },
+  {
+    px: "1280",
+    device: "Desktop",
+    token: "xl",
+    used: false,
+    boxW: 210,
+    boxH: 150,
+  },
+  {
+    px: "1536",
+    device: "Ultra wide",
+    token: "2xl",
+    used: false,
+    boxW: 264,
+    boxH: 152,
   },
 ];
 

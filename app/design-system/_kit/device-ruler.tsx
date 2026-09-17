@@ -22,7 +22,8 @@ interface DeviceRulerProps {
 
 const USED_LEVEL = "bg-surface-elevated shadow-sheet";
 
-const UNUSED_LEVEL = "bg-surface-base";
+const UNUSED_LEVEL =
+  "bg-surface-base border-(length:--stroke-divider) border-surface-mount";
 
 export function DeviceRuler({ stops }: DeviceRulerProps) {
   return (
