@@ -1,6 +1,3 @@
-/* Barrel for the gallery kit. The skill pins a barrel for the visualizers; this project's kit is one
-   flat private folder (see the report's deviation list), so one barrel covers both halves. */
-
 export { type BarItem, BarScale } from "./bar-scale";
 export { Card } from "./card";
 export { ChromeFrame } from "./chrome-frame";

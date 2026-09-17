@@ -1,10 +1,5 @@
-/* curate-gallery scaffold kit — InlineList (skill → references/section-spine.md → Bucket 4: Domain).
-
-   A DESIGN.md domain entry tagged `[inline]` is page-bound composition with no component file of its
-   own. It is LISTED, never rebuilt — recreating its markup would fabricate a component the design
-   system does not have. The skill wraps this in `.prose-content`; this project has no prose layer
-   (see DESIGN.md → Overview → No prose layer), so the list dogfoods the type-scale
-   classes directly and takes its rhythm from the `space-*` scale. */
+/* An `[inline]` domain entry has no component file, so it is listed, never rebuilt — rebuilding its
+   markup would fabricate a component. */
 
 export interface InlineEntry {
   /** The DESIGN.md entry name, e.g. "Event Info". */

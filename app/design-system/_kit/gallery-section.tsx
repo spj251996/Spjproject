@@ -1,20 +1,7 @@
 import type { ReactNode } from "react";
 
-/* curate-gallery scaffold kit — catalog primitives (skill → references/scaffold-kit.md).
-
-   P2 alignment for the whole kit, resolved from DESIGN.md rather than the skill's portfolio example
-   token names. This project's type scale has no mono/code or emphasis role, so those of the skill's
-   label roles fall back to `type-body` per visualizer-kit.md → Generic fallbacks.
-
-   Hierarchy is carried by SIZE, not by color. Reference marks — the doc path, the code path, the
-   spec note — take `type-caption`; content — headings, names, prose, intros — stays at `type-body`.
-   Never carry this distinction in `{colors.accent-gold}`: gold on body-size text falls outside the
-   exception's documented scope and measures 2.39:1 against the 4.5:1 floor. Both roles are ink, so
-   both measure 11.74:1 and the separation costs no contrast at all.
-
-   Specimen headings take `type-heading-lg` at h3/h4 following the project's own precedent:
-   DESIGN.md → Typography defines that role as "Serif sub-headings", with the event sheets' address
-   and segment lines — a sub-heading role, not a level role. */
+/* Reference lines (doc path, source path, note, spec) take `type-caption`; content takes
+   `type-body`. */
 
 interface GallerySectionProps {
   /** Section slug WITHOUT the `ds-` prefix; the rendered id is always `ds-{id}`. */
@@ -56,7 +43,7 @@ export function GallerySection({
 }
 
 interface SpecimenGroupProps {
-  /** Mirrors a DESIGN.md sub-group heading; rendered as an eyebrow, per the skill's h3 group role. */
+  /** Mirrors a DESIGN.md sub-group heading. */
   title: string;
   children: ReactNode;
 }
@@ -76,10 +63,12 @@ interface SpecimenProps {
   name: string;
   /** Real import/file path the demo renders from. */
   source?: string;
+  /** One line: what it is and where it is used. */
   description?: string;
-  /** Token list or variant note; always rendered LAST, because it annotates the demo above it.
-      An array renders one concept per line — the house convention — and is the right form for
-      anything multi-clause. A single string stays prose. */
+  /** Only what the render cannot show: an interaction to try, an unposable state, a resize, a known gap. */
+  note?: string;
+  /** Terse token or trait list, rendered last because it annotates the demo above it. A string is
+      one `·`-separated line; an array renders one item per line. */
   spec?: string | string[];
   /** 3 at section level, 4 inside a SpecimenGroup. Never skips a level. */
   headingLevel?: 3 | 4;
@@ -91,6 +80,7 @@ export function Specimen({
   name,
   source,
   description,
+  note,
   spec,
   headingLevel = 3,
   children,
@@ -107,11 +97,13 @@ export function Specimen({
       {description === undefined ? null : (
         <p className="type-body text-ink">{description}</p>
       )}
+      {note === undefined ? null : (
+        <p className="type-caption text-ink">{note}</p>
+      )}
 
       {children}
 
       {spec === undefined ? null : Array.isArray(spec) ? (
-        /* Marker-less list separated by gaps, matching RuleList — the gallery's one list shape. */
         <ul className="flex flex-col gap-space-3xs">
           {spec.map((line) => (
             <li className="type-caption text-ink" key={line}>

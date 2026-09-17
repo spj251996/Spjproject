@@ -1,18 +1,7 @@
 import type { ReactNode } from "react";
 
-/* curate-gallery scaffold kit — Card (skill → references/scaffold-kit.md → catalog).
-
-   The eyebrow role documents two stocks, and rendering the gold that belongs on the deep-green
-   contrast section requires a painted panel. Hand-rolling that panel is the dogfood violation the
-   primitive exists to prevent.
-
-   P2, resolved from DESIGN.md rather than the skill's portfolio token names. Card's law is that it
-   adopts the project's existing card treatment; this project's only stated card level is elevated
-   paper (a mounted sheet), which is a meaning-bearing raise, so a neutral demo well may not borrow it.
-   It takes the deep-well fallback instead — the deepest surface plus the documented divider, which
-   is this system's only stated hairline — matching ChromeFrame so a well and a frame read as
-   siblings. Padding is the project's own container padding (a mounted sheet uses the same step); radius
-   is omitted rather than invented, again matching ChromeFrame. */
+/* The kit's one panel treatment, shared with ChromeFrame and the visualizers: the paper stock with
+   its sheet shadow. */
 
 interface CardProps {
   /** Token name or slug shown below the box. */
@@ -26,7 +15,7 @@ export function Card({ label, className, children }: CardProps) {
   return (
     <div className="flex flex-col gap-space-2xs">
       <div
-        className={`flex min-h-space-3xl items-center justify-center border-(length:--stroke-divider) border-accent-gold bg-surface-base p-space-md ${className ?? ""}`}
+        className={`flex min-h-space-3xl items-center justify-center bg-surface-elevated shadow-sheet p-space-md ${className ?? ""}`}
       >
         {children}
       </div>
