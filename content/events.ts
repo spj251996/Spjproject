@@ -13,7 +13,7 @@ export const events: WeddingEvent[] = validateEvents([
         label: "Church Betrothal",
         time: "10:00 AM",
         venue: "St. Antony's Syro-Malabar Church",
-        address: "Paropady, Kozhikode, Keralam",
+        address: "Paroppadi, Kozhikode, Keralam",
         mapUrl: "https://maps.app.goo.gl/MfHgyAGiCzPJD1rQ8",
       },
       {
@@ -21,7 +21,7 @@ export const events: WeddingEvent[] = validateEvents([
         label: "Betrothal Lunch",
         time: "12:00 PM",
         venue: "St. Antony's Church Parish Hall",
-        address: "Paropady, Kozhikode, Keralam",
+        address: "Paroppadi, Kozhikode, Keralam",
         mapUrl: "https://maps.app.goo.gl/zGrd6SAFTZk3gAEx9",
       },
     ],
