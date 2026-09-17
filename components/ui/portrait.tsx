@@ -7,7 +7,7 @@ import { ImagePlaceholder } from "./image-placeholder";
    The composing section sets the photo's diameter as `--portrait-diameter`, and the gap between
    photo and name through `className`. `--portrait-overrun` is how far each text line may run past
    the photo on either side before it wraps; the section sets it from the gap beside the portrait,
-   so neighbouring text never meets.
+   so the real roster's text never meets.
 
    No `sizes`: the export serves images unoptimized, so there is no srcset for it to choose from.
 

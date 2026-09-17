@@ -32,7 +32,8 @@ const SIBLINGS_GAP: Readonly<Record<Side, string>> = {
 };
 
 /* How far a name or relationship may run past its portrait on each side before it wraps: measured
-   per slot against the gap beside it and the longest label there, so neighbouring text never meets. */
+   per slot against the gap beside it and the longest label there, so the real roster's text never
+   meets. */
 const OVERRUN = {
   parent: "[--portrait-overrun:20px] lg:[--portrait-overrun:28px]",
   spouse: "[--portrait-overrun:16px]",
@@ -52,7 +53,7 @@ const COUPLE_LINE_CLEARANCE = "[--couple-line-clearance:2px]";
 const ROW_LIST_CLASS = "flex list-none flex-wrap items-start justify-center";
 const COUPLE_LIST_CLASS = `relative grid w-max auto-cols-fr list-none grid-flow-col justify-items-center gap-(--couple-gap) ${COUPLE_LINE_CLEARANCE}`;
 
-/* The line is its own `li`, `absolute` like before so it stays out of the grid's item flow — the
+/* The line is its own `li`, `absolute` so it stays out of the grid's item flow — the
    `ul`'s only other children are the two members' `li`s. `aria-hidden` drops it from the
    accessibility tree, so it does not count toward the list's item total. */
 const COUPLE_LINE_CLASS =
