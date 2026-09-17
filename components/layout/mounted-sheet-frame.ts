@@ -72,8 +72,7 @@ function breakpointPx(rem: number): number {
   return rem * DEFAULT_ROOT_FONT_SIZE;
 }
 
-/* A layout value with no token or custom property: DESIGN.md → Foundations → Layout →
-   `mounted-pair`. */
+/* A layout value, not a breakpoint: DESIGN.md → Foundations → Layout → `mounted-sheet`. */
 const PAIR_TIER_LINE_WIDTH_REM = 80;
 
 /* The reveal ladder: `{reveal.md}` below `{breakpoints.lg}`, `{reveal.lg}` from it. */

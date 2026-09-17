@@ -139,7 +139,7 @@ function markFor(segmentId: string) {
   const mark = SEGMENT_MARKS[segmentId];
   if (mark === undefined) {
     throw new Error(
-      `sections: segment "${segmentId}" has no mark. Add it to SEGMENT_MARKS in app/_composition/sections.tsx (DESIGN.md → Domain Components → Event Info).`,
+      `sections: segment "${segmentId}" has no mark. Add it to SEGMENT_MARKS in app/_composition/sections.tsx.`,
     );
   }
   return mark;
@@ -191,11 +191,9 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
   );
 }
 
-/* `[@media(width>=64rem)_and_(orientation:landscape)]:` matches the frame's `pairsSideBySide`
-   condition. Tailwind emits it after `md:` and `lg:`, so it overrides them, and each class is
+/* `IconBase` takes a number rather than a class, so each size renders once and CSS shows one.
+   Tailwind emits the landscape variant after `md:` and `lg:`, so it overrides them; each class is
    written out whole because Tailwind finds classes by scanning source. */
-
-/* `IconBase` takes a number rather than a class, so each size renders once and CSS shows one. */
 const PLATE_MARKS = [
   {
     size: 72,
