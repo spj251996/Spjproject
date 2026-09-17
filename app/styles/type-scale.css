@@ -4,14 +4,14 @@
    no `--text-*` modifier for `font-family` or `text-transform`. A size utility alone therefore
    cannot express a semantic role, which is why each role gets a class rather than being consumed
    as a bare `text-<role>` utility. The classes read their metrics back out of the tokens instead of
-   restating values, and sit in the components layer so ordinary utilities still win on override. */
+   restating values, and sit in the components layer so ordinary utilities still win on override.
+
+   Every role reads an explicit line height from its tokens at every tier. */
 
 @layer components {
-  /* Couple names only. Every role in this file now steps at both `md` and `lg` — Responsive
-     Behavior states the full ladder covers all three tiers, not just this pair of breakpoints —
-     so display-name is no longer singled out for stepping at all three; `heading-lg` and
-     `date-primary` below are the only roles that still don't. This role also keeps its
-     established `-desktop` suffix rather than moving to the bare name every other role's top tier
+  /* Couple names only. Every role in this file steps at both `md` and `lg` — Responsive
+     Behavior states the full ladder covers all three tiers, not just this pair of breakpoints.
+     This role also keeps its established `-desktop` suffix rather than moving to the bare name every other role's top tier
      now uses, for continuity with how it was already named before the ladder widened. Steps sit
      inside framework variants so the token references survive — a raw media query cannot read a
      variable. */
@@ -19,22 +19,27 @@
     font-family: var(--font-script);
     font-size: var(--text-display-name-mobile);
     font-weight: var(--text-display-name-mobile--font-weight);
+    line-height: var(--text-display-name-mobile--line-height);
 
     @variant md {
       font-size: var(--text-display-name-tablet);
       font-weight: var(--text-display-name-tablet--font-weight);
+      line-height: var(--text-display-name-tablet--line-height);
     }
 
     @variant lg {
       font-size: var(--text-display-name-desktop);
       font-weight: var(--text-display-name-desktop--font-weight);
+      line-height: var(--text-display-name-desktop--line-height);
     }
   }
 
   /* Foundations → Typography: the role sets three lines in portrait windows — each name on its own
      line, the joiner between them at half the name size, 0.9 line spacing across the block — and
      stays one line at normal spacing in landscape. Orientation decides it rather than width because
-     one width tier covers both, which is the same reason the card frame queries orientation. */
+     one width tier covers both, which is the same reason the card frame queries orientation.
+     Its `line-height` beats the token line height above at equal specificity only because it comes
+     later in this file, so it must stay below the base rule. */
   @media (orientation: portrait) {
     .type-display-name {
       display: flex;
@@ -48,60 +53,92 @@
     }
   }
 
+  /* The event sheets' script heading: the couple names' face at a heading's size, set solid. */
+  .type-heading-script {
+    font-family: var(--font-script);
+    font-size: var(--text-heading-script-mobile);
+    font-weight: var(--text-heading-script-mobile--font-weight);
+    line-height: var(--text-heading-script-mobile--line-height);
+
+    @variant md {
+      font-size: var(--text-heading-script-tablet);
+      font-weight: var(--text-heading-script-tablet--font-weight);
+      line-height: var(--text-heading-script-tablet--line-height);
+    }
+
+    @variant lg {
+      font-size: var(--text-heading-script);
+      font-weight: var(--text-heading-script--font-weight);
+      line-height: var(--text-heading-script--line-height);
+    }
+  }
+
   .type-heading-xl {
     font-family: var(--font-serif);
     font-size: var(--text-heading-xl-mobile);
     font-weight: var(--text-heading-xl-mobile--font-weight);
+    line-height: var(--text-heading-xl-mobile--line-height);
 
     @variant md {
       font-size: var(--text-heading-xl-tablet);
       font-weight: var(--text-heading-xl-tablet--font-weight);
+      line-height: var(--text-heading-xl-tablet--line-height);
     }
 
     @variant lg {
       font-size: var(--text-heading-xl);
       font-weight: var(--text-heading-xl--font-weight);
+      line-height: var(--text-heading-xl--line-height);
     }
   }
 
   /* Steps with `.type-date-primary`, never alone — the two are one size separated by weight, so
-     moving either on its own makes the date read as subordinate to the event name above it. Every
-     other role in this file now carries a distinct tablet value, but this pair flattens at the
-     top: tablet and laptop share this one size, because the 120px couple names dominate the
-     composition there and a third step would only compete with them. That is why there is no
-     `-tablet` token and no `@variant lg` block here — the `md` step already covers both wider
-     tiers. */
+     moving either on its own makes the date read as subordinate to the event name above it. */
   .type-heading-lg {
     font-family: var(--font-serif);
     font-size: var(--text-heading-lg-mobile);
     font-weight: var(--text-heading-lg-mobile--font-weight);
+    line-height: var(--text-heading-lg-mobile--line-height);
 
     @variant md {
+      font-size: var(--text-heading-lg-tablet);
+      font-weight: var(--text-heading-lg-tablet--font-weight);
+      line-height: var(--text-heading-lg-tablet--line-height);
+    }
+
+    @variant lg {
       font-size: var(--text-heading-lg);
       font-weight: var(--text-heading-lg--font-weight);
+      line-height: var(--text-heading-lg--line-height);
     }
   }
 
-  /* Separates from `.type-heading-lg` at the same size by weight, not by scale, and flattens at
-     the top the same way and for the same reason. Held at the mobile size below `md` because the
-     longest place name in the content overruns the column a mounted section leaves at 320px.
-     Carries no letter-spacing: the previous 0.06em was a display-caps amount that read "off" on a
-     mixed-case serif and narrowed the line 13% at 26px, and weight 500 (up from 400) answers the
-     serif reading thin beside the 120px names. */
+  /* Separates from `.type-heading-lg` at the same size by weight, not by scale. Held at the
+     mobile size below `md` because the longest place name in the content overruns the column a
+     mounted section leaves at 320px. Carries no letter-spacing: the previous 0.06em was a
+     display-caps amount that read "off" on a mixed-case serif and narrowed the line 13% at 26px,
+     and weight 500 (up from 400) answers the serif reading thin beside the 120px names. */
   .type-date-primary {
     font-family: var(--font-serif);
     font-size: var(--text-date-primary-mobile);
     font-weight: var(--text-date-primary-mobile--font-weight);
+    line-height: var(--text-date-primary-mobile--line-height);
 
     @variant md {
+      font-size: var(--text-date-primary-tablet);
+      font-weight: var(--text-date-primary-tablet--font-weight);
+      line-height: var(--text-date-primary-tablet--line-height);
+    }
+
+    @variant lg {
       font-size: var(--text-date-primary);
       font-weight: var(--text-date-primary--font-weight);
+      line-height: var(--text-date-primary--line-height);
     }
   }
 
-  /* Steps with width for the first time — previously one flat 17px. The floor itself rose too: a
-     mixed-age audience read the sans as too small at every size tested, so 18px is now the phone
-     floor rather than a single fixed value across the site. */
+  /* The mixed-age floor is set at the phone tier, 17px, rather than as one size across the site:
+     the sans read too small at every size tested below it. */
   .type-body {
     font-family: var(--font-sans);
     font-size: var(--text-body-mobile);
@@ -145,6 +182,13 @@
     }
   }
 
+  /* The date line's raised ordinal, set `type-caption type-date-ordinal`, takes no line height:
+     left to the caption's leading it pushed the date line past its own line height at every tier.
+     It wins over the caption's line height only by coming after that rule, so it stays below it. */
+  .type-date-ordinal {
+    line-height: 0;
+  }
+
   /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
      ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
      caller pairing the class with a token and being able to get it wrong. Sized one step below
@@ -156,6 +200,7 @@
     font-size: var(--text-eyebrow-mobile);
     font-weight: var(--text-eyebrow-mobile--font-weight);
     letter-spacing: var(--text-eyebrow-mobile--letter-spacing);
+    line-height: var(--text-eyebrow-mobile--line-height);
     text-transform: uppercase;
     color: var(--color-accent-gold);
 
@@ -163,12 +208,14 @@
       font-size: var(--text-eyebrow-tablet);
       font-weight: var(--text-eyebrow-tablet--font-weight);
       letter-spacing: var(--text-eyebrow-tablet--letter-spacing);
+      line-height: var(--text-eyebrow-tablet--line-height);
     }
 
     @variant lg {
       font-size: var(--text-eyebrow);
       font-weight: var(--text-eyebrow--font-weight);
       letter-spacing: var(--text-eyebrow--letter-spacing);
+      line-height: var(--text-eyebrow--line-height);
     }
   }
 
@@ -177,18 +224,21 @@
     font-size: var(--text-action-mobile);
     font-weight: var(--text-action-mobile--font-weight);
     letter-spacing: var(--text-action-mobile--letter-spacing);
+    line-height: var(--text-action-mobile--line-height);
     text-transform: uppercase;
 
     @variant md {
       font-size: var(--text-action-tablet);
       font-weight: var(--text-action-tablet--font-weight);
       letter-spacing: var(--text-action-tablet--letter-spacing);
+      line-height: var(--text-action-tablet--line-height);
     }
 
     @variant lg {
       font-size: var(--text-action);
       font-weight: var(--text-action--font-weight);
       letter-spacing: var(--text-action--letter-spacing);
+      line-height: var(--text-action--line-height);
     }
   }
 }

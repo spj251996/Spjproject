@@ -33,70 +33,99 @@
 
   /* Foundations → Typography. Size, weight, tracking and leading ride the `--text-*` modifiers;
      family and text-transform have no modifier, which is what forces the `.type-*` class layer
-     in styles/type-scale.css. Every role now carries a value per width tier — mobile, tablet,
-     desktop — with the desktop tier held on the bare (unsuffixed) name, matching the convention
-     already set by heading-xl/heading-lg/date-primary before this pass; display-name keeps its
-     own pre-existing `-desktop` suffix rather than losing it to match. `heading-lg` and
-     `date-primary` have no `-tablet` token: DESIGN.md states tablet and laptop intentionally
-     share the bare value for that pair, so a third token would only duplicate the desktop one. */
+     in styles/type-scale.css. Every role carries a value per width tier — mobile, tablet,
+     desktop — with the desktop tier held on the bare (unsuffixed) name; display-name keeps its
+     own pre-existing `-desktop` suffix rather than losing it to match. Every tier sets an explicit
+     pixel line height, so no role inherits its leading. */
   --text-display-name-mobile: 72px;
   --text-display-name-mobile--font-weight: 400;
+  --text-display-name-mobile--line-height: 108px;
   --text-display-name-tablet: 104px;
   --text-display-name-tablet--font-weight: 400;
+  --text-display-name-tablet--line-height: 156px;
   --text-display-name-desktop: 120px;
   --text-display-name-desktop--font-weight: 400;
+  --text-display-name-desktop--line-height: 180px;
+  --text-heading-script-mobile: 56px;
+  --text-heading-script-mobile--font-weight: 400;
+  --text-heading-script-mobile--line-height: 56px;
+  --text-heading-script-tablet: 72px;
+  --text-heading-script-tablet--font-weight: 400;
+  --text-heading-script-tablet--line-height: 72px;
+  --text-heading-script: 80px;
+  --text-heading-script--font-weight: 400;
+  --text-heading-script--line-height: 80px;
   --text-heading-xl-mobile: 34px;
   --text-heading-xl-mobile--font-weight: 700;
+  --text-heading-xl-mobile--line-height: 40px;
   --text-heading-xl-tablet: 42px;
   --text-heading-xl-tablet--font-weight: 700;
+  --text-heading-xl-tablet--line-height: 48px;
   --text-heading-xl: 48px;
   --text-heading-xl--font-weight: 700;
+  --text-heading-xl--line-height: 56px;
   --text-heading-lg-mobile: 22px;
   --text-heading-lg-mobile--font-weight: 700;
+  --text-heading-lg-mobile--line-height: 28px;
+  --text-heading-lg-tablet: 24px;
+  --text-heading-lg-tablet--font-weight: 700;
+  --text-heading-lg-tablet--line-height: 30px;
   --text-heading-lg: 26px;
   --text-heading-lg--font-weight: 700;
-  /* No letter-spacing token: DESIGN.md drops the previous 0.06em tracking entirely, and weight
-     moves from 400 to 500 to answer the serif reading thin beside the 120px couple names. */
+  --text-heading-lg--line-height: 32px;
+  /* No letter-spacing token: the date line carries no tracking, and weight 500 answers the serif
+     reading thin beside the 120px couple names. */
   --text-date-primary-mobile: 22px;
   --text-date-primary-mobile--font-weight: 500;
+  --text-date-primary-mobile--line-height: 28px;
+  --text-date-primary-tablet: 24px;
+  --text-date-primary-tablet--font-weight: 500;
+  --text-date-primary-tablet--line-height: 30px;
   --text-date-primary: 26px;
   --text-date-primary--font-weight: 500;
-  --text-body-mobile: 18px;
+  --text-date-primary--line-height: 32px;
+  --text-body-mobile: 17px;
   --text-body-mobile--font-weight: 400;
-  --text-body-mobile--line-height: 1.7;
-  --text-body-tablet: 19px;
+  --text-body-mobile--line-height: 26px;
+  --text-body-tablet: 18px;
   --text-body-tablet--font-weight: 400;
-  --text-body-tablet--line-height: 1.7;
+  --text-body-tablet--line-height: 28px;
   --text-body: 20px;
   --text-body--font-weight: 400;
-  --text-body--line-height: 1.7;
+  --text-body--line-height: 32px;
   --text-caption-mobile: 15px;
   --text-caption-mobile--font-weight: 400;
-  --text-caption-mobile--line-height: 1.5;
+  --text-caption-mobile--line-height: 22px;
   --text-caption-tablet: 16px;
   --text-caption-tablet--font-weight: 400;
-  --text-caption-tablet--line-height: 1.5;
+  --text-caption-tablet--line-height: 24px;
   --text-caption: 17px;
   --text-caption--font-weight: 400;
-  --text-caption--line-height: 1.5;
+  --text-caption--line-height: 24px;
   --text-eyebrow-mobile: 14px;
   --text-eyebrow-mobile--font-weight: 500;
   --text-eyebrow-mobile--letter-spacing: 0.2em;
+  --text-eyebrow-mobile--line-height: 20px;
   --text-eyebrow-tablet: 15px;
   --text-eyebrow-tablet--font-weight: 500;
   --text-eyebrow-tablet--letter-spacing: 0.2em;
+  --text-eyebrow-tablet--line-height: 20px;
   --text-eyebrow: 16px;
   --text-eyebrow--font-weight: 500;
   --text-eyebrow--letter-spacing: 0.2em;
+  --text-eyebrow--line-height: 22px;
   --text-action-mobile: 15px;
   --text-action-mobile--font-weight: 700;
   --text-action-mobile--letter-spacing: 0.16em;
+  --text-action-mobile--line-height: 20px;
   --text-action-tablet: 16px;
   --text-action-tablet--font-weight: 700;
   --text-action-tablet--letter-spacing: 0.16em;
+  --text-action-tablet--line-height: 20px;
   --text-action: 17px;
   --text-action--font-weight: 700;
   --text-action--letter-spacing: 0.16em;
+  --text-action--line-height: 24px;
 
   /* Foundations → Spacing. Cross-Cutting Rules: "No spacing value outside the {spacing} scale."
      Closing the namespace makes that toolchain-enforced rather than advisory — the framework's
