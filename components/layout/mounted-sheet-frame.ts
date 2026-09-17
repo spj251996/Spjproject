@@ -1,28 +1,15 @@
-/* DESIGN.md → Foundations → Layout → `mounted-sheet` → The frame · When space runs out · Measured
-   per section.
-
-   What every framed section shares, and nothing any section measures: the ground tiers and their
-   padding steps, the card caps, the touchscreen query, the arithmetic that turns measured content
-   into card rectangles, and the tier lines derived from it. A section supplies its content as a
-   `MeasuredFit`; mounted-sheet-frame-css.ts turns the two into that section's stylesheet.
+/* What every framed section shares; a section supplies only its `MeasuredFit`, and
+   mounted-sheet-frame-css.ts turns the two into that section's stylesheet.
 
    Plain data and arithmetic, with no React and no DOM, so plain node can import it as well as the
    app's bundler. */
 
-/* Type follows these alone (Interaction Rules → Responsive Behavior). */
 export type WidthTier = "mobile" | "tablet" | "desktop";
 
-/* A section's content can stand a different height by orientation — the invite's couple names are
-   three lines in portrait and one in landscape — so the frame measures and fits each on its own
-   terms rather than judging one against the other's card (DESIGN.md → Measured per section). */
 export type Orientation = "portrait" | "landscape";
 
-/* A framed card holds one sheet, or two sheets pasted onto one mount (DESIGN.md → Foundations →
-   Layout → `mounted-pair`). */
 export type FrameLayout = "single" | "pair";
 
-/* Ground and padding follow these. A window's ground tier starts from its width tier and is moved
-   only by its height and its primary pointer. */
 type GroundTierName = "phone" | "tablet" | "laptop";
 
 /* From this content width upward, the section's content stands this tall. Content width is the
@@ -49,10 +36,8 @@ export interface MeasuredFit {
   >;
 }
 
-/* Every consumer reads a width tier's regimes through this rather than indexing the record
-   directly, so the orientation split has one seam. Takes a width tier's own record
-   (`fit.regimes[tier]`, or a `WindowClass`'s, which carries the same shape straight through) rather
-   than the whole fit, because `tierLine` picks an orientation before any `WindowClass` exists. */
+/* The one seam for the orientation split. Takes a width tier's own record rather than the whole
+   fit, because `tierLine` picks an orientation before any `WindowClass` exists. */
 export function regimesFor(
   regimes: Readonly<Record<Orientation, readonly FitRegime[]>>,
   orientation: Orientation,
@@ -68,7 +53,7 @@ interface GroundTier {
 }
 
 /* `{spacing.*}` steps held as numbers, like the reveal ladder and the caps below, because a media
-   query cannot read a custom property. A spacing token change must change them here, and the
+   query cannot read a custom property. A spacing token change must change them here and in the
    pixel-keyed spacing map in mounted-sheet-frame-css.ts. */
 const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
   phone: { name: "phone", ground: 16, paddingSteps: [32, 24, 16] },
@@ -76,11 +61,10 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
   laptop: { name: "laptop", ground: 96, paddingSteps: [96, 64, 48, 32] },
 };
 
-/* `{breakpoints.md}` and `{breakpoints.lg}`. The media queries use the rem form, as the type's own
-   breakpoint variants do, so a window changes ground tier exactly where it changes type. The
-   arithmetic needs pixels, and the two agree at the default 16px root. Held as numbers because a
-   media query cannot read a custom property — a change to `--breakpoint-md` or `--breakpoint-lg`
-   in app/styles/tokens.css must change them here too. */
+/* `{breakpoints.md}` and `{breakpoints.lg}`. The media queries use rem, as the type's breakpoint
+   variants do, so ground and type change at the same width; the arithmetic needs pixels, which
+   agree at the default 16px root. Held as numbers because a media query cannot read a custom
+   property — change `--breakpoint-*` in app/styles/tokens.css and these together. */
 const DEFAULT_ROOT_FONT_SIZE = 16;
 const BREAKPOINT_REM = { md: 48, lg: 64 } as const;
 
@@ -88,11 +72,8 @@ function breakpointPx(rem: number): number {
   return rem * DEFAULT_ROOT_FONT_SIZE;
 }
 
-/* A pair's two sheets share one card, so at `{breakpoints.lg}` each has only a third of the window
-   for text and the content stands tallest there. A pair therefore works its laptop and touchscreen
-   tier lines out from this width, and a narrower laptop-width window takes the phone ground tier.
-   Not a design token: a layout value like the card caps, held as a number because a media query
-   cannot read a custom property. */
+/* A layout value with no token or custom property: DESIGN.md → Foundations → Layout →
+   `mounted-pair`. */
 const PAIR_TIER_LINE_WIDTH_REM = 80;
 
 /* The reveal ladder: `{reveal.md}` below `{breakpoints.lg}`, `{reveal.lg}` from it. */
@@ -102,19 +83,16 @@ const REVEAL: Readonly<Record<WidthTier, number>> = {
   desktop: 16,
 };
 
-/* `--container-content` and `--card-height-cap`. The stylesheet reads the tokens themselves; these
-   numbers exist because a media query cannot read a custom property, so every threshold derived
-   from a cap needs it as a number. A change to either token must change it here too. */
+/* `--container-content` and `--card-height-cap`. The stylesheet reads the tokens themselves; every
+   threshold derived from a cap needs it as a number, because a media query cannot read a custom
+   property. Change the tokens and these together. */
 export const CARD_WIDTH_CAP = 1200;
 export const CARD_HEIGHT_CAP = 720;
 
-/* A landscape window's side ground is at least double the ground it currently takes. */
 export const SIDE_GROUND_MULTIPLE = 2;
 export const GROUND_HALVING = 0.5;
 
-/* The primary pointer, never `any-pointer`: a touchscreen laptop's primary pointer is its trackpad,
-   and it keeps laptop ground. `(hover: none)` is not added because it could only drop devices whose
-   primary input is still coarse, and a missed touchscreen is the failure this query exists for. */
+/* `(hover: none)` is not added: it could only drop devices whose primary input is still coarse. */
 const TOUCHSCREEN_QUERY = "(pointer: coarse)";
 
 export interface WindowClass {
@@ -145,8 +123,6 @@ export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
-/* Without the hero setting, the mount loses its fill and reveal wherever the window takes the phone
-   ground tier. */
 export function mountShows(windowClass: WindowClass, hero: boolean): boolean {
   return hero || windowClass.groundTier.name !== "phone";
 }
@@ -155,18 +131,12 @@ export function revealFor(windowClass: WindowClass, hero: boolean): number {
   return mountShows(windowClass, hero) ? REVEAL[windowClass.widthTier] : 0;
 }
 
-/* A stacked card that borrows another section's padding chain (mountedSheetFrameCss's
-   `stackedPadding`) borrows its reveal too: the hero's reveal never drops at the phone ground
-   tier, so the stacked card reads like the hero card it is modelled on regardless of the window's
-   own ground tier. */
+/* A stacked card borrowing the hero's padding chain (`stackedPadding`) borrows its reveal too,
+   which never drops at the phone ground tier. */
 export function heroReveal(windowClass: WindowClass): number {
   return revealFor(windowClass, true);
 }
 
-/* A pair sits side by side in every landscape window at `{breakpoints.lg}` and wider, keeping the
-   mount even at the phone ground tier — a laptop-width window below its own tier line still shows
-   the pair side by side, at that width tier's reveal. Everywhere else its two sheets stack, each
-   its own card, and a stacked sheet carries no mount at any width. */
 export function pairsSideBySide(
   layout: FrameLayout,
   windowClass: WindowClass,
@@ -180,8 +150,6 @@ export function pairsSideBySide(
   );
 }
 
-/* A stacked pair's sheets carry no mount at any width, so their card has no reveal; side by side,
-   the shared mount takes the width tier's reveal. A single card follows `revealFor`. */
 export function cardReveal(
   windowClass: WindowClass,
   hero: boolean,
@@ -197,8 +165,7 @@ export function cardReveal(
 /* The smallest card that holds the content at one padding: one rectangle per regime, because a
    wider card buys a shorter stack. A card fits when it clears any one of them.
 
-   Side by side, two sheets of that content share the card: the reveal shows around the pair and
-   twice between the sheets, which is what centres each sheet on its own leaf of the mount. */
+   Side by side, two sheets share the card, so the width counts two sheets and four reveals. */
 export function fitRectangles(
   regimes: readonly FitRegime[],
   reveal: number,
@@ -218,9 +185,7 @@ export function fitRectangles(
 
 /* The height from which the larger ground tier fits the section's content at halved ground and
    that tier's smallest padding, worked out at the narrowest window the class covers — a wider
-   window only widens the card. The larger tier always shows the mount for a single card, and for
-   a pair only when it sits side by side — at the desktop width tier — so the reveal is the width
-   tier's own there and zero for a stacked pair's tablet or mobile tier line.
+   window only widens the card.
 
    Such a window is landscape, and its height is at most the height cap plus the halved ground top
    and bottom, so its side ground is exactly double the halved ground. */
@@ -233,11 +198,9 @@ function tierLine(
 ): number {
   const halved = groundTier.ground * GROUND_HALVING;
   const padding = smallestPadding(groundTier);
-  /* A tier line only ever decides a landscape window (this function's own doc above), so it reads
-     the landscape regimes even for a width tier whose windows can also be portrait. The larger
-     tier always shows the mount for a single card; for a pair it sits side by side only at the
-     desktop width tier, so a tablet or mobile tier line reads a stacked pair's own, unmounted
-     arithmetic instead. */
+  /* A tier line only decides landscape windows, so it reads the landscape regimes. A single card
+     always shows the mount at the larger tier; a pair sits side by side only at the desktop width
+     tier, so its tablet and mobile lines use the stacked, unmounted arithmetic. */
   const sideBySide = layout === "pair" && widthTier === "desktop";
   const reveal = layout === "pair" && !sideBySide ? 0 : REVEAL[widthTier];
   const heights = fitRectangles(
@@ -418,8 +381,6 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
       laptopNarrowest,
       layout,
     ),
-    /* A touchscreen window at `{breakpoints.lg}` and wider — a pair's from
-       `PAIR_TIER_LINE_WIDTH_REM` — takes tablet ground with desktop type. */
     laptopTouchscreen: tierLine(
       fit,
       "desktop",
@@ -430,8 +391,8 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
   };
   /* A portrait pair window from `{breakpoints.lg}` to `PAIR_TIER_LINE_WIDTH_REM` is taller than its
      1024px or more of width, so it stands above a desktop tier line only while the line sits below
-     `{breakpoints.lg}`. The height cap keeps every line at 816px or less today; this guards a change
-     to the caps or ground tiers. */
+     `{breakpoints.lg}`. The height cap keeps every line at 816px or less; this guards a change to
+     the caps or ground tiers. */
   if (layout === "pair") {
     for (const line of [lines.laptop, lines.laptopTouchscreen]) {
       if (!(line < lg)) {
@@ -535,7 +496,6 @@ export function windowClasses(
       landscapePossible: true,
     },
     ...desktop(pointer, GROUND_TIERS.laptop, lines.laptop),
-    /* A touchscreen window takes tablet ground above its tier line. */
     ...desktop(TOUCHSCREEN_QUERY, GROUND_TIERS.tablet, lines.laptopTouchscreen),
   ];
 }

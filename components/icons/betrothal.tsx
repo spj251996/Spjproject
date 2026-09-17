@@ -1,14 +1,6 @@
 import { IconBase } from "./icon-base";
 
-/* Marks the betrothal.
-
-   Traced from the owner's drawing, cropped to its own content and recoloured to inherit its
-   surface. The mark is filled outline rather than stroked line, so its weight is the drawn line's
-   own — see DESIGN.md → Foundations → Iconography.
-
-   Carries a stroke in its own colour at 16 source units. There is no stroke-width to
-   raise on a filled outline, so a same-colour stroke is what thickens it — this mark read lighter
-   than the rest of the set without it. */
+/* The stroke on a filled outline is the added stroke: DESIGN.md → Foundations → Iconography. */
 
 export function BetrothalIcon({
   size,

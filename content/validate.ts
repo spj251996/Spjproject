@@ -28,7 +28,6 @@ function required(value: string, path: string): void {
     throw new ContentValidationError(path, "must not be empty");
 }
 
-/** Nullable fields carry a real `null` when absent — never an empty-string stand-in for one. */
 function optionalText(value: string | null, path: string): void {
   if (value !== null && value.trim() === "")
     throw new ContentValidationError(

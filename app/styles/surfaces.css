@@ -1,14 +1,5 @@
-/* DESIGN.md → Foundations → Paper Grain.
-
-   The grain binds to the surface itself rather than to each caller, the same way the type roles carry
-   their own colour: anything painted as a surface is grained by being that surface, and no component
-   can forget to apply it or apply the wrong one.
-
-   Each rule sets only the image, its size and the blend. The colour keeps coming from the surface
-   utility, so these compose rather than compete and nothing here overrides a token.
-
-   The blend is what makes a surface grain only itself: the noise blends against that surface's own
-   background colour, so a sheet never tints the ground it covers. A layer over the page would. */
+/* Each rule sets only the image, its size and the blend; the colour still comes from the surface
+   utility, so the two compose. */
 
 @layer components {
   .bg-surface-base,
@@ -18,7 +9,7 @@
     background-size: var(--grain-tile) var(--grain-tile);
   }
 
-  /* The ground is painted on `body` as well as by the background layer, so both carry it. */
+  /* `body` paints the ground without the utility, so it takes the ground grain directly. */
   body,
   .bg-surface-base {
     background-image: var(--grain-ground);

@@ -23,9 +23,7 @@ import {
   windowClasses,
 } from "./mounted-sheet-frame.ts";
 
-/* DESIGN.md → Foundations → Layout → `mounted-sheet` → The frame · When space runs out.
-
-   One section's frame as a static stylesheet, generated from its measured fit so that no threshold
+/* One section's frame as a static stylesheet, generated from its measured fit so that no threshold
    is hand arithmetic. Nothing here reads the page: the output is plain CSS that paints the final
    state on first render.
 
@@ -62,10 +60,9 @@ const GROUND_VALUE = `var(${GROUND})`;
 const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 
-/* Foundations → Spacing. Every ground, halved ground, reveal and padding the frame emits must be a
-   step on the scale; one that is not fails generation instead of shipping. Keyed by each step's
-   pixel value, because the arithmetic that picks a step needs the number a media query cannot read
-   from the token, so a spacing token change must change this map too. */
+/* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
+   value, because the arithmetic needs the number a media query cannot read from the token — a
+   spacing token change must change this map too. */
 const SPACING_TOKEN: Readonly<Record<number, string>> = {
   0: "--spacing-0",
   4: "--spacing-space-3xs",
@@ -144,8 +141,7 @@ function orientationName(landscape: boolean): Orientation {
 
 /* Does this window's card, at the given ground, hold the content at the smallest padding? Stated in
    window terms, so it can decide the ground for a card that is not on screen. It assumes the frame
-   spans the full window width, which a classic scrollbar narrows — DESIGN.md → Iteration Notes →
-   Known Gaps.
+   spans the full window width, which a classic scrollbar narrows.
 
    A portrait card is the window less the ground on every side. A landscape card is
    min(width cap, window width − 2 × max(double the ground, (window height − height cap) / 2)) wide
@@ -154,7 +150,7 @@ function orientationName(landscape: boolean): Orientation {
    query can state it. Above that band the centring term decides, and that needs window width minus
    window height, which CSS cannot state. A rectangle no wider than the height cap still clears
    there, because a landscape window is at least as wide as it is tall. A wider one is counted only
-   inside the band (DESIGN.md → Measured per section): conservative, since a window above the band
+   inside the band: conservative, since a window above the band
    may keep full ground where halving would have fitted, and nothing is hidden, because the padding
    chain reads the card's real width. */
 function windowFits(
@@ -190,8 +186,7 @@ function windowFits(
   );
 }
 
-/* Full ground wins. The ground halves only where the full-ground card does not fit and the halved
-   one does; a window where neither fits keeps full ground and the page scrolls. */
+/* True where the full-ground card does not fit and the halved one does. */
 function halvingCondition(
   windowClass: WindowClass,
   hero: boolean,
@@ -257,21 +252,14 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
     : `${mount} > .${FRAME_CLASS.sheet}`;
 }
 
-/* DESIGN.md → Foundations → Layout → `mounted-pair`. Each window class and orientation takes
-   exactly one of two blocks, so neither has to undo the other.
+/* Each window class and orientation takes exactly one of two blocks, so neither has to undo the
+   other.
 
-   Side by side, the shared mount is the card: it takes the reveal, lays the leaves in a row twice
-   the reveal apart, and shows its crease; each leaf is only a column holding its sheet. Each sheet
-   aligns its content to the top rather than centring it: the two sheets share one height, so
-   centred content of different heights would set their headings at different heights across the
-   fold. Stacked sheets and single cards stay centred.
+   Side by side, the shared mount is the card and each leaf is only a column holding its sheet.
 
-   Stacked, the shared mount stops being a surface, loses its fill, grain and shadow, and spaces
-   its leaves by the ground below one card plus the ground above the next. Each leaf carries no
-   mount at any width — zero reveal, no fill, no grain — because a stacked sheet is its own card
-   with the ground itself as its only frame. It keeps `shadow-mount`'s shadow, since this rule never
-   strips `box-shadow`, so the sheet still lifts off the ground. Each leaf takes a card's minimum
-   height, so each stacked card fills its own screen. */
+   Stacked, the mount stops being a surface and its gap is the ground below one card plus the
+   ground above the next. The leaf rule strips fill and grain but never `box-shadow`, so each
+   stacked card keeps `shadow-mount`. */
 function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
@@ -315,20 +303,14 @@ ${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: 
    steps come later and win — the cascade takes the largest step that fits, with no negation.
 
    One chain per orientation, each wrapped in its own `(orientation: …)` query and built from that
-   orientation's own regimes — a portrait and a landscape window at the same width and height can
-   need different padding, since their content differs. A class with no portrait windows
-   (`!windowClass.portraitPossible`) gets no portrait chain at all, which is what used to need an
-   explicit "portrait-only rectangle" exception when one chain covered both orientations at once.
-   Where the ground halves, a second chain under the halving condition resets to the smallest step
-   and climbs again against the halved card.
+   orientation's own regimes, since their content differs. A class with no portrait windows gets no
+   portrait chain. Where the ground halves, a second chain under the halving condition resets to the
+   smallest step and climbs again against the halved card.
 
-   A pair's stacked orientations may borrow another section's padding fit (`stackedPadding`) so a
-   stacked card reads like that section's own — Event Info's stacked cards read like the
-   invite's (DESIGN.md → `mounted-pair`). Only the chain's own regimes and reveal come from it: the ground, the halving
-   condition, the padding steps and the landscape cap skip all stay the window's own, because the
-   card the window gives the sheet is unchanged — only the content it is judged to hold moves to
-   the borrowed fit. Side-by-side orientations never borrow; they always read the section's own
-   regimes and `cardReveal`. */
+   A pair's stacked orientations may borrow another section's padding fit (`stackedPadding`). Only
+   the chain's regimes and reveal come from it: the ground, the halving condition, the padding steps
+   and the landscape cap skip stay the window's own, because the card the window gives the sheet is
+   unchanged. Side-by-side orientations never borrow. */
 function paddingRules(
   windowClass: WindowClass,
   hero: boolean,

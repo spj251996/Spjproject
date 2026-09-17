@@ -1,13 +1,6 @@
 import { IconBase } from "./icon-base";
 
-/* Marks the reception.
-
-   Traced from the owner's drawing, cropped to its own content and recoloured to inherit its
-   surface. The mark is filled outline rather than stroked line, so its weight is the drawn line's
-   own — see DESIGN.md → Foundations → Iconography.
-
-   Intentionally excludes the source's four bubbles inside the flutes — do not re-add them if this
-   mark is re-traced. The sparkle marks and the wine lines are kept. */
+/* Excludes the trace's four bubbles inside the flutes; do not re-add them on a re-trace. */
 
 export function ReceptionIcon({
   size,

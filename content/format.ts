@@ -14,11 +14,8 @@ const DATE_PARTS = new Intl.DateTimeFormat("en-IN", {
   timeZone: "UTC",
 });
 
-/* The invite renders both month spellings and lets CSS show one (DESIGN.md → Domain Components →
-   Invite), so the abbreviated form is produced here rather than in the component — a separate
-   formatter, not a substring of DATE_PARTS' output, because "Jan" is not necessarily a prefix of
-   every locale's long month name. Locale and timeZone stay pinned identically to DATE_PARTS so the
-   two never read a different calendar. */
+/* A separate formatter rather than a substring of the long month, which a short month is not
+   guaranteed to prefix. Locale and timeZone match DATE_PARTS so the two read the same calendar. */
 const MONTH_SHORT = new Intl.DateTimeFormat("en-IN", {
   month: "short",
   timeZone: "UTC",

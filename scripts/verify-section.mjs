@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-/* Section verification harness for Phase 4.
-
-   Drives the project's own `playwright-cli` devDependency rather than importing `playwright-core`,
-   which is present only as a transitive dependency of it and would break the moment the CLI's own
-   dependency tree changed.
+/* Drives the `playwright-cli` devDependency rather than importing `playwright-core`, which is only a
+   transitive dependency of it.
 
    Usage:  npm run verify:section -- /
            npm run verify:section -- /preview --widths=390,1440
@@ -25,16 +22,12 @@ const widths = widthsArg
   ? widthsArg.slice("--widths=".length).split(",").map(Number)
   : DEFAULT_WIDTHS;
 
-/* A hung CLI call would block forever with no error and no exit code, which is a worse outcome for
-   a verification tool than a wrong answer: nothing reports and nothing fails. The timeout converts
-   that into a normal spawn-level failure, which `cli()` already surfaces through `result.error`. */
+/* A hung CLI call would otherwise block forever silently; the timeout turns it into a spawn failure
+   that `cli()` reports through `result.error`. */
 const CLI_TIMEOUT_MS = 120_000;
 
-/* One guarded kill, used by both call sites. They are near-identical by nature and already drifted
-   apart once during review — one logging its failure, one silent — so this helper makes that
-   divergence structurally impossible rather than a matter of remembering. ESRCH means the group is
-   already gone, which is the expected case on a failing run; anything else is a real cleanup
-   failure and is surfaced rather than swallowed. */
+/* ESRCH means the group is already gone, the expected case on a failing run; any other error is a
+   real cleanup failure. */
 function safeKill(pid, label) {
   try {
     process.kill(-pid);
@@ -55,10 +48,8 @@ function cli(...cliArgs) {
     },
   );
   if (result.status !== 0) {
-    /* A spawn-level failure (npx missing, ENOENT) leaves status null with both streams empty and
-       the reason only in `result.error` — without it the harness reports a blank cause, which is
-       the one thing a verification tool must never do. Parenthesised because mixing `??` and `||`
-       unparenthesised is a syntax error. */
+    /* A spawn-level failure (ENOENT, timeout) leaves both streams empty and the reason only in
+       `result.error`. Mixing `??` and `||` unparenthesised is a syntax error. */
     throw new Error(
       `playwright-cli ${cliArgs[0]} failed:\n${result.error?.message ?? (result.stderr || result.stdout)}`,
     );
@@ -95,10 +86,9 @@ async function ensureDevServer() {
   throw new Error("dev server did not answer within 60s");
 }
 
-/* Contrast is resolved against the nearest ancestor carrying an opaque background, which is how the
-   mounted-sheet stack actually paints: the sheet holds the fill and the text sits several levels
-   inside it. Translucent backgrounds are skipped rather than composited — a wrong composite reads as
-   a real finding and costs more than the miss. */
+/* Contrast is measured against the nearest opaque ancestor background, since the sheet holds the
+   fill several levels above its text. Translucent backgrounds are skipped rather than composited: a
+   wrong composite would read as a real finding. */
 const PROBE = `async () => await page.evaluate(() => {
   const parse = (color) => {
     const parts = color.match(/[\\d.]+/g);
@@ -200,10 +190,8 @@ try {
   }
 
   const consoleOut = cli("console", "error");
-  /* A real regex literal, so a single backslash. The PROBE above needs `\\d` only because it is a
-     template literal whose text is handed to another JS context; doubling it here would match a
-     literal backslash followed by the letter d, which never appears in the CLI's output — and the
-     check would report zero errors forever. */
+  /* A regex literal, so a single backslash; PROBE doubles it only because it is template-literal
+     text evaluated elsewhere. Doubling it here would match nothing and report zero errors forever. */
   const errors = Number(consoleOut.match(/Errors: (\d+)/)?.[1] ?? "0");
   console.log(`\npage errors  ${errors === 0 ? "ok" : `FAIL  ${errors}`}`);
   if (errors > 0) {
@@ -211,10 +199,8 @@ try {
     clean = false;
   }
 } finally {
-  /* EVERY cleanup call is guarded, not only the first. A throw inside `finally` replaces whatever
-     `try` was throwing, so any unguarded call here hides the reason the run failed. `process.kill`
-     throws ESRCH once the process group is gone, which is exactly the state a failing run is most
-     likely to be in — a dev server that died mid-loop is why the run failed in the first place. */
+  /* Every cleanup call is guarded: a throw inside `finally` replaces the error `try` was throwing,
+     hiding why the run failed. */
   try {
     cli("close");
   } catch (error) {
@@ -225,9 +211,8 @@ try {
   }
 }
 
-/* Contrast findings do not fail the run. The gold exception (DESIGN.md -> Foundations -> Colors) is
-   legitimately below AA at 2.39:1 for the eyebrow and the engraved rule's label, so a machine cannot
-   tell an accepted exception from a defect. The list is printed for a human to judge against the
-   exception's stated scope. Overflow and page errors have no such exception and do fail. */
+/* Contrast findings do not fail the run: the gold exception is deliberately below AA, and a machine
+   cannot tell it from a defect. A human judges the list against its scope in DESIGN.md → Foundations
+   → Colors. */
 console.log(`\nScreenshots in .playwright-cli/ (gitignored).`);
 process.exit(clean ? 0 : 1);

@@ -2,14 +2,8 @@ import type { Metadata } from "next";
 import { Corinthia, Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-/* The three families bind straight onto the role tokens app/styles/tokens.css declares
-   (`--font-script`, `--font-serif`, `--font-sans`) — the token layer publishes those names as the
-   contract for this file and carries only fallback stacks until it is satisfied. `display: "swap"`
-   keeps the fallback face visible instead of flashing invisible text (DESIGN.md → Technical
-   Conventions). */
-
-/* Corinthia declares an explicit weight because it ships as static faces only; the other two are
-   variable, and omitting `weight` there loads the whole axis rather than pinning single cuts. */
+/* Corinthia needs an explicit weight because it ships as static faces only; the other two are
+   variable, and omitting `weight` loads the whole axis. */
 
 const script = Corinthia({
   variable: "--font-script",

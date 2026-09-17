@@ -67,8 +67,8 @@ test("rejects a malformed date", () => {
   });
 });
 
-/* `new Date("2027-02-30T00:00:00Z")` rolls over to 2 March instead of returning NaN, so this used to
-   render a different day rather than fail. */
+/* `new Date("2027-02-30T00:00:00Z")` rolls over to 2 March instead of returning NaN, so a NaN check
+   alone would render a different day rather than fail. */
 test("rejects a shape-valid but unreal date instead of rolling it over", () => {
   assert.throws(() => formatEventDate("2027-02-30"), {
     name: "Error",

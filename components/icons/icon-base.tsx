@@ -1,18 +1,6 @@
 import type { ReactNode } from "react";
 
-/* The frame every glyph in the set shares. Not an icon itself and not a documented entry — the
-   design doc names six marks, and this is only the structure they have in common.
-
-   Sizing runs off the DIAGONAL, not width or height. The marks have very different proportions —
-   the plate is 1.28 wide to tall, the map pin 0.65 — so matching any single dimension makes some
-   read large and others small. Matching the diagonal gives them a common optical span.
-
-   `nudge` is the per-glyph correction on top of that, derived from measured ink density: the church
-   lays down 8.2% ink and the plate 21%, so at an equal span the church reads light and the plate
-   heavy. The values live with each glyph rather than here.
-
-   The marks are filled outline, not stroked line, so they carry no stroke token. They take their
-   colour from the surface, which is how one file serves both the ivory and the green stock. */
+/* Diagonal sizing and `nudge`: DESIGN.md → Foundations → Iconography. */
 
 interface IconBaseProps {
   /** Nominal optical span in px, measured on the diagonal. */

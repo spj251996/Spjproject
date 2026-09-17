@@ -1,20 +1,11 @@
 import { notFound } from "next/navigation";
 import { EventInfoSection, InviteSection } from "@/app/_composition/sections";
 
-/* Dev-only tweak surface for Phase 4. Carries every section confirmed so far, plus the one under
-   tweak, so a section is judged while scrolling past its real neighbours rather than in isolation.
+/* Dev-only: mirrors app/page.tsx's section list, with a section under review substituted here.
 
-   Kept out of the production export by the `.dev.tsx` page extension, which next.config.ts treats
-   as a page only outside production. **That gate is what omits the route, and it is the only thing
-   that does.** The notFound() below is not a second omission mechanism and must not be read as one:
-   notFound() renders a 404 body AT the path rather than omitting it, so on its own it would still
-   ship a file — work/lessons.md, 2026-09-08, where a route kept this way shipped at 6.7 KB with a
-   revealing title. It earns its place as content safety: if the extension gate were ever lost, the
-   stray file would carry a 404 rather than the real page.
-
-   Tweak variants live in an uncommitted folder beside this route and are deleted once the owner
-   picks. Substitute the section under tweak here; leave every confirmed section reading from the
-   shared wiring so the two pages cannot drift. */
+   The `.dev.tsx` extension gate in next.config.ts is the only thing that omits this route from the
+   export. `notFound()` still emits a 404 body at the path, so it is a fallback if that gate is ever
+   lost, not an omission. */
 
 export default function PreviewPage() {
   if (process.env.NODE_ENV === "production") {

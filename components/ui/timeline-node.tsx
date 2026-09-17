@@ -6,27 +6,16 @@ import { ButtonAction } from "./button-action";
 import { ImagePlaceholder } from "./image-placeholder";
 import styles from "./timeline-node.module.css";
 
-/* DESIGN.md → Components → UI → `timeline-node`.
+/* A client component because the glow is a discrete transition fired once on entry, which
+   `animation-timeline: view()` cannot express: it is progress-linked, ignores duration and replays on
+   re-entry. The observed element is the node's own box, so there is no separate presentational
+   panel.
 
-   Client boundary, and what forces it: the entry says the node "activates with a thread glow when it
-   enters the viewport, once, without repeating", and Foundations → Motion assigns that glow
-   {motion.duration.fast} — a duration token, which the same section reserves for discrete
-   transitions and withholds from scroll-linked motion. A discrete transition fired once on entry is
-   not expressible declaratively: `animation-timeline: view()` is progress-linked (it ignores
-   duration and replays on re-entry), which is the mechanism the doc's own taxonomy rules out. So
-   script is forced, and this component owns its reduced-motion gate and its first client frame.
+   Flat props rather than `Ritual`: a portable component may not name a domain type. Preview images
+   take `alt=""` because the title and the gallery action carry the meaning. */
 
-   Not split into a presentational panel: the observed element is the node's own layout box, so a
-   pure panel could not be the thing observed without an extra wrapper that changes that box.
-
-   Props are flat scalars — the portable layer may not name `Ritual`. `onOpenGallery` is optional so
-   the component stays renderable from a server page; a caller supplying it is already a client
-   component. Preview images are decorative here (`alt=""`): the title and the gallery action carry
-   the meaning, and the doc supplies no per-image description. */
-
-/* An image list is a plain `string[]`, so the same URL can legitimately appear twice and a
-   src-keyed list collapses. Keys are the URL plus its occurrence ordinal — derived from the data
-   rather than from the array index, which identifies a position instead of a thing. */
+/* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the
+   array index. */
 function withKeys(images: string[]) {
   const seen = new Map<string, number>();
   return images.map((src) => {
@@ -42,9 +31,10 @@ interface TimelineNodeProps {
   title: string;
   description: string;
   status: TimelineNodeStatus;
-  /** Up to three previews are rendered; the doc specifies a 2–3 image preview. */
+  /** Up to three previews are rendered. */
   previewImages?: string[];
   side?: "left" | "right";
+  /** Optional so the node stays renderable from a server page. */
   onOpenGallery?: () => void;
   className?: string;
 }
@@ -73,13 +63,11 @@ export function TimelineNode({
       observer = null;
     };
 
-    /* Re-evaluated on preference change, not once at mount. */
     const sync = () => {
       if (activatedRef.current) {
         return;
       }
       if (motionQuery.matches) {
-        /* Reduced motion: the resting state is complete and static, and no observer is attached. */
         activate();
         return;
       }

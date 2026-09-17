@@ -21,14 +21,10 @@ import {
   type WeddingEvent,
 } from "@/content";
 
-/* The page and the dev-only preview route both render these. Sharing the WIRING is the point: a
-   stale prop on the preview would poison the design judgement the preview exists to support, and
-   nothing detects that — it typechecks, lints and renders. The section LIST is deliberately not
-   shared. It is five lines in the phase's fixed order, visible at a glance in both files, and a
-   missing entry shows the moment you scroll.
+/* The page and the dev-only preview both render these, so a stale prop on the preview cannot
+   silently diverge from the page. The section list itself is not shared.
 
-   Content is looked up by id rather than by array position so inserting an event cannot silently
-   repoint the invite at the wrong one. */
+   Events are looked up by id, so inserting one cannot repoint a section. */
 
 function eventById(id: string) {
   const found = events.find((event) => event.id === id);
@@ -38,19 +34,15 @@ function eventById(id: string) {
   return found;
 }
 
-/* The couple-names role sets three lines in portrait windows and stays one line in landscape
-   (DESIGN.md → Foundations → Typography), which needs the two names as separate spans rather than
-   one string — the split lives here, not in content, because it is presentation of
-   `invite.coupleNames`, not a second copy of it. Falls back to the whole string in one span if it
-   ever does not split into exactly two parts, so a future edit to the content can't render blank. */
+/* The type role needs the names as separate spans. The split is presentation, so it lives here
+   rather than in content; anything but two parts falls back to the whole string. */
 function splitCoupleNames(coupleNames: string): [string, string] | null {
   const parts = coupleNames.split(" & ");
   return parts.length === 2 ? [parts[0], parts[1]] : null;
 }
 
-/* The primary date line's content: the ordinal set small and raised, and both month spellings with
-   CSS showing one by `{breakpoints.md}` — first paint is already right, and `display: none` keeps
-   the hidden spelling out of the accessibility tree. Shared by the invite and both event sheets. */
+/* Both month spellings render; `display: none` keeps the hidden one out of the accessibility tree,
+   so no `aria-hidden` is needed. */
 function PrimaryDate({ date }: { date: FormattedDate }) {
   return (
     <>
@@ -64,43 +56,10 @@ function PrimaryDate({ date }: { date: FormattedDate }) {
   );
 }
 
-/* DESIGN.md → Domain Components → Invite [inline]. Moved inline from the retired
-   components/invite/invite.tsx once the frame moved into `mounted-sheet` itself (interlude,
-   2026-09-15): the section is now a short stack of text with no state or behaviour of its own, and
-   the only extraction trigger it still met was the gallery rendering it — the gallery now lists it
-   instead (app/design-system/_sections/domain.tsx).
-
-   Server-rendered, no client boundary. The thread draw-in and the scroll-cue this section is
-   credited with belong entirely to `thread-overlay`, which is not mounted during Phase 4 — so the
-   invite carries no scroll cue until Phase 5. That is a dated gap against PROJECT.md → Sections →
-   Invite, recorded in work/session.md, not an oversight here.
-
-   Takes the two event records rather than flat date and city strings: PROJECT.md → Content Model →
-   InviteContent requires both to be read from the WeddingEvent records so a corrected date cannot
-   drift between this section and Event Info.
-
-   The date renders through `formatEventDate` because the ordinal sets smaller than the day number,
-   which a flat string cannot express (content/format.ts).
-
-   The markup below is measured against by `inviteFit`; every content or type change re-runs
-   `npm run measure:fit`. The frame's own contract (mounted-sheet.tsx) forbids horizontal padding,
-   margin or width cap around the frame scope, which is why this section carries none: `mounted-sheet`
-   decides the ground against the window's own width.
-
-   Three things in this markup lean on rules that live outside this file, all in DESIGN.md →
-   Domain Components → Invite:
-   - The couple names split into three spans (`splitCoupleNames` above) so the couple-names TYPE
-     ROLE can set them on three lines in portrait and one line in landscape — the stacking, the
-     ampersand's 0.5em size and the 0.9 line spacing are `.type-display-name`'s own rules in
-     app/styles/type-scale.css, not this section's, because the doc states the split as "a property
-     of the role wherever it is used."
-   - Both month spellings render for every date; `md:hidden` / `hidden md:inline` pick one by the
-     same `{breakpoints.md}` the type ladder already switches on, so first paint is already correct
-     and the hidden spelling is never announced to assistive technology (`display: none` removes it
-     from the accessibility tree, so no separate `aria-hidden` is needed).
-   - The stack's gaps are explicit margins, not one `gap-*` on the parent, because only the
-     names-to-date gap changes: 16px in landscape windows at `{breakpoints.lg}` and wider, 32px
-     otherwise, while the other two stay 32px at every tier. */
+/* Measured by `inviteFit`: any content or type change re-runs `npm run measure:fit`. The section
+   carries no horizontal padding, margin or width cap, because `mounted-sheet` decides the ground
+   against the window's own width. The stack uses per-child margins rather than `gap-*` because only
+   the names-to-date gap varies. */
 export function InviteSection() {
   const wedding = eventById("wedding");
   const betrothal = eventById("engagement");
@@ -112,7 +71,7 @@ export function InviteSection() {
     <section className="relative z-(--z-content)">
       <MountedSheet fit={inviteFit} hero>
         <div className="flex flex-col items-center text-center">
-          {/* `.type-eyebrow` owns its colour. Never pair it with a colour utility. */}
+          {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
           <p className="type-eyebrow">{invite.eyebrow}</p>
 
           <h1 className="type-display-name text-ink mt-space-lg">
@@ -151,8 +110,6 @@ export function InviteSection() {
   );
 }
 
-/* The sheet's script heading names the event the way the couple speak of it, shorter than the
-   content model's formal name. Keyed by event id; a missing id fails the build. */
 const EVENT_HEADINGS: Readonly<Record<string, string>> = {
   engagement: "Betrothal",
   wedding: "Wedding",
@@ -168,10 +125,7 @@ function headingFor(eventId: string): string {
   return heading;
 }
 
-/* Which mark a segment carries is presentation, not a fact about the event, so it lives here rather
-   than in the content model (DESIGN.md → Domain Components → Event Info). Keyed by segment id, so
-   renaming a label cannot silently repoint a mark; a segment missing here fails the build rather
-   than rendering a label with no mark beside it. */
+/* Keyed by segment id, so renaming a label cannot repoint a mark. */
 const SEGMENT_MARKS: Readonly<
   Record<string, ComponentType<{ size?: number }>>
 > = {
@@ -191,10 +145,6 @@ function markFor(segmentId: string) {
   return mark;
 }
 
-/* Both segments of an event sit at one address today, so the sheet names it once, beneath the
-   heading, and each segment keeps only its venue and map link. If the segments ever diverge the
-   build fails here rather than printing one address for two places. The content model allows a
-   null address, but the header has no form without one, so a missing address fails the build too. */
 function sharedAddress(event: WeddingEvent): string {
   const addresses = new Set(event.segments.map((segment) => segment.address));
   if (addresses.size !== 1) {
@@ -211,9 +161,8 @@ function sharedAddress(event: WeddingEvent): string {
   return address;
 }
 
-/* One line where it fits. Where it does not, it breaks only after the locality — "Paroppadi, /
-   Kozhikode, Keralam" — because everything after the first comma never wraps, so the state is
-   never left alone on a line. */
+/* Everything after the first comma is unbreakable, so a wrap falls after the locality and the
+   state is never alone on a line. */
 function AddressLine({ address }: { address: string }) {
   const comma = address.indexOf(", ");
   if (comma === -1) return address;
@@ -225,8 +174,6 @@ function AddressLine({ address }: { address: string }) {
   );
 }
 
-/* The heading block: the script name, then the date line and the event's address, which separate
-   by weight alone at one size. */
 function EventSheetHeading({ event }: { event: WeddingEvent }) {
   const date = formatEventDate(event.date);
   return (
@@ -244,17 +191,11 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
   );
 }
 
-/* Every class below that carries the arbitrary variant
-   `[@media(width>=64rem)_and_(orientation:landscape)]:` applies only where the pair sits side by
-   side — the frame's own `pairsSideBySide` condition, a landscape window at `{breakpoints.lg}` and
-   wider. One window media condition drives the whole side-by-side form, so first paint is already
-   right and `measure:fit`, which sets each window's orientation, measures what the window shows.
-   Tailwind emits this variant after its `md:` and `lg:` rules, so it overrides them. Tailwind finds
-   classes by scanning source, so each is written out whole. */
+/* `[@media(width>=64rem)_and_(orientation:landscape)]:` matches the frame's `pairsSideBySide`
+   condition. Tailwind emits it after `md:` and `lg:`, so it overrides them, and each class is
+   written out whole because Tailwind finds classes by scanning source. */
 
-/* Stacked, the mark steps with the type tiers; side by side it takes one size of its own.
-   `IconBase` takes a number rather than a class, so each size renders once and CSS shows exactly
-   one. */
+/* `IconBase` takes a number rather than a class, so each size renders once and CSS shows one. */
 const PLATE_MARKS = [
   {
     size: 72,
@@ -283,7 +224,6 @@ function PlateMark({ segmentId }: { segmentId: string }) {
   ));
 }
 
-/* A square turned on its point, drawn as a path so it needs no transform. */
 function Diamond() {
   return (
     <svg
@@ -299,11 +239,9 @@ function Diamond() {
   );
 }
 
-/* The time, a gold diamond and the label on one line. The diamond, the hidden comma and the whole
-   label are one unbreakable run, so the only break is the `<wbr>` after the time: a wrapped line
-   reads "10:00 AM / ◆ Church Ceremony" and the diamond never ends a line. The time's gap to the
-   diamond is its own trailing margin, so a wrapped second line starts flush with the diamond. A
-   screen reader hears the hidden comma in the diamond's place: "10:00 AM, Church Betrothal". */
+/* The only break is the `<wbr>` after the time, so the diamond never ends a line. The time's gap is
+   its own trailing margin, so a wrapped line starts flush with the diamond. The hidden comma is
+   what a screen reader hears in the diamond's place. */
 function SegmentLine({ segment }: { segment: EventSegment }) {
   return (
     <p className="type-heading-lg text-ink text-balance">
@@ -318,8 +256,8 @@ function SegmentLine({ segment }: { segment: EventSegment }) {
   );
 }
 
-/* A hyphenated word never breaks at its hyphen: "Syro-Malabar" stays whole. The venue is set
-   `pretty` rather than balanced, because balancing broke that word. */
+/* Keeps hyphenated words whole. The venue line is `text-pretty`, not balanced, because balancing
+   broke them. */
 function VenueName({ venue }: { venue: string }) {
   const hyphenated = venue.match(/\S+-\S+/);
   if (hyphenated?.index === undefined) return venue;
@@ -333,8 +271,6 @@ function VenueName({ venue }: { venue: string }) {
   );
 }
 
-/* A map action is named for its venue, so a map link with no venue fails the build rather than
-   announcing "Map, null". */
 function mapLabel(segment: EventSegment): string {
   if (segment.venue === null) {
     throw new Error(
@@ -347,16 +283,10 @@ function mapLabel(segment: EventSegment): string {
 const PLATE_LIST_CLASS =
   "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr]";
 
-/* The segments as engraved plates, an ordered list centred in the sheet at its own width. Each
-   entry is a column subgrid: stacked, one column, so the mark leads and the centred details follow
-   it; side by side, the mark stands in an `auto` column shared by both entries, so it is as wide as
-   the sheet's widest mark and both entries' text starts at one edge. Side by side the mark drops to
-   meet the segment line's cap height. Below `{breakpoints.md}` and side by side there is no rule
-   after the heading, so the list stands `space-lg` off it; on stacked sheets from `md` up the
-   rule's own margins set the gap. */
+/* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
+   their text starts at one edge. */
 function PlateSegments({ segments }: { segments: EventSegment[] }) {
   return (
-    /* Safari drops list semantics from a list whose markers are removed, so the role restores them. */
     // biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none
     <ol className={PLATE_LIST_CLASS} role="list">
       {segments.map((segment) => (
@@ -391,9 +321,8 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
   );
 }
 
-/* One event's sheet. The `h2` stays a direct child of this root `div`: `measure:fit` finds each
-   sheet by it. The rule after the heading is the `divider`, cut to `space-2xl`. Measured by
-   `eventInfoFit` — any content or type change re-runs `npm run measure:fit`. */
+/* `measure:fit` finds each sheet by an `h2` that is a direct child of this root `div`. Measured by
+   `eventInfoFit`: any content or type change re-runs `npm run measure:fit`. */
 function EventSheet({ event }: { event: WeddingEvent }) {
   return (
     <div className="flex w-full flex-col items-center text-center">
@@ -404,11 +333,7 @@ function EventSheet({ event }: { event: WeddingEvent }) {
   );
 }
 
-/* DESIGN.md → Domain Components → Event Info [inline]. Server-rendered, no client boundary. No
-   section heading: each sheet leads with its event name. The id scopes `measure:fit`'s selector to
-   this section, so a later section's `h2` stacks cannot leak into its fit. Stacked cards take the
-   invite's padding. Entrance motion and the thread's passage are Phase 5 (DESIGN.md → Iteration
-   Notes → Open Decisions). */
+/* The id scopes `measure:fit`'s selector, so a later section's `h2`s cannot leak into this fit. */
 export function EventInfoSection() {
   return (
     <section className="relative z-(--z-content)" id="event-info">

@@ -1,24 +1,14 @@
 #!/usr/bin/env node
 /* Measures how a section's content stack fits its card, for the `mounted-sheet` frame in
-   `components/layout/mounted-sheet-frame.ts`. Drives the project's own `playwright-cli`
-   devDependency, following `scripts/verify-section.mjs`'s pattern — spawnSync through `npx
-   playwright-cli`, never `playwright-core` directly.
+   `components/layout/mounted-sheet-frame.ts`. Drives the `playwright-cli` devDependency, as
+   `scripts/verify-section.mjs` does, never `playwright-core` directly.
 
-   Method (`.superpowers/sdd/ground-frame-report.md` → Measured content heights): for each width
-   tier (mobile < 768px, tablet 768–1023px, desktop >= 1024px) the window is swept in BOTH
-   orientations — portrait at height = round(width x 1.5), landscape at round(width x 0.6) — so a
-   section whose content differs by orientation, such as the invite's three-line portrait names,
-   is measured as it actually renders rather than judged by one figure shared across both. The
-   selector may match several stacks — a `mounted-pair` section's two sheets — in which case each
-   gets its own detached host and the measured height at a width is the tallest of them, matching
-   the frame's own rule that a pair fits both sheets to the taller. Within each tier-orientation
-   pair the window is resized so the section's type resolves to that tier's sizes, web fonts are
-   confirmed loaded, every matched stack is cloned into its own detached flex-column host, and each
-   host's width is swept from 120 to 1300px. Height is a step function of width — each line of a
-   stack wraps at its own width, and the max of non-rising step functions is itself non-rising — so
-   every width where the measured height changes is a regime boundary, bisected to 1/1024px. The
-   sweep and the bisection both run inside the page in one `page.evaluate` call per tier-orientation
-   pair: no per-pixel round trip to the CLI.
+   Method: for each width tier the window is set in both orientations, so content that differs by
+   orientation is measured as it renders. Web fonts are confirmed loaded, every stack the selector
+   matches is cloned into its own detached flex-column host, and each host's width is swept from 120
+   to 1300px; the height at a width is the tallest stack's. Height is a step function of width, so
+   every width where it changes is a regime boundary, bisected to 1/1024px. The sweep runs inside the
+   page in one `page.evaluate` call per tier and orientation, with no per-pixel round trip.
 
    Usage:
      node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
@@ -55,9 +45,8 @@ const TIERS = [
   { key: "desktop", width: 1280 },
 ];
 
-/* Mirrors `app/preview/_kit/live-fit.tsx`'s `probeHeight`: a height that sets the orientation
-   without pretending to be a real device, since the sweep only needs the window tall or short
-   enough to resolve the section's type at that tier and orientation. */
+/* Heights that set the orientation without pretending to be a real device; the sweep only needs
+   the section's type resolved at that tier and orientation. */
 const ORIENTATIONS = [
   { key: "portrait", heightFor: (width) => Math.round(width * 1.5) },
   { key: "landscape", heightFor: (width) => Math.round(width * 0.6) },
@@ -164,9 +153,8 @@ function sweepScript(cssSelector, mutateContent) {
     return { error: "selector not found: " + SELECTOR };
   }
 
-  /* A pair's two sheets stand at different heights; the frame is fitted to the taller at every
-     width (DESIGN.md → mounted-pair), so each stack gets its own host and the sweep reads the max.
-     A maximum of non-rising step functions is itself non-rising, so validation still holds. */
+  /* Each stack gets its own host and the sweep reads the tallest. A maximum of non-rising step
+     functions is itself non-rising, so validation still holds. */
   const measured = sources.map((source) => {
     const host = document.createElement("div");
     host.style.cssText =
@@ -316,9 +304,7 @@ try {
   for (const tier of TIERS) {
     fit[tier.key] = {};
     for (const orientation of ORIENTATIONS) {
-      /* Falsified only on mobile, in both orientations, matching the coverage of the single-set
-         sweep this replaces: proving the bisection catches a real content change, not sweeping
-         every tier-orientation pair for it. */
+      /* Falsified on mobile only: enough to prove the bisection catches a real content change. */
       const mutateContent = falsify && tier.key === "mobile";
       fit[tier.key][orientation.key] = await measureTierOrientation(
         tier,

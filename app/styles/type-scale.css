@@ -1,20 +1,9 @@
-/* Foundations → Typography, the class half of the type scale.
-
-   The `--text-*` tokens carry size, weight, letter-spacing and line-height, but the framework has
-   no `--text-*` modifier for `font-family` or `text-transform`. A size utility alone therefore
-   cannot express a semantic role, which is why each role gets a class rather than being consumed
-   as a bare `text-<role>` utility. The classes read their metrics back out of the tokens instead of
-   restating values, and sit in the components layer so ordinary utilities still win on override.
-
-   Every role reads an explicit line height from its tokens at every tier. */
+/* Each role is a class rather than a bare `text-<role>` utility, because `--text-*` has no modifier
+   for `font-family` or `text-transform`. The classes sit in the components layer so ordinary
+   utilities still override them. Tiers step inside `@variant`, which resolves the breakpoint
+   tokens a raw media query cannot read. */
 
 @layer components {
-  /* Couple names only. Every role in this file steps at both `md` and `lg` — Responsive
-     Behavior states the full ladder covers all three tiers, not just this pair of breakpoints.
-     This role also keeps its established `-desktop` suffix rather than moving to the bare name every other role's top tier
-     now uses, for continuity with how it was already named before the ladder widened. Steps sit
-     inside framework variants so the token references survive — a raw media query cannot read a
-     variable. */
   .type-display-name {
     font-family: var(--font-script);
     font-size: var(--text-display-name-mobile);
@@ -34,12 +23,8 @@
     }
   }
 
-  /* Foundations → Typography: the role sets three lines in portrait windows — each name on its own
-     line, the joiner between them at half the name size, 0.9 line spacing across the block — and
-     stays one line at normal spacing in landscape. Orientation decides it rather than width because
-     one width tier covers both, which is the same reason the card frame queries orientation.
-     Its `line-height` beats the token line height above at equal specificity only because it comes
-     later in this file, so it must stay below the base rule. */
+  /* Orientation, not width, because one width tier covers both. This `line-height` beats the base
+     rule's only by source order, so it must stay below it. */
   @media (orientation: portrait) {
     .type-display-name {
       display: flex;
@@ -53,7 +38,6 @@
     }
   }
 
-  /* The event sheets' script heading: the couple names' face at a heading's size, set solid. */
   .type-heading-script {
     font-family: var(--font-script);
     font-size: var(--text-heading-script-mobile);
@@ -92,8 +76,6 @@
     }
   }
 
-  /* Steps with `.type-date-primary`, never alone — the two are one size separated by weight, so
-     moving either on its own makes the date read as subordinate to the event name above it. */
   .type-heading-lg {
     font-family: var(--font-serif);
     font-size: var(--text-heading-lg-mobile);
@@ -113,11 +95,6 @@
     }
   }
 
-  /* Separates from `.type-heading-lg` at the same size by weight, not by scale. Held at the
-     mobile size below `md` because the longest place name in the content overruns the column a
-     mounted section leaves at 320px. Carries no letter-spacing: the previous 0.06em was a
-     display-caps amount that read "off" on a mixed-case serif and narrowed the line 13% at 26px,
-     and weight 500 (up from 400) answers the serif reading thin beside the 120px names. */
   .type-date-primary {
     font-family: var(--font-serif);
     font-size: var(--text-date-primary-mobile);
@@ -137,8 +114,6 @@
     }
   }
 
-  /* The mixed-age floor is set at the phone tier, 17px, rather than as one size across the site:
-     the sans read too small at every size tested below it. */
   .type-body {
     font-family: var(--font-sans);
     font-size: var(--text-body-mobile);
@@ -158,11 +133,6 @@
     }
   }
 
-  /* The only role smaller than body at every tier, and the one place the scale goes under the
-     mixed-age floor — legitimate because it never carries long-form copy. The tighter leading is
-     part of that scoping: it suits a line read in a glance and fights a paragraph read
-     continuously. Unlike `.type-eyebrow` this role owns no color, so it inherits ink on paper and
-     ink-on-contrast on the green stock and is legal on both without an exception. */
   .type-caption {
     font-family: var(--font-sans);
     font-size: var(--text-caption-mobile);
@@ -182,19 +152,12 @@
     }
   }
 
-  /* The date line's raised ordinal, set `type-caption type-date-ordinal`, takes no line height:
-     left to the caption's leading it pushed the date line past its own line height at every tier.
-     It wins over the caption's line height only by coming after that rule, so it stays below it. */
+  /* Paired with `type-caption` on the raised ordinal, whose leading would otherwise push the date
+     line past its own line height. Wins only by source order, so it stays below `.type-caption`. */
   .type-date-ordinal {
     line-height: 0;
   }
 
-  /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
-     ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
-     caller pairing the class with a token and being able to get it wrong. Sized one step below
-     `.type-caption` at every tier, deliberately: tried at caption's own size and rejected, because
-     uppercase and widely letterspaced text reads larger than its number, so the step down is what
-     keeps the two roles visually distinct. */
   .type-eyebrow {
     font-family: var(--font-sans);
     font-size: var(--text-eyebrow-mobile);

@@ -1,24 +1,17 @@
 import Image from "next/image";
 import { ImagePlaceholder } from "./image-placeholder";
 
-/* DESIGN.md → Components → UI → `portrait`.
+/* Flat props rather than `FamilyMember`: a portable component may not name a domain type.
 
-   Props are flat scalars rather than the `FamilyMember` object: this lives in the portable layer,
-   which may not name a domain type without reversing the dependency direction the structure rule
-   sets. The composing Family section destructures.
-
-   `image-placeholder` renders as a base layer underneath the image rather than behind a data check.
-   The doc scopes the placeholder to "missing or still loading" — a render-time state no data check
-   can observe — and a base layer satisfies both without a hook, keeping this component server-
-   rendered. Known weakness: an image with transparent regions lets the placeholder tone show through.
-
-   `size` has no token behind it; the doc states no portrait dimension. The default is inferred. */
+   The placeholder is a base layer under the image rather than behind a data check, because
+   "still loading" is a render-time state no data check can see; this keeps the component
+   server-rendered. An image with transparent regions lets the placeholder show through. */
 
 interface PortraitProps {
   name: string;
   relationship: string;
   src: string | null;
-  /** Rendered diameter in px. Inferred default — DESIGN.md states no portrait dimension. */
+  /** Rendered diameter in px. The default has no design source yet. */
   size?: number;
   className?: string;
 }

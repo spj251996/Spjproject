@@ -1,46 +1,20 @@
-/* DESIGN.md → Domain Components → Family, thread choreography.
+/* The reveal is a mask, as in `thread-overlay`, because the visible stroke's
+   `vector-effect: non-scaling-stroke` moves its dash pattern out of the SVG's user space. This path
+   doubles back on itself, so a wipe would cross it more than once; the mask is instead a stroked
+   copy of the path, dashed along its own length. The mask path carries no `vector-effect`, so its
+   dash arithmetic stays exact.
 
-   Reveal mechanism. Masking, as settled for `thread-overlay`: the token stroke widths
-   ({stroke.thread-*}) are screen-pixel values, so the visible stroke must carry
-   `vector-effect: non-scaling-stroke`, which moves its geometry — dash pattern included — out of the
-   user space `stroke-dasharray` is authored in. A mask is measured in the SVG's own coordinate
-   system, which that opt-out does not touch, so masking is what survives the token constraint.
+   `pathLength="1"` with `stroke-dasharray: 1 2`: offset 0 paints the whole path, offset 1 nothing. A
+   gap of exactly 1 ends on the path's own end and leaves a painted sliver at zero progress.
 
-   What differs from the overlay is the mask's CONTENT, and the path's own geometry forces it. The
-   overlay wipes a rectangle top-to-bottom because both of its curves descend monotonically, so the
-   wipe front crosses the thread exactly once. This gesture "wraps the bride side" — it doubles back
-   on itself by definition — so a wipe front would cross it more than once and paint the far side of
-   the loop before the near side. The mask is therefore a stroked copy of the same path, revealed
-   along its own arc length. The dash pattern rides the MASK path, which carries no
-   `vector-effect`, so its arithmetic stays exact in the SVG's own coordinate system: this is the
-   masking mechanism, not the eliminated one.
+   `#fff` is mask luminance. The 6-unit width is coverage for the visible stroke under the
+   non-uniform stretch. The cap is butt because a round cap extends past the normalised length and
+   leaves a painted stub at zero progress.
 
-   `pathLength="1"` normalizes the mask path, so `stroke-dasharray: 1 2` puts one dash the exact
-   length of the path against a gap twice that: offset 0 paints the whole path, offset 1 paints
-   nothing. The gap is 2 rather than 1 because an exactly-1 gap ends where the next dash begins, and
-   that boundary landed on the path's own end — measured as a 9 px sliver still painted at zero
-   progress.
-
-   `#fff` is mask luminance, not a design color. The 6-unit mask stroke is coverage in the SVG's own
-   user space, wide enough to blanket the visible stroke under the non-uniform stretch; it carries no
-   design value and no token exists for it. Its cap is butt, not round: a round cap extends the dash
-   by half the mask stroke width in real user units, which `pathLength` does not normalize, so it
-   leaked a painted stub at zero progress (measured: 49 px still painted at offset 1).
-
-   Per-case defaults (the base state is a claim about the first paint):
-   - base — fully drawn. Correct for reduced motion, which DESIGN.md requires to render the thread
-     complete and static, and correct before any script runs.
-   - `prefers-reduced-motion: no-preference` — undrawn until the section activates, so the gesture
-     has somewhere to start. Declared INSIDE the query, so it is never attached when the preference
-     is set; there is no global kill-switch to fall back on.
-   - `scripting: none` — back to fully drawn. Without it, an engine that never runs the activation
-     effect would hold the no-preference undrawn state forever, which is the one case where a missed
-     default renders nothing rather than something plain.
-
-   The glow emphasis the entry ends on is delayed by {motion.duration.slow} so it lands as the draw
-   finishes rather than as it starts. It is scoped to the no-preference query on purpose: the doc
-   puts the thread at its RESTING glow level whenever reduced motion is active. Its radius and
-   opacity are inferred — "slight glow emphasis" names no value. */
+   The base state is fully drawn, for reduced motion and before script runs. The undrawn state is
+   declared only inside the no-preference query, and `scripting: none` restores the drawn state so an
+   engine that never activates still shows the thread. The glow is delayed by the draw's duration so
+   it lands as the draw finishes. */
 
 .thread {
   position: absolute;

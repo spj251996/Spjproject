@@ -1,20 +1,10 @@
-/* Design tokens — transcribed from DESIGN.md → Foundations (plus the Elevation & Depth block and
-   the two width caps stated only in prose under Foundations → Layout). Inferred values are named
-   in the run report; nothing here is invented silently.
-
-   Split rationale (rules/web-frontend/design-system.md → Stylesheet organization): the token set is
-   a distinct self-contained concern, so the identity trigger fires regardless of length. */
-
 @theme static {
-  /* Foundations → Typography. DESIGN.md names three families but no token names for them; these
-     names are the contract app/layout.tsx must satisfy via next/font — until it does, the tokens
-     resolve to their fallback stacks. Overriding the framework's own `--font-sans` role token lets
-     preflight carry the body family instead of restating it on `body`. */
+  /* Overriding the framework's own `--font-sans` lets preflight carry the body family instead of
+     restating it on `body`. */
   --font-script: "Corinthia", cursive;
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
 
-  /* Foundations → Colors */
   --color-surface-base: #fcfbf7;
   --color-surface-mount: #ece6d7;
   --color-surface-elevated: #fffefa;
@@ -24,19 +14,13 @@
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
-  /* The tint every paper-landing shadow is drawn in. Declared so the colour is greppable and
-     documented; the shadow tokens below still carry it as literal rgba, because a `color-mix()`
-     that an engine does not support invalidates the whole box-shadow and drops the card's lift
-     entirely. Single-sourcing it was measured and rejected on that basis; if the tint ever changes
-     it is six edits, and that cost is accepted. DESIGN.md → Elevation & Depth carries the decision. */
+  /* The shadow and crease tokens below repeat this tint as literal rgba: an engine without
+     `color-mix()` drops the whole declaration. */
   --color-shadow-warm: #3a301e;
 
-  /* Foundations → Typography. Size, weight, tracking and leading ride the `--text-*` modifiers;
-     family and text-transform have no modifier, which is what forces the `.type-*` class layer
-     in styles/type-scale.css. Every role carries a value per width tier — mobile, tablet,
-     desktop — with the desktop tier held on the bare (unsuffixed) name; display-name keeps its
-     own pre-existing `-desktop` suffix rather than losing it to match. Every tier sets an explicit
-     pixel line height, so no role inherits its leading. */
+  /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
+     type-scale.css. The desktop tier sits on the bare name; display-name keeps its `-desktop`
+     suffix. */
   --text-display-name-mobile: 72px;
   --text-display-name-mobile--font-weight: 400;
   --text-display-name-mobile--line-height: 108px;
@@ -73,8 +57,6 @@
   --text-heading-lg: 26px;
   --text-heading-lg--font-weight: 700;
   --text-heading-lg--line-height: 32px;
-  /* No letter-spacing token: the date line carries no tracking, and weight 500 answers the serif
-     reading thin beside the 120px couple names. */
   --text-date-primary-mobile: 22px;
   --text-date-primary-mobile--font-weight: 500;
   --text-date-primary-mobile--line-height: 28px;
@@ -127,16 +109,12 @@
   --text-action--letter-spacing: 0.16em;
   --text-action--line-height: 24px;
 
-  /* Foundations → Spacing. Cross-Cutting Rules: "No spacing value outside the {spacing} scale."
-     Closing the namespace makes that toolchain-enforced rather than advisory — the framework's
-     `--spacing` multiplier is disabled, so `p-5` and friends stop compiling entirely. Publishing
-     the doc's own zero step reopens exactly the zero utilities (p-0, gap-0, inset-0) and nothing
-     else. The named steps keep their `space-` prefix because bare t-shirt keys shadow the
-     container scale across max-w-/min-w-/basis-/w-/h-; the zero step stays bare because prefixing
-     it is what would break those zero utilities.
-     The card frame holds these steps as numbers in components/layout/mounted-sheet-frame*.ts,
-     because a media query cannot read a custom property — a change here must change them there
-     too. */
+  /* Disabling the `--spacing` multiplier stops off-scale utilities such as `p-5` compiling. The
+     bare zero step reopens only p-0, gap-0, inset-0 and the like. The named steps keep their
+     `space-` prefix because bare t-shirt keys shadow the container scale in
+     max-w-/min-w-/basis-/w-/h-.
+     components/layout/mounted-sheet-frame*.ts holds these steps as numbers, because a media query
+     cannot read a custom property — change both together. */
   --spacing: initial;
   --spacing-0: 0px;
   --spacing-space-3xs: 4px;
@@ -149,15 +127,11 @@
   --spacing-space-2xl: 64px;
   --spacing-space-3xl: 96px;
 
-  /* Foundations → Shapes */
   --radius-sm: 8px;
   --radius-lg: 16px;
 
-  /* Foundations → Elevation & Depth. One token per layer, each already the complete box-shadow the
-     layer needs — a consumer applies one utility, never composes two that overwrite each other.
-     The tint follows the surface each shadow lands on, which is why all three are warm: every one of
-     them falls on paper. Green-ink shadows belong to whatever lands on the green stock, which
-     nothing in this layer does yet. */
+  /* Each token is a complete box-shadow, so a consumer applies one utility rather than composing
+     two that overwrite each other. */
   --shadow-mount:
     0 1px 2px rgba(58, 48, 30, 0.1), 0 18px 40px -14px rgba(58, 48, 30, 0.26);
   --shadow-sheet:
@@ -165,56 +139,41 @@
   --shadow-sheet-contrast:
     0 0 0 1px rgba(58, 48, 30, 0.14), 0 2px 8px rgba(58, 48, 30, 0.34);
 
-  /* Foundations → Motion (easing only; there is no duration namespace — see :root below) */
+  /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
   --ease-settle: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Responsive Behavior. The card frame holds these as numbers in
-     components/layout/mounted-sheet-frame.ts, because a media query cannot read a custom property —
-     a change here must change them there too. */
+  /* components/layout/mounted-sheet-frame.ts holds these as numbers, because a media query cannot
+     read a custom property — change both together. */
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
 
-  /* Foundations → Layout. These two width caps are stated only in prose in DESIGN.md — reported as
-     drift. The card's height cap has a YAML entry and sits in :root below, outside this namespace.
-     The card frame holds `--container-content` as a number in
-     components/layout/mounted-sheet-frame*.ts, because a media query cannot read a custom
-     property — a change here must change it there too. */
+  /* components/layout/mounted-sheet-frame*.ts holds `--container-content` as a number, because a
+     media query cannot read a custom property — change both together. */
   --container-content: 1200px;
   --container-text: 600px;
 }
 
-/* Values whose names sit in no namespace the framework knows. They mint no utility family, so they
-   are consumed as `utility-(--token)` — e.g. `z-(--z-thread)`, `duration-(--duration-base)`. Kept
-   in a plain block for legibility, not because the compiler requires the split. */
+/* Names in no framework namespace mint no utilities; consume them as `utility-(--token)`, e.g.
+   `z-(--z-thread)`, `duration-(--duration-base)`. */
 :root {
-  /* DESIGN.md defines a single scheme; there is no dark mode to declare. */
   color-scheme: light;
 
-  /* Interaction Rules → Tap; Accessibility Rules */
   --touch-target: 44px;
 
-  /* Foundations → Layout → `mounted-sheet` → The frame. A height, so it stays out of the
-     `--container-*` namespace, whose utilities are widths. The frame's thresholds are derived from
-     the same number in components/layout/mounted-sheet-frame*.ts, because a media query cannot read
-     this variable — a change here must change it there too. */
+  /* A height, so it stays out of `--container-*`, whose utilities are widths.
+     components/layout/mounted-sheet-frame*.ts derives its thresholds from the same number, because
+     a media query cannot read this variable — change both together. */
   --card-height-cap: 720px;
 
-  /* Foundations → Layout → divider, and thread-overlay. These are SVG stroke widths and one border
-     width; they are not rehomed into `--border-width-*`, whose `border-*` utilities would misdescribe
-     the thread strokes.
-
-     Iconography marks are filled outline, not stroked line, so they carry no stroke token — do not
-     add one; see DESIGN.md → Foundations → Iconography. */
+  /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
   --stroke-thread-wisp: 1.2px;
 
-  /* Foundations → Paper Grain. One noise per surface, generated rather than an asset: nothing to
-     load, no element, and one declaration per surface. The tile is drawn at three times its CSS
-     size so the fibre resolves at the screen’s own density — at 1:1 it is upscaled on a
-     high-density display and reads as blotches. Each surface takes the blend its own lightness
-     allows, which is why the four differ; the reasoning is in the doc, not repeated here. */
+  /* The SVG is drawn at three times the tile's CSS size: at 1:1 a high-density display upscales it
+     into blotches. `color-interpolation-filters='sRGB'` keeps the noise midpoint at 0.5 — filters
+     default to linear RGB. */
   --grain-tile: 200px;
   --grain-ground-blend: multiply;
   --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.03' intercept='0.97'/><feFuncG type='linear' slope='0.03' intercept='0.97'/><feFuncB type='linear' slope='0.03' intercept='0.97'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
@@ -225,10 +184,6 @@
   --grain-stock-contrast-blend: hard-light;
   --grain-stock-contrast: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.1' intercept='0.45'/><feFuncG type='linear' slope='0.1' intercept='0.45'/><feFuncB type='linear' slope='0.1' intercept='0.45'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
 
-  /* Foundations → Layout → `mounted-pair`. The mount is one card creased down the middle, and this
-     is that fold. Carried as a literal gradient for the same reason the shadow recipes are. Lit from
-     the right — the system's single departure from light falling straight down, which Elevation &
-     Depth states. */
   --crease-width: 22px;
   --crease-fill: linear-gradient(
     to right,
@@ -243,22 +198,17 @@
     rgba(255, 255, 255, 0) 22px
   );
 
-  /* Foundations → Motion */
   --duration-fast: 200ms;
   --duration-base: 400ms;
   --duration-slow: 700ms;
 
-  /* Interaction Rules → Focus. The colors stay references, never copied literals. The ring is a
-     functional indicator needing 3:1, which is the one place gold gives way to ink: gold measures
-     2.39:1 on the ground and 2.46:1 on the paper stock, against ink's 11.74:1 and 12.05:1. On the
-     green stock the reverse holds. */
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--color-ink);
   --focus-ring-color-on-contrast: var(--color-accent-gold);
 
-  /* Elevation & Depth. `z-*` takes bare numerics against no namespace, so an off-scale `z-999`
-     still compiles — this scale is a review concern, not a toolchain-enforced one. */
+  /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
+     off-scale `z-999` still compiles; only review enforces this scale. */
   --z-base: 0;
   --z-botanical: 10;
   --z-content: 20;

@@ -6,45 +6,16 @@ import { Divider } from "../layout/divider";
 import { Portrait } from "../ui/portrait";
 import styles from "./family.module.css";
 
-/* DESIGN.md → Domain Components → Family [standalone].
+/* A client component because the gesture is a discrete transition fired once on entry, which
+   `animation-timeline: view()` cannot express: it is progress-linked, ignores duration and replays on
+   re-entry. The observed element is the section's own box, so there is no separate presentational
+   panel.
 
-   Client boundary, and what forces it: the wrap-extend-join is the page's one key interaction, and
-   Foundations → Motion assigns it {motion.duration.slow} — a DURATION token, which that section
-   reserves for discrete transitions and withholds from scroll-linked motion. A discrete transition
-   fired once when the section enters view is not expressible declaratively: `animation-timeline:
-   view()` is progress-linked, ignores duration, and replays on re-entry. So script is forced, and
-   this component owns its reduced-motion gate (honored at the source — no observer is attached when
-   the preference is set) and its first client frame (per-case defaults in family.module.css).
+   The two paths are placeholders, not doc data. They route through the section's empty bands so
+   the thread never crosses a name, which is why the viewBox is the whole section. The segment is
+   section-anchored because the fixed `thread-overlay` cannot anchor to page content.
 
-   Not split into a presentational panel: the observed element is the section's own layout box, so a
-   pure panel could not be the thing observed without an extra wrapper that changes that box. No demo
-   affordance is needed either — the section is ordinary in-flow content, so a bounded frame renders
-   it and the observer fires normally.
-
-   PROVISIONAL GEOMETRY. DESIGN.md states that thread paths are predefined per layout system but
-   supplies no path data. The two curves below carry the documented SHAPE only — enter, loop around
-   the first group, extend to the second, end joined — and are not transcribed from the doc. Each
-   doubles back on itself, which is what "wraps" means and what forces the mask form the stylesheet
-   describes. They are placed here so the gesture renders, and are expected to be replaced once
-   layouts are settled.
-
-   Both are routed through the band the composition leaves empty — below the portraits on desktop,
-   down the outer margin and through the gap between the two segments on mobile. A first pass drew
-   them across the groups row and the thread struck through the names; Cross-Cutting Rules keep
-   decorative layers off the content, and a 1.8px line over a name is unreadable either way. The
-   viewBox is the SECTION, not the groups row, so those empty bands exist to route through.
-
-   This segment is section-anchored on purpose. `thread-overlay` is `position: fixed`, so its path is
-   viewport-relative and cannot anchor to page content at all — while the doc requires the thread to
-   anchor "to the two family sides". The overlay carries the continuous page-spanning line; this
-   segment carries the gesture that has to know where the two groups are. {colors.thread-red} is
-   permitted here because this IS the thread system, on the same grounds as `timeline-node`'s anchor
-   mark.
-
-   The group heading is derived: the doc heads each group with "the relationship", and `FamilyGroup`
-   carries only `side` and `familyName` — no relationship field. The map below is inferred. Member
-   order is the content's own order: the doc prescribes parents, then the couple member with
-   siblings, and the schema has no role field that could express it. */
+   `FamilyGroup` has no relationship field, so the group heading is mapped from `side`. */
 
 const GROUP_HEADING: Record<FamilyGroup["side"], string> = {
   bride: "Bride's Family",
@@ -81,14 +52,12 @@ export function Family({ groups, className }: FamilyProps) {
       observer = null;
     };
 
-    /* Re-evaluated on preference change, not once at mount. */
     const sync = () => {
       if (activatedRef.current) {
         return;
       }
       if (motionQuery.matches) {
-        /* Reduced motion: the thread is already fully drawn by the stylesheet's base state, and no
-           observer is attached. Flipping the flag keeps the rest state and the markup in step. */
+        /* The stylesheet already draws the thread; flipping the flag keeps the markup in step. */
         activate();
         return;
       }
@@ -120,8 +89,6 @@ export function Family({ groups, className }: FamilyProps) {
       <div className="mx-auto flex w-full max-w-content flex-col lg:flex-row lg:gap-space-3xl">
         {groups.map((group, index) => (
           <Fragment key={group.id}>
-            {/* Foundations → Layout → `divider`: between family groupings. On desktop the
-                two-column split separates them spatially instead. */}
             {index === 0 ? null : (
               <Divider className="w-full max-w-text self-center lg:hidden" />
             )}

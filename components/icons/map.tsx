@@ -1,13 +1,7 @@
 import { IconBase } from "./icon-base";
 
-/* Marks a venue map link.
-
-   Traced from the owner's drawing, cropped to its own content and recoloured to inherit its
-   surface. The mark is filled outline rather than stroked line, so its weight is the drawn line's
-   own — see DESIGN.md → Foundations → Iconography.
-
-   Intentionally excludes the source's path 2, a full-width strip along the bottom edge — a scan
-   artefact rather than part of the drawing. Do not re-add it if this mark is re-traced. */
+/* Excludes the trace's path 2, a full-width strip along the bottom edge that is a scan artefact. Do
+   not re-add it on a re-trace. */
 
 export function MapIcon({
   size,

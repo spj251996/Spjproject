@@ -1,12 +1,5 @@
-/* DESIGN.md → Components → UI → `timeline-node`, activation glow.
-
-   The thread anchor mark is the node's attachment point on the spine — part of the thread system,
-   which is what permits {colors.thread-red} here. Its size and glow radius are inferred; the doc
-   names neither.
-
-   Reduced motion is honored at the source: the transition is *declared* inside the no-preference
-   query, so it is never attached when the preference is set, and the component renders the node
-   already activated in that case. There is no global kill-switch to fall back on. */
+/* The mark's size and glow radius have no design source yet. The transition is declared only inside
+   the no-preference query; under reduced motion the component renders the node already active. */
 
 .mark {
   background-color: var(--color-thread-red);

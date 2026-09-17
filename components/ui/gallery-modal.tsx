@@ -3,29 +3,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { GalleryModalPanel } from "./gallery-modal-panel";
 
-/* DESIGN.md → Components → UI → `gallery-modal`.
+/* Not a native `<dialog>`: its top layer sits outside the z-index scale, so the dialog role and its
+   attributes are declared by hand.
 
-   Client boundary, and what forces it: focus management, keyboard dismissal, a scroll lock, and
-   swipe navigation — four behaviors that need the browser at runtime. The visual surface is split
-   out into `gallery-modal-panel`; everything here is side-effect.
+   The scroll lock captures and replays the offset rather than using `overflow: hidden`, which
+   discards the offset on some platforms.
 
-   Not a native `<dialog>`: the doc places the modal on `{z-index.modal}` in an explicit layer table
-   and requires simple stacking contexts, while `<dialog>`'s top layer sits outside the z-index
-   system entirely. Native semantics were rejected on that constraint, so the dialog role and every
-   attribute its pattern requires are declared explicitly.
-
-   Scroll lock is capture-and-replay, not `overflow: hidden`: hiding overflow discards the scroll
-   offset on some platforms, which is exactly the outcome "closing returns the page to the same
-   scroll position" forbids.
-
-   Effect split is deliberate. `onClose` is read through a ref because a caller writing the idiomatic
-   inline arrow passes a fresh reference on every parent render; focus acquisition and the scroll
-   lock are mount-scoped and must run exactly twice, so they never share an effect with the key
-   listener, which legitimately re-creates when `step` changes.
-
-   No motion is attached here, so there is no reduced-motion gate to discharge: the reveal the doc
-   assigns the modal ({motion.duration.base}) belongs to the composing section's open/close
-   transition, and the active-image scroll uses the instant default. */
+   `onClose` is read through a ref because an inline arrow is a fresh reference on every parent
+   render. Focus and scroll lock are mount-scoped, so they never share an effect with the key
+   listener, which re-creates when `step` changes. */
 
 const SWIPE_THRESHOLD_PX = 40;
 

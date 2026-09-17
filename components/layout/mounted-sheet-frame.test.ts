@@ -9,12 +9,8 @@ import {
 } from "./mounted-sheet-frame.ts";
 import { mountedSheetFrameCss } from "./mounted-sheet-frame-css.ts";
 
-/* Coverage for the per-orientation split (DESIGN.md → Foundations → Layout → `mounted-sheet` →
-   Measured per section): the new `MeasuredFit` shape, every named validation error `assertValidFit`
-   still throws under it plus the one it gained, and the two behaviours the split exists for —
-   `tierLine` reading only the landscape regimes, and a landscape chain refusing content the height
-   cap can never actually give it. `assertValidFit` itself is private; every throw is exercised
-   through `windowClasses` or `mountedSheetFrameCss`, the same way production code reaches it. */
+/* `assertValidFit` is private; every throw is exercised through `windowClasses` or
+   `mountedSheetFrameCss`, the way production code reaches it. */
 
 const TINY: readonly FitRegime[] = [
   { minContentWidth: 120, contentHeight: 100 },
@@ -128,9 +124,8 @@ test("a landscape rectangle taller than the height cap is dropped, not thrown", 
 
 test("a landscape rectangle wider than the height cap is decided below the centring band", () => {
   /* 700 + 2 x 32 + 2 x 16 = 796px wide at the laptop tier's smallest padding: wider than the
-     720px height cap, which used to fail the build. Now it counts only up to cap + 4 x ground,
-     the height past which the centring gap could bind — 1104px at full laptop ground, 816px at
-     halved tablet ground. */
+     720px height cap, so it counts only up to cap + 4 x ground, the height past which the
+     centring gap could bind — 1104px at full laptop ground, 816px at halved tablet ground. */
   const wide = makeFit({
     desktop: { landscape: [{ minContentWidth: 700, contentHeight: 100 }] },
   });
@@ -168,14 +163,14 @@ test("a pair's laptop tier lines are worked out at 1280px", () => {
   );
 
   /* Content 320 at 600 tall: 2 x (320 + 64) + 64 = 832 <= 1088, and 600 + 64 + 32 = 696 <= 720,
-     so it frames. (It also clears the old 1024px limit, exactly: 832 <= 832.) */
+     so it frames. (It also clears the 832px limit a 1024px line would set, exactly.) */
   const framable = makeFit({
     desktop: { landscape: [{ minContentWidth: 320, contentHeight: 600 }] },
   });
   assert.doesNotThrow(() => windowClasses(framable, "pair"));
 
-  /* Content 400 needs 2 x (400 + 64) + 64 = 992: over the old 1024px limit of 832, inside the
-     1280px limit of 1088. This is the case the rule exists for. */
+  /* Content 400 needs 2 x (400 + 64) + 64 = 992: over the 832px limit a 1024px line would set,
+     inside the 1280px line's 1088. */
   const onlyFromWide = makeFit({
     desktop: { landscape: [{ minContentWidth: 400, contentHeight: 100 }] },
   });
@@ -267,8 +262,8 @@ test("a pair's portrait laptop-width windows under 80rem take a single card's gr
 test("a pair's laptop tier lines stay below 64rem", () => {
   /* A portrait narrow class takes laptop or tablet ground with no height condition, which holds
      only while every pair tier line sits below 1024px. The height cap bounds a line at 720 plus the
-     halved ground top and bottom — 816 at laptop ground, 768 at tablet — so no fit reaches 1024
-     today; `windowClasses` still checks it, so a change to the caps or ground tiers fails the build.
+     halved ground top and bottom — 816 at laptop ground, 768 at tablet — so no fit reaches 1024;
+     `windowClasses` still checks it, so a change to the caps or ground tiers fails the build.
      The tallest framable content here, 616 at padding 32 and reveal 16, makes a 712px card. */
   assert.doesNotThrow(() =>
     windowClasses(

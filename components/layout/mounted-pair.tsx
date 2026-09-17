@@ -6,43 +6,25 @@ import {
   mountedSheetFrameCss,
 } from "./mounted-sheet-frame-css";
 
-/* DESIGN.md → Foundations → Layout → `mounted-pair`.
+/* With a fit, the generated stylesheet sets every layout step. The leaves and the mount carry both
+   surface utilities because the stylesheet strips whichever one a layout does not show. The frame
+   contracts in mounted-sheet.tsx bind this caller too.
 
-   The mount is a single card creased down the middle and opened flat, and the two sheets are pasted
-   onto its leaves. The gap between them is TWICE the mount's reveal, not once: each sheet is centred
-   on its own leaf, so the sheet's reveal on the fold side meets the other sheet's at the crease.
+   Without a fit, the static form is for a specimen box.
 
-   Given a section's measured fit, the pair is framed to the window. It sits side by side in every
-   landscape window at `{breakpoints.lg}` and wider, keeping the mount at any ground; everywhere
-   else the two sheets stack, each its own card with no mount, keeping `shadow-mount`. Every step is in the generated stylesheet, which is also why the leaves
-   and the mount carry both surface utilities here — the stylesheet strips whichever one a layout does
-   not show, rather than a layout having to restore one. The frame contracts in mounted-sheet.tsx
-   bind this caller too.
-
-   Without a fit the pair is the static form below, for a specimen box: stacked below md, side by
-   side on the mount above it. Each stacked sheet then swaps `shadow-sheet` for `shadow-mount`,
-   because standing on the ground it does the lifting the mount was doing.
-
-   The leaves carry `relative` so they paint above the crease, which is absolutely positioned on the
-   mount and would otherwise sit over them.
-
-   No state, no effects, no handlers, so no client boundary. */
+   The leaves carry `relative` so they paint above the absolutely positioned crease. */
 
 interface MountedPairProps {
-  /* Exactly two — the layout is a pair, not a list. */
   children: [ReactNode, ReactNode];
-  /* The section's measured fit — the taller of the two sheets — which frames the pair. */
+  /* Measured from the taller of the two sheets. */
   fit?: MeasuredFit;
-  /* The fit whose padding the stacked sheets take — the invite's, so a stacked card reads like
-     it. */
+  /* The fit whose padding the stacked sheets take. */
   stackedPadding?: MeasuredFit;
 }
 
 const CREASE_GEOMETRY =
   "pointer-events-none absolute inset-y-0 left-1/2 w-(--crease-width) -translate-x-1/2 bg-(image:--crease-fill)";
 
-/* The static form's mount ladder, matching `mounted-sheet`: no mount below md, 12px at md, 16px at
-   lg, with the gap twice the reveal at each step. */
 const MOUNT =
   "relative flex flex-col gap-space-md md:flex-row md:gap-space-md lg:gap-space-lg md:bg-surface-mount md:p-space-xs lg:p-space-sm md:shadow-mount";
 
