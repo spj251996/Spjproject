@@ -90,10 +90,14 @@
      read a custom property — change both together. */
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
+  /* Tailwind's own default for `xl` is 80rem; stated explicitly here so `xl:` means 1600px, not
+     1280px. */
+  --breakpoint-xl: 100rem;
 
   /* components/layout/mounted-sheet-frame*.ts holds `--container-content` as a number, because a
      media query cannot read a custom property — change both together. */
   --container-content: 1200px;
+  --container-content-compact: 960px;
   --container-text: 600px;
 }
 
@@ -108,6 +112,7 @@
      components/layout/mounted-sheet-frame*.ts derives its thresholds from the same number, because
      a media query cannot read this variable — change both together. */
   --card-height-cap: 720px;
+  --card-height-cap-compact: 576px;
 
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
@@ -189,6 +194,29 @@
 
 :root {
   @variant lg {
+    --text-display-name: 96px;
+    --text-display-name--line-height: 144px;
+    --text-heading-script: 64px;
+    --text-heading-script--line-height: 64px;
+    --text-heading-xl: 38px;
+    --text-heading-xl--line-height: 44px;
+    --text-heading-lg: 22px;
+    --text-heading-lg--line-height: 28px;
+    --text-date-primary: 22px;
+    --text-date-primary--line-height: 28px;
+    --text-body: 17px;
+    --text-body--line-height: 26px;
+    --text-caption: 15px;
+    --text-caption--line-height: 22px;
+    --text-eyebrow: 14px;
+    --text-eyebrow--line-height: 20px;
+    --text-action: 15px;
+    --text-action--line-height: 20px;
+  }
+}
+
+:root {
+  @variant xl {
     --text-display-name: 120px;
     --text-display-name--line-height: 180px;
     --text-heading-script: 80px;
