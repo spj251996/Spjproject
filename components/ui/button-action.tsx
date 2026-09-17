@@ -16,13 +16,17 @@ import type { ReactNode } from "react";
    hairlines the doc describes. The doc's "no border" means no box around the control, which holds —
    there is no left or right edge and no radius.
 
-   Padding is inferred: the doc states the hairlines, the type role and the hit area, but no padding
-   for the engraved form. On-scale values are used so the rules overrun the label slightly, which is
-   what makes them read as rules rather than as an underline. Reported as inferred.
+   The element is the hit area and nothing else: transparent, borderless, at least
+   `{touch-target}` each way. The rules, the mark and the label sit on an inner span, so the
+   hairlines can hug the word while the target stays full size. The span's padding sets the rules:
+   `{spacing.space-sm}` sideways, so they overrun the label and read as rules rather than as an
+   underline, and `{spacing.space-3xs}` above and below, so they sit close to the word.
 
    Hover is the doc's own sentence and nothing more — rules and label to `{colors.ink}`, the space
-   between them warmed. Focus takes the global ring only; the doc gives focus no color change of its
-   own, so none is invented here. The transition carries its own reduced-motion gate at the source.
+   between them warmed. It is read off the element (`group-hover`), so the whole target triggers it.
+   Focus takes the global ring on the element only; the doc gives focus no color change of its
+   own, so none is invented here. The transition sits on the inner span and carries its own
+   reduced-motion gate at the source.
 
    The transitioned properties are named rather than using `transition-colors`, which in Tailwind v4
    includes `outline-color`. That made the focus ring FADE IN over the hover duration, starting from
@@ -30,13 +34,15 @@ import type { ReactNode } from "react";
    A focus indicator must be correct on the frame it appears, and for that whole fade it sat below the
    3:1 an indicator needs. Hover colors transition; the ring does not. */
 
-const actionClassName = [
-  "type-action inline-flex items-center justify-center gap-space-2xs text-center",
-  "min-h-(--touch-target) min-w-(--touch-target)",
+const targetClassName =
+  "group inline-flex items-center justify-center text-center min-h-(--touch-target) min-w-(--touch-target)";
+
+const rulesClassName = [
+  "type-action inline-flex items-center justify-center gap-space-2xs",
   "border-y-(length:--stroke-divider) border-accent-gold text-accent-gold",
-  "px-space-sm py-space-xs",
+  "px-space-sm py-space-3xs",
   "transition-[color,background-color,border-color] duration-(--duration-fast) ease-settle motion-reduce:transition-none",
-  "hover:border-ink hover:bg-accent-gold/10 hover:text-ink",
+  "group-hover:border-ink group-hover:bg-accent-gold/10 group-hover:text-ink",
 ].join(" ");
 
 type ButtonActionProps = {
@@ -58,7 +64,13 @@ export function ButtonAction({
   href,
   onClick,
 }: ButtonActionProps) {
-  const composed = `${actionClassName} ${className ?? ""}`;
+  const composed = `${targetClassName} ${className ?? ""}`;
+  const label = (
+    <span className={rulesClassName}>
+      {mark}
+      {children}
+    </span>
+  );
 
   if (href !== undefined) {
     /* An external hand-off, so a new tab keeps the invitation open behind it. */
@@ -70,8 +82,7 @@ export function ButtonAction({
         rel="noopener noreferrer"
         target="_blank"
       >
-        {mark}
-        {children}
+        {label}
       </a>
     );
   }
@@ -83,8 +94,7 @@ export function ButtonAction({
       onClick={onClick}
       type="button"
     >
-      {mark}
-      {children}
+      {label}
     </button>
   );
 }
