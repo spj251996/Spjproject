@@ -1,5 +1,4 @@
 export { type BarItem, BarScale } from "./bar-scale";
-export { Card } from "./card";
 export { ChromeFrame } from "./chrome-frame";
 export { DemoViewOnly, InertDemo } from "./click-guards";
 export { DepthGrid, type DepthLevel } from "./depth-grid";
