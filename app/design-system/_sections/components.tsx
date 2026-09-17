@@ -12,6 +12,7 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import { MapIcon } from "@/components/icons";
+import { Thread } from "@/components/shell/thread";
 import { ThreadOverlay } from "@/components/shell/thread-overlay";
 import { ButtonAction } from "@/components/ui/button-action";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
@@ -39,12 +40,17 @@ function Variant({ label, className, children }: VariantProps) {
 
 const THREAD_POSES = [0.25, 0.6, 1];
 
+/* The composing section sets the diameter, and the specimen has none of its own, so it borrows
+   Family's. These literals copy `components/family/family.tsx` and must follow it. */
+const PORTRAIT_SIZING =
+  "[--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:88px]";
+
 export function ComponentsSections() {
   return (
     <>
       <GallerySection
         id="shell"
-        intro="Site-wide chrome: the one continuous thread that runs the length of the page."
+        intro="The thread: the one continuous overlay that runs the length of the page, and the family section's own drawing of it."
         mapsTo="Components → Shell"
         title="Components · Shell"
       >
@@ -68,6 +74,19 @@ export function ComponentsSections() {
               </Variant>
             ))}
           </div>
+        </Specimen>
+
+        <Specimen
+          description="A section-anchored drawing of the thread that curls back on itself: the family wrap, joining the bride side to the groom side."
+          id="shell-thread"
+          name="thread"
+          note="Draws once as it scrolls into view; reload to replay. Drawn in full under reduced motion. Its paths are placeholders and it renders on no page before Phase 5. It draws no wisp, and glows in one thread-red shadow where the doc's thread-overlay describes a vermilion stack. The mobile path shows below lg, the desktop path from lg."
+          source="@/components/shell/thread"
+          spec="thread-red · stroke-thread · round caps · z-thread · section-anchored · duration-slow draw · glow as the draw ends"
+        >
+          <ChromeFrame ariaHidden height={320}>
+            <Thread />
+          </ChromeFrame>
         </Specimen>
       </GallerySection>
 
@@ -106,20 +125,18 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="Circular family portrait with its relationship label, used for every family member."
+          description="Circular, gold-rimmed family portrait with the person's name and relationship beneath it, used for every family member."
           id="ui-portrait"
           name="portrait"
-          note="The diameter has no token; this is the component default. The with-image sample is a generated placeholder."
+          note="The composing section sets the diameter; the specimen borrows Family's. Set on the paper stock, whose colour fills the ring between photo and rim. The with-image sample is a generated placeholder."
           source="@/components/ui/portrait"
-          spec="circle crop · name in body · label in eyebrow · image-placeholder fallback"
+          spec="circle crop · rim: stroke-divider accent-gold ring off a stroke-rim-offset paper ring · name in body · relationship in caption, drawn space-3xs up · both ink · image-placeholder fallback"
         >
-          <div className="flex flex-wrap gap-space-2xl">
+          <div
+            className={`flex flex-wrap gap-space-2xl bg-surface-elevated p-space-md ${PORTRAIT_SIZING}`}
+          >
             <Variant className="items-start" label="With an image">
-              <Portrait
-                name="Placeholder Family Member"
-                relationship="Placeholder Relation"
-                src={samplePortraitImage}
-              />
+              <Portrait {...samplePortrait} src={samplePortraitImage} />
             </Variant>
             <Variant className="items-start" label="Missing image">
               <Portrait {...samplePortrait} />

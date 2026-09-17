@@ -40,8 +40,8 @@ export const sampleEvent = {
 } satisfies Pick<EventSegment, "venue" | "mapUrl">;
 
 export const samplePortrait = {
-  name: "Placeholder Family Member",
-  relationship: "Placeholder Relation",
+  name: "Name",
+  relationship: "Relation",
   src: null,
 };
 

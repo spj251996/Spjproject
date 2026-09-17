@@ -12,6 +12,7 @@ import {
 } from "@/app/design-system/_kit";
 import { Family } from "@/components/family/family";
 import { Timeline } from "@/components/timeline/timeline";
+import type { FamilyGroup } from "@/content/types";
 
 interface VariantProps {
   label: string;
@@ -57,6 +58,29 @@ const WISHES_ENTRIES: InlineEntry[] = [
   },
 ];
 
+function sampleGroupBySide(side: FamilyGroup["side"]) {
+  const found = sampleFamilyGroups.find((group) => group.side === side);
+  if (found === undefined) {
+    throw new Error(`domain-samples: no family group with side "${side}"`);
+  }
+  return found;
+}
+
+const BRIDE_SHEET = {
+  eyebrow: "Bride's Family",
+  group: sampleGroupBySide("bride"),
+};
+const GROOM_SHEET = {
+  eyebrow: "Groom's Family",
+  group: sampleGroupBySide("groom"),
+};
+const FAMILY_SHEETS = [BRIDE_SHEET, GROOM_SHEET];
+
+/* Family's rows never reflow, so its unframed specimen always stacks (Layout → mounted-pair →
+   Without a fit) rather than toggling to a side-by-side form at lg. `MountedPair` takes no
+   breakpoint, so this hand-built stacked sheet is the specimen's only form; the side-by-side pair
+   is the framed page composition, not reproduced here. */
+
 export function DomainSections() {
   return (
     <>
@@ -80,26 +104,31 @@ export function DomainSections() {
 
       <GallerySection
         id="family"
-        intro="Two family groups, split in two columns on desktop and two screen-feel panels on mobile."
+        intro="Two family groups in one framed mounted-pair, bride sheet first."
         mapsTo="Domain Components → Family"
         title="Domain · Family"
       >
         <Specimen
-          description="The bride's and groom's groups, each a heading, family name and its portraits."
+          description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, the children, and a child's own children beneath that child and their spouse."
           id="domain-family"
           name="family"
+          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_composition/sections.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md and lg: diameters and gaps step with the type."
           source="@/components/family/family"
-          spec="eyebrow · heading-script family name · portrait at one scale · bride sheet first"
+          spec={[
+            "eyebrow · heading-script family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
+            "portrait uniform at 72 / 112 / 88px (phone / tablet / laptop) · name and relationship each on one line, wrapping within the column where that cannot hold",
+            "gold stroke-divider couple line between every couple, stopping short of both rims",
+            "bride's siblings space-2xl / space-4xl / space-4xl apart · groom's space-md / space-2xl / space-2xl (phone / tablet / laptop)",
+          ]}
         >
-          <div className="flex flex-col gap-space-2xl">
-            {sampleFamilyGroups.map((group) => (
-              <Family
-                eyebrow={
-                  group.side === "bride" ? "Bride's Family" : "Groom's Family"
-                }
-                group={group}
+          <div className="flex flex-col gap-space-md">
+            {FAMILY_SHEETS.map(({ eyebrow, group }) => (
+              <div
+                className="bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl lg:p-space-3xl"
                 key={group.id}
-              />
+              >
+                <Family eyebrow={eyebrow} group={group} />
+              </div>
             ))}
           </div>
         </Specimen>

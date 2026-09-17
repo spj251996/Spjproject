@@ -79,7 +79,8 @@ const COLOR_GROUPS: SwatchGroup[] = [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
-        usage: "Eyebrows, engraved rules, dividers, active states.",
+        usage:
+          "Eyebrows, engraved rules, dividers, couple lines, portrait rims, active states, on both stocks.",
       },
     ],
   },
@@ -172,7 +173,7 @@ const TYPE_TOKENS: TypeToken[] = [
     family: "Source Sans 3",
     weight: 400,
     sample:
-      "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading. Never long-form.",
+      "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
     phone: { size: 15, lh: 22 },
     tablet: { size: 16, lh: 24 },
     laptop: { size: 17, lh: 24 },
@@ -208,6 +209,7 @@ const SPACING_STEPS: BarItem[] = [
   { token: "space-xl", px: 48 },
   { token: "space-2xl", px: 64 },
   { token: "space-3xl", px: 96 },
+  { token: "space-4xl", px: 128 },
 ];
 
 const SPACING_USES = [
@@ -215,7 +217,8 @@ const SPACING_USES = [
   "space-2xs to space-sm · tight grouping",
   "space-sm to space-md · component padding",
   "space-md · viewport edge for sections without a frame",
-  "space-2xl to space-3xl · between two unframed sections",
+  "space-2xl to space-3xl · between two unframed sections back to back — the timeline's, until its frame is decided",
+  "space-4xl · between the bride's siblings in Family",
 ];
 
 const LAYOUT_CAPS = [
@@ -226,6 +229,7 @@ const LAYOUT_CAPS = [
 
 const IMAGERY_POINTERS = [
   "Family portraits · circular crops → Components · UI → portrait",
+  "A delivered portrait · at least 3× its rendered diameter, never upscaled",
   "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal",
   "Couple illustration · not drawn yet → Domain · Wishes",
 ];
@@ -400,7 +404,7 @@ export function FoundationsSections() {
           description="Each role with its size / line height in px at phone, tablet and laptop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. Script rows show a name or heading: display-name is for couple names only, heading-script for the Event Info sheet headings."
+          note="Samples render at the window's current tier. Script rows show a name or heading: display-name is for couple names only, heading-script for sheet headings: Event Info's event names and Family's family names."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
@@ -442,7 +446,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="layout"
-        intro="Parallel splits on desktop, vertical flow on mobile; every section is built on the mounted card."
+        intro="Parallel splits on desktop, vertical flow on mobile; every section is built on the mounted card, though how the timeline is framed is still open."
         mapsTo="Foundations → Layout"
         source="--container-* / --card-height-cap"
         title="Foundations · Layout"
@@ -485,7 +489,7 @@ export function FoundationsSections() {
           description="Two sheets pasted onto one mount, creased down the middle — the layout the two events take."
           id="layout-mounted-pair"
           name="mounted-pair"
-          note="Unframed: stacked below md, side by side from md. Resize to see the crease appear in the gap. The framed pair is Event Info at /."
+          note="Unframed: stacked below md, side by side from md. Resize to see the crease appear in the gap. The framed pairs are Event Info and Family at /."
           source="@/components/layout/mounted-pair"
           spec="one shared mount · gap twice the reveal · crease 22px at the fold"
         >
@@ -502,7 +506,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A thin rule within a section: after an event sheet's heading block and between family groupings."
+          description="A thin rule within a section: the short rule after an event sheet's heading block."
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
@@ -518,7 +522,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="imagery"
-        intro="Where each kind of image lives; none has a specimen of its own here."
+        intro="Where each kind of image lives, and the portrait source rule; none has a specimen of its own here."
         mapsTo="Foundations → Imagery"
         title="Foundations · Imagery"
       >
