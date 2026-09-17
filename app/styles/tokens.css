@@ -68,6 +68,7 @@
   --spacing-space-xl: 48px;
   --spacing-space-2xl: 64px;
   --spacing-space-3xl: 96px;
+  --spacing-space-4xl: 128px;
 
   --radius-sm: 8px;
   --radius-lg: 16px;
@@ -112,6 +113,7 @@
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
   --stroke-thread-wisp: 1.2px;
+  --stroke-rim-offset: 2px;
 
   /* The SVG is drawn at three times the tile's CSS size: at 1:1 a high-density display upscales it
      into blotches. `color-interpolation-filters='sRGB'` keeps the noise midpoint at 0.5 — filters

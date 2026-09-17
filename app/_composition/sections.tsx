@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { eventInfoFit } from "@/app/_composition/event-info-fit";
+import { familyFit } from "@/app/_composition/family-fit";
 import { inviteFit } from "@/app/_composition/invite-fit";
 import { Family } from "@/components/family/family";
 import {
@@ -361,11 +362,12 @@ function familyGroupBySide(side: FamilyGroup["side"]) {
   return found;
 }
 
-/* The id scopes `measure:fit`'s selector. */
+/* The id scopes `measure:fit`'s selector. Measured by `familyFit`: any content or type change
+   re-runs `npm run measure:fit`. */
 export function FamilySection() {
   return (
     <section className="relative z-(--z-content)" id="family">
-      <MountedPair>
+      <MountedPair fit={familyFit} stackedPadding={inviteFit}>
         <Family
           eyebrow={FAMILY_EYEBROWS.bride}
           group={familyGroupBySide("bride")}

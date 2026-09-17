@@ -1,13 +1,34 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { FamilyMember } from "../../content/types.ts";
-import { splitCluster } from "./family-cluster.ts";
+import { splitCluster, splitRoster } from "./family-cluster.ts";
 
 function person(id: string, family: FamilyMember[] = []): FamilyMember {
   return { id, name: id, relationship: "Relation", portrait: null, family };
 }
 
 const ids = (members: FamilyMember[]) => members.map((member) => member.id);
+
+test("the first two members are the parents, the rest the children in order", () => {
+  const roster = splitRoster([
+    person("mother"),
+    person("father"),
+    person("elder"),
+    person("younger"),
+  ]);
+  assert.deepEqual(ids(roster.parents), ["mother", "father"]);
+  assert.deepEqual(ids(roster.children), ["elder", "younger"]);
+});
+
+test("a roster of parents alone has no children row", () => {
+  const roster = splitRoster([person("mother"), person("father")]);
+  assert.deepEqual(ids(roster.parents), ["mother", "father"]);
+  assert.deepEqual(ids(roster.children), []);
+});
+
+test("a roster without both parents is refused", () => {
+  assert.throws(() => splitRoster([person("mother")]), /two parents/);
+});
 
 test("a member with no nested family stands alone", () => {
   const cluster = splitCluster(person("parent"));

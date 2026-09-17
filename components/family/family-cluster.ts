@@ -8,6 +8,24 @@ export interface MemberCluster {
   children: FamilyMember[];
 }
 
+/* Members carry no role either: mother, then father, then the children in birth order
+   (PROJECT.md → Naming and Ordering). */
+
+export interface FamilyRoster {
+  parents: [FamilyMember, FamilyMember];
+  children: FamilyMember[];
+}
+
+export function splitRoster(members: FamilyMember[]): FamilyRoster {
+  const [mother, father, ...children] = members;
+  if (mother === undefined || father === undefined) {
+    throw new Error(
+      "family: a group's roster must open with its two parents, mother then father.",
+    );
+  }
+  return { parents: [mother, father], children };
+}
+
 export function splitCluster(member: FamilyMember): MemberCluster {
   const [spouse, ...children] = member.family;
   return {
