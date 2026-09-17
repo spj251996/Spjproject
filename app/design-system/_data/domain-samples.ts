@@ -1,16 +1,5 @@
-/* Sample data for the `[standalone]` domain specimens (DESIGN.md → Domain Components).
-
-   Same convention as `./ui-samples`: self-documenting strings at real copy length, zeroed numerals
-   so demo data is never mistaken for the invitation's own content. These samples ARE object-shaped —
-   `family` and `timeline` consume `FamilyGroup[]` and `Ritual[]` from the content schema, unlike the
-   portable components, which take flat scalars. */
-
 import type { FamilyGroup, Ritual } from "@/content/types";
 
-/** Both sides, three top-level members each; the groom's sibling additionally nests a spouse and a
-    child, so the samples exercise the nested shape rather than only the flat one. Five people are
-    reachable on the groom's side, three at the top level. Every `portrait` is null so each renders its
-    designed missing-image state; portrait assets are carried to the sample-asset ask, not invented. */
 export const sampleFamilyGroups: FamilyGroup[] = [
   {
     id: "placeholder-bride-family",
@@ -64,9 +53,8 @@ export const sampleFamilyGroups: FamilyGroup[] = [
         name: "Placeholder Sibling Name",
         relationship: "Placeholder Relation",
         portrait: null,
-        /* Keep this the only non-empty `family` sample. With every sample flat the gallery renders
-           cleanly and hides that `Family` drops nested members; this one keeps that gap visible —
-           until the section descends into it, the two members below simply do not appear. */
+        /* Keep this nested sample: with every member flat, the gallery would hide that `Family`
+           does not render nested members yet. */
         family: [
           {
             id: "placeholder-groom-sibling-spouse",
@@ -88,9 +76,6 @@ export const sampleFamilyGroups: FamilyGroup[] = [
   },
 ];
 
-/** Four rituals alternating sides, mixing both statuses so the specimen shows the completed and
-    upcoming node states together. `images` is empty throughout: Ship 1 launches all-`upcoming` with
-    no galleries, and no ritual photography exists to sample. */
 export const sampleRituals: Ritual[] = [
   {
     id: "placeholder-ritual-1",
@@ -126,9 +111,6 @@ export const sampleRituals: Ritual[] = [
   },
 ];
 
-/** All-`upcoming`, at a different count from `sampleRituals` — the state Ship 1 actually launches
-    with, since no ritual has occurred yet at launch. Demonstrates that the composition takes however
-    many rituals exist rather than assuming a fixed count or a mix of statuses. */
 export const sampleRitualsAllUpcoming: Ritual[] = [
   {
     id: "placeholder-upcoming-ritual-1",

@@ -1,89 +1,56 @@
 import {
   DeviceRuler,
   GallerySection,
+  type LayerItem,
+  LayerStack,
   RuleList,
   type RulerStop,
   SpanTable,
   type SpanZone,
 } from "@/app/design-system/_kit";
 
-/* curate-gallery — Bucket 5, the Technical bucket, in DESIGN.md document order (curate-gallery → section-spine.md § 19).
-   One module for the whole bucket, per the skill's pinned `sections/` structure ("exactly 5 files — the
-   count is law"); this bucket holds exactly one section.
+const TRY_IT = [
+  "Focus and hover · tab to or hover the map action under Components · UI",
+  "Text selection · try selecting any text on this page — nothing selects",
+  "Scroll, section entry, modal and loading act on the page itself; no specimen",
+  "The gold ring on the green stock · no control sits on that stock, so there is no specimen",
+  "Tap targets → Accessibility Rules",
+];
 
-   No `Technical · Z-Index Scale` section: DESIGN.md defines no such heading, and the z-index scale
-   already renders at Foundations · Elevation & Depth as a second SpecimenGroup (curate-gallery → section-spine.md).
-   `Technical Conventions`, `Accessibility Rules`, `Cross-Cutting Rules` and `Iteration Notes` are
-   excluded per the spine's settled derivation — not re-derived here.
-
-   DEVIATION FROM THE SPINE, on the owner's call: `Interaction Rules`' own global-default bullets are
-   rendered rather than left to a single cross-reference. The spine treats them as excluded and keeps
-   only the touch-target line; the focus ring and the document-wide selection rule are load-bearing
-   behaviour with no other surface in the gallery, so they are rendered here in document order.
-
-   Prose renders through RuleList (semantic type classes directly) — this project has no prose layer
-   and the gallery may not invent one (DESIGN.md → Overview → No prose layer). No
-   Specimen/SpecimenGroup wrapper: SpanTable and DeviceRuler render directly inside GallerySection, the
-   same shape Foundations uses for its other bare visualizers — the prose-vs-box rule keeps this rules
-   section unboxed. */
-
-/* § 19 — Interaction · Responsive Behavior. Three zones in DESIGN.md document order. The intro rule
-   (two layout systems, lg as the switch, md's scoped exception) sits in the section intro; the three
-   zone bullets become SpanTable rows; the thread-path bullet folds into each zone it governs; the
-   horizontal-scroll floor and the touch-target cross-reference (curate-gallery → section-spine.md → Sanctioned
-   cross-references) close the section as labeled prose, mirroring the reference's pinned
-   touch-targets/collapsing-strategy shape. */
 const ZONES: SpanZone[] = [
   {
     name: "Mobile",
     width: "< 48rem (768px)",
     changes: [
-      "Vertical flow; family split into screen-feel panels.",
-      "Every role at its mobile size — couple names at display-name-mobile (72px), heading-lg and date-primary at their mobile size (22px).",
-      "Thread follows the mobile-system path.",
+      "Vertical flow; the family split into screen-feel panels",
+      "Mobile type step",
+      "Mobile thread path",
     ],
   },
   {
     name: "Tablet",
     width: "48rem – 64rem (768px – 1023px)",
     changes: [
-      "The mobile system continues, with wider gutters.",
-      "Every role steps to its tablet size — couple names to display-name-tablet (104px).",
-      "Thread stays on the mobile-system path; no third path is authored.",
+      "Mobile system, wider gutters",
+      "Tablet type step",
+      "Mobile thread path",
     ],
   },
   {
     name: "Desktop",
     width: "≥ 64rem (1024px)",
     changes: [
-      "Parallel splits; the timeline alternates sides.",
-      "Every role at its desktop size — couple names at display-name-desktop (120px).",
-      "Thread switches to its desktop-system path — the layout switch point.",
+      "Parallel splits; timeline nodes alternate sides",
+      "Desktop type step",
+      "Desktop thread path",
     ],
   },
 ];
 
-/* ZONE_BARS — the skill's fixed proportional silhouette standard (section-spine.md → Responsive
-   Behavior → ZONE_BARS), reproduced verbatim: px/device/token/boxW/boxH never vary per project. Only
-   `used` varies: this project marks base, md, lg (its own breakpoint tokens), not the reference's
-   base/md/xl. */
+/* Silhouette geometry is the visualizer's fixed standard; only the breakpoints DESIGN.md defines
+   are shown. */
 const ZONE_BARS: RulerStop[] = [
-  {
-    px: "0",
-    device: "Mobile",
-    token: "base",
-    used: true,
-    boxW: 64,
-    boxH: 128,
-  },
-  {
-    px: "640",
-    device: "Large mobile",
-    token: "sm",
-    used: false,
-    boxW: 76,
-    boxH: 138,
-  },
+  { px: "0", device: "Mobile", token: "base", used: true, boxW: 64, boxH: 128 },
   {
     px: "768",
     device: "Tablet",
@@ -100,47 +67,34 @@ const ZONE_BARS: RulerStop[] = [
     boxW: 168,
     boxH: 140,
   },
-  {
-    px: "1280",
-    device: "Desktop",
-    token: "xl",
-    used: false,
-    boxW: 210,
-    boxH: 150,
-  },
-  {
-    px: "1536",
-    device: "Ultra wide",
-    token: "2xl",
-    used: false,
-    boxW: 264,
-    boxH: 152,
-  },
 ];
 
-/* The touch-target and hover lines now live in GLOBAL_DEFAULTS above, where the doc puts them, so
-   this section no longer restates them — a reader would otherwise meet the same rule twice. */
-
-/* § Interaction Rules — the chapter's own global defaults, in DESIGN.md document order. Component
-   sections carry only their deviations from these. */
-const GLOBAL_DEFAULTS = [
-  "Scroll — scroll is user-controlled at all times. No snapping, no hijacking, no easing that fights input. Spacing and composition align sections to the viewport instead.",
-  "Section entry — content reveals with fade and translate bound to scroll position. Content is present and readable before its reveal completes.",
-  "Tap — every interaction is touch-first with a minimum touch-target (44px) hit area. Nothing critical depends on hover.",
-  "Hover — a subtle enhancement on pointer devices only, and never reveals information.",
-  "Focus — every interactive element takes a focus-ring indicator: 2px at 2px offset, in ink on paper surfaces and accent-gold on the green stock. The ring is a functional indicator, so it is the one place gold gives way to ink — gold measures 2.39:1 on the ground and 2.46:1 on the paper stock against the 3:1 an indicator needs, while ink measures 11.74:1 on the ground and 12.05:1 on the paper stock. On the green stock the reverse holds.",
-  "Text selection — nothing on the site is selectable. user-select: none applies to the whole document, with the vendor-prefixed form and the long-press callout suppressed so the selection menu does not appear on iOS either. The cost is accepted: a guest cannot copy the venue address or the date, and the map action is the route to the venue instead. Selection is not focus — nothing in this rule weakens keyboard reachability or the focus ring.",
-  "Modal — the gallery modal opens over the page without unmounting it, and restores scroll position on close.",
-  "Loading — images reserve their final dimensions through image-placeholder so nothing reflows.",
+const RESPONSIVE_POINTERS = [
+  "Event Info side by side or stacked → Foundations · Layout → mounted-pair",
+  "A framed section's ground and padding → Foundations · Layout → mounted-sheet",
+  "A pair's 1280px tier-line width is a layout value, not a breakpoint → Foundations · Layout → mounted-sheet",
+  "Narrowest supported width → Accessibility Rules",
 ];
 
-/* The layout-switch rule itself is NOT repeated here — the section intro states it, and a bullet
-   restating it makes a reader meet the same sentence twice. This list carries only what the intro
-   and the zones do not: the two framed-layout rules and DESIGN.md's horizontal-scroll floor. */
-const COLLAPSING_STRATEGY_RULES = [
-  "Event Info sits side by side in landscape windows at breakpoints.lg and wider, at any height, and stacks otherwise — width and orientation decide it together, never height. See Foundations · Layout → mounted-pair.",
-  "A section framed by mounted-sheet takes its ground and padding from the window's height and primary pointer as well as its width; type answers to width alone. See Foundations · Layout → mounted-sheet.",
-  "Layout holds without horizontal scroll from 320px upward.",
+const Z_LAYERS: LayerItem[] = [
+  { token: "--z-base", value: "0", role: "Base · the fixed ivory ground" },
+  {
+    token: "--z-botanical",
+    value: "10",
+    role: "Botanical · low-opacity botanical edge elements",
+  },
+  {
+    token: "--z-content",
+    value: "20",
+    role: "Content · all text and main components",
+  },
+  {
+    token: "--z-elevated",
+    value: "30",
+    role: "Elevated · mounted sections, the mount and its sheet",
+  },
+  { token: "--z-thread", value: "40", role: "Thread · the thread overlay" },
+  { token: "--z-modal", value: "50", role: "Modal · the gallery modal" },
 ];
 
 export function TechnicalSections() {
@@ -148,26 +102,33 @@ export function TechnicalSections() {
     <>
       <GallerySection
         id="interaction-defaults"
-        intro="Global behavioral defaults. Component sections carry only their deviations from these."
+        intro="Global state defaults; component sections carry only their deviations."
         mapsTo="Interaction Rules"
         title="Interaction · Global Defaults"
       >
-        <RuleList rules={GLOBAL_DEFAULTS} />
+        <RuleList rules={TRY_IT} />
       </GallerySection>
 
       <GallerySection
         id="responsive"
-        intro="Two layout systems across three tiers. breakpoints.lg is the layout switch; breakpoints.md adjusts spacing and column behavior within the mobile system without changing it, and also carries every typographic role's phone-to-tablet step — the full type ladder in Foundations · Typography steps at both breakpoints.md and breakpoints.lg, not spacing and columns alone."
+        intro="Two layout systems across three width tiers: lg switches the system, md adjusts within it."
         mapsTo="Interaction Rules → Responsive Behavior"
-        source="--breakpoint-* / --touch-target"
+        source="--breakpoint-*"
         title="Interaction · Responsive Behavior"
       >
         <SpanTable zones={ZONES} />
         <DeviceRuler stops={ZONE_BARS} />
-        <RuleList
-          label="Collapsing strategy"
-          rules={COLLAPSING_STRATEGY_RULES}
-        />
+        <RuleList rules={RESPONSIVE_POINTERS} />
+      </GallerySection>
+
+      <GallerySection
+        id="z-index"
+        intro="The layer order, from the ground up to the modal."
+        mapsTo="Technical Conventions → Z-Index Scale"
+        source="--z-*"
+        title="Technical · Z-Index Scale"
+      >
+        <LayerStack items={Z_LAYERS} />
       </GallerySection>
     </>
   );
