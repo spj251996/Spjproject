@@ -112,13 +112,13 @@ export function DomainSections() {
           description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, the children, and a child's own children beneath that child and their spouse."
           id="domain-family"
           name="family"
-          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_composition/sections.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md and lg: diameters and gaps step with the type."
+          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_composition/sections.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
             "eyebrow · heading-script family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
-            "portrait uniform at 72 / 112 / 88px (phone / tablet / laptop) · name and relationship each on one line, wrapping within the column where that cannot hold",
+            "portrait uniform at 72 / 112 / 72 / 88px (phone / tablet / compact / desktop) · name and relationship each on one line, wrapping within the column where that cannot hold",
             "gold stroke-divider couple line between every couple, stopping short of both rims",
-            "bride's siblings space-2xl / space-4xl / space-4xl apart · groom's space-md / space-2xl / space-2xl (phone / tablet / laptop)",
+            "bride's siblings space-2xl / space-4xl / space-3xl / space-4xl apart · groom's space-md / space-2xl / space-xl / space-2xl (phone / tablet / compact / desktop)",
           ]}
         >
           <div className="flex flex-col gap-space-md">

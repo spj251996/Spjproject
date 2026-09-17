@@ -120,7 +120,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Bride & Groom",
     phone: { size: 72, lh: 108 },
     tablet: { size: 104, lh: 156 },
-    laptop: { size: 120, lh: 180 },
+    compact: { size: 96, lh: 144 },
+    desktop: { size: 120, lh: 180 },
   },
   {
     token: "type-heading-script",
@@ -129,7 +130,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Betrothal",
     phone: { size: 56, lh: 56 },
     tablet: { size: 72, lh: 72 },
-    laptop: { size: 80, lh: 80 },
+    compact: { size: 64, lh: 64 },
+    desktop: { size: 80, lh: 80 },
   },
   {
     token: "type-heading-xl",
@@ -138,7 +140,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Section-level H1.",
     phone: { size: 34, lh: 40 },
     tablet: { size: 42, lh: 48 },
-    laptop: { size: 48, lh: 56 },
+    compact: { size: 38, lh: 44 },
+    desktop: { size: 48, lh: 56 },
   },
   {
     token: "type-heading-lg",
@@ -148,7 +151,8 @@ const TYPE_TOKENS: TypeToken[] = [
       "Serif sub-headings; the event sheets' address line and segment line.",
     phone: { size: 22, lh: 28 },
     tablet: { size: 24, lh: 30 },
-    laptop: { size: 26, lh: 32 },
+    compact: { size: 22, lh: 28 },
+    desktop: { size: 26, lh: 32 },
   },
   {
     token: "type-date-primary",
@@ -157,7 +161,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "The major date line on the invite and the event sheets.",
     phone: { size: 22, lh: 28 },
     tablet: { size: 24, lh: 30 },
-    laptop: { size: 26, lh: 32 },
+    compact: { size: 22, lh: 28 },
+    desktop: { size: 26, lh: 32 },
   },
   {
     token: "type-body",
@@ -166,7 +171,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Descriptions, addresses, wishes, all long-form copy.",
     phone: { size: 17, lh: 26 },
     tablet: { size: 18, lh: 28 },
-    laptop: { size: 20, lh: 32 },
+    compact: { size: 17, lh: 26 },
+    desktop: { size: 20, lh: 32 },
   },
   {
     token: "type-caption",
@@ -176,7 +182,8 @@ const TYPE_TOKENS: TypeToken[] = [
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
     phone: { size: 15, lh: 22 },
     tablet: { size: 16, lh: 24 },
-    laptop: { size: 17, lh: 24 },
+    compact: { size: 15, lh: 22 },
+    desktop: { size: 17, lh: 24 },
   },
   {
     token: "type-eyebrow",
@@ -185,7 +192,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Small labels above headings and sheet fields.",
     phone: { size: 14, lh: 20 },
     tablet: { size: 15, lh: 20 },
-    laptop: { size: 16, lh: 22 },
+    compact: { size: 14, lh: 20 },
+    desktop: { size: 16, lh: 22 },
   },
   {
     token: "type-action",
@@ -194,7 +202,8 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Buttons and calls to action.",
     phone: { size: 15, lh: 20 },
     tablet: { size: 16, lh: 20 },
-    laptop: { size: 17, lh: 24 },
+    compact: { size: 15, lh: 20 },
+    desktop: { size: 17, lh: 24 },
   },
 ];
 
@@ -222,9 +231,18 @@ const SPACING_USES = [
 ];
 
 const LAYOUT_CAPS = [
-  "--container-content · 1200px · all content; a framed card's width, landscape windows only",
+  "--container-content · 1200px · all content; a framed card's width from xl, landscape windows only",
+  "--container-content-compact · 960px · a framed card's width, lg to xl, landscape windows only",
   "--container-text · 600px · text blocks",
-  "--card-height-cap · 720px · a framed card's height, landscape windows only",
+  "--card-height-cap · 720px · a framed card's height from xl, landscape windows only",
+  "--card-height-cap-compact · 576px · a framed card's height, lg to xl, landscape windows only",
+];
+
+const FRAME_GROUND_TIERS = [
+  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md · space-sm (32 · 24 · 16px)",
+  "Tablet · md to lg; touchscreen-first from lg · ground space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
+  "Compact laptop · lg to xl, primary pointer not coarse · ground space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
+  "Desktop · xl and up, primary pointer not coarse · ground space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
 ];
 
 const IMAGERY_POINTERS = [
@@ -395,13 +413,13 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families, nine roles, each stepping at phone, tablet and laptop."
+        intro="Three families, nine roles, each stepping at phone, tablet, compact and desktop."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
       >
         <Specimen
-          description="Each role with its size / line height in px at phone, tablet and laptop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
+          description="Each role with its size / line height in px at phone, tablet, compact and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
           id="typography-scale"
           name="The scale"
           note="Samples render at the window's current tier. Script rows show a name or heading: display-name is for couple names only, heading-script for sheet headings: Event Info's event names and Family's family names."
@@ -452,6 +470,10 @@ export function FoundationsSections() {
         title="Foundations · Layout"
       >
         <RuleList label="Caps" rules={LAYOUT_CAPS} />
+        <RuleList
+          label="Ground and padding, by tier"
+          rules={FRAME_GROUND_TIERS}
+        />
 
         <Specimen
           description="The card every section is built on: a backing mount with an inner sheet laid onto it."
@@ -459,7 +481,7 @@ export function FoundationsSections() {
           name="mounted-sheet"
           note="Unframed, as every specimen box is. Resize below md: padding steps down and non-hero mounts drop fill and reveal. The framed form is live at /."
           source="@/components/layout/mounted-sheet"
-          spec="surface-mount · shadow-mount · paper or contrast stock · square · reveal 16 / 12px"
+          spec="surface-mount · shadow-mount · paper or contrast stock · square · reveal 16px from xl, 12px below it"
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>

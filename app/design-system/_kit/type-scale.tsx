@@ -16,14 +16,16 @@ export interface TypeToken {
   /** Size and line height in px at each width tier. */
   phone: TierMetric;
   tablet: TierMetric;
-  laptop: TierMetric;
+  compact: TierMetric;
+  desktop: TierMetric;
 }
 
 function tiersOf(token: TypeToken) {
   return [
     { label: "Phone", metric: token.phone },
     { label: "Tablet", metric: token.tablet },
-    { label: "Laptop", metric: token.laptop },
+    { label: "Compact", metric: token.compact },
+    { label: "Desktop", metric: token.desktop },
   ];
 }
 

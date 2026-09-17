@@ -43,7 +43,7 @@ const THREAD_POSES = [0.25, 0.6, 1];
 /* The composing section sets the diameter, and the specimen has none of its own, so it borrows
    Family's. These literals copy `components/family/family.tsx` and must follow it. */
 const PORTRAIT_SIZING =
-  "[--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:88px]";
+  "[--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px]";
 
 export function ComponentsSections() {
   return (

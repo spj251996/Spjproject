@@ -41,14 +41,15 @@ const ZONES: SpanZone[] = [
     width: "≥ 64rem (1024px)",
     changes: [
       "Parallel splits; timeline nodes alternate sides",
-      "Desktop type step",
+      "Compact type step from lg, desktop type step from xl — e.g. display-name at 96px / 120px",
       "Desktop thread path",
     ],
   },
 ];
 
 /* Silhouette geometry is the visualizer's fixed standard. Every common device width is shown;
-   `used` marks the breakpoints DESIGN.md defines. */
+   `used` marks the breakpoints DESIGN.md defines. `--breakpoint-xl` is overridden to 100rem
+   (1600px), so 1280px — Tailwind's own default `xl` — names no breakpoint this project uses. */
 const ZONE_BARS: RulerStop[] = [
   { px: "0", device: "Mobile", token: "base", used: true, boxW: 64, boxH: 128 },
   {
@@ -69,19 +70,11 @@ const ZONE_BARS: RulerStop[] = [
   },
   {
     px: "1024",
-    device: "Laptop",
+    device: "Compact laptop",
     token: "lg",
     used: true,
     boxW: 168,
     boxH: 140,
-  },
-  {
-    px: "1280",
-    device: "Desktop",
-    token: "xl",
-    used: false,
-    boxW: 210,
-    boxH: 150,
   },
   {
     px: "1536",
@@ -90,6 +83,14 @@ const ZONE_BARS: RulerStop[] = [
     used: false,
     boxW: 264,
     boxH: 152,
+  },
+  {
+    px: "1600",
+    device: "Desktop",
+    token: "xl",
+    used: true,
+    boxW: 280,
+    boxH: 156,
   },
 ];
 
