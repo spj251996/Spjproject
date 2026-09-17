@@ -127,8 +127,9 @@ export interface WindowClass {
   regimes: Readonly<Record<Orientation, readonly FitRegime[]>>;
   /* A class below a tier line has no portrait windows, because every tier line sits below the
      narrowest width it applies to — `tierLine` refuses one that does not. A pair's laptop-width
-     class under `PAIR_TIER_LINE_WIDTH_REM` has no tier line, so it can be portrait. */
+     classes under `PAIR_TIER_LINE_WIDTH_REM` are split by orientation instead, so each has one. */
   portraitPossible: boolean;
+  landscapePossible: boolean;
 }
 
 export interface CardRectangle {
@@ -171,7 +172,12 @@ export function pairsSideBySide(
   windowClass: WindowClass,
   landscape: boolean,
 ): boolean {
-  return layout === "pair" && landscape && windowClass.widthTier === "desktop";
+  return (
+    layout === "pair" &&
+    landscape &&
+    windowClass.landscapePossible &&
+    windowClass.widthTier === "desktop"
+  );
 }
 
 /* A stacked pair's sheets carry no mount at any width, so their card has no reveal; side by side,
@@ -399,10 +405,11 @@ interface TierLines {
 function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
   assertValidFit(fit);
   const md = breakpointPx(BREAKPOINT_REM.md);
+  const lg = breakpointPx(BREAKPOINT_REM.lg);
   const laptopNarrowest = breakpointPx(
     layout === "pair" ? PAIR_TIER_LINE_WIDTH_REM : BREAKPOINT_REM.lg,
   );
-  return {
+  const lines = {
     tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout),
     laptop: tierLine(
       fit,
@@ -421,12 +428,29 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
       layout,
     ),
   };
+  /* A portrait pair window from `{breakpoints.lg}` to `PAIR_TIER_LINE_WIDTH_REM` is taller than its
+     1024px or more of width, so it stands above a desktop tier line only while the line sits below
+     `{breakpoints.lg}`. The height cap keeps every line at 816px or less today; this guards a change
+     to the caps or ground tiers. */
+  if (layout === "pair") {
+    for (const line of [lines.laptop, lines.laptopTouchscreen]) {
+      if (!(line < lg)) {
+        throw new Error(
+          `mounted-sheet-frame: section "${fit.section}" cannot be framed. Its pair tier line ${formatPx(line)} is not below ${formatPx(lg)}, so a portrait window from ${formatPx(lg)} to ${formatPx(laptopNarrowest)} wide could stand below it.`,
+        );
+      }
+    }
+  }
+  return lines;
 }
 
 /* Every window falls in exactly one class: three width tiers, split by height at each tier line,
    and at `{breakpoints.lg}` and wider split by primary pointer as well. A pair's laptop-width
-   windows under `PAIR_TIER_LINE_WIDTH_REM` take the phone ground tier at any height, so each
-   pointer gains a class there and its tier line applies only from that width up. */
+   windows under `PAIR_TIER_LINE_WIDTH_REM` are split by orientation instead of height: landscape
+   ones sit side by side at the phone ground tier, and portrait ones stack at the ground a single
+   card takes there, which needs no height test because `tierLines` keeps every pair line below
+   `{breakpoints.lg}`. Each pointer gains two classes, and its tier line applies only from
+   `PAIR_TIER_LINE_WIDTH_REM` up. */
 export function windowClasses(
   fit: MeasuredFit,
   layout: FrameLayout = "single",
@@ -450,11 +474,20 @@ export function windowClasses(
     ...(layout === "pair"
       ? [
           {
-            media: `(${lg} <= width < ${pairLine}) and ${pointerQuery}`,
+            media: `(${lg} <= width < ${pairLine}) and (orientation: landscape) and ${pointerQuery}`,
             widthTier: "desktop" as const,
             groundTier: GROUND_TIERS.phone,
             regimes: fit.regimes.desktop,
+            portraitPossible: false,
+            landscapePossible: true,
+          },
+          {
+            media: `(${lg} <= width < ${pairLine}) and (orientation: portrait) and ${pointerQuery}`,
+            widthTier: "desktop" as const,
+            groundTier: aboveTier,
+            regimes: fit.regimes.desktop,
             portraitPossible: true,
+            landscapePossible: false,
           },
         ]
       : []),
@@ -464,6 +497,7 @@ export function windowClasses(
       groundTier: aboveTier,
       regimes: fit.regimes.desktop,
       portraitPossible: true,
+      landscapePossible: true,
     },
     {
       media: `${laptopWidth} and ${pointerQuery} and ${below(line)}`,
@@ -471,6 +505,7 @@ export function windowClasses(
       groundTier: GROUND_TIERS.phone,
       regimes: fit.regimes.desktop,
       portraitPossible: false,
+      landscapePossible: true,
     },
   ];
 
@@ -481,6 +516,7 @@ export function windowClasses(
       groundTier: GROUND_TIERS.phone,
       regimes: fit.regimes.mobile,
       portraitPossible: true,
+      landscapePossible: true,
     },
     {
       media: `${tabletWidth} and ${atOrAbove(lines.tablet)}`,
@@ -488,6 +524,7 @@ export function windowClasses(
       groundTier: GROUND_TIERS.tablet,
       regimes: fit.regimes.tablet,
       portraitPossible: true,
+      landscapePossible: true,
     },
     {
       media: `${tabletWidth} and ${below(lines.tablet)}`,
@@ -495,6 +532,7 @@ export function windowClasses(
       groundTier: GROUND_TIERS.phone,
       regimes: fit.regimes.tablet,
       portraitPossible: false,
+      landscapePossible: true,
     },
     ...desktop(pointer, GROUND_TIERS.laptop, lines.laptop),
     /* A touchscreen window takes tablet ground above its tier line. */

@@ -189,23 +189,34 @@ test("a pair's laptop tier lines are worked out at 1280px", () => {
   assert.doesNotThrow(() => windowClasses(tabletFit, "pair"));
 });
 
-test("a pair gives laptop-width windows under 80rem the phone ground tier", () => {
+test("a pair gives landscape laptop-width windows under 80rem the phone ground tier", () => {
+  /* Mobile 1 + tablet 2 + per pointer (narrow landscape, narrow portrait, above the line, below
+     it) 4 x 2 = 11. */
   const pair = windowClasses(makeFit(), "pair");
-  assert.equal(pair.length, 9);
+  assert.equal(pair.length, 11);
   const narrow = pair.filter((windowClass) =>
     windowClass.media.includes("(64rem <= width < 80rem)"),
   );
-  assert.equal(narrow.length, 2);
+  assert.equal(narrow.length, 4);
   for (const windowClass of narrow) {
-    assert.equal(windowClass.groundTier.name, "phone");
-    assert.equal(windowClass.portraitPossible, true);
     assert.equal(windowClass.widthTier, "desktop");
+  }
+  const narrowLandscape = narrow.filter((windowClass) =>
+    windowClass.media.includes("(orientation: landscape)"),
+  );
+  assert.equal(narrowLandscape.length, 2);
+  for (const windowClass of narrowLandscape) {
+    assert.equal(windowClass.groundTier.name, "phone");
+    assert.equal(windowClass.portraitPossible, false);
+    assert.equal(windowClass.landscapePossible, true);
   }
   const wide = pair.filter((windowClass) =>
     windowClass.media.includes("(width >= 80rem)"),
   );
   assert.equal(wide.length, 4);
   for (const windowClass of pair.filter((c) => c.widthTier === "desktop")) {
+    /* The four narrow classes plus the four wide ones are every desktop class, and no narrow
+       class leaves its orientation open. */
     assert.ok(
       narrow.includes(windowClass) || wide.includes(windowClass),
       windowClass.media,
@@ -215,6 +226,56 @@ test("a pair gives laptop-width windows under 80rem the phone ground tier", () =
   assert.ok(
     !windowClasses(makeFit()).some((windowClass) =>
       windowClass.media.includes("80rem"),
+    ),
+  );
+});
+
+test("a pair's portrait laptop-width windows under 80rem take a single card's ground", () => {
+  const narrowPortrait = windowClasses(makeFit(), "pair").filter(
+    (windowClass) =>
+      windowClass.media.includes("(64rem <= width < 80rem)") &&
+      windowClass.media.includes("(orientation: portrait)"),
+  );
+  assert.equal(narrowPortrait.length, 2);
+  const ground = (coarse: boolean) =>
+    narrowPortrait.find(
+      (windowClass) =>
+        windowClass.media.includes("(not (pointer: coarse))") !== coarse,
+    )?.groundTier.name;
+  assert.equal(ground(false), "laptop");
+  assert.equal(ground(true), "tablet");
+  for (const windowClass of narrowPortrait) {
+    assert.equal(windowClass.portraitPossible, true);
+    assert.equal(windowClass.landscapePossible, false);
+    assert.equal(pairsSideBySide("pair", windowClass, true), false);
+  }
+
+  /* Each carries only a portrait ground block, halving block and padding chain, never a landscape
+     one. */
+  const css = mountedSheetFrameCss(makeFit(), false, "pair");
+  const blocks = topLevelBlocks(css).filter((block) =>
+    block.startsWith(
+      "@media (64rem <= width < 80rem) and (orientation: portrait)",
+    ),
+  );
+  assert.ok(blocks.length > 0);
+  for (const block of blocks) {
+    assert.ok(!block.includes("(orientation: landscape)"), block);
+  }
+});
+
+test("a pair's laptop tier lines stay below 64rem", () => {
+  /* A portrait narrow class takes laptop or tablet ground with no height condition, which holds
+     only while every pair tier line sits below 1024px. The height cap bounds a line at 720 plus the
+     halved ground top and bottom — 816 at laptop ground, 768 at tablet — so no fit reaches 1024
+     today; `windowClasses` still checks it, so a change to the caps or ground tiers fails the build.
+     The tallest framable content here, 616 at padding 32 and reveal 16, makes a 712px card. */
+  assert.doesNotThrow(() =>
+    windowClasses(
+      makeFit({
+        desktop: { landscape: [{ minContentWidth: 320, contentHeight: 616 }] },
+      }),
+      "pair",
     ),
   );
 });

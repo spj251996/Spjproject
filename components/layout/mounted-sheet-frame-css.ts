@@ -206,7 +206,10 @@ function halvingCondition(
 }
 
 function orientationsOf(windowClass: WindowClass): boolean[] {
-  return windowClass.portraitPossible ? [false, true] : [true];
+  const orientations: boolean[] = [];
+  if (windowClass.portraitPossible) orientations.push(false);
+  if (windowClass.landscapePossible) orientations.push(true);
+  return orientations;
 }
 
 function groundRules(
