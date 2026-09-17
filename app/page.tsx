@@ -1,4 +1,4 @@
-import { InviteSection } from "@/app/_composition/sections";
+import { EventInfoSection, InviteSection } from "@/app/_composition/sections";
 
 /* The invitation, assembled incrementally — one section lands per Phase 4 pass, in the order the
    implementation plan fixes: invite, event info, family, timeline, wishes. The section list is
@@ -12,6 +12,7 @@ export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
       <InviteSection />
+      <EventInfoSection />
     </main>
   );
 }
