@@ -333,6 +333,20 @@ function VenueName({ venue }: { venue: string }) {
   );
 }
 
+/* A map action is named for its venue, so a map link with no venue fails the build rather than
+   announcing "Map, null". */
+function mapLabel(segment: EventSegment): string {
+  if (segment.venue === null) {
+    throw new Error(
+      `sections: segment "${segment.id}" has a map link but no venue; its map action is named for the venue.`,
+    );
+  }
+  return `Map, ${segment.venue}`;
+}
+
+const PLATE_LIST_CLASS =
+  "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr]";
+
 /* The segments as engraved plates, an ordered list centred in the sheet at its own width. Each
    entry is a column subgrid: stacked, one column, so the mark leads and the centred details follow
    it; side by side, the mark stands in an `auto` column shared by both entries, so it is as wide as
@@ -342,7 +356,9 @@ function VenueName({ venue }: { venue: string }) {
    rule's own margins set the gap. */
 function PlateSegments({ segments }: { segments: EventSegment[] }) {
   return (
-    <ol className="mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr]">
+    /* Safari drops list semantics from a list whose markers are removed, so the role restores them. */
+    // biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none
+    <ol className={PLATE_LIST_CLASS} role="list">
       {segments.map((segment) => (
         <li
           className="col-span-full grid grid-cols-subgrid items-start gap-y-space-sm"
@@ -360,7 +376,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
             )}
             {segment.mapUrl !== null && (
               <ButtonAction
-                aria-label={`Map, ${segment.venue}`}
+                aria-label={mapLabel(segment)}
                 className="mt-space-2xs"
                 href={segment.mapUrl}
                 mark={<MapIcon size={24} />}

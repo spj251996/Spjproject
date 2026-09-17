@@ -12,7 +12,7 @@ import { EventInfoSection, InviteSection } from "@/app/_composition/sections";
    revealing title. It earns its place as content safety: if the extension gate were ever lost, the
    stray file would carry a 404 rather than the real page.
 
-   Tweak variants live in app/preview/_tweaks/, stay uncommitted, and are deleted once the owner
+   Tweak variants live in an uncommitted folder beside this route and are deleted once the owner
    picks. Substitute the section under tweak here; leave every confirmed section reading from the
    shared wiring so the two pages cannot drift. */
 
