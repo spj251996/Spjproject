@@ -99,8 +99,8 @@ function PrimaryDate({ date }: { date: FormattedDate }) {
      and the hidden spelling is never announced to assistive technology (`display: none` removes it
      from the accessibility tree, so no separate `aria-hidden` is needed).
    - The stack's gaps are explicit margins, not one `gap-*` on the parent, because only the
-     names-to-date gap changes with width (32px below `{breakpoints.lg}`, 16px from it up) while the
-     other two stay 32px at every tier. */
+     names-to-date gap changes: 16px in landscape windows at `{breakpoints.lg}` and wider, 32px
+     otherwise, while the other two stay 32px at every tier. */
 export function InviteSection() {
   const wedding = eventById("wedding");
   const betrothal = eventById("engagement");
@@ -127,7 +127,7 @@ export function InviteSection() {
             )}
           </h1>
 
-          <div className="flex flex-col items-center gap-space-3xs mt-space-lg lg:mt-space-sm">
+          <div className="flex flex-col items-center gap-space-3xs mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-sm">
             <p className="type-date-primary text-ink">
               <PrimaryDate date={weddingDate} />
             </p>
