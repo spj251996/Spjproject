@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
-import { EventInfoSection, InviteSection } from "@/app/_composition/sections";
+import {
+  EventInfoSection,
+  FamilySection,
+  InviteSection,
+} from "@/app/_composition/sections";
 
 /* Dev-only: mirrors app/page.tsx's section list, with a section under review substituted here.
 
@@ -16,6 +20,7 @@ export default function PreviewPage() {
     <main className="flex flex-1 flex-col">
       <InviteSection />
       <EventInfoSection />
+      <FamilySection />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { eventInfoFit } from "@/app/_composition/event-info-fit";
 import { inviteFit } from "@/app/_composition/invite-fit";
+import { Family } from "@/components/family/family";
 import {
   BetrothalIcon,
   LunchIcon,
@@ -15,7 +16,9 @@ import { ButtonAction } from "@/components/ui/button-action";
 import {
   type EventSegment,
   events,
+  type FamilyGroup,
   type FormattedDate,
+  familyGroups,
   formatEventDate,
   invite,
   type WeddingEvent,
@@ -338,6 +341,39 @@ export function EventInfoSection() {
       <MountedPair fit={eventInfoFit} stackedPadding={inviteFit}>
         <EventSheet event={eventById("engagement")} />
         <EventSheet event={eventById("wedding")} />
+      </MountedPair>
+    </section>
+  );
+}
+
+const FAMILY_EYEBROWS: Readonly<Record<FamilyGroup["side"], string>> = {
+  bride: "Bride's Family",
+  groom: "Groom's Family",
+};
+
+function familyGroupBySide(side: FamilyGroup["side"]) {
+  const found = familyGroups.find((group) => group.side === side);
+  if (found === undefined) {
+    throw new Error(
+      `sections: no family group with side "${side}" in content/family.ts`,
+    );
+  }
+  return found;
+}
+
+/* The id scopes `measure:fit`'s selector. */
+export function FamilySection() {
+  return (
+    <section className="relative z-(--z-content)" id="family">
+      <MountedPair>
+        <Family
+          eyebrow={FAMILY_EYEBROWS.bride}
+          group={familyGroupBySide("bride")}
+        />
+        <Family
+          eyebrow={FAMILY_EYEBROWS.groom}
+          group={familyGroupBySide("groom")}
+        />
       </MountedPair>
     </section>
   );
