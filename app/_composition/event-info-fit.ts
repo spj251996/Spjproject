@@ -61,6 +61,33 @@ export const eventInfoFit: MeasuredFit = {
     },
     desktop: {
       portrait: [
+        { minContentWidth: 120, contentHeight: 835.78125 },
+        { minContentWidth: 140.953125, contentHeight: 809.78125 },
+        { minContentWidth: 148.8125, contentHeight: 798.71875 },
+        { minContentWidth: 149.15625, contentHeight: 783.78125 },
+        { minContentWidth: 189.078125, contentHeight: 772.71875 },
+        { minContentWidth: 215.765625, contentHeight: 755.78125 },
+        { minContentWidth: 221.90625, contentHeight: 727.78125 },
+        { minContentWidth: 266.421875, contentHeight: 699.78125 },
+        { minContentWidth: 290.671875, contentHeight: 673.78125 },
+        { minContentWidth: 331.78125, contentHeight: 645.78125 },
+      ],
+      landscape: [
+        { minContentWidth: 120, contentHeight: 676 },
+        { minContentWidth: 163.5, contentHeight: 650 },
+        { minContentWidth: 171.546875, contentHeight: 624 },
+        { minContentWidth: 215.765625, contentHeight: 598 },
+        { minContentWidth: 221.90625, contentHeight: 570 },
+        { minContentWidth: 237.03125, contentHeight: 544 },
+        { minContentWidth: 273.5625, contentHeight: 516 },
+        { minContentWidth: 304.921875, contentHeight: 490 },
+        { minContentWidth: 331.78125, contentHeight: 462 },
+        { minContentWidth: 348.75, contentHeight: 434 },
+        { minContentWidth: 373, contentHeight: 408 },
+      ],
+    },
+    wide: {
+      portrait: [
         { minContentWidth: 120, contentHeight: 945.78125 },
         { minContentWidth: 132.765625, contentHeight: 913.78125 },
         { minContentWidth: 165.828125, contentHeight: 881.78125 },

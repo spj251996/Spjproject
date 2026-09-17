@@ -34,7 +34,7 @@ const CLI_TIMEOUT_MS = 120_000;
 const MIN_WIDTH = 120;
 const MAX_WIDTH = 1300;
 
-/* One width safely inside each width tier, away from the 768/1024 breakpoints. Each is swept at
+/* One width safely inside each width tier, away from the 768/1024/1600 breakpoints. Each is swept at
    both orientations' heights below — irrelevant to the clone, which is measured off-screen in a
    detached host, but the window itself must actually be portrait or landscape for the section's
    own on-screen layout (and so `document.fonts.ready`, loaded before the clone is taken) to
@@ -43,6 +43,7 @@ const TIERS = [
   { key: "mobile", width: 400 },
   { key: "tablet", width: 900 },
   { key: "desktop", width: 1280 },
+  { key: "wide", width: 1700 },
 ];
 
 /* Heights that set the orientation without pretending to be a real device; the sweep only needs
@@ -289,6 +290,9 @@ ${formatOrientation(fit.tablet)}
     },
     desktop: {
 ${formatOrientation(fit.desktop)}
+    },
+    wide: {
+${formatOrientation(fit.wide)}
     },
   },
 };

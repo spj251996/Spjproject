@@ -47,6 +47,25 @@ export const inviteFit: MeasuredFit = {
     },
     desktop: {
       portrait: [
+        { minContentWidth: 120, contentHeight: 573.96875 },
+        { minContentWidth: 139.59375, contentHeight: 553.96875 },
+        { minContentWidth: 164.1875, contentHeight: 531.96875 },
+        { minContentWidth: 191.75, contentHeight: 511.96875 },
+        { minContentWidth: 219.03125, contentHeight: 491.96875 },
+        { minContentWidth: 221.90625, contentHeight: 463.96875 },
+      ],
+      landscape: [
+        { minContentWidth: 120, contentHeight: 630 },
+        { minContentWidth: 139.59375, contentHeight: 610 },
+        { minContentWidth: 164.1875, contentHeight: 588 },
+        { minContentWidth: 191.75, contentHeight: 568 },
+        { minContentWidth: 219.03125, contentHeight: 548 },
+        { minContentWidth: 221.90625, contentHeight: 520 },
+        { minContentWidth: 487.390625, contentHeight: 376 },
+      ],
+    },
+    wide: {
+      portrait: [
         { minContentWidth: 120, contentHeight: 656 },
         { minContentWidth: 159.546875, contentHeight: 634 },
         { minContentWidth: 186.015625, contentHeight: 610 },
