@@ -26,7 +26,7 @@ const CREASE_GEOMETRY =
   "pointer-events-none absolute inset-y-0 left-1/2 w-(--crease-width) -translate-x-1/2 bg-(image:--crease-fill)";
 
 const MOUNT =
-  "relative flex flex-col gap-space-md md:flex-row md:gap-space-md lg:gap-space-lg md:bg-surface-mount md:p-space-xs lg:p-space-sm md:shadow-mount";
+  "relative flex flex-col gap-space-md md:flex-row md:gap-space-md xl:gap-space-lg md:bg-surface-mount md:p-space-xs xl:p-space-sm md:shadow-mount";
 
 const SHEET =
   "relative flex-1 bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-sheet lg:p-space-3xl";

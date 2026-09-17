@@ -37,16 +37,16 @@ export const familyFit: MeasuredFit = {
     },
     desktop: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 832 },
-        { minContentWidth: 139.9375, contentHeight: 812 },
-        { minContentWidth: 276.40625, contentHeight: 748 },
-        { minContentWidth: 352, contentHeight: 548 },
+        { minContentWidth: 120, contentHeight: 740 },
+        { minContentWidth: 139.9375, contentHeight: 720 },
+        { minContentWidth: 276.40625, contentHeight: 656 },
+        { minContentWidth: 288, contentHeight: 488 },
       ],
       landscape: [
-        { minContentWidth: 120, contentHeight: 832 },
-        { minContentWidth: 139.9375, contentHeight: 812 },
-        { minContentWidth: 276.40625, contentHeight: 748 },
-        { minContentWidth: 352, contentHeight: 548 },
+        { minContentWidth: 120, contentHeight: 740 },
+        { minContentWidth: 139.9375, contentHeight: 720 },
+        { minContentWidth: 276.40625, contentHeight: 656 },
+        { minContentWidth: 288, contentHeight: 488 },
       ],
     },
     wide: {

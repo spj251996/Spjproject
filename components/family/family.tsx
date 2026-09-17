@@ -15,27 +15,27 @@ type Side = FamilyGroup["side"];
 /* The portrait diameter per type step. `--portrait-rim` restates the rim `portrait` draws outside
    the photo, so the couple line can stop short of it. */
 const SHEET_CLASS =
-  "flex w-full flex-col items-center text-center [--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:88px] [--rows-gap:var(--spacing-space-md)] md:[--rows-gap:var(--spacing-space-sm)] [--portrait-rim:calc(var(--stroke-divider)+var(--stroke-rim-offset))]";
+  "flex w-full flex-col items-center text-center [--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px] [--rows-gap:var(--spacing-space-md)] md:[--rows-gap:var(--spacing-space-sm)] lg:[--rows-gap:var(--spacing-space-xs)] xl:[--rows-gap:var(--spacing-space-sm)] [--portrait-rim:calc(var(--stroke-divider)+var(--stroke-rim-offset))]";
 
 const ROWS_CLASS =
-  "mt-space-lg flex flex-col items-center gap-(--rows-gap) md:mt-space-sm";
+  "mt-space-lg flex flex-col items-center gap-(--rows-gap) md:mt-space-sm lg:mt-space-xs xl:mt-space-sm";
 
 const PORTRAIT_TO_NAME = "gap-space-2xs md:gap-space-3xs";
 
 const PARENTS_GAP =
-  "[--couple-gap:var(--spacing-space-lg)] lg:[--couple-gap:var(--spacing-space-xl)]";
+  "[--couple-gap:var(--spacing-space-lg)] xl:[--couple-gap:var(--spacing-space-xl)]";
 const SPOUSES_GAP = "[--couple-gap:var(--spacing-space-md)]";
 
 const SIBLINGS_GAP: Readonly<Record<Side, string>> = {
-  bride: "gap-space-2xl md:gap-space-4xl",
-  groom: "gap-space-md md:gap-space-2xl",
+  bride: "gap-space-2xl md:gap-space-4xl lg:gap-space-3xl xl:gap-space-4xl",
+  groom: "gap-space-md md:gap-space-2xl lg:gap-space-xl xl:gap-space-2xl",
 };
 
 /* How far a name or relationship may run past its portrait on each side before it wraps: measured
    per slot against the gap beside it and the longest label there, so the real roster's text never
    meets. */
 const OVERRUN = {
-  parent: "[--portrait-overrun:20px] lg:[--portrait-overrun:28px]",
+  parent: "[--portrait-overrun:20px] xl:[--portrait-overrun:28px]",
   spouse: "[--portrait-overrun:16px]",
   child: "[--portrait-overrun:48px]",
   sibling: {

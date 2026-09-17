@@ -35,8 +35,8 @@ const MOUNT_BASE = "shadow-mount";
 
 /* Unmounted is the base, so a non-hero section never paints a mount and then loses it. */
 const MOUNT_REVEAL = {
-  hero: "bg-surface-mount p-space-xs lg:p-space-sm",
-  section: "bg-transparent p-0 md:bg-surface-mount md:p-space-xs lg:p-space-sm",
+  hero: "bg-surface-mount p-space-xs xl:p-space-sm",
+  section: "bg-transparent p-0 md:bg-surface-mount md:p-space-xs xl:p-space-sm",
 } as const;
 
 const SHEET_PADDING = "p-space-lg md:p-space-2xl lg:p-space-3xl";

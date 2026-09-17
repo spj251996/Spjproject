@@ -196,24 +196,27 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
 }
 
 /* `IconBase` takes a number rather than a class, so each size renders once and CSS shows one.
-   Tailwind emits the landscape variant after `md:` and `lg:`, so it overrides them; each class is
-   written out whole because Tailwind finds classes by scanning source. */
+   Tailwind emits the landscape variant after `md:` and `xl:`, so it overrides them; each class is
+   written out whole because Tailwind finds classes by scanning source.
+
+   Size 72 covers both the phone stack and the compact-laptop side-by-side plate, in one entry
+   because a size may render only once per `PlateMark` (the array is keyed by size). */
 const PLATE_MARKS = [
   {
     size: 72,
-    show: "block md:hidden [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
+    show: "block md:hidden [@media(64rem<=width<100rem)_and_(orientation:landscape)]:block",
   },
   {
     size: 96,
-    show: "hidden md:block lg:hidden [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
+    show: "hidden md:block xl:hidden [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
   },
   {
     size: 112,
-    show: "hidden lg:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
+    show: "hidden xl:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden",
   },
   {
     size: 88,
-    show: "hidden [@media(width>=64rem)_and_(orientation:landscape)]:block",
+    show: "hidden [@media(width>=100rem)_and_(orientation:landscape)]:block",
   },
 ] as const;
 
