@@ -4,11 +4,13 @@ import {
   CARD_HEIGHT_CAP,
   CARD_WIDTH_CAP,
   type CardRectangle,
+  cardReveal,
   type FitRegime,
   type FrameLayout,
   fitRectangles,
   formatPx,
   GROUND_HALVING,
+  heroReveal,
   type MeasuredFit,
   mountShows,
   type Orientation,
@@ -164,7 +166,7 @@ function windowFits(
 ): Condition {
   const rectangles = fitRectangles(
     regimesFor(windowClass.regimes, orientationName(landscape)),
-    revealFor(windowClass, hero),
+    cardReveal(windowClass, hero, layout, landscape),
     smallestPadding(windowClass.groundTier),
     pairsSideBySide(layout, windowClass, landscape),
   );
@@ -256,34 +258,41 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
    exactly one of two blocks, so neither has to undo the other.
 
    Side by side, the shared mount is the card: it takes the reveal, lays the leaves in a row twice
-   the reveal apart, and shows its crease; each leaf is only a column holding its sheet.
+   the reveal apart, and shows its crease; each leaf is only a column holding its sheet. Each sheet
+   aligns its content to the top rather than centring it: the two sheets share one height, so
+   centred content of different heights would set their headings at different heights across the
+   fold. Stacked sheets and single cards stay centred.
 
    Stacked, the shared mount stops being a surface, loses its fill, grain and shadow, and spaces
-   its leaves by the ground below one card plus the ground above the next. Each leaf is then the
-   card's mount, exactly as `mountRules` treats a single card's: the reveal and the fill where the
-   mount shows, neither at the phone ground tier, and `shadow-mount` kept either way. Each leaf
-   takes a card's minimum height, so each stacked card fills its own screen. */
+   its leaves by the ground below one card plus the ground above the next. Each leaf carries no
+   mount at any width — zero reveal, no fill, no grain — because a stacked sheet is its own card
+   with the ground itself as its only frame. It keeps `shadow-mount`'s shadow, since this rule never
+   strips `box-shadow`, so the sheet still lifts off the ground. Each leaf takes a card's minimum
+   height, so each stacked card fills its own screen. */
 function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
+  const sheet = sheetSelector(scope, "pair");
   const crease = `${mount} > .${FRAME_CLASS.crease}`;
-  const reveal = revealFor(windowClass, false);
   const strip = "background-color: transparent; background-image: none;";
 
   return orientationsOf(windowClass)
     .map((landscape) => {
       const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
       if (pairsSideBySide("pair", windowClass, landscape)) {
+        /* Side by side keeps the mount even at the phone ground tier, so its reveal is the width
+           tier's own (`cardReveal`) rather than `revealFor`, which would fall to zero there. */
+        const reveal = cardReveal(windowClass, false, "pair", landscape);
         return `${prelude} {
 ${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
-${leaf} { flex: 1 1 0; min-width: 0; padding: 0; ${strip} box-shadow: none; }
+${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)}; ${strip} box-shadow: none; }
+${sheet} { justify-content: flex-start; }
 ${crease} { display: block; }
 }`;
       }
-      const fill = mountShows(windowClass, false) ? "" : ` ${strip}`;
       return `${prelude} {
-${mount} { gap: calc(2 * ${GROUND_VALUE}); padding: 0; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(reveal)};${fill} }
+${mount} { gap: calc(2 * ${GROUND_VALUE}); padding: ${spacing(0)}; ${strip} box-shadow: none; }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; background-color: transparent; background-image: none; }
 }`;
     })
     .join("\n");
@@ -308,16 +317,24 @@ ${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: 
    (`!windowClass.portraitPossible`) gets no portrait chain at all, which is what used to need an
    explicit "portrait-only rectangle" exception when one chain covered both orientations at once.
    Where the ground halves, a second chain under the halving condition resets to the smallest step
-   and climbs again against the halved card. */
+   and climbs again against the halved card.
+
+   A pair's stacked orientations may borrow another section's padding fit (`stackedPadding`) so a
+   stacked card reads like that section's own — Event Info's stacked cards read like the
+   invite's (DESIGN.md → `mounted-pair`). Only the chain's own regimes and reveal come from it: the ground, the halving
+   condition, the padding steps and the landscape cap skip all stay the window's own, because the
+   card the window gives the sheet is unchanged — only the content it is judged to hold moves to
+   the borrowed fit. Side-by-side orientations never borrow; they always read the section's own
+   regimes and `cardReveal`. */
 function paddingRules(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
   scope: string,
+  stackedPadding?: MeasuredFit,
 ): string {
   const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
-  const reveal = revealFor(windowClass, hero);
 
   /* One block per chain, so its condition is stated once and each rectangle nests inside it. A
      landscape chain skips a rectangle taller than the height cap: the box's landscape height is
@@ -330,6 +347,7 @@ function paddingRules(
     landscape: boolean,
     regimes: readonly FitRegime[],
     sideBySide: boolean,
+    reveal: number,
   ): string => {
     const rules = [`${sheet} { padding: ${spacing(ascending[0])}; }`];
     for (const padding of ascending.slice(1)) {
@@ -351,16 +369,33 @@ function paddingRules(
   const ground = windowClass.groundTier.ground;
   const rules: string[] = [];
   for (const landscape of orientationsOf(windowClass)) {
-    const regimes = regimesFor(windowClass.regimes, orientationName(landscape));
     const sideBySide = pairsSideBySide(layout, windowClass, landscape);
+    const stacked =
+      layout === "pair" && !sideBySide && stackedPadding !== undefined;
+    const regimes = stacked
+      ? regimesFor(
+          stackedPadding.regimes[windowClass.widthTier],
+          orientationName(landscape),
+        )
+      : regimesFor(windowClass.regimes, orientationName(landscape));
+    const reveal = stacked
+      ? heroReveal(windowClass)
+      : cardReveal(windowClass, hero, layout, landscape);
     const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
-    rules.push(chain(base, ground, landscape, regimes, sideBySide));
+    rules.push(chain(base, ground, landscape, regimes, sideBySide, reveal));
 
     const halving = halvingCondition(windowClass, hero, layout, landscape);
     if (halving === false) continue;
     const prelude = halving === true ? base : `${base} and ${halving}`;
     rules.push(
-      chain(prelude, ground * GROUND_HALVING, landscape, regimes, sideBySide),
+      chain(
+        prelude,
+        ground * GROUND_HALVING,
+        landscape,
+        regimes,
+        sideBySide,
+        reveal,
+      ),
     );
   }
   return rules.join("\n");
@@ -430,20 +465,33 @@ ${sheet} {
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
-   tier line, a tier line not below its narrowest window, a value off the spacing scale, or a pair
-   asked to be the hero. */
+   tier line, a tier line not below its narrowest window, a value off the spacing scale, a pair
+   asked to be the hero, a single card given a stacked padding fit, or a stacked padding fit that
+   is itself malformed. */
 export function mountedSheetFrameCss(
   fit: MeasuredFit,
   hero: boolean,
   layout: FrameLayout = "single",
+  stackedPadding?: MeasuredFit,
 ): string {
+  /* Validates the fit, so it runs before anything reads the fit's section name — including the
+     hero-pair guard below, which needs a valid fit to report one. */
+  const classes = windowClasses(fit, layout);
   if (layout === "pair" && hero) {
     throw new Error(
       `mounted-sheet-frame-css: section "${fit.section}" asks for a hero pair, but a pair is never the hero — the opening section is a single card.`,
     );
   }
-  /* Validates the fit, so it runs before anything reads the fit's section name. */
-  const classes = windowClasses(fit, layout);
+  if (stackedPadding !== undefined) {
+    if (layout !== "pair") {
+      throw new Error(
+        `mounted-sheet-frame-css: section "${fit.section}" was given a stacked padding fit, but a stacked padding fit is only for a pair — a single card has no stacked sheets to borrow padding for.`,
+      );
+    }
+    /* Validated the same way as the section's own fit, so a malformed stacked padding fit fails
+       with the same named error rather than a confusing one from reading its regimes later. */
+    windowClasses(stackedPadding);
+  }
   const scope = `.${frameScopeClass(fit)}`;
   return [
     frameRules(scope, layout),
@@ -452,7 +500,7 @@ export function mountedSheetFrameCss(
       layout === "pair"
         ? pairLayoutRules(windowClass, scope)
         : mountRules(windowClass, hero, scope),
-      paddingRules(windowClass, hero, layout, scope),
+      paddingRules(windowClass, hero, layout, scope, stackedPadding),
     ]),
   ].join("\n");
 }

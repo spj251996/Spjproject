@@ -46,6 +46,22 @@ function makeFit(
   };
 }
 
+/* Each top-level rule of a stylesheet, prelude and body together, found by matching braces — the
+   padding chains nest `@media` and `@container` blocks, so a line split cannot tell them apart. */
+function topLevelBlocks(css: string): string[] {
+  const blocks: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < css.length; index++) {
+    if (css[index] === "{") depth++;
+    if (css[index] === "}" && --depth === 0) {
+      blocks.push(css.slice(start, index + 1).trim());
+      start = index + 1;
+    }
+  }
+  return blocks;
+}
+
 test("regimesFor picks the orientation named", () => {
   const portrait: readonly FitRegime[] = [
     { minContentWidth: 1, contentHeight: 2 },
@@ -137,28 +153,86 @@ test("a pair is never the hero", () => {
   );
 });
 
-test("a pair's tier line is worked out side by side", () => {
-  /* Tablet: narrowest window 768, halved ground 24, so a rectangle may be 672px wide. Single at
-     content 300: 300 + 64 + 24 = 388 — fits. Side by side: 2 x (300 + 64) + 48 = 776 — does not. */
-  const fit = makeFit({
+test("a pair's laptop tier lines are worked out at 1280px", () => {
+  /* A pair's laptop and touchscreen tier lines start at 80rem, so the laptop line's rectangle may
+     be 1280 - 4 x 48 = 1088px wide at halved laptop ground. Content 500 side by side at padding 32
+     and reveal 16 is 2 x (500 + 64) + 64 = 1192 — does not fit. A single card keeps 1024: 500 + 64
+     + 32 = 596, well inside 1024 - 192 = 832. */
+  const tooWide = makeFit({
+    desktop: { landscape: [{ minContentWidth: 500, contentHeight: 100 }] },
+  });
+  assert.doesNotThrow(() => windowClasses(tooWide));
+  assert.throws(
+    () => windowClasses(tooWide, "pair"),
+    /cannot be framed[\s\S]*laptop ground tier fit its desktop content[\s\S]*1280px/,
+  );
+
+  /* Content 320 at 600 tall: 2 x (320 + 64) + 64 = 832 <= 1088, and 600 + 64 + 32 = 696 <= 720,
+     so it frames. (It also clears the old 1024px limit, exactly: 832 <= 832.) */
+  const framable = makeFit({
+    desktop: { landscape: [{ minContentWidth: 320, contentHeight: 600 }] },
+  });
+  assert.doesNotThrow(() => windowClasses(framable, "pair"));
+
+  /* Content 400 needs 2 x (400 + 64) + 64 = 992: over the old 1024px limit of 832, inside the
+     1280px limit of 1088. This is the case the rule exists for. */
+  const onlyFromWide = makeFit({
+    desktop: { landscape: [{ minContentWidth: 400, contentHeight: 100 }] },
+  });
+  assert.doesNotThrow(() => windowClasses(onlyFromWide, "pair"));
+
+  /* Tablet widths stack rather than sitting side by side, so a tablet-only regime does not throw
+     for a pair. */
+  const tabletFit = makeFit({
     tablet: { landscape: [{ minContentWidth: 300, contentHeight: 100 }] },
   });
-  assert.doesNotThrow(() => windowClasses(fit));
-  assert.throws(
-    () => windowClasses(fit, "pair"),
-    /cannot be framed[\s\S]*tablet ground tier fit its tablet content/,
+  assert.doesNotThrow(() => windowClasses(tabletFit, "pair"));
+});
+
+test("a pair gives laptop-width windows under 80rem the phone ground tier", () => {
+  const pair = windowClasses(makeFit(), "pair");
+  assert.equal(pair.length, 9);
+  const narrow = pair.filter((windowClass) =>
+    windowClass.media.includes("(64rem <= width < 80rem)"),
+  );
+  assert.equal(narrow.length, 2);
+  for (const windowClass of narrow) {
+    assert.equal(windowClass.groundTier.name, "phone");
+    assert.equal(windowClass.portraitPossible, true);
+    assert.equal(windowClass.widthTier, "desktop");
+  }
+  const wide = pair.filter((windowClass) =>
+    windowClass.media.includes("(width >= 80rem)"),
+  );
+  assert.equal(wide.length, 4);
+  for (const windowClass of pair.filter((c) => c.widthTier === "desktop")) {
+    assert.ok(
+      narrow.includes(windowClass) || wide.includes(windowClass),
+      windowClass.media,
+    );
+  }
+  assert.equal(windowClasses(makeFit()).length, 7);
+  assert.ok(
+    !windowClasses(makeFit()).some((windowClass) =>
+      windowClass.media.includes("80rem"),
+    ),
   );
 });
 
-test("side by side only in landscape where the mount shows", () => {
+test("side by side in every landscape laptop-width window", () => {
   const classes = windowClasses(makeFit(), "pair");
   const sideBySide = classes.filter((windowClass) =>
     pairsSideBySide("pair", windowClass, true),
   );
-  assert.equal(sideBySide.length, 3);
+  assert.equal(sideBySide.length, 6);
   for (const windowClass of sideBySide) {
-    assert.notEqual(windowClass.groundTier.name, "phone");
+    assert.equal(windowClass.widthTier, "desktop");
   }
+  /* The two narrow classes and the two below their tier line. */
+  const phoneGround = sideBySide.filter(
+    (windowClass) => windowClass.groundTier.name === "phone",
+  );
+  assert.equal(phoneGround.length, 4);
   for (const windowClass of classes) {
     assert.equal(pairsSideBySide("pair", windowClass, false), false);
     assert.equal(pairsSideBySide("single", windowClass, true), false);
@@ -166,33 +240,124 @@ test("side by side only in landscape where the mount shows", () => {
 });
 
 test("a pair's landscape padding chain uses side-by-side widths", () => {
-  /* Tablet content 200: side by side at padding 48 is 2 x (200 + 96) + 48 = 640, at 64 is
-     2 x (200 + 128) + 48 = 704. Stacked portrait keeps single widths: 200 + 128 + 24 = 352. */
+  /* Desktop content 200, desktop reveal 16, side by side = 2 x (200 + 2p) + 4 x 16.
+     - Laptop ground (>= 80rem, above the line), steps 96/64/48/32: 656 at 48, 720 at 64, 848 at 96.
+     - Tablet ground (touchscreen, >= 80rem, above the line), steps 64/48/32: 656, 720.
+     - Phone ground (64-80rem, and >= 80rem below a line), steps 32/24/16: 560 at 24, 592 at 32.
+     Stacked portrait carries no reveal, so 200 + 2p: 392 at laptop 96; 248 and 264 in the narrow
+     classes' portrait chains at 24 and 32 — which a single card also emits (its phone-ground
+     reveal is 0), so they are not asserted as pair-only. A single card instead reads
+     200 + 2p + 32: 328 / 360 / 424. */
   const fit = makeFit({
-    tablet: {
+    desktop: {
       portrait: [{ minContentWidth: 200, contentHeight: 100 }],
       landscape: [{ minContentWidth: 200, contentHeight: 100 }],
     },
   });
   const pair = mountedSheetFrameCss(fit, false, "pair");
   const single = mountedSheetFrameCss(fit, false);
-  assert.ok(pair.includes("@container (width >= 640px)"));
-  assert.ok(pair.includes("@container (width >= 704px)"));
-  assert.ok(pair.includes("@container (width >= 352px)"));
-  assert.ok(!single.includes("@container (width >= 640px)"));
+  assert.ok(pair.includes("@container (width >= 656px)"));
+  assert.ok(pair.includes("@container (width >= 720px)"));
+  assert.ok(pair.includes("@container (width >= 848px)"));
+  assert.ok(pair.includes("@container (width >= 392px)"));
+  assert.ok(pair.includes("@container (width >= 560px)"));
+  assert.ok(pair.includes("@container (width >= 592px)"));
+  assert.ok(!single.includes("@container (width >= 656px)"));
+  assert.ok(!single.includes("@container (width >= 560px)"));
+  assert.ok(!single.includes("@container (width >= 392px)"));
+
+  /* The narrow classes' own landscape chain is side by side at phone steps. */
+  const narrowLandscape = topLevelBlocks(pair).filter(
+    (block) =>
+      block.startsWith("@media (64rem <= width < 80rem)") &&
+      block.includes("(orientation: landscape) {") &&
+      block.includes("@container"),
+  );
+  assert.ok(narrowLandscape.length >= 2, String(narrowLandscape.length));
+  for (const block of narrowLandscape) {
+    assert.ok(block.includes("@container (width >= 560px)"), block);
+    assert.ok(block.includes("@container (width >= 592px)"), block);
+  }
 });
 
 test("every pair window and orientation gets exactly one layout block", () => {
   const pair = mountedSheetFrameCss(makeFit(), false, "pair");
-  /* Three side-by-side (class, landscape) pairs; the other eight window-orientation blocks stack. */
-  assert.equal((pair.match(/flex-direction: row;/g) ?? []).length, 3);
+  /* Nine classes, six of which can be portrait: 6 x 2 + 3 x 1 = 15 blocks. Every landscape
+     orientation at the desktop width tier is side by side, six of them; the other nine stack —
+     mobile x 2, tablet above its line x 2, tablet below x 1, and the four desktop portraits. */
+  assert.equal((pair.match(/flex-direction: row;/g) ?? []).length, 6);
   assert.equal(
     (pair.match(/gap: calc\(2 \* var\(--mounted-sheet-ground\)\);/g) ?? [])
       .length,
-    8,
+    9,
   );
   assert.ok(pair.includes(".mounted-sheet-frame__leaf"));
   assert.ok(!mountedSheetFrameCss(makeFit(), false).includes("__leaf"));
+});
+
+test("side-by-side sheets align to the top; stacked and single cards stay centred", () => {
+  const pair = mountedSheetFrameCss(makeFit(), false, "pair");
+  const sideBySideBlocks = (pair.match(/flex-direction: row;/g) ?? []).length;
+  assert.equal(sideBySideBlocks, 6);
+  assert.equal(
+    (pair.match(/justify-content: flex-start;/g) ?? []).length,
+    sideBySideBlocks,
+  );
+  assert.ok(
+    pair.includes(
+      ".mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { justify-content: flex-start; }",
+    ),
+  );
+  assert.ok(!mountedSheetFrameCss(makeFit(), false).includes("flex-start"));
+});
+
+test("a stacked pair's leaf carries no mount at any width but keeps its lift", () => {
+  const pair = mountedSheetFrameCss(makeFit(), false, "pair");
+  const leafRules =
+    pair.match(/mounted-sheet-frame__leaf \{ min-height:[^}]*\}/g) ?? [];
+  assert.equal(leafRules.length, 9);
+  for (const rule of leafRules) {
+    assert.ok(rule.includes("padding: var(--spacing-0)"), rule);
+    assert.ok(rule.includes("background-image: none"), rule);
+    assert.ok(!rule.includes("box-shadow"), rule);
+  }
+});
+
+test("stacked sheets take the padding fit's steps", () => {
+  /* The tablet-above-line class is never side by side (only desktop width is), so its portrait
+     chain always takes the stacked branch. At the hero reveal (12 for tablet) and padding 64:
+     150 + 2 x 64 + 2 x 12 = 302. */
+  const own = makeFit();
+  const padding = makeFit({
+    tablet: { portrait: [{ minContentWidth: 150, contentHeight: 100 }] },
+  });
+  const withPadding = mountedSheetFrameCss(own, false, "pair", padding);
+  const withoutPadding = mountedSheetFrameCss(own, false, "pair");
+  assert.ok(withPadding.includes("@container (width >= 302px)"));
+  assert.ok(!withoutPadding.includes("@container (width >= 302px)"));
+});
+
+test("a single card refuses a stacked padding fit", () => {
+  assert.throws(
+    () => mountedSheetFrameCss(makeFit(), false, "single", makeFit()),
+    /stacked padding fit is only for a pair/,
+  );
+});
+
+test("a malformed stacked padding fit fails validation", () => {
+  assert.throws(
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed input
+    () => mountedSheetFrameCss(makeFit(), false, "pair", null as any),
+    /must be an object carrying section and regimes/,
+  );
+});
+
+test("a malformed fit fails validation before the hero-pair guard", () => {
+  assert.throws(
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed input
+    () => mountedSheetFrameCss(null as any, true, "pair"),
+    /must be an object carrying section and regimes/,
+  );
 });
 
 test("rejects a fit that is not an object", () => {

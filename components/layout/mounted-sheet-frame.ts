@@ -88,6 +88,13 @@ function breakpointPx(rem: number): number {
   return rem * DEFAULT_ROOT_FONT_SIZE;
 }
 
+/* A pair's two sheets share one card, so at `{breakpoints.lg}` each has only a third of the window
+   for text and the content stands tallest there. A pair therefore works its laptop and touchscreen
+   tier lines out from this width, and a narrower laptop-width window takes the phone ground tier.
+   Not a design token: a layout value like the card caps, held as a number because a media query
+   cannot read a custom property. */
+const PAIR_TIER_LINE_WIDTH_REM = 80;
+
 /* The reveal ladder: `{reveal.md}` below `{breakpoints.lg}`, `{reveal.lg}` from it. */
 const REVEAL: Readonly<Record<WidthTier, number>> = {
   mobile: 12,
@@ -119,7 +126,8 @@ export interface WindowClass {
      render, since a class above its tier line covers both. */
   regimes: Readonly<Record<Orientation, readonly FitRegime[]>>;
   /* A class below a tier line has no portrait windows, because every tier line sits below the
-     narrowest width it applies to — `tierLine` refuses one that does not. */
+     narrowest width it applies to — `tierLine` refuses one that does not. A pair's laptop-width
+     class under `PAIR_TIER_LINE_WIDTH_REM` has no tier line, so it can be portrait. */
   portraitPossible: boolean;
 }
 
@@ -146,15 +154,38 @@ export function revealFor(windowClass: WindowClass, hero: boolean): number {
   return mountShows(windowClass, hero) ? REVEAL[windowClass.widthTier] : 0;
 }
 
-/* A pair sits side by side only in a landscape window whose mount shows; everywhere else its two
-   sheets stack, each its own card. A pair is never the hero, so its mount goes wherever the window
-   takes the phone ground tier. */
+/* A stacked card that borrows another section's padding chain (mountedSheetFrameCss's
+   `stackedPadding`) borrows its reveal too: the hero's reveal never drops at the phone ground
+   tier, so the stacked card reads like the hero card it is modelled on regardless of the window's
+   own ground tier. */
+export function heroReveal(windowClass: WindowClass): number {
+  return revealFor(windowClass, true);
+}
+
+/* A pair sits side by side in every landscape window at `{breakpoints.lg}` and wider, keeping the
+   mount even at the phone ground tier — a laptop-width window below its own tier line still shows
+   the pair side by side, at that width tier's reveal. Everywhere else its two sheets stack, each
+   its own card, and a stacked sheet carries no mount at any width. */
 export function pairsSideBySide(
   layout: FrameLayout,
   windowClass: WindowClass,
   landscape: boolean,
 ): boolean {
-  return layout === "pair" && landscape && mountShows(windowClass, false);
+  return layout === "pair" && landscape && windowClass.widthTier === "desktop";
+}
+
+/* A stacked pair's sheets carry no mount at any width, so their card has no reveal; side by side,
+   the shared mount takes the width tier's reveal. A single card follows `revealFor`. */
+export function cardReveal(
+  windowClass: WindowClass,
+  hero: boolean,
+  layout: FrameLayout,
+  landscape: boolean,
+): number {
+  if (layout === "single") return revealFor(windowClass, hero);
+  return pairsSideBySide(layout, windowClass, landscape)
+    ? REVEAL[windowClass.widthTier]
+    : 0;
 }
 
 /* The smallest card that holds the content at one padding: one rectangle per regime, because a
@@ -181,8 +212,9 @@ export function fitRectangles(
 
 /* The height from which the larger ground tier fits the section's content at halved ground and
    that tier's smallest padding, worked out at the narrowest window the class covers — a wider
-   window only widens the card. The larger tier always shows the mount, so the reveal is the
-   width tier's own.
+   window only widens the card. The larger tier always shows the mount for a single card, and for
+   a pair only when it sits side by side — at the desktop width tier — so the reveal is the width
+   tier's own there and zero for a stacked pair's tablet or mobile tier line.
 
    Such a window is landscape, and its height is at most the height cap plus the halved ground top
    and bottom, so its side ground is exactly double the halved ground. */
@@ -197,12 +229,16 @@ function tierLine(
   const padding = smallestPadding(groundTier);
   /* A tier line only ever decides a landscape window (this function's own doc above), so it reads
      the landscape regimes even for a width tier whose windows can also be portrait. The larger
-     tier always shows the mount, so a pair is side by side there. */
+     tier always shows the mount for a single card; for a pair it sits side by side only at the
+     desktop width tier, so a tablet or mobile tier line reads a stacked pair's own, unmounted
+     arithmetic instead. */
+  const sideBySide = layout === "pair" && widthTier === "desktop";
+  const reveal = layout === "pair" && !sideBySide ? 0 : REVEAL[widthTier];
   const heights = fitRectangles(
     regimesFor(fit.regimes[widthTier], "landscape"),
-    REVEAL[widthTier],
+    reveal,
     padding,
-    layout === "pair",
+    sideBySide,
   )
     .filter(
       (rectangle) =>
@@ -363,24 +399,34 @@ interface TierLines {
 function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
   assertValidFit(fit);
   const md = breakpointPx(BREAKPOINT_REM.md);
-  const lg = breakpointPx(BREAKPOINT_REM.lg);
+  const laptopNarrowest = breakpointPx(
+    layout === "pair" ? PAIR_TIER_LINE_WIDTH_REM : BREAKPOINT_REM.lg,
+  );
   return {
     tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout),
-    laptop: tierLine(fit, "desktop", GROUND_TIERS.laptop, lg, layout),
-    /* A touchscreen window at `{breakpoints.lg}` and wider takes tablet ground with desktop
-       type. */
+    laptop: tierLine(
+      fit,
+      "desktop",
+      GROUND_TIERS.laptop,
+      laptopNarrowest,
+      layout,
+    ),
+    /* A touchscreen window at `{breakpoints.lg}` and wider — a pair's from
+       `PAIR_TIER_LINE_WIDTH_REM` — takes tablet ground with desktop type. */
     laptopTouchscreen: tierLine(
       fit,
       "desktop",
       GROUND_TIERS.tablet,
-      lg,
+      laptopNarrowest,
       layout,
     ),
   };
 }
 
 /* Every window falls in exactly one class: three width tiers, split by height at each tier line,
-   and at `{breakpoints.lg}` and wider split by primary pointer as well. */
+   and at `{breakpoints.lg}` and wider split by primary pointer as well. A pair's laptop-width
+   windows under `PAIR_TIER_LINE_WIDTH_REM` take the phone ground tier at any height, so each
+   pointer gains a class there and its tier line applies only from that width up. */
 export function windowClasses(
   fit: MeasuredFit,
   layout: FrameLayout = "single",
@@ -388,11 +434,45 @@ export function windowClasses(
   const lines = tierLines(fit, layout);
   const md = `${BREAKPOINT_REM.md}rem`;
   const lg = `${BREAKPOINT_REM.lg}rem`;
+  const pairLine = `${PAIR_TIER_LINE_WIDTH_REM}rem`;
   const tabletWidth = `(${md} <= width < ${lg})`;
-  const desktopPointer = `(width >= ${lg}) and (not ${TOUCHSCREEN_QUERY})`;
-  const desktopTouchscreen = `(width >= ${lg}) and ${TOUCHSCREEN_QUERY}`;
+  const laptopWidth =
+    layout === "pair" ? `(width >= ${pairLine})` : `(width >= ${lg})`;
+  const pointer = `(not ${TOUCHSCREEN_QUERY})`;
   const atOrAbove = (line: number) => `(height >= ${formatPx(line)})`;
   const below = (line: number) => `(height < ${formatPx(line)})`;
+
+  const desktop = (
+    pointerQuery: string,
+    aboveTier: GroundTier,
+    line: number,
+  ): WindowClass[] => [
+    ...(layout === "pair"
+      ? [
+          {
+            media: `(${lg} <= width < ${pairLine}) and ${pointerQuery}`,
+            widthTier: "desktop" as const,
+            groundTier: GROUND_TIERS.phone,
+            regimes: fit.regimes.desktop,
+            portraitPossible: true,
+          },
+        ]
+      : []),
+    {
+      media: `${laptopWidth} and ${pointerQuery} and ${atOrAbove(line)}`,
+      widthTier: "desktop",
+      groundTier: aboveTier,
+      regimes: fit.regimes.desktop,
+      portraitPossible: true,
+    },
+    {
+      media: `${laptopWidth} and ${pointerQuery} and ${below(line)}`,
+      widthTier: "desktop",
+      groundTier: GROUND_TIERS.phone,
+      regimes: fit.regimes.desktop,
+      portraitPossible: false,
+    },
+  ];
 
   return [
     {
@@ -416,33 +496,8 @@ export function windowClasses(
       regimes: fit.regimes.tablet,
       portraitPossible: false,
     },
-    {
-      media: `${desktopPointer} and ${atOrAbove(lines.laptop)}`,
-      widthTier: "desktop",
-      groundTier: GROUND_TIERS.laptop,
-      regimes: fit.regimes.desktop,
-      portraitPossible: true,
-    },
-    {
-      media: `${desktopPointer} and ${below(lines.laptop)}`,
-      widthTier: "desktop",
-      groundTier: GROUND_TIERS.phone,
-      regimes: fit.regimes.desktop,
-      portraitPossible: false,
-    },
-    {
-      media: `${desktopTouchscreen} and ${atOrAbove(lines.laptopTouchscreen)}`,
-      widthTier: "desktop",
-      groundTier: GROUND_TIERS.tablet,
-      regimes: fit.regimes.desktop,
-      portraitPossible: true,
-    },
-    {
-      media: `${desktopTouchscreen} and ${below(lines.laptopTouchscreen)}`,
-      widthTier: "desktop",
-      groundTier: GROUND_TIERS.phone,
-      regimes: fit.regimes.desktop,
-      portraitPossible: false,
-    },
+    ...desktop(pointer, GROUND_TIERS.laptop, lines.laptop),
+    /* A touchscreen window takes tablet ground above its tier line. */
+    ...desktop(TOUCHSCREEN_QUERY, GROUND_TIERS.tablet, lines.laptopTouchscreen),
   ];
 }

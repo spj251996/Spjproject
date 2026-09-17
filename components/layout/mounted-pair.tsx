@@ -12,9 +12,9 @@ import {
    onto its leaves. The gap between them is TWICE the mount's reveal, not once: each sheet is centred
    on its own leaf, so the sheet's reveal on the fold side meets the other sheet's at the crease.
 
-   Given a section's measured fit, the pair is framed to the window. It sits side by side only in a
-   landscape window whose mount shows; everywhere else the two sheets stack and each leaf becomes a
-   card's mount of its own. Every step is in the generated stylesheet, which is also why the leaves
+   Given a section's measured fit, the pair is framed to the window. It sits side by side in every
+   landscape window at `{breakpoints.lg}` and wider, keeping the mount at any ground; everywhere
+   else the two sheets stack, each its own card with no mount, keeping `shadow-mount`. Every step is in the generated stylesheet, which is also why the leaves
    and the mount carry both surface utilities here — the stylesheet strips whichever one a layout does
    not show, rather than a layout having to restore one. The frame contracts in mounted-sheet.tsx
    bind this caller too.
@@ -33,6 +33,9 @@ interface MountedPairProps {
   children: [ReactNode, ReactNode];
   /* The section's measured fit — the taller of the two sheets — which frames the pair. */
   fit?: MeasuredFit;
+  /* The fit whose padding the stacked sheets take — the invite's, so a stacked card reads like
+     it. */
+  stackedPadding?: MeasuredFit;
 }
 
 const CREASE_GEOMETRY =
@@ -46,7 +49,11 @@ const MOUNT =
 const SHEET =
   "relative flex-1 bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-sheet lg:p-space-3xl";
 
-export function MountedPair({ children, fit }: MountedPairProps) {
+export function MountedPair({
+  children,
+  fit,
+  stackedPadding,
+}: MountedPairProps) {
   const [first, second] = children;
 
   if (fit !== undefined) {
@@ -54,7 +61,9 @@ export function MountedPair({ children, fit }: MountedPairProps) {
     const sheet = `${FRAME_CLASS.sheet} bg-surface-elevated shadow-sheet`;
     return (
       <>
-        <style>{mountedSheetFrameCss(fit, false, "pair")}</style>
+        <style>
+          {mountedSheetFrameCss(fit, false, "pair", stackedPadding)}
+        </style>
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div
