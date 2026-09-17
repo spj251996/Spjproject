@@ -1,54 +1,30 @@
 /* The right-hand sample carries only the role class — no colour, size, weight, line-height or
    family utility beside it — so it renders at the role's own scale for the current window tier. */
 
+interface TierMetric {
+  size: number;
+  lh: number;
+}
+
 export interface TypeToken {
   /** The `.type-*` class name, without the leading dot. */
   token: string;
   family: string;
   weight: number;
-  /** Laptop tier size in px. */
-  size: number;
-  /** Laptop tier line height in px. Omitted when the token declares none. */
-  lh?: number;
   /** The role's use, from DESIGN.md → Typography → The scale → Use. Rendered in the role itself. */
   sample: string;
-  /** Phone and tablet tiers, for roles that step across the width tiers. */
-  responsive?: {
-    tablet: number;
-    mobile: number;
-    tabletLh?: number;
-    mobileLh?: number;
-  };
+  /** Size and line height in px at each width tier. */
+  phone: TierMetric;
+  tablet: TierMetric;
+  laptop: TierMetric;
 }
 
-interface Tier {
-  label: string;
-  size: number;
-  lh: number | undefined;
-}
-
-function tiersOf(token: TypeToken): Tier[] {
-  if (token.responsive === undefined) {
-    return [{ label: "Every tier", size: token.size, lh: token.lh }];
-  }
-
+function tiersOf(token: TypeToken) {
   return [
-    {
-      label: "Phone",
-      size: token.responsive.mobile,
-      lh: token.responsive.mobileLh,
-    },
-    {
-      label: "Tablet",
-      size: token.responsive.tablet,
-      lh: token.responsive.tabletLh,
-    },
-    { label: "Laptop", size: token.size, lh: token.lh },
+    { label: "Phone", metric: token.phone },
+    { label: "Tablet", metric: token.tablet },
+    { label: "Laptop", metric: token.laptop },
   ];
-}
-
-function tierMetric({ size, lh }: Tier): string {
-  return lh === undefined ? `${size}px` : `${size} / ${lh}px`;
 }
 
 interface TypeScaleListProps {
@@ -73,7 +49,9 @@ export function TypeScaleList({ tokens }: TypeScaleListProps) {
               {tiersOf(token).map((tier) => (
                 <div className="contents" key={tier.label}>
                   <dt className="type-caption text-ink">{tier.label}</dt>
-                  <dd className="type-caption text-ink">{tierMetric(tier)}</dd>
+                  <dd className="type-caption text-ink">
+                    {tier.metric.size} / {tier.metric.lh}px
+                  </dd>
                 </div>
               ))}
             </dl>

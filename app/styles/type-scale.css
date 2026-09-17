@@ -1,26 +1,13 @@
 /* Each role is a class rather than a bare `text-<role>` utility, because `--text-*` has no modifier
    for `font-family` or `text-transform`. The classes sit in the components layer so ordinary
-   utilities still override them. Tiers step inside `@variant`, which resolves the breakpoint
-   tokens a raw media query cannot read. */
+   utilities still override them. The variables themselves step at the breakpoints, in tokens.css. */
 
 @layer components {
   .type-display-name {
     font-family: var(--font-script);
-    font-size: var(--text-display-name-mobile);
-    font-weight: var(--text-display-name-mobile--font-weight);
-    line-height: var(--text-display-name-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-display-name-tablet);
-      font-weight: var(--text-display-name-tablet--font-weight);
-      line-height: var(--text-display-name-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-display-name-desktop);
-      font-weight: var(--text-display-name-desktop--font-weight);
-      line-height: var(--text-display-name-desktop--line-height);
-    }
+    font-size: var(--text-display-name);
+    font-weight: var(--text-display-name--font-weight);
+    line-height: var(--text-display-name--line-height);
   }
 
   /* Orientation, not width, because one width tier covers both. This `line-height` beats the base
@@ -40,116 +27,44 @@
 
   .type-heading-script {
     font-family: var(--font-script);
-    font-size: var(--text-heading-script-mobile);
-    font-weight: var(--text-heading-script-mobile--font-weight);
-    line-height: var(--text-heading-script-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-heading-script-tablet);
-      font-weight: var(--text-heading-script-tablet--font-weight);
-      line-height: var(--text-heading-script-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-heading-script);
-      font-weight: var(--text-heading-script--font-weight);
-      line-height: var(--text-heading-script--line-height);
-    }
+    font-size: var(--text-heading-script);
+    font-weight: var(--text-heading-script--font-weight);
+    line-height: var(--text-heading-script--line-height);
   }
 
   .type-heading-xl {
     font-family: var(--font-serif);
-    font-size: var(--text-heading-xl-mobile);
-    font-weight: var(--text-heading-xl-mobile--font-weight);
-    line-height: var(--text-heading-xl-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-heading-xl-tablet);
-      font-weight: var(--text-heading-xl-tablet--font-weight);
-      line-height: var(--text-heading-xl-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-heading-xl);
-      font-weight: var(--text-heading-xl--font-weight);
-      line-height: var(--text-heading-xl--line-height);
-    }
+    font-size: var(--text-heading-xl);
+    font-weight: var(--text-heading-xl--font-weight);
+    line-height: var(--text-heading-xl--line-height);
   }
 
   .type-heading-lg {
     font-family: var(--font-serif);
-    font-size: var(--text-heading-lg-mobile);
-    font-weight: var(--text-heading-lg-mobile--font-weight);
-    line-height: var(--text-heading-lg-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-heading-lg-tablet);
-      font-weight: var(--text-heading-lg-tablet--font-weight);
-      line-height: var(--text-heading-lg-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-heading-lg);
-      font-weight: var(--text-heading-lg--font-weight);
-      line-height: var(--text-heading-lg--line-height);
-    }
+    font-size: var(--text-heading-lg);
+    font-weight: var(--text-heading-lg--font-weight);
+    line-height: var(--text-heading-lg--line-height);
   }
 
   .type-date-primary {
     font-family: var(--font-serif);
-    font-size: var(--text-date-primary-mobile);
-    font-weight: var(--text-date-primary-mobile--font-weight);
-    line-height: var(--text-date-primary-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-date-primary-tablet);
-      font-weight: var(--text-date-primary-tablet--font-weight);
-      line-height: var(--text-date-primary-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-date-primary);
-      font-weight: var(--text-date-primary--font-weight);
-      line-height: var(--text-date-primary--line-height);
-    }
+    font-size: var(--text-date-primary);
+    font-weight: var(--text-date-primary--font-weight);
+    line-height: var(--text-date-primary--line-height);
   }
 
   .type-body {
     font-family: var(--font-sans);
-    font-size: var(--text-body-mobile);
-    font-weight: var(--text-body-mobile--font-weight);
-    line-height: var(--text-body-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-body-tablet);
-      font-weight: var(--text-body-tablet--font-weight);
-      line-height: var(--text-body-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-body);
-      font-weight: var(--text-body--font-weight);
-      line-height: var(--text-body--line-height);
-    }
+    font-size: var(--text-body);
+    font-weight: var(--text-body--font-weight);
+    line-height: var(--text-body--line-height);
   }
 
   .type-caption {
     font-family: var(--font-sans);
-    font-size: var(--text-caption-mobile);
-    font-weight: var(--text-caption-mobile--font-weight);
-    line-height: var(--text-caption-mobile--line-height);
-
-    @variant md {
-      font-size: var(--text-caption-tablet);
-      font-weight: var(--text-caption-tablet--font-weight);
-      line-height: var(--text-caption-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-caption);
-      font-weight: var(--text-caption--font-weight);
-      line-height: var(--text-caption--line-height);
-    }
+    font-size: var(--text-caption);
+    font-weight: var(--text-caption--font-weight);
+    line-height: var(--text-caption--line-height);
   }
 
   /* Paired with `type-caption` on the raised ordinal, whose leading would otherwise push the date
@@ -160,48 +75,20 @@
 
   .type-eyebrow {
     font-family: var(--font-sans);
-    font-size: var(--text-eyebrow-mobile);
-    font-weight: var(--text-eyebrow-mobile--font-weight);
-    letter-spacing: var(--text-eyebrow-mobile--letter-spacing);
-    line-height: var(--text-eyebrow-mobile--line-height);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--text-eyebrow--font-weight);
+    letter-spacing: var(--text-eyebrow--letter-spacing);
+    line-height: var(--text-eyebrow--line-height);
     text-transform: uppercase;
     color: var(--color-accent-gold);
-
-    @variant md {
-      font-size: var(--text-eyebrow-tablet);
-      font-weight: var(--text-eyebrow-tablet--font-weight);
-      letter-spacing: var(--text-eyebrow-tablet--letter-spacing);
-      line-height: var(--text-eyebrow-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-eyebrow);
-      font-weight: var(--text-eyebrow--font-weight);
-      letter-spacing: var(--text-eyebrow--letter-spacing);
-      line-height: var(--text-eyebrow--line-height);
-    }
   }
 
   .type-action {
     font-family: var(--font-sans);
-    font-size: var(--text-action-mobile);
-    font-weight: var(--text-action-mobile--font-weight);
-    letter-spacing: var(--text-action-mobile--letter-spacing);
-    line-height: var(--text-action-mobile--line-height);
+    font-size: var(--text-action);
+    font-weight: var(--text-action--font-weight);
+    letter-spacing: var(--text-action--letter-spacing);
+    line-height: var(--text-action--line-height);
     text-transform: uppercase;
-
-    @variant md {
-      font-size: var(--text-action-tablet);
-      font-weight: var(--text-action-tablet--font-weight);
-      letter-spacing: var(--text-action-tablet--letter-spacing);
-      line-height: var(--text-action-tablet--line-height);
-    }
-
-    @variant lg {
-      font-size: var(--text-action);
-      font-weight: var(--text-action--font-weight);
-      letter-spacing: var(--text-action--letter-spacing);
-      line-height: var(--text-action--line-height);
-    }
   }
 }
