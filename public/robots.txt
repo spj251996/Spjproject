@@ -1,0 +1,14 @@
+# This invitation is shared by link only. Nothing here should be indexed or listed.
+# The single exception is Meta's link-preview fetchers: a WhatsApp share triggers
+# WhatsApp/2.x, facebookexternalhit/1.1 and Facebot, and without them a shared link
+# renders as a bare URL with no card. They fetch on demand — they do not crawl for
+# new URLs — so allowing them does not make the site discoverable.
+# Deliberately no Sitemap: directive.
+
+User-agent: WhatsApp
+User-agent: facebookexternalhit
+User-agent: Facebot
+Allow: /
+
+User-agent: *
+Disallow: /
