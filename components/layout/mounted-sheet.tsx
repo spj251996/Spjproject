@@ -35,7 +35,13 @@ interface MountedSheetProps {
   className?: string;
 }
 
-const MOUNT_BASE = "shadow-mount";
+/* The mount's cast depends on the stock it carries: against an ivory ground the ivory mount reads
+   as page under the green stock, so that one is lifted with a deeper shadow rather than a second
+   mount colour. */
+const MOUNT_SHADOW: Record<Stock, string> = {
+  paper: "shadow-mount",
+  contrast: "shadow-mount-contrast",
+};
 
 /* Unmounted is the base, so a non-hero section never paints a mount and then loses it. */
 const MOUNT_REVEAL = {
@@ -73,7 +79,7 @@ export function MountedSheet({
         <div className={tallScopeClass(hero)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_BASE} bg-surface-mount`}
+              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW[stock]} bg-surface-mount`}
             >
               <div
                 className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
@@ -96,7 +102,7 @@ export function MountedSheet({
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_BASE} bg-surface-mount`}
+              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW[stock]} bg-surface-mount`}
             >
               <div
                 className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
@@ -112,7 +118,7 @@ export function MountedSheet({
 
   return (
     <div
-      className={`${MOUNT_BASE} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
+      className={`${MOUNT_SHADOW[stock]} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
       <div className={`${SHEET[stock]} ${SHEET_PADDING} ${className ?? ""}`}>
         {children}

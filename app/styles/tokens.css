@@ -81,6 +81,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 3px rgba(58, 48, 30, 0.16);
   --shadow-sheet-contrast:
     0 0 0 1px rgba(58, 48, 30, 0.14), 0 2px 8px rgba(58, 48, 30, 0.34);
+  /* The mount under the green stock. The mount's own ivory sits against an ivory ground, so on that
+     stock it reads as page rather than as a mat; a deeper cast lifts it off the ground instead of
+     giving it a second colour. */
+  --shadow-mount-contrast:
+    0 2px 4px rgba(58, 48, 30, 0.16), 0 26px 56px -16px rgba(58, 48, 30, 0.42);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
