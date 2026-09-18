@@ -1,8 +1,12 @@
+/* `gap` lives here rather than on a Tailwind utility class so the segment bridge below can consume
+   the exact same value through `--celebrations-row-gap` — a utility class has no custom property
+   of its own to share, and the two must never disagree. */
 .list {
   list-style: none;
   margin: 0;
   padding: 0;
   width: 100%;
+  gap: var(--celebrations-row-gap);
 }
 
 .row {
@@ -19,7 +23,8 @@
    to the next is exactly this row's height plus the gap to the next row — the offset cancels out.
    Skipping the segment on the last row lets the second-to-last row's segment be the one that ends
    the chain exactly on the last mark, with no reference to the list's box needed at either end.
-   The gap must match the list's own `gap-space-xl` utility class. Phase 6 replaces this with the
+   The gap comes from `--celebrations-row-gap`, the same property `.list` reads its own `gap` from,
+   so retuning the row rhythm can never leave the two disagreeing. Phase 6 replaces this with the
    thread's own generated segment. */
 .row:not(:last-child)::before {
   content: "";
@@ -31,7 +36,7 @@
   );
   inset-inline-start: var(--celebrations-spine-x);
   width: var(--stroke-divider);
-  height: calc(100% + var(--spacing-space-xl));
+  height: calc(100% + var(--celebrations-row-gap));
   background-color: var(--color-accent-gold);
 }
 

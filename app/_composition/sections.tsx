@@ -396,7 +396,7 @@ const CELEBRATIONS_INTRO = [
   "Moments leading up to the day, shared as they unfold.",
 ] as const;
 
-const CELEBRATIONS_LIST_CLASS = `${celebrations.list} mt-space-2xl flex flex-col gap-space-xl`;
+const CELEBRATIONS_LIST_CLASS = `${celebrations.list} mt-space-2xl flex flex-col`;
 
 export function CelebrationsSection() {
   return (
@@ -408,6 +408,7 @@ export function CelebrationsSection() {
             ["--celebrations-measure" as string]: "42rem",
             ["--celebrations-spine-x" as string]: "0.5rem",
             ["--celebrations-row-indent" as string]: "2.5rem",
+            ["--celebrations-row-gap" as string]: "var(--spacing-space-xl)",
             ["--celebrations-mark-size" as string]: "0.5rem",
             ["--celebrations-mark-offset" as string]: "0.5rem",
           }}
