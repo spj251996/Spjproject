@@ -1,8 +1,10 @@
+import Image from "next/image";
 import type { ComponentType } from "react";
 import celebrations from "@/app/_composition/celebrations.module.css";
 import { eventInfoFit } from "@/app/_composition/event-info-fit";
 import { familyFit } from "@/app/_composition/family-fit";
 import { inviteFit } from "@/app/_composition/invite-fit";
+import wishesStyles from "@/app/_composition/wishes.module.css";
 import { Family } from "@/components/family/family";
 import {
   BetrothalIcon,
@@ -25,6 +27,7 @@ import {
   invite,
   rituals,
   type WeddingEvent,
+  wishes,
 } from "@/content";
 
 /* The page and the dev-only preview both render these, so a stale prop on the preview cannot
@@ -450,6 +453,65 @@ export function CelebrationsSection() {
               </li>
             ))}
           </ol>
+        </div>
+      </MountedSheet>
+    </section>
+  );
+}
+
+/* The page's close, and the only section on the green stock. Every value below is a starting point
+   for the owner's tweak loop, reported as inferred: the column split, the bleed distance and the fade
+   start. The illustration is static — Phase 4 renders no motion, and its entrance is decided in
+   Phase 5 with the thread. */
+export function WishesSection() {
+  return (
+    <section className="relative z-(--z-content)" id="wishes">
+      <MountedSheet stock="contrast">
+        <div
+          className="wishes-stack flex w-full flex-col items-center"
+          style={{
+            ["--wishes-bleed" as string]: "var(--spacing-space-lg)",
+            ["--wishes-fade-start" as string]: "72%",
+          }}
+        >
+          <p className="type-eyebrow">A life in love</p>
+
+          <div className="mt-space-lg flex w-full flex-col items-center gap-space-lg [@media(width>=48rem)]:flex-row [@media(width>=48rem)]:items-center [@media(width>=48rem)]:gap-space-2xl">
+            <div className="flex flex-col items-center text-center [@media(width>=48rem)]:flex-1 [@media(width>=48rem)]:items-start [@media(width>=48rem)]:text-left">
+              <p className="type-body text-ink-on-contrast text-pretty">
+                {wishes.passage}
+              </p>
+              <p className="type-caption text-ink-on-contrast mt-space-sm">
+                {wishes.passageAttribution}
+              </p>
+            </div>
+
+            <div
+              className={`${wishesStyles.bleed} flex shrink-0 justify-center [@media(width>=48rem)]:flex-1`}
+            >
+              <Image
+                alt=""
+                className={wishesStyles.illustration}
+                height={900}
+                priority={false}
+                src="/couple/couple.webp"
+                width={900}
+              />
+            </div>
+          </div>
+
+          <p className="type-heading-script text-ink-on-contrast mt-space-2xl">
+            {wishes.coupleNames}
+          </p>
+
+          <div className="mt-space-lg flex flex-col items-center gap-space-3xs text-center">
+            <p className="type-body-italic text-ink-on-contrast">
+              {wishes.wishesLead}
+            </p>
+            <p className="type-body text-ink-on-contrast">
+              {wishes.wishesLine}
+            </p>
+          </div>
         </div>
       </MountedSheet>
     </section>

@@ -1,0 +1,16 @@
+/* The drawing is cropped at its own bottom edge, so it is dissolved into the stock rather than cut.
+   A mask, not a gradient overlay: the sheet's grain sits behind the image, and an overlay in the
+   stock's colour would cover the grain with a flat block. */
+.illustration {
+  mask-image: linear-gradient(
+    to bottom,
+    #000 var(--wishes-fade-start),
+    transparent 100%
+  );
+}
+
+/* An image may extend past the sheet's content padding; text may not. The negative inline margin is
+   the bleed, and it is clamped so the drawing never crosses the sheet's own edge. */
+.bleed {
+  margin-inline-end: calc(-1 * var(--wishes-bleed));
+}
