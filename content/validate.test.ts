@@ -75,6 +75,7 @@ const wishes: WishesContent = {
   passage: "Text.",
   passageAttribution: "Book 1:1",
   coupleNames: "A & B",
+  wishesLead: "With love",
   wishesLine: "Best compliments from C.",
 };
 
@@ -276,5 +277,19 @@ test("rejects empty wishes copy, naming the field", () => {
   assert.throws(
     () => validateWishes({ ...wishes, wishesLine: "   " }),
     /wishes\.wishesLine must not be empty/,
+  );
+});
+
+test("validateWishes rejects a missing sign-off lead", () => {
+  assert.throws(
+    () =>
+      validateWishes({
+        passage: "Charity suffereth long.",
+        passageAttribution: "1 Corinthians 13:4",
+        coupleNames: "Flemy & Sebastian",
+        wishesLead: "",
+        wishesLine: "Marietta Joseph, Harry William & Amal Roy",
+      }),
+    /wishes\.wishesLead/,
   );
 });

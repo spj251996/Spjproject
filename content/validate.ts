@@ -191,6 +191,7 @@ export function validateWishes(wishes: WishesContent): WishesContent {
   required(wishes.passage, "wishes.passage");
   required(wishes.passageAttribution, "wishes.passageAttribution");
   required(wishes.coupleNames, "wishes.coupleNames");
+  required(wishes.wishesLead, "wishes.wishesLead");
   required(wishes.wishesLine, "wishes.wishesLine");
   return wishes;
 }

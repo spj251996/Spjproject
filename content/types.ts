@@ -50,6 +50,8 @@ export interface WishesContent {
   passage: string;
   passageAttribution: string;
   coupleNames: string;
+  /** The sign-off's opening line; its names follow in `wishesLine`. */
+  wishesLead: string;
   wishesLine: string;
 }
 
