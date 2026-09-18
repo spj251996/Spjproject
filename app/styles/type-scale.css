@@ -60,6 +60,16 @@
     line-height: var(--text-body--line-height);
   }
 
+  /* The body role in italic. A separate class rather than an `italic` utility beside `type-body`,
+     so the role owns its own face and no caller can reach it with a synthesised oblique. */
+  .type-body-italic {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: var(--text-body--font-weight);
+    font-style: italic;
+    line-height: var(--text-body--line-height);
+  }
+
   .type-caption {
     font-family: var(--font-sans);
     font-size: var(--text-caption);

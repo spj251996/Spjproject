@@ -20,9 +20,12 @@ const serif = Cormorant_Garamond({
   fallback: ["Georgia", "serif"],
 });
 
+/* The italic axis is loaded, not synthesised: the closing sign-off's lead line is set in italic body,
+   and a browser-obliqued normal face reads as a slanted regular at that size. */
 const sans = Source_Sans_3({
   variable: "--font-sans",
   subsets: ["latin"],
+  style: ["normal", "italic"],
   display: "swap",
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
