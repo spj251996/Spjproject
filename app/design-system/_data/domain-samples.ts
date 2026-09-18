@@ -96,7 +96,7 @@ export const sampleFamilyGroups: FamilyGroup[] = [
 
 /* Two rows only: enough to show the spine's own rule (Timeline → "The spine and its marks") —
    a segment reaches from one mark to the next, so the last row carries none. `status` and `images`
-   are present for schema validity only; The Celebrations placeholder (app/_composition/sections.tsx)
+   are present for schema validity only; The Celebrations placeholder (app/page.tsx)
    reads just `title` and `description`, so both rows share one value and it goes unrendered here. */
 export const sampleRituals: Ritual[] = [
   {

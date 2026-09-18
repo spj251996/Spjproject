@@ -30,7 +30,7 @@ function Variant({ label, children }: VariantProps) {
 const INVITE_ENTRIES: InlineEntry[] = [
   {
     name: "Invite",
-    home: "app/_composition/sections.tsx",
+    home: "app/page.tsx",
     composes:
       "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary · betrothal block",
     note: "Live at /. Its scroll cue arrives with the Phase 5 thread.",
@@ -40,7 +40,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
 const EVENT_INFO_ENTRIES: InlineEntry[] = [
   {
     name: "Event Info",
-    home: "app/_composition/sections.tsx",
+    home: "app/page.tsx",
     composes:
       "mounted-pair · per sheet: heading-script heading, date line, address, divider where the layout shows one, segment plates · per plate: mark, segment line, venue, button-action with map",
     note: "Live at /. Marks → Foundations · Iconography; the map action → Components · UI.",
@@ -50,7 +50,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
 const TIMELINE_ENTRIES: InlineEntry[] = [
   {
     name: "Timeline",
-    home: "app/_composition/sections.tsx",
+    home: "app/page.tsx",
     composes:
       "mounted-sheet in tall mode · heading in heading-script ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each a heading-lg title and a body description laid against a gold spine",
     note: "Live at /. The spine is static and structural until Phase 6, when the thread's own generated segment replaces it.",
@@ -60,7 +60,7 @@ const TIMELINE_ENTRIES: InlineEntry[] = [
 const WISHES_ENTRIES: InlineEntry[] = [
   {
     name: "Wishes",
-    home: "app/_composition/sections.tsx",
+    home: "app/page.tsx",
     composes:
       "the contrast stock · eyebrow · passage in body · citation in caption · couple illustration · couple names in heading-script · sign-off lead in body-italic · sign-off names in body",
     note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
@@ -149,7 +149,7 @@ export function DomainSections() {
           description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, the children, and a child's own children beneath that child and their spouse."
           id="domain-family"
           name="family"
-          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_composition/sections.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md, lg and xl: diameters and gaps step with the type."
+          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/page.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
             "eyebrow · heading-script family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
