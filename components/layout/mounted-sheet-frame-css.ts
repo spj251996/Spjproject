@@ -509,16 +509,20 @@ export function mountedSheetFrameCss(
   ].join("\n");
 }
 
-/* Every tall section shares one stylesheet, because tall mode has no per-section threshold to scope —
-   that is the whole difference from a fitted frame. */
-export const TALL_SCOPE_CLASS = "mounted-sheet-frame--tall";
+/* Tall mode has no per-section threshold to scope, so every tall section shares one of two
+   stylesheets — but `hero` is per-section, and two tall cards with different `hero` would otherwise
+   collide on one class at identical specificity, with the later one in document order winning for
+   both. Keying the scope class on `hero` keeps the two apart. */
+export function tallScopeClass(hero: boolean): string {
+  return `mounted-sheet-frame--tall-${hero ? "hero" : "section"}`;
+}
 
 /* A section that scrolls rather than fitting one window. No height query, no container query and no
    minimum card height: the card is its content's height, and the page scrolls past it. The landscape
    side ground is a flat double, with none of the fitted frame's leftover-from-the-height-cap term,
    because a tall card has no height cap to leave anything over. */
 export function tallFrameCss(hero: boolean): string {
-  const scope = `.${TALL_SCOPE_CLASS}`;
+  const scope = `.${tallScopeClass(hero)}`;
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;

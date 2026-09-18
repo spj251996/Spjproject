@@ -11,8 +11,8 @@ import {
 } from "./mounted-sheet-frame.ts";
 import {
   mountedSheetFrameCss,
-  TALL_SCOPE_CLASS,
   tallFrameCss,
+  tallScopeClass,
 } from "./mounted-sheet-frame-css.ts";
 
 /* `assertValidFit` is private; every throw is exercised through `windowClasses` or
@@ -63,6 +63,15 @@ function topLevelBlocks(css: string): string[] {
     }
   }
   return blocks;
+}
+
+/* One tall window class's own top-level block, found by its exact media prelude rather than a
+   substring search — the block that carries its ground, mount and sheet rules together. `media` is
+   unique per class (`tallWindowClasses`' six strings never collide), so the prelude match is exact. */
+function tallBlockFor(css: string, media: string): string | undefined {
+  return topLevelBlocks(css).find((block) =>
+    block.startsWith(`@media ${media} {`),
+  );
 }
 
 test("a fit missing the wide regimes is rejected", () => {
@@ -704,14 +713,101 @@ test("a hero tall card keeps its mount at the phone ground tier", () => {
 
 test("tall mode states no height threshold and no container query", () => {
   const css = tallFrameCss(false);
-  assert.ok(css.includes(TALL_SCOPE_CLASS));
+  assert.ok(css.includes(tallScopeClass(false)));
   assert.equal(/\(height/.test(css), false);
   assert.equal(/@container/.test(css), false);
   assert.equal(/min-height:\s*min\(/.test(css), false);
 });
 
-test("tall mode caps the card's width at each tier", () => {
+/* Ground and padding pixel values tall mode actually emits (phone 16/32, tablet 48/64, compact
+   64/64, laptop 96/96), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
+   (private) `SPACING_TOKEN` does. Kept separate from that map, as every other CSS-content assertion
+   in this file states its expected literal by hand rather than importing the generator's internals. */
+const GROUND_TOKEN: Readonly<Record<number, string>> = {
+  16: "--spacing-space-sm",
+  48: "--spacing-space-xl",
+  64: "--spacing-space-2xl",
+  96: "--spacing-space-3xl",
+};
+const PADDING_TOKEN: Readonly<Record<number, string>> = {
+  32: "--spacing-space-lg",
+  64: "--spacing-space-2xl",
+  96: "--spacing-space-3xl",
+};
+
+test("each tall window class's own block binds its ground and sheet padding, never another class's", () => {
   const css = tallFrameCss(false);
-  assert.ok(css.includes("var(--container-content)"));
-  assert.ok(css.includes("var(--container-content-compact)"));
+  for (const windowClass of tallWindowClasses(false)) {
+    const block = tallBlockFor(css, windowClass.media);
+    assert.ok(block, `no block for "${windowClass.media}"`);
+    assert.ok(
+      block?.includes(
+        `{ --mounted-sheet-ground: var(${GROUND_TOKEN[windowClass.ground]}); }`,
+      ),
+      `${windowClass.media}: ground ${windowClass.ground}`,
+    );
+    assert.ok(
+      block?.includes(
+        `mounted-sheet-frame__sheet { padding: var(${PADDING_TOKEN[windowClass.padding]}); }`,
+      ),
+      `${windowClass.media}: padding ${windowClass.padding}`,
+    );
+  }
+});
+
+test("only the phone-tier block strips the mount's fill and reveal", () => {
+  const strip = "background-color: transparent; background-image: none;";
+  for (const hero of [false, true]) {
+    const css = tallFrameCss(hero);
+    for (const windowClass of tallWindowClasses(hero)) {
+      const block = tallBlockFor(css, windowClass.media);
+      const mountLine = block
+        ?.split("\n")
+        .find((line) => line.includes("mounted-sheet-frame__mount"));
+      assert.ok(mountLine, `${windowClass.media}: no mount rule`);
+      assert.equal(
+        mountLine?.includes(strip),
+        !windowClass.mountShows,
+        `hero=${hero} ${windowClass.media}: mountShows ${windowClass.mountShows}`,
+      );
+    }
+  }
+});
+
+test("the width cap binds only in landscape, and only the compact band takes the compact-cap token", () => {
+  const css = tallFrameCss(false);
+  const blocks = topLevelBlocks(css);
+
+  const baseCap = blocks.find(
+    (block) =>
+      block.startsWith("@media (orientation: landscape) {") &&
+      block.includes("width: min(var(--container-content), 100%)"),
+  );
+  assert.ok(baseCap, "a plain landscape rule sets the base width cap");
+  assert.ok(
+    !baseCap?.includes("--container-content-compact"),
+    "the base cap rule never carries the compact token",
+  );
+
+  const compactCap = blocks.find(
+    (block) =>
+      block.startsWith(
+        "@media (orientation: landscape) and (64rem <= width < 100rem) {",
+      ) && block.includes("width: min(var(--container-content-compact), 100%)"),
+  );
+  assert.ok(
+    compactCap,
+    "the compact-width band overrides with the compact-cap token",
+  );
+
+  /* No rule anywhere sets either width-cap token outside a landscape-gated prelude — catches the
+     cap binding in portrait as well. */
+  for (const block of blocks.filter((b) =>
+    b.includes("width: min(var(--container-content"),
+  )) {
+    assert.ok(
+      block.startsWith("@media (orientation: landscape)"),
+      `width-cap rule not gated by landscape: ${block}`,
+    );
+  }
 });

@@ -4,13 +4,13 @@ import {
   FRAME_CLASS,
   frameScopeClass,
   mountedSheetFrameCss,
-  TALL_SCOPE_CLASS,
   tallFrameCss,
+  tallScopeClass,
 } from "./mounted-sheet-frame-css";
 
 /* With a fit, the generated stylesheet sets every frame step; without one, the static card is for a
-   surface with no window to fit (a specimen box, a long scrolling section). A long scrolling section
-   takes `tall` instead, which keeps the frame but drops every height threshold.
+   surface with no window to fit — a specimen box. A long scrolling section takes `tall` instead,
+   which keeps the frame but drops every height threshold.
 
    Two contracts bind a framed card's caller:
    - No horizontal padding, margin or width cap around the frame: its ground is decided against the
@@ -65,10 +65,12 @@ export function MountedSheet({
         "mounted-sheet: a tall card takes no measured fit. The fitted frame is defined only for a card that fits its tier's height cap; a tall section is taller than every window.",
       );
     }
+    /* The frame's stylesheet sets the reveal and padding and removes the mount's fill where it does
+       not show, so neither element carries a padding utility. */
     return (
       <>
         <style>{tallFrameCss(hero)}</style>
-        <div className={TALL_SCOPE_CLASS}>
+        <div className={tallScopeClass(hero)}>
           <div className={FRAME_CLASS.box}>
             <div
               className={`${FRAME_CLASS.mount} ${MOUNT_BASE} bg-surface-mount`}

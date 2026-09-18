@@ -134,8 +134,17 @@ export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
+/* The one statement of the phone-drop rule; `mountShows` and `tallWindowClasses` both call it, so a
+   future change to the rule cannot update one and miss the other. */
+function groundTierShowsMount(
+  groundTierName: GroundTierName,
+  hero: boolean,
+): boolean {
+  return hero || groundTierName !== "phone";
+}
+
 export function mountShows(windowClass: WindowClass, hero: boolean): boolean {
-  return hero || windowClass.groundTier.name !== "phone";
+  return groundTierShowsMount(windowClass.groundTier.name, hero);
 }
 
 export function revealFor(windowClass: WindowClass, hero: boolean): number {
@@ -599,7 +608,7 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
     widthTier: WidthTier,
     groundTier: GroundTier,
   ): TallWindowClass => {
-    const shows = hero || groundTier.name !== "phone";
+    const shows = groundTierShowsMount(groundTier.name, hero);
     return {
       media,
       widthTier,
