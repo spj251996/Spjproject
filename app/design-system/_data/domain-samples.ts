@@ -94,63 +94,24 @@ export const sampleFamilyGroups: FamilyGroup[] = [
   },
 ];
 
+/* Two rows only: enough to show the spine's own rule (Timeline → "The spine and its marks") —
+   a segment reaches from one mark to the next, so the last row carries none. `status` and `images`
+   are present for schema validity only; The Celebrations placeholder (app/_composition/sections.tsx)
+   reads just `title` and `description`, so both rows share one value and it goes unrendered here. */
 export const sampleRituals: Ritual[] = [
   {
     id: "placeholder-ritual-1",
-    title: "Placeholder Completed Ritual",
+    title: "Placeholder Ritual",
     description:
-      "The first ritual in the sequence, described at the length the real entries will run to — a sentence or two of what happens and who takes part.",
-    status: "completed",
+      "A ritual in the sequence, described at the length the real entries will run to — a sentence or two of what happens and who takes part.",
+    status: "upcoming",
     images: [],
   },
   {
     id: "placeholder-ritual-2",
-    title: "Placeholder Second Ritual",
-    description:
-      "The second ritual, alternating to the opposite side of the spine on wide viewports and stacking beneath the first on narrow ones.",
-    status: "completed",
-    images: [],
-  },
-  {
-    id: "placeholder-ritual-3",
-    title: "Placeholder Upcoming Ritual",
-    description:
-      "An upcoming ritual, still ahead of the couple — its node shows title and description only, and offers no gallery to open.",
-    status: "upcoming",
-    images: [],
-  },
-  {
-    id: "placeholder-ritual-4",
     title: "Placeholder Final Ritual",
     description:
-      "The last node in the timeline, where the thread comes to rest at the closing section of the page.",
-    status: "upcoming",
-    images: [],
-  },
-];
-
-export const sampleRitualsAllUpcoming: Ritual[] = [
-  {
-    id: "placeholder-upcoming-ritual-1",
-    title: "Placeholder First Ritual",
-    description:
-      "The first ritual ahead of the couple, described at the length the real entries will run to.",
-    status: "upcoming",
-    images: [],
-  },
-  {
-    id: "placeholder-upcoming-ritual-2",
-    title: "Placeholder Second Ritual",
-    description:
-      "A second upcoming ritual, alternating to the opposite side of the spine on wide viewports.",
-    status: "upcoming",
-    images: [],
-  },
-  {
-    id: "placeholder-upcoming-ritual-3",
-    title: "Placeholder Third Ritual",
-    description:
-      "A third upcoming ritual, showing the spine extend to a different node count than the mixed-status sample above.",
+      "The last ritual in the list, where the spine ends exactly on this row's own mark.",
     status: "upcoming",
     images: [],
   },

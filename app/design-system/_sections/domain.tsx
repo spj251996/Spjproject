@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import {
   sampleFamilyGroups,
   sampleRituals,
-  sampleRitualsAllUpcoming,
 } from "@/app/design-system/_data/domain-samples";
 import {
   GallerySection,
@@ -11,7 +10,7 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import { Family } from "@/components/family/family";
-import { Timeline } from "@/components/timeline/timeline";
+import { MountedSheet } from "@/components/layout/mounted-sheet";
 import type { FamilyGroup } from "@/content/types";
 
 interface VariantProps {
@@ -48,13 +47,51 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
   },
 ];
 
+const TIMELINE_ENTRIES: InlineEntry[] = [
+  {
+    name: "Timeline",
+    home: "app/_composition/sections.tsx",
+    composes:
+      "mounted-sheet in tall mode · heading in heading-script ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each a heading-lg title and a body description laid against a gold spine",
+    note: "Live at /. The spine is static and structural until Phase 6, when the thread's own generated segment replaces it.",
+  },
+];
+
 const WISHES_ENTRIES: InlineEntry[] = [
   {
     name: "Wishes",
-    home: "Not composed yet",
+    home: "app/_composition/sections.tsx",
     composes:
-      "the contrast stock · passage in heading-xl · attribution in caption · illustration · couple names in the script face · wishes line in body",
-    note: "The couple illustration has no asset.",
+      "the contrast stock · eyebrow · passage in body · citation in caption · couple illustration · couple names in heading-script · sign-off lead in body-italic · sign-off names in body",
+    note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
+  },
+];
+
+/* Every text role Wishes sets on the contrast stock, paired for the one thing a colour swatch alone
+   can't show (Foundations · Colors lists the tokens): whether each role reads against it. body and
+   body-italic sit adjacent on purpose — they share one size and line height, so the only visible
+   difference is the face itself, never a synthesised oblique. */
+const WISHES_STOCK_ROLES = [
+  { token: "eyebrow", className: "type-eyebrow", sample: "A closing line" },
+  {
+    token: "heading-script",
+    className: "type-heading-script",
+    sample: "Bride & Groom",
+  },
+  {
+    token: "body",
+    className: "type-body",
+    sample: "The passage, and the names who send it.",
+  },
+  {
+    token: "body-italic",
+    className: "type-body-italic",
+    sample: "The passage, and the names who send it.",
+  },
+  {
+    token: "caption",
+    className: "type-caption",
+    sample: "What the passage above is drawn from.",
   },
 ];
 
@@ -139,27 +176,50 @@ export function DomainSections() {
         mapsTo="Domain Components → Timeline"
         title="Domain · Timeline"
       >
+        <InlineList entries={TIMELINE_ENTRIES} />
+
         <Specimen
-          description="The rituals as timeline-node instances alternating either side of a vertical spine."
-          id="domain-timeline"
-          name="timeline"
-          note="Two samples at different node counts. The spine is the interim gold line until Phase 5, and no sample opens a gallery."
-          source="@/components/timeline/timeline"
-          spec="alternating nodes · single column on mobile · accent-gold spine at stroke-divider"
+          description="The mark, the spine and the row indent that lay every ritual row against The Celebrations' gold spine — a ruler for the one relationship the doc's numbers alone don't show, not a reproduction of the card itself (listed above, never rebuilt)."
+          id="domain-timeline-spine"
+          name="The spine and its marks"
+          note="Interim until Phase 6, when the thread's own generated segment replaces this static rule."
+          spec={[
+            "mark · 0.5rem circle · accent-gold · centred on the spine",
+            "spine · stroke-divider · accent-gold · 0.5rem from the row's leading edge",
+            "mark to its own row's top · 0.5rem",
+            "row indent · 2.5rem, so no text meets the spine or a mark",
+          ]}
         >
-          <div className="flex flex-col gap-space-2xl">
-            <Variant label="Four rituals, mixed status">
-              <Timeline
-                rituals={sampleRituals}
-                title="Placeholder Ritual Timeline — Mixed Status"
-              />
-            </Variant>
-            <Variant label="Three rituals, all upcoming">
-              <Timeline
-                rituals={sampleRitualsAllUpcoming}
-                title="Placeholder Ritual Timeline — All Upcoming"
-              />
-            </Variant>
+          <div className="flex flex-col gap-space-xl bg-surface-elevated p-space-lg text-left">
+            {sampleRituals.map((ritual, index) => (
+              <Variant
+                key={ritual.id}
+                label={
+                  index < sampleRituals.length - 1
+                    ? "A row before another"
+                    : "The last row"
+                }
+              >
+                <div className="relative">
+                  {index < sampleRituals.length - 1 ? (
+                    <span
+                      aria-hidden
+                      className="absolute top-[0.75rem] left-[0.5rem] h-[calc(100%+var(--spacing-space-xl))] w-(--stroke-divider) bg-accent-gold"
+                    />
+                  ) : null}
+                  <span
+                    aria-hidden
+                    className="absolute top-[0.5rem] left-[0.25rem] h-[0.5rem] w-[0.5rem] rounded-full bg-accent-gold"
+                  />
+                  <div className="pl-[2.5rem]">
+                    <h4 className="type-heading-lg text-ink">{ritual.title}</h4>
+                    <p className="type-body text-ink mt-space-2xs">
+                      {ritual.description}
+                    </p>
+                  </div>
+                </div>
+              </Variant>
+            ))}
           </div>
         </Specimen>
       </GallerySection>
@@ -171,6 +231,26 @@ export function DomainSections() {
         title="Domain · Wishes"
       >
         <InlineList entries={WISHES_ENTRIES} />
+
+        <Specimen
+          description="Every text role Wishes sets on the contrast stock, the site's only one — the swatch at Foundations · Colors names ink-on-contrast; this shows it carrying real type."
+          id="domain-wishes-stock"
+          name="Text roles on the green stock"
+          note="ink-on-contrast is set once, on the sheet; every role below inherits it rather than naming it again. The eyebrow stays gold on both stocks."
+          source="@/components/layout/mounted-sheet"
+          spec="eyebrow · heading-script · body · body-italic · caption, all on surface-contrast"
+        >
+          <MountedSheet stock="contrast">
+            <div className="flex flex-col gap-space-md">
+              {WISHES_STOCK_ROLES.map(({ token, className, sample }) => (
+                <div className="flex flex-col gap-space-3xs" key={token}>
+                  <p className={className}>{sample}</p>
+                  <span className="type-caption">{token}</span>
+                </div>
+              ))}
+            </div>
+          </MountedSheet>
+        </Specimen>
       </GallerySection>
     </>
   );
