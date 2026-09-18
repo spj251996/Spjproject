@@ -15,7 +15,11 @@ import sharp from "sharp";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/* One entry per image family. `pass-through` is a real recipe, not a stub: the ten portraits are
+/* The couple drawing is trimmed of its own transparent border before resizing: the border is
+   lopsided (81px left against 12 right on the source), which pushes the couple off-centre in their
+   box. The two widths cover the largest rendered size (550px) at 1x and 2x.
+
+   One entry per image family. `pass-through` is a real recipe, not a stub: the ten portraits are
    already web-sized files with no larger original, so re-encoding today's placeholders would change
    `content/family.ts`'s paths for no visual gain. When the full-resolution portraits arrive, this
    entry becomes a resize-and-encode like the couple's. */
@@ -24,13 +28,30 @@ const RECIPES = [
      these two widths are its 1x and 2x delivery rather than one oversized file for every screen. */
   {
     source: "assets/couple/couple.png",
+    out: "public/couple/couple-1x.avif",
+    recipe: (image) =>
+      image.trim({ threshold: 0 }).resize({ width: 560 }).avif({ quality: 60 }),
+  },
+  {
+    source: "assets/couple/couple.png",
     out: "public/couple/couple-1x.webp",
-    recipe: (image) => image.resize({ width: 320 }).webp({ quality: 82 }),
+    recipe: (image) =>
+      image.trim({ threshold: 0 }).resize({ width: 560 }).webp({ quality: 82 }),
+  },
+  {
+    source: "assets/couple/couple.png",
+    out: "public/couple/couple-2x.avif",
+    /* AVIF at 1.5x rather than WebP at 2x: for a soft pencil drawing with no fine text 840px is
+       indistinguishable from 1120 on a retina screen, and AVIF is less than a third of WebP's size
+       here — 126 KB against 409. The WebP below stays as the fallback for engines without AVIF. */
+    recipe: (image) =>
+      image.trim({ threshold: 0 }).resize({ width: 840 }).avif({ quality: 50 }),
   },
   {
     source: "assets/couple/couple.png",
     out: "public/couple/couple-2x.webp",
-    recipe: (image) => image.resize({ width: 640 }).webp({ quality: 82 }),
+    recipe: (image) =>
+      image.trim({ threshold: 0 }).resize({ width: 840 }).webp({ quality: 72 }),
   },
   {
     sourceDir: "assets/family",
