@@ -1,16 +1,61 @@
-/* The drawing is cropped at its own bottom edge, so it is dissolved into the stock rather than cut.
-   A mask, not a gradient overlay: the sheet's grain sits behind the image, and an overlay in the
-   stock's colour would cover the grain with a flat block. */
+/* The drawing is a background layer, not an `<img>`: it needs no alt text (decorative), `image-set`
+   picks the right file before any byte downloads, and absolute positioning keeps it out of flow so
+   its own size can never drive the card's height (owner tweak round 1).
+
+   `.row` is the illustration's positioning root, and it needs its own stacking context (`z-index`
+   as well as `position`), not `position: relative` alone: without one, a negative-`z-index`
+   descendant is ordered against the nearest ANCESTOR stacking context instead — here the
+   `<section>` two levels up — and paints behind the sheet's own green background rather than
+   behind only its sibling text. Scoping the context to `.row` keeps the ordering local: the
+   sheet's background (painted earlier, in the tree) stays underneath, the drawing paints next,
+   and the passage text paints last, on top. */
+.row {
+  position: relative;
+  z-index: 0;
+}
+
+/* Stacked, the passage sits centred at close to the card's full width, so a right-anchored 320px
+   drawing has nowhere clear to sit — it would cross whatever text is nearest, at any vertical
+   position, because centred lines and the drawing both span nearly the whole column. Side by side,
+   the passage is left-aligned and narrower, so the same drawing clears it at full size (measured on
+   render). Below `{breakpoints.lg}` and landscape, `--wishes-illustration` keeps its smaller base
+   value (set at the composition site) instead, small enough to sit in the gap between the passage
+   and the couple names without touching either. */
+@media (width >= 64rem) and (orientation: landscape) {
+  .row {
+    --wishes-illustration: 20rem;
+  }
+}
+
 .illustration {
-  mask-image: linear-gradient(
-    to bottom,
+  position: absolute;
+  /* Right-anchored and starting exactly at the passage row's own bottom edge, growing downward:
+     centring on the row sat the couple's faces — the drawing's most opaque, highest-luminance
+     detail — directly under running text and measured 1.13:1, far under the 4.5:1 body text needs.
+     Bottom-anchoring to the row cleared the text but pushed the drawing's top past the sheet's own
+     edge, since the row sits close to the eyebrow above it. Starting flush with the row's bottom
+     keeps the whole box below the passage — clear of it entirely — while staying inside the sheet. */
+  top: 100%;
+  right: 0;
+  /* The negative right margin bleeds the drawing past the sheet's own content padding
+     (`mounted-sheet` → The frame), which an image may do and text may not; no `transform`. */
+  margin-right: calc(-1 * var(--wishes-bleed));
+  width: var(--wishes-illustration);
+  height: var(--wishes-illustration);
+  background-image: image-set(
+    url("/couple/couple-1x.webp") 1x,
+    url("/couple/couple-2x.webp") 2x
+  );
+  background-position: center;
+  background-size: cover;
+  pointer-events: none;
+
+  /* Oval, concave away from the couple: an elliptical radial gradient centred above the drawing's
+     midpoint, so the fade dips lowest under the couple and rises toward the edges, rather than
+     dissolving along one flat line. */
+  mask-image: radial-gradient(
+    ellipse 68% 46% at 50% 32%,
     #000 var(--wishes-fade-start),
     transparent 100%
   );
-}
-
-/* An image may extend past the sheet's content padding; text may not. The negative inline margin is
-   the bleed, and it is clamped so the drawing never crosses the sheet's own edge. */
-.bleed {
-  margin-inline-end: calc(-1 * var(--wishes-bleed));
 }

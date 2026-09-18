@@ -3,9 +3,9 @@ import { validateWishes } from "./validate.ts";
 
 export const wishes: WishesContent = validateWishes({
   passage:
-    "Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up, doth not behave itself unseemly, seeketh not her own, is not easily provoked, thinketh no evil.",
+    "Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It is not rude, it is not self-seeking, it is not easily angered, it keeps no account of wrongs.",
   passageAttribution: "1 Corinthians 13:4–5",
   coupleNames: "Flemy & Sebastian",
-  wishesLead: "With all our love",
+  wishesLead: "With love and joy from",
   wishesLine: "Marietta Joseph, Harry William & Amal Roy",
 });

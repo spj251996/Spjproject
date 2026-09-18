@@ -20,10 +20,17 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    `content/family.ts`'s paths for no visual gain. When the full-resolution portraits arrive, this
    entry becomes a resize-and-encode like the couple's. */
 const RECIPES = [
+  /* Wishes' illustration renders at a fixed 320px CSS box (`--wishes-illustration`), never larger, so
+     these two widths are its 1x and 2x delivery rather than one oversized file for every screen. */
   {
     source: "assets/couple/couple.png",
-    out: "public/couple/couple.webp",
-    recipe: (image) => image.resize({ width: 900 }).webp({ quality: 82 }),
+    out: "public/couple/couple-1x.webp",
+    recipe: (image) => image.resize({ width: 320 }).webp({ quality: 82 }),
+  },
+  {
+    source: "assets/couple/couple.png",
+    out: "public/couple/couple-2x.webp",
+    recipe: (image) => image.resize({ width: 640 }).webp({ quality: 82 }),
   },
   {
     sourceDir: "assets/family",

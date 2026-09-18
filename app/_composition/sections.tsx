@@ -1,10 +1,10 @@
-import Image from "next/image";
 import type { ComponentType } from "react";
 import celebrations from "@/app/_composition/celebrations.module.css";
 import { eventInfoFit } from "@/app/_composition/event-info-fit";
 import { familyFit } from "@/app/_composition/family-fit";
 import { inviteFit } from "@/app/_composition/invite-fit";
 import wishesStyles from "@/app/_composition/wishes.module.css";
+import { wishesFit } from "@/app/_composition/wishes-fit";
 import { Family } from "@/components/family/family";
 import {
   BetrothalIcon,
@@ -460,44 +460,50 @@ export function CelebrationsSection() {
 }
 
 /* The page's close, and the only section on the green stock. Every value below is a starting point
-   for the owner's tweak loop, reported as inferred: the column split, the bleed distance and the fade
-   start. The illustration is static — Phase 4 renders no motion, and its entrance is decided in
-   Phase 5 with the thread. */
+   for the owner's tweak loop, reported as inferred: the illustration's size, the bleed distance and
+   the fade shape. The illustration is static — Phase 4 renders no motion, and its entrance is
+   decided in Phase 5 with the thread. */
 export function WishesSection() {
   return (
     <section className="relative z-(--z-content)" id="wishes">
-      <MountedSheet stock="contrast">
+      <MountedSheet fit={wishesFit} stock="contrast">
         <div
           className="wishes-stack flex w-full flex-col items-center"
           style={{
             ["--wishes-bleed" as string]: "var(--spacing-space-lg)",
             ["--wishes-fade-start" as string]: "72%",
+            /* The stacked-tier base value: small enough to clear the passage above and the couple
+               names below without touching either (`wishes.module.css` → `.row`'s media query
+               raises it to 20rem once the passage is left-aligned and narrower, side by side).
+               Out of flow (`.row`/`.illustration` below), it never drives the card's height at any
+               width, so both figures are free choices rather than a fitted budget — inferred, not
+               the owner's numbers; theirs from the tweak loop. */
+            ["--wishes-illustration" as string]: "4.5rem",
           }}
         >
           <p className="type-eyebrow">A life in love</p>
 
-          <div className="mt-space-lg flex w-full flex-col items-center gap-space-lg [@media(width>=48rem)]:flex-row [@media(width>=48rem)]:items-center [@media(width>=48rem)]:gap-space-2xl">
-            <div className="flex flex-col items-center text-center [@media(width>=48rem)]:flex-1 [@media(width>=48rem)]:items-start [@media(width>=48rem)]:text-left">
+          {/* `.row` is the illustration's positioning root (its own stacking context — why, in
+              wishes.module.css): the passage's own height sets the row's height, and the
+              illustration layers behind it (`wishesStyles.illustration`) without joining the flex
+              flow, so it can never add to that height. The two-column composition now reads as
+              alignment alone — centred while stacked, left-aligned once side by side — matching
+              Event Info's own side-by-side condition (`mounted-pair` → `pairsSideBySide`) rather
+              than the plain width switch this used before. */}
+          <div
+            className={`${wishesStyles.row} mt-space-lg flex w-full flex-col items-center`}
+          >
+            <div className="flex flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:text-left">
               <p className="type-body text-pretty">{wishes.passage}</p>
               <p className="type-caption mt-space-sm">
                 {wishes.passageAttribution}
               </p>
             </div>
 
-            <div
-              className={`${wishesStyles.bleed} flex shrink-0 justify-center [@media(width>=48rem)]:flex-1`}
-            >
-              <Image
-                alt=""
-                className={wishesStyles.illustration}
-                height={900}
-                src="/couple/couple.webp"
-                width={900}
-              />
-            </div>
+            <div aria-hidden className={wishesStyles.illustration} />
           </div>
 
-          <p className="type-heading-script mt-space-2xl">
+          <p className="type-heading-script mt-space-3xl">
             {wishes.coupleNames}
           </p>
 
