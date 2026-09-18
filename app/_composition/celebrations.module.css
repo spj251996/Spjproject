@@ -1,26 +1,38 @@
-/* The spine is a single rule behind the rows rather than a border on each, so it runs unbroken
-   through the gaps and stops at the first and last mark instead of at the list's padding box.
-   Phase 6 replaces it with the thread's own generated segment. */
 .list {
-  position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
   width: 100%;
 }
 
-.list::before {
-  content: "";
-  position: absolute;
-  inset-block: var(--celebrations-spine-inset);
-  inset-inline-start: var(--celebrations-spine-x);
-  width: var(--stroke-divider);
-  background-color: var(--color-accent-gold);
-}
-
 .row {
   position: relative;
   padding-inline-start: var(--celebrations-row-indent);
+}
+
+/* The spine is drawn per row rather than as a border on each or a single rule behind the list,
+   so it can anchor to marks instead of to box edges: a fixed inset from the list's own top/bottom
+   stops at the first mark (which sits at a fixed offset from the list top) but overruns the last
+   one, whose row height varies with its description's wrap.
+
+   Every mark sits at the same offset from its own row's top, so the reach from one mark's centre
+   to the next is exactly this row's height plus the gap to the next row — the offset cancels out.
+   Skipping the segment on the last row lets the second-to-last row's segment be the one that ends
+   the chain exactly on the last mark, with no reference to the list's box needed at either end.
+   The gap must match the list's own `gap-space-xl` utility class. Phase 6 replaces this with the
+   thread's own generated segment. */
+.row:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(
+    var(--celebrations-mark-offset) +
+    var(--celebrations-mark-size) /
+    2
+  );
+  inset-inline-start: var(--celebrations-spine-x);
+  width: var(--stroke-divider);
+  height: calc(100% + var(--spacing-space-xl));
+  background-color: var(--color-accent-gold);
 }
 
 .mark {

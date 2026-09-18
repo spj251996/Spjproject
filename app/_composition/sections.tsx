@@ -407,7 +407,6 @@ export function CelebrationsSection() {
           style={{
             ["--celebrations-measure" as string]: "42rem",
             ["--celebrations-spine-x" as string]: "0.5rem",
-            ["--celebrations-spine-inset" as string]: "0.75rem",
             ["--celebrations-row-indent" as string]: "2.5rem",
             ["--celebrations-mark-size" as string]: "0.5rem",
             ["--celebrations-mark-offset" as string]: "0.5rem",
