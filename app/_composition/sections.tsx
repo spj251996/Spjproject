@@ -396,7 +396,10 @@ const CELEBRATIONS_INTRO = [
   "Moments leading up to the day, shared as they unfold.",
 ] as const;
 
-const CELEBRATIONS_LIST_CLASS = `${celebrations.list} mt-space-2xl flex flex-col`;
+/* No `mt-*` utility here: `celebrations.list`'s own `margin: 0` is a plain, unlayered rule, so it
+   always beats a Tailwind margin utility regardless of value — the gap has to be set inside the
+   module instead (celebrations.module.css), through `--celebrations-intro-gap`. */
+const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
 export function CelebrationsSection() {
   return (
@@ -405,17 +408,18 @@ export function CelebrationsSection() {
         <div
           className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center"
           style={{
-            ["--celebrations-measure" as string]: "42rem",
+            ["--celebrations-measure" as string]: "36rem",
             ["--celebrations-spine-x" as string]: "0.5rem",
             ["--celebrations-row-indent" as string]: "2.5rem",
             ["--celebrations-row-gap" as string]: "var(--spacing-space-xl)",
             ["--celebrations-mark-size" as string]: "0.5rem",
             ["--celebrations-mark-offset" as string]: "0.5rem",
+            ["--celebrations-intro-gap" as string]: "var(--spacing-space-4xl)",
           }}
         >
           <h2 className="type-heading-script text-ink">The Celebrations</h2>
 
-          <div className="mt-space-sm flex flex-col gap-space-2xs">
+          <div className="mt-space-2xs flex flex-col gap-space-2xs">
             {CELEBRATIONS_INTRO.map((line) => (
               <p className="type-body text-ink text-pretty" key={line}>
                 {line}
@@ -427,7 +431,14 @@ export function CelebrationsSection() {
           <ol className={CELEBRATIONS_LIST_CLASS} role="list">
             {rituals.map((ritual) => (
               <li className={`${celebrations.row} text-left`} key={ritual.id}>
-                <span aria-hidden className={celebrations.mark} />
+                {/* `rounded-full` is the project's circle shape (DESIGN.md → Foundations → Shapes
+                    lists Circle for `timeline-node`'s node dot, drawn the same way): Circle has no
+                    dedicated radius token, so this matches the codebase's own convention rather
+                    than a raw `border-radius: 50%`. */}
+                <span
+                  aria-hidden
+                  className={`${celebrations.mark} rounded-full`}
+                />
                 <h3 className="type-heading-lg text-ink">{ritual.title}</h3>
                 <p className="type-body text-ink mt-space-2xs text-pretty">
                   {ritual.description}
