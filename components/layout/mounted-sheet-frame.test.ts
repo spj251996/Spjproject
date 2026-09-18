@@ -6,9 +6,14 @@ import {
   type MeasuredFit,
   pairsSideBySide,
   regimesFor,
+  tallWindowClasses,
   windowClasses,
 } from "./mounted-sheet-frame.ts";
-import { mountedSheetFrameCss } from "./mounted-sheet-frame-css.ts";
+import {
+  mountedSheetFrameCss,
+  TALL_SCOPE_CLASS,
+  tallFrameCss,
+} from "./mounted-sheet-frame-css.ts";
 
 /* `assertValidFit` is private; every throw is exercised through `windowClasses` or
    `mountedSheetFrameCss`, the way production code reaches it. */
@@ -650,4 +655,63 @@ test("a section taller than the compact height cap cannot be framed", () => {
     },
   });
   assert.throws(() => mountedSheetFrameCss(tall, false), /cannot be framed/);
+});
+
+/* Tall mode's whole promise is that the card looks like its fitted neighbours: full ground, largest
+   padding step, the tier's own width cap. These assert the four tiers' values directly, because a
+   regression here is invisible on screen until someone compares two sections side by side. */
+test("tall mode gives each tier its full ground and largest padding step", () => {
+  const byTier = new Map(tallWindowClasses(false).map((c) => [c.media, c]));
+  const phone = [...byTier.values()].find((c) => c.widthTier === "mobile");
+  assert.equal(phone?.ground, 16);
+  assert.equal(phone?.padding, 32);
+  assert.equal(phone?.mountShows, false);
+
+  const tablet = [...byTier.values()].find((c) => c.widthTier === "tablet");
+  assert.equal(tablet?.ground, 48);
+  assert.equal(tablet?.padding, 64);
+  assert.equal(tablet?.mountShows, true);
+
+  const compact = [...byTier.values()].find(
+    (c) =>
+      c.widthTier === "desktop" && c.media.includes("not (pointer: coarse)"),
+  );
+  assert.equal(compact?.ground, 64);
+  assert.equal(compact?.padding, 64);
+
+  const wide = [...byTier.values()].find(
+    (c) => c.widthTier === "wide" && c.media.includes("not (pointer: coarse)"),
+  );
+  assert.equal(wide?.ground, 96);
+  assert.equal(wide?.padding, 96);
+});
+
+test("a touchscreen from the compact tier up takes the tablet ground", () => {
+  const coarse = tallWindowClasses(false).filter(
+    (c) =>
+      c.media.includes("(pointer: coarse)") &&
+      !c.media.includes("not (pointer: coarse)"),
+  );
+  assert.equal(coarse.length, 2);
+  for (const windowClass of coarse) assert.equal(windowClass.ground, 48);
+});
+
+test("a hero tall card keeps its mount at the phone ground tier", () => {
+  const phone = tallWindowClasses(true).find((c) => c.widthTier === "mobile");
+  assert.equal(phone?.mountShows, true);
+  assert.equal(phone?.reveal, 12);
+});
+
+test("tall mode states no height threshold and no container query", () => {
+  const css = tallFrameCss(false);
+  assert.ok(css.includes(TALL_SCOPE_CLASS));
+  assert.equal(/\(height/.test(css), false);
+  assert.equal(/@container/.test(css), false);
+  assert.equal(/min-height:\s*min\(/.test(css), false);
+});
+
+test("tall mode caps the card's width at each tier", () => {
+  const css = tallFrameCss(false);
+  assert.ok(css.includes("var(--container-content)"));
+  assert.ok(css.includes("var(--container-content-compact)"));
 });

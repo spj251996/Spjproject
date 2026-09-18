@@ -48,7 +48,7 @@ export function regimesFor(
   return regimes[orientation];
 }
 
-interface GroundTier {
+export interface GroundTier {
   name: GroundTierName;
   ground: number;
   /* Largest first. */
@@ -569,6 +569,65 @@ export function windowClasses(
       TOUCHSCREEN_QUERY,
       GROUND_TIERS.tablet,
       lines.wideTouchscreen,
+    ),
+  ];
+}
+
+/* A tall section's window classes: width and primary pointer only.
+
+   A tall card is taller than every window, so there is no tier line to split it by height and no
+   give-way to apply — it takes the full ground and the largest padding step of its tier, the card an
+   unpressed window would have given a fitted section. The touchscreen split stays, because a
+   touchscreen's ground tier is a property of the device, not of the content. */
+export interface TallWindowClass {
+  media: string;
+  widthTier: WidthTier;
+  ground: number;
+  padding: number;
+  reveal: number;
+  mountShows: boolean;
+}
+
+export function tallWindowClasses(hero: boolean): TallWindowClass[] {
+  const md = `${BREAKPOINT_REM.md}rem`;
+  const lg = `${BREAKPOINT_REM.lg}rem`;
+  const xl = `${BREAKPOINT_REM.xl}rem`;
+  const pointer = `(not ${TOUCHSCREEN_QUERY})`;
+
+  const build = (
+    media: string,
+    widthTier: WidthTier,
+    groundTier: GroundTier,
+  ): TallWindowClass => {
+    const shows = hero || groundTier.name !== "phone";
+    return {
+      media,
+      widthTier,
+      ground: groundTier.ground,
+      padding: groundTier.paddingSteps[0],
+      reveal: shows ? REVEAL[widthTier] : 0,
+      mountShows: shows,
+    };
+  };
+
+  return [
+    build(`(width < ${md})`, "mobile", GROUND_TIERS.phone),
+    build(`(${md} <= width < ${lg})`, "tablet", GROUND_TIERS.tablet),
+    build(
+      `(${lg} <= width < ${xl}) and ${pointer}`,
+      "desktop",
+      GROUND_TIERS.compact,
+    ),
+    build(
+      `(${lg} <= width < ${xl}) and ${TOUCHSCREEN_QUERY}`,
+      "desktop",
+      GROUND_TIERS.tablet,
+    ),
+    build(`(width >= ${xl}) and ${pointer}`, "wide", GROUND_TIERS.laptop),
+    build(
+      `(width >= ${xl}) and ${TOUCHSCREEN_QUERY}`,
+      "wide",
+      GROUND_TIERS.tablet,
     ),
   ];
 }

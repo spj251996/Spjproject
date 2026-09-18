@@ -19,6 +19,7 @@ import {
   revealFor,
   SIDE_GROUND_MULTIPLE,
   smallestPadding,
+  tallWindowClasses,
   type WindowClass,
   windowClasses,
 } from "./mounted-sheet-frame.ts";
@@ -506,4 +507,73 @@ export function mountedSheetFrameCss(
       paddingRules(windowClass, hero, layout, scope, stackedPadding),
     ]),
   ].join("\n");
+}
+
+/* Every tall section shares one stylesheet, because tall mode has no per-section threshold to scope —
+   that is the whole difference from a fitted frame. */
+export const TALL_SCOPE_CLASS = "mounted-sheet-frame--tall";
+
+/* A section that scrolls rather than fitting one window. No height query, no container query and no
+   minimum card height: the card is its content's height, and the page scrolls past it. The landscape
+   side ground is a flat double, with none of the fitted frame's leftover-from-the-height-cap term,
+   because a tall card has no height cap to leave anything over. */
+export function tallFrameCss(hero: boolean): string {
+  const scope = `.${TALL_SCOPE_CLASS}`;
+  const box = `${scope} > .${FRAME_CLASS.box}`;
+  const mount = `${box} > .${FRAME_CLASS.mount}`;
+  const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
+
+  const base = `${scope} {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  padding-block: ${GROUND_VALUE};
+  padding-inline: ${GROUND_VALUE};
+  justify-content: center;
+  justify-content: safe center;
+  align-items: center;
+  align-items: safe center;
+}
+@media (orientation: landscape) {
+${scope} { padding-inline: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
+}
+${box} {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+@media (orientation: landscape) {
+${box} { width: min(var(--container-content), 100%); }
+}
+@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+${box} { width: min(var(--container-content-compact), 100%); }
+}
+${mount} {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+${sheet} {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  justify-content: safe center;
+  align-items: center;
+  align-items: safe center;
+}`;
+
+  const perClass = tallWindowClasses(hero).map((windowClass) => {
+    const fill = windowClass.mountShows
+      ? ""
+      : " background-color: transparent; background-image: none;";
+    return `@media ${windowClass.media} {
+${scope} { ${GROUND}: ${spacing(windowClass.ground)}; }
+${mount} { padding: ${spacing(windowClass.reveal)};${fill} }
+${sheet} { padding: ${spacing(windowClass.padding)}; }
+}`;
+  });
+
+  return [base, ...perClass].join("\n");
 }
