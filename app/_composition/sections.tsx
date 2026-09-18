@@ -389,11 +389,9 @@ export function FamilySection() {
   );
 }
 
-/* The placeholder timeline card. Every value here is a starting point for the owner's tweak loop,
-   reported as inferred: the spine's position, the mark's size and offset, the row indent and every
-   gap. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured fit — it grows to
-   its content and the page scrolls past it. Phase 6 replaces the whole interior with the real
-   timeline; only the frame and the header are meant to survive. */
+/* The placeholder timeline card. The section is tall (`mounted-sheet`'s tall mode), so it takes no
+   measured fit — it grows to its content and the page scrolls past it. Phase 6 replaces the whole
+   interior with the real timeline; only the frame and the header are meant to survive. */
 /* Two lines, not one paragraph, because the second does different work: it is what tells a guest
    photographs arrive here after the wedding, so it is set apart and set in italic. The card would
    otherwise read as finished rather than as still to come. */
@@ -459,58 +457,45 @@ export function CelebrationsSection() {
   );
 }
 
-/* The page's close, and the only section on the green stock. Every value below is a starting point
-   for the owner's tweak loop, reported as inferred: the illustration's size, the bleed distance and
-   the fade shape. The illustration is static — Phase 4 renders no motion, and its entrance is
-   decided in Phase 5 with the thread. */
+/* The page's close, and the only section on the green stock. The illustration's size and bleed
+   distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
+   illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
+   the thread. */
 export function WishesSection() {
   return (
     <section className="relative z-(--z-content)" id="wishes">
       <MountedSheet fit={wishesFit} stock="contrast">
         <div
-          className="wishes-stack flex w-full flex-col items-center"
+          className={`${wishesStyles.stack} wishes-stack flex w-full flex-col items-center`}
           style={{
-            ["--wishes-bleed" as string]: "var(--spacing-space-lg)",
-            ["--wishes-fade-start" as string]: "72%",
-            /* The stacked-tier base value: small enough to clear the passage above and the couple
-               names below without touching either (`wishes.module.css` → `.row`'s media query
-               raises it to 20rem once the passage is left-aligned and narrower, side by side).
-               Out of flow (`.row`/`.illustration` below), it never drives the card's height at any
-               width, so both figures are free choices rather than a fitted budget — inferred, not
-               the owner's numbers; theirs from the tweak loop. */
-            ["--wishes-illustration" as string]: "4.5rem",
+            /* The drawing's own proportions once its transparent border is trimmed off. */
+            ["--wishes-figure-ratio" as string]: "560 / 573",
           }}
         >
           <p className="type-eyebrow">A life in love</p>
 
-          {/* `.row` is the illustration's positioning root (its own stacking context — why, in
-              wishes.module.css): the passage's own height sets the row's height, and the
-              illustration layers behind it (`wishesStyles.illustration`) without joining the flex
-              flow, so it can never add to that height. The two-column composition now reads as
-              alignment alone — centred while stacked, left-aligned once side by side — matching
-              Event Info's own side-by-side condition (`mounted-pair` → `pairsSideBySide`) rather
-              than the plain width switch this used before. */}
-          <div
-            className={`${wishesStyles.row} mt-space-lg flex w-full flex-col items-center`}
-          >
-            <div className="flex flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:text-left">
-              <p className="type-body text-pretty">{wishes.passage}</p>
-              <p className="type-caption mt-space-sm">
-                {wishes.passageAttribution}
-              </p>
-            </div>
-
-            <div aria-hidden className={wishesStyles.illustration} />
+          <div className="mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg flex w-full flex-col items-center text-center">
+            <p className="type-body text-pretty">{wishes.passage}</p>
+            <p className="type-caption mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
+              {wishes.passageAttribution}
+            </p>
           </div>
 
-          <p className="type-heading-script mt-space-3xl">
+          <div className={wishesStyles.figureCol}>
+            <div aria-hidden className={wishesStyles.figure} />
+          </div>
+
+          <p className="type-heading-script mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
             {wishes.coupleNames}
           </p>
 
-          <div className="mt-space-lg flex flex-col items-center gap-space-3xs text-center">
-            <p className="type-body-italic">{wishes.wishesLead}</p>
-            <p className="type-body">{wishes.wishesLine}</p>
-          </div>
+          {/* Two lines in both layouts: the lead in italic, the names who send it in regular. */}
+          <p
+            className={`${wishesStyles.signoff} type-body mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg text-center`}
+          >
+            <span className="type-body-italic">{wishes.wishesLead}</span>
+            <span>{wishes.wishesLine}</span>
+          </p>
         </div>
       </MountedSheet>
     </section>
