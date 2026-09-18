@@ -79,6 +79,7 @@ const SPACING_TOKEN: Readonly<Record<number, string>> = {
   48: "--spacing-space-xl",
   64: "--spacing-space-2xl",
   96: "--spacing-space-3xl",
+  128: "--spacing-space-4xl",
 };
 
 function spacing(px: number): string {

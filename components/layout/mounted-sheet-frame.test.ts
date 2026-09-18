@@ -666,19 +666,22 @@ test("a section taller than the compact height cap cannot be framed", () => {
   assert.throws(() => mountedSheetFrameCss(tall, false), /cannot be framed/);
 });
 
-/* Tall mode's whole promise is that the card looks like its fitted neighbours: full ground, largest
-   padding step, the tier's own width cap. These assert the four tiers' values directly, because a
-   regression here is invisible on screen until someone compares two sections side by side. */
-test("tall mode gives each tier its full ground and largest padding step", () => {
+/* Tall mode's whole promise is that the card looks like its fitted neighbours, but padded one step
+   past them: full ground, one padding step above the fitted ladder's largest, the tier's own width
+   cap. A tall card never has to give way, so it can afford the extra step, and at the fitted value a
+   scrolling card reads as too tight (owner, 2026-09-18). These assert the four tiers' values
+   directly, because a regression here is invisible on screen until someone compares two sections
+   side by side. */
+test("tall mode gives each tier its full ground and one padding step above its fitted largest", () => {
   const byTier = new Map(tallWindowClasses(false).map((c) => [c.media, c]));
   const phone = [...byTier.values()].find((c) => c.widthTier === "mobile");
   assert.equal(phone?.ground, 16);
-  assert.equal(phone?.padding, 32);
+  assert.equal(phone?.padding, 48);
   assert.equal(phone?.mountShows, false);
 
   const tablet = [...byTier.values()].find((c) => c.widthTier === "tablet");
   assert.equal(tablet?.ground, 48);
-  assert.equal(tablet?.padding, 64);
+  assert.equal(tablet?.padding, 96);
   assert.equal(tablet?.mountShows, true);
 
   const compact = [...byTier.values()].find(
@@ -686,13 +689,13 @@ test("tall mode gives each tier its full ground and largest padding step", () =>
       c.widthTier === "desktop" && c.media.includes("not (pointer: coarse)"),
   );
   assert.equal(compact?.ground, 64);
-  assert.equal(compact?.padding, 64);
+  assert.equal(compact?.padding, 96);
 
   const wide = [...byTier.values()].find(
     (c) => c.widthTier === "wide" && c.media.includes("not (pointer: coarse)"),
   );
   assert.equal(wide?.ground, 96);
-  assert.equal(wide?.padding, 96);
+  assert.equal(wide?.padding, 128);
 });
 
 test("a touchscreen from the compact tier up takes the tablet ground", () => {
@@ -719,8 +722,8 @@ test("tall mode states no height threshold and no container query", () => {
   assert.equal(/min-height:\s*min\(/.test(css), false);
 });
 
-/* Ground and padding pixel values tall mode actually emits (phone 16/32, tablet 48/64, compact
-   64/64, laptop 96/96), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
+/* Ground and padding pixel values tall mode actually emits (phone 16/48, tablet 48/96, compact
+   64/96, laptop 96/128), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
    (private) `SPACING_TOKEN` does. Kept separate from that map, as every other CSS-content assertion
    in this file states its expected literal by hand rather than importing the generator's internals. */
 const GROUND_TOKEN: Readonly<Record<number, string>> = {
@@ -730,9 +733,9 @@ const GROUND_TOKEN: Readonly<Record<number, string>> = {
   96: "--spacing-space-3xl",
 };
 const PADDING_TOKEN: Readonly<Record<number, string>> = {
-  32: "--spacing-space-lg",
-  64: "--spacing-space-2xl",
+  48: "--spacing-space-xl",
   96: "--spacing-space-3xl",
+  128: "--spacing-space-4xl",
 };
 
 test("each tall window class's own block binds its ground and sheet padding, never another class's", () => {

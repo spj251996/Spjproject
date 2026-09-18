@@ -585,8 +585,9 @@ export function windowClasses(
 /* A tall section's window classes: width and primary pointer only.
 
    A tall card is taller than every window, so there is no tier line to split it by height and no
-   give-way to apply — it takes the full ground and the largest padding step of its tier, the card an
-   unpressed window would have given a fitted section. The touchscreen split stays, because a
+   give-way to apply — it never has to give up padding for room the way a fitted card does at a
+   pressed window, so it can afford one step more than a fitted card's largest step. At the fitted
+   value itself, a card that scrolls reads as too tight. The touchscreen split stays, because a
    touchscreen's ground tier is a property of the device, not of the content. */
 export interface TallWindowClass {
   media: string;
@@ -596,6 +597,15 @@ export interface TallWindowClass {
   reveal: number;
   mountShows: boolean;
 }
+
+/* One step above each ground tier's own largest (`paddingSteps[0]`), read off the spacing scale:
+   phone 32 → 48, tablet and compact 64 → 96, laptop 96 → 128 (owner, 2026-09-18). */
+const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
+  phone: 48,
+  tablet: 96,
+  compact: 96,
+  laptop: 128,
+};
 
 export function tallWindowClasses(hero: boolean): TallWindowClass[] {
   const md = `${BREAKPOINT_REM.md}rem`;
@@ -613,7 +623,7 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
       media,
       widthTier,
       ground: groundTier.ground,
-      padding: groundTier.paddingSteps[0],
+      padding: TALL_PADDING[groundTier.name],
       reveal: shows ? REVEAL[widthTier] : 0,
       mountShows: shows,
     };
