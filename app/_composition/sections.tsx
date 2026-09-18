@@ -286,7 +286,7 @@ function mapLabel(segment: EventSegment): string {
 }
 
 const PLATE_LIST_CLASS =
-  "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr]";
+  "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:my-auto";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
@@ -330,7 +330,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
    `eventInfoFit`: any content or type change re-runs `npm run measure:fit`. */
 function EventSheet({ event }: { event: WeddingEvent }) {
   return (
-    <div className="flex w-full flex-col items-center text-center">
+    <div className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
       <EventSheetHeading event={event} />
       <Divider className="my-space-lg hidden w-space-2xl md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden" />
       <PlateSegments segments={event.segments} />
