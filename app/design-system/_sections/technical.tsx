@@ -41,7 +41,7 @@ const ZONES: SpanZone[] = [
     width: "≥ 64rem (1024px)",
     changes: [
       "Parallel splits; timeline nodes alternate sides",
-      "Compact type step from lg, desktop type step from xl — e.g. display-name at 96px / 120px",
+      "Compact type step from lg, desktop type step from xl",
       "Desktop thread path",
     ],
   },

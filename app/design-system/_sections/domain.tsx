@@ -116,9 +116,8 @@ export function DomainSections() {
           source="@/components/family/family"
           spec={[
             "eyebrow · heading-script family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
-            "portrait uniform at 72 / 112 / 72 / 88px (phone / tablet / compact / desktop) · name and relationship each on one line, wrapping within the column where that cannot hold",
+            "portrait uniform · name and relationship each on one line, wrapping within the column where that cannot hold",
             "gold stroke-divider couple line between every couple, stopping short of both rims",
-            "bride's siblings space-2xl / space-4xl / space-3xl / space-4xl apart · groom's space-md / space-2xl / space-xl / space-2xl (phone / tablet / compact / desktop)",
           ]}
         >
           <div className="flex flex-col gap-space-md">

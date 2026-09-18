@@ -481,7 +481,7 @@ export function FoundationsSections() {
           name="mounted-sheet"
           note="Unframed, as every specimen box is. Resize below md: padding steps down and non-hero mounts drop fill and reveal. The framed form is live at /."
           source="@/components/layout/mounted-sheet"
-          spec="surface-mount · shadow-mount · paper or contrast stock · square · reveal 16px from xl, 12px below it"
+          spec="surface-mount · shadow-mount · paper or contrast stock · square · reveal"
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
