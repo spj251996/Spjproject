@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
+    "images": "node scripts/generate-images.mjs",
     "test": "node --test content/*.test.ts components/**/*.test.ts",
     "validate:content": "node content/verify.ts",
     "verify:section": "node scripts/verify-section.mjs",
