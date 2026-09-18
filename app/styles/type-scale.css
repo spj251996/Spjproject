@@ -1,49 +1,56 @@
-/* Foundations → Typography, the class half of the type scale.
-
-   The `--text-*` tokens carry size, weight, letter-spacing and line-height, but the framework has
-   no `--text-*` modifier for `font-family` or `text-transform`. A size utility alone therefore
-   cannot express a semantic role, which is why each role gets a class rather than being consumed
-   as a bare `text-<role>` utility. The classes read their metrics back out of the tokens instead of
-   restating values, and sit in the components layer so ordinary utilities still win on override. */
+/* Each role is a class rather than a bare `text-<role>` utility, because `--text-*` has no modifier
+   for `font-family` or `text-transform`. The classes sit in the components layer so ordinary
+   utilities still override them. The variables themselves step at the breakpoints, in tokens.css. */
 
 @layer components {
-  /* Couple names only. This is the one role that steps across viewports; it steps at `md` as well
-     as `lg` (Responsive Behavior names it as the single exception to `lg` being the layout switch),
-     inside framework variants so the token references survive. */
   .type-display-name {
     font-family: var(--font-script);
-    font-size: var(--text-display-name-mobile);
-    font-weight: var(--text-display-name-mobile--font-weight);
+    font-size: var(--text-display-name);
+    font-weight: var(--text-display-name--font-weight);
+    line-height: var(--text-display-name--line-height);
+  }
 
-    @variant md {
-      font-size: var(--text-display-name-tablet);
-      font-weight: var(--text-display-name-tablet--font-weight);
+  /* Orientation, not width, because one width tier covers both. This `line-height` beats the base
+     rule's only by source order, so it must stay below it. */
+  @media (orientation: portrait) {
+    .type-display-name {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 0.9;
     }
 
-    @variant lg {
-      font-size: var(--text-display-name-desktop);
-      font-weight: var(--text-display-name-desktop--font-weight);
+    .type-display-name__joiner {
+      font-size: 0.5em;
     }
+  }
+
+  .type-heading-script {
+    font-family: var(--font-script);
+    font-size: var(--text-heading-script);
+    font-weight: var(--text-heading-script--font-weight);
+    line-height: var(--text-heading-script--line-height);
   }
 
   .type-heading-xl {
     font-family: var(--font-serif);
     font-size: var(--text-heading-xl);
     font-weight: var(--text-heading-xl--font-weight);
+    line-height: var(--text-heading-xl--line-height);
   }
 
   .type-heading-lg {
     font-family: var(--font-serif);
     font-size: var(--text-heading-lg);
     font-weight: var(--text-heading-lg--font-weight);
+    line-height: var(--text-heading-lg--line-height);
   }
 
-  /* Separates from `.type-heading-lg` at the same size by weight, not by scale. */
   .type-date-primary {
     font-family: var(--font-serif);
     font-size: var(--text-date-primary);
     font-weight: var(--text-date-primary--font-weight);
-    letter-spacing: var(--text-date-primary--letter-spacing);
+    line-height: var(--text-date-primary--line-height);
   }
 
   .type-body {
@@ -53,14 +60,35 @@
     line-height: var(--text-body--line-height);
   }
 
-  /* The only type role that carries a color. DESIGN.md → Foundations → Colors states the eyebrow is
-     ALWAYS gold and never ink, on both stocks, so the role owns the color outright rather than every
-     caller pairing the class with a token and being able to get it wrong. */
+  /* The body role in italic. A separate class rather than an `italic` utility beside `type-body`,
+     so the role owns its own face and no caller can reach it with a synthesised oblique. */
+  .type-body-italic {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: var(--text-body--font-weight);
+    font-style: italic;
+    line-height: var(--text-body--line-height);
+  }
+
+  .type-caption {
+    font-family: var(--font-sans);
+    font-size: var(--text-caption);
+    font-weight: var(--text-caption--font-weight);
+    line-height: var(--text-caption--line-height);
+  }
+
+  /* Paired with `type-caption` on the raised ordinal, whose leading would otherwise push the date
+     line past its own line height. Wins only by source order, so it stays below `.type-caption`. */
+  .type-date-ordinal {
+    line-height: 0;
+  }
+
   .type-eyebrow {
     font-family: var(--font-sans);
     font-size: var(--text-eyebrow);
     font-weight: var(--text-eyebrow--font-weight);
     letter-spacing: var(--text-eyebrow--letter-spacing);
+    line-height: var(--text-eyebrow--line-height);
     text-transform: uppercase;
     color: var(--color-accent-gold);
   }
@@ -70,6 +98,7 @@
     font-size: var(--text-action);
     font-weight: var(--text-action--font-weight);
     letter-spacing: var(--text-action--letter-spacing);
+    line-height: var(--text-action--line-height);
     text-transform: uppercase;
   }
 }

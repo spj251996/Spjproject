@@ -1,61 +1,73 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
 import { ImagePlaceholder } from "./image-placeholder";
 
-/* DESIGN.md → Components → UI → `portrait`.
+/* Flat props rather than `FamilyMember`: a portable component may not name a domain type.
 
-   Props are flat scalars rather than the `FamilyMember` object: this lives in the portable layer,
-   which may not name a domain type without reversing the dependency direction the structure rule
-   sets. The composing Family section destructures.
+   The composing section sets the photo's diameter as `--portrait-diameter`, and the gap between
+   photo and name through `className`. `--portrait-overrun` is how far each text line may run past
+   the photo on either side before it wraps; the section sets it from the gap beside the portrait,
+   so the real roster's text never meets.
 
-   `image-placeholder` renders as a base layer underneath the image rather than behind a data check.
-   The doc scopes the placeholder to "missing or still loading" — a render-time state no data check
-   can observe — and a base layer satisfies both without a hook, keeping this component server-
-   rendered. Known weakness: an image with transparent regions lets the placeholder tone show through.
+   No `sizes`: the export serves images unoptimized, so there is no srcset for it to choose from.
 
-   `size` has no token behind it; the doc states no portrait dimension. The default is inferred. */
+   The placeholder is a base layer under the image rather than behind a data check, because
+   "still loading" is a render-time state no data check can see; this keeps the component
+   server-rendered. An image with transparent regions lets the placeholder show through. */
 
 interface PortraitProps {
   name: string;
   relationship: string;
   src: string | null;
-  /** Rendered diameter in px. Inferred default — DESIGN.md states no portrait dimension. */
-  size?: number;
   className?: string;
+}
+
+/* The negative margins keep the column at the photo's width while the line runs wider. */
+function TextLine({
+  className,
+  children,
+}: {
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <span className="-mx-(--portrait-overrun,0px) flex w-[calc(var(--portrait-diameter)+2*var(--portrait-overrun,0px))] justify-center">
+      <span className={`${className} text-balance text-center`}>
+        {children}
+      </span>
+    </span>
+  );
 }
 
 export function Portrait({
   name,
   relationship,
   src,
-  size = 128,
   className,
 }: PortraitProps) {
   return (
     <figure
-      className={`flex flex-col items-center gap-space-2xs ${className ?? ""}`}
+      className={`flex w-(--portrait-diameter) flex-col items-center ${className ?? ""}`}
     >
-      <div
-        className="relative overflow-hidden rounded-full"
-        style={{ width: size, height: size }}
-      >
-        <ImagePlaceholder
-          className="absolute inset-0 h-full"
-          height={size}
-          width={size}
-        />
-        {src === null ? null : (
-          <Image
-            alt={name}
-            className="object-cover"
-            fill
-            sizes={`${size}px`}
-            src={src}
+      <div className="relative size-(--portrait-diameter) shrink-0 rounded-full ring-(length:--stroke-divider) ring-accent-gold ring-offset-(length:--stroke-rim-offset) ring-offset-surface-elevated">
+        <div className="absolute inset-0 overflow-hidden rounded-full">
+          <ImagePlaceholder
+            className="absolute inset-0 h-full"
+            height={1}
+            width={1}
           />
-        )}
+          {/* Empty alt: the figcaption below already names the person, so a screen reader
+              would otherwise announce the name twice. */}
+          {src === null ? null : (
+            <Image alt="" className="object-cover" fill src={src} />
+          )}
+        </div>
       </div>
-      <figcaption className="flex flex-col items-center gap-space-3xs text-center">
-        <span className="type-body text-ink">{name}</span>
-        <span className="type-eyebrow text-accent-gold">{relationship}</span>
+      <figcaption className="flex flex-col items-center">
+        <TextLine className="type-body text-ink">{name}</TextLine>
+        <span className="-mt-space-3xs flex">
+          <TextLine className="type-caption text-ink">{relationship}</TextLine>
+        </span>
       </figcaption>
     </figure>
   );

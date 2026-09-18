@@ -1,18 +1,7 @@
 import type { ReactNode } from "react";
 
-/* curate-gallery scaffold kit — catalog primitives (skill → references/scaffold-kit.md).
-
-   P2 alignment for the whole kit, resolved from DESIGN.md rather than the skill's portfolio example
-   token names. This project's type scale has 7 roles and no mono/code, caption or emphasis role, so
-   several of the skill's label roles fall back to `type-body` per visualizer-kit.md → Generic
-   fallbacks. Hierarchy is carried by color instead: `text-ink` for content (headings, names, prose)
-   and `text-accent-gold` for reference marks (doc paths, code paths, token names, spec
-   notes) — DESIGN.md → Colors assigns gold to "eyebrow labels ... and link accent details" and to
-   "meaning-bearing marks on ivory", which is exactly what those lines are.
-
-   Specimen headings take `type-heading-lg` at h3/h4 following the project's own precedent:
-   A domain section renders its `<h3>` name at that role, which DESIGN.md → Typography defines as "H2 and
-   event names" — a name role, not a level role. */
+/* Reference lines (doc path, source path, note, spec) take `type-caption`; content takes
+   `type-body`. */
 
 interface GallerySectionProps {
   /** Section slug WITHOUT the `ds-` prefix; the rendered id is always `ds-{id}`. */
@@ -41,9 +30,9 @@ export function GallerySection({
     >
       <div className="flex flex-col gap-space-2xs">
         <h2 className="type-heading-lg text-ink">{title}</h2>
-        <p className="type-body text-ink">→ DESIGN.md → {mapsTo}</p>
+        <p className="type-caption text-ink">→ DESIGN.md → {mapsTo}</p>
         {source === undefined ? null : (
-          <p className="type-body text-ink">{source}</p>
+          <p className="type-caption text-ink">{source}</p>
         )}
         <p className="type-body text-ink">{intro}</p>
       </div>
@@ -54,7 +43,7 @@ export function GallerySection({
 }
 
 interface SpecimenGroupProps {
-  /** Mirrors a DESIGN.md sub-group heading; rendered as an eyebrow, per the skill's h3 group role. */
+  /** Mirrors a DESIGN.md sub-group heading. */
   title: string;
   children: ReactNode;
 }
@@ -62,7 +51,7 @@ interface SpecimenGroupProps {
 export function SpecimenGroup({ title, children }: SpecimenGroupProps) {
   return (
     <div className="flex flex-col gap-space-md">
-      <h3 className="type-eyebrow text-accent-gold">{title}</h3>
+      <h3 className="type-eyebrow">{title}</h3>
       <div className="flex flex-col gap-space-lg">{children}</div>
     </div>
   );
@@ -74,9 +63,13 @@ interface SpecimenProps {
   name: string;
   /** Real import/file path the demo renders from. */
   source?: string;
+  /** One line: what it is and where it is used. */
   description?: string;
-  /** Token list or variant note; always rendered LAST, because it annotates the demo above it. */
-  spec?: string;
+  /** Only what the render cannot show: an interaction to try, an unposable state, a resize, a known gap. */
+  note?: string;
+  /** Terse token or trait list, rendered last because it annotates the demo above it. A string is
+      one `·`-separated line; an array renders one item per line. */
+  spec?: string | string[];
   /** 3 at section level, 4 inside a SpecimenGroup. Never skips a level. */
   headingLevel?: 3 | 4;
   children: ReactNode;
@@ -87,6 +80,7 @@ export function Specimen({
   name,
   source,
   description,
+  note,
   spec,
   headingLevel = 3,
   children,
@@ -98,15 +92,28 @@ export function Specimen({
       <Heading className="type-heading-lg text-ink">{name}</Heading>
 
       {source === undefined ? null : (
-        <p className="type-body text-ink">{source}</p>
+        <p className="type-caption text-ink">{source}</p>
       )}
       {description === undefined ? null : (
         <p className="type-body text-ink">{description}</p>
       )}
+      {note === undefined ? null : (
+        <p className="type-caption text-ink">{note}</p>
+      )}
 
       {children}
 
-      {spec === undefined ? null : <p className="type-body text-ink">{spec}</p>}
+      {spec === undefined ? null : Array.isArray(spec) ? (
+        <ul className="flex flex-col gap-space-3xs">
+          {spec.map((line) => (
+            <li className="type-caption text-ink" key={line}>
+              {line}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="type-caption text-ink">{spec}</p>
+      )}
     </div>
   );
 }

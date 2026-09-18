@@ -10,8 +10,11 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "test": "node --test content/*.test.ts",
-    "validate:content": "node content/verify.ts"
+    "images": "node scripts/generate-images.mjs",
+    "test": "node --test content/*.test.ts components/**/*.test.ts",
+    "validate:content": "node content/verify.ts",
+    "verify:section": "node scripts/verify-section.mjs",
+    "measure:fit": "node scripts/measure-section-fit.mjs"
   },
   "dependencies": {
     "next": "16.3.4",
@@ -25,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

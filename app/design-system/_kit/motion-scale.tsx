@@ -1,19 +1,9 @@
-/* curate-gallery visualizer kit — DurationScale + EasingCurves (skill → references/visualizer-kit.md § 6).
+/* Both visualizers are static, so reduced motion holds without a gate.
 
-   Both are static: neither animates, so `prefers-reduced-motion` is satisfied by construction rather
-   than by a gate a later edit could drop.
+   Gold marks the measurement (bar fill, curve); the mount colour marks the scaffolding (track,
+   diagonal, handles). Gold on both would render every duration bar as one solid bar. */
 
-   The split used to be two golds — one meaning-bearing, one decorative. There is now ONE gold, so
-   the distinction moved to a different axis: the bar fill and the bezier curve stay
-   `{colors.accent-gold}` because they carry the measurement, while the empty track, the reference
-   diagonal, the control handles and the control-point rings take `{colors.surface-mount}` — a real
-   token that reads as quiet ground against the base.
-
-   This matters more than it looks: while both were gold, all three duration bars rendered as one
-   solid bar and the scale conveyed nothing at all. The plot well uses the sunken fallback (deepest
-   surface + the documented divider) — this system defines no recessed level. */
-
-/* Gallery layout constants (skill → visualizer-kit.md → documented bare-px exceptions). */
+/* Gallery layout constants and plot geometry. */
 const TRACK_W = 280;
 const LABEL_W = 160;
 const CANVAS = 180;
@@ -54,12 +44,13 @@ export function DurationScale({ items }: DurationScaleProps) {
 
               <div className="relative shrink-0" style={{ width: TRACK_W }}>
                 <span
-                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+4px)] whitespace-nowrap text-accent-gold"
+                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+var(--spacing-space-3xs))] whitespace-nowrap"
                   style={{ left: barPx }}
                 >
                   {ms}ms
                 </span>
 
+                {/* 6px track height: plot geometry. */}
                 <div className="h-[6px] w-full bg-surface-mount">
                   <div
                     className="h-full bg-accent-gold"
@@ -67,10 +58,10 @@ export function DurationScale({ items }: DurationScaleProps) {
                   />
                 </div>
 
-                <span className="type-eyebrow absolute top-[calc(100%+4px)] left-0 text-accent-gold">
+                <span className="type-eyebrow absolute top-[calc(100%+var(--spacing-space-3xs))] left-0">
                   0ms
                 </span>
-                <span className="type-eyebrow absolute top-[calc(100%+4px)] right-0 text-accent-gold">
+                <span className="type-eyebrow absolute top-[calc(100%+var(--spacing-space-3xs))] right-0">
                   {maxMs}ms
                 </span>
               </div>
@@ -92,7 +83,7 @@ function EasingPlot({ token, curve }: EasingToken) {
   return (
     <div className="flex flex-col gap-space-3xs">
       <div
-        className="rounded-sm border-(length:--stroke-divider) border-accent-gold bg-surface-base"
+        className="bg-surface-elevated shadow-sheet"
         style={{ width: CANVAS, height: CANVAS }}
       >
         <svg
@@ -102,6 +93,7 @@ function EasingPlot({ token, curve }: EasingToken) {
           viewBox={`0 0 ${CANVAS} ${CANVAS}`}
           width={CANVAS}
         >
+          {/* Stroke widths, dash pattern and point radii below are plot geometry, not stroke tokens. */}
           <line
             className="stroke-surface-mount"
             strokeDasharray="2 2"

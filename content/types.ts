@@ -8,7 +8,6 @@ export interface Ritual {
   images: string[];
 }
 
-/** One sub-event within a day — the church service and the reception are separate places and times. */
 export interface EventSegment {
   id: string;
   label: string;
@@ -22,7 +21,6 @@ export interface EventSegment {
 export interface WeddingEvent {
   id: string;
   name: string;
-  /** Locality alone — district and state live in each segment's `address`. */
   cityTown: string;
   date: string;
   segments: EventSegment[];
@@ -30,11 +28,9 @@ export interface WeddingEvent {
 
 export interface FamilyMember {
   id: string;
-  /** Display name: full for parents, first name for everyone else. */
   name: string;
   relationship: string;
   portrait: string | null;
-  /** A sibling's spouse and child. Empty for everyone else. */
   family: FamilyMember[];
 }
 
@@ -42,7 +38,6 @@ export interface FamilyGroup {
   id: string;
   side: "bride" | "groom";
   familyName: string;
-  /** Mother, father, then children in birth order, eldest first. */
   members: FamilyMember[];
 }
 
@@ -55,6 +50,8 @@ export interface WishesContent {
   passage: string;
   passageAttribution: string;
   coupleNames: string;
+  /** The sign-off's opening line; its names follow in `wishesLine`. */
+  wishesLead: string;
   wishesLine: string;
 }
 
@@ -64,5 +61,10 @@ export interface FormattedDate {
   day: string;
   ordinal: string;
   month: string;
+  /** Both spellings exist at first paint, so CSS picks one without client code. */
+  monthShort: string;
   year: string;
+  /** The ISO date this was formatted from, carried so a caller can emit `<time datetime>` without
+      being handed the raw value separately. */
+  iso: string;
 }

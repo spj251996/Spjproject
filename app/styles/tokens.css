@@ -1,20 +1,10 @@
-/* Design tokens — transcribed from DESIGN.md → Foundations (plus the Elevation & Depth block and
-   the two width caps stated only in prose under Foundations → Layout). Inferred values are named
-   in the run report; nothing here is invented silently.
-
-   Split rationale (rules/web-frontend/design-system.md → Stylesheet organization): the token set is
-   a distinct self-contained concern, so the identity trigger fires regardless of length. */
-
 @theme static {
-  /* Foundations → Typography. DESIGN.md names three families but no token names for them; these
-     names are the contract app/layout.tsx must satisfy via next/font — until it does, the tokens
-     resolve to their fallback stacks. Overriding the framework's own `--font-sans` role token lets
-     preflight carry the body family instead of restating it on `body`. */
+  /* Overriding the framework's own `--font-sans` lets preflight carry the body family instead of
+     restating it on `body`. */
   --font-script: "Corinthia", cursive;
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
 
-  /* Foundations → Colors */
   --color-surface-base: #fcfbf7;
   --color-surface-mount: #ece6d7;
   --color-surface-elevated: #fffefa;
@@ -24,45 +14,49 @@
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
-  /* The tint every paper-landing shadow is drawn in. Declared so the colour is greppable and
-     documented; the shadow tokens below still carry it as literal rgba, because a `color-mix()`
-     that an engine does not support invalidates the whole box-shadow and drops the card's lift
-     entirely. Single-sourcing it is an open call — see tasks.md. */
+  /* The shadow and crease tokens below repeat this tint as literal rgba: an engine without
+     `color-mix()` drops the whole declaration. */
   --color-shadow-warm: #3a301e;
 
-  /* Foundations → Typography. Size, weight, tracking and leading ride the `--text-*` modifiers;
-     family and text-transform have no modifier, which is what forces the `.type-*` class layer
-     in styles/type-scale.css. */
-  --text-display-name-mobile: 56px;
-  --text-display-name-mobile--font-weight: 400;
-  --text-display-name-tablet: 72px;
-  --text-display-name-tablet--font-weight: 400;
-  --text-display-name-desktop: 96px;
-  --text-display-name-desktop--font-weight: 400;
-  --text-heading-xl: 48px;
+  /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
+     type-scale.css. These are the phone values; the tablet and laptop steps override them on
+     `:root` below. */
+  --text-display-name: 72px;
+  --text-display-name--font-weight: 400;
+  --text-display-name--line-height: 108px;
+  --text-heading-script: 56px;
+  --text-heading-script--font-weight: 400;
+  --text-heading-script--line-height: 56px;
+  --text-heading-xl: 34px;
   --text-heading-xl--font-weight: 700;
-  --text-heading-lg: 30px;
+  --text-heading-xl--line-height: 40px;
+  --text-heading-lg: 22px;
   --text-heading-lg--font-weight: 700;
-  --text-date-primary: 30px;
-  --text-date-primary--font-weight: 400;
-  --text-date-primary--letter-spacing: 0.06em;
+  --text-heading-lg--line-height: 28px;
+  --text-date-primary: 22px;
+  --text-date-primary--font-weight: 500;
+  --text-date-primary--line-height: 28px;
   --text-body: 17px;
   --text-body--font-weight: 400;
-  --text-body--line-height: 1.7;
-  --text-eyebrow: 12px;
+  --text-body--line-height: 26px;
+  --text-caption: 15px;
+  --text-caption--font-weight: 400;
+  --text-caption--line-height: 22px;
+  --text-eyebrow: 14px;
   --text-eyebrow--font-weight: 500;
   --text-eyebrow--letter-spacing: 0.2em;
-  --text-action: 13px;
+  --text-eyebrow--line-height: 20px;
+  --text-action: 15px;
   --text-action--font-weight: 700;
   --text-action--letter-spacing: 0.16em;
+  --text-action--line-height: 20px;
 
-  /* Foundations → Spacing. Cross-Cutting Rules: "No spacing value outside the {spacing} scale."
-     Closing the namespace makes that toolchain-enforced rather than advisory — the framework's
-     `--spacing` multiplier is disabled, so `p-5` and friends stop compiling entirely. Publishing
-     the doc's own zero step reopens exactly the zero utilities (p-0, gap-0, inset-0) and nothing
-     else. The named steps keep their `space-` prefix because bare t-shirt keys shadow the
-     container scale across max-w-/min-w-/basis-/w-/h-; the zero step stays bare because prefixing
-     it is what would break those zero utilities. */
+  /* Disabling the `--spacing` multiplier stops off-scale utilities such as `p-5` compiling. The
+     bare zero step reopens only p-0, gap-0, inset-0 and the like. The named steps keep their
+     `space-` prefix because bare t-shirt keys shadow the container scale in
+     max-w-/min-w-/basis-/w-/h-.
+     components/layout/mounted-sheet-frame*.ts holds these steps as numbers, because a media query
+     cannot read a custom property — change both together. */
   --spacing: initial;
   --spacing-0: 0px;
   --spacing-space-3xs: 4px;
@@ -74,74 +68,177 @@
   --spacing-space-xl: 48px;
   --spacing-space-2xl: 64px;
   --spacing-space-3xl: 96px;
+  --spacing-space-4xl: 128px;
 
-  /* Foundations → Shapes */
   --radius-sm: 8px;
   --radius-lg: 16px;
 
-  /* Foundations → Elevation & Depth. One token per layer, each already the complete box-shadow the
-     layer needs — a consumer applies one utility, never composes two that overwrite each other.
-     The tint follows the surface each shadow lands on, which is why all three are warm: every one of
-     them falls on paper. Green-ink shadows belong to whatever lands on the green stock, which
-     nothing in this layer does yet. */
+  /* Each token is a complete box-shadow, so a consumer applies one utility rather than composing
+     two that overwrite each other. */
   --shadow-mount:
     0 1px 2px rgba(58, 48, 30, 0.1), 0 18px 40px -14px rgba(58, 48, 30, 0.26);
   --shadow-sheet:
     inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 3px rgba(58, 48, 30, 0.16);
   --shadow-sheet-contrast:
     0 0 0 1px rgba(58, 48, 30, 0.14), 0 2px 8px rgba(58, 48, 30, 0.34);
+  /* The mount under the green stock. The mount's own ivory sits against an ivory ground, so on that
+     stock it reads as page rather than as a mat; a deeper cast lifts it off the ground instead of
+     giving it a second colour. */
+  --shadow-mount-contrast:
+    0 2px 4px rgba(58, 48, 30, 0.16), 0 26px 56px -16px rgba(58, 48, 30, 0.42);
 
-  /* Foundations → Motion (easing only; there is no duration namespace — see :root below) */
+  /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
   --ease-settle: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Responsive Behavior */
+  /* components/layout/mounted-sheet-frame.ts holds these as numbers, because a media query cannot
+     read a custom property — change both together. */
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
+  /* Tailwind's own default for `xl` is 80rem; stated explicitly here so `xl:` means 1600px, not
+     1280px. */
+  --breakpoint-xl: 100rem;
 
-  /* Foundations → Layout. Both caps are stated only in prose in DESIGN.md — reported as drift. */
+  /* components/layout/mounted-sheet-frame*.ts holds `--container-content` as a number, because a
+     media query cannot read a custom property — change both together. */
   --container-content: 1200px;
+  --container-content-compact: 960px;
   --container-text: 600px;
 }
 
-/* Values whose names sit in no namespace the framework knows. They mint no utility family, so they
-   are consumed as `utility-(--token)` — e.g. `z-(--z-thread)`, `duration-(--duration-base)`. Kept
-   in a plain block for legibility, not because the compiler requires the split. */
+/* Names in no framework namespace mint no utilities; consume them as `utility-(--token)`, e.g.
+   `z-(--z-thread)`, `duration-(--duration-base)`. */
 :root {
-  /* DESIGN.md defines a single scheme; there is no dark mode to declare. */
   color-scheme: light;
 
-  /* Interaction Rules → Tap; Accessibility Rules */
   --touch-target: 44px;
 
-  /* Foundations → Iconography, Layout → divider, and thread-overlay. These are SVG stroke widths
-     and one border width; they are not rehomed into `--border-width-*`, whose `border-*` utilities
-     would misdescribe the icon and thread strokes. */
+  /* A height, so it stays out of `--container-*`, whose utilities are widths.
+     components/layout/mounted-sheet-frame*.ts derives its thresholds from the same number, because
+     a media query cannot read this variable — change both together. */
+  --card-height-cap: 720px;
+  --card-height-cap-compact: 576px;
+
+  /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
-  --stroke-icon: 1.25px;
-  --stroke-icon-lg: 1.5px;
   --stroke-thread: 1.6px;
   --stroke-thread-wisp: 1.2px;
+  --stroke-rim-offset: 2px;
 
-  /* Foundations → Motion */
+  /* The SVG is drawn at three times the tile's CSS size: at 1:1 a high-density display upscales it
+     into blotches. `color-interpolation-filters='sRGB'` keeps the noise midpoint at 0.5 — filters
+     default to linear RGB. */
+  --grain-tile: 200px;
+  --grain-ground-blend: multiply;
+  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.03' intercept='0.97'/><feFuncG type='linear' slope='0.03' intercept='0.97'/><feFuncB type='linear' slope='0.03' intercept='0.97'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-mount-blend: overlay;
+  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.4' intercept='0.3'/><feFuncG type='linear' slope='0.4' intercept='0.3'/><feFuncB type='linear' slope='0.4' intercept='0.3'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-stock-paper-blend: hard-light;
+  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.05' intercept='0.475'/><feFuncG type='linear' slope='0.05' intercept='0.475'/><feFuncB type='linear' slope='0.05' intercept='0.475'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-stock-contrast-blend: hard-light;
+  --grain-stock-contrast: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.1' intercept='0.45'/><feFuncG type='linear' slope='0.1' intercept='0.45'/><feFuncB type='linear' slope='0.1' intercept='0.45'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+
+  --crease-width: 22px;
+  --crease-fill: linear-gradient(
+    to right,
+    rgba(58, 48, 30, 0) 0px,
+    rgba(58, 48, 30, 0.03) 5px,
+    rgba(58, 48, 30, 0.08) 9px,
+    rgba(58, 48, 30, 0.12) 10.5px,
+    rgba(58, 48, 30, 0.05) 12px,
+    rgba(255, 255, 255, 0.06) 13px,
+    rgba(255, 255, 255, 0.18) 16px,
+    rgba(255, 255, 255, 0.09) 19px,
+    rgba(255, 255, 255, 0) 22px
+  );
+
   --duration-fast: 200ms;
   --duration-base: 400ms;
   --duration-slow: 700ms;
 
-  /* Interaction Rules → Focus. The colors stay references, never copied literals. The ring is a
-     functional indicator needing 3:1, which is the one place gold gives way to ink: gold measures
-     2.39:1 on paper against ink's 11.74:1. On the green stock the reverse holds. */
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--color-ink);
   --focus-ring-color-on-contrast: var(--color-accent-gold);
 
-  /* Elevation & Depth. `z-*` takes bare numerics against no namespace, so an off-scale `z-999`
-     still compiles — this scale is a review concern, not a toolchain-enforced one. */
+  /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
+     off-scale `z-999` still compiles; only review enforces this scale. */
   --z-base: 0;
   --z-botanical: 10;
   --z-content: 20;
   --z-elevated: 30;
   --z-thread: 40;
   --z-modal: 50;
+}
+
+/* `@theme` accepts only bare custom properties, so the type steps live here. `@variant` resolves the
+   breakpoint tokens a raw media query cannot read. Each step gets its own `:root` rule because
+   Biome reads sibling `@variant` blocks as one block and flags the repeated names. */
+:root {
+  @variant md {
+    --text-display-name: 104px;
+    --text-display-name--line-height: 156px;
+    --text-heading-script: 72px;
+    --text-heading-script--line-height: 72px;
+    --text-heading-xl: 42px;
+    --text-heading-xl--line-height: 48px;
+    --text-heading-lg: 24px;
+    --text-heading-lg--line-height: 30px;
+    --text-date-primary: 24px;
+    --text-date-primary--line-height: 30px;
+    --text-body: 18px;
+    --text-body--line-height: 28px;
+    --text-caption: 16px;
+    --text-caption--line-height: 24px;
+    --text-eyebrow: 15px;
+    --text-eyebrow--line-height: 20px;
+    --text-action: 16px;
+    --text-action--line-height: 20px;
+  }
+}
+
+:root {
+  @variant lg {
+    --text-display-name: 96px;
+    --text-display-name--line-height: 144px;
+    --text-heading-script: 64px;
+    --text-heading-script--line-height: 64px;
+    --text-heading-xl: 38px;
+    --text-heading-xl--line-height: 44px;
+    --text-heading-lg: 22px;
+    --text-heading-lg--line-height: 28px;
+    --text-date-primary: 22px;
+    --text-date-primary--line-height: 28px;
+    --text-body: 17px;
+    --text-body--line-height: 26px;
+    --text-caption: 15px;
+    --text-caption--line-height: 22px;
+    --text-eyebrow: 14px;
+    --text-eyebrow--line-height: 20px;
+    --text-action: 15px;
+    --text-action--line-height: 20px;
+  }
+}
+
+:root {
+  @variant xl {
+    --text-display-name: 120px;
+    --text-display-name--line-height: 180px;
+    --text-heading-script: 80px;
+    --text-heading-script--line-height: 80px;
+    --text-heading-xl: 48px;
+    --text-heading-xl--line-height: 56px;
+    --text-heading-lg: 26px;
+    --text-heading-lg--line-height: 32px;
+    --text-date-primary: 26px;
+    --text-date-primary--line-height: 32px;
+    --text-body: 20px;
+    --text-body--line-height: 32px;
+    --text-caption: 17px;
+    --text-caption--line-height: 24px;
+    --text-eyebrow: 16px;
+    --text-eyebrow--line-height: 22px;
+    --text-action: 17px;
+    --text-action--line-height: 24px;
+  }
 }

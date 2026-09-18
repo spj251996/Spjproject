@@ -1,23 +1,14 @@
 import { type CSSProperties, useId } from "react";
 import styles from "./thread-overlay.module.css";
 
-/* DESIGN.md → Components → Shell → `thread-overlay`.
+/* The two paths are placeholders, not doc data.
 
-   Server-rendered, no JavaScript: the reveal, the reduced-motion gate and the resting state are all
-   declared in thread-overlay.module.css, which carries the reasoning for both mechanism choices.
+   The breakpoint switch uses `lg:` variants rather than a media query in the stylesheet, because a
+   media query cannot read `{breakpoints.lg}`. Stroke width rides the same variants for the same
+   reason.
 
-   PROVISIONAL GEOMETRY. DESIGN.md states that paths are predefined per layout system and that the
-   timeline spine is generated to fit measured node positions, but supplies no path data for either.
-   The two curves below are stand-ins with the documented shape only — one continuous line entering
-   the top edge and leaving the bottom edge — and are not transcribed from the doc. They are placed
-   here so the component renders; they are expected to be replaced once layouts are settled.
-
-   The breakpoint switch is expressed as framework `lg:` variants rather than a media query in the
-   stylesheet, because a media query cannot read `{breakpoints.lg}` as a token and would have to
-   restate its value. Stroke width rides the same variants for the same reason.
-
-   Both curves share one reveal mask, but the mask id is per-instance: ids are document-scoped, so
-   two overlays posed at different progress values would otherwise both resolve to the first mask. */
+   The mask id is per instance: ids are document-scoped, so two overlays posed at different progress
+   values would otherwise both resolve to the first mask. */
 
 const MOBILE_PATH =
   "M 50 0 C 68 10 32 22 50 34 C 66 46 34 60 50 74 C 62 86 42 92 50 100";

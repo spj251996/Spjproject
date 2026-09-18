@@ -1,36 +1,76 @@
 import type { ReactNode } from "react";
+import type { MeasuredFit } from "./mounted-sheet-frame";
+import {
+  FRAME_CLASS,
+  frameScopeClass,
+  mountedSheetFrameCss,
+} from "./mounted-sheet-frame-css";
 
-/* DESIGN.md → Foundations → Layout → `mounted-pair`.
+/* With a fit, the generated stylesheet sets every layout step. The leaves and the mount carry both
+   surface utilities because the stylesheet strips whichever one a layout does not show. The frame
+   contracts in mounted-sheet.tsx bind this caller too.
 
-   Two sheets sharing one mount. The reveal shows between them as well as around them, so the gap
-   between the sheets is the same value as the mount's padding at every step of the ladder — that is
-   what makes the pair read as two leaves of one card rather than two cards side by side.
+   Without a fit, the static form is for a specimen box.
 
-   Below the md breakpoint the mount goes and the sheets stack. Each sheet then swaps `shadow-sheet`
-   for `shadow-mount`: inside the mount a sheet only has to separate from the mount, but standing on
-   the ground it has to do the lifting the mount was doing. This is the pair's version of the rule
-   `mounted-sheet` states — the lift never disappears with the mount.
-
-   No state, no effects, no handlers, so no client boundary. */
+   The leaves carry `relative` so they paint above the absolutely positioned crease. */
 
 interface MountedPairProps {
-  /* Exactly two — the layout is a pair, not a list. */
   children: [ReactNode, ReactNode];
-  className?: string;
+  /* Measured from the taller of the two sheets. */
+  fit?: MeasuredFit;
+  /* The fit whose padding the stacked sheets take. */
+  stackedPadding?: MeasuredFit;
 }
 
-/* The mount's own ladder, matching `mounted-sheet`: no mount below md, 12px at md, 16px at lg.
-   The gap tracks the padding so the reveal is even on all sides of both sheets. */
+const CREASE_GEOMETRY =
+  "pointer-events-none absolute inset-y-0 left-1/2 w-(--crease-width) -translate-x-1/2 bg-(image:--crease-fill)";
+
 const MOUNT =
-  "flex flex-col gap-space-md md:flex-row md:gap-space-xs lg:gap-space-sm md:bg-surface-mount md:p-space-xs lg:p-space-sm md:shadow-mount";
+  "relative flex flex-col gap-space-md md:flex-row md:gap-space-md xl:gap-space-lg md:bg-surface-mount md:p-space-xs xl:p-space-sm md:shadow-mount";
 
-/* Inside the mount a sheet separates from the mount; stacked on the ground it does the lifting. */
-const SHEET = "flex-1 bg-surface-elevated shadow-mount md:shadow-sheet";
+const SHEET =
+  "relative flex-1 bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-sheet lg:p-space-3xl";
 
-export function MountedPair({ children, className }: MountedPairProps) {
+export function MountedPair({
+  children,
+  fit,
+  stackedPadding,
+}: MountedPairProps) {
   const [first, second] = children;
+
+  if (fit !== undefined) {
+    const leaf = `${FRAME_CLASS.leaf} relative bg-surface-mount shadow-mount`;
+    const sheet = `${FRAME_CLASS.sheet} bg-surface-elevated shadow-sheet`;
+    return (
+      <>
+        <style>
+          {mountedSheetFrameCss(fit, false, "pair", stackedPadding)}
+        </style>
+        <div className={frameScopeClass(fit)}>
+          <div className={FRAME_CLASS.box}>
+            <div
+              className={`${FRAME_CLASS.mount} relative bg-surface-mount shadow-mount`}
+            >
+              <div
+                aria-hidden
+                className={`${FRAME_CLASS.crease} ${CREASE_GEOMETRY}`}
+              />
+              <div className={leaf}>
+                <div className={sheet}>{first}</div>
+              </div>
+              <div className={leaf}>
+                <div className={sheet}>{second}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div className={`${MOUNT} ${className ?? ""}`}>
+    <div className={MOUNT}>
+      <div aria-hidden className={`hidden md:block ${CREASE_GEOMETRY}`} />
       <div className={SHEET}>{first}</div>
       <div className={SHEET}>{second}</div>
     </div>

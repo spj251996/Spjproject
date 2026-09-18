@@ -1,18 +1,14 @@
 import type { ReactNode } from "react";
 
-/* curate-gallery scaffold kit — ChromeFrame (skill → references/scaffold-kit.md).
-
-   `transform: translateZ(0)` is the entire mechanism: it makes the frame a CSS containing block, so
-   `position: fixed` descendants resolve to the frame instead of the viewport. Without it
-   `thread-overlay` and `paper-base` — both `fixed inset-0` — escape any bounded demo and cover the
-   page. Frame surface + border come from DESIGN.md: the ivory base as the ground a chrome layer sits
-   over, outlined with the documented divider (`{stroke.divider}` 1px in `{colors.accent-gold}`),
-   which is this system's only stated hairline. */
+/* `transform: translateZ(0)` makes the frame a containing block, so `position: fixed` descendants
+   resolve to the frame instead of the viewport. Without it `thread-overlay` escapes the demo and
+   covers the page. */
 
 interface ChromeFrameProps {
-  /** Explicit px height. REQUIRED whenever a `position: fixed` child must be bounded; omit for flow content. */
+  /** Explicit px height — a per-demo gallery layout constant, not a design token. Required whenever a
+      `position: fixed` child must be bounded; omit for flow content. */
   height?: number;
-  /** Explicit px width; omit to fill the column (the Specimen children container stretches). */
+  /** Explicit px width — a per-demo gallery layout constant. Omit to fill the column. */
   width?: number;
   /** True when the framed component duplicates a live landmark elsewhere on the page. */
   ariaHidden?: boolean;
@@ -30,7 +26,7 @@ export function ChromeFrame({
   return (
     <div
       aria-hidden={ariaHidden}
-      className={`relative overflow-hidden border-(length:--stroke-divider) border-accent-gold bg-surface-base ${className ?? ""}`}
+      className={`relative overflow-hidden bg-surface-elevated shadow-sheet ${className ?? ""}`}
       style={{
         transform: "translateZ(0)",
         height,

@@ -1,51 +1,47 @@
-/* Sample data for the portable `ui/` specimens (DESIGN.md → Components → UI).
+/* Sample strings run at real copy length, so wrapping and card height are exercised. The portable
+   components take flat scalars; object-shaped samples live in `./domain-samples`. */
 
-   Convention: every string names what it is and is written at the length real copy will have — a
-   specimen validated against short stubs proves nothing about wrapping, truncation or card height.
-   Numerals in placeholder dates, times and phone numbers are zeroed so no reader mistakes demo data
-   for the real invitation, while the character count stays true to the real string.
+import type { EventSegment, RitualStatus } from "@/content/types";
 
-   Props were read from each component, not inferred from a type name: `portrait` and
-   `timeline-node` all take FLAT SCALARS, not a `WeddingEvent` / `FamilyMember` / `Ritual` object,
-   because the portable layer may not name a domain type. The object-shaped samples the domain
-   components consume live in `./domain-samples`. */
+/* Generated sample images. A data-URI SVG is a separate document and cannot read CSS custom
+   properties, so the palette values are written literally here as asset content. */
+function svgImage(width: number, height: number, body: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="#ECE6D7"/>${body}</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
-import type { RitualStatus } from "@/content/types";
+export const samplePortraitImage = svgImage(
+  256,
+  256,
+  '<rect width="256" height="256" fill="#FFFEFA"/><circle cx="128" cy="96" r="46" fill="#D29B2F"/><path d="M32 256a96 96 0 0 1 192 0Z" fill="#0F3D2E"/>',
+);
 
-/** Every optional field present. Field set matches `WeddingEvent` minus `id`, which the card,
-    being portable, does not take. Consumed by the `button-action` specimen for real action targets. */
+const sampleRitualImages = [
+  svgImage(
+    320,
+    400,
+    '<circle cx="160" cy="150" r="70" fill="#D29B2F"/><path d="M0 400 L120 240 L200 320 L320 200 V400Z" fill="#0F3D2E"/>',
+  ),
+  svgImage(
+    320,
+    240,
+    '<rect x="40" y="40" width="240" height="160" fill="#FFFEFA"/><circle cx="160" cy="120" r="40" fill="#0F3D2E"/>',
+  ),
+  svgImage(
+    320,
+    480,
+    '<path d="M160 60 L260 420 H60Z" fill="#D29B2F"/><rect x="0" y="420" width="320" height="60" fill="#0F3D2E"/>',
+  ),
+];
+
 export const sampleEvent = {
-  name: "Placeholder Ceremony",
-  city: "Placeholder City",
-  date: "Saturday, 00 Month 0000",
   venue: "Placeholder Cathedral of the Sample Parish",
-  time: "00:00 AM onwards",
-  address:
-    "Placeholder Cathedral, 00 Sample Church Road, Placeholder District, Placeholder State 000000",
   mapUrl: "https://example.com/placeholder-map-location",
-  contactPhone: "+00 00000 00000",
-};
+} satisfies Pick<EventSegment, "venue" | "mapUrl">;
 
-/** Same card with every optional field absent — demonstrates the documented behavior that a missing
-    venue, time, address or action target renders nothing rather than a placeholder label
-    (rules/data-integrity.md → Missing values). */
-export const sampleEventMinimal = {
-  name: "Placeholder Reception",
-  city: "Placeholder City",
-  date: "Saturday, 00 Month 0000",
-  venue: null,
-  time: null,
-  address: null,
-  mapUrl: null,
-  contactPhone: null,
-};
-
-/** `portrait` with `src: null` — the component's designed missing-image state, where
-    `image-placeholder` shows through as the base layer. No portrait assets exist in this repo yet;
-    that gap is carried to the sample-asset ask rather than filled with an invented file. */
 export const samplePortrait = {
-  name: "Placeholder Family Member",
-  relationship: "Placeholder Relation",
+  name: "Name",
+  relationship: "Relation",
   src: null,
 };
 
@@ -57,32 +53,26 @@ interface TimelineNodeSample {
   side: "left" | "right";
 }
 
-/** Both node states, which the spine requires the Timeline specimen to show. `previewImages` is
-    empty because no ritual photography exists yet: `timeline-node` renders no preview strip for an
-    empty list, so the completed state still reads correctly. */
 export const sampleTimelineNodes: TimelineNodeSample[] = [
   {
     title: "Placeholder Completed Ritual",
     description:
-      "A completed node at rest: the preview strip and the gallery action appear here once ritual photographs exist to fill them.",
+      "A completed node at rest, described at the length the real entries will run to.",
     status: "completed",
-    previewImages: [],
+    previewImages: sampleRitualImages,
     side: "left",
   },
   {
     title: "Placeholder Upcoming Ritual",
     description:
-      "An upcoming node carries the same copy weight but never a preview strip or a gallery action, whatever images the ritual turns out to have.",
+      "An upcoming node, with the same copy weight and never a preview strip or gallery action.",
     status: "upcoming",
     previewImages: [],
     side: "right",
   },
 ];
 
-/** `gallery-modal-panel` is the presentational extraction `gallery-modal` demos through — it is the
-    demo mechanism, not a specimen of its own. `images` is empty pending sample assets; the panel
-    renders its contrast ground, title and close control regardless. */
 export const sampleGalleryPanel = {
   title: "Placeholder Ritual Gallery",
-  images: [] as string[],
+  images: sampleRitualImages,
 };

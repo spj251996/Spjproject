@@ -1,25 +1,14 @@
 import { ImagePlaceholder } from "./image-placeholder";
 
-/* The presentational half of DESIGN.md → Components → UI → `gallery-modal`.
+/* The presentational half of `gallery-modal`, split out because `'use client'` is file-scoped: with
+   no hooks it renders from a server page and demos in a plain bounded box.
 
-   This file exists because `'use client'` is file-scoped: `gallery-modal` retains the focus trap,
-   scroll lock, keyboard dismissal and swipe handling, and this panel carries no directive, no hooks
-   and no side-effects, so it renders from a server page and demos inside a plain bounded box. It is
-   the extraction pattern's output, not a component DESIGN.md names — the doc gives it no entry.
+   `<img>` rather than `next/image`: masonry needs each tile's intrinsic height, and the content
+   schema carries no image dimensions, so neither the sized nor the `fill` form works. A failed image
+   therefore collapses its figure. */
 
-   The panel establishes the system's first deep-green contrast ground (the `modal-scrim` block, which
-   emits no variables and resolves as one `bg-<color>/<opacity>` here). Per the interaction rules it
-   therefore rebinds `--focus-ring-color` on its own subtree; the global `:focus-visible` rule reads
-   the variable, so no second ring definition exists.
-
-   `<img>` rather than `next/image` is a documented exception: masonry needs each tile's intrinsic
-   height, and the content schema carries no image dimensions, so neither the width/height form nor
-   the `fill` form is available. Residue, reported as a spec gap: a failed image collapses its figure
-   because nothing supplies the dimensions the doc's own no-reflow requirement depends on. */
-
-/* An image list is a plain `string[]`, so the same URL can legitimately appear twice and a
-   src-keyed list collapses. Keys are the URL plus its occurrence ordinal — derived from the data
-   rather than from the array index, which identifies a position instead of a thing. */
+/* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the
+   array index. */
 function withKeys(images: string[]) {
   const seen = new Map<string, number>();
   return images.map((src) => {

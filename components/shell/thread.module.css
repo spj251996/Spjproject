@@ -1,0 +1,67 @@
+/* The reveal is a mask, as in `thread-overlay`, because the visible stroke's
+   `vector-effect: non-scaling-stroke` moves its dash pattern out of the SVG's user space. This path
+   doubles back on itself, so a wipe would cross it more than once; the mask is instead a stroked
+   copy of the path, dashed along its own length. The mask path carries no `vector-effect`, so its
+   dash arithmetic stays exact.
+
+   `pathLength="1"` with `stroke-dasharray: 1 2`: offset 0 paints the whole path, offset 1 nothing. A
+   gap of exactly 1 ends on the path's own end and leaves a painted sliver at zero progress.
+
+   `#fff` is mask luminance. The 6-unit width is coverage for the visible stroke under the
+   non-uniform stretch. The cap is butt because a round cap extends past the normalised length and
+   leaves a painted stub at zero progress.
+
+   The base state is fully drawn, for reduced motion and before script runs. The undrawn state is
+   declared only inside the no-preference query, and `scripting: none` restores the drawn state so an
+   engine that never activates still shows the thread. The glow is delayed by the draw's duration so
+   it lands as the draw finishes. */
+
+.thread {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-thread);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.path {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  filter: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color-thread-red) 40%, transparent)
+  );
+}
+
+.reveal {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 6;
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    transition: stroke-dashoffset var(--duration-slow) var(--ease-settle);
+  }
+
+  .thread[data-activated="false"] .reveal {
+    stroke-dashoffset: 1;
+  }
+
+  .thread[data-activated="true"] .path {
+    filter: drop-shadow(
+      0 0 4px color-mix(in srgb, var(--color-thread-red) 55%, transparent)
+    );
+    transition: filter var(--duration-fast) var(--ease-settle)
+      var(--duration-slow);
+  }
+}
+
+@media (scripting: none) {
+  .thread[data-activated="false"] .reveal {
+    stroke-dashoffset: 0;
+  }
+}

@@ -2,14 +2,8 @@ import type { Metadata } from "next";
 import { Corinthia, Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-/* The three families bind straight onto the role tokens app/styles/tokens.css declares
-   (`--font-script`, `--font-serif`, `--font-sans`) — the token layer publishes those names as the
-   contract for this file and carries only fallback stacks until it is satisfied. `display: "swap"`
-   keeps the fallback face visible instead of flashing invisible text (DESIGN.md → Technical
-   Conventions). */
-
-/* Corinthia declares an explicit weight because it ships as static faces only; the other two are
-   variable, and omitting `weight` there loads the whole axis rather than pinning single cuts. */
+/* Corinthia needs an explicit weight because it ships as static faces only; the other two are
+   variable, and omitting `weight` loads the whole axis. */
 
 const script = Corinthia({
   variable: "--font-script",
@@ -26,16 +20,46 @@ const serif = Cormorant_Garamond({
   fallback: ["Georgia", "serif"],
 });
 
+/* The italic axis is loaded, not synthesised: the closing sign-off's lead line is set in italic body,
+   and a browser-obliqued normal face reads as a slanted regular at that size. */
 const sans = Source_Sans_3({
   variable: "--font-sans",
   subsets: ["latin"],
+  style: ["normal", "italic"],
   display: "swap",
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
 
+/* The invitation is shared by link only. robots.txt stops the crawl; this states the same intent
+   to anything that fetches the page regardless, and metadataBase is what resolves the OpenGraph
+   image to the absolute URL a preview fetcher needs. https, not http: Vercel redirects http, and
+   an http base would emit http image URLs that some clients refuse to load. */
+const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Flemy & Sebastian",
   description: "Wedding invitation for Flemy and Sebastian.",
+  robots: { index: false, follow: false },
+  /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
+     export carries them. Left alone rather than suppressed: they are free, they agree with the og:
+     values, and some clients read them as a fallback. Twitterbot itself is blocked in robots.txt,
+     so this advertises nothing to X. */
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: SITE_URL,
+    title: "Flemy & Sebastian",
+    description: "Wedding invitation for Flemy and Sebastian.",
+    images: [
+      {
+        url: "/og-card.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Flemy and Sebastian, Saturday 9th January 2027, Koothattukulam",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

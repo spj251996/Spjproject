@@ -1,0 +1,112 @@
+/* The drawing is a background layer, not an `<img>`: it needs no alt text (decorative), and
+   `image-set` picks the right file before any byte downloads. */
+
+.figureCol {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-space-lg);
+}
+
+/* A fixed square, not a fraction of its column: a square sized from its column grows taller as the
+   column widens, and a framed section's fit requires that its content never stand taller at a wider
+   column. The stacked value is the content width of the narrowest window that reaches this tier, so
+   the drawing never overflows and never changes size within it. */
+/* One size per tier, set by the owner: phone 250, tablet 220, laptop 400, desktop 550. Stacked the
+   drawing is in the flow, so its size is part of the card's height budget; side by side it is out of
+   flow and costs nothing. */
+.figure {
+  width: 15.625rem;
+  aspect-ratio: var(--wishes-figure-ratio);
+  /* AVIF first, WebP behind it: the browser takes the first type it supports, so modern engines
+     fetch less than half the bytes and older ones still get a file. Only one is ever downloaded. */
+  background-image: image-set(
+    url("/couple/couple-1x.avif") type("image/avif") 1x,
+    url("/couple/couple-2x.avif") type("image/avif") 2x,
+    url("/couple/couple-1x.webp") type("image/webp") 1x,
+    url("/couple/couple-2x.webp") type("image/webp") 2x
+  );
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* Two lines in both layouts: the lead in italic above the names who send it, who stay regular. */
+.signoff {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-space-3xs);
+}
+
+/* The tablet step. Declared before the side-by-side block so that block wins where both
+   match — these are plain media rules, ordered by source, not by specificity. */
+@media (width >= 48rem) {
+  .figure {
+    width: 13.75rem;
+  }
+}
+
+/* Side by side the card is two real columns: the text takes 55 and centres in its own column, the
+   drawing 45 with a fixed square centred in it.
+
+   The DOM order stays the stacked one — eyebrow, verse, drawing, names, sign-off — and the grid
+   moves the drawing into the second column spanning every row, so neither layout needs its own
+   markup and the reading order is right in both. */
+@media (width >= 64rem) and (orientation: landscape) {
+  .stack {
+    display: grid;
+    grid-template-columns: 55fr 45fr;
+    /* Declared, not implicit: `grid-row: 1 / -1` spans only the EXPLICIT grid, so without these
+       rows the drawing collapses into row one. One row per text child — eyebrow, verse, names,
+       sign-off — and the drawing spans all four beside them. */
+    grid-template-rows: repeat(4, auto);
+    align-items: center;
+  }
+
+  .stack > *:not(.figureCol) {
+    grid-column: 1;
+    justify-self: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* The column is the drawing's positioning box, and the drawing is taken out of the flow inside
+     it: at full column width a square stands taller than the text beside it, and an in-flow drawing
+     would make the section grow taller as the card grows wider — which a framed section's fit
+     forbids. Out of flow it contributes no height at any width, and it can bleed past the sheet's
+     content padding, which an image may do and text may not. */
+  .figureCol {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    position: relative;
+    align-self: stretch;
+    justify-self: stretch;
+    margin-top: 0;
+  }
+
+  /* Centred by auto block margins rather than a transform: nothing between the fixed ground and
+     the viewport carries one (DESIGN.md → Interaction / the standing section constraints). */
+  /* Anchored to the card's right edge by a minimum gap and grown leftward from there, so a larger
+     drawing bleeds into the text column rather than off the card. It sits under the text: the text
+     items are raised instead of the drawing being pushed back, which keeps everything in one
+     stacking context and off a negative `z-index` that would paint behind the sheet itself. */
+  .figure {
+    /* Negative: the drawing crosses the sheet's content padding and stops short of the stock's own
+       edge by this much. An image may bleed past that padding where text may not. */
+    --wishes-right-bleed: calc(-1 * var(--spacing-space-sm));
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: var(--wishes-right-bleed);
+    width: 25rem;
+    aspect-ratio: var(--wishes-figure-ratio);
+    margin-block: auto;
+  }
+}
+
+@media (width >= 100rem) and (orientation: landscape) {
+  .figure {
+    --wishes-right-bleed: calc(-1 * var(--spacing-space-lg));
+    width: 34.375rem;
+  }
+}

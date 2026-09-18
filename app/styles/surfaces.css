@@ -1,0 +1,34 @@
+/* Each rule sets only the image, its size and the blend; the colour still comes from the surface
+   utility, so the two compose. */
+
+@layer components {
+  .bg-surface-base,
+  .bg-surface-mount,
+  .bg-surface-elevated,
+  .bg-surface-contrast {
+    background-size: var(--grain-tile) var(--grain-tile);
+  }
+
+  /* `body` paints the ground without the utility, so it takes the ground grain directly. */
+  body,
+  .bg-surface-base {
+    background-image: var(--grain-ground);
+    background-size: var(--grain-tile) var(--grain-tile);
+    background-blend-mode: var(--grain-ground-blend);
+  }
+
+  .bg-surface-mount {
+    background-image: var(--grain-mount);
+    background-blend-mode: var(--grain-mount-blend);
+  }
+
+  .bg-surface-elevated {
+    background-image: var(--grain-stock-paper);
+    background-blend-mode: var(--grain-stock-paper-blend);
+  }
+
+  .bg-surface-contrast {
+    background-image: var(--grain-stock-contrast);
+    background-blend-mode: var(--grain-stock-contrast-blend);
+  }
+}

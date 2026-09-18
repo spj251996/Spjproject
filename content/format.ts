@@ -14,6 +14,13 @@ const DATE_PARTS = new Intl.DateTimeFormat("en-IN", {
   timeZone: "UTC",
 });
 
+/* A separate formatter rather than a substring of the long month, which a short month is not
+   guaranteed to prefix. Locale and timeZone match DATE_PARTS so the two read the same calendar. */
+const MONTH_SHORT = new Intl.DateTimeFormat("en-IN", {
+  month: "short",
+  timeZone: "UTC",
+});
+
 /**
  * The one ISO-date rule, shared with `validate.ts` so the two cannot drift apart.
  * `new Date("2027-02-30")` rolls over to 2 March rather than failing, so the round-trip comparison —
@@ -50,6 +57,8 @@ export function formatEventDate(iso: string): FormattedDate {
     day,
     ordinal: ordinalFor(Number(day)),
     month: part("month"),
+    monthShort: MONTH_SHORT.format(date),
     year: part("year"),
+    iso,
   };
 }

@@ -1,191 +1,148 @@
-"use client";
-
-import { Fragment, useEffect, useId, useRef, useState } from "react";
-import type { FamilyGroup } from "@/content/types";
-import { Divider } from "../layout/divider";
+import { Children, type ReactNode } from "react";
+import type { FamilyGroup, FamilyMember } from "@/content/types";
 import { Portrait } from "../ui/portrait";
-import styles from "./family.module.css";
+import { splitCluster, splitRoster } from "./family-cluster";
 
-/* DESIGN.md → Domain Components → Family [standalone].
-
-   Client boundary, and what forces it: the wrap-extend-join is the page's one key interaction, and
-   Foundations → Motion assigns it {motion.duration.slow} — a DURATION token, which that section
-   reserves for discrete transitions and withholds from scroll-linked motion. A discrete transition
-   fired once when the section enters view is not expressible declaratively: `animation-timeline:
-   view()` is progress-linked, ignores duration, and replays on re-entry. So script is forced, and
-   this component owns its reduced-motion gate (honored at the source — no observer is attached when
-   the preference is set) and its first client frame (per-case defaults in family.module.css).
-
-   Not split into a presentational panel: the observed element is the section's own layout box, so a
-   pure panel could not be the thing observed without an extra wrapper that changes that box. No demo
-   affordance is needed either — the section is ordinary in-flow content, so a bounded frame renders
-   it and the observer fires normally.
-
-   PROVISIONAL GEOMETRY. DESIGN.md states that thread paths are predefined per layout system but
-   supplies no path data. The two curves below carry the documented SHAPE only — enter, loop around
-   the first group, extend to the second, end joined — and are not transcribed from the doc. Each
-   doubles back on itself, which is what "wraps" means and what forces the mask form the stylesheet
-   describes. They are placed here so the gesture renders, and are expected to be replaced once
-   layouts are settled.
-
-   Both are routed through the band the composition leaves empty — below the portraits on desktop,
-   down the outer margin and through the gap between the two segments on mobile. A first pass drew
-   them across the groups row and the thread struck through the names; Cross-Cutting Rules keep
-   decorative layers off the content, and a 1.8px line over a name is unreadable either way. The
-   viewBox is the SECTION, not the groups row, so those empty bands exist to route through.
-
-   This segment is section-anchored on purpose. `thread-overlay` is `position: fixed`, so its path is
-   viewport-relative and cannot anchor to page content at all — while the doc requires the thread to
-   anchor "to the two family sides". The overlay carries the continuous page-spanning line; this
-   segment carries the gesture that has to know where the two groups are. {colors.thread-red} is
-   permitted here because this IS the thread system, on the same grounds as `timeline-node`'s anchor
-   mark.
-
-   The group heading is derived: the doc heads each group with "the relationship", and `FamilyGroup`
-   carries only `side` and `familyName` — no relationship field. The map below is inferred. Member
-   order is the content's own order: the doc prescribes parents, then the couple member with
-   siblings, and the schema has no role field that could express it. */
-
-const GROUP_HEADING: Record<FamilyGroup["side"], string> = {
-  bride: "Bride's Family",
-  groom: "Groom's Family",
-};
-
-const MOBILE_PATH =
-  "M 3 4 C 3 20 4 32 10 44 C 18 56 30 52 27 45 C 24 38 12 41 8 52 C 5 62 4 76 5 88 C 6 94 10 97 16 97";
-
-const DESKTOP_PATH =
-  "M 2 78 C 8 92 24 96 30 86 C 35 78 24 72 18 80 C 12 88 20 96 34 96 C 52 96 62 88 74 84 C 84 81 92 84 98 90";
+/* One group's sheet. `measure:fit` finds each sheet by the `h2` that is a direct child of this root. */
 
 interface FamilyProps {
-  groups: FamilyGroup[];
-  className?: string;
+  group: FamilyGroup;
+  eyebrow: string;
 }
 
-export function Family({ groups, className }: FamilyProps) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const activatedRef = useRef(false);
-  const [activated, setActivated] = useState(false);
-  const instanceId = useId();
-  const mobileMaskId = `family-thread-mobile-${instanceId}`;
-  const desktopMaskId = `family-thread-desktop-${instanceId}`;
+type Side = FamilyGroup["side"];
 
-  useEffect(() => {
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let observer: IntersectionObserver | null = null;
+/* The portrait diameter per type step. `--portrait-rim` restates the rim `portrait` draws outside
+   the photo, so the couple line can stop short of it. */
+const SHEET_CLASS =
+  "flex w-full flex-col items-center text-center [--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px] [--rows-gap:var(--spacing-space-md)] md:[--rows-gap:var(--spacing-space-sm)] lg:[--rows-gap:var(--spacing-space-xs)] xl:[--rows-gap:var(--spacing-space-sm)] [--portrait-rim:calc(var(--stroke-divider)+var(--stroke-rim-offset))]";
 
-    const activate = () => {
-      activatedRef.current = true;
-      setActivated(true);
-      observer?.disconnect();
-      observer = null;
-    };
+const ROWS_CLASS =
+  "mt-space-lg flex flex-col items-center gap-(--rows-gap) md:mt-space-sm lg:mt-space-xs xl:mt-space-sm";
 
-    /* Re-evaluated on preference change, not once at mount. */
-    const sync = () => {
-      if (activatedRef.current) {
-        return;
-      }
-      if (motionQuery.matches) {
-        /* Reduced motion: the thread is already fully drawn by the stylesheet's base state, and no
-           observer is attached. Flipping the flag keeps the rest state and the markup in step. */
-        activate();
-        return;
-      }
-      const element = sectionRef.current;
-      if (element === null || observer !== null) {
-        return;
-      }
-      observer = new IntersectionObserver((entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          activate();
-        }
-      });
-      observer.observe(element);
-    };
+const PORTRAIT_TO_NAME = "gap-space-2xs md:gap-space-3xs";
 
-    sync();
-    motionQuery.addEventListener("change", sync);
-    return () => {
-      motionQuery.removeEventListener("change", sync);
-      observer?.disconnect();
-    };
-  }, []);
+const PARENTS_GAP =
+  "[--couple-gap:var(--spacing-space-lg)] xl:[--couple-gap:var(--spacing-space-xl)]";
+const SPOUSES_GAP = "[--couple-gap:var(--spacing-space-md)]";
 
+const SIBLINGS_GAP: Readonly<Record<Side, string>> = {
+  bride: "gap-space-2xl md:gap-space-4xl lg:gap-space-3xl xl:gap-space-4xl",
+  groom: "gap-space-md md:gap-space-2xl lg:gap-space-xl xl:gap-space-2xl",
+};
+
+/* How far a name or relationship may run past its portrait on each side before it wraps: measured
+   per slot against the gap beside it and the longest label there, so the real roster's text never
+   meets. */
+const OVERRUN = {
+  parent: "[--portrait-overrun:20px] xl:[--portrait-overrun:28px]",
+  spouse: "[--portrait-overrun:16px]",
+  child: "[--portrait-overrun:48px]",
+  sibling: {
+    bride: "[--portrait-overrun:32px] md:[--portrait-overrun:64px]",
+    groom: "[--portrait-overrun:12px] md:[--portrait-overrun:32px]",
+  },
+} as const;
+
+/* "Stopping short of both rims" by this much, so the line reads as joining, not touching. */
+const COUPLE_LINE_CLEARANCE = "[--couple-line-clearance:2px]";
+
+/* Both lists below restore `role="list"`: WebKit and VoiceOver drop list semantics once
+   list-style is none. Each is folded into one constant (clearance included) so the tag stays on
+   one line — the ignore comment above `role="list"` only suppresses the line right after it. */
+const ROW_LIST_CLASS = "flex list-none flex-wrap items-start justify-center";
+const COUPLE_LIST_CLASS = `relative grid w-max auto-cols-fr list-none grid-flow-col justify-items-center gap-(--couple-gap) ${COUPLE_LINE_CLEARANCE}`;
+
+/* The line is its own `li`, `absolute` so it stays out of the grid's item flow — the
+   `ul`'s only other children are the two members' `li`s. `aria-hidden` drops it from the
+   accessibility tree, so it does not count toward the list's item total. */
+const COUPLE_LINE_CLASS =
+  "absolute top-[calc(var(--portrait-diameter)/2)] left-[calc(50%-var(--couple-gap)/2+var(--portrait-rim)+var(--couple-line-clearance))] h-(--stroke-divider) w-[calc(var(--couple-gap)-2*var(--portrait-rim)-2*var(--couple-line-clearance))] bg-accent-gold";
+
+export function Family({ group, eyebrow }: FamilyProps) {
+  const { parents, children } = splitRoster(group.members);
+  const [mother, father] = parents;
   return (
-    <section
-      className={`relative z-(--z-content) flex flex-col px-space-md py-space-3xl lg:min-h-dvh lg:justify-center ${className ?? ""}`}
-      ref={sectionRef}
-    >
-      <div className="mx-auto flex w-full max-w-content flex-col lg:flex-row lg:gap-space-3xl">
-        {groups.map((group, index) => (
-          <Fragment key={group.id}>
-            {/* Foundations → Layout → `divider`: between family groupings. On desktop the
-                two-column split separates them spatially instead. */}
-            {index === 0 ? null : (
-              <Divider className="w-full max-w-text self-center lg:hidden" />
-            )}
-            <div className="flex min-h-dvh flex-1 flex-col items-center justify-center gap-space-md lg:min-h-0">
-              <h2 className="type-heading-lg text-ink">
-                {GROUP_HEADING[group.side]}
-              </h2>
-              <p className="type-body text-ink">{group.familyName}</p>
-              <ul className="flex flex-wrap justify-center gap-space-md">
-                {group.members.map((member) => (
-                  <li key={member.id}>
-                    <Portrait
-                      name={member.name}
-                      relationship={member.relationship}
-                      src={member.portrait}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Fragment>
-        ))}
+    <div className={SHEET_CLASS}>
+      <p className="type-eyebrow">{eyebrow}</p>
+      <h2 className="type-heading-script text-ink mt-space-2xs">
+        {group.familyName}
+      </h2>
+      <div className={ROWS_CLASS}>
+        <Couple gap={PARENTS_GAP}>
+          <MemberPortrait member={mother} overrun={OVERRUN.parent} />
+          <MemberPortrait member={father} overrun={OVERRUN.parent} />
+        </Couple>
+        <Row gap={SIBLINGS_GAP[group.side]}>
+          {children.map((child) => (
+            <ChildSlot child={child} key={child.id} side={group.side} />
+          ))}
+        </Row>
       </div>
+    </div>
+  );
+}
 
-      <svg
-        aria-hidden="true"
-        className={styles.thread}
-        data-activated={activated}
-        preserveAspectRatio="none"
-        viewBox="0 0 100 100"
-      >
-        <mask
-          height="120"
-          id={mobileMaskId}
-          maskUnits="userSpaceOnUse"
-          width="120"
-          x="-10"
-          y="-10"
-        >
-          <path className={styles.reveal} d={MOBILE_PATH} pathLength="1" />
-        </mask>
-        <mask
-          height="120"
-          id={desktopMaskId}
-          maskUnits="userSpaceOnUse"
-          width="120"
-          x="-10"
-          y="-10"
-        >
-          <path className={styles.reveal} d={DESKTOP_PATH} pathLength="1" />
-        </mask>
-        <path
-          className={`${styles.path} stroke-(length:--stroke-thread) lg:hidden`}
-          d={MOBILE_PATH}
-          mask={`url(#${mobileMaskId})`}
-          vectorEffect="non-scaling-stroke"
-        />
-        <path
-          className={`${styles.path} hidden stroke-(length:--stroke-thread) lg:inline`}
-          d={DESKTOP_PATH}
-          mask={`url(#${desktopMaskId})`}
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-    </section>
+function MemberPortrait({
+  member,
+  overrun,
+}: {
+  member: FamilyMember;
+  overrun: string;
+}) {
+  return (
+    <Portrait
+      className={`${PORTRAIT_TO_NAME} ${overrun}`}
+      name={member.name}
+      relationship={member.relationship}
+      src={member.portrait}
+    />
+  );
+}
+
+function ChildSlot({ child, side }: { child: FamilyMember; side: Side }) {
+  const { row, children } = splitCluster(child);
+  const [sibling, spouse] = row;
+  if (spouse === undefined) {
+    return <MemberPortrait member={sibling} overrun={OVERRUN.sibling[side]} />;
+  }
+  return (
+    <div className="flex flex-col items-center gap-(--rows-gap)">
+      <Couple gap={SPOUSES_GAP}>
+        <MemberPortrait member={sibling} overrun={OVERRUN.spouse} />
+        <MemberPortrait member={spouse} overrun={OVERRUN.spouse} />
+      </Couple>
+      {children.length === 0 ? null : (
+        <Row gap={SIBLINGS_GAP[side]}>
+          {children.map((kid) => (
+            <MemberPortrait key={kid.id} member={kid} overrun={OVERRUN.child} />
+          ))}
+        </Row>
+      )}
+    </div>
+  );
+}
+
+/* Equal columns keep the gap, and so the line, centred between the two portraits. */
+function Couple({ gap, children }: { gap: string; children: ReactNode }) {
+  return (
+    // biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none
+    <ul className={`${COUPLE_LIST_CLASS} ${gap}`} role="list">
+      {Children.map(children, (member) => (
+        <li>{member}</li>
+      ))}
+      <li aria-hidden className={COUPLE_LINE_CLASS} />
+    </ul>
+  );
+}
+
+function Row({ gap, children }: { gap: string; children: ReactNode }) {
+  return (
+    // biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none
+    <ul className={`${ROW_LIST_CLASS} ${gap}`} role="list">
+      {Children.map(children, (member) => (
+        <li>{member}</li>
+      ))}
+    </ul>
   );
 }

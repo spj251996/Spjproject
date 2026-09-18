@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   type BarItem,
   BarScale,
@@ -8,8 +9,6 @@ import {
   EasingCurves,
   type EasingToken,
   GallerySection,
-  type LayerItem,
-  LayerStack,
   RuleList,
   type ShapeItem,
   ShapeRow,
@@ -20,48 +19,41 @@ import {
   TypeScaleList,
   type TypeToken,
 } from "@/app/design-system/_kit";
+import {
+  BetrothalIcon,
+  LoveIcon,
+  LunchIcon,
+  MapIcon,
+  ReceptionIcon,
+  WeddingIcon,
+} from "@/components/icons";
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 
-/* curate-gallery — Bucket 1, the nine Foundations sections, in DESIGN.md document order
-   (curate-gallery → section-spine.md § 1–9). One module for the whole bucket, per the skill's pinned `sections/`
-   structure; the spine restates it as "exactly 5 files (foundations.tsx 9 · …)".
-
-   Prose renders through the semantic type classes directly. This project has no prose layer and the
-   gallery may not invent one (DESIGN.md → Overview → No prose layer), so list structure
-   and spacing come from the `space-*` scale and list markers are omitted rather than designed. */
-
-/* § 1 — Colors. Four role groups covering all eight tokens, in the doc's table order. There is no
-   Borders group: DESIGN.md defines no border token, and the divider borrows accent-gold at
-   `--stroke-divider`. Per-swatch `usage` carries the contrast ratios from Accessibility Rules — a
-   sanctioned cross-reference (curate-gallery → section-spine.md). */
 const COLOR_GROUPS: SwatchGroup[] = [
   {
     label: "Surfaces",
-    note: "Three layers, always in this order: the fixed ground, the mount laid on it, and the stock laid on the mount. Exactly one section takes the green stock — the closing one.",
     tokens: [
       {
         token: "--color-surface-base",
         name: "surface-base",
-        usage:
-          "The ivory ground. Fixed behind the whole page; every section sits on it.",
+        usage: "The ivory ground behind the whole page.",
       },
       {
         token: "--color-surface-mount",
         name: "surface-mount",
-        usage:
-          "The mount — the backing sheet of every mounted section. Carries no text, which is why gold's 3.93:1 on it never occurs.",
+        usage: "The mount behind every mounted section. No text.",
       },
       {
         token: "--color-surface-elevated",
         name: "surface-elevated",
-        usage: "The paper stock — the inner sheet laid on the mount.",
+        usage: "The paper stock laid on the mount.",
       },
       {
         token: "--color-surface-contrast",
         name: "surface-contrast",
-        usage: "The green stock. The closing section's inner sheet.",
+        usage: "The green stock: the closing section only.",
       },
     ],
   },
@@ -71,123 +63,150 @@ const COLOR_GROUPS: SwatchGroup[] = [
       {
         token: "--color-ink",
         name: "ink",
-        usage:
-          "Primary text on the ivory base; fills for strong UI elements. ~11.7:1 there.",
+        usage: "Text on paper; the focus ring on light surfaces.",
       },
       {
         token: "--color-ink-on-contrast",
         name: "ink-on-contrast",
-        usage:
-          "Primary text on the deep-green contrast section. ~12.6:1 there.",
+        usage: "Text on the green stock.",
       },
     ],
   },
   {
     label: "Accent",
-    note: "ONE gold, and it does not vary by ground. It marks eyebrows, the engraved rule, dividers and active states on both stocks. RECORDED EXCEPTION: 2.39:1 on paper against AA's 4.5:1 — a deliberate decision scoped to the eyebrow and the engraved rule's label only. Every other text role uses ink. Do not 'fix' it. On the green stock the same gold measures 5.72:1 and is compliant.",
+    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, the engraved rule's label and the six marks only.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "The single gold. 2.39:1 on paper (the recorded exception), 5.72:1 on the green stock. Never used for the focus ring on paper, where it falls under the 3:1 an indicator needs.",
+          "Eyebrows, engraved rules, dividers, couple lines, portrait rims, active states, on both stocks.",
       },
     ],
   },
   {
-    label: "Thread reserved",
-    note: "Exclusive to the thread. Buttons, headings, icons, error states and decorative accents never use either. The thread is decorative and never the sole carrier of meaning, which is what keeps its 1.87:1 on the green stock out of scope for contrast requirements.",
+    label: "Thread",
+    note: "Reserved for the thread and the seal mark.",
     tokens: [
       {
         token: "--color-thread-red",
         name: "thread-red",
-        usage:
-          "The thread and its wisp, at one colour on both stocks — a real thread does not change colour, it catches light differently.",
-      },
-      {
-        token: "--color-shadow-warm",
-        name: "shadow-warm",
-        usage:
-          "The tint every shadow that lands on paper is drawn in — 0.10/0.26 in shadow-mount, 0.16 in shadow-sheet, 0.14/0.34 in shadow-sheet-contrast. Carried as literal rgba on purpose: color-mix single-sources it but an engine without support drops the whole box-shadow and the sheet loses its lift.",
+        usage: "The thread and its wisp, on both stocks.",
       },
       {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
-        usage:
-          "The thread's glow only — 0.68/0.44/0.30 on paper, 0.98/0.62/0.38 on the green stock, all literal for the same reason as the shadow tint. A glow cannot exist on paper: ivory has 27x less room to add light than the green stock, so on paper this is an ink bleed made by darkening.",
+        usage: "The thread's glow only. Never a stroke or text.",
+      },
+    ],
+  },
+  {
+    label: "Shadow tint",
+    tokens: [
+      {
+        token: "--color-shadow-warm",
+        name: "shadow-warm",
+        usage: "The tint of every shadow that lands on paper.",
       },
     ],
   },
 ];
 
-/* § 2 — Typography. Seven rows, matching the doc's seven-row role table and the seven `.type-*`
-   classes. `display-name` is ONE role that steps across viewports, not three roles. */
 const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-display-name",
     family: "Corinthia",
-    size: 96,
     weight: 400,
-    sample: "Couple names only.",
-    responsive: { tablet: 72, mobile: 56 },
+    sample: "Bride & Groom",
+    phone: { size: 72, lh: 108 },
+    tablet: { size: 104, lh: 156 },
+    compact: { size: 96, lh: 144 },
+    desktop: { size: 120, lh: 180 },
+  },
+  {
+    token: "type-heading-script",
+    family: "Corinthia",
+    weight: 400,
+    sample: "Betrothal",
+    phone: { size: 56, lh: 56 },
+    tablet: { size: 72, lh: 72 },
+    compact: { size: 64, lh: 64 },
+    desktop: { size: 80, lh: 80 },
   },
   {
     token: "type-heading-xl",
     family: "Cormorant Garamond",
-    size: 48,
     weight: 700,
     sample: "Section-level H1.",
+    phone: { size: 34, lh: 40 },
+    tablet: { size: 42, lh: 48 },
+    compact: { size: 38, lh: 44 },
+    desktop: { size: 48, lh: 56 },
   },
   {
     token: "type-heading-lg",
     family: "Cormorant Garamond",
-    size: 30,
     weight: 700,
-    sample: "H2 and event names.",
+    sample:
+      "Serif sub-headings; the event sheets' address line and segment line.",
+    phone: { size: 22, lh: 28 },
+    tablet: { size: 24, lh: 30 },
+    compact: { size: 22, lh: 28 },
+    desktop: { size: 26, lh: 32 },
   },
   {
     token: "type-date-primary",
     family: "Cormorant Garamond",
-    size: 30,
-    weight: 400,
-    sample: "The major date line on the invite and event cards.",
+    weight: 500,
+    sample: "The major date line on the invite and the event sheets.",
+    phone: { size: 22, lh: 28 },
+    tablet: { size: 24, lh: 30 },
+    compact: { size: 22, lh: 28 },
+    desktop: { size: 26, lh: 32 },
   },
   {
     token: "type-body",
     family: "Source Sans 3",
-    size: 17,
     weight: 400,
-    lh: 1.7,
     sample: "Descriptions, addresses, wishes, all long-form copy.",
+    phone: { size: 17, lh: 26 },
+    tablet: { size: 18, lh: 28 },
+    compact: { size: 17, lh: 26 },
+    desktop: { size: 20, lh: 32 },
+  },
+  {
+    token: "type-caption",
+    family: "Source Sans 3",
+    weight: 400,
+    sample:
+      "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
+    phone: { size: 15, lh: 22 },
+    tablet: { size: 16, lh: 24 },
+    compact: { size: 15, lh: 22 },
+    desktop: { size: 17, lh: 24 },
   },
   {
     token: "type-eyebrow",
     family: "Source Sans 3",
-    size: 12,
     weight: 500,
-    sample:
-      "ALWAYS GOLD — the one type role that carries its own color, on both stocks, in every section. There is no eyebrow component: the class is the whole thing.",
+    sample: "Small labels above headings and sheet fields.",
+    phone: { size: 14, lh: 20 },
+    tablet: { size: 15, lh: 20 },
+    compact: { size: 14, lh: 20 },
+    desktop: { size: 16, lh: 22 },
   },
   {
     token: "type-action",
     family: "Source Sans 3",
-    size: 13,
     weight: 700,
     sample: "Buttons and calls to action.",
+    phone: { size: 15, lh: 20 },
+    tablet: { size: 16, lh: 20 },
+    compact: { size: 15, lh: 20 },
+    desktop: { size: 17, lh: 24 },
   },
 ];
 
-const TYPE_RULES = [
-  "The script face appears only on couple names — never on body copy, headings, labels, or buttons.",
-  "Long-form and functional information stays in Cormorant Garamond and Source Sans 3.",
-  "Both serif and sans carry regular and bold only. Bold marks structural headings and actions; everything else sits at regular, including the date line, which separates from heading-lg at the same size by weight rather than by scale.",
-  "Mobile sizing may scale responsively, but hierarchy and font roles are unchanged across viewports. display-name is the only role that steps.",
-  "Body sizing is set for a mixed-age audience; it does not shrink below 17px at any viewport.",
-  "Tracking and casing ride the class rather than the metadata column: date-primary 0.06em, eyebrow 0.2em uppercase, action 0.16em uppercase.",
-];
-
-/* § 3 — Spacing. One group of ten steps: the bare zero step plus space-3xs…space-3xl. This project
-   defines no gutter or margin spacing tokens, so there is no second group. */
 const SPACING_STEPS: BarItem[] = [
   { token: "0", px: 0 },
   { token: "space-3xs", px: 4 },
@@ -199,43 +218,50 @@ const SPACING_STEPS: BarItem[] = [
   { token: "space-xl", px: 48 },
   { token: "space-2xl", px: 64 },
   { token: "space-3xl", px: 96 },
+  { token: "space-4xl", px: 128 },
 ];
 
-const SPACING_RULES = [
-  "Tight grouping uses space-2xs (8px) to space-sm (16px).",
-  "Component padding uses space-sm (16px) to space-md (24px).",
-  "Section spacing uses space-2xl (64px) to space-3xl (96px).",
-  "Content never hugs the viewport edge; vertical rhythm stays consistent across sections.",
-  "Named steps carry a space- prefix: the bare t-shirt keys double as the styling framework's width-scale keys, and the spacing value silently wins — a width cap named lg resolved to 32px.",
-  "The zero step keeps the bare name 0 — it collides with nothing, and prefixing it stops every zero-valued step resolving. Its bar is correctly invisible.",
+const SPACING_USES = [
+  "0 · flush edges, collapsed gaps",
+  "space-2xs to space-sm · tight grouping",
+  "space-sm to space-md · component padding",
+  "space-md · viewport edge for sections without a frame",
+  "space-2xl to space-3xl · between two unframed sections back to back — the timeline's, until its frame is decided",
+  "space-4xl · between the bride's siblings in Family",
 ];
 
-const LAYOUT_RULES = [
-  "Each major section is composed around one viewport height, with the timeline as the deliberate exception.",
-  "Content width caps at 1200px and text blocks at 600px; cards flex within the grid.",
-  "Sections alternate between dense composition (event info) and airy composition (invite, wishes) so no two adjacent sections carry equal visual weight.",
-  "Whitespace is structural, not leftover space.",
-  "Both caps are stated only in DESIGN.md prose, in no token block; the token layer emits them as --container-content and --container-text.",
+const LAYOUT_CAPS = [
+  "--container-content · 1200px · all content; a framed card's width from xl, landscape windows only",
+  "--container-content-compact · 960px · a framed card's width, lg to xl, landscape windows only",
+  "--container-text · 600px · text blocks",
+  "--card-height-cap · 720px · a framed card's height from xl, landscape windows only",
+  "--card-height-cap-compact · 576px · a framed card's height, lg to xl, landscape windows only",
 ];
 
-const IMAGERY_RULES = [
-  "Family portraits are circular crops, the one place a circle is used as a container.",
-  "Gallery images sit in a masonry arrangement inside the modal only, never on the page.",
-  "The couple illustration is minimal and elegant, consistent with the overall direction rather than cartoonish.",
+const FRAME_GROUND_TIERS = [
+  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md · space-sm (32 · 24 · 16px)",
+  "Tablet · md to lg; touchscreen-first from lg · ground space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
+  "Compact laptop · lg to xl, primary pointer not coarse · ground space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
+  "Desktop · xl and up, primary pointer not coarse · ground space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
 ];
 
-/* § 6 — Motion. Both cubic-bezier tuples are stated in DESIGN.md itself, so no curve value is
-   recovered from code here. */
+const IMAGERY_POINTERS = [
+  "Family portraits · circular crops → Components · UI → portrait",
+  "A delivered portrait · at least 3× its rendered diameter, never upscaled",
+  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal",
+  "Couple illustration · held back behind the closing text → Domain · Wishes",
+];
+
 const DURATION_TOKENS: DurationToken[] = [
   { token: "--duration-fast", ms: 200 },
   { token: "--duration-base", ms: 400 },
   { token: "--duration-slow", ms: 700 },
 ];
 
-const DURATION_RULES = [
-  "--duration-fast (200ms) for state changes: node activation glow, action feedback.",
-  "--duration-base (400ms) for section entry reveals, card reveals, and modal open and close.",
-  "--duration-slow (700ms) for the two set pieces: the invite thread draw-in and the family thread wrap.",
+const DURATION_USES = [
+  "fast · state changes: node activation glow, action feedback",
+  "base · section and sheet reveals, the modal",
+  "slow · the invite thread draw-in and the family thread wrap",
 ];
 
 const EASING_TOKENS: EasingToken[] = [
@@ -243,151 +269,133 @@ const EASING_TOKENS: EasingToken[] = [
   { token: "--ease-settle", curve: [0.4, 0, 0.2, 1] },
 ];
 
-const EASING_RULES = [
-  "--ease-entrance for anything appearing — decelerating, no overshoot, no spring.",
-  "--ease-settle for anything the thread does, including its rest at the closing section.",
+const EASING_USES = [
+  "entrance · anything appearing",
+  "settle · anything the thread does",
 ];
 
-const MOTION_RULES = [
-  "Primary motion is scroll-linked fade and translate, with translate distance capped at 20–40px.",
-  "Secondary motion is thread reveal and timeline node activation.",
-  "Nothing loops, nothing pulses, and no content waits on an animation delay.",
-  "Motion budget across the whole page: one major gesture at entry, one key interaction at the family section, and continuous subtle motion through the timeline.",
-  "Reduced motion disables all scroll-linked motion, including the thread, leaving the page complete and static; the thread renders fully drawn at its resting glow level.",
-];
-
-/* § 7 — Shapes. Four items: the two radius tokens plus circle and pill, neither of which has a
-   token. Both render at 9999px, which on a square box is the same silhouette — the distinction is
-   the container they are applied to, not the value. */
 const SHAPE_ITEMS: ShapeItem[] = [
   {
     token: "square",
     radius: "0",
-    value: "no token",
+    value: "0",
     usage:
-      "THE SECTION SHAPE. The mount and both stocks take no radius at all — this is what makes a section read as paper rather than as a dialog.",
+      "Every section surface. image-placeholder takes its container's shape.",
   },
   {
     token: "--radius-sm",
     radius: "var(--radius-sm)",
     value: "8px",
-    usage:
-      "Retained for the few elements that still take a radius — image-placeholder and the gallery modal. Nothing at section scale uses it.",
+    usage: "gallery-modal's tiles and close control; timeline-node's previews.",
   },
   {
     token: "--radius-lg",
     radius: "var(--radius-lg)",
     value: "16px",
-    usage:
-      "Retained for the gallery modal. Nothing at section scale uses it, and the one component that still carried it — event-card — has been retired rather than restyled.",
+    usage: "No current use.",
   },
   {
     token: "circle",
     radius: "9999px",
-    value: "no token",
-    usage:
-      "Containers for portraits only — the one place a circle is used as a container.",
-  },
-  {
-    token: "pill",
-    radius: "9999px",
-    value: "no token",
-    usage:
-      "Unused, and now unusable at section scale. The action control has no box at all — it is an engraved rule.",
+    value: "—",
+    usage: "portrait's crop; timeline-node's node dot.",
   },
 ];
 
-const SHAPE_RULES = [
-  "Section surfaces are SQUARE. The mount and both stocks take no radius at all — rendered both ways, radius-lg reads as a dialog and 0 reads as a sheet. A radius at section scale is the strongest signal that a card is web UI rather than paper.",
-  "The radius tokens remain for the few elements that still take one — image-placeholder and the gallery modal. Nothing at section scale uses them.",
-  "Circles are containers for portraits only.",
-  "Dividers are --stroke-divider (1px) lines in accent-gold — rendered under Foundations · Layout.",
-  "event-card is retired: once every section is a mounted sheet, an elevated card INSIDE a section is a second elevation the system no longer needs. Two events now share one mount — see Foundations · Layout → mounted-pair.",
-];
-
-/* § 8 — Elevation & Depth. Two specimen groups in one section, because this one sub-section
-   documents two token kinds. The z-order scale therefore has no section of its own: DESIGN.md has
-   no Z-Index Scale heading, and minting one would point mapsTo at a heading that does not exist
-   (curate-gallery → section-spine.md). */
-/* Each level renders on the ground its shadow actually lands on, so the tint rule is demonstrated
-   rather than asserted: all three are warm because all three fall on paper. */
 const DEPTH_LEVELS: DepthLevel[] = [
   {
     name: "The ground",
-    spec: "surface-base · no shadow · the hairline is the demo card's edge, not part of the level",
-    className:
-      "border-(length:--stroke-divider) border-accent-gold bg-surface-base",
-    usage: "The fixed ivory ground. Everything else sits on it.",
+    spec: "surface-base · no shadow",
+    className: "bg-surface-base",
+    usage:
+      "Everything else sits on it. This card matches the page's own ground.",
   },
   {
     name: "Mount on the ground",
-    spec: "surface-mount · shadow-mount · square",
+    spec: "surface-mount · shadow-mount",
     className: "bg-surface-mount shadow-mount",
-    usage:
-      "Lifts the whole mounted section off the ground. Keeps its shadow at every width, including where it loses its fill below the md breakpoint.",
+    usage: "Two soft drops lift the whole section.",
   },
   {
     name: "Paper stock on the mount",
-    spec: "surface-elevated · shadow-sheet · square",
+    spec: "surface-elevated · shadow-sheet",
     className: "bg-surface-elevated shadow-sheet",
-    usage:
-      "A light sheet on a light mount barely casts, so most of its separation is the inset top highlight — which stays pure white and untinted, because the tint rule governs shadows and a highlight is the opposite of one.",
+    usage: "Inset white highlight, faint drop.",
   },
   {
     name: "Green stock on the mount",
-    spec: "surface-contrast · shadow-sheet-contrast · square",
+    spec: "surface-contrast · shadow-sheet-contrast",
     className: "bg-surface-contrast text-ink-on-contrast shadow-sheet-contrast",
-    usage:
-      "A dark sheet on a light mount genuinely casts, so this one takes a real drop shadow and a hairline, and no highlight at all. Two constructions, not two strengths.",
+    usage: "Hairline and a real drop, no highlight.",
   },
 ];
 
-const Z_LAYERS: LayerItem[] = [
+const ICONS = [
   {
-    token: "--z-base",
-    value: "0",
-    role: "Base — the fixed ivory ground.",
+    name: "wedding",
+    marks: "the church ceremony",
+    nudge: "1",
+    stroke: true,
+    Icon: WeddingIcon,
   },
   {
-    token: "--z-botanical",
-    value: "10",
-    role: "Botanical — low-opacity botanical edge elements.",
+    name: "betrothal",
+    marks: "the betrothal",
+    nudge: "0.97",
+    stroke: true,
+    Icon: BetrothalIcon,
   },
   {
-    token: "--z-content",
-    value: "20",
-    role: "Content — all text and main components.",
+    name: "reception",
+    marks: "the reception",
+    nudge: "1.02",
+    stroke: false,
+    Icon: ReceptionIcon,
   },
   {
-    token: "--z-elevated",
-    value: "30",
-    role: "Elevated — mounted sections, the mount and its sheet, as paper on paper.",
+    name: "lunch",
+    marks: "the betrothal lunch",
+    nudge: "0.92",
+    stroke: false,
+    Icon: LunchIcon,
   },
-  { token: "--z-thread", value: "40", role: "Thread — the thread overlay." },
-  { token: "--z-modal", value: "50", role: "Modal — the gallery modal." },
+  {
+    name: "love",
+    marks: "the closing wishes",
+    nudge: "1.03",
+    stroke: false,
+    Icon: LoveIcon,
+  },
+  {
+    name: "map",
+    marks: "a venue's map link",
+    nudge: "0.88",
+    stroke: false,
+    Icon: MapIcon,
+  },
 ];
 
-const ELEVATION_RULES = [
-  "Layering must be achievable with simple stacking contexts so the thread overlay never fights nested stacking.",
-  "A shadow takes the tint of the surface it FALLS ON, because a shadow is that surface darkened. Shadows landing on paper — the ground, the mount, the paper stock — are warm; shadows landing on the green stock are green ink. Neither is ever black.",
-  "All three recipes above are warm, because all three fall on paper. The green-ink case belongs to whatever lands on the green stock, which nothing in this layer does yet.",
-  "The paper stock and the green stock need different CONSTRUCTIONS, not different strengths — a light sheet on a light mount barely casts, a dark sheet on a light mount genuinely does.",
-  "Layering adds no heavy assets and does not affect scroll performance.",
-];
-
-/* § 9 — Iconography. Spec prose only: the doc specifies a full icon system, but no icon library is
-   installed, no components/icons/ exists, and no component renders an icon, so there is nothing to
-   catalog and no grid may be invented (DESIGN.md → Foundations → Iconography). */
-const ICON_RULES = [
-  "All icons come from one consistent set — thin, stroke-based, with no fills, rounded stroke ends, and slightly organic curves rather than perfect geometry.",
-  "Stroke is --stroke-icon (1.25px) to --stroke-icon-lg (1.5px), consistent across the set, aligned to the pixel grid so small sizes stay sharp.",
-  "Icons use accent-gold on the ivory base and ink-on-contrast on the contrast section.",
-  "The intended feel is etched or engraved line work rather than UI iconography.",
-  "The set is Lucide with a customized stroke. Individual bespoke SVGs may be drawn to match when Lucide has no suitable glyph.",
-];
-
-const ICON_GAP_RULES = [
-  "No icon library is installed, no components/icons/ exists, and no component renders an icon — there are zero icons to catalog, so this section renders its spec rather than an icon grid.",
+const GRAIN_SURFACES = [
+  {
+    caption: "multiply 0.03 · paints #F8F7F3",
+    label: "Ground",
+    surface: "bg-surface-base",
+  },
+  {
+    caption: "overlay 0.40 · paints #ECE6D7",
+    label: "Mount",
+    surface: "bg-surface-mount",
+  },
+  {
+    caption: "hard-light 0.05 · paints #FDFCF8",
+    label: "Paper stock",
+    surface: "bg-surface-elevated",
+  },
+  {
+    caption: "hard-light 0.10 · paints #0D3226",
+    label: "Green stock",
+    surface: "bg-surface-contrast",
+  },
 ];
 
 export function FoundationsSections() {
@@ -395,9 +403,9 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="The palette is fixed around ivory, deep green, gold, and a single warm red reserved for the thread. Section distinction comes from composition, layering, spacing, and motion — never from alternating section background colors."
+        intro="A fixed palette: ivory, deep green, one gold, and one warm red for the thread."
         mapsTo="Foundations → Colors"
-        source="app/styles/tokens.css → @theme static"
+        source="app/styles/tokens.css"
         title="Foundations · Colors"
       >
         <SwatchGrid groups={COLOR_GROUPS} />
@@ -405,176 +413,299 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families with strictly divided roles. The script face is decorative and never carries functional information."
+        intro="Three families, nine roles, each stepping at phone, tablet, compact and desktop."
         mapsTo="Foundations → Typography"
-        source="app/styles/type-scale.css"
+        source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
       >
-        <TypeScaleList tokens={TYPE_TOKENS} />
-        <RuleList rules={TYPE_RULES} />
+        <Specimen
+          description="Each role with its size / line height in px at phone, tablet, compact and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
+          id="typography-scale"
+          name="The scale"
+          note="Samples render at the window's current tier. Script rows show a name or heading: display-name is for couple names only, heading-script for sheet headings: Event Info's event names and Family's family names."
+        >
+          <TypeScaleList tokens={TYPE_TOKENS} />
+        </Specimen>
+
+        <Specimen
+          description="The couple names and the date line, set with their real role classes."
+          id="typography-names-and-date"
+          name="Names and date line"
+          note="Rotate or resize to portrait to see the names split onto three lines. The date line's raised ordinal takes no line height."
+          spec="display-name · joiner at 0.5em in portrait · date-primary · caption ordinal"
+        >
+          <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-sheet">
+            <p className="type-display-name text-ink">
+              <span>Bride</span>
+              <span className="type-display-name__joiner">{" & "}</span>
+              <span>Groom</span>
+            </p>
+            <p className="type-date-primary text-ink">
+              Saturday, 1
+              <span className="type-caption type-date-ordinal align-super">
+                st
+              </span>{" "}
+              January 2000
+            </p>
+          </div>
+        </Specimen>
       </GallerySection>
 
       <GallerySection
         id="spacing"
-        intro="Base unit 4px. Values outside the scale are not used — including zero, which has its own named step rather than an arbitrary value, so flush edges and collapsed gaps stay inside the scale."
+        intro="A 4px base unit; only scale steps are used, zero included."
         mapsTo="Foundations → Spacing"
         source="--spacing-*"
         title="Foundations · Spacing"
       >
         <BarScale items={SPACING_STEPS} varPrefix="--spacing-" />
-        <RuleList rules={SPACING_RULES} />
+        <RuleList label="Uses" rules={SPACING_USES} />
       </GallerySection>
 
       <GallerySection
         id="layout"
-        intro="Desktop composes in parallel splits; mobile flows vertically and splits the event and family sections into separate screen-feel segments. The layout layer itself is one primitive — the divider; the width caps are composition rules, not isolable primitives."
+        intro="Parallel splits on desktop, vertical flow on mobile; every section is built on the mounted card, though how the timeline is framed is still open."
         mapsTo="Foundations → Layout"
+        source="--container-* / --card-height-cap"
         title="Foundations · Layout"
       >
-        <RuleList rules={LAYOUT_RULES} />
+        <RuleList label="Caps" rules={LAYOUT_CAPS} />
+        <RuleList
+          label="Ground and padding, by tier"
+          rules={FRAME_GROUND_TIERS}
+        />
 
         <Specimen
-          description="The card layout every section is built on — a backing mount with an inner sheet laid onto it."
+          description="The card every section is built on: a backing mount with an inner sheet laid onto it."
           id="layout-mounted-sheet"
           name="mounted-sheet"
+          note="Unframed, as every specimen box is. Resize below md: padding steps down and non-hero mounts drop fill and reveal. The framed form is live at /."
           source="@/components/layout/mounted-sheet"
-          spec="Two stocks, one mount. The mount never changes colour; only the inner stock does. Reveal is 16px at lg, 12px at md, and below md only the hero keeps its mount — resize the window to watch the ladder. The mount keeps its shadow at every width, so an unmounted sheet still lifts off the ground. The mount carries no text."
+          spec="surface-mount · shadow-mount · paper or contrast stock · square · reveal"
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
-              <div className="flex flex-col gap-space-2xs p-space-lg">
-                <p className="type-eyebrow">The invitation</p>
+              <div className="flex flex-col gap-space-2xs">
+                <p className="type-eyebrow">Hero</p>
                 <p className="type-body text-ink">
-                  Paper stock, hero — the one section that keeps its mount below
-                  the md breakpoint.
+                  Paper stock with the hero setting.
                 </p>
               </div>
             </MountedSheet>
             <MountedSheet>
-              <div className="flex flex-col gap-space-2xs p-space-lg">
-                <p className="type-eyebrow">Where and when</p>
-                <p className="type-body text-ink">
-                  Paper stock, ordinary section — its mount disappears below the
-                  md breakpoint.
-                </p>
+              <div className="flex flex-col gap-space-2xs">
+                <p className="type-eyebrow">Paper stock</p>
+                <p className="type-body text-ink">An ordinary section.</p>
               </div>
             </MountedSheet>
             <MountedSheet stock="contrast">
-              <div className="flex flex-col gap-space-2xs p-space-lg">
-                <p className="type-eyebrow">With all our love</p>
-                <p className="type-body">
-                  Green stock — a real drop shadow and no inset highlight, and
-                  it rebinds the focus ring on its own subtree.
-                </p>
+              <div className="flex flex-col gap-space-2xs">
+                <p className="type-eyebrow">Green stock</p>
+                <p className="type-body">The closing section.</p>
               </div>
             </MountedSheet>
           </div>
         </Specimen>
 
         <Specimen
-          description="Two sheets sharing one mount — the layout the two events take, replacing the retired event-card."
+          description="Two sheets pasted onto one mount, creased down the middle — the layout the two events take."
           id="layout-mounted-pair"
           name="mounted-pair"
+          note="Unframed: stacked below md, side by side from md. Resize to see the crease appear in the gap. The framed pairs are Event Info and Family at /."
           source="@/components/layout/mounted-pair"
-          spec="Same mount as mounted-sheet, on the same reveal ladder, with the reveal showing BETWEEN the two sheets as well as around them · the gap equals the mount's own reveal at every step — 16px above lg, 12px below — because an uneven gap reads as two cards set near each other while an even one reads as two leaves of one mounted card · below md the mount goes and the sheets stack, and each sheet takes shadow-mount in place of shadow-sheet, since standing on the ground it has to do the lifting the mount was doing. Resize the window to watch both changes happen together."
+          spec="one shared mount · gap twice the reveal · crease 22px at the fold"
         >
           <MountedPair>
-            <div className="flex flex-col gap-space-2xs p-space-lg">
-              <p className="type-eyebrow">The betrothal</p>
-              <p className="type-body text-ink">4 January 2027 · Kozhikode</p>
+            <div className="flex flex-col gap-space-2xs">
+              <p className="type-heading-script text-ink">Betrothal</p>
+              <p className="type-body text-ink">First sheet</p>
             </div>
-            <div className="flex flex-col gap-space-2xs p-space-lg">
-              <p className="type-eyebrow">The wedding</p>
-              <p className="type-body text-ink">9 January 2027 · Ernakulam</p>
+            <div className="flex flex-col gap-space-2xs">
+              <p className="type-heading-script text-ink">Wedding</p>
+              <p className="type-body text-ink">Second sheet</p>
             </div>
           </MountedPair>
         </Specimen>
 
         <Specimen
-          description="Thin rule separating grouped content within a section — --stroke-divider (1px) in accent-gold."
+          description="A thin rule within a section: the short rule after an event sheet's heading block."
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
-          spec="Used inside event cards and between family groupings, not between sections — section separation is spatial."
+          spec="stroke-divider (1px) · accent-gold"
         >
           <div className="flex flex-col gap-space-sm">
-            <p className="type-body text-ink">
-              Grouped content above the rule.
-            </p>
+            <p className="type-body text-ink">Grouped content</p>
             <Divider />
-            <p className="type-body text-ink">
-              Grouped content below the rule.
-            </p>
+            <p className="type-body text-ink">Grouped content</p>
           </div>
         </Specimen>
       </GallerySection>
 
       <GallerySection
         id="imagery"
-        intro="Three rules govern how imagery is used. They are listed for completeness — none is a visual specimen."
+        intro="Where each kind of image lives, and the portrait source rule; none has a specimen of its own here."
         mapsTo="Foundations → Imagery"
         title="Foundations · Imagery"
       >
-        <RuleList rules={IMAGERY_RULES} />
+        <RuleList rules={IMAGERY_POINTERS} />
       </GallerySection>
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction. Motion guides rather than distracts, and never blocks content visibility. Duration and easing tokens govern discrete transitions only — scroll-linked motion is bound to scroll progress and consumes no duration token."
+        intro="Scroll is the primary interaction; these tokens govern discrete transitions only."
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
       >
         <SpecimenGroup title="Durations">
           <DurationScale items={DURATION_TOKENS} />
-          <RuleList rules={DURATION_RULES} />
+          <RuleList rules={DURATION_USES} />
         </SpecimenGroup>
 
         <SpecimenGroup title="Easing">
           <EasingCurves items={EASING_TOKENS} />
-          <RuleList rules={EASING_RULES} />
+          <RuleList rules={EASING_USES} />
         </SpecimenGroup>
-
-        <RuleList label="Motion rules" rules={MOTION_RULES} />
       </GallerySection>
 
       <GallerySection
         id="shapes"
-        intro="The soft rectangle is the primary shape, with the circle reserved for portraits and the pill permitted but currently unused."
+        intro="Square at section scale; one radius in use, and circles for two named uses."
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"
       >
         <ShapeRow items={SHAPE_ITEMS} />
-        <RuleList rules={SHAPE_RULES} />
       </GallerySection>
 
       <GallerySection
         id="elevation"
-        intro="Depth comes from paper edge, subtle shadow, slight tone difference, and overlap — never from strong 3D or skeuomorphic effects. This sub-section documents two token kinds, the paper-elevation treatment and the six-layer z-order, so both render here and the z-index scale gets no section of its own."
+        intro="Depth from paper edge, subtle shadow and tone: three shadow recipes, all tinted warm."
         mapsTo="Foundations → Elevation & Depth"
-        source="--shadow-* / --z-*"
+        source="--shadow-*"
         title="Foundations · Elevation & Depth"
       >
-        <SpecimenGroup title="Paper elevation">
-          <DepthGrid levels={DEPTH_LEVELS} />
-        </SpecimenGroup>
+        <DepthGrid levels={DEPTH_LEVELS} />
+      </GallerySection>
 
-        <SpecimenGroup title="Z-order">
-          <LayerStack items={Z_LAYERS} />
-        </SpecimenGroup>
-
-        <RuleList label="Depth rules" rules={ELEVATION_RULES} />
+      <GallerySection
+        id="paper-grain"
+        intro="A static generated noise laid into every surface."
+        mapsTo="Foundations → Paper Grain"
+        source="--grain-*"
+        title="Foundations · Paper Grain"
+      >
+        <Specimen
+          description="Each tile is painted with the real surface class, so it carries that surface's grain."
+          id="paper-grain-surfaces"
+          name="The four surfaces"
+          note="View at full size — downscaling averages the grain away. The ground tile matches this page's own ground."
+          spec="tile 200px · coarseness 0.6 · irregularity 3"
+        >
+          <div className="flex flex-wrap gap-space-md">
+            {GRAIN_SURFACES.map((item) => (
+              <figure className="m-0" key={item.surface}>
+                {/* 220x132 is a gallery layout constant. */}
+                <div className={`h-[132px] w-[220px] ${item.surface}`} />
+                <figcaption className="mt-space-xs flex flex-col gap-space-3xs">
+                  <span className="type-caption text-ink">{item.label}</span>
+                  <span className="type-caption text-ink">{item.caption}</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </Specimen>
       </GallerySection>
 
       <GallerySection
         id="iconography"
-        intro="The icon system is fully specified in DESIGN.md but wholly unimplemented, so this section renders its spec rather than an icon grid."
+        intro="A closed set of six traced marks, plus the seal mark that serves as the site's icon."
         mapsTo="Foundations → Iconography"
+        source="@/components/icons"
         title="Foundations · Iconography"
       >
-        <RuleList label="Specification" rules={ICON_RULES} />
-        <RuleList label="Not yet implemented" rules={ICON_GAP_RULES} />
+        <Specimen
+          description="Every mark in the set on both stocks, each above its name, at a 96px span."
+          id="iconography-set"
+          name="The set"
+          source="@/components/icons"
+          spec="filled outline · accent-gold from the surface · sized on the diagonal"
+        >
+          <div className="flex flex-col gap-space-md">
+            <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
+              {ICONS.map(({ name, Icon }) => (
+                <span
+                  className="flex flex-col items-center gap-space-2xs"
+                  key={name}
+                >
+                  <span className="text-accent-gold">
+                    <Icon size={96} />
+                  </span>
+                  <span className="type-caption text-ink">{name}</span>
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-end gap-space-lg bg-surface-contrast p-space-md">
+              {ICONS.map(({ name, Icon }) => (
+                <span
+                  className="flex flex-col items-center gap-space-2xs"
+                  key={name}
+                >
+                  <span className="text-accent-gold">
+                    <Icon size={96} />
+                  </span>
+                  <span className="type-caption text-ink-on-contrast">
+                    {name}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="What each mark marks, with its optical nudge and whether it takes the added stroke."
+          id="iconography-table"
+          name="Marks and what they mark"
+          note="On the page a mark sits beside its segment line or the Map label, not beside these captions."
+          spec="name · what it marks · nudge · added stroke"
+        >
+          <div className="flex flex-wrap gap-space-lg bg-surface-elevated p-space-md">
+            {ICONS.map(({ name, marks, nudge, stroke, Icon }) => (
+              <span className="flex items-center gap-space-2xs" key={name}>
+                <span className="text-accent-gold">
+                  <Icon size={32} />
+                </span>
+                <span className="type-caption text-ink">
+                  {name} · {marks} · nudge {nudge}
+                  {stroke ? " · added stroke" : ""}
+                </span>
+              </span>
+            ))}
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="The site's browser icon: the thread drawn into a heart, at the sizes a browser asks for."
+          id="iconography-seal"
+          name="The seal mark"
+          note="Served from the shipped file. Safari refuses a scalable tab icon and shows its own default."
+          source="app/icon.svg"
+          spec="thread-red · 97% × 95% crop · 1.65px line at 16px"
+        >
+          <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
+            {[16, 32, 48, 128].map((px) => (
+              <span
+                className="flex flex-col items-center gap-space-2xs"
+                key={px}
+              >
+                <Image alt="" height={px} src="/icon.svg" width={px} />
+                <span className="type-caption text-ink">{px}px</span>
+              </span>
+            ))}
+          </div>
+        </Specimen>
       </GallerySection>
     </>
   );

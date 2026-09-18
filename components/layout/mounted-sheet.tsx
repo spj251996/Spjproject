@@ -1,40 +1,55 @@
 import type { ReactNode } from "react";
+import type { MeasuredFit } from "./mounted-sheet-frame";
+import {
+  FRAME_CLASS,
+  frameScopeClass,
+  mountedSheetFrameCss,
+  tallFrameCss,
+  tallScopeClass,
+} from "./mounted-sheet-frame-css";
 
-/* DESIGN.md → Foundations → Layout → `mounted-sheet`.
+/* With a fit, the generated stylesheet sets every frame step; without one, the static card is for a
+   surface with no window to fit — a specimen box. A long scrolling section takes `tall` instead,
+   which keeps the frame but drops every height threshold.
 
-   Two elements because there are two sheets: the mount, and the stock laid onto it. No state, no
-   effects, no handlers, so no client boundary.
+   Two contracts bind a framed card's caller:
+   - No horizontal padding, margin or width cap around the frame: its ground is decided against the
+     window's width.
+   - The frame's unlayered sheet rules set `display`, `flex-direction`, `flex`, `justify-content`,
+     `align-items` and `padding`, so a `className` utility for any of them is discarded.
 
-   The mount keeps `shadow-mount` at every width even where it loses its fill and reveal. Below the
-   md breakpoint a non-hero section has no mount, but the sheet still has to lift off the ground —
-   the wrapper stops being a visible mount and goes on casting.
+   The reveal uses spacing utilities directly: `{reveal.*}` only aliases spacing steps, so it has no
+   tokens of its own.
 
-   The reveal resolves at the point of use rather than through `{reveal.*}` tokens: those keys are
-   aliases of `{spacing.space-sm}` and `{spacing.space-xs}`, and a token that only aliases another
-   token earns nothing (foundations-mapping → Which keys become tokens).
-
-   `contrast` establishes the deep-green ground, so it rebinds `--focus-ring-color` on its own
-   subtree; the global `:focus-visible` rule reads the variable and inherits it. One rebinding, not a
-   second ring definition. */
+   `contrast` rebinds `--focus-ring-color` on its subtree, which the global `:focus-visible` rule
+   reads. */
 
 type Stock = "paper" | "contrast";
 
 interface MountedSheetProps {
   children: ReactNode;
   stock?: Stock;
-  /* The opening section is the one that keeps its mount below the md breakpoint. */
   hero?: boolean;
+  fit?: MeasuredFit;
+  tall?: boolean;
   className?: string;
 }
 
-const MOUNT_BASE = "shadow-mount";
+/* The mount's cast depends on the stock it carries: against an ivory ground the ivory mount reads
+   as page under the green stock, so that one is lifted with a deeper shadow rather than a second
+   mount colour. */
+const MOUNT_SHADOW: Record<Stock, string> = {
+  paper: "shadow-mount",
+  contrast: "shadow-mount-contrast",
+};
 
-/* Two defaults, one per case, both correct on first paint — a non-hero section paints unmounted
-   below md rather than painting a mount and losing it. */
+/* Unmounted is the base, so a non-hero section never paints a mount and then loses it. */
 const MOUNT_REVEAL = {
-  hero: "bg-surface-mount p-space-xs lg:p-space-sm",
-  section: "bg-transparent p-0 md:bg-surface-mount md:p-space-xs lg:p-space-sm",
+  hero: "bg-surface-mount p-space-xs xl:p-space-sm",
+  section: "bg-transparent p-0 md:bg-surface-mount md:p-space-xs xl:p-space-sm",
 } as const;
+
+const SHEET_PADDING = "p-space-lg md:p-space-2xl lg:p-space-3xl";
 
 const SHEET: Record<Stock, string> = {
   paper: "bg-surface-elevated shadow-sheet",
@@ -46,13 +61,68 @@ export function MountedSheet({
   children,
   stock = "paper",
   hero = false,
+  fit,
+  tall = false,
   className,
 }: MountedSheetProps) {
+  if (tall) {
+    if (fit !== undefined) {
+      throw new Error(
+        "mounted-sheet: a tall card takes no measured fit. The fitted frame is defined only for a card that fits its tier's height cap; a tall section is taller than every window.",
+      );
+    }
+    /* The frame's stylesheet sets the reveal and padding and removes the mount's fill where it does
+       not show, so neither element carries a padding utility. */
+    return (
+      <>
+        <style>{tallFrameCss(hero)}</style>
+        <div className={tallScopeClass(hero)}>
+          <div className={FRAME_CLASS.box}>
+            <div
+              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW[stock]} bg-surface-mount`}
+            >
+              <div
+                className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
+              >
+                {children}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (fit !== undefined) {
+    /* The frame's stylesheet sets the reveal and padding and removes the mount's fill where it does
+       not show, so neither element carries a padding utility. */
+    return (
+      <>
+        <style>{mountedSheetFrameCss(fit, hero)}</style>
+        <div className={frameScopeClass(fit)}>
+          <div className={FRAME_CLASS.box}>
+            <div
+              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW[stock]} bg-surface-mount`}
+            >
+              <div
+                className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
+              >
+                {children}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <div
-      className={`${MOUNT_BASE} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
+      className={`${MOUNT_SHADOW[stock]} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
-      <div className={`${SHEET[stock]} ${className ?? ""}`}>{children}</div>
+      <div className={`${SHEET[stock]} ${SHEET_PADDING} ${className ?? ""}`}>
+        {children}
+      </div>
     </div>
   );
 }

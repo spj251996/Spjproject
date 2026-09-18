@@ -9,11 +9,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-/* curate-gallery scaffold kit — click guards (skill → references/scaffold-kit.md).
-
-   Both guards listen in the CAPTURE phase, so a router or component handler never sees the event.
-   The tooltip is portaled to <body> rather than rendered inside the guard, because a ChromeFrame's
-   `translateZ(0)` containing block would otherwise clip a fixed-position tip to the frame. */
+/* Both guards listen in the capture phase, so a router or component handler never sees the event.
+   The tip is portaled to <body>: inside a ChromeFrame, its `translateZ(0)` containing block would
+   clip a fixed-position tip to the frame. */
 
 const SUPPRESSED_MESSAGE =
   "Interactions are disabled in the design-system preview.";
@@ -38,9 +36,9 @@ function SuppressionTip({ position }: { position: TipPosition | null }) {
 
   return createPortal(
     <div
-      /* max-w is a gallery layout constant (skill → visualizer-kit.md → documented bare-px
-         exceptions); the offset keeps the tip clear of the cursor. */
-      className="type-body pointer-events-none fixed z-(--z-modal) max-w-[240px] rounded-sm border-(length:--stroke-divider) border-accent-gold bg-surface-elevated px-space-sm py-space-xs text-ink"
+      /* Dev chrome: the 240px cap and the 12px cursor offset are gallery layout constants, and the
+         tip takes the top layer of the z-index scale so it clears every demo, the thread included. */
+      className="type-body pointer-events-none fixed z-(--z-modal) max-w-[240px] bg-surface-elevated shadow-sheet px-space-sm py-space-xs text-ink"
       role="status"
       style={{ left: position.x + 12, top: position.y + 12 }}
     >
@@ -79,9 +77,8 @@ interface GuardProps {
   children: ReactNode;
 }
 
-/* Wraps the whole gallery content area — one per page, not one per specimen. Blocks anchor
-   navigation only; buttons, hover and focus-visible stay live so interaction states remain
-   demonstrable. Renders as <article> because the skill's section rail scrapes h2s from it. */
+/* One per page, around the whole content area. Blocks anchor navigation only, so buttons, hover and
+   focus-visible stay demonstrable. */
 export function DemoViewOnly({ className, children }: GuardProps) {
   const { position, show } = useSuppressionTip();
 
@@ -103,8 +100,8 @@ export function DemoViewOnly({ className, children }: GuardProps) {
   );
 }
 
-/* Per-specimen guard for components whose buttons would fire real state changes. Always nested
-   INSIDE DemoViewOnly; stopPropagation keeps the outer anchor guard from showing a second tip. */
+/* Per-specimen guard for buttons that would fire real state changes. Nested inside DemoViewOnly;
+   stopPropagation keeps the outer guard from showing a second tip. */
 export function InertDemo({ className, children }: GuardProps) {
   const { position, show } = useSuppressionTip();
 

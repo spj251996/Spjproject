@@ -1,34 +1,23 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 @import "./styles/type-scale.css";
+@import "./styles/surfaces.css";
 
-/* The starter's own theme layer is gone rather than left beside the real tokens, where it would
-   read as sanctioned: `--background`/`--foreground`, the `--color-background`/`--color-foreground`
-   mappings, the `--font-geist-sans`/`--font-geist-mono` wiring and the `prefers-color-scheme: dark`
-   block. DESIGN.md defines one scheme, declared as `color-scheme: light` alongside the tokens.
-   What still consumes those identifiers outside this layer is named in the run report. */
-
-/* Background → Paper Base: the ivory base is the only page background. Its static paper texture
-   has no asset in the doc, so no texture is declared here. */
 body {
   background-color: var(--color-surface-base);
   color: var(--color-ink);
 }
 
-/* Interaction Rules → Text selection: nothing on the site is selectable. The webkit property is
-   not redundant — iOS Safari needs it — and the callout suppression is separate again, without which
-   the long-press selection menu still appears there. Applied to `html` so it inherits everywhere,
-   including into the fixed background layer. Selection is not focus: nothing here weakens keyboard
-   reachability or the ring below. */
+/* Set on `html` so it inherits everywhere. iOS Safari needs the prefixed property, and the
+   long-press menu needs the callout suppression as well. */
 html {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
 
-/* Interaction Rules → Focus. One rule reading one variable: a component that establishes a
-   contrast ground rebinds `--focus-ring-color` on its own subtree rather than adding a second
-   ring definition. */
+/* A component on a contrast ground rebinds `--focus-ring-color` on its subtree rather than adding a
+   second ring rule. */
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

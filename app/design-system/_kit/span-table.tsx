@@ -1,11 +1,5 @@
-/* curate-gallery visualizer kit — SpanTable (skill → references/visualizer-kit.md § 9).
-
-   The skill has this table inherit a `.prose-content` editorial layer supplied by the caller. This
-   project has no prose layer and none may be invented (DESIGN.md → Overview → No prose layer), so the table carries its own structure from real tokens: the documented divider
-   for rules, the `space-*` scale for cell padding, and the type-scale classes for text.
-
-   Name and Width merge down each zone with `rowSpan`, so a zone reads as one block however many
-   changes it lists. */
+/* With no prose layer to inherit, the table styles itself: divider rules, `space-*` padding, type
+   roles. */
 
 export interface SpanZone {
   name: string;
@@ -21,20 +15,14 @@ interface SpanTableProps {
 const CELL =
   "border-b-(length:--stroke-divider) border-accent-gold p-space-2xs text-left align-top";
 
-/* Gallery layout constant (skill → visualizer-kit.md → documented bare-px exceptions), the same
-   allowance DurationScale's TRACK_W/LABEL_W take. Below this the Key-changes column is squeezed to a
-   sliver and wraps into rows tall enough to read as blank bands, while the nowrap zone cells hold the
-   table open anyway — so the table scrolls at a readable width instead of compressing to an
-   unreadable one. */
+/* Gallery layout constant. Narrower, the changes column wraps into near-blank bands while the
+   nowrap zone cells hold the table open anyway, so the table scrolls instead. */
 const MIN_TABLE_W = 480;
 
 export function SpanTable({ zones }: SpanTableProps) {
   return (
-    /* The zone name and width cells are `whitespace-nowrap`, so the table has a min-content floor
-       that `w-full` cannot shrink past — below that it pushed the whole page into horizontal scroll,
-       breaking the 320px floor this very section documents. Scrolling the wide content in its own
-       container is the design system's answer (design-system.md → Responsive), and the same shape
-       DurationScale already uses in this kit. */
+    /* The nowrap cells give the table a min-content floor; scrolling here keeps the page itself
+       free of horizontal scroll at 320px. */
     <div className="overflow-x-auto">
       <table
         className="w-full border-collapse"
@@ -42,11 +30,9 @@ export function SpanTable({ zones }: SpanTableProps) {
       >
         <thead>
           <tr>
-            <th className={`type-eyebrow text-accent-gold ${CELL}`}>Name</th>
-            <th className={`type-eyebrow text-accent-gold ${CELL}`}>Width</th>
-            <th className={`type-eyebrow text-accent-gold ${CELL}`}>
-              Key changes
-            </th>
+            <th className={`type-eyebrow ${CELL}`}>Name</th>
+            <th className={`type-eyebrow ${CELL}`}>Width</th>
+            <th className={`type-eyebrow ${CELL}`}>Key changes</th>
           </tr>
         </thead>
         <tbody>
@@ -56,13 +42,13 @@ export function SpanTable({ zones }: SpanTableProps) {
                 {index === 0 ? (
                   <>
                     <td
-                      className={`type-eyebrow whitespace-nowrap text-accent-gold ${CELL}`}
+                      className={`type-eyebrow whitespace-nowrap ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.name}
                     </td>
                     <td
-                      className={`type-eyebrow whitespace-nowrap text-accent-gold ${CELL}`}
+                      className={`type-eyebrow whitespace-nowrap ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.width}
