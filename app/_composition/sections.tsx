@@ -478,10 +478,8 @@ export function WishesSection() {
 
           <div className="mt-space-lg flex w-full flex-col items-center gap-space-lg [@media(width>=48rem)]:flex-row [@media(width>=48rem)]:items-center [@media(width>=48rem)]:gap-space-2xl">
             <div className="flex flex-col items-center text-center [@media(width>=48rem)]:flex-1 [@media(width>=48rem)]:items-start [@media(width>=48rem)]:text-left">
-              <p className="type-body text-ink-on-contrast text-pretty">
-                {wishes.passage}
-              </p>
-              <p className="type-caption text-ink-on-contrast mt-space-sm">
+              <p className="type-body text-pretty">{wishes.passage}</p>
+              <p className="type-caption mt-space-sm">
                 {wishes.passageAttribution}
               </p>
             </div>
@@ -493,24 +491,19 @@ export function WishesSection() {
                 alt=""
                 className={wishesStyles.illustration}
                 height={900}
-                priority={false}
                 src="/couple/couple.webp"
                 width={900}
               />
             </div>
           </div>
 
-          <p className="type-heading-script text-ink-on-contrast mt-space-2xl">
+          <p className="type-heading-script mt-space-2xl">
             {wishes.coupleNames}
           </p>
 
           <div className="mt-space-lg flex flex-col items-center gap-space-3xs text-center">
-            <p className="type-body-italic text-ink-on-contrast">
-              {wishes.wishesLead}
-            </p>
-            <p className="type-body text-ink-on-contrast">
-              {wishes.wishesLine}
-            </p>
+            <p className="type-body-italic">{wishes.wishesLead}</p>
+            <p className="type-body">{wishes.wishesLine}</p>
           </div>
         </div>
       </MountedSheet>
