@@ -626,3 +626,28 @@ test("allows equal consecutive heights", () => {
   });
   assert.doesNotThrow(() => windowClasses(fit));
 });
+
+/* Tall mode exists because the fitted frame refuses a section taller than its tier's height cap:
+   `tierLine` keeps only rectangles clearing `CAPS[tier].height`, and a tall section has none. The
+   compact tier's 576px cap binds first. If this ever stops throwing, tall mode's premise is gone. */
+test("a section taller than the compact height cap cannot be framed", () => {
+  const tall = makeFit({
+    mobile: {
+      portrait: [{ minContentWidth: 120, contentHeight: 600 }],
+      landscape: [{ minContentWidth: 120, contentHeight: 600 }],
+    },
+    tablet: {
+      portrait: [{ minContentWidth: 120, contentHeight: 600 }],
+      landscape: [{ minContentWidth: 120, contentHeight: 600 }],
+    },
+    desktop: {
+      portrait: [{ minContentWidth: 120, contentHeight: 600 }],
+      landscape: [{ minContentWidth: 120, contentHeight: 600 }],
+    },
+    wide: {
+      portrait: [{ minContentWidth: 120, contentHeight: 600 }],
+      landscape: [{ minContentWidth: 120, contentHeight: 600 }],
+    },
+  });
+  assert.throws(() => mountedSheetFrameCss(tall, false), /cannot be framed/);
+});
