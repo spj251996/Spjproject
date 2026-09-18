@@ -12,10 +12,10 @@
 
    Usage:
      node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
-       --section=invite --out=app/_composition/invite-fit.ts
+       --section=invite --out=app/invite-fit.ts
 
-   `--out` sits beside the page's composition module that supplies the section's fit, e.g.
-   `app/_composition/invite-fit.ts` for the invite.
+   `--out` sits beside `app/page.tsx`, which supplies the section's fit, e.g. `app/invite-fit.ts`
+   for the invite.
 
    Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
    landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending
