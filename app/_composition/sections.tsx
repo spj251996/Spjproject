@@ -391,10 +391,13 @@ export function FamilySection() {
    gap. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured fit — it grows to
    its content and the page scrolls past it. Phase 6 replaces the whole interior with the real
    timeline; only the frame and the header are meant to survive. */
-const CELEBRATIONS_INTRO = [
-  "A look at the ceremonies and traditions that shape our Syro-Malabar Catholic wedding.",
-  "Moments leading up to the day, shared as they unfold.",
-] as const;
+/* Two lines, not one paragraph, because the second does different work: it is what tells a guest
+   photographs arrive here after the wedding, so it is set apart and set in italic. The card would
+   otherwise read as finished rather than as still to come. */
+const CELEBRATIONS_INTRO =
+  "A look at the ceremonies and traditions that shape our Syro-Malabar Catholic wedding.";
+const CELEBRATIONS_PROMISE =
+  "Moments leading up to the day, shared as they unfold.";
 
 /* No `mt-*` utility here: `celebrations.list`'s own `margin: 0` is a plain, unlayered rule, so it
    always beats a Tailwind margin utility regardless of value — the gap has to be set inside the
@@ -414,17 +417,18 @@ export function CelebrationsSection() {
             ["--celebrations-row-gap" as string]: "var(--spacing-space-xl)",
             ["--celebrations-mark-size" as string]: "0.5rem",
             ["--celebrations-mark-offset" as string]: "0.5rem",
-            ["--celebrations-intro-gap" as string]: "var(--spacing-space-4xl)",
+            ["--celebrations-intro-gap" as string]: "var(--spacing-space-lg)",
           }}
         >
           <h2 className="type-heading-script text-ink">The Celebrations</h2>
 
-          <div className="mt-space-2xs flex flex-col gap-space-2xs">
-            {CELEBRATIONS_INTRO.map((line) => (
-              <p className="type-body text-ink text-pretty" key={line}>
-                {line}
-              </p>
-            ))}
+          <div className="mt-space-2xs flex flex-col gap-space-sm">
+            <p className="type-body text-ink text-pretty">
+              {CELEBRATIONS_INTRO}
+            </p>
+            <p className="type-body-italic text-ink text-pretty">
+              {CELEBRATIONS_PROMISE}
+            </p>
           </div>
 
           {/* biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none */}
