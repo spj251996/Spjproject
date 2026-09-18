@@ -84,6 +84,14 @@ const RECIPES = [
     outDir: "public/family",
     recipe: "pass-through",
   },
+  /* The link-preview card, already baked at its delivery size by the card generator, so this is a
+     pass-through like the family portraits rather than a resize. It is 1200x630 because that is what
+     the OpenGraph consumers expect; re-encoding here would only cost a second generation of JPEG loss. */
+  {
+    sourceDir: "assets/og",
+    outDir: "public",
+    recipe: "pass-through",
+  },
 ];
 
 async function run() {
