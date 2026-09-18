@@ -29,11 +29,6 @@
   background-size: contain;
   background-repeat: no-repeat;
   pointer-events: none;
-  /* Held back so the drawing sits behind the text rather than competing with it: it carries the
-     only saturated colour on the stock, and at full strength the gold splatter pulls the eye off
-     the passage it sits under. */
-  filter: saturate(var(--wishes-figure-saturation));
-  opacity: var(--wishes-figure-opacity);
 }
 
 /* Two lines in both layouts: the lead in italic above the names who send it, who stay regular. */

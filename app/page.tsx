@@ -467,8 +467,6 @@ export function WishesSection() {
           style={{
             /* The drawing's own proportions once its transparent border is trimmed off. */
             ["--wishes-figure-ratio" as string]: "560 / 573",
-            ["--wishes-figure-saturation" as string]: "0.7",
-            ["--wishes-figure-opacity" as string]: "0.9",
           }}
         >
           <p className="type-eyebrow">A life in love</p>
