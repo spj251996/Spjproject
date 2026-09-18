@@ -59,5 +59,6 @@ export function formatEventDate(iso: string): FormattedDate {
     month: part("month"),
     monthShort: MONTH_SHORT.format(date),
     year: part("year"),
+    iso,
   };
 }

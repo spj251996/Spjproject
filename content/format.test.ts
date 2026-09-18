@@ -10,6 +10,7 @@ test("formats the wedding date", () => {
     month: "January",
     monthShort: "Jan",
     year: "2027",
+    iso: "2027-01-09",
   });
 });
 
@@ -21,6 +22,7 @@ test("formats the engagement date", () => {
     month: "January",
     monthShort: "Jan",
     year: "2027",
+    iso: "2027-01-04",
   });
 });
 

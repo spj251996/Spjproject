@@ -64,4 +64,7 @@ export interface FormattedDate {
   /** Both spellings exist at first paint, so CSS picks one without client code. */
   monthShort: string;
   year: string;
+  /** The ISO date this was formatted from, carried so a caller can emit `<time datetime>` without
+      being handed the raw value separately. */
+  iso: string;
 }

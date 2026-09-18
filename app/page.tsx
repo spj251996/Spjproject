@@ -48,17 +48,18 @@ function splitCoupleNames(coupleNames: string): [string, string] | null {
 }
 
 /* Both month spellings render; `display: none` keeps the hidden one out of the accessibility tree,
-   so no `aria-hidden` is needed. */
+   so no `aria-hidden` is needed. The `<time>` carries the ISO value so the rendered string — which
+   is split across spans and duplicated for two month spellings — is still readable as one date. */
 function PrimaryDate({ date }: { date: FormattedDate }) {
   return (
-    <>
+    <time dateTime={date.iso}>
       {date.weekday}, {date.day}
       <span className="type-caption type-date-ordinal align-super">
         {date.ordinal}
       </span>{" "}
       <span className="md:hidden">{date.monthShort}</span>
       <span className="hidden md:inline">{date.month}</span> {date.year}
-    </>
+    </time>
   );
 }
 
@@ -102,11 +103,13 @@ export function InviteSection() {
           <div className="flex flex-col items-center gap-space-3xs mt-space-lg">
             <p className="type-eyebrow">{betrothal.name}</p>
             <p className="type-caption text-ink">
-              {betrothalDate.weekday}, {betrothalDate.day}
-              {betrothalDate.ordinal}{" "}
-              <span className="md:hidden">{betrothalDate.monthShort}</span>
-              <span className="hidden md:inline">{betrothalDate.month}</span>{" "}
-              {betrothalDate.year}
+              <time dateTime={betrothalDate.iso}>
+                {betrothalDate.weekday}, {betrothalDate.day}
+                {betrothalDate.ordinal}{" "}
+                <span className="md:hidden">{betrothalDate.monthShort}</span>
+                <span className="hidden md:inline">{betrothalDate.month}</span>{" "}
+                {betrothalDate.year}
+              </time>
             </p>
             <p className="type-caption text-ink">{betrothal.cityTown}</p>
           </div>
@@ -189,9 +192,9 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
         <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
-        <p className="type-heading-lg text-ink">
+        <address className="type-heading-lg text-ink not-italic">
           <AddressLine address={sharedAddress(event)} />
-        </p>
+        </address>
       </div>
     </>
   );
