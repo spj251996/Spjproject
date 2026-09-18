@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Corinthia, Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
@@ -68,7 +69,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${script.variable} ${serif.variable} ${sans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* Vercel Web Analytics is first-party on Vercel: the script and its beacon are same-origin
+          under `/_vercel/*`, so no CSP allowance is needed and no third party receives guest data —
+          which matters on a site whose whole policy is that it is shared by link and listed
+          nowhere. It is cookieless and counts visits rather than identifying visitors. */}
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
