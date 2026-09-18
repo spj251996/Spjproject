@@ -1,0 +1,37 @@
+/* The spine is a single rule behind the rows rather than a border on each, so it runs unbroken
+   through the gaps and stops at the first and last mark instead of at the list's padding box.
+   Phase 6 replaces it with the thread's own generated segment. */
+.list {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.list::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--celebrations-spine-inset);
+  inset-inline-start: var(--celebrations-spine-x);
+  width: var(--stroke-divider);
+  background-color: var(--color-accent-gold);
+}
+
+.row {
+  position: relative;
+  padding-inline-start: var(--celebrations-row-indent);
+}
+
+.mark {
+  position: absolute;
+  inset-inline-start: calc(
+    var(--celebrations-spine-x) -
+    var(--celebrations-mark-size) /
+    2
+  );
+  inset-block-start: var(--celebrations-mark-offset);
+  width: var(--celebrations-mark-size);
+  height: var(--celebrations-mark-size);
+  background-color: var(--color-accent-gold);
+}

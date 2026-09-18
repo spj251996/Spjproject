@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import celebrations from "@/app/_composition/celebrations.module.css";
 import { eventInfoFit } from "@/app/_composition/event-info-fit";
 import { familyFit } from "@/app/_composition/family-fit";
 import { inviteFit } from "@/app/_composition/invite-fit";
@@ -22,6 +23,7 @@ import {
   familyGroups,
   formatEventDate,
   invite,
+  rituals,
   type WeddingEvent,
 } from "@/content";
 
@@ -380,6 +382,61 @@ export function FamilySection() {
           group={familyGroupBySide("groom")}
         />
       </MountedPair>
+    </section>
+  );
+}
+
+/* The placeholder timeline card. Every value here is a starting point for the owner's tweak loop,
+   reported as inferred: the spine's position, the mark's size and offset, the row indent and every
+   gap. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured fit — it grows to
+   its content and the page scrolls past it. Phase 6 replaces the whole interior with the real
+   timeline; only the frame and the header are meant to survive. */
+const CELEBRATIONS_INTRO = [
+  "A look at the ceremonies and traditions that shape our Syro-Malabar Catholic wedding.",
+  "Moments leading up to the day, shared as they unfold.",
+] as const;
+
+const CELEBRATIONS_LIST_CLASS = `${celebrations.list} mt-space-2xl flex flex-col gap-space-xl`;
+
+export function CelebrationsSection() {
+  return (
+    <section className="relative z-(--z-content)" id="celebrations">
+      <MountedSheet tall>
+        <div
+          className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center"
+          style={{
+            ["--celebrations-measure" as string]: "42rem",
+            ["--celebrations-spine-x" as string]: "0.5rem",
+            ["--celebrations-spine-inset" as string]: "0.75rem",
+            ["--celebrations-row-indent" as string]: "2.5rem",
+            ["--celebrations-mark-size" as string]: "0.5rem",
+            ["--celebrations-mark-offset" as string]: "0.5rem",
+          }}
+        >
+          <h2 className="type-heading-script text-ink">The Celebrations</h2>
+
+          <div className="mt-space-sm flex flex-col gap-space-2xs">
+            {CELEBRATIONS_INTRO.map((line) => (
+              <p className="type-body text-ink text-pretty" key={line}>
+                {line}
+              </p>
+            ))}
+          </div>
+
+          {/* biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none */}
+          <ol className={CELEBRATIONS_LIST_CLASS} role="list">
+            {rituals.map((ritual) => (
+              <li className={`${celebrations.row} text-left`} key={ritual.id}>
+                <span aria-hidden className={celebrations.mark} />
+                <h3 className="type-heading-lg text-ink">{ritual.title}</h3>
+                <p className="type-body text-ink mt-space-2xs text-pretty">
+                  {ritual.description}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </MountedSheet>
     </section>
   );
 }
