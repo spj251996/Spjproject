@@ -32,7 +32,9 @@ export {
 
 export type BotanicalPiece =
   | "falling-spray"
-  | "hanging-bunch"
+  | "tied-bouquet"
+  | "crossing-stems"
+  | "drooping-stem"
   | "corner-spray"
   | "horizontal-garland"
   | "side-spread-left"
@@ -48,6 +50,7 @@ type RingBand = "block" | "side";
 type Anchor =
   | "top-span"
   | "low-right"
+  | "top-left"
   | "top-right"
   | "bottom-left"
   | "mid-left"
@@ -66,14 +69,16 @@ export const SECTION_PLACEMENT = {
     { piece: "corner-spray", anchor: "low-right" },
   ],
   "event-info": [
-    { piece: "hanging-bunch", anchor: "top-right" },
-    { piece: "horizontal-garland", anchor: "bottom-left" },
+    { piece: "tied-bouquet", anchor: "top-right" },
+    { piece: "horizontal-garland", anchor: "gap-left" },
   ],
   family: [
     { piece: "side-spread-left", anchor: "mid-left" },
     { piece: "side-spread-right", anchor: "mid-right" },
   ],
   celebrations: [
+    { piece: "crossing-stems", anchor: "top-left" },
+    { piece: "drooping-stem", anchor: "top-right" },
     { piece: "tall-column-a", anchor: "mid-left" },
     { piece: "tall-column-b", anchor: "mid-right" },
   ],
@@ -112,9 +117,11 @@ export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
    of scope (owner decision — every piece is tuned individually). */
 export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
   "falling-spray": 7.33,
-  "hanging-bunch": 4.3,
+  "tied-bouquet": 4.14,
+  "crossing-stems": 3,
+  "drooping-stem": 3,
   "corner-spray": 2.74,
-  "horizontal-garland": 4.34,
+  "horizontal-garland": 7,
   "side-spread-left": 2.25,
   "side-spread-right": 2.09,
   "sprig-cross-left": 2.99,
@@ -127,7 +134,9 @@ export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
    entering from a side edge against `--ring-side`. */
 export const RING_BAND: Readonly<Record<NonMeadowPiece, RingBand>> = {
   "falling-spray": "block",
-  "hanging-bunch": "block",
+  "tied-bouquet": "block",
+  "crossing-stems": "block",
+  "drooping-stem": "block",
   "corner-spray": "side",
   "horizontal-garland": "block",
   "side-spread-left": "side",
@@ -149,15 +158,17 @@ const RING_VAR: Readonly<Record<RingBand, string>> = {
    only wastes canvas inside the box; it never breaks a crop, so no test asserts it. */
 export const ASPECT_RATIO: Readonly<Record<NonMeadowPiece, string>> = {
   "falling-spray": "998 / 748",
-  "hanging-bunch": "387 / 623",
+  "tied-bouquet": "387 / 623",
+  "crossing-stems": "1312 / 1199",
+  "drooping-stem": "1312 / 1199",
   "corner-spray": "715 / 689",
   "horizontal-garland": "1536 / 1024",
   "side-spread-left": "738 / 1050",
   "side-spread-right": "713 / 1106",
   "sprig-cross-left": "635 / 400",
   "sprig-cross-right": "491 / 578",
-  "tall-column-a": "441 / 1707",
-  "tall-column-b": "482 / 1726",
+  "tall-column-a": "827 / 1902",
+  "tall-column-b": "821 / 1915",
 };
 
 /* `"998 / 748"` -> `1.3342`. Kept beside the table it reads so the two cannot drift. */

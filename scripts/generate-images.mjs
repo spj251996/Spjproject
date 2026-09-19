@@ -105,11 +105,7 @@ async function fadeBase(data, width, height, channels) {
   return faded;
 }
 
-const FADE_PIECES = new Set([
-  "tall-column-a",
-  "tall-column-b",
-  "side-spread-right",
-]);
+const FADE_PIECES = new Set(["side-spread-right"]);
 
 /* A piece's on-page width is `k × the ring band it lives in`
    (`components/layout/mounted-sheet-frame.ts` GROUND_TIERS), never a fixed pixel value, so it
@@ -134,7 +130,7 @@ const BOTANICAL_DENSITY = 1.5;
 
 const BOTANICAL_PIECES = [
   { name: "falling-spray", g: 13.4, band: "block" },
-  { name: "hanging-bunch", g: 7, band: "block" },
+  { name: "tied-bouquet", g: 6.9, band: "block" },
   { name: "horizontal-garland", g: 7.23, band: "block" },
   { name: "corner-spray", g: 9, band: "side" },
   { name: "side-spread-left", g: 7.5, band: "side" },
@@ -143,6 +139,8 @@ const BOTANICAL_PIECES = [
   { name: "sprig-cross-right", g: 6, band: "side" },
   { name: "tall-column-a", g: 4.8, band: "side" },
   { name: "tall-column-b", g: 6.2, band: "side" },
+  { name: "crossing-stems", g: 5, band: "block" },
+  { name: "drooping-stem", g: 5, band: "block" },
 ];
 
 /* `meadow-band` is the exception: it renders at full window width, not `k × ring`, so its width
@@ -157,7 +155,7 @@ const MEADOW_BAND_WIDTH = { phoneTablet: 768, compact: 1600, laptop: 1920 };
    stacking context isolates the botanical layer's `mix-blend-mode: multiply` — the drawing would
    then paint its white background as a visible rectangle on the ivory. */
 const FLIP_H_PIECES = new Set(["corner-spray"]);
-const FLIP_V_PIECES = new Set(["hanging-bunch"]);
+const FLIP_V_PIECES = new Set(["tied-bouquet"]);
 
 /* Resizes (never upscaling past the source), mirrors the flipped pieces, clamps to white, and — for
    the four bad-base pieces — fades the bottom edge, re-clamping after. Returns a sharp pipeline
