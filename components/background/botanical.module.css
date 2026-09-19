@@ -1,0 +1,328 @@
+/* DESIGN.md → Botanical Edge. Delivery is a CSS background, not `<img>`: a non-matching media query
+   fetches nothing, so a phone never learns the laptop file exists, and the layer needs no alt text —
+   it is decorative by construction. Every rule here avoids the properties that isolate
+   `mix-blend-mode` into a new stacking context: no `z-index`, `isolation`, `contain`,
+   `content-visibility`, `transform`, `filter`, sub-1 `opacity`, or shadow. */
+
+/* The wrapper carries the section's own frame-scope class (`.mounted-sheet-frame--*`) so it reads
+   `--ring-block`/`--ring-side` from the same generated rule the card's own frame uses — see
+   `botanical.tsx`'s header comment for why it cannot instead become a literal child of that div.
+   That rule also sets `display: flex`, real padding and a `min-height` on anything carrying the
+   class, meant for the card frame it was written for; `display: contents` removes this wrapper's own
+   box entirely so none of that reaches it or its children, while the custom properties still
+   inherit. The attribute selector repeats the class match so this rule carries two selectors'
+   specificity against the generated stylesheet's one, winning the cascade outright rather than
+   depending on `!important` or which stylesheet the browser parses second. */
+.layer[class*="mounted-sheet-frame--"] {
+  display: contents;
+}
+
+.bloom {
+  position: absolute;
+  height: auto;
+  width: calc(var(--piece-ring) * var(--piece-k));
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* Anchors — each pins a piece to the edge or gap the eye reads it against, never a typed pixel
+   offset. `mid-left`/`mid-right` centre with `inset-block` + `margin-block: auto` (the same
+   technique `app/wishes.module.css` uses for its figure), not a transform, since a transform value
+   also isolates the blend. */
+.top-span {
+  top: 0;
+  left: 0;
+}
+
+.low-right {
+  right: 0;
+  bottom: 14%;
+}
+
+.top-right {
+  top: 0;
+  right: 0;
+}
+
+.bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.mid-left {
+  inset-block: 0;
+  left: 0;
+  margin-block: auto;
+}
+
+.mid-right {
+  inset-block: 0;
+  right: 0;
+  margin-block: auto;
+}
+
+/* The gap between two cards: the section's own top edge is where the gap above it sits, so a piece
+   anchored here reads against that seam. A future tuning pass may shift it to straddle the seam
+   itself; left flush with the section's top edge for now. */
+.gap-left {
+  top: 0;
+  left: 0;
+}
+
+.gap-right {
+  top: 0;
+  right: 0;
+}
+
+/* The meadow band is the one piece exempt from ring-relative sizing: full window width, cropped
+   from its own top edge so stems cut mid-length at the bottom edge rather than tapering out. Its
+   aspect ratio is set inline from `botanical-meadow.ts`'s own natural-size constants divided by how
+   much of that height stays visible, rather than a bare crop fraction hardcoded here — the numbers
+   live once, and `botanical.test.ts` asserts every shipped tier's file still matches them. */
+.meadow-band {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-size: cover;
+  background-position: top center;
+}
+
+.falling-spray {
+  background-image: image-set(
+    url("/botanical/falling-spray-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/falling-spray-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.hanging-bunch {
+  background-image: image-set(
+    url("/botanical/hanging-bunch-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/hanging-bunch-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.corner-spray {
+  background-image: image-set(
+    url("/botanical/corner-spray-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/corner-spray-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.upright-clump {
+  background-image: image-set(
+    url("/botanical/upright-clump-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/upright-clump-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.side-spread-left {
+  background-image: image-set(
+    url("/botanical/side-spread-left-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/side-spread-left-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.side-spread-right {
+  background-image: image-set(
+    url("/botanical/side-spread-right-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/side-spread-right-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.sprig-cross-left {
+  background-image: image-set(
+    url("/botanical/sprig-cross-left-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/sprig-cross-left-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.sprig-cross-right {
+  background-image: image-set(
+    url("/botanical/sprig-cross-right-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/sprig-cross-right-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.tall-column-a {
+  background-image: image-set(
+    url("/botanical/tall-column-a-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/tall-column-a-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.tall-column-b {
+  background-image: image-set(
+    url("/botanical/tall-column-b-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/tall-column-b-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+.meadow-band {
+  background-image: image-set(
+    url("/botanical/meadow-band-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/meadow-band-phoneTablet.webp") type("image/webp") 1x
+  );
+}
+
+/* The compact step. */
+@media (width >= 64rem) {
+  .falling-spray {
+    background-image: image-set(
+      url("/botanical/falling-spray-compact.avif") type("image/avif") 1x,
+      url("/botanical/falling-spray-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .hanging-bunch {
+    background-image: image-set(
+      url("/botanical/hanging-bunch-compact.avif") type("image/avif") 1x,
+      url("/botanical/hanging-bunch-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .corner-spray {
+    background-image: image-set(
+      url("/botanical/corner-spray-compact.avif") type("image/avif") 1x,
+      url("/botanical/corner-spray-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .upright-clump {
+    background-image: image-set(
+      url("/botanical/upright-clump-compact.avif") type("image/avif") 1x,
+      url("/botanical/upright-clump-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .side-spread-left {
+    background-image: image-set(
+      url("/botanical/side-spread-left-compact.avif") type("image/avif") 1x,
+      url("/botanical/side-spread-left-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .side-spread-right {
+    background-image: image-set(
+      url("/botanical/side-spread-right-compact.avif") type("image/avif") 1x,
+      url("/botanical/side-spread-right-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .sprig-cross-left {
+    background-image: image-set(
+      url("/botanical/sprig-cross-left-compact.avif") type("image/avif") 1x,
+      url("/botanical/sprig-cross-left-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .sprig-cross-right {
+    background-image: image-set(
+      url("/botanical/sprig-cross-right-compact.avif") type("image/avif") 1x,
+      url("/botanical/sprig-cross-right-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .tall-column-a {
+    background-image: image-set(
+      url("/botanical/tall-column-a-compact.avif") type("image/avif") 1x,
+      url("/botanical/tall-column-a-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .tall-column-b {
+    background-image: image-set(
+      url("/botanical/tall-column-b-compact.avif") type("image/avif") 1x,
+      url("/botanical/tall-column-b-compact.webp") type("image/webp") 1x
+    );
+  }
+
+  .meadow-band {
+    background-image: image-set(
+      url("/botanical/meadow-band-compact.avif") type("image/avif") 1x,
+      url("/botanical/meadow-band-compact.webp") type("image/webp") 1x
+    );
+  }
+}
+
+/* The laptop step. */
+@media (width >= 100rem) {
+  .falling-spray {
+    background-image: image-set(
+      url("/botanical/falling-spray-laptop.avif") type("image/avif") 1x,
+      url("/botanical/falling-spray-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .hanging-bunch {
+    background-image: image-set(
+      url("/botanical/hanging-bunch-laptop.avif") type("image/avif") 1x,
+      url("/botanical/hanging-bunch-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .corner-spray {
+    background-image: image-set(
+      url("/botanical/corner-spray-laptop.avif") type("image/avif") 1x,
+      url("/botanical/corner-spray-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .upright-clump {
+    background-image: image-set(
+      url("/botanical/upright-clump-laptop.avif") type("image/avif") 1x,
+      url("/botanical/upright-clump-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .side-spread-left {
+    background-image: image-set(
+      url("/botanical/side-spread-left-laptop.avif") type("image/avif") 1x,
+      url("/botanical/side-spread-left-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .side-spread-right {
+    background-image: image-set(
+      url("/botanical/side-spread-right-laptop.avif") type("image/avif") 1x,
+      url("/botanical/side-spread-right-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .sprig-cross-left {
+    background-image: image-set(
+      url("/botanical/sprig-cross-left-laptop.avif") type("image/avif") 1x,
+      url("/botanical/sprig-cross-left-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .sprig-cross-right {
+    background-image: image-set(
+      url("/botanical/sprig-cross-right-laptop.avif") type("image/avif") 1x,
+      url("/botanical/sprig-cross-right-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .tall-column-a {
+    background-image: image-set(
+      url("/botanical/tall-column-a-laptop.avif") type("image/avif") 1x,
+      url("/botanical/tall-column-a-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .tall-column-b {
+    background-image: image-set(
+      url("/botanical/tall-column-b-laptop.avif") type("image/avif") 1x,
+      url("/botanical/tall-column-b-laptop.webp") type("image/webp") 1x
+    );
+  }
+
+  .meadow-band {
+    background-image: image-set(
+      url("/botanical/meadow-band-laptop.avif") type("image/avif") 1x,
+      url("/botanical/meadow-band-laptop.webp") type("image/webp") 1x
+    );
+  }
+}

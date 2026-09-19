@@ -5,6 +5,7 @@ import { familyFit } from "@/app/family-fit";
 import { inviteFit } from "@/app/invite-fit";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
+import { Botanical } from "@/components/background/botanical";
 import { Family } from "@/components/family/family";
 import {
   BetrothalIcon,
@@ -75,7 +76,14 @@ export function InviteSection() {
   const names = splitCoupleNames(invite.coupleNames);
 
   return (
-    <section className="relative z-(--z-content)">
+    <section className="relative">
+      <Botanical
+        fit={inviteFit}
+        pieces={[
+          { piece: "falling-spray", anchor: "top-span" },
+          { piece: "upright-clump", anchor: "low-right" },
+        ]}
+      />
       <MountedSheet fit={inviteFit} hero>
         <div className="flex flex-col items-center text-center">
           {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
@@ -346,7 +354,14 @@ function EventSheet({ event }: { event: WeddingEvent }) {
 /* The id scopes `measure:fit`'s selector, so a later section's `h2`s cannot leak into this fit. */
 export function EventInfoSection() {
   return (
-    <section className="relative z-(--z-content)" id="event-info">
+    <section className="relative" id="event-info">
+      <Botanical
+        fit={eventInfoFit}
+        pieces={[
+          { piece: "hanging-bunch", anchor: "top-right" },
+          { piece: "corner-spray", anchor: "bottom-left" },
+        ]}
+      />
       <MountedPair fit={eventInfoFit} stackedPadding={inviteFit}>
         <EventSheet event={eventById("engagement")} />
         <EventSheet event={eventById("wedding")} />
@@ -374,7 +389,14 @@ function familyGroupBySide(side: FamilyGroup["side"]) {
    re-runs `npm run measure:fit`. */
 export function FamilySection() {
   return (
-    <section className="relative z-(--z-content)" id="family">
+    <section className="relative" id="family">
+      <Botanical
+        fit={familyFit}
+        pieces={[
+          { piece: "side-spread-left", anchor: "mid-left" },
+          { piece: "side-spread-right", anchor: "mid-right" },
+        ]}
+      />
       <MountedPair fit={familyFit} stackedPadding={inviteFit}>
         <Family
           eyebrow={FAMILY_EYEBROWS.bride}
@@ -407,7 +429,13 @@ const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
 export function CelebrationsSection() {
   return (
-    <section className="relative z-(--z-content)" id="celebrations">
+    <section className="relative" id="celebrations">
+      <Botanical
+        pieces={[
+          { piece: "tall-column-a", anchor: "mid-left" },
+          { piece: "tall-column-b", anchor: "mid-right" },
+        ]}
+      />
       <MountedSheet tall>
         <div
           className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center"
@@ -463,7 +491,15 @@ export function CelebrationsSection() {
    the thread. */
 export function WishesSection() {
   return (
-    <section className="relative z-(--z-content)" id="wishes">
+    <section className="relative" id="wishes">
+      <Botanical
+        fit={wishesFit}
+        pieces={[
+          { piece: "meadow-band", anchor: "band-bottom" },
+          { piece: "sprig-cross-left", anchor: "gap-left" },
+          { piece: "sprig-cross-right", anchor: "gap-right" },
+        ]}
+      />
       <MountedSheet fit={wishesFit} stock="contrast">
         <div
           className={`${wishesStyles.stack} wishes-stack flex w-full flex-col items-center`}
