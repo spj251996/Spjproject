@@ -104,10 +104,13 @@
   background-position: top center;
 }
 
-/* Nudged 43px further off the left window edge, live with the owner. A left-edge bleed is the one
-   DESIGN.md allows, and `top-span` anchors `left: 0`, so a left margin is the axis that moves it. */
+/* Anchor nudges below are settled live with the owner on `/preview`. Each uses the property that
+   actually moves ITS anchor: a `low-right` piece is anchored `right`/`bottom`, so only a
+   `margin-bottom` shifts it vertically, and a `mid-*` piece centres with `margin-block: auto`, so it
+   offsets through asymmetric block insets rather than a margin that would break the centring. A
+   positive nudge always reads as right/down whatever the anchor. */
 .falling-spray {
-  margin-left: -43px;
+  margin-left: -54px;
   background-image: image-set(
     url("/botanical/falling-spray-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/falling-spray-phoneTablet.webp") type("image/webp") 1x
@@ -129,6 +132,7 @@
 }
 
 .upright-clump {
+  margin-bottom: -70px;
   background-image: image-set(
     url("/botanical/upright-clump-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/upright-clump-phoneTablet.webp") type("image/webp") 1x
@@ -136,6 +140,7 @@
 }
 
 .side-spread-left {
+  inset-block: -320px 0;
   background-image: image-set(
     url("/botanical/side-spread-left-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/side-spread-left-phoneTablet.webp") type("image/webp") 1x
@@ -143,6 +148,7 @@
 }
 
 .side-spread-right {
+  inset-block: 180px 0;
   background-image: image-set(
     url("/botanical/side-spread-right-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/side-spread-right-phoneTablet.webp") type("image/webp") 1x
@@ -150,6 +156,8 @@
 }
 
 .sprig-cross-left {
+  margin-left: -19px;
+  margin-top: -91px;
   background-image: image-set(
     url("/botanical/sprig-cross-left-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/sprig-cross-left-phoneTablet.webp") type("image/webp") 1x
@@ -157,6 +165,7 @@
 }
 
 .sprig-cross-right {
+  margin-top: -91px;
   background-image: image-set(
     url("/botanical/sprig-cross-right-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/sprig-cross-right-phoneTablet.webp") type("image/webp") 1x
@@ -164,6 +173,7 @@
 }
 
 .tall-column-a {
+  margin-left: 34px;
   background-image: image-set(
     url("/botanical/tall-column-a-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tall-column-a-phoneTablet.webp") type("image/webp") 1x
@@ -171,6 +181,7 @@
 }
 
 .tall-column-b {
+  margin-right: 23px;
   background-image: image-set(
     url("/botanical/tall-column-b-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tall-column-b-phoneTablet.webp") type("image/webp") 1x
