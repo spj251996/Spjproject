@@ -109,22 +109,6 @@
   background-position: top center;
 }
 
-/* The garland sits ACROSS the boundary between the invite card and the event cards rather than
-   inside either section, so it is centred on that edge: `gap-left` pins its top to the section's top
-   edge, and pulling it up by half its own height straddles it. The height is not a value CSS can
-   read back, so it is recomputed from the same terms the width uses — width is `ring x k` and the
-   aspect is width over height, so half the height is `0.5 * ring * k / aspect`. A `translate` would
-   be the usual way to do this and is exactly what must not be used: it creates a stacking context
-   and isolates the multiply blend. */
-.horizontal-garland {
-  margin-top: calc(
-    -0.5 *
-    var(--piece-ring) *
-    var(--piece-k) /
-    var(--piece-aspect)
-  );
-}
-
 /* Anchor nudges below are settled live with the owner on `/preview`. Each uses the property that
    actually moves ITS anchor: a `low-right` piece is anchored `right`/`bottom`, so only a
    `margin-bottom` shifts it vertically, and a `mid-*` piece centres with `margin-block: auto`, so it
@@ -139,7 +123,7 @@
 }
 
 .tied-bouquet {
-  margin-top: 200px;
+  margin-top: 267px;
   background-image: image-set(
     url("/botanical/tied-bouquet-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tied-bouquet-phoneTablet.webp") type("image/webp") 1x
@@ -155,6 +139,7 @@
 }
 
 .horizontal-garland {
+  margin-top: -98px;
   margin-left: -46px;
   background-image: image-set(
     url("/botanical/horizontal-garland-phoneTablet.avif") type("image/avif") 1x,
@@ -196,7 +181,8 @@
 }
 
 .tall-column-a {
-  margin-left: 34px;
+  inset-block: 44px 0;
+  margin-left: -12px;
   background-image: image-set(
     url("/botanical/tall-column-a-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tall-column-a-phoneTablet.webp") type("image/webp") 1x
@@ -204,7 +190,8 @@
 }
 
 .tall-column-b {
-  margin-right: 23px;
+  inset-block: 70px 0;
+  margin-right: 5px;
   background-image: image-set(
     url("/botanical/tall-column-b-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tall-column-b-phoneTablet.webp") type("image/webp") 1x
@@ -212,6 +199,8 @@
 }
 
 .drooping-stem {
+  margin-right: 45px;
+  margin-top: -51px;
   background-image: image-set(
     url("/botanical/drooping-stem-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/drooping-stem-phoneTablet.webp") type("image/webp") 1x
@@ -219,6 +208,8 @@
 }
 
 .crossing-stems {
+  margin-left: -58px;
+  margin-top: -65px;
   background-image: image-set(
     url("/botanical/crossing-stems-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/crossing-stems-phoneTablet.webp") type("image/webp") 1x

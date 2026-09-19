@@ -118,16 +118,16 @@ export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
 export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
   "falling-spray": 7.33,
   "tied-bouquet": 4.14,
-  "crossing-stems": 3,
-  "drooping-stem": 3,
+  "crossing-stems": 4.96,
+  "drooping-stem": 5.04,
   "corner-spray": 2.74,
   "horizontal-garland": 7,
   "side-spread-left": 2.25,
   "side-spread-right": 2.09,
   "sprig-cross-left": 2.99,
   "sprig-cross-right": 2,
-  "tall-column-a": 1.76,
-  "tall-column-b": 1.84,
+  "tall-column-a": 2.25,
+  "tall-column-b": 2.82,
 };
 
 /* A piece entering from a section's top or bottom edge is sized against `--ring-block`; one
