@@ -132,7 +132,6 @@
 }
 
 .upright-clump {
-  margin-bottom: -70px;
   background-image: image-set(
     url("/botanical/upright-clump-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/upright-clump-phoneTablet.webp") type("image/webp") 1x

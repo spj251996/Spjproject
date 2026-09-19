@@ -81,7 +81,7 @@ export function InviteSection() {
         fit={inviteFit}
         pieces={[
           { piece: "falling-spray", anchor: "top-span" },
-          { piece: "upright-clump", anchor: "low-right" },
+          { piece: "corner-spray", anchor: "low-right" },
         ]}
       />
       <MountedSheet fit={inviteFit} hero>
@@ -359,7 +359,7 @@ export function EventInfoSection() {
         fit={eventInfoFit}
         pieces={[
           { piece: "hanging-bunch", anchor: "top-right" },
-          { piece: "corner-spray", anchor: "bottom-left" },
+          { piece: "upright-clump", anchor: "bottom-left" },
         ]}
       />
       <MountedPair fit={eventInfoFit} stackedPadding={inviteFit}>

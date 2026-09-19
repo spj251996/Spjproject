@@ -85,8 +85,8 @@ export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
 export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
   "falling-spray": 7.33,
   "hanging-bunch": 4.3,
-  "corner-spray": 5.4,
-  "upright-clump": 2.17,
+  "corner-spray": 2.7,
+  "upright-clump": 4.34,
   "side-spread-left": 2.25,
   "side-spread-right": 2.09,
   "sprig-cross-left": 2.99,
@@ -100,8 +100,8 @@ export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
 export const RING_BAND: Readonly<Record<NonMeadowPiece, RingBand>> = {
   "falling-spray": "block",
   "hanging-bunch": "block",
-  "corner-spray": "block",
-  "upright-clump": "side",
+  "corner-spray": "side",
+  "upright-clump": "block",
   "side-spread-left": "side",
   "side-spread-right": "side",
   "sprig-cross-left": "side",

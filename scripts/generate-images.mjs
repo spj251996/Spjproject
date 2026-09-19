@@ -134,9 +134,9 @@ const BOTANICAL_DENSITY = 1.5;
 
 const BOTANICAL_PIECES = [
   { name: "falling-spray", g: 13.4, band: "block" },
-  { name: "upright-clump", g: 7.8, band: "side" },
+  { name: "upright-clump", g: 7.8, band: "block" },
   { name: "hanging-bunch", g: 7, band: "block" },
-  { name: "corner-spray", g: 9, band: "block" },
+  { name: "corner-spray", g: 9, band: "side" },
   { name: "side-spread-left", g: 7.5, band: "side" },
   { name: "side-spread-right", g: 8.5, band: "side" },
   { name: "sprig-cross-left", g: 8.5, band: "side" },
@@ -151,10 +151,19 @@ const BOTANICAL_PIECES = [
    wide desktop for laptop (the tier itself is unbounded above). */
 const MEADOW_BAND_WIDTH = { phoneTablet: 768, compact: 1600, laptop: 1920 };
 
-/* Resizes (never upscaling past the source), clamps to white, and — for the four bad-base pieces —
-   fades the bottom edge, re-clamping after. Returns a sharp pipeline ready for `.avif()`/`.webp()`. */
+/* A piece whose composition roots in one side edge points the wrong way once it is anchored to the
+   opposite one, so it is mirrored. The flip is BAKED IN here rather than applied as CSS, because
+   `transform: scaleX(-1)` and the standalone `scale` property both create a stacking context, and a
+   stacking context isolates the botanical layer's `mix-blend-mode: multiply` — the drawing would
+   then paint its white background as a visible rectangle on the ivory. */
+const FLIP_PIECES = new Set(["corner-spray", "upright-clump"]);
+
+/* Resizes (never upscaling past the source), mirrors the flipped pieces, clamps to white, and — for
+   the four bad-base pieces — fades the bottom edge, re-clamping after. Returns a sharp pipeline
+   ready for `.avif()`/`.webp()`. */
 async function prepareBotanicalPiece(image, name, width) {
-  const resized = image.resize({ width, withoutEnlargement: true });
+  const sized = image.resize({ width, withoutEnlargement: true });
+  const resized = FLIP_PIECES.has(name) ? sized.flop() : sized;
   const { data, info } = await resized
     .raw()
     .toBuffer({ resolveWithObject: true });
