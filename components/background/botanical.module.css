@@ -114,8 +114,13 @@
    `margin-bottom` shifts it vertically, and a `mid-*` piece centres with `margin-block: auto`, so it
    offsets through asymmetric block insets rather than a margin that would break the centring. A
    positive nudge always reads as right/down whatever the anchor. */
+/* Nudges are expressed as a fraction of the piece's own ring band, never in pixels. A fixed pixel
+   offset does not scale: -54px is a subtle 8% of `falling-spray`'s width at laptop and 46% of it on
+   a phone, where the ring is six times narrower. Sizes were already ring-relative; these make the
+   offsets match, so a placement settled at one tier holds at every other. The fractions below were
+   derived from the laptop ring (block 96, side 192), which is the tier they were tuned at. */
 .falling-spray {
-  margin-left: -54px;
+  margin-left: calc(-0.5625 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/falling-spray-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/falling-spray-phoneTablet.webp") type("image/webp") 1x
@@ -123,7 +128,7 @@
 }
 
 .tied-bouquet {
-  margin-top: 267px;
+  margin-top: calc(2.7812 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/tied-bouquet-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tied-bouquet-phoneTablet.webp") type("image/webp") 1x
@@ -131,7 +136,7 @@
 }
 
 .corner-spray {
-  margin-bottom: -120px;
+  margin-bottom: calc(-0.625 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/corner-spray-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/corner-spray-phoneTablet.webp") type("image/webp") 1x
@@ -139,8 +144,8 @@
 }
 
 .horizontal-garland {
-  margin-top: -98px;
-  margin-left: -46px;
+  margin-top: calc(-1.0208 * var(--piece-ring));
+  margin-left: calc(-0.4792 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/horizontal-garland-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/horizontal-garland-phoneTablet.webp") type("image/webp") 1x
@@ -148,7 +153,7 @@
 }
 
 .side-spread-left {
-  inset-block: -320px 0;
+  inset-block: calc(-1.6667 * var(--piece-ring)) 0;
   background-image: image-set(
     url("/botanical/side-spread-left-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/side-spread-left-phoneTablet.webp") type("image/webp") 1x
@@ -156,7 +161,7 @@
 }
 
 .side-spread-right {
-  inset-block: 180px 0;
+  inset-block: calc(0.9375 * var(--piece-ring)) 0;
   background-image: image-set(
     url("/botanical/side-spread-right-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/side-spread-right-phoneTablet.webp") type("image/webp") 1x
@@ -164,8 +169,8 @@
 }
 
 .sprig-cross-left {
-  margin-left: -19px;
-  margin-top: -91px;
+  margin-left: calc(-0.099 * var(--piece-ring));
+  margin-top: calc(-0.474 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/sprig-cross-left-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/sprig-cross-left-phoneTablet.webp") type("image/webp") 1x
@@ -173,7 +178,7 @@
 }
 
 .sprig-cross-right {
-  margin-top: -91px;
+  margin-top: calc(-0.474 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/sprig-cross-right-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/sprig-cross-right-phoneTablet.webp") type("image/webp") 1x
@@ -181,8 +186,8 @@
 }
 
 .tall-column-a {
-  inset-block: 44px 0;
-  margin-left: -12px;
+  inset-block: calc(0.2292 * var(--piece-ring)) 0;
+  margin-left: calc(-0.0625 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/tall-column-a-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tall-column-a-phoneTablet.webp") type("image/webp") 1x
@@ -190,8 +195,8 @@
 }
 
 .tall-column-b {
-  inset-block: 70px 0;
-  margin-right: 5px;
+  inset-block: calc(0.3646 * var(--piece-ring)) 0;
+  margin-right: calc(0.026 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/tall-column-b-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/tall-column-b-phoneTablet.webp") type("image/webp") 1x
@@ -199,8 +204,8 @@
 }
 
 .drooping-stem {
-  margin-right: 45px;
-  margin-top: -51px;
+  margin-right: calc(0.4688 * var(--piece-ring));
+  margin-top: calc(-0.5312 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/drooping-stem-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/drooping-stem-phoneTablet.webp") type("image/webp") 1x
@@ -208,8 +213,8 @@
 }
 
 .crossing-stems {
-  margin-left: -58px;
-  margin-top: -65px;
+  margin-left: calc(-0.6042 * var(--piece-ring));
+  margin-top: calc(-0.6771 * var(--piece-ring));
   background-image: image-set(
     url("/botanical/crossing-stems-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/crossing-stems-phoneTablet.webp") type("image/webp") 1x

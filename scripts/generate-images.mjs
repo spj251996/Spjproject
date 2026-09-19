@@ -8,7 +8,7 @@
 
    Usage: npm run images */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { copyFile, mkdir, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -125,23 +125,58 @@ const RING_BAND = {
   compact: { block: 64, side: 128 },
   laptop: { block: 96, side: 192 },
 };
-const K_FACTOR = 0.6;
-const BOTANICAL_DENSITY = 1.5;
 
-const BOTANICAL_PIECES = [
-  { name: "falling-spray", g: 13.4, band: "block" },
-  { name: "tied-bouquet", g: 6.9, band: "block" },
-  { name: "horizontal-garland", g: 7.23, band: "block" },
-  { name: "corner-spray", g: 9, band: "side" },
-  { name: "side-spread-left", g: 7.5, band: "side" },
-  { name: "side-spread-right", g: 8.5, band: "side" },
-  { name: "sprig-cross-left", g: 8.5, band: "side" },
-  { name: "sprig-cross-right", g: 6, band: "side" },
-  { name: "tall-column-a", g: 4.8, band: "side" },
-  { name: "tall-column-b", g: 6.2, band: "side" },
-  { name: "crossing-stems", g: 5, band: "block" },
-  { name: "drooping-stem", g: 5, band: "block" },
-];
+/* Delivery density. 2x is the target so a piece is sharp on a retina screen at the size it actually
+   renders; where a source cannot reach it, the resize clamps to the source and the piece ships at
+   whatever it has. */
+const BOTANICAL_DENSITY = 2;
+
+/* The tuned sizes live in `components/background/botanical.tsx` and are READ from it, never copied.
+   A copy here silently drifted once already: the owner re-tuned `k` in the component and the
+   delivered rasters kept their original seeded widths, so three pieces shipped below 1x of the size
+   they were being drawn at — soft on screen, with nothing failing. Parsed rather than imported
+   because this is a plain node script and that file is TSX; the count assertion below is what makes
+   the parse trustworthy, since a regex that silently matches nothing looks exactly like success. */
+function readTunedTable(name) {
+  const source = readFileSync(
+    join(ROOT, "components/background/botanical.tsx"),
+    "utf8",
+  );
+  const block = new RegExp(`export const ${name}[^{]*\\{([^}]*)\\}`).exec(
+    source,
+  );
+  if (!block)
+    throw new Error(`generate-images: could not find ${name} in botanical.tsx`);
+  const table = {};
+  for (const [, key, value] of block[1].matchAll(
+    /"([a-z-]+)":\s*"?([\w.-]+)"?,/g,
+  )) {
+    table[key] = Number.isNaN(Number(value)) ? value : Number(value);
+  }
+  return table;
+}
+
+const RING_FRACTION = readTunedTable("RING_FRACTION");
+const PIECE_BAND = readTunedTable("RING_BAND");
+
+const BOTANICAL_PIECES = Object.keys(RING_FRACTION).map((name) => ({
+  name,
+  k: RING_FRACTION[name],
+  band: PIECE_BAND[name],
+}));
+
+if (BOTANICAL_PIECES.length !== 12) {
+  throw new Error(
+    `generate-images: parsed ${BOTANICAL_PIECES.length} botanical pieces, expected 12`,
+  );
+}
+for (const piece of BOTANICAL_PIECES) {
+  if (!piece.band || !piece.k) {
+    throw new Error(
+      `generate-images: incomplete tuned values for ${piece.name}`,
+    );
+  }
+}
 
 /* `meadow-band` is the exception: it renders at full window width, not `k × ring`, so its width
    steps are representative window widths rather than a ring multiple — `{breakpoints.md}` for the
@@ -197,7 +232,7 @@ function botanicalRecipes() {
       widths: Object.fromEntries(
         Object.entries(RING_BAND).map(([tier, bands]) => [
           tier,
-          Math.round(p.g * K_FACTOR * bands[p.band] * BOTANICAL_DENSITY),
+          Math.round(p.k * bands[p.band] * BOTANICAL_DENSITY),
         ]),
       ),
     })),
