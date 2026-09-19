@@ -104,7 +104,10 @@
   background-position: top center;
 }
 
+/* Nudged 43px further off the left window edge, live with the owner. A left-edge bleed is the one
+   DESIGN.md allows, and `top-span` anchors `left: 0`, so a left margin is the axis that moves it. */
 .falling-spray {
+  margin-left: -43px;
   background-image: image-set(
     url("/botanical/falling-spray-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/falling-spray-phoneTablet.webp") type("image/webp") 1x

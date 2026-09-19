@@ -83,10 +83,10 @@ export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
    eye from here, one section at a time (Wave 3), and cross-piece bloom-matching is explicitly out
    of scope (owner decision — every piece is tuned individually). */
 export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
-  "falling-spray": 8.04,
+  "falling-spray": 7.58,
   "hanging-bunch": 4.2,
   "corner-spray": 5.4,
-  "upright-clump": 2.85,
+  "upright-clump": 2.41,
   "side-spread-left": 3.66,
   "side-spread-right": 3.35,
   "sprig-cross-left": 5.1,
