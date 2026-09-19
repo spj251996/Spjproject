@@ -20,7 +20,18 @@
 .bloom {
   position: absolute;
   height: auto;
-  width: calc(var(--piece-ring) * var(--piece-k));
+  /* Two limits, whichever is smaller. The first is the placement law: a piece is `k` times the ring
+     band it occupies. The second caps it by the block extent it has to live in, because the ring is
+     not a fixed multiple of the ground — above ~1104px of window height the frame's side padding
+     switches to `(100svh - card cap) / 2`, so the ring keeps growing with the window and a `k`
+     tuned at one height bleeds past the section's top or bottom at another. `DESIGN.md` allows a
+     bleed off the left or right window edge only, so the cap enforces that rule structurally rather
+     than relying on every hand-tuned constant having been checked at every window size. */
+  --piece-max-block: 100svh;
+  width: min(
+    calc(var(--piece-ring) * var(--piece-k)),
+    calc(var(--piece-max-block) * var(--piece-aspect))
+  );
   pointer-events: none;
   mix-blend-mode: multiply;
   background-repeat: no-repeat;
@@ -37,7 +48,10 @@
   left: 0;
 }
 
+/* Anchored 14% up from the section's bottom edge, so that much of the block extent is already
+   spent before the piece begins — its cap has to account for it. */
 .low-right {
+  --piece-max-block: 86svh;
   right: 0;
   bottom: 14%;
 }

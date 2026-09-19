@@ -61,31 +61,43 @@ export interface BotanicalPlacement {
   anchor: Anchor;
 }
 
-type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
+/* Exported, along with the three tables below, so the uncommitted `/preview` tuning panel
+   (`app/preview/`) can read the live baseline rather than duplicating it as a second copy that
+   would drift the moment a value is tuned here. */
+export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
 
 /* One knob per piece: k, the fraction of its ring band a piece's width occupies — width is
-   `k × the ring band it enters from`. Seeded from the placement mock
-   (`tmp/botanical-preview/index.html`), whose `--g` values ran at a fixed 64px ground and a
-   0.6 flora-scale, so k ≈ g × 0.6. Provisional: the botanical plan's Wave 3 re-tunes every value
-   here live with the owner, one section at a time, so this stays one small readable table rather
-   than magic numbers scattered across the stylesheet. `meadow-band` is exempt — it is sized against
-   the window, never the ring, and its own crop constants sit below. */
-const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
+   `k × the ring band it enters from`. `meadow-band` is exempt — it is sized against the window,
+   never the ring, and its own crop constants sit below.
+
+   These are a MECHANICAL starting point, not a tuned one: the mock-derived seed (`k ≈ g × 0.6`,
+   `tmp/botanical-preview/index.html`) let several pieces bleed off a section's top or bottom edge
+   at wide tiers — `upright-clump` measured 899×1405 inside Invite's 1000px-tall laptop-landscape
+   card, 545px past the top. DESIGN.md → Botanical Edge allows a piece to bleed off the left or
+   right window edge only, never the top or bottom.
+
+   Each value here is the largest k at which that piece's height (its width, via its own aspect
+   ratio) does not exceed its own section's real height, at every measured tier and orientation
+   (phone/tablet/compact/laptop portrait and landscape, read off the built page — see
+   `tmp/botanical-tune/`). It is a ceiling, not a design value: the owner tunes every piece down by
+   eye from here, one section at a time (Wave 3), and cross-piece bloom-matching is explicitly out
+   of scope (owner decision — every piece is tuned individually). */
+export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
   "falling-spray": 8.04,
   "hanging-bunch": 4.2,
   "corner-spray": 5.4,
-  "upright-clump": 4.68,
-  "side-spread-left": 4.5,
-  "side-spread-right": 5.1,
+  "upright-clump": 2.85,
+  "side-spread-left": 3.66,
+  "side-spread-right": 3.35,
   "sprig-cross-left": 5.1,
   "sprig-cross-right": 3.6,
-  "tall-column-a": 2.88,
-  "tall-column-b": 3.72,
+  "tall-column-a": 2.29,
+  "tall-column-b": 2.47,
 };
 
 /* A piece entering from a section's top or bottom edge is sized against `--ring-block`; one
    entering from a side edge against `--ring-side`. */
-const RING_BAND: Readonly<Record<NonMeadowPiece, RingBand>> = {
+export const RING_BAND: Readonly<Record<NonMeadowPiece, RingBand>> = {
   "falling-spray": "block",
   "hanging-bunch": "block",
   "corner-spray": "block",
@@ -107,7 +119,7 @@ const RING_VAR: Readonly<Record<RingBand, string>> = {
    (`public/botanical/<piece>-laptop.avif`) so the box matches the art with no letterboxing —
    `background-size: contain` then fills it exactly. Unlike the meadow band's crop, a mismatch here
    only wastes canvas inside the box; it never breaks a crop, so no test asserts it. */
-const ASPECT_RATIO: Readonly<Record<NonMeadowPiece, string>> = {
+export const ASPECT_RATIO: Readonly<Record<NonMeadowPiece, string>> = {
   "falling-spray": "998 / 748",
   "hanging-bunch": "387 / 623",
   "corner-spray": "715 / 689",
@@ -119,6 +131,12 @@ const ASPECT_RATIO: Readonly<Record<NonMeadowPiece, string>> = {
   "tall-column-a": "441 / 1707",
   "tall-column-b": "482 / 1726",
 };
+
+/* `"998 / 748"` -> `1.3342`. Kept beside the table it reads so the two cannot drift. */
+function aspectNumber(ratio: string): number {
+  const [w, h] = ratio.split("/").map((n) => Number(n.trim()));
+  return w / h;
+}
 
 function Bloom({ piece, anchor }: BotanicalPlacement) {
   if (piece === "meadow-band") {
@@ -137,6 +155,13 @@ function Bloom({ piece, anchor }: BotanicalPlacement) {
       className={`${styles.bloom} ${styles[piece]} ${styles[anchor]}`}
       style={{
         aspectRatio: ASPECT_RATIO[piece],
+        /* The same ratio as a bare number, so `.bloom` can cap its width by the block extent it has
+           to live in. Without this cap a piece is sized purely by the ring, and the ring itself
+           grows with window height once the frame's `max()` takes over above ~1104px — so a `k`
+           tuned at one window silently bleeds past a section's top or bottom at a taller one, which
+           `DESIGN.md` forbids. The cap enforces that rule structurally rather than by hoping every
+           hand-tuned constant was checked at every window. */
+        ["--piece-aspect" as string]: aspectNumber(ASPECT_RATIO[piece]),
         /* `--piece-ring`/`--piece-k` feed `.bloom`'s own `width: calc(...)` in the stylesheet, so
            the fraction lives once, here, rather than being restated as a literal in CSS. */
         ["--piece-ring" as string]: RING_VAR[band],
