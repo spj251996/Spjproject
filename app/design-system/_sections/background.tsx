@@ -6,8 +6,8 @@ const PAPER_BASE_POINTERS = [
 ];
 
 const BOTANICAL_POINTERS = [
-  "No component and no assets yet; the layer is reserved on z-botanical.",
-  "The thread passes in front of it → Technical · Z-Index Scale",
+  "Eleven source drawings, generated to public/botanical/; no component yet.",
+  "Composites with mix-blend-mode: multiply, so it cannot carry its own z-index → Technical · Z-Index Scale",
 ];
 
 export function BackgroundSections() {

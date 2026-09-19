@@ -104,11 +104,6 @@ const RESPONSIVE_POINTERS = [
 const Z_LAYERS: LayerItem[] = [
   { token: "--z-base", value: "0", role: "Base · the fixed ivory ground" },
   {
-    token: "--z-botanical",
-    value: "10",
-    role: "Botanical · low-opacity botanical edge elements",
-  },
-  {
     token: "--z-content",
     value: "20",
     role: "Content · all text and main components",

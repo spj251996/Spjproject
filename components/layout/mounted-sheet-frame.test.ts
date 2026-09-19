@@ -192,6 +192,64 @@ test("a landscape rectangle wider than the height cap is decided below the centr
   );
 });
 
+/* Every rule body written directly against a scope selector (never one of its descendants — the
+   ` > .` that follows a descendant selector breaks the match), wherever it appears: bare or nested
+   inside an `@media` block. These bodies are flat declaration lists with no further nesting, so a
+   brace-balanced parse is unnecessary. */
+function scopeSelectorBodies(css: string, scope: string): string[] {
+  const escaped = scope.replace(/[.]/g, "\\.");
+  const pattern = new RegExp(`${escaped} \\{([^}]*)\\}`, "g");
+  return [...css.matchAll(pattern)].map((match) => match[1]);
+}
+
+/* The botanical background layer is an absolutely-positioned child of the frame scope div, isolated
+   from the card by `mix-blend-mode: multiply` reading the box's stacking context, not the scope
+   div's. Any of these properties on the scope div creates a stacking context there instead and
+   silently breaks the blend — a spike proved the failure composites as opaque white with no error.
+   `z-index` therefore belongs on `.mounted-sheet-frame__box`, never on the scope div. */
+test("the frame scope div creates no stacking context; z-index sits on the box instead", () => {
+  const forbidden = [
+    /isolation\s*:/,
+    /contain\s*:/,
+    /transform\s*:/,
+    /opacity\s*:/,
+    /filter\s*:/,
+    /content-visibility\s*:/,
+    /z-index\s*:/,
+  ];
+
+  const fit = makeFit();
+  const scope = ".mounted-sheet-frame--test-section";
+  const cases: { css: string; scope: string }[] = [
+    { css: mountedSheetFrameCss(fit, false), scope },
+    { css: mountedSheetFrameCss(fit, false, "pair"), scope },
+    { css: tallFrameCss(false), scope: `.${tallScopeClass(false)}` },
+    { css: tallFrameCss(true), scope: `.${tallScopeClass(true)}` },
+  ];
+
+  for (const { css, scope } of cases) {
+    const bodies = scopeSelectorBodies(css, scope);
+    assert.ok(bodies.length > 0, `no rule bodies found for ${scope}`);
+    for (const body of bodies) {
+      for (const property of forbidden) {
+        assert.ok(
+          !property.test(body),
+          `${scope} carries a stacking-context property (${property}): ${body}`,
+        );
+      }
+    }
+  }
+
+  /* The box is the one place z-index is expected — confirms the assertion above is discriminating,
+     not vacuously true because z-index never appears anywhere. */
+  const boxCss = mountedSheetFrameCss(fit, false);
+  assert.ok(
+    boxCss.includes(
+      `${scope} > .mounted-sheet-frame__box {\n  container-type: inline-size;\n  position: relative;\n  z-index: var(--z-content);`,
+    ),
+  );
+});
+
 test("a pair is never the hero", () => {
   assert.throws(
     () => mountedSheetFrameCss(makeFit(), true, "pair"),

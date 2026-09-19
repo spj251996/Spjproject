@@ -56,6 +56,15 @@ export function frameScopeClass(fit: MeasuredFit): string {
 const GROUND = "--mounted-sheet-ground";
 const GROUND_VALUE = `var(${GROUND})`;
 
+/* `--ring-block`/`--ring-side` republish the same padding the frame scope div already carries, as
+   custom properties an absolutely-positioned child (the botanical layer) can read by inheritance —
+   one source for the band, never a second ladder. `--ring-cap` is a local indirection so the
+   landscape side-padding expression (`max(...)`) is written once and only the height-cap token it
+   reads changes per width band, rather than the whole expression repeating. */
+const RING_BLOCK = "--ring-block";
+const RING_SIDE = "--ring-side";
+const RING_CAP = "--ring-cap";
+
 /* The card's minimum height from the window: every viewport-height term is `svh`, so nothing in the
    frame moves as a phone's toolbar hides. A landscape card's is also capped — at the compact
    laptop tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
@@ -421,23 +430,32 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
       : "";
 
   /* The box holds the card's minimum height and lengthens past it with its content. The mount and
-     the sheet grow inside it as flex items, so each fills the height above it. */
+     the sheet grow inside it as flex items, so each fills the height above it.
+
+     `--ring-cap` carries whichever height-cap token the current width band reads, so the landscape
+     side-padding formula (`max(...)`) is written once, on the general landscape rule, and the
+     compact-width rule only swaps the token `--ring-cap` resolves to — the `max(...)` expression
+     itself is never repeated. */
   return `${scope} {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  padding-block: ${GROUND_VALUE};
-  padding-inline: ${GROUND_VALUE};
+  ${RING_BLOCK}: ${GROUND_VALUE};
+  ${RING_SIDE}: ${GROUND_VALUE};
+  padding-block: var(${RING_BLOCK});
+  padding-inline: var(${RING_SIDE});
   ${safeCentre}
 }
 @media (orientation: landscape) {
-${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap)) / 2)); }
+${scope} { ${RING_CAP}: var(--card-height-cap); ${RING_SIDE}: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(${RING_CAP})) / 2)); }
 }
 @media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
-${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap-compact)) / 2)); }
+${scope} { ${RING_CAP}: var(--card-height-cap-compact); }
 }
 ${box} {
   container-type: inline-size;
+  position: relative;
+  z-index: var(--z-content);
   flex: none;
   display: flex;
   flex-direction: column;
@@ -532,17 +550,21 @@ export function tallFrameCss(hero: boolean): string {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  padding-block: ${GROUND_VALUE};
-  padding-inline: ${GROUND_VALUE};
+  ${RING_BLOCK}: ${GROUND_VALUE};
+  ${RING_SIDE}: ${GROUND_VALUE};
+  padding-block: var(${RING_BLOCK});
+  padding-inline: var(${RING_SIDE});
   justify-content: center;
   justify-content: safe center;
   align-items: center;
   align-items: safe center;
 }
 @media (orientation: landscape) {
-${scope} { padding-inline: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
+${scope} { ${RING_SIDE}: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
 }
 ${box} {
+  position: relative;
+  z-index: var(--z-content);
   flex: none;
   display: flex;
   flex-direction: column;
