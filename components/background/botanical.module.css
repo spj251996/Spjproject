@@ -125,16 +125,17 @@
 }
 
 .corner-spray {
+  margin-bottom: -120px;
   background-image: image-set(
     url("/botanical/corner-spray-phoneTablet.avif") type("image/avif") 1x,
     url("/botanical/corner-spray-phoneTablet.webp") type("image/webp") 1x
   );
 }
 
-.upright-clump {
+.horizontal-garland {
   background-image: image-set(
-    url("/botanical/upright-clump-phoneTablet.avif") type("image/avif") 1x,
-    url("/botanical/upright-clump-phoneTablet.webp") type("image/webp") 1x
+    url("/botanical/horizontal-garland-phoneTablet.avif") type("image/avif") 1x,
+    url("/botanical/horizontal-garland-phoneTablet.webp") type("image/webp") 1x
   );
 }
 
@@ -217,10 +218,10 @@
     );
   }
 
-  .upright-clump {
+  .horizontal-garland {
     background-image: image-set(
-      url("/botanical/upright-clump-compact.avif") type("image/avif") 1x,
-      url("/botanical/upright-clump-compact.webp") type("image/webp") 1x
+      url("/botanical/horizontal-garland-compact.avif") type("image/avif") 1x,
+      url("/botanical/horizontal-garland-compact.webp") type("image/webp") 1x
     );
   }
 
@@ -297,10 +298,10 @@
     );
   }
 
-  .upright-clump {
+  .horizontal-garland {
     background-image: image-set(
-      url("/botanical/upright-clump-laptop.avif") type("image/avif") 1x,
-      url("/botanical/upright-clump-laptop.webp") type("image/webp") 1x
+      url("/botanical/horizontal-garland-laptop.avif") type("image/avif") 1x,
+      url("/botanical/horizontal-garland-laptop.webp") type("image/webp") 1x
     );
   }
 

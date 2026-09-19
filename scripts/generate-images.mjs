@@ -8,6 +8,7 @@
 
    Usage: npm run images */
 
+import { existsSync } from "node:fs";
 import { copyFile, mkdir, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -63,7 +64,7 @@ function clampWhite(data, channels) {
 }
 
 /* `tall-column-a`/`-b` carry real ink on their own final row, and `side-spread-right` /
-   `upright-clump` end within a few px of theirs — a hard crop would only move the cut, not remove
+   `side-spread-right` ends within a few px of its own — a hard crop would only move the cut, not remove
    it. This dissolves the bottom 38% into the paper instead, eased rather than linear (a 16% linear
    version read as an abrupt edge). Composited as a white gradient over the image (sharp's default
    "over" blend), so it must be re-clamped afterward — the blend reintroduces 250-254 values at the
@@ -108,7 +109,6 @@ const FADE_PIECES = new Set([
   "tall-column-a",
   "tall-column-b",
   "side-spread-right",
-  "upright-clump",
 ]);
 
 /* A piece's on-page width is `k × the ring band it lives in`
@@ -134,8 +134,8 @@ const BOTANICAL_DENSITY = 1.5;
 
 const BOTANICAL_PIECES = [
   { name: "falling-spray", g: 13.4, band: "block" },
-  { name: "upright-clump", g: 7.8, band: "block" },
   { name: "hanging-bunch", g: 7, band: "block" },
+  { name: "horizontal-garland", g: 7.23, band: "block" },
   { name: "corner-spray", g: 9, band: "side" },
   { name: "side-spread-left", g: 7.5, band: "side" },
   { name: "side-spread-right", g: 8.5, band: "side" },
@@ -156,14 +156,18 @@ const MEADOW_BAND_WIDTH = { phoneTablet: 768, compact: 1600, laptop: 1920 };
    `transform: scaleX(-1)` and the standalone `scale` property both create a stacking context, and a
    stacking context isolates the botanical layer's `mix-blend-mode: multiply` — the drawing would
    then paint its white background as a visible rectangle on the ivory. */
-const FLIP_PIECES = new Set(["corner-spray", "upright-clump"]);
+const FLIP_H_PIECES = new Set(["corner-spray"]);
+const FLIP_V_PIECES = new Set(["hanging-bunch"]);
 
 /* Resizes (never upscaling past the source), mirrors the flipped pieces, clamps to white, and — for
    the four bad-base pieces — fades the bottom edge, re-clamping after. Returns a sharp pipeline
    ready for `.avif()`/`.webp()`. */
 async function prepareBotanicalPiece(image, name, width) {
   const sized = image.resize({ width, withoutEnlargement: true });
-  const resized = FLIP_PIECES.has(name) ? sized.flop() : sized;
+  let oriented = sized;
+  if (FLIP_H_PIECES.has(name)) oriented = oriented.flop();
+  if (FLIP_V_PIECES.has(name)) oriented = oriented.flip();
+  const resized = oriented;
   const { data, info } = await resized
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -175,6 +179,16 @@ async function prepareBotanicalPiece(image, name, width) {
   return sharp(pixels, {
     raw: { width: info.width, height: info.height, channels: info.channels },
   });
+}
+
+/* Most pieces survive only as the cropped `.webp` — their lossless originals cannot reproduce them
+   (the crop step is lost). Where a true lossless original DOES exist it is the source of record and
+   is used directly, so that piece never pays a second generation of encoding loss. */
+function botanicalSource(name) {
+  const png = join(ROOT, `assets/botanical/${name}.png`);
+  return existsSync(png)
+    ? `assets/botanical/${name}.png`
+    : `assets/botanical/${name}.webp`;
 }
 
 function botanicalRecipes() {
@@ -206,7 +220,7 @@ function botanicalRecipes() {
         ["webp", { quality: 82 }],
       ]) {
         entries.push({
-          source: `assets/botanical/${piece.name}.webp`,
+          source: botanicalSource(piece.name),
           out: `public/botanical/${piece.name}-${tier}.${format}`,
           recipe: async (image) => {
             const prepared = await prepareBotanicalPiece(

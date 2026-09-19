@@ -34,7 +34,7 @@ export type BotanicalPiece =
   | "falling-spray"
   | "hanging-bunch"
   | "corner-spray"
-  | "upright-clump"
+  | "horizontal-garland"
   | "side-spread-left"
   | "side-spread-right"
   | "sprig-cross-left"
@@ -56,6 +56,34 @@ type Anchor =
   | "gap-right"
   | "band-bottom";
 
+/* Which pieces each section carries, and the anchor each sits on. This is the ONE place the
+   assignment lives: `app/page.tsx` renders from it and the dev tuning panel reads it to group its
+   controls. A second copy has twice drifted out of step with a swap and sent nudges along an axis
+   the piece was no longer anchored on, which moves it nowhere and reads as a dead slider. */
+export const SECTION_PLACEMENT = {
+  invite: [
+    { piece: "falling-spray", anchor: "top-span" },
+    { piece: "corner-spray", anchor: "low-right" },
+  ],
+  "event-info": [
+    { piece: "hanging-bunch", anchor: "top-right" },
+    { piece: "horizontal-garland", anchor: "bottom-left" },
+  ],
+  family: [
+    { piece: "side-spread-left", anchor: "mid-left" },
+    { piece: "side-spread-right", anchor: "mid-right" },
+  ],
+  celebrations: [
+    { piece: "tall-column-a", anchor: "mid-left" },
+    { piece: "tall-column-b", anchor: "mid-right" },
+  ],
+  wishes: [
+    { piece: "meadow-band", anchor: "band-bottom" },
+    { piece: "sprig-cross-left", anchor: "gap-left" },
+    { piece: "sprig-cross-right", anchor: "gap-right" },
+  ],
+} as const satisfies Readonly<Record<string, readonly BotanicalPlacement[]>>;
+
 export interface BotanicalPlacement {
   piece: BotanicalPiece;
   anchor: Anchor;
@@ -72,7 +100,7 @@ export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
 
    These are a MECHANICAL starting point, not a tuned one: the mock-derived seed (`k ≈ g × 0.6`,
    `tmp/botanical-preview/index.html`) let several pieces bleed off a section's top or bottom edge
-   at wide tiers — `upright-clump` measured 899×1405 inside Invite's 1000px-tall laptop-landscape
+   at wide tiers — `side-spread-left` measured far taller than its section at laptop-landscape
    card, 545px past the top. DESIGN.md → Botanical Edge allows a piece to bleed off the left or
    right window edge only, never the top or bottom.
 
@@ -85,8 +113,8 @@ export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
 export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
   "falling-spray": 7.33,
   "hanging-bunch": 4.3,
-  "corner-spray": 2.7,
-  "upright-clump": 4.34,
+  "corner-spray": 2.74,
+  "horizontal-garland": 4.34,
   "side-spread-left": 2.25,
   "side-spread-right": 2.09,
   "sprig-cross-left": 2.99,
@@ -101,7 +129,7 @@ export const RING_BAND: Readonly<Record<NonMeadowPiece, RingBand>> = {
   "falling-spray": "block",
   "hanging-bunch": "block",
   "corner-spray": "side",
-  "upright-clump": "block",
+  "horizontal-garland": "block",
   "side-spread-left": "side",
   "side-spread-right": "side",
   "sprig-cross-left": "side",
@@ -123,7 +151,7 @@ export const ASPECT_RATIO: Readonly<Record<NonMeadowPiece, string>> = {
   "falling-spray": "998 / 748",
   "hanging-bunch": "387 / 623",
   "corner-spray": "715 / 689",
-  "upright-clump": "608 / 951",
+  "horizontal-garland": "1536 / 1024",
   "side-spread-left": "738 / 1050",
   "side-spread-right": "713 / 1106",
   "sprig-cross-left": "635 / 400",
