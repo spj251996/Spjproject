@@ -66,7 +66,9 @@ export function Portrait({
       <figcaption className="flex flex-col items-center">
         <TextLine className="type-body text-ink">{name}</TextLine>
         <span className="-mt-space-3xs flex">
-          <TextLine className="type-caption text-ink">{relationship}</TextLine>
+          <TextLine className="type-caption-italic text-ink-muted">
+            {relationship}
+          </TextLine>
         </span>
       </figcaption>
     </figure>

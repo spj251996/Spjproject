@@ -1,0 +1,17 @@
+/* The gold rule that sets the invite's passage apart from the rest of the card.
+
+   One SVG rather than two bordered elements with a glyph between them: the four-pointed star has to
+   hold its proportion to the line at every width, and it only does that if the whole ornament scales
+   as one drawing. */
+
+.rule {
+  display: block;
+  width: min(100%, 21em);
+  /* A FIXED height, not one derived from the width. At 30:1 an auto height grows with the card,
+     and a framed section's measured fit requires that its content never stand taller at a wider
+     column — the sweep fails outright on the rise. `meet` keeps the star's proportion and centres
+     the drawing in the box, so a narrower card gets a shorter line, not a stretched one. */
+  height: 0.6875rem;
+  color: var(--color-accent-gold);
+  fill: currentColor;
+}
