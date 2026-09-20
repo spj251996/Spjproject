@@ -9,8 +9,9 @@ import {
   InlineList,
   Specimen,
 } from "@/app/design-system/_kit";
+import inviteRuleStyles from "@/app/invite-rule.module.css";
+import { InviteRule } from "@/app/page";
 import { Family } from "@/components/family/family";
-import { MountedSheet } from "@/components/layout/mounted-sheet";
 import type { FamilyGroup } from "@/content/types";
 
 interface VariantProps {
@@ -32,7 +33,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary · betrothal block",
+      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · gold rule · passage in caption · citation in caption-italic",
     note: "Live at /. Its scroll cue arrives with the Phase 5 thread.",
   },
 ];
@@ -42,7 +43,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     name: "Event Info",
     home: "app/page.tsx",
     composes:
-      "mounted-pair · per sheet: heading-script heading, date line, address, divider where the layout shows one, segment plates · per plate: mark, segment line, venue, button-action with map",
+      "mounted-pair · per sheet: eyebrow, heading-xl heading, date line, address, divider where the layout shows one, segment plates · per plate: mark, segment line, venue, button-action with map",
     note: "Live at /. Marks → Foundations · Iconography; the map action → Components · UI.",
   },
 ];
@@ -52,7 +53,7 @@ const TIMELINE_ENTRIES: InlineEntry[] = [
     name: "Timeline",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet in tall mode · heading in heading-script ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each a heading-lg title and a body description laid against a gold spine",
+      "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each a heading-lg title and a body description laid against a gold spine",
     note: "Live at /. The spine is static and structural until Phase 6, when the thread's own generated segment replaces it.",
   },
 ];
@@ -62,36 +63,8 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/page.tsx",
     composes:
-      "the contrast stock · eyebrow · passage in body · citation in caption · couple illustration · couple names in heading-script · sign-off lead in body-italic · sign-off names in body",
+      "eyebrow · passage in body · citation in caption · couple illustration · couple names in heading-script · sign-off lead in caption-italic · sign-off names in caption",
     note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
-  },
-];
-
-/* Every text role Wishes sets on the contrast stock, paired for the one thing a colour swatch alone
-   can't show (Foundations · Colors lists the tokens): whether each role reads against it. body and
-   body-italic sit adjacent on purpose — they share one size and line height, so the only visible
-   difference is the face itself, never a synthesised oblique. */
-const WISHES_STOCK_ROLES = [
-  { token: "eyebrow", className: "type-eyebrow", sample: "A closing line" },
-  {
-    token: "heading-script",
-    className: "type-heading-script",
-    sample: "Bride & Groom",
-  },
-  {
-    token: "body",
-    className: "type-body",
-    sample: "The passage, and the names who send it.",
-  },
-  {
-    token: "body-italic",
-    className: "type-body-italic",
-    sample: "The passage, and the names who send it.",
-  },
-  {
-    token: "caption",
-    className: "type-caption",
-    sample: "What the passage above is drawn from.",
   },
 ];
 
@@ -128,6 +101,19 @@ export function DomainSections() {
         title="Domain · Invite"
       >
         <InlineList entries={INVITE_ENTRIES} />
+
+        <Specimen
+          description="The gold rule that sets the invite's passage apart from the naming block above it: two even hairlines with a small four-pointed star centred in the gap."
+          id="domain-invite-rule"
+          name="The gold rule"
+          note="The invite composes the rule inline, so this is the ornament's only render outside the live page."
+          source="app/page.tsx"
+          spec="height fixed, never derived from width, so a framed section's measured fit never sees it grow taller in a wider column · no taper"
+        >
+          <div className="bg-surface-elevated p-space-xl">
+            <InviteRule className={inviteRuleStyles.rule} />
+          </div>
+        </Specimen>
       </GallerySection>
 
       <GallerySection
@@ -152,9 +138,9 @@ export function DomainSections() {
           note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/page.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
-            "eyebrow · heading-script family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
+            "eyebrow · heading-xl family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
             "portrait uniform · name and relationship each on one line, wrapping within the column where that cannot hold",
-            "gold stroke-divider couple line between every couple, stopping short of both rims",
+            "no line drawn between people — grouping and the labels alone carry every relationship",
           ]}
         >
           <div className="flex flex-col gap-space-md">
@@ -226,31 +212,11 @@ export function DomainSections() {
 
       <GallerySection
         id="wishes"
-        intro="The airy closing composition, on the green stock."
+        intro="The airy closing composition."
         mapsTo="Domain Components → Wishes"
         title="Domain · Wishes"
       >
         <InlineList entries={WISHES_ENTRIES} />
-
-        <Specimen
-          description="Every text role Wishes sets on the contrast stock, the site's only one — the swatch at Foundations · Colors names ink-on-contrast; this shows it carrying real type."
-          id="domain-wishes-stock"
-          name="Text roles on the green stock"
-          note="ink-on-contrast is set once, on the sheet; every role below inherits it rather than naming it again. The eyebrow stays gold on both stocks."
-          source="@/components/layout/mounted-sheet"
-          spec="eyebrow · heading-script · body · body-italic · caption, all on surface-contrast"
-        >
-          <MountedSheet stock="contrast">
-            <div className="flex flex-col gap-space-md">
-              {WISHES_STOCK_ROLES.map(({ token, className, sample }) => (
-                <div className="flex flex-col gap-space-3xs" key={token}>
-                  <p className={className}>{sample}</p>
-                  <span className="type-caption">{token}</span>
-                </div>
-              ))}
-            </div>
-          </MountedSheet>
-        </Specimen>
       </GallerySection>
     </>
   );

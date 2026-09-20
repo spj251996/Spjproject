@@ -130,7 +130,7 @@ export function ComponentsSections() {
           name="portrait"
           note="The composing section sets the diameter; the specimen borrows Family's. Set on the paper stock, whose colour fills the ring between photo and rim. The with-image sample is a generated placeholder."
           source="@/components/ui/portrait"
-          spec="circle crop · rim: stroke-divider accent-gold ring off a stroke-rim-offset paper ring · name in body · relationship in caption, drawn space-3xs up · both ink · image-placeholder fallback"
+          spec="circle crop · rim: stroke-divider accent-gold ring off a stroke-rim-offset paper ring · name in body, ink · relationship in caption-italic, ink-muted, drawn space-3xs up · image-placeholder fallback"
         >
           <div
             className={`flex flex-wrap gap-space-2xl bg-surface-elevated p-space-md ${PORTRAIT_SIZING}`}
@@ -167,7 +167,7 @@ export function ComponentsSections() {
           name="gallery-modal"
           note="Shown through its presentational panel with generated sample images: swipe, focus handling and the scroll restore on close need the live modal."
           source="@/components/ui/gallery-modal"
-          spec="z-modal · scrim surface-contrast at 0.92 · masonry · radius-sm tiles"
+          spec="z-modal · scrim shadow-warm at 0.92 · masonry · radius-sm tiles"
         >
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />

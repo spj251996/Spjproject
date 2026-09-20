@@ -50,11 +50,6 @@ const COLOR_GROUPS: SwatchGroup[] = [
         name: "surface-elevated",
         usage: "The paper stock laid on the mount.",
       },
-      {
-        token: "--color-surface-contrast",
-        name: "surface-contrast",
-        usage: "The green stock: the closing section only.",
-      },
     ],
   },
   {
@@ -63,12 +58,20 @@ const COLOR_GROUPS: SwatchGroup[] = [
       {
         token: "--color-ink",
         name: "ink",
-        usage: "Text on paper; the focus ring on light surfaces.",
+        usage:
+          "Body text, names, dates, venues and addresses; the focus ring on light surfaces.",
       },
       {
-        token: "--color-ink-on-contrast",
-        name: "ink-on-contrast",
-        usage: "Text on the green stock.",
+        token: "--color-ink-muted",
+        name: "ink-muted",
+        usage:
+          "A quieter register: section headings, the invite's passage and citation, Wishes' attribution and sign-off, Family's relationships.",
+      },
+      {
+        token: "--color-ink-inverse",
+        name: "ink-inverse",
+        usage:
+          "Light text on a dark scrim — the design-system gallery's own preview modal (dev-only).",
       },
     ],
   },
@@ -80,7 +83,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "Eyebrows, engraved rules, dividers, couple lines, portrait rims, active states, on both stocks.",
+          "Eyebrows, engraved rules, dividers, portrait rims, active states.",
       },
     ],
   },
@@ -91,7 +94,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
       {
         token: "--color-thread-red",
         name: "thread-red",
-        usage: "The thread and its wisp, on both stocks.",
+        usage: "The thread and its wisp.",
       },
       {
         token: "--color-thread-vermilion",
@@ -118,10 +121,10 @@ const TYPE_TOKENS: TypeToken[] = [
     family: "Corinthia",
     weight: 400,
     sample: "Bride & Groom",
-    phone: { size: 72, lh: 108 },
-    tablet: { size: 104, lh: 156 },
-    compact: { size: 96, lh: 144 },
-    desktop: { size: 120, lh: 180 },
+    phone: { size: 94, lh: 141 },
+    tablet: { size: 135, lh: 203 },
+    compact: { size: 125, lh: 188 },
+    desktop: { size: 156, lh: 234 },
   },
   {
     token: "type-heading-script",
@@ -135,75 +138,97 @@ const TYPE_TOKENS: TypeToken[] = [
   },
   {
     token: "type-heading-xl",
-    family: "Cormorant Garamond",
+    family: "Playfair Display",
     weight: 700,
     sample: "Section-level H1.",
-    phone: { size: 34, lh: 40 },
-    tablet: { size: 42, lh: 48 },
-    compact: { size: 38, lh: 44 },
-    desktop: { size: 48, lh: 56 },
+    phone: { size: 26, lh: 40 },
+    tablet: { size: 32, lh: 48 },
+    compact: { size: 30, lh: 44 },
+    desktop: { size: 38, lh: 56 },
   },
   {
     token: "type-heading-lg",
-    family: "Cormorant Garamond",
+    family: "Playfair Display",
     weight: 700,
     sample:
       "Serif sub-headings; the event sheets' address line and segment line.",
-    phone: { size: 22, lh: 28 },
-    tablet: { size: 24, lh: 30 },
-    compact: { size: 22, lh: 28 },
-    desktop: { size: 26, lh: 32 },
+    phone: { size: 14, lh: 28 },
+    tablet: { size: 15, lh: 30 },
+    compact: { size: 14, lh: 28 },
+    desktop: { size: 17, lh: 32 },
   },
   {
     token: "type-date-primary",
-    family: "Cormorant Garamond",
-    weight: 500,
+    family: "Playfair Display",
+    weight: 700,
     sample: "The major date line on the invite and the event sheets.",
-    phone: { size: 22, lh: 28 },
-    tablet: { size: 24, lh: 30 },
-    compact: { size: 22, lh: 28 },
-    desktop: { size: 26, lh: 32 },
+    phone: { size: 14, lh: 28 },
+    tablet: { size: 15, lh: 30 },
+    compact: { size: 14, lh: 28 },
+    desktop: { size: 17, lh: 32 },
   },
   {
     token: "type-body",
-    family: "Source Sans 3",
+    family: "Libre Baskerville",
     weight: 400,
     sample: "Descriptions, addresses, wishes, all long-form copy.",
-    phone: { size: 17, lh: 26 },
-    tablet: { size: 18, lh: 28 },
-    compact: { size: 17, lh: 26 },
-    desktop: { size: 20, lh: 32 },
+    phone: { size: 13, lh: 26 },
+    tablet: { size: 14, lh: 28 },
+    compact: { size: 13, lh: 26 },
+    desktop: { size: 16, lh: 32 },
+  },
+  {
+    token: "type-body-italic",
+    family: "Libre Baskerville",
+    weight: 400,
+    sample:
+      "The closing sign-off's lead line, and the timeline's promise line.",
+    phone: { size: 13, lh: 26 },
+    tablet: { size: 14, lh: 28 },
+    compact: { size: 13, lh: 26 },
+    desktop: { size: 16, lh: 32 },
   },
   {
     token: "type-caption",
-    family: "Source Sans 3",
+    family: "Libre Baskerville",
     weight: 400,
     sample:
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
-    phone: { size: 15, lh: 22 },
-    tablet: { size: 16, lh: 24 },
-    compact: { size: 15, lh: 22 },
-    desktop: { size: 17, lh: 24 },
+    phone: { size: 12, lh: 22 },
+    tablet: { size: 13, lh: 24 },
+    compact: { size: 12, lh: 22 },
+    desktop: { size: 14, lh: 24 },
+  },
+  {
+    token: "type-caption-italic",
+    family: "Libre Baskerville",
+    weight: 400,
+    sample:
+      "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
+    phone: { size: 12, lh: 22 },
+    tablet: { size: 13, lh: 24 },
+    compact: { size: 12, lh: 22 },
+    desktop: { size: 14, lh: 24 },
   },
   {
     token: "type-eyebrow",
-    family: "Source Sans 3",
-    weight: 500,
+    family: "Libre Baskerville",
+    weight: 400,
     sample: "Small labels above headings and sheet fields.",
-    phone: { size: 14, lh: 20 },
-    tablet: { size: 15, lh: 20 },
-    compact: { size: 14, lh: 20 },
-    desktop: { size: 16, lh: 22 },
+    phone: { size: 10, lh: 20 },
+    tablet: { size: 11, lh: 20 },
+    compact: { size: 10, lh: 20 },
+    desktop: { size: 12, lh: 22 },
   },
   {
     token: "type-action",
-    family: "Source Sans 3",
+    family: "Libre Baskerville",
     weight: 700,
     sample: "Buttons and calls to action.",
-    phone: { size: 15, lh: 20 },
-    tablet: { size: 16, lh: 20 },
-    compact: { size: 15, lh: 20 },
-    desktop: { size: 17, lh: 24 },
+    phone: { size: 11, lh: 20 },
+    tablet: { size: 12, lh: 20 },
+    compact: { size: 11, lh: 20 },
+    desktop: { size: 13, lh: 24 },
   },
 ];
 
@@ -226,7 +251,7 @@ const SPACING_USES = [
   "space-2xs to space-sm · tight grouping",
   "space-sm to space-md · component padding",
   "space-md · viewport edge for sections without a frame",
-  "space-2xl to space-3xl · between two unframed sections back to back — the timeline's, until its frame is decided",
+  "space-2xl to space-3xl · between two unframed sections back to back",
   "space-4xl · between the bride's siblings in Family",
 ];
 
@@ -298,7 +323,8 @@ const SHAPE_ITEMS: ShapeItem[] = [
     token: "circle",
     radius: "9999px",
     value: "—",
-    usage: "portrait's crop; timeline-node's node dot.",
+    usage:
+      "portrait's crop; timeline-node's node dot; the Timeline placeholder's ritual mark.",
   },
 ];
 
@@ -321,12 +347,6 @@ const DEPTH_LEVELS: DepthLevel[] = [
     spec: "surface-elevated · shadow-sheet",
     className: "bg-surface-elevated shadow-sheet",
     usage: "Inset white highlight, faint drop.",
-  },
-  {
-    name: "Green stock on the mount",
-    spec: "surface-contrast · shadow-sheet-contrast",
-    className: "bg-surface-contrast text-ink-on-contrast shadow-sheet-contrast",
-    usage: "Hairline and a real drop, no highlight.",
   },
 ];
 
@@ -377,7 +397,7 @@ const ICONS = [
 
 const GRAIN_SURFACES = [
   {
-    caption: "multiply 0.03 · paints #F8F7F3",
+    caption: "multiply 0.28 · warm off-white, per channel",
     label: "Ground",
     surface: "bg-surface-base",
   },
@@ -391,11 +411,6 @@ const GRAIN_SURFACES = [
     label: "Paper stock",
     surface: "bg-surface-elevated",
   },
-  {
-    caption: "hard-light 0.10 · paints #0D3226",
-    label: "Green stock",
-    surface: "bg-surface-contrast",
-  },
 ];
 
 export function FoundationsSections() {
@@ -403,7 +418,7 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, deep green, one gold, and one warm red for the thread."
+        intro="A fixed palette: ivory, mahogany ink, one gold, and one warm red for the thread."
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"
@@ -422,7 +437,7 @@ export function FoundationsSections() {
           description="Each role with its size / line height in px at phone, tablet, compact and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. Script rows show a name or heading: display-name is for couple names only, heading-script for sheet headings: Event Info's event names and Family's family names."
+          note="Samples render at the window's current tier. The two script rows: display-name is the invite's couple names; heading-script is Wishes' couple names, the script face's only other section-level use."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
@@ -481,7 +496,7 @@ export function FoundationsSections() {
           name="mounted-sheet"
           note="Unframed, as every specimen box is. Resize below md: padding steps down and non-hero mounts drop fill and reveal. The framed form is live at /."
           source="@/components/layout/mounted-sheet"
-          spec="surface-mount · shadow-mount · paper or contrast stock · square · reveal"
+          spec="surface-mount · shadow-mount · paper stock · square · reveal"
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
@@ -498,12 +513,6 @@ export function FoundationsSections() {
                 <p className="type-body text-ink">An ordinary section.</p>
               </div>
             </MountedSheet>
-            <MountedSheet stock="contrast">
-              <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Green stock</p>
-                <p className="type-body">The closing section.</p>
-              </div>
-            </MountedSheet>
           </div>
         </Specimen>
 
@@ -517,11 +526,11 @@ export function FoundationsSections() {
         >
           <MountedPair>
             <div className="flex flex-col gap-space-2xs">
-              <p className="type-heading-script text-ink">Betrothal</p>
+              <p className="type-heading-xl text-ink">Betrothal</p>
               <p className="type-body text-ink">First sheet</p>
             </div>
             <div className="flex flex-col gap-space-2xs">
-              <p className="type-heading-script text-ink">Wedding</p>
+              <p className="type-heading-xl text-ink">Wedding</p>
               <p className="type-body text-ink">Second sheet</p>
             </div>
           </MountedPair>
@@ -599,9 +608,9 @@ export function FoundationsSections() {
         <Specimen
           description="Each tile is painted with the real surface class, so it carries that surface's grain."
           id="paper-grain-surfaces"
-          name="The four surfaces"
+          name="The three surfaces"
           note="View at full size — downscaling averages the grain away. The ground tile matches this page's own ground."
-          spec="tile 200px · coarseness 0.6 · irregularity 3"
+          spec="tile 50px · octaves 3 · ground coarseness 0.03 · mount and stock coarseness 0.6"
         >
           <div className="flex flex-wrap gap-space-md">
             {GRAIN_SURFACES.map((item) => (
@@ -626,41 +635,24 @@ export function FoundationsSections() {
         title="Foundations · Iconography"
       >
         <Specimen
-          description="Every mark in the set on both stocks, each above its name, at a 96px span."
+          description="Every mark in the set, each above its name, at a 96px span."
           id="iconography-set"
           name="The set"
           source="@/components/icons"
           spec="filled outline · accent-gold from the surface · sized on the diagonal"
         >
-          <div className="flex flex-col gap-space-md">
-            <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
-              {ICONS.map(({ name, Icon }) => (
-                <span
-                  className="flex flex-col items-center gap-space-2xs"
-                  key={name}
-                >
-                  <span className="text-accent-gold">
-                    <Icon size={96} />
-                  </span>
-                  <span className="type-caption text-ink">{name}</span>
+          <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
+            {ICONS.map(({ name, Icon }) => (
+              <span
+                className="flex flex-col items-center gap-space-2xs"
+                key={name}
+              >
+                <span className="text-accent-gold">
+                  <Icon size={96} />
                 </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-end gap-space-lg bg-surface-contrast p-space-md">
-              {ICONS.map(({ name, Icon }) => (
-                <span
-                  className="flex flex-col items-center gap-space-2xs"
-                  key={name}
-                >
-                  <span className="text-accent-gold">
-                    <Icon size={96} />
-                  </span>
-                  <span className="type-caption text-ink-on-contrast">
-                    {name}
-                  </span>
-                </span>
-              ))}
-            </div>
+                <span className="type-caption text-ink">{name}</span>
+              </span>
+            ))}
           </div>
         </Specimen>
 

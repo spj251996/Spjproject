@@ -13,7 +13,6 @@ const TRY_IT = [
   "Focus and hover · tab to or hover the map action under Components · UI",
   "Text selection · try selecting any text on this page — nothing selects",
   "Scroll, section entry, modal and loading act on the page itself; no specimen",
-  "The gold ring on the green stock · no control sits on that stock, so there is no specimen",
   "Tap targets → Accessibility Rules",
 ];
 

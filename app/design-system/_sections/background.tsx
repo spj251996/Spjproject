@@ -6,8 +6,8 @@ const PAPER_BASE_POINTERS = [
 ];
 
 const BOTANICAL_POINTERS = [
-  "Eleven source drawings, generated to public/botanical/; no component yet.",
-  "Composites with mix-blend-mode: multiply, so it cannot carry its own z-index → Technical · Z-Index Scale",
+  "Thirteen named pieces, generated into public/botanical/.",
+  "Composites with mix-blend-mode: multiply, so it never carries its own z-index — DOM order alone keeps it below content.",
 ];
 
 export function BackgroundSections() {
@@ -26,6 +26,7 @@ export function BackgroundSections() {
         id="botanical-edge"
         intro="Sparse wildflower elements at the screen edges, above the paper base and below all content."
         mapsTo="Background → Botanical Edge"
+        source="@/components/background/botanical"
         title="Background · Botanical Edge"
       >
         <RuleList rules={BOTANICAL_POINTERS} />
