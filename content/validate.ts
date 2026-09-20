@@ -118,8 +118,8 @@ export function validateEvents(events: WeddingEvent[]): WeddingEvent[] {
   events.forEach((event, index) => {
     const at = `events[${index}]`;
     claimId(event.id, `${at}.id`, seen);
-    required(event.name, `${at}.name`);
     required(event.cityTown, `${at}.cityTown`);
+    required(event.state, `${at}.state`);
     isoDate(event.date, `${at}.date`);
     if (event.segments.length === 0) {
       throw new ContentValidationError(
@@ -184,6 +184,8 @@ export function validateFamilyGroups(groups: FamilyGroup[]): FamilyGroup[] {
 export function validateInvite(invite: InviteContent): InviteContent {
   required(invite.eyebrow, "invite.eyebrow");
   required(invite.coupleNames, "invite.coupleNames");
+  required(invite.passage, "invite.passage");
+  required(invite.passageAttribution, "invite.passageAttribution");
   return invite;
 }
 

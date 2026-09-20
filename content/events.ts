@@ -4,21 +4,21 @@ import { validateEvents } from "./validate.ts";
 export const events: WeddingEvent[] = validateEvents([
   {
     id: "engagement",
-    name: "Betrothal Ceremony",
     cityTown: "Kozhikode",
+    state: "Keralam",
     date: "2027-01-04",
     segments: [
       {
         id: "engagement-church",
-        label: "Church Betrothal",
+        label: "Betrothal",
         time: "10:00 AM",
         venue: "St. Antony's Syro-Malabar Church",
         address: "Paroppadi, Kozhikode, Keralam",
-        mapUrl: "https://maps.app.goo.gl/MfHgyAGiCzPJD1rQ8",
+        mapUrl: "https://maps.app.goo.gl/zgM9uq5vf8B5RD7Q9",
       },
       {
         id: "engagement-reception",
-        label: "Betrothal Lunch",
+        label: "Reception",
         time: "12:00 PM",
         venue: "St. Antony's Church Parish Hall",
         address: "Paroppadi, Kozhikode, Keralam",
@@ -28,13 +28,13 @@ export const events: WeddingEvent[] = validateEvents([
   },
   {
     id: "wedding",
-    name: "Wedding Ceremony",
     cityTown: "Koothattukulam",
+    state: "Keralam",
     date: "2027-01-09",
     segments: [
       {
         id: "wedding-church",
-        label: "Church Ceremony",
+        label: "Wedding",
         time: "10:00 AM",
         venue: "St. John the Baptist Holy Catholic Church",
         address: "Koothattukulam, Ernakulam, Keralam",

@@ -37,8 +37,8 @@ const segment = (over: Partial<EventSegment> = {}): EventSegment => ({
 
 const event = (over: Partial<WeddingEvent> = {}): WeddingEvent => ({
   id: "e",
-  name: "An Event",
   cityTown: "A Town",
+  state: "A State",
   date: "2027-01-09",
   segments: [segment()],
   ...over,
@@ -69,6 +69,8 @@ const pair = (over: Partial<FamilyGroup> = {}) => [
 const invite: InviteContent = {
   eyebrow: "We are getting married",
   coupleNames: "A & B",
+  passage: "Text.",
+  passageAttribution: "Book 1:1",
 };
 
 const wishes: WishesContent = {
@@ -94,6 +96,13 @@ test("rejects an empty required string, naming the path", () => {
   );
 });
 
+test("rejects an empty invite passage, naming the path", () => {
+  assert.throws(
+    () => validateInvite({ ...invite, passage: "" }),
+    /invite\.passage/,
+  );
+});
+
 test("rejects a duplicate id", () => {
   assert.throws(
     () => validateRituals([ritual(), ritual()]),
@@ -112,6 +121,13 @@ test("rejects an empty image entry", () => {
   assert.throws(
     () => validateRituals([ritual({ images: [""] })]),
     /rituals\[0\]\.images\[0\]/,
+  );
+});
+
+test("rejects an empty event state, naming the path", () => {
+  assert.throws(
+    () => validateEvents([event({ state: "" })]),
+    /events\[0\]\.state must not be empty/,
   );
 });
 

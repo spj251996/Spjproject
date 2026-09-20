@@ -20,8 +20,9 @@ export interface EventSegment {
 /** Named WeddingEvent because `Event` collides with the DOM global. */
 export interface WeddingEvent {
   id: string;
-  name: string;
   cityTown: string;
+  /** The state the event is held in. Read by the invite, printed beneath the date. */
+  state: string;
   date: string;
   segments: EventSegment[];
 }
@@ -44,6 +45,9 @@ export interface FamilyGroup {
 export interface InviteContent {
   eyebrow: string;
   coupleNames: string;
+  /** The passage set off from the rest of the invite by the ornamental divider. */
+  passage: string;
+  passageAttribution: string;
 }
 
 export interface WishesContent {
