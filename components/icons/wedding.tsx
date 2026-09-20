@@ -12,9 +12,9 @@ export function WeddingIcon({
   return (
     <IconBase
       className={className}
-      nudge={1}
+      nudge={1.0116}
       size={size}
-      viewBox="171.3 121 346.7 391.5"
+      viewBox="169.21 118.8 350.87 395.9"
     >
       <g
         stroke="currentColor"

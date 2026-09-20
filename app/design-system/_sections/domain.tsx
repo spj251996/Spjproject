@@ -9,8 +9,6 @@ import {
   InlineList,
   Specimen,
 } from "@/app/design-system/_kit";
-import inviteRuleStyles from "@/app/invite-rule.module.css";
-import { InviteRule } from "@/app/page";
 import { Family } from "@/components/family/family";
 import type { FamilyGroup } from "@/content/types";
 
@@ -101,19 +99,6 @@ export function DomainSections() {
         title="Domain · Invite"
       >
         <InlineList entries={INVITE_ENTRIES} />
-
-        <Specimen
-          description="The gold rule that sets the invite's passage apart from the naming block above it: two even hairlines with a small four-pointed star centred in the gap."
-          id="domain-invite-rule"
-          name="The gold rule"
-          note="The invite composes the rule inline, so this is the ornament's only render outside the live page."
-          source="app/page.tsx"
-          spec="height fixed, never derived from width, so a framed section's measured fit never sees it grow taller in a wider column · no taper"
-        >
-          <div className="bg-surface-elevated p-space-xl">
-            <InviteRule className={inviteRuleStyles.rule} />
-          </div>
-        </Specimen>
       </GallerySection>
 
       <GallerySection

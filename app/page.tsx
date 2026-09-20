@@ -3,7 +3,6 @@ import celebrations from "@/app/celebrations.module.css";
 import { eventInfoFit } from "@/app/event-info-fit";
 import { familyFit } from "@/app/family-fit";
 import { inviteFit } from "@/app/invite-fit";
-import inviteRule from "@/app/invite-rule.module.css";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
 import {
@@ -21,6 +20,7 @@ import {
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
+import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 import { ButtonAction } from "@/components/ui/button-action";
 import {
   type EventSegment,
@@ -86,29 +86,10 @@ function PrimaryDate({
   );
 }
 
-/* Two even hairlines with a small four-pointed star in the gap between them. Decoration only: the
-   rule carries no separator role, since an `<hr>` here would announce a division the reading order
-   does not have. Drawn rather than bordered so the star keeps its proportion to the line at every
-   width — the whole ornament scales as one. */
-export function InviteRule({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden
-      className={className}
-      role="presentation"
-      viewBox="0 0 600 20"
-    >
-      <rect x="0" y="9.5" width="272" height="1" />
-      <rect x="328" y="9.5" width="272" height="1" />
-      <path d="M300 3 C 300.8 8.2 301.8 9.2 307 10 C 301.8 10.8 300.8 11.8 300 17 C 299.2 11.8 298.2 10.8 293 10 C 298.2 9.2 299.2 8.2 300 3 Z" />
-    </svg>
-  );
-}
-
 function InvitePassage() {
   return (
     <>
-      <InviteRule className={inviteRule.rule} />
+      <OrnamentalDivider />
 
       <div className="mt-space-xs flex flex-col items-center">
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
@@ -285,7 +266,9 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
         {headingFor(event.id)}
       </h2>
       <div className="flex flex-col items-center gap-space-3xs mt-space-sm">
-        <p className="type-date-primary text-ink">
+        {/* The weights invert the invite's: there the date is bold over a lighter place, here the
+            address carries the weight and the date steps back. */}
+        <p className="type-date-primary font-medium text-ink">
           <PrimaryDate date={date} />
         </p>
         <address className="type-heading-lg text-ink not-italic">
@@ -580,8 +563,10 @@ export function WishesSection() {
 
           <div className="mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg flex w-full flex-col items-center text-center">
             <p className="type-body text-pretty">{wishes.passage}</p>
-            <p className="type-caption text-ink-muted mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
-              {wishes.passageAttribution}
+            {/* The dash is chrome, not content — the citation itself is the reference alone, the
+                same treatment the invite's citation gets. */}
+            <p className="type-caption-italic text-ink-muted mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
+              {`— ${wishes.passageAttribution}`}
             </p>
           </div>
 

@@ -30,6 +30,7 @@ import {
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
+import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 
 const COLOR_GROUPS: SwatchGroup[] = [
   {
@@ -547,6 +548,18 @@ export function FoundationsSections() {
             <p className="type-body text-ink">Grouped content</p>
             <Divider />
             <p className="type-body text-ink">Grouped content</p>
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider above."
+          id="layout-ornamental-divider"
+          name="ornamental-divider"
+          source="@/components/layout/ornamental-divider"
+          spec="two even hairlines · a four-pointed star in the gap · no taper · height fixed, never derived from width"
+        >
+          <div className="bg-surface-elevated p-space-xl">
+            <OrnamentalDivider />
           </div>
         </Specimen>
       </GallerySection>

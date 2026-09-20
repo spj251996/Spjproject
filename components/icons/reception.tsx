@@ -12,9 +12,9 @@ export function ReceptionIcon({
   return (
     <IconBase
       className={className}
-      nudge={1.02}
+      nudge={1.0274}
       size={size}
-      viewBox="65 40.9 105.5 130.9"
+      viewBox="64.52 40.43 106.45 131.71"
     >
       <g transform="translate(0.000000,226.000000) scale(0.050000,-0.050000)">
         <path d="M2375 3625 c-5 -41 -3 -83 6 -92 30 -33 59 10 59 88 0 106 -52 109 -65 4z" />

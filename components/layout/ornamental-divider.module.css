@@ -1,9 +1,3 @@
-/* The gold rule that sets the invite's passage apart from the rest of the card.
-
-   One SVG rather than two bordered elements with a glyph between them: the four-pointed star has to
-   hold its proportion to the line at every width, and it only does that if the whole ornament scales
-   as one drawing. */
-
 .rule {
   display: block;
   width: min(100%, 21em);
