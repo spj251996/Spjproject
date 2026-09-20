@@ -3,6 +3,7 @@ import celebrations from "@/app/celebrations.module.css";
 import { eventInfoFit } from "@/app/event-info-fit";
 import { familyFit } from "@/app/family-fit";
 import { inviteFit } from "@/app/invite-fit";
+import inviteRule from "@/app/invite-rule.module.css";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
 import {
@@ -54,16 +55,73 @@ function splitCoupleNames(coupleNames: string): [string, string] | null {
 /* Both month spellings render; `display: none` keeps the hidden one out of the accessibility tree,
    so no `aria-hidden` is needed. The `<time>` carries the ISO value so the rendered string — which
    is split across spans and duplicated for two month spellings — is still readable as one date. */
-function PrimaryDate({ date }: { date: FormattedDate }) {
+function PrimaryDate({
+  date,
+  weekday = true,
+  fullMonth = false,
+}: {
+  date: FormattedDate;
+  weekday?: boolean;
+  /* The invite spells the month out at every width. Elsewhere a phone takes the short form, where
+     the date shares its line with a place and a time. */
+  fullMonth?: boolean;
+}) {
   return (
     <time dateTime={date.iso}>
-      {date.weekday}, {date.day}
+      {weekday ? `${date.weekday}, ` : null}
+      {date.day}
       <span className="type-caption type-date-ordinal align-super">
         {date.ordinal}
       </span>{" "}
-      <span className="md:hidden">{date.monthShort}</span>
-      <span className="hidden md:inline">{date.month}</span> {date.year}
+      {fullMonth ? (
+        date.month
+      ) : (
+        <>
+          <span className="md:hidden">{date.monthShort}</span>
+          <span className="hidden md:inline">{date.month}</span>
+        </>
+      )}{" "}
+      {date.year}
     </time>
+  );
+}
+
+/* Two even hairlines with a small four-pointed star in the gap between them. Decoration only: the
+   rule carries no separator role, since an `<hr>` here would announce a division the reading order
+   does not have. Drawn rather than bordered so the star keeps its proportion to the line at every
+   width — the whole ornament scales as one. */
+export function InviteRule({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      role="presentation"
+      viewBox="0 0 600 20"
+    >
+      <rect x="0" y="9.5" width="272" height="1" />
+      <rect x="328" y="9.5" width="272" height="1" />
+      <path d="M300 3 C 300.8 8.2 301.8 9.2 307 10 C 301.8 10.8 300.8 11.8 300 17 C 299.2 11.8 298.2 10.8 293 10 C 298.2 9.2 299.2 8.2 300 3 Z" />
+    </svg>
+  );
+}
+
+function InvitePassage() {
+  return (
+    <>
+      <InviteRule className={inviteRule.rule} />
+
+      <div className="mt-space-xs flex flex-col items-center">
+        {/* No reading-column cap: the passage is one line wherever the card is wide enough to
+            hold it, and the card's own content width is the only limit that should apply. */}
+        <p className="type-caption text-ink-muted text-balance">
+          {invite.passage}
+        </p>
+        {/* The dash is chrome, not content — the citation itself is the reference alone. */}
+        <p className="type-caption-italic text-ink-muted mt-space-3xs">
+          {`\u2014 ${invite.passageAttribution}`}
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -73,50 +131,59 @@ function PrimaryDate({ date }: { date: FormattedDate }) {
    the names-to-date gap varies. */
 export function InviteSection() {
   const wedding = eventById("wedding");
-  const betrothal = eventById("engagement");
   const weddingDate = formatEventDate(wedding.date);
-  const betrothalDate = formatEventDate(betrothal.date);
   const names = splitCoupleNames(invite.coupleNames);
 
   return (
     <section className="relative">
       <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
       <MountedSheet fit={inviteFit} hero>
-        <div className="flex flex-col items-center text-center">
-          {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-          <p className="type-eyebrow">{invite.eyebrow}</p>
+        {/* The stack fills the card so the passage can settle against its bottom edge. Auto margins
+            rather than `1fr` grid rows: an auto margin collapses to 0 in `measure:fit`'s detached
+            clone, so the measured height stays the content's own, while `1fr` rows held the card
+            near its tallest at every width and put the section past the tablet tier's cap. */}
+        <div
+          className="flex h-full w-full flex-1 flex-col items-center text-center"
+          data-invite-stack
+        >
+          <div className="my-auto flex flex-col items-center">
+            {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
+            <p className="type-eyebrow">{invite.eyebrow}</p>
 
-          <h1 className="type-display-name text-ink mt-space-lg">
-            {names ? (
-              <>
-                <span>{names[0]}</span>
-                <span className="type-display-name__joiner">{" & "}</span>
-                <span>{names[1]}</span>
-              </>
-            ) : (
-              invite.coupleNames
-            )}
-          </h1>
+            <h1 className="type-display-name text-ink mt-space-lg">
+              {names ? (
+                <>
+                  <span>{names[0]}</span>
+                  <span className="type-display-name__joiner">{" & "}</span>
+                  <span>{names[1]}</span>
+                </>
+              ) : (
+                invite.coupleNames
+              )}
+            </h1>
 
-          <div className="flex flex-col items-center gap-space-3xs mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-sm">
-            <p className="type-date-primary text-ink">
-              <PrimaryDate date={weddingDate} />
+            <p className="type-date-primary text-ink mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-sm">
+              <PrimaryDate date={weddingDate} weekday={false} fullMonth />
             </p>
-            <p className="type-date-primary text-ink">{wedding.cityTown}</p>
+
+            {/* The state, not the town: where the wedding is rather than which venue. It takes the
+                date's own role at the weight the role carried before the date went bold — same
+                size, not bold. */}
+            <p
+              className="type-date-primary font-medium text-ink mt-space-3xs"
+              data-invite-place
+            >
+              {wedding.state}
+            </p>
           </div>
 
-          <div className="flex flex-col items-center gap-space-3xs mt-space-lg">
-            <p className="type-eyebrow">{betrothal.name}</p>
-            <p className="type-caption text-ink">
-              <time dateTime={betrothalDate.iso}>
-                {betrothalDate.weekday}, {betrothalDate.day}
-                {betrothalDate.ordinal}{" "}
-                <span className="md:hidden">{betrothalDate.monthShort}</span>
-                <span className="hidden md:inline">{betrothalDate.month}</span>{" "}
-                {betrothalDate.year}
-              </time>
-            </p>
-            <p className="type-caption text-ink">{betrothal.cityTown}</p>
+          {/* A floor under the gap the auto margins open, so the rule never crowds the date on a
+              card with no slack to give. */}
+          <div
+            className="mt-space-lg md:mt-0 lg:mt-space-lg flex w-full flex-col items-center"
+            data-invite-passage
+          >
+            <InvitePassage />
           </div>
         </div>
       </MountedSheet>
@@ -124,10 +191,27 @@ export function InviteSection() {
   );
 }
 
-const EVENT_HEADINGS: Readonly<Record<string, string>> = {
+/* The eyebrow names the occasion plainly; the heading is the couple's phrase for it. Both are fixed
+   chrome at the composition site, like Family's and Wishes' eyebrows, rather than content fields. */
+const EVENT_EYEBROWS: Readonly<Record<string, string>> = {
   engagement: "Betrothal",
   wedding: "Wedding",
 };
+
+const EVENT_HEADINGS: Readonly<Record<string, string>> = {
+  engagement: "A Promise",
+  wedding: "A Life Together",
+};
+
+function eyebrowFor(eventId: string): string {
+  const eyebrow = EVENT_EYEBROWS[eventId];
+  if (eyebrow === undefined) {
+    throw new Error(
+      `sections: event "${eventId}" has no eyebrow. Add it to EVENT_EYEBROWS in app/page.tsx.`,
+    );
+  }
+  return eyebrow;
+}
 
 function headingFor(eventId: string): string {
   const heading = EVENT_HEADINGS[eventId];
@@ -192,8 +276,15 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
   const date = formatEventDate(event.date);
   return (
     <>
-      <h2 className="type-heading-script text-ink">{headingFor(event.id)}</h2>
-      <div className="flex flex-col items-center gap-space-3xs mt-space-2xs">
+      {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
+      <p className="type-eyebrow">{eyebrowFor(event.id)}</p>
+      <h2
+        className="type-heading-xl text-ink-muted mt-space-2xs"
+        data-event={event.id}
+      >
+        {headingFor(event.id)}
+      </h2>
+      <div className="flex flex-col items-center gap-space-3xs mt-space-sm">
         <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
@@ -403,7 +494,7 @@ export function FamilySection() {
    photographs arrive here after the wedding, so it is set apart and set in italic. The card would
    otherwise read as finished rather than as still to come. */
 const CELEBRATIONS_INTRO =
-  "A look at the ceremonies and traditions that shape our Syro-Malabar Catholic wedding.";
+  "A look at the ceremonies and rituals that shape our wedding.";
 const CELEBRATIONS_PROMISE =
   "Moments leading up to the day, shared as they unfold.";
 
@@ -429,7 +520,11 @@ export function CelebrationsSection() {
             ["--celebrations-intro-gap" as string]: "var(--spacing-space-lg)",
           }}
         >
-          <h2 className="type-heading-script text-ink">The Celebrations</h2>
+          {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
+          <p className="type-eyebrow">Our traditions</p>
+          <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
+            The Celebrations
+          </h2>
 
           <div className="mt-space-2xs flex flex-col gap-space-sm">
             <p className="type-body text-ink text-pretty">
@@ -465,7 +560,7 @@ export function CelebrationsSection() {
   );
 }
 
-/* The page's close, and the only section on the green stock. The illustration's size and bleed
+/* The page's close. The illustration's size and bleed
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
    illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
    the thread. */
@@ -473,7 +568,7 @@ export function WishesSection() {
   return (
     <section className="relative" id="wishes">
       <Botanical fit={wishesFit} pieces={SECTION_PLACEMENT.wishes} />
-      <MountedSheet fit={wishesFit} stock="contrast">
+      <MountedSheet fit={wishesFit}>
         <div
           className={`${wishesStyles.stack} wishes-stack flex w-full flex-col items-center`}
           style={{
@@ -485,7 +580,7 @@ export function WishesSection() {
 
           <div className="mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg flex w-full flex-col items-center text-center">
             <p className="type-body text-pretty">{wishes.passage}</p>
-            <p className="type-caption mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
+            <p className="type-caption text-ink-muted mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
               {wishes.passageAttribution}
             </p>
           </div>
@@ -500,9 +595,9 @@ export function WishesSection() {
 
           {/* Two lines in both layouts: the lead in italic, the names who send it in regular. */}
           <p
-            className={`${wishesStyles.signoff} type-body mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg text-center`}
+            className={`${wishesStyles.signoff} type-caption text-ink-muted mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-2xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl text-center`}
           >
-            <span className="type-body-italic">{wishes.wishesLead}</span>
+            <span className="type-caption-italic">{wishes.wishesLead}</span>
             <span>{wishes.wishesLine}</span>
           </p>
         </div>
