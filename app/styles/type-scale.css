@@ -19,10 +19,19 @@
       align-items: center;
       line-height: 0.9;
     }
+  }
 
-    .type-display-name__joiner {
-      font-size: 0.5em;
-    }
+  /* The joiner is half the name it sits between, at every size and in both orientations: the
+     invite's one-line landscape form and its three-line portrait form are the same couple.
+
+     `line-height: 1` because the joiner inherits its parent's line-height as a LENGTH, so a
+     half-size inline box carries half-leading it does not need and grows the line box — measured,
+     Wishes' line went 56px to 61px from making the "&" smaller. The invite does not show it only
+     because its portrait form is a flex column, where each span owns its own line. */
+  .type-display-name__joiner,
+  .type-heading-script__joiner {
+    font-size: 0.5em;
+    line-height: 1;
   }
 
   .type-heading-script {

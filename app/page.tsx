@@ -548,6 +548,8 @@ export function CelebrationsSection() {
    illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
    the thread. */
 export function WishesSection() {
+  const wishesNames = splitCoupleNames(wishes.coupleNames);
+
   return (
     <section className="relative" id="wishes">
       <Botanical fit={wishesFit} pieces={SECTION_PLACEMENT.wishes} />
@@ -575,7 +577,15 @@ export function WishesSection() {
           </div>
 
           <p className="type-heading-script mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
-            {wishes.coupleNames}
+            {wishesNames ? (
+              <>
+                <span>{wishesNames[0]}</span>
+                <span className="type-heading-script__joiner">{" & "}</span>
+                <span>{wishesNames[1]}</span>
+              </>
+            ) : (
+              wishes.coupleNames
+            )}
           </p>
 
           {/* Two lines in both layouts: the lead in italic, the names who send it in regular. */}
