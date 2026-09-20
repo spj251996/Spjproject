@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   CAPS,
   type FitRegime,
@@ -11,6 +13,8 @@ import {
 } from "./mounted-sheet-frame.ts";
 import {
   mountedSheetFrameCss,
+  SPACING_TOKEN,
+  spacingTokenFor,
   tallFrameCss,
   tallScopeClass,
 } from "./mounted-sheet-frame-css.ts";
@@ -871,4 +875,46 @@ test("the width cap binds only in landscape, and only the compact band takes the
       `width-cap rule not gated by landscape: ${block}`,
     );
   }
+});
+
+test("SPACING_TOKEN agrees with app/styles/tokens.css's --spacing-* scale, in both directions, across the whole scale", () => {
+  /* Parses the real stylesheet rather than trusting SPACING_TOKEN's own claim about it — the two
+     maps are hand-synced (mounted-sheet-frame-css.ts's own comment on SPACING_TOKEN says so), and a
+     step present in one and not the other generates CSS that resolves to nothing with every other
+     gate green. */
+  const tokensCssPath = fileURLToPath(
+    new URL("../../app/styles/tokens.css", import.meta.url),
+  );
+  const tokensCss = readFileSync(tokensCssPath, "utf8");
+
+  const cssSpacing = new Map<string, number>();
+  for (const match of tokensCss.matchAll(
+    /^\s*(--spacing[\w-]*):\s*(\d+)px;/gm,
+  )) {
+    cssSpacing.set(match[1], Number(match[2]));
+  }
+  assert.ok(
+    cssSpacing.size >= Object.keys(SPACING_TOKEN).length,
+    "the stylesheet parsed at least as many --spacing-* declarations as SPACING_TOKEN has entries",
+  );
+
+  for (const [px, token] of Object.entries(SPACING_TOKEN)) {
+    assert.equal(
+      cssSpacing.get(token),
+      Number(px),
+      `SPACING_TOKEN[${px}] = "${token}" has no matching declaration in tokens.css`,
+    );
+  }
+
+  for (const [token, px] of cssSpacing) {
+    assert.equal(
+      SPACING_TOKEN[px],
+      token,
+      `tokens.css declares ${token}: ${px}px with no matching SPACING_TOKEN entry`,
+    );
+  }
+
+  /* The reachable-through-the-generator path, kept as a sanity check on `spacing()`'s own throw
+     behavior rather than as scale coverage — the loops above are what proves the scale. */
+  assert.doesNotThrow(() => spacingTokenFor(172));
 });

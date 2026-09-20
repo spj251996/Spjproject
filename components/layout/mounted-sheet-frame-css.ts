@@ -77,7 +77,9 @@ const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_RE
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
    value, because the arithmetic needs the number a media query cannot read from the token — a
    spacing token change must change this map too. */
-const SPACING_TOKEN: Readonly<Record<number, string>> = {
+/* Exported for the test that checks this map against `app/styles/tokens.css` itself, in both
+   directions, rather than trusting one hand-picked step. */
+export const SPACING_TOKEN: Readonly<Record<number, string>> = {
   0: "--spacing-0",
   4: "--spacing-space-3xs",
   8: "--spacing-space-2xs",
@@ -89,6 +91,7 @@ const SPACING_TOKEN: Readonly<Record<number, string>> = {
   64: "--spacing-space-2xl",
   96: "--spacing-space-3xl",
   128: "--spacing-space-4xl",
+  172: "--spacing-space-5xl",
 };
 
 function spacing(px: number): string {
@@ -99,6 +102,12 @@ function spacing(px: number): string {
     );
   }
   return `var(${token})`;
+}
+
+/* Exported so a test can exercise the real lookup `mountedSheetFrameCss` uses, rather than reading
+   `SPACING_TOKEN` and inferring the throw behavior. */
+export function spacingTokenFor(px: number): string {
+  return spacing(px);
 }
 
 /* A condition is a parenthesised query fragment, or a constant once simplified. Every compound is
