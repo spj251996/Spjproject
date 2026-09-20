@@ -2,15 +2,15 @@
   /* Overriding the framework's own `--font-sans` lets preflight carry the body family instead of
      restating it on `body`. */
   --font-script: "Corinthia", cursive;
-  --font-serif: "Cormorant Garamond", Georgia, serif;
-  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Libre Baskerville", Georgia, serif;
 
   --color-surface-base: #fcfbf7;
   --color-surface-mount: #ece6d7;
   --color-surface-elevated: #fffefa;
-  --color-surface-contrast: #0c3125;
-  --color-ink: #0f3d2e;
-  --color-ink-on-contrast: #f4f1e8;
+  --color-ink: #2d1100;
+  --color-ink-muted: #5a3a2a;
+  --color-ink-inverse: #f4f1e8;
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
@@ -21,32 +21,32 @@
   /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
      type-scale.css. These are the phone values; the tablet and laptop steps override them on
      `:root` below. */
-  --text-display-name: 72px;
+  --text-display-name: 94px;
   --text-display-name--font-weight: 400;
-  --text-display-name--line-height: 108px;
+  --text-display-name--line-height: 141px;
   --text-heading-script: 56px;
   --text-heading-script--font-weight: 400;
   --text-heading-script--line-height: 56px;
-  --text-heading-xl: 34px;
+  --text-heading-xl: 26px;
   --text-heading-xl--font-weight: 700;
   --text-heading-xl--line-height: 40px;
-  --text-heading-lg: 22px;
+  --text-heading-lg: 14px;
   --text-heading-lg--font-weight: 700;
   --text-heading-lg--line-height: 28px;
-  --text-date-primary: 22px;
-  --text-date-primary--font-weight: 500;
+  --text-date-primary: 14px;
+  --text-date-primary--font-weight: 700;
   --text-date-primary--line-height: 28px;
-  --text-body: 17px;
+  --text-body: 13px;
   --text-body--font-weight: 400;
   --text-body--line-height: 26px;
-  --text-caption: 15px;
+  --text-caption: 12px;
   --text-caption--font-weight: 400;
   --text-caption--line-height: 22px;
-  --text-eyebrow: 14px;
-  --text-eyebrow--font-weight: 500;
+  --text-eyebrow: 10px;
+  --text-eyebrow--font-weight: 400;
   --text-eyebrow--letter-spacing: 0.2em;
   --text-eyebrow--line-height: 20px;
-  --text-action: 15px;
+  --text-action: 11px;
   --text-action--font-weight: 700;
   --text-action--letter-spacing: 0.16em;
   --text-action--line-height: 20px;
@@ -79,13 +79,6 @@
     0 1px 2px rgba(58, 48, 30, 0.1), 0 18px 40px -14px rgba(58, 48, 30, 0.26);
   --shadow-sheet:
     inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 3px rgba(58, 48, 30, 0.16);
-  --shadow-sheet-contrast:
-    0 0 0 1px rgba(58, 48, 30, 0.14), 0 2px 8px rgba(58, 48, 30, 0.34);
-  /* The mount under the green stock. The mount's own ivory sits against an ivory ground, so on that
-     stock it reads as page rather than as a mat; a deeper cast lifts it off the ground instead of
-     giving it a second colour. */
-  --shadow-mount-contrast:
-    0 2px 4px rgba(58, 48, 30, 0.16), 0 26px 56px -16px rgba(58, 48, 30, 0.42);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
@@ -128,15 +121,18 @@
   /* The SVG is drawn at three times the tile's CSS size: at 1:1 a high-density display upscales it
      into blotches. `color-interpolation-filters='sRGB'` keeps the noise midpoint at 0.5 — filters
      default to linear RGB. */
-  --grain-tile: 200px;
+  --grain-tile: 50px;
   --grain-ground-blend: multiply;
-  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.03' intercept='0.97'/><feFuncG type='linear' slope='0.03' intercept='0.97'/><feFuncB type='linear' slope='0.03' intercept='0.97'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  /* Candidate C's noise, tinted warm. The grain is greyscaled first, then each channel gets its
+     own dark end so the tooth lands on a warm off-white (#e3e0d8) rather than on neutral grey —
+     the three intercepts are that colour divided by the ground's own, scaled to this depth. Blue is held
+     down hardest, red least. A single shared intercept multiplies the ivory toward grey, which is
+     what read cold on an off-white ground. */
+  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.03' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.28' intercept='0.889'/><feFuncG type='linear' slope='0.28' intercept='0.88'/><feFuncB type='linear' slope='0.28' intercept='0.845'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");
   --grain-mount-blend: overlay;
-  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.4' intercept='0.3'/><feFuncG type='linear' slope='0.4' intercept='0.3'/><feFuncB type='linear' slope='0.4' intercept='0.3'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.4' intercept='0.3'/><feFuncG type='linear' slope='0.4' intercept='0.3'/><feFuncB type='linear' slope='0.4' intercept='0.3'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");
   --grain-stock-paper-blend: hard-light;
-  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.05' intercept='0.475'/><feFuncG type='linear' slope='0.05' intercept='0.475'/><feFuncB type='linear' slope='0.05' intercept='0.475'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
-  --grain-stock-contrast-blend: hard-light;
-  --grain-stock-contrast: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.1' intercept='0.45'/><feFuncG type='linear' slope='0.1' intercept='0.45'/><feFuncB type='linear' slope='0.1' intercept='0.45'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.05' intercept='0.475'/><feFuncG type='linear' slope='0.05' intercept='0.475'/><feFuncB type='linear' slope='0.05' intercept='0.475'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");
 
   --crease-width: 22px;
   --crease-fill: linear-gradient(
@@ -159,7 +155,7 @@
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--color-ink);
-  --focus-ring-color-on-contrast: var(--color-accent-gold);
+  --focus-ring-color-inverse: var(--color-accent-gold);
 
   /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
      off-scale `z-999` still compiles; only review enforces this scale. */
@@ -175,69 +171,69 @@
    Biome reads sibling `@variant` blocks as one block and flags the repeated names. */
 :root {
   @variant md {
-    --text-display-name: 104px;
-    --text-display-name--line-height: 156px;
+    --text-display-name: 135px;
+    --text-display-name--line-height: 203px;
     --text-heading-script: 72px;
     --text-heading-script--line-height: 72px;
-    --text-heading-xl: 42px;
+    --text-heading-xl: 32px;
     --text-heading-xl--line-height: 48px;
-    --text-heading-lg: 24px;
+    --text-heading-lg: 15px;
     --text-heading-lg--line-height: 30px;
-    --text-date-primary: 24px;
+    --text-date-primary: 15px;
     --text-date-primary--line-height: 30px;
-    --text-body: 18px;
+    --text-body: 14px;
     --text-body--line-height: 28px;
-    --text-caption: 16px;
+    --text-caption: 13px;
     --text-caption--line-height: 24px;
-    --text-eyebrow: 15px;
+    --text-eyebrow: 11px;
     --text-eyebrow--line-height: 20px;
-    --text-action: 16px;
+    --text-action: 12px;
     --text-action--line-height: 20px;
   }
 }
 
 :root {
   @variant lg {
-    --text-display-name: 96px;
-    --text-display-name--line-height: 144px;
+    --text-display-name: 125px;
+    --text-display-name--line-height: 188px;
     --text-heading-script: 64px;
     --text-heading-script--line-height: 64px;
-    --text-heading-xl: 38px;
+    --text-heading-xl: 30px;
     --text-heading-xl--line-height: 44px;
-    --text-heading-lg: 22px;
+    --text-heading-lg: 14px;
     --text-heading-lg--line-height: 28px;
-    --text-date-primary: 22px;
+    --text-date-primary: 14px;
     --text-date-primary--line-height: 28px;
-    --text-body: 17px;
+    --text-body: 13px;
     --text-body--line-height: 26px;
-    --text-caption: 15px;
+    --text-caption: 12px;
     --text-caption--line-height: 22px;
-    --text-eyebrow: 14px;
+    --text-eyebrow: 10px;
     --text-eyebrow--line-height: 20px;
-    --text-action: 15px;
+    --text-action: 11px;
     --text-action--line-height: 20px;
   }
 }
 
 :root {
   @variant xl {
-    --text-display-name: 120px;
-    --text-display-name--line-height: 180px;
+    --text-display-name: 156px;
+    --text-display-name--line-height: 234px;
     --text-heading-script: 80px;
     --text-heading-script--line-height: 80px;
-    --text-heading-xl: 48px;
+    --text-heading-xl: 38px;
     --text-heading-xl--line-height: 56px;
-    --text-heading-lg: 26px;
+    --text-heading-lg: 17px;
     --text-heading-lg--line-height: 32px;
-    --text-date-primary: 26px;
+    --text-date-primary: 17px;
     --text-date-primary--line-height: 32px;
-    --text-body: 20px;
+    --text-body: 16px;
     --text-body--line-height: 32px;
-    --text-caption: 17px;
+    --text-caption: 14px;
     --text-caption--line-height: 24px;
-    --text-eyebrow: 16px;
+    --text-eyebrow: 12px;
     --text-eyebrow--line-height: 22px;
-    --text-action: 17px;
+    --text-action: 13px;
     --text-action--line-height: 24px;
   }
 }

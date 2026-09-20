@@ -1,10 +1,14 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
-import { Corinthia, Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
+import {
+  Corinthia,
+  Libre_Baskerville,
+  Playfair_Display,
+} from "next/font/google";
 import "./globals.css";
 
-/* Corinthia needs an explicit weight because it ships as static faces only; the other two are
-   variable, and omitting `weight` loads the whole axis. */
+/* Corinthia and Libre Baskerville ship as static faces and need explicit weights; Playfair Display
+   is variable, so omitting `weight` loads the whole axis. */
 
 const script = Corinthia({
   variable: "--font-script",
@@ -14,21 +18,24 @@ const script = Corinthia({
   fallback: ["cursive"],
 });
 
-const serif = Cormorant_Garamond({
+const serif = Playfair_Display({
   variable: "--font-serif",
   subsets: ["latin"],
   display: "swap",
   fallback: ["Georgia", "serif"],
 });
 
-/* The italic axis is loaded, not synthesised: the closing sign-off's lead line is set in italic body,
-   and a browser-obliqued normal face reads as a slanted regular at that size. */
-const sans = Source_Sans_3({
+/* The italic cut is loaded, not synthesised: the closing sign-off's lead line and the invite's
+   citation are set in italic, and a browser-obliqued normal face reads as a slanted regular at that
+   size. Libre Baskerville ships 400, 700 and 400 italic — there is no 500, which is why
+   `{typography.eyebrow}` is set at 400. */
+const sans = Libre_Baskerville({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "700"],
   style: ["normal", "italic"],
   display: "swap",
-  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
+  fallback: ["Georgia", "serif"],
 });
 
 /* The invitation is shared by link only. robots.txt stops the crawl; this states the same intent

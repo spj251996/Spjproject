@@ -38,14 +38,14 @@ export function GalleryModalPanel({
 }: GalleryModalPanelProps) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-surface-contrast/92 p-space-md [--focus-ring-color:var(--focus-ring-color-on-contrast)] ${className ?? ""}`}
+      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-shadow-warm/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-space-md">
-        <h2 className="type-heading-lg text-ink-on-contrast" id={titleId}>
+        <h2 className="type-heading-lg text-ink-inverse" id={titleId}>
           {title}
         </h2>
         <button
-          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-sm text-ink-on-contrast"
+          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-sm text-ink-inverse"
           onClick={onClose}
           type="button"
         >

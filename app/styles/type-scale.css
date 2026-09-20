@@ -77,6 +77,15 @@
     line-height: var(--text-caption--line-height);
   }
 
+  /* The caption role in italic, on the same terms as `type-body-italic`. */
+  .type-caption-italic {
+    font-family: var(--font-sans);
+    font-size: var(--text-caption);
+    font-weight: var(--text-caption--font-weight);
+    font-style: italic;
+    line-height: var(--text-caption--line-height);
+  }
+
   /* Paired with `type-caption` on the raised ordinal, whose leading would otherwise push the date
      line past its own line height. Wins only by source order, so it stays below `.type-caption`. */
   .type-date-ordinal {

@@ -16,7 +16,7 @@ html {
   -webkit-touch-callout: none;
 }
 
-/* A component on a contrast ground rebinds `--focus-ring-color` on its subtree rather than adding a
+/* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
    second ring rule. */
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

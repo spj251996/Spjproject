@@ -4,16 +4,20 @@
 @layer components {
   .bg-surface-base,
   .bg-surface-mount,
-  .bg-surface-elevated,
-  .bg-surface-contrast {
+  .bg-surface-elevated {
     background-size: var(--grain-tile) var(--grain-tile);
   }
 
-  /* `body` paints the ground without the utility, so it takes the ground grain directly. */
+  /* `body` paints the ground without the utility, so it takes the ground grain directly. It sizes
+     itself from its own token: a noise tile needs the shared tile size, a repeating gradient
+     carries its own period and must not be rescaled. */
   body,
   .bg-surface-base {
     background-image: var(--grain-ground);
-    background-size: var(--grain-tile) var(--grain-tile);
+    background-size: var(
+      --grain-ground-size,
+      var(--grain-tile) var(--grain-tile)
+    );
     background-blend-mode: var(--grain-ground-blend);
   }
 
@@ -25,10 +29,5 @@
   .bg-surface-elevated {
     background-image: var(--grain-stock-paper);
     background-blend-mode: var(--grain-stock-paper-blend);
-  }
-
-  .bg-surface-contrast {
-    background-image: var(--grain-stock-contrast);
-    background-blend-mode: var(--grain-stock-contrast-blend);
   }
 }

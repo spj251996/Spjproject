@@ -19,29 +19,17 @@ import {
      `align-items` and `padding`, so a `className` utility for any of them is discarded.
 
    The reveal uses spacing utilities directly: `{reveal.*}` only aliases spacing steps, so it has no
-   tokens of its own.
-
-   `contrast` rebinds `--focus-ring-color` on its subtree, which the global `:focus-visible` rule
-   reads. */
-
-type Stock = "paper" | "contrast";
+   tokens of its own. */
 
 interface MountedSheetProps {
   children: ReactNode;
-  stock?: Stock;
   hero?: boolean;
   fit?: MeasuredFit;
   tall?: boolean;
   className?: string;
 }
 
-/* The mount's cast depends on the stock it carries: against an ivory ground the ivory mount reads
-   as page under the green stock, so that one is lifted with a deeper shadow rather than a second
-   mount colour. */
-const MOUNT_SHADOW: Record<Stock, string> = {
-  paper: "shadow-mount",
-  contrast: "shadow-mount-contrast",
-};
+const MOUNT_SHADOW = "shadow-mount";
 
 /* Unmounted is the base, so a non-hero section never paints a mount and then loses it. */
 const MOUNT_REVEAL = {
@@ -51,15 +39,10 @@ const MOUNT_REVEAL = {
 
 const SHEET_PADDING = "p-space-lg md:p-space-2xl lg:p-space-3xl";
 
-const SHEET: Record<Stock, string> = {
-  paper: "bg-surface-elevated shadow-sheet",
-  contrast:
-    "bg-surface-contrast text-ink-on-contrast shadow-sheet-contrast [--focus-ring-color:var(--focus-ring-color-on-contrast)]",
-};
+const SHEET = "bg-surface-elevated shadow-sheet";
 
 export function MountedSheet({
   children,
-  stock = "paper",
   hero = false,
   fit,
   tall = false,
@@ -79,10 +62,10 @@ export function MountedSheet({
         <div className={tallScopeClass(hero)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW[stock]} bg-surface-mount`}
+              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW} bg-surface-mount`}
             >
               <div
-                className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
+                className={`${FRAME_CLASS.sheet} ${SHEET} ${className ?? ""}`}
               >
                 {children}
               </div>
@@ -102,10 +85,10 @@ export function MountedSheet({
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW[stock]} bg-surface-mount`}
+              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW} bg-surface-mount`}
             >
               <div
-                className={`${FRAME_CLASS.sheet} ${SHEET[stock]} ${className ?? ""}`}
+                className={`${FRAME_CLASS.sheet} ${SHEET} ${className ?? ""}`}
               >
                 {children}
               </div>
@@ -118,9 +101,9 @@ export function MountedSheet({
 
   return (
     <div
-      className={`${MOUNT_SHADOW[stock]} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
+      className={`${MOUNT_SHADOW} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
-      <div className={`${SHEET[stock]} ${SHEET_PADDING} ${className ?? ""}`}>
+      <div className={`${SHEET} ${SHEET_PADDING} ${className ?? ""}`}>
         {children}
       </div>
     </div>
