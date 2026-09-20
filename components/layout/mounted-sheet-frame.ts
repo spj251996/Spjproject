@@ -48,21 +48,78 @@ export function regimesFor(
   return regimes[orientation];
 }
 
+/* A portrait window's two bands: `block` frames the card top and bottom, `inline` is the page
+   margin beside it, and one number cannot be both.
+
+   `blockPressed` / `inlinePressed` are fields, never halved at emit time. `groundRules` builds its
+   give-way body as a template-literal argument, so `spacing()` runs even where the condition is
+   false — and the tablet's 172 / 2 is 86, off the spacing scale, which would throw at build time for
+   every section on a code path that never renders. A tier whose half IS on the scale may still
+   derive its own pair (`squareGround`); what may not happen is the emitter doing it. */
+export interface PortraitGround {
+  block: number;
+  blockPressed: number;
+  inline: number;
+  inlinePressed: number;
+}
+
 export interface GroundTier {
   name: GroundTierName;
+  /* The landscape ground, on both axes. Its side ground is doubled and floored by the height-cap
+     centring gap, which is a window-height term no declared band could express. */
   ground: number;
+  portrait: PortraitGround;
   /* Largest first. */
   paddingSteps: readonly number[];
+}
+
+export const SIDE_GROUND_MULTIPLE = 2;
+/* Declared above `GROUND_TIERS` because `squareGround` reads it while that table initialises. */
+export const GROUND_HALVING = 0.5;
+
+/* A tier whose portrait band is its landscape ground on both axes, given way by the same halving
+   landscape uses. */
+function squareGround(ground: number): PortraitGround {
+  return {
+    block: ground,
+    blockPressed: ground * GROUND_HALVING,
+    inline: ground,
+    inlinePressed: ground * GROUND_HALVING,
+  };
 }
 
 /* `{spacing.*}` steps held as numbers, like the reveal ladder and the caps below, because a media
    query cannot read a custom property. A spacing token change must change them here and in the
    pixel-keyed spacing map in mounted-sheet-frame-css.ts. */
 const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
-  phone: { name: "phone", ground: 16, paddingSteps: [32, 24, 16] },
-  tablet: { name: "tablet", ground: 48, paddingSteps: [64, 48, 32] },
-  compact: { name: "compact", ground: 64, paddingSteps: [64, 48, 32, 24] },
-  laptop: { name: "laptop", ground: 96, paddingSteps: [96, 64, 48, 32] },
+  phone: {
+    name: "phone",
+    ground: 16,
+    portrait: { block: 96, blockPressed: 48, inline: 24, inlinePressed: 16 },
+    paddingSteps: [32, 24, 16],
+  },
+  tablet: {
+    name: "tablet",
+    ground: 48,
+    portrait: { block: 172, blockPressed: 96, inline: 128, inlinePressed: 64 },
+    paddingSteps: [64, 48, 32],
+  },
+  /* Compact and laptop take a square band DERIVED from their landscape ground, never a literal:
+     DESIGN.md gives their band as "Its `Ground, landscape`" and says it follows that ground wherever
+     it moves, which a copied number would silently stop doing. Halving is safe on these two alone —
+     both halves are on the spacing scale, where the tablet's 172 / 2 = 86 is not. */
+  compact: {
+    name: "compact",
+    ground: 64,
+    portrait: squareGround(64),
+    paddingSteps: [64, 48, 32, 24],
+  },
+  laptop: {
+    name: "laptop",
+    ground: 96,
+    portrait: squareGround(96),
+    paddingSteps: [96, 64, 48, 32],
+  },
 };
 
 /* `{breakpoints.md}`, `{breakpoints.lg}` and `{breakpoints.xl}`. The media queries use rem, as the
@@ -99,9 +156,6 @@ export const CAPS: Readonly<
   desktop: { width: 960, height: 576 },
   wide: { width: 1200, height: 720 },
 };
-
-export const SIDE_GROUND_MULTIPLE = 2;
-export const GROUND_HALVING = 0.5;
 
 /* `(hover: none)` is not added: it could only drop devices whose primary input is still coarse. */
 const TOUCHSCREEN_QUERY = "(pointer: coarse)";
@@ -593,6 +647,8 @@ export interface TallWindowClass {
   media: string;
   widthTier: WidthTier;
   ground: number;
+  /* Tall mode has no give-way, so the pressed pair is not part of a tall class. */
+  portrait: Pick<PortraitGround, "block" | "inline">;
   padding: number;
   reveal: number;
   mountShows: boolean;
@@ -623,6 +679,7 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
       media,
       widthTier,
       ground: groundTier.ground,
+      portrait: groundTier.portrait,
       padding: TALL_PADDING[groundTier.name],
       reveal: shows ? REVEAL[widthTier] : 0,
       mountShows: shows,

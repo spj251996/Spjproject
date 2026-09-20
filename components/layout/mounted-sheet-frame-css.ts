@@ -65,11 +65,16 @@ const RING_BLOCK = "--ring-block";
 const RING_SIDE = "--ring-side";
 const RING_CAP = "--ring-cap";
 
+/* The window's own two bands, before the ring republishes them for the botanical layer. A portrait
+   window sets them apart; landscape leaves both at the one ground it has always used. */
+const GROUND_BLOCK = "--ground-block";
+const GROUND_INLINE = "--ground-inline";
+
 /* The card's minimum height from the window: every viewport-height term is `svh`, so nothing in the
    frame moves as a phone's toolbar hides. A landscape card's is also capped — at the compact
    laptop tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
    everywhere else (mobile, tablet, wide). */
-const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
+const CARD_HEIGHT = `calc(100svh - 2 * var(${GROUND_BLOCK}))`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-compact), ${CARD_HEIGHT})`;
 const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
@@ -181,7 +186,7 @@ function windowFits(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
-  ground: number,
+  pressed: boolean,
   landscape: boolean,
 ): Condition {
   const rectangles = fitRectangles(
@@ -190,8 +195,20 @@ function windowFits(
     smallestPadding(windowClass.groundTier),
     pairsSideBySide(layout, windowClass, landscape),
   );
-  if (!landscape) return clears(rectangles, 2 * ground, 2 * ground);
+  if (!landscape) {
+    /* `clears` takes a width offset and a height offset separately: the inline band decides the
+       card's width, the block band its height. */
+    const portrait = windowClass.groundTier.portrait;
+    return clears(
+      rectangles,
+      2 * (pressed ? portrait.inlinePressed : portrait.inline),
+      2 * (pressed ? portrait.blockPressed : portrait.block),
+    );
+  }
 
+  const ground = pressed
+    ? windowClass.groundTier.ground * GROUND_HALVING
+    : windowClass.groundTier.ground;
   const cap = CAPS[windowClass.widthTier];
   const band = `(height <= ${formatPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
   return any(
@@ -218,10 +235,9 @@ function halvingCondition(
   layout: FrameLayout,
   landscape: boolean,
 ): Condition {
-  const ground = windowClass.groundTier.ground;
   return all(
-    not(windowFits(windowClass, hero, layout, ground, landscape)),
-    windowFits(windowClass, hero, layout, ground * GROUND_HALVING, landscape),
+    not(windowFits(windowClass, hero, layout, false, landscape)),
+    windowFits(windowClass, hero, layout, true, landscape),
   );
 }
 
@@ -232,22 +248,36 @@ function orientationsOf(windowClass: WindowClass): boolean[] {
   return orientations;
 }
 
+/* The class's own base rule sets all three properties to its landscape ground, so a window always
+   has a band even before an orientation rule narrows it; the portrait rules then override the two
+   band properties, and landscape needs no rule of its own because the base already is its value. */
 function groundRules(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
   scope: string,
 ): string {
-  const ground = windowClass.groundTier.ground;
+  const tier = windowClass.groundTier;
+  const ground = spacing(tier.ground);
   const rules = [
-    `@media ${windowClass.media} {\n${scope} { ${GROUND}: ${spacing(ground)}; }\n}`,
+    `@media ${windowClass.media} {\n${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }\n}`,
   ];
   for (const landscape of orientationsOf(windowClass)) {
+    const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
+    if (!landscape) {
+      rules.push(
+        `${prelude} {\n${scope} { ${GROUND_BLOCK}: ${spacing(tier.portrait.block)}; ${GROUND_INLINE}: ${spacing(tier.portrait.inline)}; }\n}`,
+      );
+    }
+    const halved = landscape ? spacing(tier.ground * GROUND_HALVING) : "";
+    const pressedBody = landscape
+      ? `${scope} { ${GROUND}: ${halved}; ${GROUND_BLOCK}: ${halved}; ${GROUND_INLINE}: ${halved}; }`
+      : `${scope} { ${GROUND_BLOCK}: ${spacing(tier.portrait.blockPressed)}; ${GROUND_INLINE}: ${spacing(tier.portrait.inlinePressed)}; }`;
     rules.push(
       mediaRule(
-        `@media ${windowClass.media} and ${orientationQuery(landscape)}`,
+        prelude,
         halvingCondition(windowClass, hero, layout, landscape),
-        `${scope} { ${GROUND}: ${spacing(ground * GROUND_HALVING)}; }`,
+        pressedBody,
       ),
     );
   }
@@ -307,7 +337,7 @@ ${crease} { display: block; }
 }`;
       }
       return `${prelude} {
-${mount} { gap: calc(2 * ${GROUND_VALUE}); padding: ${spacing(0)}; ${strip} box-shadow: none; }
+${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
 ${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; background-color: transparent; background-image: none; }
 }`;
     })
@@ -353,7 +383,7 @@ function paddingRules(
      its chain keeps every rectangle. */
   const chain = (
     prelude: string,
-    ground: number,
+    blockBand: number,
     landscape: boolean,
     regimes: readonly FitRegime[],
     sideBySide: boolean,
@@ -373,16 +403,22 @@ function paddingRules(
         )
           continue;
         rules.push(
-          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
+          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
         );
       }
     }
     return `${prelude} {\n${rules.join("\n")}\n}`;
   };
 
-  const ground = windowClass.groundTier.ground;
+  const tier = windowClass.groundTier;
   const rules: string[] = [];
   for (const landscape of orientationsOf(windowClass)) {
+    /* The height query asks whether the window's card clears a rectangle, so it offsets by whatever
+       the card's height is measured from: the landscape ground, or portrait's block band. */
+    const blockBand = landscape ? tier.ground : tier.portrait.block;
+    const pressedBlockBand = landscape
+      ? tier.ground * GROUND_HALVING
+      : tier.portrait.blockPressed;
     const sideBySide = pairsSideBySide(layout, windowClass, landscape);
     const stacked =
       layout === "pair" && !sideBySide && stackedPadding !== undefined;
@@ -396,20 +432,13 @@ function paddingRules(
       ? heroReveal(windowClass)
       : cardReveal(windowClass, hero, layout, landscape);
     const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
-    rules.push(chain(base, ground, landscape, regimes, sideBySide, reveal));
+    rules.push(chain(base, blockBand, landscape, regimes, sideBySide, reveal));
 
     const halving = halvingCondition(windowClass, hero, layout, landscape);
     if (halving === false) continue;
     const prelude = halving === true ? base : `${base} and ${halving}`;
     rules.push(
-      chain(
-        prelude,
-        ground * GROUND_HALVING,
-        landscape,
-        regimes,
-        sideBySide,
-        reveal,
-      ),
+      chain(prelude, pressedBlockBand, landscape, regimes, sideBySide, reveal),
     );
   }
   return rules.join("\n");
@@ -449,8 +478,8 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  ${RING_BLOCK}: ${GROUND_VALUE};
-  ${RING_SIDE}: ${GROUND_VALUE};
+  ${RING_BLOCK}: var(${GROUND_BLOCK});
+  ${RING_SIDE}: var(${GROUND_INLINE});
   padding-block: var(${RING_BLOCK});
   padding-inline: var(${RING_SIDE});
   ${safeCentre}
@@ -559,8 +588,8 @@ export function tallFrameCss(hero: boolean): string {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  ${RING_BLOCK}: ${GROUND_VALUE};
-  ${RING_SIDE}: ${GROUND_VALUE};
+  ${RING_BLOCK}: var(${GROUND_BLOCK});
+  ${RING_SIDE}: var(${GROUND_INLINE});
   padding-block: var(${RING_BLOCK});
   padding-inline: var(${RING_SIDE});
   justify-content: center;
@@ -604,10 +633,14 @@ ${sheet} {
     const fill = windowClass.mountShows
       ? ""
       : " background-color: transparent; background-image: none;";
+    const ground = spacing(windowClass.ground);
     return `@media ${windowClass.media} {
-${scope} { ${GROUND}: ${spacing(windowClass.ground)}; }
+${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
 ${mount} { padding: ${spacing(windowClass.reveal)};${fill} }
 ${sheet} { padding: ${spacing(windowClass.padding)}; }
+}
+@media ${windowClass.media} and (orientation: portrait) {
+${scope} { ${GROUND_BLOCK}: ${spacing(windowClass.portrait.block)}; ${GROUND_INLINE}: ${spacing(windowClass.portrait.inline)}; }
 }`;
   });
 

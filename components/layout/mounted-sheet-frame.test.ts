@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 import {
   CAPS,
   type FitRegime,
+  fitRectangles,
   type MeasuredFit,
+  type Orientation,
   pairsSideBySide,
   regimesFor,
   tallWindowClasses,
@@ -465,8 +467,7 @@ test("every pair window and orientation gets exactly one layout block", () => {
      now that the tier splits in two): 21 blocks total, 10 row and 11 stacked. */
   assert.equal((pair.match(/flex-direction: row;/g) ?? []).length, 10);
   assert.equal(
-    (pair.match(/gap: calc\(2 \* var\(--mounted-sheet-ground\)\);/g) ?? [])
-      .length,
+    (pair.match(/gap: calc\(2 \* var\(--ground-block\)\);/g) ?? []).length,
     11,
   );
   assert.ok(pair.includes(".mounted-sheet-frame__leaf"));
@@ -807,7 +808,7 @@ test("each tall window class's own block binds its ground and sheet padding, nev
     assert.ok(block, `no block for "${windowClass.media}"`);
     assert.ok(
       block?.includes(
-        `{ --mounted-sheet-ground: var(${GROUND_TOKEN[windowClass.ground]}); }`,
+        `{ --mounted-sheet-ground: var(${GROUND_TOKEN[windowClass.ground]}); --ground-block: var(${GROUND_TOKEN[windowClass.ground]}); --ground-inline: var(${GROUND_TOKEN[windowClass.ground]}); }`,
       ),
       `${windowClass.media}: ground ${windowClass.ground}`,
     );
@@ -917,4 +918,225 @@ test("SPACING_TOKEN agrees with app/styles/tokens.css's --spacing-* scale, in bo
   /* The reachable-through-the-generator path, kept as a sanity check on `spacing()`'s own throw
      behavior rather than as scale coverage — the loops above are what proves the scale. */
   assert.doesNotThrow(() => spacingTokenFor(172));
+});
+
+/* Every `--ground-block` / `--ground-inline` pair one window class declares for one orientation.
+   `pressed` marks the give-way rule — the one whose prelude carries a condition beyond the
+   orientation query. Matched on the exact prelude rather than a substring, since one class's media
+   string is a prefix of no other's. */
+function groundBands(
+  css: string,
+  media: string,
+  orientation: Orientation,
+): { pressed: boolean; block?: string; inline?: string }[] {
+  const prelude = `@media ${media} and (orientation: ${orientation})`;
+  return topLevelBlocks(css)
+    .filter(
+      (rule) =>
+        rule.startsWith(`${prelude} `) || rule.startsWith(`${prelude}{`),
+    )
+    .filter((rule) => rule.includes("--ground-block"))
+    .map((rule) => ({
+      pressed: rule.slice(0, rule.indexOf("{")).trim() !== prelude,
+      block: rule.match(/--ground-block: var\((--[a-z0-9-]+)\)/)?.[1],
+      inline: rule.match(/--ground-inline: var\((--[a-z0-9-]+)\)/)?.[1],
+    }));
+}
+
+function bandFor(
+  css: string,
+  media: string,
+  orientation: Orientation,
+  pressed: boolean,
+): { block?: string; inline?: string } {
+  const bands = groundBands(css, media, orientation).filter(
+    (band) => band.pressed === pressed,
+  );
+  assert.equal(
+    bands.length,
+    1,
+    `${media} ${orientation} pressed=${pressed}: expected one band rule, got ${bands.length}`,
+  );
+  return bands[0];
+}
+
+test("a portrait window sets its block and side ground independently", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const classes = windowClasses(makeFit(), "single");
+  const phone = classes[0];
+  const tablet = classes[1];
+
+  const phoneBand = bandFor(css, phone.media, "portrait", false);
+  assert.equal(phoneBand.block, "--spacing-space-3xl", "phone block is 96px");
+  assert.equal(phoneBand.inline, "--spacing-space-md", "phone inline is 24px");
+  assert.notEqual(
+    phoneBand.block,
+    phoneBand.inline,
+    "the phone band's two axes are different numbers",
+  );
+
+  const tabletBand = bandFor(css, tablet.media, "portrait", false);
+  assert.equal(
+    tabletBand.block,
+    "--spacing-space-5xl",
+    "tablet block is 172px",
+  );
+  assert.equal(
+    tabletBand.inline,
+    "--spacing-space-4xl",
+    "tablet inline is 128px",
+  );
+  assert.notEqual(tabletBand.block, tabletBand.inline);
+});
+
+test("a portrait window's given-way band is declared per tier, never halved", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const classes = windowClasses(makeFit(), "single");
+
+  const phone = bandFor(css, classes[0].media, "portrait", true);
+  assert.equal(
+    phone.block,
+    "--spacing-space-xl",
+    "phone pressed block is 48px",
+  );
+  assert.equal(
+    phone.inline,
+    "--spacing-space-sm",
+    "phone pressed inline is 16px, never below today's shipped side ground",
+  );
+
+  /* 172 / 2 is 86, which is off the spacing scale — a computed half would have thrown before it
+     could be asserted, so reaching this line at all is half the proof. */
+  const tablet = bandFor(css, classes[1].media, "portrait", true);
+  assert.equal(
+    tablet.block,
+    "--spacing-space-3xl",
+    "tablet pressed block is 96px, not 86px",
+  );
+  assert.equal(
+    tablet.inline,
+    "--spacing-space-2xl",
+    "tablet pressed inline is 64px",
+  );
+});
+
+test("landscape keeps one ground on both axes", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const classes = windowClasses(makeFit(), "single");
+
+  /* A class's base rule is its landscape band: only the portrait rules narrow it, so landscape
+     needs no orientation rule of its own. */
+  for (const windowClass of [classes[0], classes[1]]) {
+    assert.equal(
+      groundBands(css, windowClass.media, "landscape").filter(
+        (band) => !band.pressed,
+      ).length,
+      0,
+      `${windowClass.media}: landscape declares no band of its own`,
+    );
+  }
+  assert.ok(
+    css.includes(
+      `@media ${classes[0].media} {\n.mounted-sheet-frame--test-section { --mounted-sheet-ground: var(--spacing-space-sm); --ground-block: var(--spacing-space-sm); --ground-inline: var(--spacing-space-sm); }`,
+    ),
+    "the phone tier's landscape ground is unchanged at 16px on all three properties",
+  );
+  assert.ok(
+    css.includes(
+      "--ring-side: max(calc(2 * var(--mounted-sheet-ground)), calc((100svh - var(--ring-cap)) / 2))",
+    ),
+    "the landscape side ground still carries the centring term",
+  );
+});
+
+test("the ring and the card height read the two bands, not the one ground", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  assert.ok(css.includes("--ring-block: var(--ground-block);"));
+  assert.ok(css.includes("--ring-side: var(--ground-inline);"));
+  assert.ok(
+    css.includes("min-height: calc(100svh - 2 * var(--ground-block));"),
+  );
+  assert.ok(
+    !/min-height: calc\(100svh - 2 \* var\(--mounted-sheet-ground\)\)/.test(
+      css,
+    ),
+    "no card height is still measured from the single ground",
+  );
+});
+
+test("every emitted ground is on the spacing scale, pressed values included", () => {
+  /* `groundRules` builds its give-way body as a template-literal argument, so `spacing()` runs even
+     where `mediaRule` discards it for a false condition. This fails loudly if a future edit goes
+     back to computing the pressed band instead of declaring it. */
+  assert.doesNotThrow(() => mountedSheetFrameCss(makeFit(), false, "single"));
+  assert.doesNotThrow(() => mountedSheetFrameCss(makeFit(), true, "single"));
+  assert.doesNotThrow(() => mountedSheetFrameCss(makeFit(), false, "pair"));
+  assert.doesNotThrow(() => tallFrameCss(false));
+  assert.doesNotThrow(() => tallFrameCss(true));
+});
+
+test("a tall portrait window takes its tier's two bands", () => {
+  const css = tallFrameCss(false);
+  const phone = tallWindowClasses(false)[0];
+  const band = bandFor(css, phone.media, "portrait", false);
+  assert.equal(band.block, "--spacing-space-3xl");
+  assert.equal(band.inline, "--spacing-space-md");
+});
+
+test("the padding chain's height threshold is measured from the block band, not the landscape ground", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  const prelude = `@media ${phone.media} and (orientation: portrait)`;
+  const chain = topLevelBlocks(css).find(
+    (rule) => rule.startsWith(`${prelude} {`) && rule.includes("padding:"),
+  );
+  assert.ok(chain, "no portrait padding chain for the phone class");
+
+  /* The chain asks whether the card clears a rectangle, and a portrait card is the window less its
+     BLOCK band — 96px, not the 16px landscape ground. A non-hero phone card shows no mount, so its
+     reveal is 0 and the chain climbs 16 → 24 → 32. */
+  for (const padding of [24, 32]) {
+    const [rectangle] = fitRectangles(TINY, 0, padding);
+    assert.ok(
+      chain?.includes(
+        `@media (height >= ${rectangle.minCardHeight + 2 * 96}px)`,
+      ),
+      `padding ${padding}: threshold measured from the 96px block band\n${chain}`,
+    );
+    /* The same threshold measured from the landscape ground instead: 160px lower — exactly
+       2 × (96 − 16) — which would hand the sheet a padding the card has no room for. */
+    assert.ok(
+      !chain?.includes(
+        `@media (height >= ${rectangle.minCardHeight + 2 * 16}px)`,
+      ),
+      `padding ${padding}: no threshold is still measured from the landscape ground\n${chain}`,
+    );
+  }
+});
+
+test("a compact or laptop portrait window takes a square band derived from its landscape ground", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const covered = new Set<string>();
+  for (const windowClass of windowClasses(makeFit(), "single")) {
+    const tier = windowClass.groundTier;
+    if (tier.name !== "compact" && tier.name !== "laptop") continue;
+    if (!windowClass.portraitPossible) continue;
+    covered.add(tier.name);
+
+    /* Derived, not copied: DESIGN.md gives these two bands as "Its `Ground, landscape`", following
+       that ground wherever it moves. */
+    assert.equal(tier.portrait.block, tier.ground, tier.name);
+    assert.equal(tier.portrait.inline, tier.ground, tier.name);
+    assert.equal(tier.portrait.blockPressed, tier.ground / 2, tier.name);
+    assert.equal(tier.portrait.inlinePressed, tier.ground / 2, tier.name);
+
+    const band = bandFor(css, windowClass.media, "portrait", false);
+    assert.equal(band.block, GROUND_TOKEN[tier.ground], windowClass.media);
+    assert.equal(band.inline, GROUND_TOKEN[tier.ground], windowClass.media);
+  }
+  assert.deepEqual(
+    [...covered].sort(),
+    ["compact", "laptop"],
+    "both square tiers have a portrait window to assert against",
+  );
 });
