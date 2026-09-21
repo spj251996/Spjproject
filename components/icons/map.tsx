@@ -1,7 +1,8 @@
 import { IconBase } from "./icon-base";
 
-/* Excludes the trace's path 2, a full-width strip along the bottom edge that is a scan artefact. Do
-   not re-add it on a re-trace. */
+/* Outer contours only, drawn as a stroke rather than the source's filled ring — see DESIGN.md →
+   Foundations → Iconography: the added stroke is the only way to thicken a filled outline, and
+   here it's the only way to thin the source's own heavy ring down to the set's line weight. */
 
 export function MapIcon({
   size,
@@ -13,13 +14,20 @@ export function MapIcon({
   return (
     <IconBase
       className={className}
-      nudge={0.8863}
+      nudge={0.7127}
       size={size}
-      viewBox="24.54 30.89 170.69 262.92"
+      viewBox="66.68 -9.42 378.57 531.45"
     >
-      <g transform="translate(0.000000,300.000000) scale(0.050000,-0.050000)">
-        <path d="M1800 5319 c-1028 -268 -1576 -1390 -1144 -2342 61 -137 136 -259 748 -1224 209 -328 376 -600 372 -603 -4 -4 -93 -25 -199 -48 -1162 -242 -702 -960 617 -962 1411 -2 1819 776 519 990 -97 16 -140 -68 442 853 749 1182 733 1145 734 1667 1 362 -11 428 -123 700 -301 726 -1199 1168 -1966 969z m723 -108 c704 -149 1214 -745 1251 -1462 22 -423 -43 -614 -402 -1186 -786 -1251 -1145 -1811 -1164 -1816 -16 -4 -540 813 -1213 1889 -300 480 -367 692 -350 1098 43 974 936 1677 1878 1477z m-506 -4421 c202 -316 182 -316 382 1 164 260 137 247 413 188 996 -216 570 -708 -612 -707 -1108 1 -1573 463 -690 686 364 91 335 101 507 -168z" />
-        <path d="M1545 4369 c-592 -295 -396 -1018 424 -1567 249 -166 231 -165 462 -11 639 427 899 889 721 1282 -164 362 -638 467 -891 198 l-46 -49 -84 69 c-170 139 -401 170 -586 78z m363 -93 c54 -16 117 -61 186 -132 115 -119 121 -119 224 0 278 320 761 107 762 -336 0 -286 -341 -691 -832 -989 -108 -65 -716 461 -852 736 -199 405 109 839 512 721z" />
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={368}
+        transform="translate(0.000000,512.000000) scale(0.050000,-0.050000)"
+      >
+        <path d="M4720 10218 c-1670 -189 -2994 -1523 -3179 -3202 -115 -1054 276 -2274 1225 -3816 319 -517 547 -853 1344 -1980 276 -390 571 -810 656 -932 281 -409 432 -403 729 30 95 138 359 513 585 832 1152 1622 1544 2235 1949 3045 624 1248 815 2250 608 3204 -388 1795 -2098 3025 -3917 2819z" />
+        <path d="M4760 8403 c-1406 -308 -1919 -2025 -907 -3037 879 -879 2362 -612 2898 520 622 1312 -576 2826 -1991 2517z" />
       </g>
     </IconBase>
   );

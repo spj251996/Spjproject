@@ -397,7 +397,7 @@ const ICONS = [
   {
     name: "map",
     marks: "a venue's map link",
-    nudge: "0.88",
+    nudge: "0.71",
     stroke: false,
     Icon: MapIcon,
   },
