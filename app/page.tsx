@@ -427,7 +427,7 @@ export function EventInfoSection() {
   return (
     <section className="relative" id="event-info">
       <Botanical fit={eventInfoFit} pieces={SECTION_PLACEMENT["event-info"]} />
-      <MountedPair fit={eventInfoFit} stackedPadding={inviteFit}>
+      <MountedPair fit={eventInfoFit}>
         <EventSheet event={eventById("engagement")} />
         <EventSheet event={eventById("wedding")} />
       </MountedPair>

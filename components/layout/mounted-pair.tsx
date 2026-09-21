@@ -21,7 +21,7 @@ interface MountedPairProps {
   /* Opt-in: the fit whose padding chain the stacked sheets borrow instead of their own tier
      steps. Only where the borrowed chain still reaches this section's smallest step, or the
      give-way rule is emitted and never matches (`mounted-sheet` → When space runs
-     out). Event Info borrows; Family does not. */
+     out). No section borrows. */
   stackedPadding?: MeasuredFit;
 }
 
