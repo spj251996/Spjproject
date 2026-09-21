@@ -222,9 +222,11 @@ export function Botanical({ fit, pieces }: BotanicalProps) {
     fit !== undefined ? frameScopeClass(fit) : tallScopeClass(false);
   return (
     <div className={`${scopeClass} ${styles.layer}`}>
-      {pieces.map((placement) => (
-        <Bloom key={placement.piece} {...placement} />
-      ))}
+      <div className={styles.clip}>
+        {pieces.map((placement) => (
+          <Bloom key={placement.piece} {...placement} />
+        ))}
+      </div>
     </div>
   );
 }

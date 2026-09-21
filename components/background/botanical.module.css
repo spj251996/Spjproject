@@ -17,6 +17,31 @@
   display: contents;
 }
 
+/* The clip box. `DESIGN.md` → Botanical Edge lets a piece bleed off the left or right window edge,
+   and a piece is sized from the ring band — so the portrait ground's growth multiplied every piece
+   with it and the widest ran 290px past a 360px phone, widening the document and letting a reader
+   swipe sideways into blank ivory with the card off screen. This box bounds the decorative layer to
+   the section's own width so the bleed is cut at the edge instead of extending the page.
+
+   `overflow-x` ALONE, and `clip` rather than `hidden`: clipping overflow creates no stacking
+   context, while `contain: paint` — the obvious reach when told to clip — does, and a stacking
+   context here isolates `mix-blend-mode: multiply` so every drawing composites its opaque white
+   ground as a visible rectangle, with no error and every gate green. `hidden` would also make this
+   a scroll container on both axes, which forces the other axis to `auto` and would cut a piece that
+   straddles a section boundary — which `DESIGN.md` explicitly wants. `clip` paired with an explicit
+   `visible` is the one combination CSS preserves per axis, so the block axis stays unclipped.
+
+   It carries the section's box because `.layer` is `display: contents` and has none; the blooms'
+   containing block moves from the `<section>` to here, which is the same rectangle, so every anchor
+   and nudge resolves exactly as before. */
+.clip {
+  position: absolute;
+  inset: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+  pointer-events: none;
+}
+
 .bloom {
   position: absolute;
   height: auto;
