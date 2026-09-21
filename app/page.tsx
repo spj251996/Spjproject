@@ -563,7 +563,9 @@ export function WishesSection() {
         >
           <p className="type-eyebrow">A life in love</p>
 
-          <div className="mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg flex w-full flex-col items-center text-center">
+          {/* This gap and the two below halve at phone, with `.figureCol`'s in `wishes.module.css`
+              — the fourth of the same four, where the reason is written. */}
+          <div className="mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg flex w-full flex-col items-center text-center">
             <p className="type-body text-pretty">{wishes.passage}</p>
             {/* The dash is chrome, not content — the citation itself is the reference alone, the
                 same treatment the invite's citation gets. */}
@@ -576,7 +578,7 @@ export function WishesSection() {
             <div aria-hidden className={wishesStyles.figure} />
           </div>
 
-          <p className="type-heading-script mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
+          <p className="type-heading-script mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
             {wishesNames ? (
               <>
                 <span>{wishesNames[0]}</span>
@@ -590,7 +592,7 @@ export function WishesSection() {
 
           {/* Two lines in both layouts: the lead in italic, the names who send it in regular. */}
           <p
-            className={`${wishesStyles.signoff} type-caption text-ink-muted mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-2xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl text-center`}
+            className={`${wishesStyles.signoff} type-caption text-ink-muted mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-2xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl text-center`}
           >
             <span className="type-caption-italic">{wishes.wishesLead}</span>
             <span>{wishes.wishesLine}</span>

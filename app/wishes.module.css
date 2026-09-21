@@ -4,18 +4,21 @@
 .figureCol {
   display: flex;
   justify-content: center;
-  margin-top: var(--spacing-space-lg);
+  /* Phone only: the 96px block band leaves the card 160px less height. This gap and the three in
+     `page.tsx` halve together to give 64px of it back — the drawing's smaller width gives the rest.
+     Restored at the tablet step, where the 172px band still fits. */
+  margin-top: var(--spacing-space-sm);
 }
 
 /* A fixed square, not a fraction of its column: a square sized from its column grows taller as the
    column widens, and a framed section's fit requires that its content never stand taller at a wider
    column. The stacked value is the content width of the narrowest window that reaches this tier, so
    the drawing never overflows and never changes size within it. */
-/* One size per tier, set by the owner: phone 250, tablet 220, laptop 400, desktop 550. Stacked the
+/* One size per tier, set by the owner: phone 195, tablet 220, laptop 400, desktop 550. Stacked the
    drawing is in the flow, so its size is part of the card's height budget; side by side it is out of
    flow and costs nothing. */
 .figure {
-  width: 15.625rem;
+  width: 12.1875rem;
   aspect-ratio: var(--wishes-figure-ratio);
   /* AVIF first, WebP behind it: the browser takes the first type it supports, so modern engines
      fetch less than half the bytes and older ones still get a file. Only one is ever downloaded. */
@@ -42,6 +45,10 @@
 /* The tablet step. Declared before the side-by-side block so that block wins where both
    match — these are plain media rules, ordered by source, not by specificity. */
 @media (width >= 48rem) {
+  .figureCol {
+    margin-top: var(--spacing-space-lg);
+  }
+
   .figure {
     width: 13.75rem;
   }
