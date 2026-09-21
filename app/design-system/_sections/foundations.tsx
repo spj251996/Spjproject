@@ -245,6 +245,7 @@ const SPACING_STEPS: BarItem[] = [
   { token: "space-2xl", px: 64 },
   { token: "space-3xl", px: 96 },
   { token: "space-4xl", px: 128 },
+  { token: "space-5xl", px: 172 },
 ];
 
 const SPACING_USES = [
@@ -265,10 +266,16 @@ const LAYOUT_CAPS = [
 ];
 
 const FRAME_GROUND_TIERS = [
-  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md · space-sm (32 · 24 · 16px)",
-  "Tablet · md to lg; touchscreen-first from lg · ground space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
-  "Compact laptop · lg to xl, primary pointer not coarse · ground space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
-  "Desktop · xl and up, primary pointer not coarse · ground space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
+  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground, landscape space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md · space-sm (32 · 24 · 16px)",
+  "Tablet · md to lg; touchscreen-first from lg · ground, landscape space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
+  "Compact laptop · lg to xl, primary pointer not coarse · ground, landscape space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
+  "Desktop · xl and up, primary pointer not coarse · ground, landscape space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
+];
+
+const FRAME_PORTRAIT_BAND = [
+  "Phone · block space-3xl (96px), inline space-md (24px) · given way space-xl · space-sm (48 · 16px)",
+  "Tablet · block space-5xl (172px), inline space-4xl (128px) · given way space-3xl · space-2xl (96 · 64px)",
+  "Compact laptop and desktop · square: each axis takes that tier's landscape ground, and its given-way ground with it",
 ];
 
 const IMAGERY_POINTERS = [
@@ -444,16 +451,21 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="The couple names and the date line, set with their real role classes."
+          description="The couple names in both script roles — display-name above, heading-script below — and the date line, set with their real role classes."
           id="typography-names-and-date"
           name="Names and date line"
-          note="Rotate or resize to portrait to see the names split onto three lines. The date line's raised ordinal takes no line height."
-          spec="display-name · joiner at 0.5em in portrait · date-primary · caption ordinal"
+          note="Rotate or resize to portrait to see display-name split onto three lines; the split belongs to that role alone. The date line's raised ordinal takes no line height."
+          spec="display-name · heading-script · joiner at 0.5em · date-primary · caption ordinal"
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-sheet">
             <p className="type-display-name text-ink">
               <span>Bride</span>
               <span className="type-display-name__joiner">{" & "}</span>
+              <span>Groom</span>
+            </p>
+            <p className="type-heading-script text-ink">
+              <span>Bride</span>
+              <span className="type-heading-script__joiner">{" & "}</span>
               <span>Groom</span>
             </p>
             <p className="type-date-primary text-ink">
@@ -489,6 +501,10 @@ export function FoundationsSections() {
         <RuleList
           label="Ground and padding, by tier"
           rules={FRAME_GROUND_TIERS}
+        />
+        <RuleList
+          label="The portrait band — block above and below the card, inline beside it"
+          rules={FRAME_PORTRAIT_BAND}
         />
 
         <Specimen

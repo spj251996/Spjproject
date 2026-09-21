@@ -61,7 +61,7 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/page.tsx",
     composes:
-      "eyebrow · passage in body · citation in caption · couple illustration · couple names in heading-script · sign-off lead in caption-italic · sign-off names in caption",
+      "eyebrow · passage in body · citation in caption-italic · couple illustration · couple names in heading-script · sign-off lead in caption-italic · sign-off names in caption",
     note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
   },
 ];
