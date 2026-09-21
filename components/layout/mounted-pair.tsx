@@ -18,11 +18,6 @@ interface MountedPairProps {
   children: [ReactNode, ReactNode];
   /* Measured from the taller of the two sheets. */
   fit?: MeasuredFit;
-  /* Opt-in: the fit whose padding chain the stacked sheets borrow instead of their own tier
-     steps. Only where the borrowed chain still reaches this section's smallest step, or the
-     give-way rule is emitted and never matches (`mounted-sheet` → When space runs
-     out). No section borrows. */
-  stackedPadding?: MeasuredFit;
 }
 
 const CREASE_GEOMETRY =
@@ -34,11 +29,7 @@ const MOUNT =
 const SHEET =
   "relative flex-1 bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-sheet lg:p-space-3xl";
 
-export function MountedPair({
-  children,
-  fit,
-  stackedPadding,
-}: MountedPairProps) {
+export function MountedPair({ children, fit }: MountedPairProps) {
   const [first, second] = children;
 
   if (fit !== undefined) {
@@ -46,9 +37,7 @@ export function MountedPair({
     const sheet = `${FRAME_CLASS.sheet} bg-surface-elevated shadow-sheet`;
     return (
       <>
-        <style>
-          {mountedSheetFrameCss(fit, false, "pair", stackedPadding)}
-        </style>
+        <style>{mountedSheetFrameCss(fit, false, "pair")}</style>
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div

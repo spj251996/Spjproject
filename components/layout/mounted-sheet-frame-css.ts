@@ -10,7 +10,6 @@ import {
   fitRectangles,
   formatPx,
   GROUND_HALVING,
-  heroReveal,
   type MeasuredFit,
   mountShows,
   type Orientation,
@@ -360,18 +359,12 @@ ${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: 
    One chain per orientation, each wrapped in its own `(orientation: …)` query and built from that
    orientation's own regimes, since their content differs. A class with no portrait windows gets no
    portrait chain. Where the ground halves, a second chain under the halving condition resets to the
-   smallest step and climbs again against the halved card.
-
-   A pair's stacked orientations may borrow another section's padding fit (`stackedPadding`). Only
-   the chain's regimes and reveal come from it: the ground, the halving condition, the padding steps
-   and the landscape cap skip stay the window's own, because the card the window gives the sheet is
-   unchanged. Side-by-side orientations never borrow. */
+   smallest step and climbs again against the halved card. */
 function paddingRules(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
   scope: string,
-  stackedPadding?: MeasuredFit,
 ): string {
   const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
@@ -420,17 +413,8 @@ function paddingRules(
       ? tier.ground * GROUND_HALVING
       : tier.portrait.blockPressed;
     const sideBySide = pairsSideBySide(layout, windowClass, landscape);
-    const stacked =
-      layout === "pair" && !sideBySide && stackedPadding !== undefined;
-    const regimes = stacked
-      ? regimesFor(
-          stackedPadding.regimes[windowClass.widthTier],
-          orientationName(landscape),
-        )
-      : regimesFor(windowClass.regimes, orientationName(landscape));
-    const reveal = stacked
-      ? heroReveal(windowClass)
-      : cardReveal(windowClass, hero, layout, landscape);
+    const regimes = regimesFor(windowClass.regimes, orientationName(landscape));
+    const reveal = cardReveal(windowClass, hero, layout, landscape);
     const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
     rules.push(chain(base, blockBand, landscape, regimes, sideBySide, reveal));
 
@@ -526,14 +510,12 @@ ${sheet} {
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
-   tier line, a tier line not below its narrowest window, a value off the spacing scale, a pair
-   asked to be the hero, a single card given a stacked padding fit, or a stacked padding fit that
-   is itself malformed. */
+   tier line, a tier line not below its narrowest window, a value off the spacing scale, or a pair
+   asked to be the hero. */
 export function mountedSheetFrameCss(
   fit: MeasuredFit,
   hero: boolean,
   layout: FrameLayout = "single",
-  stackedPadding?: MeasuredFit,
 ): string {
   /* Validates the fit, so it runs before anything reads the fit's section name — including the
      hero-pair guard below, which needs a valid fit to report one. */
@@ -543,16 +525,6 @@ export function mountedSheetFrameCss(
       `mounted-sheet-frame-css: section "${fit.section}" asks for a hero pair, but a pair is never the hero — the opening section is a single card.`,
     );
   }
-  if (stackedPadding !== undefined) {
-    if (layout !== "pair") {
-      throw new Error(
-        `mounted-sheet-frame-css: section "${fit.section}" was given a stacked padding fit, but a stacked padding fit is only for a pair — a single card has no stacked sheets to borrow padding for.`,
-      );
-    }
-    /* Validated the same way as the section's own fit, so a malformed stacked padding fit fails
-       with the same named error rather than a confusing one from reading its regimes later. */
-    windowClasses(stackedPadding);
-  }
   const scope = `.${frameScopeClass(fit)}`;
   return [
     frameRules(scope, layout),
@@ -561,7 +533,7 @@ export function mountedSheetFrameCss(
       layout === "pair"
         ? pairLayoutRules(windowClass, scope)
         : mountRules(windowClass, hero, scope),
-      paddingRules(windowClass, hero, layout, scope, stackedPadding),
+      paddingRules(windowClass, hero, layout, scope),
     ]),
   ].join("\n");
 }

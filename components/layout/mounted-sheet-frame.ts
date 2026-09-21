@@ -205,12 +205,6 @@ export function revealFor(windowClass: WindowClass, hero: boolean): number {
   return mountShows(windowClass, hero) ? REVEAL[windowClass.widthTier] : 0;
 }
 
-/* A stacked card borrowing the hero's padding chain (`stackedPadding`) borrows its reveal too,
-   which never drops at the phone ground tier. */
-export function heroReveal(windowClass: WindowClass): number {
-  return revealFor(windowClass, true);
-}
-
 export function pairsSideBySide(
   layout: FrameLayout,
   windowClass: WindowClass,

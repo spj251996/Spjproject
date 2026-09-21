@@ -502,35 +502,6 @@ test("a stacked pair's leaf carries no mount at any width but keeps its lift", (
   }
 });
 
-test("a borrowing pair's stacked sheets take the borrowed fit's steps", () => {
-  /* The tablet-above-line class is never side by side (only desktop width is), so its portrait
-     chain always takes the stacked branch. At the hero reveal (12 for tablet) and padding 64:
-     150 + 2 x 64 + 2 x 12 = 302. */
-  const own = makeFit();
-  const padding = makeFit({
-    tablet: { portrait: [{ minContentWidth: 150, contentHeight: 100 }] },
-  });
-  const withPadding = mountedSheetFrameCss(own, false, "pair", padding);
-  const withoutPadding = mountedSheetFrameCss(own, false, "pair");
-  assert.ok(withPadding.includes("@container (width >= 302px)"));
-  assert.ok(!withoutPadding.includes("@container (width >= 302px)"));
-});
-
-test("a single card refuses a stacked padding fit", () => {
-  assert.throws(
-    () => mountedSheetFrameCss(makeFit(), false, "single", makeFit()),
-    /stacked padding fit is only for a pair/,
-  );
-});
-
-test("a malformed stacked padding fit fails validation", () => {
-  assert.throws(
-    // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed input
-    () => mountedSheetFrameCss(makeFit(), false, "pair", null as any),
-    /must be an object carrying section and regimes/,
-  );
-});
-
 test("a malformed fit fails validation before the hero-pair guard", () => {
   assert.throws(
     // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed input
