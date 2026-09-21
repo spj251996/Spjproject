@@ -502,7 +502,7 @@ test("a stacked pair's leaf carries no mount at any width but keeps its lift", (
   }
 });
 
-test("stacked sheets take the padding fit's steps", () => {
+test("a borrowing pair's stacked sheets take the borrowed fit's steps", () => {
   /* The tablet-above-line class is never side by side (only desktop width is), so its portrait
      chain always takes the stacked branch. At the hero reveal (12 for tablet) and padding 64:
      150 + 2 x 64 + 2 x 12 = 302. */

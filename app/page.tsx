@@ -456,7 +456,7 @@ export function FamilySection() {
   return (
     <section className="relative" id="family">
       <Botanical fit={familyFit} pieces={SECTION_PLACEMENT.family} />
-      <MountedPair fit={familyFit} stackedPadding={inviteFit}>
+      <MountedPair fit={familyFit}>
         <Family
           eyebrow={FAMILY_EYEBROWS.bride}
           group={familyGroupBySide("bride")}
