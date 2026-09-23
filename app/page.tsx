@@ -593,7 +593,7 @@ export function WishesSection() {
           className={`${wishesStyles.stack} wishes-stack flex w-full flex-col items-center`}
           style={{
             /* The drawing's own proportions once its transparent border is trimmed off. */
-            ["--wishes-figure-ratio" as string]: "560 / 554",
+            ["--wishes-figure-ratio" as string]: "560 / 550",
           }}
         >
           <p className="type-eyebrow">A life in love</p>
