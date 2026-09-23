@@ -87,6 +87,13 @@ export const SECTION_PLACEMENT = {
     { piece: "sprig-cross-left", anchor: "gap-left" },
     { piece: "sprig-cross-right", anchor: "gap-right" },
   ],
+  /* The not-found screen is a standalone single-screen composition like the invite, not a closing
+     section, so it takes the invite's own placement rather than a section's gap-straddling one —
+     DESIGN.md → Not found. */
+  "not-found": [
+    { piece: "falling-spray", anchor: "top-span" },
+    { piece: "corner-spray", anchor: "low-right" },
+  ],
 } as const satisfies Readonly<Record<string, readonly BotanicalPlacement[]>>;
 
 export interface BotanicalPlacement {
