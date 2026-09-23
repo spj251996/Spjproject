@@ -371,6 +371,9 @@ test("rejects a phone number that is not E.164", () => {
   for (const bad of [
     "9354187793",
     "+0 9354187793",
+    /* No space, so this one fails on the leading zero alone — the case above it fails on the
+       space and leaves the country-code rule unproven. */
+    "+09354187793",
     "+91 93541 87793",
     "+91935418779312345",
     "+9135",

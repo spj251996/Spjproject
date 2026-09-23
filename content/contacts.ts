@@ -1,8 +1,9 @@
 import type { ContactPerson } from "./types.ts";
 import { validateContacts } from "./validate.ts";
 
-/* Carried from the legacy site and NOT yet re-confirmed by the couple — the end-of-content
-   confirmation pass owns these five fields.
+/* Each contact's name, relationship and number are carried from the legacy site and are NOT yet
+   re-confirmed by the couple; the end-of-content confirmation pass owns those three. `id` and
+   `side` are structural and are not theirs to confirm.
 
    The groom-side relationship is not the legacy site's: it read "Brother of Sebastian", and the
    couple have since placed him as a cousin, which is why he does not appear in the family roster.
