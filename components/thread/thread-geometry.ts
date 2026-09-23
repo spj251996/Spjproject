@@ -76,14 +76,33 @@ function connector(
   return `C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
 }
 
+/* The section box a thread is composed against. Only its ASPECT is read, so a nominal tier box and
+   the real window box of the same shape compose identically. */
+export type SectionBox = { width: number; height: number };
+
+/* A square section: the aspect-neutral default, under which `place` reduces to scaling both axes by
+   `scale` — the shape this module had before the box entered it. */
+const SQUARE_BOX: SectionBox = { width: 1, height: 1 };
+
 /* Placements' unit-square points, scaled and moved to where the section wants them. `anchor`
    itself is resolved by the component (it names a live DOM element); this function only knows
    `x`/`y`/`scale`, so it works identically whether the caller already resolved an anchor to a
-   fraction or used a literal one. */
-function place(point: { x: number; y: number }, placement: Placement) {
+   fraction or used a literal one.
+
+   A motif renders as a SQUARE of side `scale x min(section width, section height)`, while `x`/`y`
+   are fractions of the section — so the one side covers a different fraction of each axis, and the
+   section's aspect enters the geometry. It cannot be removed: a square that is 0.34 of a 390x844
+   phone's shorter side spans 34% of its width and 16% of its height. The caller composes once per
+   tier with that tier's box rather than pretending one path serves every aspect. */
+function place(
+  point: { x: number; y: number },
+  placement: Placement,
+  box: SectionBox,
+) {
+  const side = placement.scale * Math.min(box.width, box.height);
   return {
-    x: placement.x + (point.x - 0.5) * placement.scale,
-    y: placement.y + (point.y - 0.5) * placement.scale,
+    x: placement.x + (point.x - 0.5) * (side / box.width),
+    y: placement.y + (point.y - 0.5) * (side / box.height),
   };
 }
 
@@ -102,6 +121,7 @@ const TERMINAL_TANGENT: Tangent = { x: 0, y: 0, angle: 90 };
 export function composePath(
   section: SectionThread,
   motifs: Record<MotifId, Motif>,
+  box: SectionBox = SQUARE_BOX,
 ): string {
   let cursor = section.entryX === null ? null : { x: section.entryX, y: 0 };
   let cursorTangent: Tangent = TERMINAL_TANGENT;
@@ -113,8 +133,8 @@ export function composePath(
 
   for (const placement of section.placements) {
     const motif = motifs[placement.motif];
-    const entryPoint = place(motif.entry, placement);
-    const exitPoint = place(motif.exit, placement);
+    const entryPoint = place(motif.entry, placement, box);
+    const exitPoint = place(motif.exit, placement, box);
 
     if (cursor === null) {
       segments.push(`M ${entryPoint.x} ${entryPoint.y}`);

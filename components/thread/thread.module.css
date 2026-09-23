@@ -1,0 +1,100 @@
+/* Everything about a thread that is the same in every section. The per-section, per-tier geometry
+   and the whole scrub are generated instead — `thread-css.ts`. */
+
+/* Zero layout: the thread contributes no height and no width to the section it sits in, takes no
+   pointer events and is `aria-hidden` at the element. The invite has three pixels of headroom
+   against its tablet cap, so anything here that occupied flow would overflow a card. */
+.root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-thread);
+}
+
+/* Wishes' two woven copies are the one exception to the thread's z-index: they carry none, so
+   document order alone puts one either side of the illustration. A z-index on either would put a
+   stacking context between them and both copies would land on the same side. */
+.weave {
+  z-index: auto;
+}
+
+/* Section fractions ARE the user space, so `composePath`'s output needs no conversion. Stretching
+   is correct here: a plain curve has no shape to lose, and every motif is drawn in its own square
+   svg instead. */
+.field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ink,
+.wisp,
+.stub,
+.motifPath {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  /* A viewBox unit is ~0.78 screen px at phone and ~2.0 at desktop, so one declared width would
+     otherwise render at two. This is also what forces the reveal onto a mask: it fragments a
+     `pathLength` dash into disjoint runs, with or without a stretch. */
+  vector-effect: non-scaling-stroke;
+}
+
+.ink,
+.motifPath {
+  stroke-width: var(--stroke-thread);
+}
+
+/* A wisp is the thread's cut end, not an ornament — the same curve, thinner and fainter, just past
+   wherever the ink stops. */
+.wisp,
+.stub {
+  stroke-width: var(--stroke-thread-wisp);
+  opacity: 0.7;
+}
+
+/* Mask content: `white` here is full coverage on the alpha channel, not a colour the page shows. */
+.reveal {
+  fill: white;
+  stroke: white;
+  /* A round cap on a zero-length dash paints a dot, measured as two stray specks on a fully
+     undrawn segment. */
+  stroke-linecap: butt;
+  fill-rule: nonzero;
+}
+
+/* The generated sheet animates `transform` on these, so both the reference box and the origin are
+   pinned: an SVG element's CSS transform-origin otherwise resolves against its own fill box, and a
+   wipe rect's fill box moves as the wipe scales it. */
+.reveal,
+.wipeFrame {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+/* A motif is a SQUARE sized off the shorter of the section's two sides — sizing on width alone is
+   absurd in landscape, and sizing on height alone flips a connector's left/right direction between
+   tiers. A section spans the window's width and is at least one window tall, so `svmin` is that
+   shorter side and the size stays a static CSS expression with no container query — which would
+   need size containment, and containment isolates the page's blend. */
+.motif {
+  position: absolute;
+  left: calc(var(--thread-motif-x) * 100%);
+  top: calc(var(--thread-motif-y) * 100%);
+  width: var(--thread-motif-side);
+  height: var(--thread-motif-side);
+  translate: -50% -50%;
+}
+
+.motifField {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.motifMask {
+  fill: none;
+  stroke-width: var(--thread-mask-width);
+}
