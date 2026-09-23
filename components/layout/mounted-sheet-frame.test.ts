@@ -10,7 +10,9 @@ import {
   type Orientation,
   pairsSideBySide,
   regimesFor,
+  revealFor,
   tallWindowClasses,
+  type WidthTier,
   windowClasses,
 } from "./mounted-sheet-frame.ts";
 import {
@@ -265,10 +267,10 @@ test("a pair is never the hero", () => {
 
 test("a pair's compact tier lines are worked out at 1280px", () => {
   /* A pair's compact and touchscreen tier lines start at 80rem, at the compact ground tier's
-     smallest padding (24) and reveal (12). Content 550 side by side is
-     2 x (550 + 48) + 48 = 1244px, and 1244 + 4 x 32 (halved compact ground) = 1372 — over 1280, so
-     it still cannot be framed even at the 1280px line. A single card keeps 1024: 550 + 48 + 24 =
-     622, well inside 1024 - 128 = 896. */
+     smallest padding (24) and reveal (16). Content 550 side by side is
+     2 x (550 + 48) + 64 = 1260px, and 1260 + 4 x 32 (halved compact ground) = 1388 — over 1280, so
+     it still cannot be framed even at the 1280px line. A single card keeps 1024: 550 + 48 + 32 =
+     630, well inside 1024 - 128 = 896. */
   const tooWide = makeFit({
     desktop: { landscape: [{ minContentWidth: 550, contentHeight: 100 }] },
   });
@@ -420,16 +422,17 @@ test("side by side in every landscape compact-width or wide window", () => {
 });
 
 test("a pair's landscape padding chain uses side-by-side widths", () => {
-  /* Desktop content 200, desktop reveal 12, side by side = 2 x (200 + 2p) + 4 x 12.
-     - Compact ground (>= 80rem, above the line), steps 64/48/32/24: 576 at 32, 640 at 48, 704 at 64.
-     - Tablet ground (touchscreen, >= 80rem, above the line), steps 64/48/32: 640, 704 — the same
+  /* Desktop content 200, desktop reveal 16, side by side = 2 x (200 + 2p) + 4 x 16.
+     - Compact ground (>= 80rem, above the line), steps 64/48/32/24: 592 at 32, 656 at 48, 720 at 64.
+     - Tablet ground (touchscreen, >= 80rem, above the line), steps 64/48/32: 656, 720 — the same
        numbers, since the two ground tiers share the 48 and 64 steps at this reveal.
-     - Phone ground (64-80rem narrow band, and >= 80rem below a line), steps 32/24/16: 544 at 24,
-       576 at 32.
+     - Phone ground (64-80rem narrow band, and >= 80rem below a line), steps 32/24/16: 560 at 24,
+       592 at 32.
      Stacked portrait carries no reveal, so 200 + 2p: 328 at the compact tier's largest step (64);
-     248 and 264 in the narrow classes' portrait chains at 24 and 32 — which a single card also
-     emits (its own reveal there is added on top), so they are not asserted as pair-only. A single
-     card instead reads 200 + 2p + 24: 296 / 352. */
+     248 and 264 in the narrow classes' portrait chains at 24 and 32. None of the stacked numbers is
+     pair-only, because a single card reads 200 + 2p + 32 and its 48 step lands on 328 as well — so
+     the side-by-side widths carry the whole of this test's evidence, and the stacked ones are
+     asserted present rather than absent from the single card. */
   const fit = makeFit({
     desktop: {
       portrait: [{ minContentWidth: 200, contentHeight: 100 }],
@@ -438,14 +441,13 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
   });
   const pair = mountedSheetFrameCss(fit, false, "pair");
   const single = mountedSheetFrameCss(fit, false);
-  assert.ok(pair.includes("@container (width >= 576px)"));
-  assert.ok(pair.includes("@container (width >= 640px)"));
-  assert.ok(pair.includes("@container (width >= 704px)"));
+  assert.ok(pair.includes("@container (width >= 592px)"));
+  assert.ok(pair.includes("@container (width >= 656px)"));
+  assert.ok(pair.includes("@container (width >= 720px)"));
   assert.ok(pair.includes("@container (width >= 328px)"));
-  assert.ok(pair.includes("@container (width >= 544px)"));
-  assert.ok(!single.includes("@container (width >= 576px)"));
-  assert.ok(!single.includes("@container (width >= 544px)"));
-  assert.ok(!single.includes("@container (width >= 328px)"));
+  assert.ok(pair.includes("@container (width >= 560px)"));
+  assert.ok(!single.includes("@container (width >= 592px)"));
+  assert.ok(!single.includes("@container (width >= 560px)"));
 
   /* The narrow classes' own landscape chain is side by side at phone steps. */
   const narrowLandscape = topLevelBlocks(pair).filter(
@@ -456,8 +458,8 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
   );
   assert.ok(narrowLandscape.length >= 2, String(narrowLandscape.length));
   for (const block of narrowLandscape) {
-    assert.ok(block.includes("@container (width >= 544px)"), block);
-    assert.ok(block.includes("@container (width >= 576px)"), block);
+    assert.ok(block.includes("@container (width >= 560px)"), block);
+    assert.ok(block.includes("@container (width >= 592px)"), block);
   }
 });
 
@@ -745,7 +747,7 @@ test("a touchscreen from the compact tier up takes the tablet ground", () => {
 test("a hero tall card keeps its mount at the phone ground tier", () => {
   const phone = tallWindowClasses(true).find((c) => c.widthTier === "mobile");
   assert.equal(phone?.mountShows, true);
-  assert.equal(phone?.reveal, 12);
+  assert.equal(phone?.reveal, 16);
 });
 
 test("tall mode states no height threshold and no container query", () => {
@@ -1109,5 +1111,22 @@ test("a compact or laptop portrait window takes a square band derived from its l
     [...covered].sort(),
     ["compact", "laptop"],
     "both square tiers have a portrait window to assert against",
+  );
+});
+
+/* The mat is the one frame value the owner set by eye at each tier, and `revealFor` is the single
+   place the fit arithmetic and the generated stylesheet both read it from — so the ladder is
+   asserted through it rather than against `REVEAL`, which is private. The tablet rung is the
+   narrowest deliberately (DESIGN.md → Foundations → Layout → `mounted-sheet`). */
+test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
+  const classes = windowClasses(makeFit(), "single");
+  const matFor = (widthTier: WidthTier) => {
+    const windowClass = classes.find((c) => c.widthTier === widthTier);
+    assert.ok(windowClass, widthTier);
+    return revealFor(windowClass, true);
+  };
+  assert.deepEqual(
+    (["mobile", "tablet", "desktop", "wide"] as const).map(matFor),
+    [16, 12, 16, 24],
   );
 });

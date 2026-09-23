@@ -136,12 +136,20 @@ function breakpointPx(rem: number): number {
 /* A layout value, not a breakpoint: DESIGN.md → Foundations → Layout → `mounted-sheet`. */
 const PAIR_TIER_LINE_WIDTH_REM = 80;
 
-/* The reveal ladder: `{reveal.md}` below `{breakpoints.xl}`, `{reveal.lg}` from it. */
+/* The reveal ladder, one rung per width tier: `{reveal.base}` below `{breakpoints.md}`,
+   `{reveal.md}` from there to `{breakpoints.lg}`, `{reveal.lg}` to `{breakpoints.xl}`, `{reveal.xl}`
+   above it. The mobile rung reaches the hero alone — every other section loses its mount's fill and
+   reveal in the phone ground tier (`mountShows`).
+
+   The tablet rung is the narrowest deliberately, and it is the one value here that is not a
+   preference: the invite's landscape card in a `{breakpoints.md}`-to-`{breakpoints.lg}` window
+   stands 717px against a 720px cap, and the reveal is taken out of the card, so 14 or more leaves
+   that tier no line and `tierLine` refuses at build time. */
 const REVEAL: Readonly<Record<WidthTier, number>> = {
-  mobile: 12,
+  mobile: 16,
   tablet: 12,
-  desktop: 12,
-  wide: 16,
+  desktop: 16,
+  wide: 24,
 };
 
 /* `--container-content` / `--card-height-cap` (mobile, tablet and wide) and their `-compact`
