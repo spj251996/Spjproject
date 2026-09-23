@@ -10,6 +10,7 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import { Family } from "@/components/family/family";
+import { ButtonAction } from "@/components/ui/button-action";
 import type { FamilyGroup } from "@/content/types";
 
 interface VariantProps {
@@ -43,6 +44,16 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     composes:
       "mounted-pair · per sheet: eyebrow, heading-xl heading, date line, address, divider where the layout shows one, segment plates · per plate: mark, segment line, venue, button-action with map",
     note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI.",
+  },
+];
+
+const CONTACT_ENTRIES: InlineEntry[] = [
+  {
+    name: "Contact",
+    home: "app/page.tsx",
+    composes:
+      "mounted-sheet · eyebrow, heading-xl heading, divider · two plates: side eyebrow, name, relationship, number, two button-actions",
+    note: "Live at /. Three things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one rule serves both; the number is the site's one selectable text, which only a real selection proves; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
   },
 ];
 
@@ -108,6 +119,15 @@ export function DomainSections() {
         title="Domain · Event Info"
       >
         <InlineList entries={EVENT_INFO_ENTRIES} />
+      </GallerySection>
+
+      <GallerySection
+        id="contact"
+        intro="One framed mounted-sheet holding a heading block and two plates, bride's side first."
+        mapsTo="Domain Components → Contact"
+        title="Domain · Contact"
+      >
+        <InlineList entries={CONTACT_ENTRIES} />
       </GallerySection>
 
       <GallerySection
@@ -202,6 +222,42 @@ export function DomainSections() {
         title="Domain · Wishes"
       >
         <InlineList entries={WISHES_ENTRIES} />
+      </GallerySection>
+
+      <GallerySection
+        id="not-found"
+        intro="The screen an unmatched path reaches, on the same frame as every section."
+        mapsTo="Domain Components → Not found"
+        title="Domain · Not found"
+      >
+        <Specimen
+          description="Eyebrow, the page's h1, one line, and the way back."
+          id="domain-not-found"
+          name="not-found"
+          note="Unframed here, as every specimen box is; the framed screen is live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit."
+          source="app/not-found.tsx"
+          spec={[
+            "no botanical — the pieces are placed per section of the scroll, and this is not one",
+            "the action carries no mark, the set having none for a way home",
+          ]}
+        >
+          <div className="rounded-card bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl">
+            {/* the same four elements app/not-found.tsx composes, with an h2 in place of its h1 —
+                the gallery page already owns the one h1 on its own document */}
+            <div className="flex w-full flex-col items-center text-center">
+              <p className="type-eyebrow">Oops</p>
+              <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
+                A Wrong Turn
+              </h2>
+              <p className="type-body text-ink mt-space-sm">
+                This page isn&apos;t part of the invitation.
+              </p>
+              <div className="mt-space-lg">
+                <ButtonAction href="/">Open the invitation</ButtonAction>
+              </div>
+            </div>
+          </div>
+        </Specimen>
       </GallerySection>
     </>
   );

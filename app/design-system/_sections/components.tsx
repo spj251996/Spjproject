@@ -11,7 +11,7 @@ import {
   GallerySection,
   Specimen,
 } from "@/app/design-system/_kit";
-import { MapIcon } from "@/components/icons";
+import { CallIcon, ChatIcon, MapIcon } from "@/components/icons";
 import { Thread } from "@/components/shell/thread";
 import { ThreadOverlay } from "@/components/shell/thread-overlay";
 import { ButtonAction } from "@/components/ui/button-action";
@@ -98,7 +98,7 @@ export function ComponentsSections() {
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control, a ruled mark rather than a button: the label between two short gold rules, with no box at all. Used for the map action, and for a completed timeline-node's gallery action."
+          description="The page's one control, a ruled mark rather than a button: the label between two short gold rules, with no box at all. Used for the map action, a contact's call and WhatsApp actions, and for a completed timeline-node's gallery action."
           id="ui-button-action"
           name="button-action"
           note="The three states cannot be posed — hover it on a pointer device to see the whole mark grow and thicken without the rules shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
@@ -109,6 +109,7 @@ export function ComponentsSections() {
             "press · the whole mark dims",
             "focus · the focus ring on the target, never transitioned",
             "the target is transparent and at least the touch target each way, so the rules hug the word while the hit area stays full size",
+            "a web destination opens in its own tab; a telephone handoff and a link home stay in this one",
           ]}
         >
           <div className="flex flex-wrap gap-space-2xl">
@@ -123,6 +124,27 @@ export function ComponentsSections() {
               >
                 Map
               </ButtonAction>
+            </Variant>
+            <Variant
+              className="items-start"
+              label="A contact's actions · call and chat marks · named Call/WhatsApp, <name>"
+            >
+              <div className="flex flex-wrap items-center gap-space-2xs">
+                <ButtonAction
+                  aria-label="Call, Name"
+                  href="tel:+10000000000"
+                  mark={<CallIcon size={24} />}
+                >
+                  Call
+                </ButtonAction>
+                <ButtonAction
+                  aria-label="WhatsApp, Name"
+                  href="https://wa.me/10000000000"
+                  mark={<ChatIcon size={24} />}
+                >
+                  WhatsApp
+                </ButtonAction>
+              </div>
             </Variant>
             <Variant className="items-start" label="The gallery action">
               <GalleryButtonActionDemo />

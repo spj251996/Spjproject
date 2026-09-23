@@ -21,6 +21,8 @@ import {
 } from "@/app/design-system/_kit";
 import {
   BetrothalIcon,
+  CallIcon,
+  ChatIcon,
   LoveIcon,
   LunchIcon,
   MapIcon,
@@ -79,7 +81,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, a ruled mark's label and the six marks only.",
+    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, a ruled mark's label and the marks only.",
     tokens: [
       {
         token: "--color-accent-gold",
@@ -398,6 +400,20 @@ const ICONS = [
     stroke: "stroke-drawn, not an added stroke",
     Icon: MapIcon,
   },
+  {
+    name: "call",
+    marks: "a contact's telephone action",
+    nudge: "0.84",
+    stroke: "stroke-drawn, not an added stroke",
+    Icon: CallIcon,
+  },
+  {
+    name: "chat",
+    marks: "a contact's WhatsApp action",
+    nudge: "0.85",
+    stroke: "stroke-drawn, not an added stroke",
+    Icon: ChatIcon,
+  },
 ];
 
 const GRAIN_SURFACES = [
@@ -671,7 +687,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of six traced marks, plus the seal mark that serves as the site's icon."
+        intro="A closed set of eight marks, plus the seal mark that serves as the site's icon. Six are traced from drawings made for this invitation; call and chat are adapted stock line drawings, squared at the ends and matched on line weight."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -681,7 +697,7 @@ export function FoundationsSections() {
           id="iconography-set"
           name="The set"
           source="@/components/icons"
-          spec="filled outline, except map, whose outer contour is stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
+          spec="filled outline, except map, call and chat, which are stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
             {ICONS.map(({ name, Icon }) => (
