@@ -18,6 +18,7 @@ import {
   BetrothalIcon,
   CallIcon,
   ChatIcon,
+  LoveIcon,
   LunchIcon,
   MapIcon,
   ReceptionIcon,
@@ -511,20 +512,35 @@ function readableNumber(phone: string) {
 
 function ContactPlate({ person }: { person: ContactPerson }) {
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className="flex flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:flex-1">
       {/* The side is load-bearing, not a label: the relationship below is a bare noun, and this is
           what it resolves against. */}
       <p className="type-eyebrow">{CONTACT_SIDES[person.side]}</p>
-      <p className="type-body text-ink mt-space-2xs">{person.name}</p>
+      {/* The plate's primary line, so it takes the same serif role an event plate's segment line
+          takes — the system carries no bold cut of `type-body`, and a raw weight at this call site
+          would be a role with no token behind it. */}
+      <p className="type-heading-lg text-ink mt-space-2xs [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-xs">
+        {person.name}
+      </p>
       {/* `portrait`'s register, down to the negative margin it uses: the relationship one step
           quieter, drawn up into the name's line. A plate names a person, as a family row does. */}
       <p className="-mt-space-3xs type-caption-italic text-ink-muted">
         {person.relationship}
       </p>
-      <p className="type-body text-ink mt-space-2xs" data-contact-number>
+      <p
+        className="type-body text-ink mt-space-2xs [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-xs"
+        data-contact-number
+      >
         {readableNumber(person.phone)}
       </p>
-      <div className="mt-space-sm flex flex-wrap items-center justify-center gap-space-2xs">
+      {/* Always one column, never side by side: each action carries a mark as well as a label, so a
+          side-by-side pair is wide enough to crowd a narrow plate, and one column keeps both
+          targets the same width. */}
+      {/* Flush, with the wider gap above: each target is 44px around a 28px mark, so 8px of
+          invisible tap area sits either side of every action. At equal declared gaps the pair and
+          the number above it measure the same to the eye, which is what stopped the two reading as
+          one. Nothing here shrinks a target. */}
+      <div className="mt-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-md flex flex-col items-center gap-0 [@media(width>=64rem)_and_(orientation:landscape)]:gap-space-2xs">
         <ButtonAction
           aria-label={`Call, ${person.name}`}
           href={callHref(person.phone)}
@@ -544,6 +560,34 @@ function ContactPlate({ person }: { person: ContactPerson }) {
   );
 }
 
+/* Contact is one `mounted-sheet`, not a `mounted-pair`, so its ground follows the plain
+   phone/tablet/laptop/desktop breakpoints with no landscape-squeeze band — unlike `PLATE_MARKS`,
+   which also covers a pair pressed to phone ground in compact-laptop landscape. Tablet and compact
+   laptop share one size here, so two breakpoints (`md`, `xl`) cover all four tiers. */
+/* Shown only where the two plates stand side by side, because that is the only place the mark has
+   a between to sit in — and there it costs no height, which is what lets it exist at all: stacked,
+   this section's card has under 40px to spare. The two bands are bounded rather than open-ended:
+   Tailwind emits arbitrary variants in string order, so an open `>=64rem` rule is written after
+   the `>=100rem` one and would beat it wherever both match. */
+const CONTACT_MARK_SIZES = [
+  {
+    size: 72,
+    show: "hidden [@media(64rem<=width<100rem)_and_(orientation:landscape)]:block",
+  },
+  {
+    size: 112,
+    show: "hidden [@media(width>=100rem)_and_(orientation:landscape)]:block",
+  },
+] as const;
+
+function ContactMark() {
+  return CONTACT_MARK_SIZES.map(({ size, show }) => (
+    <span className={`${show} *:block`} key={size}>
+      <LoveIcon size={size} />
+    </span>
+  ));
+}
+
 /* The id scopes `app/contact.css`'s selection exception; `data-contact-stack` on the inner div
    scopes `measure:fit`'s selector — the outer `#contact` section already carries the sheet's own
    padding and mount, so measuring it directly would double-count that padding against the frame's
@@ -553,18 +597,40 @@ export function ContactSection() {
     <section className="relative" id="contact">
       <MountedSheet fit={contactFit}>
         <div
-          className="flex w-full flex-col items-center text-center"
+          className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1"
           data-contact-stack
         >
           <p className="type-eyebrow">For Assistance</p>
           <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
             Get in Touch
           </h2>
-          <Divider className="my-space-lg w-space-2xl" />
-          {/* The same condition `mounted-pair` goes side by side on, so the page carries one switch
-              rule rather than two. */}
-          <div className="flex w-full flex-col items-center gap-space-2xl [@media(width>=64rem)_and_(orientation:landscape)]:flex-row [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:justify-center">
+          {/* The same condition `mounted-pair` goes side by side on, and the plates row below
+              switches on. Absent when the plates stack — a horizontal rule above a vertical stack
+              of plates adds a line where the stacking has already done the separating. Written out
+              literally, not from a shared constant: Tailwind's content scanner reads class names as
+              literal source text, and a name assembled through a JS template-literal variable at
+              this spot never resolves to a generated rule. */}
+          <Divider className="my-space-lg hidden w-space-2xl [@media(width>=64rem)_and_(orientation:landscape)]:block" />
+          {/* The compact band is bounded rather than open-ended: Tailwind emits arbitrary variants
+              in string order, so `100rem` is written out before `64rem`, and an open `>=64rem` rule
+              would come later and beat the desktop one wherever both match. Every gap here would
+              silently stay 96px.
+              From `{breakpoints.xl}` in landscape, this row takes the sheet's remaining space below
+              the heading block, so the heading sits at the top rather than floating centred with
+              everything else — the same `mb-auto` treatment Event Info's `PLATE_LIST_CLASS` takes
+              at that band. */}
+          <div className="relative mt-space-lg [@media(48rem<=width<64rem)]:mt-space-md flex w-full flex-col items-center gap-space-xl [@media(48rem<=width<64rem)]:gap-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:flex-row [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:gap-0 [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto">
             <ContactPlate person={contactBySide("bride")} />
+            {/* Between the two sides, not above them: the mark is what joins them.
+                Out of flow, and that is load-bearing twice over. It is decoration sitting in the
+                gap the columns already leave, so it must not drive the card's height — and
+                `measure:fit` sweeps the measured clone's own width rather than the viewport, so a
+                media query inside the clone never re-evaluates during the sweep. In flow, the
+                harness would measure this mark into every width band including the stacked ones it
+                never renders in, and the tablet card has no height to give. */}
+            <span className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 text-accent-gold">
+              <ContactMark />
+            </span>
             <ContactPlate person={contactBySide("groom")} />
           </div>
         </div>
