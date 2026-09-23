@@ -1,0 +1,14 @@
+/* The one place on the site where text is selectable (DESIGN.md → Interaction Rules). `globals.css`
+   sets all three properties on `html`, where they inherit, so all three must be lifted here: the
+   unprefixed property, the prefixed one iOS Safari still reads, and the long-press callout —
+   without the last, a long press on iOS offers no copy even where the selection is allowed.
+
+   A plain stylesheet rather than a CSS module, for the same reason `app/event-info.css` is one,
+   scoped by the section's id. `measure:fit` selects the inner `[data-contact-stack]` instead — a
+   fit measured on the outer section would carry the frame's own padding, which the frame then adds
+   again. */
+#contact [data-contact-number] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}

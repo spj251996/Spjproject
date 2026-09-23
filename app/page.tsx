@@ -1,5 +1,7 @@
 import type { ComponentType } from "react";
 import celebrations from "@/app/celebrations.module.css";
+import "@/app/contact.css";
+import { contactFit } from "@/app/contact-fit";
 import "@/app/event-info.css";
 import { eventInfoFit } from "@/app/event-info-fit";
 import { familyFit } from "@/app/family-fit";
@@ -13,6 +15,8 @@ import {
 import { Family } from "@/components/family/family";
 import {
   BetrothalIcon,
+  CallIcon,
+  ChatIcon,
   LunchIcon,
   MapIcon,
   ReceptionIcon,
@@ -24,6 +28,8 @@ import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 import { ButtonAction } from "@/components/ui/button-action";
 import {
+  type ContactPerson,
+  contacts,
   type EventSegment,
   events,
   type FamilyGroup,
@@ -470,6 +476,102 @@ export function EventInfoSection() {
   );
 }
 
+const CONTACT_SIDES: Readonly<Record<ContactPerson["side"], string>> = {
+  bride: "Bride's Side",
+  groom: "Groom's Side",
+};
+
+function contactBySide(side: ContactPerson["side"]) {
+  const found = contacts.find((person) => person.side === side);
+  if (found === undefined) {
+    throw new Error(
+      `sections: no contact with side "${side}" in content/contacts.ts`,
+    );
+  }
+  return found;
+}
+
+/* Both targets derive from the one stored number: two authored URLs would drift. WhatsApp's own
+   link form takes the digits without the leading "+". */
+function callHref(phone: string) {
+  return `tel:${phone}`;
+}
+
+function whatsAppHref(phone: string) {
+  return `https://wa.me/${phone.replace(/^\+/, "")}`;
+}
+
+/* The number is spaced for reading, never stored that way — `content/contacts.ts` holds one
+   canonical E.164 string, and both hrefs derive from it. */
+function readableNumber(phone: string) {
+  const match = phone.match(/^(\+\d{2})(\d{5})(\d{5})$/);
+  return match === null ? phone : `${match[1]} ${match[2]} ${match[3]}`;
+}
+
+function ContactPlate({ person }: { person: ContactPerson }) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      {/* The side is load-bearing, not a label: the relationship below is a bare noun, and this is
+          what it resolves against. */}
+      <p className="type-eyebrow">{CONTACT_SIDES[person.side]}</p>
+      <p className="type-body text-ink mt-space-2xs">{person.name}</p>
+      {/* `portrait`'s register, down to the negative margin it uses: the relationship one step
+          quieter, drawn up into the name's line. A plate names a person, as a family row does. */}
+      <p className="-mt-space-3xs type-caption-italic text-ink-muted">
+        {person.relationship}
+      </p>
+      <p className="type-body text-ink mt-space-2xs" data-contact-number>
+        {readableNumber(person.phone)}
+      </p>
+      <div className="mt-space-sm flex flex-wrap items-center justify-center gap-space-2xs">
+        <ButtonAction
+          aria-label={`Call, ${person.name}`}
+          href={callHref(person.phone)}
+          mark={<CallIcon size={20} />}
+        >
+          Call
+        </ButtonAction>
+        <ButtonAction
+          aria-label={`WhatsApp, ${person.name}`}
+          href={whatsAppHref(person.phone)}
+          mark={<ChatIcon size={20} />}
+        >
+          WhatsApp
+        </ButtonAction>
+      </div>
+    </div>
+  );
+}
+
+/* The id scopes `app/contact.css`'s selection exception; `data-contact-stack` on the inner div
+   scopes `measure:fit`'s selector — the outer `#contact` section already carries the sheet's own
+   padding and mount, so measuring it directly would double-count that padding against the frame's
+   own addition of it. */
+export function ContactSection() {
+  return (
+    <section className="relative" id="contact">
+      <MountedSheet fit={contactFit}>
+        <div
+          className="flex w-full flex-col items-center text-center"
+          data-contact-stack
+        >
+          <p className="type-eyebrow">For Assistance</p>
+          <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
+            Get in Touch
+          </h2>
+          <Divider className="my-space-lg w-space-2xl" />
+          {/* The same condition `mounted-pair` goes side by side on, so the page carries one switch
+              rule rather than two. */}
+          <div className="flex w-full flex-col items-center gap-space-2xl [@media(width>=64rem)_and_(orientation:landscape)]:flex-row [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:justify-center">
+            <ContactPlate person={contactBySide("bride")} />
+            <ContactPlate person={contactBySide("groom")} />
+          </div>
+        </div>
+      </MountedSheet>
+    </section>
+  );
+}
+
 const FAMILY_EYEBROWS: Readonly<Record<FamilyGroup["side"], string>> = {
   bride: "Bride's Family",
   groom: "Groom's Family",
@@ -643,6 +745,7 @@ export default function Home() {
     <main className="flex flex-1 flex-col">
       <InviteSection />
       <EventInfoSection />
+      <ContactSection />
       <FamilySection />
       <CelebrationsSection />
       <WishesSection />
