@@ -493,18 +493,17 @@ function contactBySide(side: ContactPerson["side"]) {
   return found;
 }
 
-/* Both targets derive from the one stored number: two authored URLs would drift. WhatsApp's own
-   link form takes the digits without the leading "+". */
 function callHref(phone: string) {
   return `tel:${phone}`;
 }
 
+/* WhatsApp's own link form takes the digits without the leading "+". */
 function whatsAppHref(phone: string) {
   return `https://wa.me/${phone.replace(/^\+/, "")}`;
 }
 
-/* The number is spaced for reading, never stored that way — `content/contacts.ts` holds one
-   canonical E.164 string, and both hrefs derive from it. */
+/* The number is spaced for reading, never stored that way — see `ContactPerson.phone` for the
+   one canonical form both hrefs derive from. */
 function readableNumber(phone: string) {
   const match = phone.match(/^(\+\d{2})(\d{5})(\d{5})$/);
   return match === null ? phone : `${match[1]} ${match[2]} ${match[3]}`;
@@ -537,9 +536,8 @@ function ContactPlate({ person }: { person: ContactPerson }) {
           side-by-side pair is wide enough to crowd a narrow plate, and one column keeps both
           targets the same width. */}
       {/* Flush, with the wider gap above: each target is 44px around a 28px mark, so 8px of
-          invisible tap area sits either side of every action. At equal declared gaps the pair and
-          the number above it measure the same to the eye, which is what stopped the two reading as
-          one. Nothing here shrinks a target. */}
+          invisible tap area sits either side of every action, and at equal declared gaps the pair
+          and the number above it measure the same to the eye. */}
       <div className="mt-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-md flex flex-col items-center gap-0 [@media(width>=64rem)_and_(orientation:landscape)]:gap-space-2xs">
         <ButtonAction
           aria-label={`Call, ${person.name}`}
@@ -560,10 +558,6 @@ function ContactPlate({ person }: { person: ContactPerson }) {
   );
 }
 
-/* Contact is one `mounted-sheet`, not a `mounted-pair`, so its ground follows the plain
-   phone/tablet/laptop/desktop breakpoints with no landscape-squeeze band — unlike `PLATE_MARKS`,
-   which also covers a pair pressed to phone ground in compact-laptop landscape. Tablet and compact
-   laptop share one size here, so two breakpoints (`md`, `xl`) cover all four tiers. */
 /* Shown only where the two plates stand side by side, because that is the only place the mark has
    a between to sit in — and there it costs no height, which is what lets it exist at all: stacked,
    this section's card has under 40px to spare. The two bands are bounded rather than open-ended:
@@ -611,10 +605,8 @@ export function ContactSection() {
               literal source text, and a name assembled through a JS template-literal variable at
               this spot never resolves to a generated rule. */}
           <Divider className="my-space-lg hidden w-space-2xl [@media(width>=64rem)_and_(orientation:landscape)]:block" />
-          {/* The compact band is bounded rather than open-ended: Tailwind emits arbitrary variants
-              in string order, so `100rem` is written out before `64rem`, and an open `>=64rem` rule
-              would come later and beat the desktop one wherever both match. Every gap here would
-              silently stay 96px.
+          {/* The `48rem<=width<64rem` band is bounded rather than open-ended so the tablet-width
+              margin step does not also apply in a large portrait window below the landscape switch.
               From `{breakpoints.xl}` in landscape, this row takes the sheet's remaining space below
               the heading block, so the heading sits at the top rather than floating centred with
               everything else — the same `mb-auto` treatment Event Info's `PLATE_LIST_CLASS` takes

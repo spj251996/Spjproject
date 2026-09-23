@@ -10,7 +10,6 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import { Family } from "@/components/family/family";
-import { ButtonAction } from "@/components/ui/button-action";
 import type { FamilyGroup } from "@/content/types";
 
 interface VariantProps {
@@ -74,6 +73,16 @@ const WISHES_ENTRIES: InlineEntry[] = [
     composes:
       "eyebrow · passage in body · citation in caption-italic · couple illustration · couple names in heading-script · sign-off lead in caption-italic · sign-off names in caption",
     note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
+  },
+];
+
+const NOT_FOUND_ENTRIES: InlineEntry[] = [
+  {
+    name: "Not found",
+    home: "app/not-found.tsx",
+    composes:
+      "mounted-sheet, the invite's own botanical placement · eyebrow · the page's h1 in heading-xl · button-action with no mark",
+    note: "Live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit.",
   },
 ];
 
@@ -230,35 +239,7 @@ export function DomainSections() {
         mapsTo="Domain Components → Not found"
         title="Domain · Not found"
       >
-        <Specimen
-          description="Eyebrow, the sentence heading, and the way back — no body line."
-          id="domain-not-found"
-          name="not-found"
-          note="Unframed here, as every specimen box is; the framed screen is live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit."
-          source="app/not-found.tsx"
-          spec={[
-            "carries botanical at the invite's own placement, on the live screen — SECTION_PLACEMENT is its one source and is not copied here",
-            "the action carries no mark, the set having none for a way home",
-          ]}
-        >
-          <div className="rounded-card bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl">
-            {/* The same three elements app/not-found.tsx composes, hand-copied with an h2 in place
-                of its h1 — the gallery page already owns the one h1 on its own document. Botanical
-                is deliberately not reproduced here; a second copy of SECTION_PLACEMENT's pieces has
-                drifted before (Background → Botanical Edge). Keep this copy in sync with
-                app/not-found.tsx's copy exactly — that duplication is a known weakness of this
-                specimen, not a design choice. */}
-            <div className="flex w-full flex-col items-center text-center">
-              <p className="type-eyebrow">A Small Detour</p>
-              <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
-                This page isn&apos;t part of the invitation.
-              </h2>
-              <div className="mt-space-lg">
-                <ButtonAction href="/">Back to the Invitation</ButtonAction>
-              </div>
-            </div>
-          </div>
-        </Specimen>
+        <InlineList entries={NOT_FOUND_ENTRIES} />
       </GallerySection>
     </>
   );

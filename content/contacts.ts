@@ -3,10 +3,8 @@ import { validateContacts } from "./validate.ts";
 
 /* Each contact's name, relationship and number are carried from the legacy site and are NOT yet
    re-confirmed by the couple; the end-of-content confirmation pass owns those three. `id` and
-   `side` are structural and are not theirs to confirm.
-
-   The groom-side relationship is not the legacy site's: it read "Brother of Sebastian", and the
-   couple have since placed him as a cousin, which is why he does not appear in the family roster.
+   `side` are structural and are not theirs to confirm. A contact need not be in the family roster —
+   the bride's side is, the groom's side is not.
 
    Display names follow PROJECT.md → Naming and Ordering — full names for parents and for the two
    contacts, everyone else a first name. */
