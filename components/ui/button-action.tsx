@@ -62,15 +62,16 @@ export function ButtonAction({
 
   if (href !== undefined) {
     /* A web destination opens in its own tab so the invitation is never navigated away from; a
-       `tel:` handoff leaves the browser entirely, and a new tab would be left behind empty. */
-    const leavesTheBrowser = href.startsWith("tel:");
+       `tel:` handoff leaves the browser entirely, and a new tab would be left behind empty. A
+       root-relative href is this site, and replaces the page rather than opening beside it. */
+    const sameTab = href.startsWith("tel:") || href.startsWith("/");
     return (
       <a
         aria-label={accessibleName}
         className={composed}
         href={href}
-        rel={leavesTheBrowser ? undefined : "noopener noreferrer"}
-        target={leavesTheBrowser ? undefined : "_blank"}
+        rel={sameTab ? undefined : "noopener noreferrer"}
+        target={sameTab ? undefined : "_blank"}
       >
         {label}
       </a>
