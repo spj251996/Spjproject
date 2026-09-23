@@ -5,6 +5,7 @@ import { contactFit } from "@/app/contact-fit";
 import "@/app/event-info.css";
 import { eventInfoFit } from "@/app/event-info-fit";
 import { familyFit } from "@/app/family-fit";
+import "@/app/invite.css";
 import { inviteFit } from "@/app/invite-fit";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
@@ -150,7 +151,7 @@ export function InviteSection() {
   return (
     <section className="relative">
       <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
-      <MountedSheet fit={inviteFit} hero>
+      <MountedSheet className="invite-settle" fit={inviteFit} hero>
         {/* The stack fills the card so the passage can settle against its bottom edge. Growth
             shares rather than `1fr` grid rows: a share with no free space collapses to 0 in
             `measure:fit`'s detached clone, so the measured height stays the content's own, while

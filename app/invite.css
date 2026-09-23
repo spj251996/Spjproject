@@ -1,0 +1,23 @@
+/* The invite's card settles onto its mount, once, on first paint — the page's single entry gesture
+   (DESIGN.md → Foundations → Motion). The mount stays put and the stock arrives on it.
+
+   Transform only, never opacity: a card that fades in is invisible on the first frame, which delays
+   the largest paint and hides readable text. Transform is also off the layout path, so the entrance
+   contributes nothing to layout shift.
+
+   `backwards` holds the opening frame through the animation's own start, so the card cannot paint
+   at its resting position for one frame and then jump up to begin. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes invite-settle {
+    from {
+      transform: translateY(-8px);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .invite-settle {
+    animation: invite-settle var(--duration-base) var(--ease-entrance) backwards;
+  }
+}
