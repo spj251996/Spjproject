@@ -131,7 +131,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Bride & Groom",
     phone: { size: 94, lh: 141 },
     tablet: { size: 135, lh: 203 },
-    compact: { size: 125, lh: 188 },
+    laptop: { size: 125, lh: 188 },
     desktop: { size: 156, lh: 234 },
   },
   {
@@ -141,7 +141,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Betrothal",
     phone: { size: 56, lh: 56 },
     tablet: { size: 72, lh: 72 },
-    compact: { size: 64, lh: 64 },
+    laptop: { size: 64, lh: 64 },
     desktop: { size: 80, lh: 80 },
   },
   {
@@ -151,7 +151,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Section-level H1.",
     phone: { size: 26, lh: 40 },
     tablet: { size: 32, lh: 48 },
-    compact: { size: 30, lh: 44 },
+    laptop: { size: 30, lh: 44 },
     desktop: { size: 38, lh: 56 },
   },
   {
@@ -162,7 +162,7 @@ const TYPE_TOKENS: TypeToken[] = [
       "Serif sub-headings; the event sheets' address line and segment line.",
     phone: { size: 14, lh: 28 },
     tablet: { size: 15, lh: 30 },
-    compact: { size: 14, lh: 28 },
+    laptop: { size: 14, lh: 28 },
     desktop: { size: 17, lh: 32 },
   },
   {
@@ -172,7 +172,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "The major date line on the invite and the event sheets.",
     phone: { size: 14, lh: 28 },
     tablet: { size: 15, lh: 30 },
-    compact: { size: 14, lh: 28 },
+    laptop: { size: 14, lh: 28 },
     desktop: { size: 17, lh: 32 },
   },
   {
@@ -182,7 +182,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Descriptions, addresses, wishes, all long-form copy.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
-    compact: { size: 13, lh: 26 },
+    laptop: { size: 13, lh: 26 },
     desktop: { size: 16, lh: 32 },
   },
   {
@@ -193,7 +193,7 @@ const TYPE_TOKENS: TypeToken[] = [
       "The closing sign-off's lead line, and the timeline's promise line.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
-    compact: { size: 13, lh: 26 },
+    laptop: { size: 13, lh: 26 },
     desktop: { size: 16, lh: 32 },
   },
   {
@@ -204,7 +204,7 @@ const TYPE_TOKENS: TypeToken[] = [
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
     phone: { size: 12, lh: 22 },
     tablet: { size: 13, lh: 24 },
-    compact: { size: 12, lh: 22 },
+    laptop: { size: 12, lh: 22 },
     desktop: { size: 14, lh: 24 },
   },
   {
@@ -215,7 +215,7 @@ const TYPE_TOKENS: TypeToken[] = [
       "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
     phone: { size: 12, lh: 22 },
     tablet: { size: 13, lh: 24 },
-    compact: { size: 12, lh: 22 },
+    laptop: { size: 12, lh: 22 },
     desktop: { size: 14, lh: 24 },
   },
   {
@@ -225,7 +225,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Small labels above headings and sheet fields.",
     phone: { size: 10, lh: 20 },
     tablet: { size: 11, lh: 20 },
-    compact: { size: 10, lh: 20 },
+    laptop: { size: 10, lh: 20 },
     desktop: { size: 12, lh: 22 },
   },
   {
@@ -235,7 +235,7 @@ const TYPE_TOKENS: TypeToken[] = [
     sample: "Buttons and calls to action.",
     phone: { size: 11, lh: 20 },
     tablet: { size: 12, lh: 20 },
-    compact: { size: 11, lh: 20 },
+    laptop: { size: 11, lh: 20 },
     desktop: { size: 13, lh: 24 },
   },
 ];
@@ -275,14 +275,14 @@ const LAYOUT_CAPS = [
 const FRAME_GROUND_TIERS = [
   "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground, landscape space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md · space-sm (32 · 24 · 16px)",
   "Tablet · md to lg; touchscreen-first from lg · ground, landscape space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
-  "Compact laptop · lg to xl, primary pointer not coarse · ground, landscape space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
+  "Laptop · lg to xl, primary pointer not coarse · ground, landscape space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
   "Desktop · xl and up, primary pointer not coarse · ground, landscape space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
 ];
 
 const FRAME_PORTRAIT_BAND = [
   "Phone · block space-3xl (96px), inline space-md (24px) · given way space-xl · space-sm (48 · 16px)",
   "Tablet · block space-5xl (172px), inline space-4xl (128px) · given way space-3xl · space-2xl (96 · 64px)",
-  "Compact laptop and desktop · square: each axis takes that tier's landscape ground, and its given-way ground with it",
+  "Laptop and desktop · square: each axis takes that tier's landscape ground, and its given-way ground with it",
 ];
 
 const IMAGERY_POINTERS = [
@@ -434,13 +434,13 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families, nine roles, each stepping at phone, tablet, compact and desktop."
+        intro="Three families, nine roles, each stepping at phone, tablet, laptop and desktop."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
       >
         <Specimen
-          description="Each role with its size / line height in px at phone, tablet, compact and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
+          description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
           id="typography-scale"
           name="The scale"
           note="Samples render at the window's current tier. The two script rows: display-name is the invite's couple names; heading-script is Wishes' couple names, the script face's only other section-level use."
@@ -490,7 +490,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="layout"
-        intro="Parallel splits on desktop, vertical flow on mobile. Every section is built on the mounted card and every section is framed; one taller than any window takes the card's tall mode rather than fitting one screen."
+        intro="Parallel splits on desktop, vertical flow on phone. Every section is built on the mounted card and every section is framed; one taller than any window takes the card's tall mode rather than fitting one screen."
         mapsTo="Foundations → Layout"
         source="--container-* / --card-height-cap"
         title="Foundations · Layout"

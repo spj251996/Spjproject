@@ -70,9 +70,9 @@ const GROUND_BLOCK = "--ground-block";
 const GROUND_INLINE = "--ground-inline";
 
 /* The card's minimum height from the window: every viewport-height term is `svh`, so nothing in the
-   frame moves as a phone's toolbar hides. A landscape card's is also capped — at the compact
-   laptop tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
-   everywhere else (mobile, tablet, wide). */
+   frame moves as a phone's toolbar hides. A landscape card's is also capped — at the laptop
+   tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
+   everywhere else (phone, tablet, desktop). */
 const CARD_HEIGHT = `calc(100svh - 2 * var(${GROUND_BLOCK}))`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-compact), ${CARD_HEIGHT})`;

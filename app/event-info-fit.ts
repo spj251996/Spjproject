@@ -7,7 +7,7 @@ import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
 export const eventInfoFit: MeasuredFit = {
   section: "event-info",
   regimes: {
-    mobile: {
+    phone: {
       portrait: [
         { minContentWidth: 120, contentHeight: 796.0625 },
         { minContentWidth: 123.359375, contentHeight: 794.03125 },
@@ -63,7 +63,7 @@ export const eventInfoFit: MeasuredFit = {
         { minContentWidth: 263.907227, contentHeight: 654.375 },
       ],
     },
-    desktop: {
+    laptop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 872.375 },
         { minContentWidth: 131.625, contentHeight: 846.375 },
@@ -94,7 +94,7 @@ export const eventInfoFit: MeasuredFit = {
         { minContentWidth: 317.046875, contentHeight: 424 },
       ],
     },
-    wide: {
+    desktop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 1017.265625 },
         { minContentWidth: 129.84375, contentHeight: 985.265625 },

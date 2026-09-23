@@ -7,7 +7,7 @@ import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
 export const wishesFit: MeasuredFit = {
   section: "wishes",
   regimes: {
-    mobile: {
+    phone: {
       portrait: [
         { minContentWidth: 120, contentHeight: 843.515625 },
         { minContentWidth: 124.890625, contentHeight: 817.515625 },
@@ -85,7 +85,7 @@ export const wishesFit: MeasuredFit = {
         { minContentWidth: 1189.109375, contentHeight: 552.0625 },
       ],
     },
-    desktop: {
+    laptop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 948.0625 },
         { minContentWidth: 124.890625, contentHeight: 922.0625 },
@@ -116,7 +116,7 @@ export const wishesFit: MeasuredFit = {
         { minContentWidth: 1015.796875, contentHeight: 358 },
       ],
     },
-    wide: {
+    desktop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 1212.0625 },
         { minContentWidth: 120.984375, contentHeight: 1180.0625 },

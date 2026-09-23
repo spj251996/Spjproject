@@ -7,7 +7,7 @@ import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
 export const familyFit: MeasuredFit = {
   section: "family",
   regimes: {
-    mobile: {
+    phone: {
       portrait: [
         { minContentWidth: 120, contentHeight: 736 },
         { minContentWidth: 128.15625, contentHeight: 716 },
@@ -35,7 +35,7 @@ export const familyFit: MeasuredFit = {
         { minContentWidth: 464, contentHeight: 616 },
       ],
     },
-    desktop: {
+    laptop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 700 },
         { minContentWidth: 128.15625, contentHeight: 680 },
@@ -49,7 +49,7 @@ export const familyFit: MeasuredFit = {
         { minContentWidth: 312, contentHeight: 468 },
       ],
     },
-    wide: {
+    desktop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 852 },
         { minContentWidth: 153.78125, contentHeight: 830 },

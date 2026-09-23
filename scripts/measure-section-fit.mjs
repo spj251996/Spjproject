@@ -49,10 +49,10 @@ const MAX_BOUNDARIES_PER_PIXEL = 12;
    own on-screen layout (and so `document.fonts.ready`, loaded before the clone is taken) to
    resolve as a guest would see it. */
 const TIERS = [
-  { key: "mobile", width: 400 },
+  { key: "phone", width: 400 },
   { key: "tablet", width: 900 },
-  { key: "desktop", width: 1280 },
-  { key: "wide", width: 1700 },
+  { key: "laptop", width: 1280 },
+  { key: "desktop", width: 1700 },
 ];
 
 /* Heights that set the orientation without pretending to be a real device; the sweep only needs
@@ -335,17 +335,17 @@ import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
 export const ${exportName}: MeasuredFit = {
   section: ${JSON.stringify(section)},
   regimes: {
-    mobile: {
-${formatOrientation(fit.mobile)}
+    phone: {
+${formatOrientation(fit.phone)}
     },
     tablet: {
 ${formatOrientation(fit.tablet)}
     },
+    laptop: {
+${formatOrientation(fit.laptop)}
+    },
     desktop: {
 ${formatOrientation(fit.desktop)}
-    },
-    wide: {
-${formatOrientation(fit.wide)}
     },
   },
 };
@@ -361,8 +361,8 @@ try {
   for (const tier of TIERS) {
     fit[tier.key] = {};
     for (const orientation of ORIENTATIONS) {
-      /* Falsified on mobile only: enough to prove the bisection catches a real content change. */
-      const mutateContent = falsify && tier.key === "mobile";
+      /* Falsified on phone only: enough to prove the bisection catches a real content change. */
+      const mutateContent = falsify && tier.key === "phone";
       fit[tier.key][orientation.key] = await measureTierOrientation(
         tier,
         orientation,

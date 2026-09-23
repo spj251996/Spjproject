@@ -69,7 +69,7 @@ const ZONE_BARS: RulerStop[] = [
   },
   {
     px: "1024",
-    device: "Compact laptop",
+    device: "Laptop",
     token: "lg",
     used: true,
     boxW: 168,
