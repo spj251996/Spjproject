@@ -14,7 +14,7 @@
    column widens, and a framed section's fit requires that its content never stand taller at a wider
    column. The stacked value is the content width of the narrowest window that reaches this tier, so
    the drawing never overflows and never changes size within it. */
-/* One size per tier, set by the owner: phone 195, tablet 220, laptop 400, desktop 550. Stacked the
+/* One size per tier, set by the owner: phone 195, tablet 220, laptop 340, desktop 470. Stacked the
    drawing is in the flow, so its size is part of the card's height budget; side by side it is out of
    flow and costs nothing. */
 .figure {
@@ -105,7 +105,7 @@
     position: absolute;
     inset-block: 0;
     inset-inline-end: var(--wishes-right-bleed);
-    width: 25rem;
+    width: 21.25rem;
     aspect-ratio: var(--wishes-figure-ratio);
     margin-block: auto;
   }
@@ -114,6 +114,6 @@
 @media (width >= 100rem) and (orientation: landscape) {
   .figure {
     --wishes-right-bleed: calc(-1 * var(--spacing-space-lg));
-    width: 34.375rem;
+    width: 29.375rem;
   }
 }

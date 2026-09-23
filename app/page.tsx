@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import celebrations from "@/app/celebrations.module.css";
+import "@/app/event-info.css";
 import { eventInfoFit } from "@/app/event-info-fit";
 import { familyFit } from "@/app/family-fit";
 import { inviteFit } from "@/app/invite-fit";
@@ -89,9 +90,34 @@ function PrimaryDate({
 function InvitePassage() {
   return (
     <>
+      {/* The rule sits 60 : 40 between the place line above it and the passage below it, centre to
+          centre, whatever slack the card has: the space above grows 3 where the space below grows
+          2, over floors of 27.5px and 16.5px that already hold the ratio on a card with no slack at
+          all. The floors are the split's own rather than scale steps (Cross-Cutting Rules), and
+          they are derived from the rule's MEASURED height: `ornamental-divider` is 0.6875rem, 11px
+          at every tier, so 27.5 + 5.5 of 55 is exactly 60 %.
+
+          Growth shares, never `1fr` rows — the reason is on the stack in `InviteSection`.
+
+          The floors drop to 8.3 and 3.7 between `{breakpoints.md}` and `{breakpoints.lg}`, taking
+          the floor block from 55px to 23px. That band is the one tier where the card has no height
+          to spare: its landscape card already stands 717px against a 720px cap, so a 55px floor
+          block leaves the frame no tier line and the build refuses. 12px of floor is what the
+          layout this replaces already left there — it zeroed its own gap in the same band — so the
+          band's card measures within 0.015625px of what it always did. 8.3 + 5.5 of 23 is 60 %
+          exactly, the same derivation as 27.5 + 5.5 of 55. */}
+      <div
+        aria-hidden
+        className="shrink-0 grow-3 basis-[27.5px] md:basis-[8.3px] lg:basis-[27.5px]"
+      />
+
       <OrnamentalDivider />
 
-      <div className="mt-space-xs flex flex-col items-center">
+      <div className="flex grow-2 flex-col items-center">
+        <div
+          aria-hidden
+          className="shrink-0 grow basis-[16.5px] md:basis-[3.7px] lg:basis-[16.5px]"
+        />
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
             hold it, and the card's own content width is the only limit that should apply. */}
         <p className="type-caption text-ink-muted text-balance">
@@ -119,15 +145,22 @@ export function InviteSection() {
     <section className="relative">
       <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
       <MountedSheet fit={inviteFit} hero>
-        {/* The stack fills the card so the passage can settle against its bottom edge. Auto margins
-            rather than `1fr` grid rows: an auto margin collapses to 0 in `measure:fit`'s detached
-            clone, so the measured height stays the content's own, while `1fr` rows held the card
-            near its tallest at every width and put the section past the tablet tier's cap. */}
+        {/* The stack fills the card so the passage can settle against its bottom edge. Growth
+            shares rather than `1fr` grid rows: a share with no free space collapses to 0 in
+            `measure:fit`'s detached clone, so the measured height stays the content's own, while
+            `1fr` rows held the card near its tallest at every width and put the section past the
+            tablet tier's cap. */}
         <div
           className="flex h-full w-full flex-1 flex-col items-center text-center"
           data-invite-stack
         >
-          <div className="my-auto flex flex-col items-center">
+          {/* The header holds the card's centre: this spacer and the passage below it grow by the
+              same share, so the card's slack splits in two around the header. Growth rather than
+              the auto margins it replaces — an auto margin absorbs every pixel of free space before
+              a growth share can claim any, and the rule's own split below needs its share of it. */}
+          <div aria-hidden className="grow" />
+
+          <div className="flex flex-col items-center">
             {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
             <p className="type-eyebrow">{invite.eyebrow}</p>
 
@@ -158,10 +191,10 @@ export function InviteSection() {
             </p>
           </div>
 
-          {/* A floor under the gap the auto margins open, so the rule never crowds the date on a
-              card with no slack to give. */}
+          {/* `grow`, not `flex-1`: a zero basis would hand the passage half the card's height
+              instead of its content plus a share of the slack. */}
           <div
-            className="mt-space-lg md:mt-0 lg:mt-space-lg flex w-full flex-col items-center"
+            className="flex w-full grow flex-col items-center"
             data-invite-passage
           >
             <InvitePassage />
@@ -369,8 +402,10 @@ function mapLabel(segment: EventSegment): string {
   return `Map, ${segment.venue}`;
 }
 
+/* Centred in the space left below the heading block instead, the list closes to a few pixels of the
+   place line as soon as the venue takes a second line. */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:my-auto";
+  "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-lg text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
