@@ -47,7 +47,7 @@ const SHEET_PADDING = "p-space-lg md:p-space-2xl lg:p-space-3xl";
    because it casts the shadow either way and the cast takes the shape of the box it leaves. */
 const CARD_CORNERS = "rounded-card";
 
-const SHEET = "bg-surface-elevated shadow-sheet";
+const SHEET = "bg-surface-elevated shadow-stock";
 
 export function MountedSheet({
   children,

@@ -74,10 +74,10 @@
   --radius-sm: 8px;
   --radius-lg: 16px;
 
-  /* Each token is a complete box-shadow, so a consumer applies one utility rather than composing
-     two that overwrite each other — which is why `--shadow-sheet` carries the stock's edge and its
-     highlight as well as its own two drops. The three stay separately named so either edge
-     treatment can be tuned without touching the drops.
+  /* Four recipes, one per separation, and each stays separately named so any one tunes without
+     touching the others. `--shadow-stock` is the composition a stock actually applies — the two
+     insets then the two drops — so a consumer sets one utility rather than two that would
+     overwrite each other.
      Every tint is mixed from its colour token rather than restated, so one edit moves all of them.
      `color-mix()` sets the support floor at Safari 16.2 → DESIGN.md → Technical Conventions. */
   --shadow-mount:
@@ -90,16 +90,17 @@
     color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
   /* Zero blur, so the negative spread cancels the extra offset and this paints the top row itself,
      1px tall — measured identical to `inset 0 1px 0 0`, and to any larger offset with a matching
-     spread. It shares that row with the hairline, which is listed first in `--shadow-sheet` and so
+     spread. It shares that row with the hairline, which is listed first in `--shadow-stock` and so
      composites over it: the highlight reads as the hairline's row lightened, not as a line of its
      own. */
   --shadow-sheet-highlight: inset 0 2px 0 -1px
     color-mix(in srgb, var(--color-paper-light) 85%, transparent);
   --shadow-sheet:
-    var(--shadow-sheet-edge), var(--shadow-sheet-highlight),
     0 1px 2px color-mix(in srgb, var(--color-shadow-warm) 14%, transparent),
     0 4px 10px -3px
     color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
+  --shadow-stock:
+    var(--shadow-sheet-edge), var(--shadow-sheet-highlight), var(--shadow-sheet);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);

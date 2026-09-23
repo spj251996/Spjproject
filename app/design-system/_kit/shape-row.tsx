@@ -24,7 +24,7 @@ export function ShapeRow({ items }: ShapeRowProps) {
         >
           <span
             aria-hidden="true"
-            className="size-space-2xl bg-surface-elevated shadow-sheet"
+            className="size-space-2xl bg-surface-elevated shadow-stock"
             style={{ borderRadius: radius }}
           />
           <span className="type-body whitespace-nowrap text-ink">

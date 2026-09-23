@@ -366,8 +366,8 @@ const DEPTH_LEVELS: DepthLevel[] = [
   },
   {
     name: "The contact shadow · stock on the mount",
-    spec: "surface-elevated · shadow-sheet",
-    className: "bg-surface-elevated shadow-sheet rounded-card",
+    spec: "surface-elevated · shadow-stock",
+    className: "bg-surface-elevated shadow-stock rounded-card",
     usage:
       "The stock composes three recipes into one value — its edge hairline and its lit top edge, both inset, then two drops cast by the card itself — setting how close the stock sits to its mount.",
   },
@@ -473,7 +473,7 @@ export function FoundationsSections() {
           note="Rotate or resize to portrait to see display-name split onto three lines; the split belongs to that role alone. The date line's raised ordinal takes no line height."
           spec="display-name · heading-script · joiner at 0.5em · date-primary · caption ordinal"
         >
-          <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-sheet">
+          <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
             <p className="type-display-name text-ink">
               <span>Bride</span>
               <span className="type-display-name__joiner">{" & "}</span>
@@ -531,7 +531,7 @@ export function FoundationsSections() {
           source="@/components/layout/mounted-sheet"
           spec={[
             "mount · surface-mount · shadow-mount · carries no text, ever",
-            "stock · surface-elevated · shadow-sheet",
+            "stock · surface-elevated · shadow-stock",
             "corners · radius-card on both layers",
             "reveal · 16px below md · 12px md to lg · 16px lg to xl · 24px from xl — the tablet rung is the narrowest deliberately, the invite's landscape card at that width having no height left to give",
           ]}

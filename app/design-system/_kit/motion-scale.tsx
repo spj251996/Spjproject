@@ -83,7 +83,7 @@ function EasingPlot({ token, curve }: EasingToken) {
   return (
     <div className="flex flex-col gap-space-3xs">
       <div
-        className="bg-surface-elevated shadow-sheet"
+        className="bg-surface-elevated shadow-stock"
         style={{ width: CANVAS, height: CANVAS }}
       >
         <svg

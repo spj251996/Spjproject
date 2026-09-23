@@ -20,7 +20,7 @@ interface DeviceRulerProps {
   stops: RulerStop[];
 }
 
-const USED_LEVEL = "bg-surface-elevated shadow-sheet";
+const USED_LEVEL = "bg-surface-elevated shadow-stock";
 
 const UNUSED_LEVEL =
   "bg-surface-base border-(length:--stroke-divider) border-surface-mount";

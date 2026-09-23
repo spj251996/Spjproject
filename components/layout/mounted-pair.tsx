@@ -33,14 +33,14 @@ const CARD_CORNERS = "rounded-card";
    base gap is two cards' spacing rather than a rung of the ladder. */
 const MOUNT = `relative flex flex-col gap-space-md ${CARD_CORNERS} md:flex-row md:gap-space-md lg:gap-space-lg xl:gap-space-xl md:bg-surface-mount md:p-space-xs lg:p-space-sm xl:p-space-md md:shadow-mount`;
 
-const SHEET = `relative flex-1 ${CARD_CORNERS} bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-sheet lg:p-space-3xl`;
+const SHEET = `relative flex-1 ${CARD_CORNERS} bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-stock lg:p-space-3xl`;
 
 export function MountedPair({ children, fit }: MountedPairProps) {
   const [first, second] = children;
 
   if (fit !== undefined) {
     const leaf = `${FRAME_CLASS.leaf} relative ${CARD_CORNERS} bg-surface-mount shadow-mount`;
-    const sheet = `${FRAME_CLASS.sheet} ${CARD_CORNERS} bg-surface-elevated shadow-sheet`;
+    const sheet = `${FRAME_CLASS.sheet} ${CARD_CORNERS} bg-surface-elevated shadow-stock`;
     return (
       <>
         <style>{mountedSheetFrameCss(fit, false, "pair")}</style>

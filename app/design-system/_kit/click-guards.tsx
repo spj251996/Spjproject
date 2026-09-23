@@ -38,7 +38,7 @@ function SuppressionTip({ position }: { position: TipPosition | null }) {
     <div
       /* Dev chrome: the 240px cap and the 12px cursor offset are gallery layout constants, and the
          tip takes the top layer of the z-index scale so it clears every demo, the thread included. */
-      className="type-body pointer-events-none fixed z-(--z-modal) max-w-[240px] bg-surface-elevated shadow-sheet px-space-sm py-space-xs text-ink"
+      className="type-body pointer-events-none fixed z-(--z-modal) max-w-[240px] bg-surface-elevated shadow-stock px-space-sm py-space-xs text-ink"
       role="status"
       style={{ left: position.x + 12, top: position.y + 12 }}
     >

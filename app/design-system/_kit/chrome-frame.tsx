@@ -26,7 +26,7 @@ export function ChromeFrame({
   return (
     <div
       aria-hidden={ariaHidden}
-      className={`relative overflow-hidden bg-surface-elevated shadow-sheet ${className ?? ""}`}
+      className={`relative overflow-hidden bg-surface-elevated shadow-stock ${className ?? ""}`}
       style={{
         transform: "translateZ(0)",
         height,

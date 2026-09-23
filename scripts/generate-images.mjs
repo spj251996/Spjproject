@@ -18,7 +18,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /* The couple drawing is trimmed of its own transparent border before resizing: the border is
    lopsided (81px left against 12 right on the source), which pushes the couple off-centre in their
-   box. The two widths cover the largest rendered size (550px) at 1x and 2x.
+   box. The two widths cover the largest rendered size (470px) at 1x and 2x.
 
    One entry per image family. `pass-through` is a real recipe, not a stub: the ten portraits are
    already web-sized files with no larger original, so re-encoding today's placeholders would change
