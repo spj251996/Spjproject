@@ -1,5 +1,6 @@
 import { parseIsoDate } from "./format.ts";
 import type {
+  ContactPerson,
   EventSegment,
   FamilyGroup,
   FamilyMember,
@@ -63,6 +64,21 @@ function assetPath(value: string | null, path: string): void {
     throw new ContentValidationError(
       path,
       `must be root-relative, starting with "/" ("${value}")`,
+    );
+  }
+}
+
+/* E.164: a leading "+", a country code that cannot start at zero, then up to fifteen digits in
+   total. Stricter than the `tel:` scheme, which permits spaces and punctuation — one canonical
+   stored form is what lets both the telephone and the WhatsApp target derive from this field. */
+const E164 = /^\+[1-9]\d{7,14}$/;
+
+function phoneNumber(value: string, path: string): void {
+  required(value, path);
+  if (!E164.test(value)) {
+    throw new ContentValidationError(
+      path,
+      `must be an E.164 number — a leading "+", then 8 to 15 digits, no spaces or punctuation ("${value}")`,
     );
   }
 }
@@ -179,6 +195,29 @@ export function validateFamilyGroups(groups: FamilyGroup[]): FamilyGroup[] {
     });
   });
   return groups;
+}
+
+export function validateContacts(contacts: ContactPerson[]): ContactPerson[] {
+  const sides = contacts.map((c) => c.side);
+  if (
+    sides.length !== 2 ||
+    !sides.includes("bride") ||
+    !sides.includes("groom")
+  ) {
+    throw new ContentValidationError(
+      "contacts",
+      `must hold exactly one "bride" contact and one "groom" contact (got: ${sides.join(", ") || "none"})`,
+    );
+  }
+  const seen = new Set<string>();
+  contacts.forEach((person, index) => {
+    const at = `contacts[${index}]`;
+    claimId(person.id, `${at}.id`, seen);
+    required(person.name, `${at}.name`);
+    required(person.relationship, `${at}.relationship`);
+    phoneNumber(person.phone, `${at}.phone`);
+  });
+  return contacts;
 }
 
 export function validateInvite(invite: InviteContent): InviteContent {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type {
+  ContactPerson,
   EventSegment,
   FamilyGroup,
   InviteContent,
@@ -9,6 +10,7 @@ import type {
   WishesContent,
 } from "./types.ts";
 import {
+  validateContacts,
   validateEvents,
   validateFamilyGroups,
   validateInvite,
@@ -307,5 +309,88 @@ test("validateWishes rejects a missing sign-off lead", () => {
         wishesLine: "Marietta Joseph, Harry William & Amal Roy",
       }),
     /wishes\.wishesLead/,
+  );
+});
+
+const contact = (over: Partial<ContactPerson> = {}): ContactPerson => ({
+  id: "bride-contact",
+  side: "bride",
+  name: "Amal",
+  relationship: "Brother",
+  phone: "+919354187793",
+  ...over,
+});
+
+const contactPair = (): ContactPerson[] => [
+  contact(),
+  contact({
+    id: "groom-contact",
+    side: "groom",
+    name: "Christopher",
+    relationship: "Cousin",
+    phone: "+919048054495",
+  }),
+];
+
+test("accepts a well-formed contact pair", () => {
+  assert.deepEqual(validateContacts(contactPair()), contactPair());
+});
+
+test("rejects a contact list without one of each side", () => {
+  assert.throws(
+    () => validateContacts([contact()]),
+    /contacts must hold exactly one "bride"/,
+  );
+  assert.throws(
+    () => validateContacts([contact(), contact({ id: "second" })]),
+    /contacts must hold exactly one "bride"/,
+  );
+});
+
+test("rejects a duplicate contact id, naming the path", () => {
+  const pair = contactPair();
+  pair[1].id = pair[0].id;
+  assert.throws(
+    () => validateContacts(pair),
+    /contacts\[1\]\.id duplicates an earlier id/,
+  );
+});
+
+test("rejects an empty contact name or relationship, naming the path", () => {
+  assert.throws(
+    () => validateContacts([contact({ name: "" }), contactPair()[1]]),
+    /contacts\[0\]\.name/,
+  );
+  assert.throws(
+    () => validateContacts([contact({ relationship: "" }), contactPair()[1]]),
+    /contacts\[0\]\.relationship/,
+  );
+});
+
+test("rejects a phone number that is not E.164", () => {
+  for (const bad of [
+    "9354187793",
+    "+0 9354187793",
+    "+91 93541 87793",
+    "+91935418779312345",
+    "+9135",
+  ]) {
+    assert.throws(
+      () => validateContacts([contact({ phone: bad }), contactPair()[1]]),
+      /contacts\[0\]\.phone must be an E\.164 number/,
+      `expected "${bad}" to be rejected`,
+    );
+  }
+});
+
+test("accepts an E.164 number at both length bounds", () => {
+  assert.doesNotThrow(() =>
+    validateContacts([contact({ phone: "+12345678" }), contactPair()[1]]),
+  );
+  assert.doesNotThrow(() =>
+    validateContacts([
+      contact({ phone: "+123456789012345" }),
+      contactPair()[1],
+    ]),
   );
 });

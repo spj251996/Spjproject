@@ -27,6 +27,16 @@ export interface WeddingEvent {
   segments: EventSegment[];
 }
 
+/** Someone a guest can reach on the day. One per side; see PROJECT.md → Sections → Contact. */
+export interface ContactPerson {
+  id: string;
+  side: "bride" | "groom";
+  name: string;
+  relationship: string;
+  /** E.164. Both the telephone and WhatsApp targets derive from it; neither is authored. */
+  phone: string;
+}
+
 export interface FamilyMember {
   id: string;
   name: string;
