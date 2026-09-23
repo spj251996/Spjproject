@@ -5,18 +5,17 @@
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Libre Baskerville", Georgia, serif;
 
-  --color-surface-base: #fcfbf7;
-  --color-surface-mount: #ece6d7;
-  --color-surface-elevated: #fffefa;
+  --color-surface-base: #fff9eb;
+  --color-surface-mount: #f1e2c5;
+  --color-surface-elevated: #fffcf4;
   --color-ink: #2d1100;
   --color-ink-muted: #5a3a2a;
   --color-ink-inverse: #f4f1e8;
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
-  /* The shadow and crease tokens below repeat this tint as literal rgba: an engine without
-     `color-mix()` drops the whole declaration. */
   --color-shadow-warm: #3a301e;
+  --color-paper-light: #ffffff;
 
   /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
      type-scale.css. These are the phone values; the tablet and laptop steps override them on
@@ -71,15 +70,36 @@
   --spacing-space-4xl: 128px;
   --spacing-space-5xl: 172px;
 
+  --radius-card: 3px;
   --radius-sm: 8px;
   --radius-lg: 16px;
 
   /* Each token is a complete box-shadow, so a consumer applies one utility rather than composing
-     two that overwrite each other. */
+     two that overwrite each other — which is why `--shadow-sheet` carries the stock's edge and its
+     highlight as well as its own two drops. The three stay separately named so either edge
+     treatment can be tuned without touching the drops.
+     Every tint is mixed from its colour token rather than restated, so one edit moves all of them.
+     `color-mix()` sets the support floor at Safari 16.2 → DESIGN.md → Technical Conventions. */
   --shadow-mount:
-    0 1px 2px rgba(58, 48, 30, 0.1), 0 18px 40px -14px rgba(58, 48, 30, 0.26);
+    0 1px 3px color-mix(in srgb, var(--color-shadow-warm) 11%, transparent),
+    0 10px 24px -9px
+    color-mix(in srgb, var(--color-shadow-warm) 19%, transparent),
+    0 34px 68px -20px
+    color-mix(in srgb, var(--color-shadow-warm) 28%, transparent);
+  --shadow-sheet-edge: inset 0 0 0 1px
+    color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
+  /* Zero blur, so the negative spread cancels the extra offset and this paints the top row itself,
+     1px tall — measured identical to `inset 0 1px 0 0`, and to any larger offset with a matching
+     spread. It shares that row with the hairline, which is listed first in `--shadow-sheet` and so
+     composites over it: the highlight reads as the hairline's row lightened, not as a line of its
+     own. */
+  --shadow-sheet-highlight: inset 0 2px 0 -1px
+    color-mix(in srgb, var(--color-paper-light) 85%, transparent);
   --shadow-sheet:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 3px rgba(58, 48, 30, 0.16);
+    var(--shadow-sheet-edge), var(--shadow-sheet-highlight),
+    0 1px 2px color-mix(in srgb, var(--color-shadow-warm) 14%, transparent),
+    0 4px 10px -3px
+    color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
@@ -119,34 +139,48 @@
   --stroke-thread-wisp: 1.2px;
   --stroke-rim-offset: 2px;
 
-  /* The SVG is drawn at three times the tile's CSS size: at 1:1 a high-density display upscales it
-     into blotches. `color-interpolation-filters='sRGB'` keeps the noise midpoint at 0.5 — filters
-     default to linear RGB. */
-  --grain-tile: 50px;
+  /* Every texture is one SVG drawn at three times its tile's CSS size and rasterised once by
+     the browser, then tiled — at 1:1 a high-density display upscales the tile into blotches, and a
+     live filter on an element would isolate every blend inside it. `color-interpolation-filters`
+     is 'sRGB' on each because an SVG filter computes in linear RGB by default, which lands a noise
+     midpoint of 0.5 at about 0.73 and lightens instead of balancing.
+     Each grain closes on warm per-channel intercepts rather than one shared dark end, so the tooth
+     reads as a warm off-white rather than grey — blue is held down hardest, red least. */
+  --grain-tile: 300px;
   --grain-ground-blend: multiply;
-  /* Candidate C's noise, tinted warm. The grain is greyscaled first, then each channel gets its
-     own dark end so the tooth lands on a warm off-white (#e3e0d8) rather than on neutral grey —
-     the three intercepts are that colour divided by the ground's own, scaled to this depth. Blue is held
-     down hardest, red least. A single shared intercept multiplies the ivory toward grey, which is
-     what read cold on an off-white ground. */
-  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.03' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.28' intercept='0.889'/><feFuncG type='linear' slope='0.28' intercept='0.88'/><feFuncB type='linear' slope='0.28' intercept='0.845'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");
-  --grain-mount-blend: overlay;
-  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.4' intercept='0.3'/><feFuncG type='linear' slope='0.4' intercept='0.3'/><feFuncB type='linear' slope='0.4' intercept='0.3'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");
-  --grain-stock-paper-blend: hard-light;
-  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.05' intercept='0.475'/><feFuncG type='linear' slope='0.05' intercept='0.475'/><feFuncB type='linear' slope='0.05' intercept='0.475'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='150' height='150' filter='url(%23n)'/></svg>");
+  /* Chart paper: a fine laid weave under a soft fibre. fractalNoise baseFrequency 0.16667,
+     2 octaves, seed 3 is the fibre; a turbulence at 0.03030 x 0.05556, 1 octave, seed 7, clipped to
+     its first two table steps, is the ruling laid over it. */
+  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.16667' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/><feComponentTransfer result='g'><feFuncR type='linear' slope='1' intercept='0.36'/><feFuncG type='linear' slope='1' intercept='0.36'/><feFuncB type='linear' slope='1' intercept='0.36'/></feComponentTransfer><feTurbulence type='turbulence' baseFrequency='0.03030 0.05556' numOctaves='1' seed='7' stitchTiles='stitch'/><feColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/><feComponentTransfer result='fb'><feFuncR type='table' tableValues='0.62 0.93 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/><feFuncG type='table' tableValues='0.62 0.93 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/><feFuncB type='table' tableValues='0.62 0.93 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/></feComponentTransfer><feComposite in='g' in2='fb' operator='arithmetic' k1='1' result='v'/><feComponentTransfer><feFuncR type='linear' slope='0.0550' intercept='0.9450'/><feFuncG type='linear' slope='0.0800' intercept='0.9200'/><feFuncB type='linear' slope='0.1350' intercept='0.8650'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  --grain-mount-blend: multiply;
+  /* Fine watercolour: the watercolour's own tooth at a fine scale. Two fractalNoise fields —
+     0.08333 at 3 octaves, seed 41, and a 0.01389 mottle at 2 octaves, seed 43, mixed 0.78 / 0.22 —
+     are read as a height field through the alpha channel and lit by a distant light at azimuth 270,
+     elevation 58, so the tooth has a direction rather than reading as flat noise. */
+  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0825' intercept='0.9300'/><feFuncG type='linear' slope='0.1073' intercept='0.9090'/><feFuncB type='linear' slope='0.1486' intercept='0.8740'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  /* The stock and the mount are the same material at two tones, so they share one texture. */
+  --grain-stock-paper-blend: multiply;
+  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0825' intercept='0.9300'/><feFuncG type='linear' slope='0.1073' intercept='0.9090'/><feFuncB type='linear' slope='0.1486' intercept='0.8740'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
 
+  /* The crease is a bend in the stock, not a rule: 22px, centred on the mount, and the one
+     treatment lit from the side rather than from overhead — a fold reads only under side light, so
+     the shadowed face sits left of the fold. It shows only where a pair sits side by side.
+     Both faces are the mount's own hue. A pure-white lit face bleaches the cream mount — measured,
+     it lifts L* by 3.2 and drops chroma from 16.2 to 13.3, so the strip reads grey beside the fold. */
   --crease-width: 22px;
+  --crease-fold: #746131;
+  --crease-light: #fff2d6;
   --crease-fill: linear-gradient(
     to right,
-    rgba(58, 48, 30, 0) 0px,
-    rgba(58, 48, 30, 0.03) 5px,
-    rgba(58, 48, 30, 0.08) 9px,
-    rgba(58, 48, 30, 0.12) 10.5px,
-    rgba(58, 48, 30, 0.05) 12px,
-    rgba(255, 255, 255, 0.06) 13px,
-    rgba(255, 255, 255, 0.18) 16px,
-    rgba(255, 255, 255, 0.09) 19px,
-    rgba(255, 255, 255, 0) 22px
+    color-mix(in srgb, var(--crease-fold) 0%, transparent) 0px,
+    color-mix(in srgb, var(--crease-fold) 3%, transparent) 4px,
+    color-mix(in srgb, var(--crease-fold) 8.5%, transparent) 8px,
+    color-mix(in srgb, var(--crease-fold) 12.5%, transparent) 10.5px,
+    color-mix(in srgb, var(--crease-fold) 5.5%, transparent) 12.5px,
+    color-mix(in srgb, var(--crease-light) 8.5%, transparent) 13.5px,
+    color-mix(in srgb, var(--crease-light) 28%, transparent) 16.5px,
+    color-mix(in srgb, var(--crease-light) 14%, transparent) 19.5px,
+    color-mix(in srgb, var(--crease-light) 0%, transparent) 22px
   );
 
   --duration-fast: 200ms;
