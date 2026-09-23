@@ -45,7 +45,7 @@ export function GalleryModalPanel({
           {title}
         </h2>
         <button
-          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-sm text-ink-inverse"
+          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse"
           onClick={onClose}
           type="button"
         >
@@ -57,7 +57,7 @@ export function GalleryModalPanel({
         {withKeys(images).map(({ src, key }, index) => (
           <figure
             aria-current={index === activeIndex ? "true" : undefined}
-            className="relative mb-space-2xs block break-inside-avoid overflow-hidden rounded-sm"
+            className="relative mb-space-2xs block break-inside-avoid overflow-hidden rounded-card"
             data-gallery-index={index}
             key={key}
           >

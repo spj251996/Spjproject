@@ -32,7 +32,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     home: "app/page.tsx",
     composes:
       "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · gold rule, sitting at 60 : 40 between the place line and the passage at every tier · passage in caption · citation in caption-italic",
-    note: "Live at /. Its scroll cue arrives with the Phase 5 thread.",
+    note: "Live at /. The thread that leaves the screen still going — the only thing cueing the scroll — arrives in Phase 5.",
   },
 ];
 

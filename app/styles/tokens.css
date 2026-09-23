@@ -70,9 +70,12 @@
   --spacing-space-4xl: 128px;
   --spacing-space-5xl: 172px;
 
+  /* Closing the namespace is what makes "one radius, on everything with corners" enforceable:
+     Tailwind ships its own xs/sm/md/lg/xl steps, so deleting the project's second and third
+     steps would leave `rounded-lg` compiling from the framework's default instead of failing.
+     `rounded-full` and `rounded-none` are static utilities and survive the closure. */
+  --radius-*: initial;
   --radius-card: 3px;
-  --radius-sm: 8px;
-  --radius-lg: 16px;
 
   /* Four recipes, one per separation, and each stays separately named so any one tunes without
      touching the others. `--shadow-stock` is the composition a stock actually applies — the two

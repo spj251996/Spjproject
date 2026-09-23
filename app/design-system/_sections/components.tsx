@@ -156,7 +156,7 @@ export function ComponentsSections() {
           name="timeline-node"
           note="Preview images are generated samples; the gallery action does nothing when pressed."
           source="@/components/ui/timeline-node"
-          spec="title in heading-lg · description in body · completed adds radius-sm previews and the gallery action"
+          spec="title in heading-lg · description in body · completed adds radius-card previews and the gallery action"
         >
           <div className="grid gap-space-lg md:grid-cols-2">
             {sampleTimelineNodes.map((node) => (
@@ -173,20 +173,11 @@ export function ComponentsSections() {
           name="gallery-modal"
           note="Shown through its presentational panel with generated sample images: swipe, focus handling and the scroll restore on close need the live modal."
           source="@/components/ui/gallery-modal"
-          spec="z-modal · scrim shadow-warm at 0.92 · masonry · radius-sm tiles"
+          spec="z-modal · scrim shadow-warm at 0.92 · masonry · radius-card tiles"
         >
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />
           </ChromeFrame>
-        </Specimen>
-
-        <Specimen
-          description="The cue at the invite's lower edge that the page continues."
-          id="ui-scroll-cue"
-          name="scroll-cue"
-          note="No component: it is thread-overlay's residual glow in thread-vermilion, so there is nothing to render on its own."
-        >
-          {null}
         </Specimen>
 
         <Specimen

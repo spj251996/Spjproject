@@ -320,25 +320,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     radius: "var(--radius-card)",
     value: "3px",
     usage:
-      "Every section surface — the mount and the paper stock, the same value on both, and a mount that hugs its stock rather than revealing a mat.",
-  },
-  {
-    token: "square",
-    radius: "0",
-    value: "0",
-    usage: "image-placeholder, which takes its container's shape.",
-  },
-  {
-    token: "--radius-sm",
-    radius: "var(--radius-sm)",
-    value: "8px",
-    usage: "gallery-modal's tiles and close control; timeline-node's previews.",
-  },
-  {
-    token: "--radius-lg",
-    radius: "var(--radius-lg)",
-    value: "16px",
-    usage: "No current use.",
+      "Every rectangular surface: mount and paper stock, gallery-modal's tiles and close control, timeline-node's previews, image-placeholder.",
   },
   {
     token: "circle",
@@ -467,10 +449,10 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="The couple names in both script roles — display-name above, heading-script below — and the date line, set with their real role classes."
+          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows display-name's portrait split and the ordinal's zero-height superscript."
           id="typography-names-and-date"
           name="Names and date line"
-          note="Rotate or resize to portrait to see display-name split onto three lines; the split belongs to that role alone. The date line's raised ordinal takes no line height."
+          note="Rotate or resize to portrait to see display-name split onto three lines — the split belongs to that role alone. The date line's raised ordinal takes no line height, visible only against a real baseline."
           spec="display-name · heading-script · joiner at 0.5em · date-primary · caption ordinal"
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
@@ -635,7 +617,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="shapes"
-        intro="A section surface is cut, not rounded: 3px on the mount and the stock alike, small enough to read as a trimmed paper corner. One larger radius is in use, and circles serve three named uses."
+        intro="One radius, on everything with corners: 3px, small enough to read as a trimmed paper corner rather than a web dialog. Circles serve three named uses and are a shape, not a step on the scale."
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"

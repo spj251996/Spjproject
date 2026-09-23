@@ -112,7 +112,7 @@ export function TimelineNode({
             <ul className="flex w-full gap-space-2xs">
               {previews.map(({ src, key }) => (
                 <li className="min-w-0 flex-1" key={key}>
-                  <div className="relative overflow-hidden rounded-sm">
+                  <div className="relative overflow-hidden rounded-card">
                     <ImagePlaceholder height={5} width={4} />
                     <Image
                       alt=""
