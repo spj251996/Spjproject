@@ -92,18 +92,24 @@ export function ComponentsSections() {
 
       <GallerySection
         id="ui"
-        intro="Portable primitives: the engraved-rule control, portraits, timeline nodes, the gallery overlay and the image stand-in."
+        intro="Portable primitives: the ruled mark, portraits, timeline nodes, the gallery overlay and the image stand-in."
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control, an engraved rule: the map action, and a completed timeline-node's gallery action."
+          description="The page's one control, a ruled mark rather than a button: the label between two short gold rules, with no box at all. Used for the map action, and for a completed timeline-node's gallery action."
           id="ui-button-action"
           name="button-action"
-          note="Hover anywhere on the target, or tab to it for the focus ring. The gallery action here does nothing when pressed."
+          note="The three states cannot be posed — hover it on a pointer device to see the whole mark grow and thicken without the rules shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
           source="@/components/ui/button-action"
-          spec="two stroke-divider rules · action in accent-gold · optional mark · 44px target"
+          spec={[
+            "rest · no fill, border, radius or depth anywhere",
+            "hover · the whole mark scales 1.06 and thickens optically — label 0.35px either side, mark 0.4px all round, rules 1.6x stroke-divider — so nothing reflows and the rules keep their length",
+            "press · the whole mark dims",
+            "focus · the focus ring on the target, never transitioned",
+            "the target is transparent and at least the touch target each way, so the rules hug the word while the hit area stays full size",
+          ]}
         >
           <div className="flex flex-wrap gap-space-2xl">
             <Variant

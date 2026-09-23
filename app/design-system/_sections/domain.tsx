@@ -31,7 +31,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · gold rule · passage in caption · citation in caption-italic",
+      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · gold rule, sitting at 60 : 40 between the place line and the passage at every tier · passage in caption · citation in caption-italic",
     note: "Live at /. Its scroll cue arrives with the Phase 5 thread.",
   },
 ];
@@ -42,7 +42,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     home: "app/page.tsx",
     composes:
       "mounted-pair · per sheet: eyebrow, heading-xl heading, date line, address, divider where the layout shows one, segment plates · per plate: mark, segment line, venue, button-action with map",
-    note: "Live at /. Marks → Foundations · Iconography; the map action → Components · UI.",
+    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI.",
   },
 ];
 
@@ -131,7 +131,7 @@ export function DomainSections() {
           <div className="flex flex-col gap-space-md">
             {FAMILY_SHEETS.map(({ eyebrow, group }) => (
               <div
-                className="bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl lg:p-space-3xl"
+                className="rounded-card bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl lg:p-space-3xl"
                 key={group.id}
               >
                 <Family eyebrow={eyebrow} group={group} />

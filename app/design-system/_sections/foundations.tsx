@@ -35,6 +35,7 @@ import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 const COLOR_GROUPS: SwatchGroup[] = [
   {
     label: "Surfaces",
+    note: "In stacking order, ground up. The stock is always the lightest layer — a constraint on every later change to the three, not only on today's values.",
     tokens: [
       {
         token: "--color-surface-base",
@@ -78,13 +79,13 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, the engraved rule's label and the six marks only.",
+    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, a ruled mark's label and the six marks only.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "Eyebrows, engraved rules, dividers, portrait rims, active states.",
+          "Eyebrows, dividers, a ruled mark's rules and label, portrait rims, active states.",
       },
     ],
   },
@@ -105,12 +106,18 @@ const COLOR_GROUPS: SwatchGroup[] = [
     ],
   },
   {
-    label: "Shadow tint",
+    label: "Shadow and light",
     tokens: [
       {
         token: "--color-shadow-warm",
         name: "shadow-warm",
-        usage: "The tint of every shadow that lands on paper.",
+        usage:
+          "The tint of every shadow that lands on paper, and of the stock's edge hairline.",
+      },
+      {
+        token: "--color-paper-light",
+        name: "paper-light",
+        usage: "The light a surface catches: the stock's lit top edge alone.",
       },
     ],
   },
@@ -309,11 +316,17 @@ const EASING_USES = [
 
 const SHAPE_ITEMS: ShapeItem[] = [
   {
+    token: "--radius-card",
+    radius: "var(--radius-card)",
+    value: "3px",
+    usage:
+      "Every section surface — the mount and the paper stock, the same value on both, and a mount that hugs its stock rather than revealing a mat.",
+  },
+  {
     token: "square",
     radius: "0",
     value: "0",
-    usage:
-      "Every section surface. image-placeholder takes its container's shape.",
+    usage: "image-placeholder, which takes its container's shape.",
   },
   {
     token: "--radius-sm",
@@ -345,16 +358,18 @@ const DEPTH_LEVELS: DepthLevel[] = [
       "Everything else sits on it. This card matches the page's own ground.",
   },
   {
-    name: "Mount on the ground",
+    name: "The outer lift · mount on the ground",
     spec: "surface-mount · shadow-mount",
-    className: "bg-surface-mount shadow-mount",
-    usage: "Two soft drops lift the whole section.",
+    className: "bg-surface-mount shadow-mount rounded-card",
+    usage:
+      "Three drops — a tight edge, a mid key, a far ambient — set how far the whole section stands off the ground.",
   },
   {
-    name: "Paper stock on the mount",
+    name: "The contact shadow · stock on the mount",
     spec: "surface-elevated · shadow-sheet",
-    className: "bg-surface-elevated shadow-sheet",
-    usage: "Inset white highlight, faint drop.",
+    className: "bg-surface-elevated shadow-sheet rounded-card",
+    usage:
+      "The stock composes three recipes into one value — its edge hairline and its lit top edge, both inset, then two drops cast by the card itself — setting how close the stock sits to its mount.",
   },
 ];
 
@@ -363,59 +378,60 @@ const ICONS = [
     name: "wedding",
     marks: "the church ceremony",
     nudge: "1",
-    stroke: true,
+    stroke: "added stroke",
     Icon: WeddingIcon,
   },
   {
     name: "betrothal",
     marks: "the betrothal",
     nudge: "0.97",
-    stroke: true,
+    stroke: "added stroke",
     Icon: BetrothalIcon,
   },
   {
     name: "reception",
     marks: "the reception",
     nudge: "1.02",
-    stroke: false,
+    stroke: "",
     Icon: ReceptionIcon,
   },
   {
     name: "lunch",
     marks: "the betrothal lunch",
     nudge: "0.92",
-    stroke: false,
+    stroke: "",
     Icon: LunchIcon,
   },
   {
     name: "love",
     marks: "the closing wishes",
     nudge: "1.03",
-    stroke: false,
+    stroke: "",
     Icon: LoveIcon,
   },
   {
     name: "map",
     marks: "a venue's map link",
     nudge: "0.83",
-    stroke: true,
+    stroke: "stroke-drawn, not an added stroke",
     Icon: MapIcon,
   },
 ];
 
 const GRAIN_SURFACES = [
   {
-    caption: "multiply 0.28 · warm off-white, per channel",
+    caption: "Chart paper — a fine laid weave under a soft fibre · multiply",
     label: "Ground",
     surface: "bg-surface-base",
   },
   {
-    caption: "overlay 0.40 · paints #ECE6D7",
+    caption:
+      "Fine watercolour — the watercolour tooth at a fine scale · multiply",
     label: "Mount",
     surface: "bg-surface-mount",
   },
   {
-    caption: "hard-light 0.05 · paints #FDFCF8",
+    caption: "Fine watercolour, the same texture as the mount · multiply",
     label: "Paper stock",
     surface: "bg-surface-elevated",
   },
@@ -492,7 +508,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="layout"
-        intro="Parallel splits on desktop, vertical flow on mobile; every section is built on the mounted card, though how the timeline is framed is still open."
+        intro="Parallel splits on desktop, vertical flow on mobile. Every section is built on the mounted card and every section is framed; one taller than any window takes the card's tall mode rather than fitting one screen."
         mapsTo="Foundations → Layout"
         source="--container-* / --card-height-cap"
         title="Foundations · Layout"
@@ -511,9 +527,14 @@ export function FoundationsSections() {
           description="The card every section is built on: a backing mount with an inner sheet laid onto it."
           id="layout-mounted-sheet"
           name="mounted-sheet"
-          note="Unframed, as every specimen box is. Resize below md: padding steps down and non-hero mounts drop fill and reveal. The framed form is live at /."
+          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung."
           source="@/components/layout/mounted-sheet"
-          spec="surface-mount · shadow-mount · paper stock · square · reveal"
+          spec={[
+            "mount · surface-mount · shadow-mount · carries no text, ever",
+            "stock · surface-elevated · shadow-sheet",
+            "corners · radius-card on both layers",
+            "reveal · 16px below md · 12px md to lg · 16px lg to xl · 24px from xl — the tablet rung is the narrowest deliberately, the invite's landscape card at that width having no height left to give",
+          ]}
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
@@ -537,9 +558,14 @@ export function FoundationsSections() {
           description="Two sheets pasted onto one mount, creased down the middle — the layout the two events take."
           id="layout-mounted-pair"
           name="mounted-pair"
-          note="Unframed: stacked below md, side by side from md. Resize to see the crease appear in the gap. The framed pairs are Event Info and Family at /."
+          note="Unframed: stacked below md, side by side from md. Resize past md to bring the crease into the gap — it is hidden under the sheets, so it shows there and nowhere else. The framed pairs are Event Info and Family at /."
           source="@/components/layout/mounted-pair"
-          spec="one shared mount · gap twice the reveal · crease 22px at the fold"
+          spec={[
+            "one shared mount, read as a single card creased down the middle and opened flat",
+            "gap · twice the reveal, so each sheet is centred on its own leaf and the fold-side reveals meet at the crease",
+            "crease · crease-width (22px) of crease-fill, centred on the mount, full height",
+            "a bend in the stock, not a rule: broad and shallow, its shadowed face left of the fold and its lit face right, each its own token and both tones of the mount's own family",
+          ]}
         >
           <MountedPair>
             <div className="flex flex-col gap-space-2xs">
@@ -609,7 +635,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="shapes"
-        intro="Square at section scale; one radius in use, and circles for two named uses."
+        intro="A section surface is cut, not rounded: 3px on the mount and the stock alike, small enough to read as a trimmed paper corner. One larger radius is in use, and circles serve three named uses."
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"
@@ -619,7 +645,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="elevation"
-        intro="Depth from paper edge, subtle shadow and tone: three shadow recipes, all tinted warm."
+        intro="Depth from paper edge, subtle shadow and tone. The outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other. Four recipes in all; every shadow is tinted warm, and the stock's inset highlight alone stays untinted."
         mapsTo="Foundations → Elevation & Depth"
         source="--shadow-*"
         title="Foundations · Elevation & Depth"
@@ -638,14 +664,19 @@ export function FoundationsSections() {
           description="Each tile is painted with the real surface class, so it carries that surface's grain."
           id="paper-grain-surfaces"
           name="The three surfaces"
-          note="View at full size — downscaling averages the grain away. The ground tile matches this page's own ground."
-          spec="tile 50px · octaves 3 · ground coarseness 0.03 · mount and stock coarseness 0.6"
+          note="One full tile each, so the tooth shows at its real scale. View at full size — downscaling averages the grain away. The ground tile matches this page's own ground."
+          spec="tile 300px · drawn at 3x its tile and rasterised once, then tiled — never a live filter on an element · the tile resolves at the screen's own density"
         >
           <div className="flex flex-wrap gap-space-md">
             {GRAIN_SURFACES.map((item) => (
-              <figure className="m-0" key={item.surface}>
-                {/* 220x132 is a gallery layout constant. */}
-                <div className={`h-[132px] w-[220px] ${item.surface}`} />
+              /* The figure is capped to the tile so a long caption cannot stretch it. */
+              <figure className="m-0 w-(--grain-tile)" key={item.surface}>
+                {/* One --grain-tile square, so the tooth shows at its own scale. The hairline is
+                    what makes the ground tile's bounds visible: it is the page's own ground, so
+                    without one the tile reads as empty space rather than as a specimen. */}
+                <div
+                  className={`size-(--grain-tile) border-(length:--stroke-divider) border-surface-mount ${item.surface}`}
+                />
                 <figcaption className="mt-space-xs flex flex-col gap-space-3xs">
                   <span className="type-caption text-ink">{item.label}</span>
                   <span className="type-caption text-ink">{item.caption}</span>
@@ -668,7 +699,7 @@ export function FoundationsSections() {
           id="iconography-set"
           name="The set"
           source="@/components/icons"
-          spec="filled outline · accent-gold from the surface · sized on the diagonal"
+          spec="filled outline, except map, whose outer contour is stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
             {ICONS.map(({ name, Icon }) => (
@@ -686,11 +717,11 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="What each mark marks, with its optical nudge and whether it takes the added stroke."
+          description="What each mark marks, with its optical nudge and how its line weight is made."
           id="iconography-table"
           name="Marks and what they mark"
           note="On the page a mark sits beside its segment line or the Map label, not beside these captions."
-          spec="name · what it marks · nudge · added stroke"
+          spec="name · what it marks · nudge · stroke"
         >
           <div className="flex flex-wrap gap-space-lg bg-surface-elevated p-space-md">
             {ICONS.map(({ name, marks, nudge, stroke, Icon }) => (
@@ -700,7 +731,7 @@ export function FoundationsSections() {
                 </span>
                 <span className="type-caption text-ink">
                   {name} · {marks} · nudge {nudge}
-                  {stroke ? " · added stroke" : ""}
+                  {stroke === "" ? "" : ` · ${stroke}`}
                 </span>
               </span>
             ))}
