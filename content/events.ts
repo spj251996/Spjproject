@@ -36,7 +36,7 @@ export const events: WeddingEvent[] = validateEvents([
         id: "wedding-church",
         label: "Wedding",
         time: "10:00 AM",
-        venue: "St. John the Baptist Holy Catholic Church",
+        venue: "St. John The Baptist Catholic Church",
         address: "Koothattukulam, Ernakulam, Keralam",
         mapUrl: "https://maps.app.goo.gl/Js7xUDTPfWqoeTc18",
       },
