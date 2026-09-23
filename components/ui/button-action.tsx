@@ -61,13 +61,16 @@ export function ButtonAction({
   );
 
   if (href !== undefined) {
+    /* A web destination opens in its own tab so the invitation is never navigated away from; a
+       `tel:` handoff leaves the browser entirely, and a new tab would be left behind empty. */
+    const leavesTheBrowser = href.startsWith("tel:");
     return (
       <a
         aria-label={accessibleName}
         className={composed}
         href={href}
-        rel="noopener noreferrer"
-        target="_blank"
+        rel={leavesTheBrowser ? undefined : "noopener noreferrer"}
+        target={leavesTheBrowser ? undefined : "_blank"}
       >
         {label}
       </a>
