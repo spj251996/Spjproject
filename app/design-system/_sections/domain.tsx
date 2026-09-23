@@ -52,8 +52,8 @@ const CONTACT_ENTRIES: InlineEntry[] = [
     name: "Contact",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet · eyebrow, heading-xl heading, divider · two plates: side eyebrow, name, relationship, number, two button-actions",
-    note: "Live at /. Three things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one rule serves both; the number is the site's one selectable text, which only a real selection proves; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
+      "mounted-sheet · mark, eyebrow, heading-xl heading, divider (side by side only) · two plates: side eyebrow, name, relationship, number, two button-actions stacked",
+    note: "Live at /. Things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one rule serves both; the rule shows only when the plates sit side by side and is absent when they stack — inverted from Event Info's, which shows when its sheets stack; the two actions always stack, never side by side, at every width; the number is the site's one selectable text, which only a real selection proves; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
   },
 ];
 
@@ -231,29 +231,30 @@ export function DomainSections() {
         title="Domain · Not found"
       >
         <Specimen
-          description="Eyebrow, the page's h1, one line, and the way back."
+          description="Eyebrow, the sentence heading, and the way back — no body line."
           id="domain-not-found"
           name="not-found"
           note="Unframed here, as every specimen box is; the framed screen is live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit."
           source="app/not-found.tsx"
           spec={[
-            "no botanical — the pieces are placed per section of the scroll, and this is not one",
+            "carries botanical at the invite's own placement, on the live screen — SECTION_PLACEMENT is its one source and is not copied here",
             "the action carries no mark, the set having none for a way home",
           ]}
         >
           <div className="rounded-card bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl">
-            {/* the same four elements app/not-found.tsx composes, with an h2 in place of its h1 —
-                the gallery page already owns the one h1 on its own document */}
+            {/* The same three elements app/not-found.tsx composes, hand-copied with an h2 in place
+                of its h1 — the gallery page already owns the one h1 on its own document. Botanical
+                is deliberately not reproduced here; a second copy of SECTION_PLACEMENT's pieces has
+                drifted before (Background → Botanical Edge). Keep this copy in sync with
+                app/not-found.tsx's copy exactly — that duplication is a known weakness of this
+                specimen, not a design choice. */}
             <div className="flex w-full flex-col items-center text-center">
-              <p className="type-eyebrow">Oops</p>
+              <p className="type-eyebrow">A Small Detour</p>
               <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
-                A Wrong Turn
-              </h2>
-              <p className="type-body text-ink mt-space-sm">
                 This page isn&apos;t part of the invitation.
-              </p>
+              </h2>
               <div className="mt-space-lg">
-                <ButtonAction href="/">Open the invitation</ButtonAction>
+                <ButtonAction href="/">Back to the Invitation</ButtonAction>
               </div>
             </div>
           </div>

@@ -127,9 +127,9 @@ export function ComponentsSections() {
             </Variant>
             <Variant
               className="items-start"
-              label="A contact's actions · call and chat marks · named Call/WhatsApp, <name>"
+              label="A contact's actions · call and chat marks · named Call/WhatsApp, <name> · always stacked, never side by side"
             >
-              <div className="flex flex-wrap items-center gap-space-2xs">
+              <div className="flex flex-col items-center gap-space-2xs">
                 <ButtonAction
                   aria-label="Call, Name"
                   href="tel:+10000000000"

@@ -388,7 +388,7 @@ const ICONS = [
   },
   {
     name: "love",
-    marks: "the closing wishes",
+    marks: "Contact",
     nudge: "1.03",
     stroke: "",
     Icon: LoveIcon,
