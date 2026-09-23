@@ -7,20 +7,20 @@ import { validateContacts } from "./validate.ts";
    The groom-side relationship is not the legacy site's: it read "Brother of Sebastian", and the
    couple have since placed him as a cousin, which is why he does not appear in the family roster.
 
-   Display names follow PROJECT.md → Naming and Ordering — full names for parents only, everyone
-   else a first name. */
+   Display names follow PROJECT.md → Naming and Ordering — full names for parents and for the two
+   contacts, everyone else a first name. */
 export const contacts: ContactPerson[] = validateContacts([
   {
     id: "bride-contact",
     side: "bride",
-    name: "Amal",
+    name: "Amal Roy",
     relationship: "Brother",
     phone: "+919354187793",
   },
   {
     id: "groom-contact",
     side: "groom",
-    name: "Christopher",
+    name: "Christopher George",
     relationship: "Cousin",
     phone: "+919048054495",
   },
