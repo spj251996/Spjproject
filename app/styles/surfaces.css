@@ -1,33 +1,45 @@
-/* Each rule sets only the image, its size and the blend; the colour still comes from the surface
-   utility, so the two compose. */
+/* Each surface utility carries its colour, its grain image, the grain's size and its blend
+   together, as one Tailwind utility (`@utility`, not a bare `.bg-surface-*` selector in
+   `@layer components`) — a bare selector only ever matches the unprefixed class. Tailwind emits a
+   responsive variant as its own class (`md:bg-surface-mount` → `.md\:bg-surface-mount`), which a
+   bare `.bg-surface-mount` rule never matches: the colour would land under the media query and the
+   grain would not. `@utility` defines the whole rule as a first-class utility, so every variant
+   Tailwind generates — responsive or otherwise — carries all four properties together. */
 
+@utility bg-surface-base {
+  background-color: var(--color-surface-base);
+  background-image: var(--grain-ground);
+  background-size: var(
+    --grain-ground-size,
+    var(--grain-tile) var(--grain-tile)
+  );
+  background-blend-mode: var(--grain-ground-blend);
+}
+
+@utility bg-surface-mount {
+  background-color: var(--color-surface-mount);
+  background-image: var(--grain-mount);
+  background-size: var(--grain-tile) var(--grain-tile);
+  background-blend-mode: var(--grain-mount-blend);
+}
+
+@utility bg-surface-elevated {
+  background-color: var(--color-surface-elevated);
+  background-image: var(--grain-stock-paper);
+  background-size: var(--grain-tile) var(--grain-tile);
+  background-blend-mode: var(--grain-stock-paper-blend);
+}
+
+/* `body` paints the ground without the utility class, so it takes the same ground grain directly,
+   sized from its own token: a noise tile needs the shared tile size, a repeating gradient carries
+   its own period and must not be rescaled. */
 @layer components {
-  .bg-surface-base,
-  .bg-surface-mount,
-  .bg-surface-elevated {
-    background-size: var(--grain-tile) var(--grain-tile);
-  }
-
-  /* `body` paints the ground without the utility, so it takes the ground grain directly. It sizes
-     itself from its own token: a noise tile needs the shared tile size, a repeating gradient
-     carries its own period and must not be rescaled. */
-  body,
-  .bg-surface-base {
+  body {
     background-image: var(--grain-ground);
     background-size: var(
       --grain-ground-size,
       var(--grain-tile) var(--grain-tile)
     );
     background-blend-mode: var(--grain-ground-blend);
-  }
-
-  .bg-surface-mount {
-    background-image: var(--grain-mount);
-    background-blend-mode: var(--grain-mount-blend);
-  }
-
-  .bg-surface-elevated {
-    background-image: var(--grain-stock-paper);
-    background-blend-mode: var(--grain-stock-paper-blend);
   }
 }
