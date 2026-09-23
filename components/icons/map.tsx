@@ -14,9 +14,9 @@ export function MapIcon({
   return (
     <IconBase
       className={className}
-      nudge={0.7127}
+      nudge={0.8348}
       size={size}
-      viewBox="66.68 -9.42 378.57 531.45"
+      viewBox="26.68 -49.42 458.57 611.45"
     >
       <g
         fill="none"
