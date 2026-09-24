@@ -1,5 +1,6 @@
 import styles from "./thread.module.css";
 import {
+  MOTIF_SIDE,
   THREAD_CLASS,
   THREAD_TIERS,
   threadCss,
@@ -147,17 +148,17 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                 aria-hidden
                 className={styles.motifField}
                 role="presentation"
-                viewBox="0 0 1 1"
+                viewBox={`0 0 ${MOTIF_SIDE} ${MOTIF_SIDE}`}
               >
                 {["ink", "wisp"].map((layer) => (
                   <mask
                     key={layer}
                     id={maskId(segment.index, layer)}
                     maskUnits="userSpaceOnUse"
-                    x="-1"
-                    y="-1"
-                    width="3"
-                    height="3"
+                    x={-MOTIF_SIDE}
+                    y={-MOTIF_SIDE}
+                    width={MOTIF_SIDE * 3}
+                    height={MOTIF_SIDE * 3}
                   >
                     <path
                       className={`${styles.reveal} ${styles.motifMask} ${

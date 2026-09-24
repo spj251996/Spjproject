@@ -72,10 +72,29 @@ export const THREAD_HOLD = 0.25;
    wisp a width and an opacity but no extent. Owner: design-write. */
 const WISP_EXTENT = 0.04;
 
-/* INFERRED, not stated: the mask stroke's width in the motif's own unit square. It must exceed the
-   visible stroke at every tier and stay under the closest approach of two of the motif's own
-   passes; the drawings that decide the second half land in Task 6. Owner: design-write. */
-const MASK_WIDTH = 0.04;
+/* Every motif's `d` is authored in a 0-100 square, not a 0-1 one (`thread-motifs.ts`, and
+   `thread-geometry.test.ts` asserts each `d` starts at `entry.x * 100`). Both the svg that renders a
+   motif and the box that converts its arc length to pixels read it from here, so the two cannot
+   disagree about the convention again. */
+export const MOTIF_SIDE = 100;
+
+/* INFERRED, not stated: the mask stroke's width in the motif's own 0-100 square. The visible stroke
+   is pinned at `--stroke-thread` by `vector-effect: non-scaling-stroke` while this one scales with
+   the motif, so the binding case is the SMALLEST motif on the narrowest supported viewport — the bow
+   at `scale: 0.12` on a 320px screen, 38.4px across, where 1.6px is 4.17 of these units.
+
+   MEASURED there against the same bow rendered with no mask at all: 4.5 leaves 96 of 1600 pixels
+   lighter than unmasked, 5 leaves 74, 6 leaves 12, and 7 and above leave 4 — the floor, which is the
+   round cap on the visible stroke that a butt-capped mask cannot reach. 6 is the knee, and 1.44x the
+   stroke rather than 1x because both edges are antialiased and the two partial alphas multiply.
+
+   Its stated upper bound — staying under the closest approach of two of the motif's own passes —
+   CANNOT be met at any width that satisfies the above: `rings` is drawn as a doubled contour 0.62
+   units apart and `portraitLoop` as offset passes 1.02 units apart, both deliberate, both an order
+   of magnitude under the lower bound. Over-width reveals a neighbouring pass early, which shows only
+   mid-scrub; under-width lightens the thread at rest. This takes the bound that has a render behind
+   it. Owner: design-write. */
+const MASK_WIDTH = 6;
 
 /* INFERRED, not stated: the arc of the Wishes loop that passes BEHIND the illustration. DESIGN.md
    requires the under-segment to cross the drawn figures rather than the pale surround, which is a
@@ -258,6 +277,22 @@ export function pathLength(d: string, box: SectionBox): number {
   return total;
 }
 
+/* The drawn extent of a path in the box it is rendered in. Test-facing, like `pathLength` above, and
+   reading the same samples so the two cannot disagree: it is what lets a test say "a motif is drawn
+   inside its own field" against the units rather than against a viewBox spelling. */
+export function pathBounds(
+  d: string,
+  box: SectionBox,
+): { minX: number; minY: number; maxX: number; maxY: number } {
+  const points = samplePath(d, box);
+  return {
+    minX: Math.min(...points.map((p) => p.x)),
+    minY: Math.min(...points.map((p) => p.y)),
+    maxX: Math.max(...points.map((p) => p.x)),
+    maxY: Math.max(...points.map((p) => p.y)),
+  };
+}
+
 /* `composePath` returns every connector in one `d`, lifting the pen across each motif's footprint.
    A subpath that is only a moveto draws nothing — it is the lift itself — and is dropped. */
 export function drawnSubpaths(d: string): string[] {
@@ -374,12 +409,16 @@ export function threadSegments(
     if (at > 0 || section.entryX !== null) segments.push(take());
     const motif = MOTIFS[placement.motif];
     const side = placement.scale * Math.min(tier.box.width, tier.box.height);
+    /* A connector's `d` is in section fractions and a motif's is in its own 0-100 square, so the
+       two need different boxes to come out in the same pixels — and they have to, because the
+       scrub divides one arc budget between them. */
+    const unit = side / MOTIF_SIDE;
     segments.push({
       kind: "motif",
       index: segments.length,
       motif,
       placement,
-      length: pathLength(motif.d, { width: side, height: side }),
+      length: pathLength(motif.d, { width: unit, height: unit }),
     });
   });
   if (section.exitX !== null) segments.push(take());

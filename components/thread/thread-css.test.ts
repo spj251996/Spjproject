@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   drawnSubpaths,
+  MOTIF_SIDE,
+  pathBounds,
   pathLength,
   THREAD_TIERS,
   threadCss,
@@ -151,9 +153,9 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
         ? []
         : [r.decls["animation-timeline"]],
     );
-    /* A segment with no measured length draws nothing and is not scrubbed — every motif measures
-       zero until Task 6 supplies its `d`, so `not-found`, whose only segment is a motif, animates
-       nothing today and will animate the moment that drawing lands. */
+    /* A segment with no measured length draws nothing and is not scrubbed. The tie is deliberate
+       rather than incidental: a section whose every segment measures zero must declare no
+       animation at all, so an undrawn thread can never sit on a live timeline. */
     const drawable = THREAD_TIERS.some((tier) =>
       threadSegments(section, tier).some((segment) => segment.length > 0),
     );
@@ -390,6 +392,51 @@ test("pathLength measures a scaled path in the box it is drawn in", () => {
     () => pathLength("M 0 0 A 1 1 0 0 1 1 1", { width: 1, height: 1 }),
     /unsupported/,
   );
+});
+
+/* A motif's `d` is authored in its own square and a connector's in section fractions, and the two
+   conventions meet in two places: the svg the motif is drawn in, and the box its arc length is
+   measured in. Both read `MOTIF_SIDE`, so both are asserted here against the drawings themselves
+   rather than against a viewBox spelling. The first shipped render had the svg declaring a 0-1 box
+   around a 0-100 drawing: the heart measured 13259x4989 CSS px inside a 133px field, and every gate
+   was green. */
+test("every motif is drawn inside its own field", () => {
+  for (const motif of Object.values(MOTIFS)) {
+    /* An unscaled box keeps the authored coordinates, which is the whole claim: the field the
+       component renders is `MOTIF_SIDE` across, and the drawing has to be in those units. */
+    const { minX, minY, maxX, maxY } = pathBounds(motif.d, {
+      width: 1,
+      height: 1,
+    });
+    assert.ok(
+      minX >= 0 && minY >= 0 && maxX <= MOTIF_SIDE && maxY <= MOTIF_SIDE,
+      `${motif.id} is drawn outside its field: [${minX}, ${minY}]..[${maxX}, ${maxY}] against 0..${MOTIF_SIDE}`,
+    );
+    /* Containment alone passes a drawing shrunk into a corner, which is the same defect seen from
+       the other side — the field has to be the drawing's own square, not merely larger than it. */
+    assert.ok(
+      maxX - minX >= MOTIF_SIDE / 2 || maxY - minY >= MOTIF_SIDE / 2,
+      `${motif.id} spans ${maxX - minX}x${maxY - minY} of a ${MOTIF_SIDE} field`,
+    );
+  }
+});
+
+/* The scrub divides ONE arc budget between the connectors and the motifs, so a motif measured in
+   the wrong units takes the whole of it and the connectors are drawn in a few frames. */
+test("a motif's measured length is commensurate with the field it is drawn in", () => {
+  for (const section of ALL_THREADS) {
+    for (const tier of THREAD_TIERS) {
+      for (const segment of threadSegments(section, tier)) {
+        if (segment.kind !== "motif") continue;
+        const side =
+          segment.placement.scale * Math.min(tier.box.width, tier.box.height);
+        assert.ok(
+          segment.length > side && segment.length < side * 10,
+          `${section.id} at ${tier.name}: ${segment.motif.id} measures ${segment.length}px in a ${side}px field`,
+        );
+      }
+    }
+  }
 });
 
 /* The scrub law: the head grows, both hold, then the TAIL eats forward. A retract that shortens the
