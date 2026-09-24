@@ -207,8 +207,17 @@ try {
           for (const portal of document.querySelectorAll("nextjs-portal")) {
             portal.style.display = "none";
           }
-          for (const chrome of document.querySelectorAll("[data-lab-chrome]")) {
-            chrome.style.display = "none";
+          /* The panel's chrome is hidden by an injected STYLESHEET, not an inline style: the
+             overlay is React-managed and re-renders when the section below is scrolled into view,
+             which replaces the nodes and takes any inline `display` with them. A rule in the
+             document outlives that. Measured: with the inline form the gate still reported 12
+             broken invite renders; the same frames collapse to one run of ink under the rule. */
+          const HIDE_ID = "thread-joins-hide-lab-chrome";
+          if (document.getElementById(HIDE_ID) === null) {
+            const style = document.createElement("style");
+            style.id = HIDE_ID;
+            style.textContent = "[data-lab-chrome]{display:none !important}";
+            document.head.append(style);
           }
         }, id);
         await section.evaluate((node, at) => {
