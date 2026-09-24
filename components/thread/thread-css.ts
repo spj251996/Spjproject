@@ -51,6 +51,11 @@ import { type Point, splinePath } from "./thread-spline.ts";
 
 export const THREAD_CLASS = {
   root: "thread",
+  /* The ink and the light are two sibling layers of the same box, and the split is load-bearing
+     rather than tidy: the bleed is a `filter` on the ink layer alone, so the head and the re-trace
+     move ABOVE that blurred buffer instead of inside it. */
+  inkLayer: "thread__ink-layer",
+  lightLayer: "thread__light-layer",
   field: "thread__field",
   connector: "thread__connector",
   inkReveal: "thread__ink-reveal",
@@ -59,6 +64,13 @@ export const THREAD_CLASS = {
   stub: "thread__stub",
   motif: "thread__motif",
   motifPath: "thread__motif-path",
+  head: "thread__head",
+  headReveal: "thread__head-reveal",
+  retrace: "thread__retrace",
+  retraceReveal: "thread__retrace-reveal",
+  /* One stroked copy of the path, at this layer's own alpha and width. The head and the re-trace
+     are the same light on two clocks, so a layer of one is a layer of the other. */
+  light: "thread__light",
   weaveUnder: "thread--weave-under",
   weaveOver: "thread--weave-over",
 } as const;
@@ -161,6 +173,63 @@ const MASK_MARGIN = 1;
    routing requirement over a drawing that does not exist yet. Task 12 tunes it against the measured
    bar (under-segment ink hidden >= 60%). Owner: design-write. */
 const WEAVE_BAND: readonly [number, number] = [0.3, 0.7];
+
+/* ---- the light ------------------------------------------------------------------------------ */
+
+/* PROVISIONAL, and DESIGN.md says so in those words: the bleed's three radii were carried across
+   from the retired glow and had never been rendered, because `{colors.thread-vermilion}` had no
+   consumer anywhere in the emitted CSS. The alphas and radii below are the doc's own, verbatim
+   (Domain Components -> Thread -> the `bleed:` line).
+
+   It is NEVER animated. A filter over ink that is itself being revealed is re-rasterised while the
+   thread draws — the spike priced that blurred layer at +50ms/5s on its own — and an ANIMATED
+   filter would re-rasterise at rest as well, which is the cost the design exists to avoid.
+
+   `color-mix` rather than the relative-colour syntax: the alpha has to come off the token, and a
+   literal hex here would be a design value the sheet computed. Owner: design-write. */
+const BLEED: readonly (readonly [number, number])[] = [
+  [68, 3.5],
+  [44, 12],
+  [30, 33],
+];
+
+/* INFERRED, not stated: how much of a section's thread the drawing head spans, tip and trail
+   together, as a fraction of the thread's own length. DESIGN.md calls it "a short bright dash at
+   the leading edge with further stroked copies of the same path behind it" and gives no figure.
+   Owner: design-write. */
+const HEAD_EXTENT = 0.06;
+
+/* INFERRED, not stated: the head's layers, brightest first, at the "falling opacity and width"
+   DESIGN.md asks for. Three is the fewest that reads as a tip with a trail behind it rather than
+   as one dash; each carries an equal share of `HEAD_EXTENT`.
+
+   The brightest layer is as WIDE as the ink and takes a round cap while its dash has length — the
+   spike measured the laid ink's own round cap showing as a dark pip ahead of a butt-capped light
+   (168 against 252 on the darkest channel, ground 255). A round cap on a ZERO-length dash paints a
+   dot, so the cap is animated with the dash rather than declared. Owner: design-write. */
+export const HEAD_LAYERS: readonly {
+  name: string;
+  alpha: number;
+  width: number;
+}[] = [
+  { name: "tip", alpha: 1, width: 1 },
+  { name: "trail", alpha: 0.5, width: 0.8 },
+  { name: "fade", alpha: 0.22, width: 0.6 },
+];
+
+const HEAD_STEP = HEAD_EXTENT / HEAD_LAYERS.length;
+
+/* INFERRED, not stated: one re-trace pass and the gap between two passes, in seconds. DESIGN.md ->
+   Foundations -> Motion makes the re-trace's cadence "a deliberate exception to the duration and
+   easing scales" and gives no figure, so there is no token to read. Owner: design-write. */
+const RETRACE_PASS = 2.4;
+const RETRACE_GAP = 1.6;
+const RETRACE_CYCLE = RETRACE_PASS + RETRACE_GAP;
+const RETRACE_ACTIVE = RETRACE_PASS / RETRACE_CYCLE;
+
+/* A pass carries the head its own extent PAST the thread's last point, exactly as the draw does, so
+   the pen runs off the end instead of parking on it. */
+const RETRACE_REACH = 1 + HEAD_EXTENT;
 
 function round(value: number): string {
   const fixed = value.toFixed(5).replace(/\.?0+$/, "");
@@ -979,8 +1048,17 @@ function keyframes(
 type Layer = {
   /* The suffix that separates this layer's animation and keyframes from the segment's others. */
   suffix: string;
+  /* `view` reads the section's own named scroll timeline; `time` runs on the clock. Only the
+     re-trace is timed, and DESIGN.md -> Foundations -> Motion sanctions exactly that one loop. */
+  clock: "view" | "time";
   /* `[tail, head]` and the wisp bands are both a list of arcs; a layer is the list it paints. */
   bands: (progress: number, span: Span) => Band01[];
+  /* Arc positions, beyond the segment's own two ends, at which this layer's bands cross a boundary
+     — the keyframe stops where linear interpolation would otherwise cut a corner. */
+  arcs: (span: Span) => number[];
+  /* The brightest layer alone animates its cap: round while it has length, butt while it has none.
+     See `HEAD_LAYERS`. */
+  cap: boolean;
   /* The weave restricts a layer to part of the motif; every other layer sees the whole of it. */
   within: readonly Band01[];
   /* A class on the thread's ROOT that this layer's rules are additionally qualified by — the weave
@@ -990,21 +1068,87 @@ type Layer = {
   target: string;
 };
 
+const NO_ARCS = () => [];
+
+/* The head's own bands, at layer `index` of the stack: a window of the thread `HEAD_STEP` long,
+   `index` steps behind the leading edge.
+
+   The leading edge is UNCAPPED — `progress / THREAD_HOLD` rather than `headAt`, which stops at 1 —
+   so once the thread is fully drawn the head slides off its end and shrinks to nothing there,
+   instead of parking on the last point for the whole hold band. */
+function headBands(index: number) {
+  return (leading: number, span: Span): Band01[] => [
+    [
+      localise(leading - (index + 1) * HEAD_STEP, span),
+      localise(leading - index * HEAD_STEP, span),
+    ],
+  ];
+}
+
+function headArcs(index: number) {
+  return (span: Span) =>
+    [span.start, span.end].flatMap((arc) => [
+      arc + index * HEAD_STEP,
+      arc + (index + 1) * HEAD_STEP,
+    ]);
+}
+
+function headLayer(name: string, index: number): Layer {
+  return {
+    suffix: `head-${name}`,
+    clock: "view",
+    bands: (progress, span) => headBands(index)(progress / THREAD_HOLD, span),
+    arcs: headArcs(index),
+    cap: index === 0,
+    within: [FULL],
+    root: "",
+    target: `.${THREAD_CLASS.headReveal}--${name}`,
+  };
+}
+
+/* The same head, on the clock instead of on the scroll. `cycle` is the fraction of one pass plus
+   one gap: the leading edge crosses the whole thread over the pass and then rests at the far end,
+   where every band is collapsed and paints nothing. */
+function retraceLayer(name: string, index: number): Layer {
+  return {
+    suffix: `retrace-${name}`,
+    clock: "time",
+    bands: (cycle, span) =>
+      headBands(index)(
+        RETRACE_REACH * Math.min(1, cycle / RETRACE_ACTIVE),
+        span,
+      ),
+    arcs: NO_ARCS,
+    cap: index === 0,
+    within: [FULL],
+    root: "",
+    target: `.${THREAD_CLASS.retraceReveal}--${name}`,
+  };
+}
+
 const BASE_LAYERS: readonly Layer[] = [
   {
     suffix: "ink",
+    clock: "view",
     bands: inkBands,
+    arcs: NO_ARCS,
+    cap: false,
     within: [FULL],
     root: "",
     target: `.${THREAD_CLASS.inkReveal}`,
   },
   {
     suffix: "wisp",
+    clock: "view",
     bands: wispBands,
+    arcs: NO_ARCS,
+    cap: false,
     within: [FULL],
     root: "",
     target: `.${THREAD_CLASS.wispReveal}`,
   },
+  ...HEAD_LAYERS.map((layer, index) => headLayer(layer.name, index)),
+  ...HEAD_LAYERS.map((layer, index) => retraceLayer(layer.name, index)),
 ];
 
 /* The loop renders twice, as complementary segments of one curve: an under-copy beneath the
@@ -1013,25 +1157,34 @@ const BASE_LAYERS: readonly Layer[] = [
 function layersFor(weave: boolean): readonly Layer[] {
   if (!weave) return BASE_LAYERS;
   const [under0, under1] = WEAVE_BAND;
-  return [
-    ...BASE_LAYERS,
+  const copies = [
     {
-      suffix: "under",
-      bands: inkBands,
-      within: [[under0, under1]],
+      which: "under",
       root: `.${THREAD_CLASS.weaveUnder}`,
-      target: `.${THREAD_CLASS.inkReveal}`,
+      within: [[under0, under1]] as readonly Band01[],
     },
     {
-      suffix: "over",
-      bands: inkBands,
+      which: "over",
+      root: `.${THREAD_CLASS.weaveOver}`,
       within: [
         [0, under0],
         [under1, 1],
-      ],
-      root: `.${THREAD_CLASS.weaveOver}`,
-      target: `.${THREAD_CLASS.inkReveal}`,
+      ] as readonly Band01[],
     },
+  ];
+  /* The light is split by the weave exactly as the ink is: a head painted on BOTH copies would
+     show in front of the illustration while the thread it leads runs behind it. The wisp is the
+     one layer left whole — it paints outside the inked arc, so the split does not reach it. */
+  return [
+    ...BASE_LAYERS,
+    ...BASE_LAYERS.filter((layer) => layer.suffix !== "wisp").flatMap((layer) =>
+      copies.map(({ which, root, within }) => ({
+        ...layer,
+        suffix: layer.suffix === "ink" ? which : `${layer.suffix}-${which}`,
+        within,
+        root,
+      })),
+    ),
   ];
 }
 
@@ -1043,6 +1196,23 @@ function isWeave(id: ThreadId, segment: ThreadSegment): boolean {
   );
 }
 
+/* The stops one CLOCK-timed pass needs: every point at which the head's bands cross one of the
+   segment's own ends, in fractions of the whole cycle, plus the moment the pass ends and the gap
+   begins. Between two of them the leading edge is linear in time, so linear interpolation is exact
+   — the same claim `stops` makes for the scrub. */
+function cycleStops(span: Span): number[] {
+  const all = [0, RETRACE_ACTIVE, 1];
+  for (const arc of [span.start, span.end]) {
+    for (let layer = 0; layer <= HEAD_LAYERS.length; layer += 1) {
+      const at = ((arc + layer * HEAD_STEP) / RETRACE_REACH) * RETRACE_ACTIVE;
+      if (at > 0 && at < RETRACE_ACTIVE) all.push(at);
+    }
+  }
+  return [...new Set(all.map((at) => Number(at.toFixed(6))))].sort(
+    (a, b) => a - b,
+  );
+}
+
 function emitSegment(
   id: ThreadId,
   band: Band,
@@ -1050,6 +1220,7 @@ function emitSegment(
   span: Span,
   layers: readonly Layer[],
   extraStops: readonly number[],
+  animated: Set<string>,
 ): { animations: string[]; keyframes: string[] } {
   const scope = `.${threadScopeClass(id)}`;
   const along = segment.kind === "connector" ? segment.along : IDENTITY;
@@ -1059,21 +1230,50 @@ function emitSegment(
   for (const layer of layers) {
     const name = `thread-${id}-${segment.index}-${layer.suffix}-${band.id}`;
     const selector = `${scope}${layer.root} .${segmentClass(segment.index)} ${layer.target}`;
-    const frames = stops(span, extraStops).map((at) => ({
-      at,
-      decl: `stroke-dasharray: ${dashArray(
-        intersect(layer.bands(at, span), layer.within),
+    const at =
+      layer.clock === "time"
+        ? cycleStops(span)
+        : stops(span, [...extraStops, ...layer.arcs(span)]);
+    const frames = at.map((stop) => {
+      const dash = dashArray(
+        intersect(layer.bands(stop, span), layer.within),
         along,
-      )};`,
-    }));
+      );
+      const decls = [`stroke-dasharray: ${dash};`];
+      /* A round cap reaches half the mask's stroke past the dash, which is what covers the laid
+         ink's own cap ahead of the light — and what paints a dot on a band with no length. Read
+         off the EMITTED dash, not off the band it came from: a band with length in the segment's
+         own space can still round to nothing once `along` has mapped it onto a stretched box, and
+         it is the emitted number that paints. */
+      if (layer.cap) {
+        const draws = dash
+          .split(" ")
+          .filter((_, at) => at % 2 === 0)
+          .some((length) => Number(length) > 0);
+        decls.push(`stroke-linecap: ${draws ? "round" : "butt"};`);
+      }
+      return { at: stop, decl: decls.join(" ") };
+    });
     animations.push(
-      rule(selector, [
-        `animation-name: ${name};`,
-        `animation-timeline: ${timelineName(id)};`,
-        "animation-fill-mode: both;",
-        "animation-timing-function: linear;",
-      ]),
+      rule(
+        selector,
+        layer.clock === "time"
+          ? [
+              `animation-name: ${name};`,
+              `animation-duration: ${round(RETRACE_CYCLE)}s;`,
+              "animation-iteration-count: infinite;",
+              "animation-fill-mode: both;",
+              "animation-timing-function: linear;",
+            ]
+          : [
+              `animation-name: ${name};`,
+              `animation-timeline: ${timelineName(id)};`,
+              "animation-fill-mode: both;",
+              "animation-timing-function: linear;",
+            ],
+      ),
     );
+    animated.add(selector);
     emitted.push(keyframes(name, frames));
   }
   return { animations, keyframes: emitted };
@@ -1089,6 +1289,7 @@ function curveRules(selector: string, segment: ThreadSegment): string {
       [
         `${selector} .${THREAD_CLASS.connector}`,
         `${selector} .${THREAD_CLASS.wisp}`,
+        `${selector} .${THREAD_CLASS.light}`,
       ].join(", "),
       [`d: path("${segment.d}");`],
     ),
@@ -1096,6 +1297,8 @@ function curveRules(selector: string, segment: ThreadSegment): string {
       [
         `${selector} .${THREAD_CLASS.inkReveal}`,
         `${selector} .${THREAD_CLASS.wispReveal}`,
+        `${selector} .${THREAD_CLASS.headReveal}`,
+        `${selector} .${THREAD_CLASS.retraceReveal}`,
       ].join(", "),
       [`d: path("${segment.revealD}");`],
     ),
@@ -1108,7 +1311,7 @@ function curveRules(selector: string, segment: ThreadSegment): string {
    keyframes per segment per layer. All of it is per band, because a motif is a square off
    `min(width, height)` while its cell is a fraction of the section, so the section's aspect enters
    the geometry and cannot be removed at build time. */
-function bandRules(id: ThreadId, band: Band): string {
+function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
   const scope = `.${threadScopeClass(id)}`;
   const segments = threadSegments(id, band);
   const total = segments.reduce((sum, segment) => sum + segment.length, 0);
@@ -1194,6 +1397,7 @@ function bandRules(id: ThreadId, band: Band): string {
       span,
       layersFor(weave),
       weave ? WEAVE_BAND : [],
+      animated,
     );
     animations.push(...emitted.animations);
     frames.push(...emitted.keyframes);
@@ -1286,6 +1490,12 @@ export function threadStubs(id: ThreadId, band: Band): ThreadStub[] {
 export function threadCss(id: ThreadId): string {
   const scope = `.${threadScopeClass(id)}`;
   const timeline = timelineName(id);
+  /* Every selector the bands put an animation on, collected as they are written rather than
+     re-derived: the reduced-motion block below repeats each one verbatim, so it cancels the
+     animation at EQUAL specificity and later in the sheet. The rule it replaced was two classes
+     against the per-segment rule's three and lost the cascade, so reduced motion left the whole
+     scrub running — invisible on a parked section, and no gate could see it. */
+  const animated = new Set<string>();
 
   const woven = threadSegments(id, THREAD_BANDS[0]).filter((segment) =>
     isWeave(id, segment),
@@ -1311,6 +1521,36 @@ export function threadCss(id: ThreadId): string {
     rule(`${scope} .${THREAD_CLASS.wispReveal}`, [
       `stroke-dasharray: ${dashArray([], IDENTITY)};`,
     ]),
+    /* The light is the one thing the base state does NOT carry: a resting thread has no pen on it.
+       Both reveals therefore start asking for nothing, which is where reduced motion, a page
+       without scripting and a browser without `animation-timeline` all land. */
+    rule(
+      `${scope} .${THREAD_CLASS.headReveal}, ${scope} .${THREAD_CLASS.retraceReveal}`,
+      [`stroke-dasharray: ${dashArray([], IDENTITY)};`],
+    ),
+    /* The bleed, and the reason it sits on a layer of its own rather than on each stroke: a CSS
+       filter's lengths resolve in the filtered element's own coordinate system, and a connector's
+       box is a stretched unit square, so 3.5px on the path would be 3.5 BOX WIDTHS. The layer is a
+       plain absolutely positioned box the size of the section, where a pixel is a pixel — and it
+       holds the ink alone, so the head and the re-trace paint above the blurred buffer rather than
+       inside it. */
+    rule(`${scope} .${THREAD_CLASS.inkLayer}`, [
+      `filter: ${BLEED.map(
+        ([alpha, radius]) =>
+          `drop-shadow(color-mix(in srgb, var(--color-thread-vermilion) ${round(alpha)}%, transparent) 0 0 ${round(radius)}px)`,
+      ).join(" ")};`,
+    ]),
+    ...HEAD_LAYERS.map((layer) =>
+      rule(`${scope} .${THREAD_CLASS.light}--${layer.name}`, [
+        "stroke: var(--color-thread-vermilion);",
+        `stroke-width: ${
+          layer.width === 1
+            ? "var(--stroke-thread)"
+            : `calc(var(--stroke-thread) * ${round(layer.width)})`
+        };`,
+        `stroke-opacity: ${round(layer.alpha)};`,
+      ]),
+    ),
   ];
 
   /* The weave is a property of the COMPLETE thread, not of the scrub, so the two copies split the
@@ -1339,15 +1579,57 @@ export function threadCss(id: ThreadId): string {
   }
 
   const bands = THREAD_BANDS.map(
-    (band) => `@media ${aspectQuery(band)} {\n${bandRules(id, band)}\n}`,
+    (band) =>
+      `@media ${aspectQuery(band)} {\n${bandRules(id, band, animated)}\n}`,
   );
 
-  /* Reduced motion removes the animation and nothing else, which lands on the complete base above —
-     one code path, not a second rendering of the same thread. */
-  const reduced = `@media (prefers-reduced-motion: reduce) {\n${rule(
-    `${scope} .${THREAD_CLASS.inkReveal}, ${scope} .${THREAD_CLASS.wispReveal}`,
-    ["animation: none;"],
-  )}\n}`;
+  /* The re-trace runs on the clock, because a RESTING re-trace has to move while the reader does
+     not — so nothing about the scroll can start or stop it. What gates it to the hold band is this
+     one scroll-driven animation on the group the passes live in: coverage, not the dash, so the
+     per-layer alphas underneath it are untouched. Its keyframes step rather than ramp; the gate
+     carries state, and a property carrying state is correct on its first frame.
 
-  return [...base, ...bands, reduced].join("\n");
+     One block, outside the bands: the gate is the same at every aspect, and a per-band copy would
+     define one `@keyframes` name three times, where the later definition silently wins. */
+  const gateName = `thread-${id}-retrace-gate`;
+  const edge = 0.001;
+  const gate =
+    animated.size === 0
+      ? ""
+      : `\n@supports (animation-timeline: view()) {\n${[
+          rule(`${scope} .${THREAD_CLASS.retrace}`, [
+            `animation-name: ${gateName};`,
+            `animation-timeline: ${timeline};`,
+            "animation-fill-mode: both;",
+            "animation-timing-function: linear;",
+          ]),
+          keyframes(
+            gateName,
+            [
+              [0, 0],
+              [THREAD_HOLD - edge, 0],
+              [THREAD_HOLD, 1],
+              [1 - THREAD_HOLD, 1],
+              [1 - THREAD_HOLD + edge, 0],
+              [1, 0],
+            ].map(([at, opacity]) => ({ at, decl: `opacity: ${opacity};` })),
+          ),
+        ].join("\n")}\n}`;
+  if (animated.size > 0) animated.add(`${scope} .${THREAD_CLASS.retrace}`);
+
+  /* Reduced motion removes the animation and nothing else, which lands on the complete base above —
+     one code path, not a second rendering of the same thread. Every animated selector is repeated
+     verbatim, so each cancellation matches its own rule's specificity exactly and wins on order;
+     a selector of this block's own choosing would be a specificity bet, and the last one lost it. */
+  const cancelled =
+    animated.size > 0
+      ? [...animated]
+      : /* A section whose every segment measures zero is never animated; the block still states
+           the rule, so the contract reads the same whether or not there is a thread to draw. */
+        [`${scope} .${THREAD_CLASS.inkReveal}`];
+  const reduced = `@media (prefers-reduced-motion: reduce) {\n${cancelled
+    .map((selector) => rule(selector, ["animation: none;"]))
+    .join("\n")}\n}`;
+
+  return [...base, ...bands, gate, reduced].join("\n");
 }

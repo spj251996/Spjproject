@@ -7,6 +7,7 @@ import {
   MOTIF_SIDE,
   pathBounds,
   pathLength,
+  THREAD_CLASS,
   threadCss,
   threadMaskRegions,
   threadScopeClass,
@@ -282,7 +283,13 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
       );
     }
 
+    /* The re-trace is the ONE clock in the sheet, and it has to be one: a resting re-trace moves
+       while the reader does not, so nothing about the scroll can drive it. DESIGN.md -> Foundations
+       -> Motion makes its pass duration and the delay between passes "a deliberate exception to the
+       duration and easing scales". What the scroll still owns is WHEN it runs — a gate on the hold
+       band, read off the section's own timeline like everything else. */
     for (const rule of rules) {
+      if (rule.selector.includes("retrace")) continue;
       for (const [property, value] of Object.entries(rule.decls)) {
         if (property === "animation-duration" || property === "animation") {
           assert.doesNotMatch(
@@ -912,5 +919,126 @@ test("no connector's box changes which point pins it, at any section height", ()
         );
       }
     }
+  }
+});
+
+/* ---- the light ------------------------------------------------------------------------------ */
+
+test("the bleed is static and present at rest", () => {
+  for (const id of ALL_IDS) {
+    const rest = readRules(threadCss(id)).filter((r) => !conditional(r));
+    const bleed = rest.filter((r) => r.decls.filter !== undefined);
+    assert.ok(bleed.length > 0, `${id} has no bleed at rest`);
+    for (const rule of bleed) {
+      assert.equal(
+        Object.keys(rule.decls).some((p) => p.startsWith("animation")),
+        false,
+        `${id}: the bleed animates, so a blurred buffer re-renders`,
+      );
+      /* It covers the INK layer and nothing wider: a bleed over the head would put the moving
+         light inside the blurred buffer, which is the one cost the static filter exists to avoid. */
+      assert.match(
+        rule.selector,
+        new RegExp(`\\.${THREAD_CLASS.inkLayer}$`),
+        `${id}: the bleed is on ${rule.selector}`,
+      );
+    }
+  }
+});
+
+test("the head and the re-trace are the only looping layers", () => {
+  for (const id of ALL_IDS) {
+    const infinite = readRules(threadCss(id)).filter((r) =>
+      Object.values(r.decls).some((v) => v.includes("infinite")),
+    );
+    assert.ok(infinite.length > 0, `${id} loops nothing`);
+    for (const rule of infinite) {
+      assert.match(
+        rule.selector,
+        /head|retrace/,
+        `${rule.selector} loops but is neither the head nor the re-trace`,
+      );
+    }
+  }
+});
+
+/* The defect this replaces was invisible to every gate and to the eye: the reduced-motion rule was
+   two classes against the per-segment rule's three, so it LOST the cascade and the whole scrub kept
+   running. A parked section looks the same either way, which is why nothing caught it — including
+   the joins gate, whose `rest` state is this rule.
+
+   The claim is therefore not "a block exists" but "every animated selector is cancelled, at a
+   specificity that can win". */
+test("reduced motion cancels every animated selector, at a weight that wins", () => {
+  const classes = (selector: string) => selector.split(".").length - 1;
+
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
+    const rules = readRules(css);
+    const animated = rules.filter(
+      (r) => r.decls["animation-name"] !== undefined,
+    );
+    assert.ok(animated.length > 0, `${id} animates nothing`);
+
+    const reduced = rules.filter((r) =>
+      r.at.some((at) => /prefers-reduced-motion:\s*reduce/.test(at)),
+    );
+    const cancelled = new Map(
+      reduced.map((r) => [r.selector, r.decls.animation]),
+    );
+    for (const rule of animated) {
+      assert.equal(
+        cancelled.get(rule.selector),
+        "none",
+        `${id}: ${rule.selector} animates and is never cancelled`,
+      );
+    }
+    /* Equal specificity only wins on order, so the block has to be last in the sheet. */
+    for (const selector of cancelled.keys()) {
+      assert.ok(
+        css.indexOf("prefers-reduced-motion") <
+          css.indexOf(`${selector} { animation: none;`),
+        `${id}: ${selector} is cancelled outside the reduced-motion block`,
+      );
+    }
+    for (const rule of animated) {
+      assert.ok(
+        classes(rule.selector) >= 1,
+        `${id}: ${rule.selector} carries no class to match`,
+      );
+    }
+    assert.equal(
+      css.lastIndexOf("@media (prefers-reduced-motion: reduce)") >
+        css.lastIndexOf("@supports"),
+      true,
+      `${id}: an animation is declared after the block that cancels it`,
+    );
+  }
+});
+
+/* A round cap reaches half the mask's stroke past the dash, which is what covers the laid ink's own
+   cap so no dark pip shows ahead of the light (measured 168 against 252 on the darkest channel).
+   On a ZERO-length dash the same cap paints a dot — a bug this project has already shipped once. */
+test("the head's brightest layer caps round only where its dash has length", () => {
+  for (const id of ALL_IDS) {
+    let checked = 0;
+    for (const rule of readRules(threadCss(id))) {
+      const cap = rule.decls["stroke-linecap"];
+      if (cap === undefined) continue;
+      const dash = rule.decls["stroke-dasharray"];
+      assert.ok(dash, `${id}: ${rule.selector} caps without a dash`);
+      const inked = (dash as string)
+        .split(/\s+/)
+        .map(Number)
+        .filter((_, at) => at % 2 === 0);
+      const paints = inked.some((length) => length > 1e-9);
+      assert.equal(
+        cap,
+        paints ? "round" : "butt",
+        `${id}: ${rule.at.at(-1)} caps ${cap} on ${dash}`,
+      );
+      checked += 1;
+    }
+    assert.ok(checked > 0, `${id}: no frame animates a cap`);
   }
 });

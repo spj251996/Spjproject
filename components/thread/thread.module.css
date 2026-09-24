@@ -11,6 +11,17 @@
   z-index: var(--z-thread);
 }
 
+/* The ink and the light, two boxes of the same size, stacked by document order alone. The bleed is
+   a `filter` on the ink layer — generated, because its radii are tuned values — so the head and the
+   re-trace have to sit OUTSIDE it, or every frame of the draw re-rasterises a blurred buffer that
+   is meant to be static. Neither takes a z-index: the light is second in the markup, which is all
+   the order it needs, and a stacking context here would change nothing but cost the weave. */
+.inkLayer,
+.lightLayer {
+  position: absolute;
+  inset: 0;
+}
+
 /* Wishes' two woven copies are the one exception to the thread's z-index: they carry none, so
    document order alone puts one either side of the illustration. A z-index on either would put a
    stacking context between them and both copies would land on the same side. */
@@ -33,7 +44,8 @@
 .ink,
 .wisp,
 .stub,
-.motifPath {
+.motifPath,
+.light {
   fill: none;
   stroke: var(--color-thread-red);
   stroke-linecap: round;
@@ -54,6 +66,13 @@
 .stub {
   stroke-width: var(--stroke-thread-wisp);
   opacity: 0.7;
+}
+
+/* The re-trace is the drawing head on the clock, gated to the hold band by one scroll-driven
+   animation on this group. With no animation at all — reduced motion, or a browser without
+   `animation-timeline` — it stays where it starts, which is invisible. */
+.retrace {
+  opacity: 0;
 }
 
 /* Mask content: `white` here is full coverage on the alpha channel, not a colour the page shows.
