@@ -1,4 +1,4 @@
-/* Everything about a thread that is the same in every section. The per-section, per-tier geometry
+/* Everything about a thread that is the same in every section. The per-section, per-band geometry
    and the whole scrub are generated instead — `thread-css.ts`. */
 
 /* Zero layout: the thread contributes no height and no width to the section it sits in, takes no
@@ -57,29 +57,21 @@
 }
 
 /* Mask content: `white` here is full coverage on the alpha channel, not a colour the page shows.
-   A wipe rect covers by its FILL alone — SVG's default `stroke-width: 1` is one whole user unit,
-   which in the wipe frame's own space is the connector's whole span, so a stroked rect revealed
-   roughly twice the band it was asked for at every frame but the empty one. */
+   Every reveal is a dashed STROKED COPY of the path it reveals — never a filled shape: an open
+   curve filled would flood the mask with the whole region its ends enclose. The width is set per
+   segment, because a motif's square and a connector's stretched box state it in different units. */
 .reveal {
-  fill: white;
-  fill-rule: nonzero;
+  fill: none;
+  stroke: white;
+  stroke-width: var(--thread-mask-width);
   /* A round cap on a zero-length dash paints a dot, measured as two stray specks on a fully
      undrawn segment. */
   stroke-linecap: butt;
 }
 
-/* The generated sheet animates `transform` on these, so both the reference box and the origin are
-   pinned: an SVG element's CSS transform-origin otherwise resolves against its own fill box, and a
-   wipe rect's fill box moves as the wipe scales it. */
-.reveal,
-.wipeFrame {
-  transform-box: view-box;
-  transform-origin: 0 0;
-}
-
 /* A motif is a SQUARE sized off the shorter of the section's two sides — sizing on width alone is
    absurd in landscape, and sizing on height alone flips a connector's left/right direction between
-   tiers. A section spans the window's width and is at least one window tall, so `svmin` is that
+   aspect bands. A section spans the window's width and is at least one window tall, so `svmin` is that
    shorter side and the size stays a static CSS expression with no container query — which would
    need size containment, and containment isolates the page's blend. */
 .motif {
@@ -95,12 +87,4 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-}
-
-/* A motif's mask covers by its STROKE instead — a dashed copy of the drawing, wide enough to hold
-   the visible stroke inside it. */
-.motifMask {
-  fill: none;
-  stroke: white;
-  stroke-width: var(--thread-mask-width);
 }

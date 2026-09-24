@@ -35,17 +35,18 @@
  * ROUTE: `/thread-lab` by default, because the thread is not mounted on `/` until the cutover
  * (Task 10). Point it at `/` with `--route=/` once it is, and the gate is unchanged.
  *
- * CAPS: a fixed 7 sections x 4 viewports x 2 states, navigation 20s, fonts 5s best-effort, one
- * fixed 350ms settle after each park. No convergence loops, no unbounded waits.
+ * CAPS: a fixed 7 sections x 2 viewports per aspect band x 2 states, navigation 20s, fonts 5s
+ * best-effort, one fixed 350ms settle after each park. No convergence loops, no unbounded waits.
  *
  * USAGE:
  *   node scripts/check-thread-joins.mjs
- *   node scripts/check-thread-joins.mjs --section=family --viewport=phone
+ *   node scripts/check-thread-joins.mjs --section=family --viewport=tall-nominal
  *   node scripts/check-thread-joins.mjs --falsify     # prove the gate can see a break
  */
 
 import { chromium } from "playwright";
 import sharp from "sharp";
+import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
 const NAV = 20000;
@@ -61,12 +62,25 @@ const SECTIONS = [
   "not-found",
 ];
 
-const VIEWPORTS = [
-  { name: "phone", width: 390, height: 844, dpr: 2 },
-  { name: "tablet", width: 768, height: 1024, dpr: 1 },
-  { name: "laptop", width: 1280, height: 720, dpr: 1 },
-  { name: "desktop", width: 1920, height: 900, dpr: 1 },
-];
+/* One window per ASPECT BAND, not per width tier: thread geometry is emitted per band now, so a
+   sweep keyed to widths could miss a band entirely. Each band contributes its own NOMINAL box —
+   where the emitted geometry renders 1:1 and a join is exact by construction — and one real window
+   that DRIFTS from it inside the same band, which is where a masking or pinning defect shows. */
+const DRIFTED = {
+  tall: { width: 360, height: 780, dpr: 2 },
+  upright: { width: 768, height: 1024, dpr: 1 },
+  wide: { width: 1280, height: 720, dpr: 1 },
+};
+
+const VIEWPORTS = THREAD_BANDS.flatMap((band) => [
+  {
+    name: `${band.id}-nominal`,
+    width: band.box.width,
+    height: band.box.height,
+    dpr: band.box.width < 500 ? 2 : 1,
+  },
+  { name: `${band.id}-drifted`, ...DRIFTED[band.id] },
+]);
 
 const flag = (name, fallback = null) => {
   const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));

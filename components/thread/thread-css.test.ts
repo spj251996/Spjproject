@@ -1,27 +1,24 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { type Band, THREAD_BANDS } from "./thread-bands.ts";
 import {
-  drawnSubpaths,
   JOIN_OVERLAP,
   MOTIF_SIDE,
   pathBounds,
   pathLength,
-  THREAD_TIERS,
   threadCss,
   threadMaskRegions,
   threadScopeClass,
   threadSegments,
 } from "./thread-css.ts";
-import {
-  composeConnectors,
-  composePath,
-  type SectionThread,
-} from "./thread-geometry.ts";
+import type { ThreadId } from "./thread-geometry.ts";
+import { THREAD_IDS } from "./thread-grid.ts";
 import { MOTIFS } from "./thread-motifs.ts";
-import { ALL_THREADS, SECTION_THREADS } from "./thread-placement.ts";
 
-const wishes = SECTION_THREADS.find((s) => s.id === "wishes") as SectionThread;
+/* Every surface the component mounts, not only the six page sections: `not-found` draws the
+   invite's route on a screen of its own and has to satisfy the same laws. */
+const ALL_IDS: readonly ThreadId[] = [...THREAD_IDS, "not-found"];
 
 /* The emitted sheet is nested at-rules over plain declaration blocks, so a test that wants to make
    a claim about a RULE rather than about a substring needs the blocks back. This reader keeps every
@@ -92,47 +89,157 @@ test("the rule reader finds every block the sheet declares", () => {
   );
 });
 
+/* ---- per band, and every connector draws ----------------------------------------------------- */
+
+test("geometry is emitted per band, and each band's connector geometry differs", () => {
+  const css = threadCss("wishes");
+  for (const band of THREAD_BANDS) {
+    assert.ok(css.includes(band.id), `wishes emits no ${band.id} block`);
+  }
+  assert.equal(
+    css.includes("tier"),
+    false,
+    "a tier name survived the band rewrite",
+  );
+});
+
+/* A wipe reveals along an axis; a route that doubles back is revealed out of order by one. Every
+   segment now draws along its own path, so nothing constrains how the owner routes. */
+test("no reveal is an axis wipe", () => {
+  for (const id of THREAD_IDS) {
+    for (const rule of readRules(threadCss(id))) {
+      if (!rule.selector.includes("reveal")) continue;
+      assert.equal(
+        rule.decls.transform?.includes("scale") ?? false,
+        false,
+        `${id}: ${rule.selector} still wipes`,
+      );
+    }
+  }
+});
+
+/* A motif is a square sized off the section's shorter side while its cell is a fraction of each
+   axis, so the section's ASPECT enters the geometry: it decides how much of the thread's one arc
+   budget the motif takes against its connectors, and therefore every keyframe stop. That is the
+   whole reason geometry is emitted per band rather than once.
+
+   Asserted as the rule, not as a magnitude: a band's emitted block must DIFFER wherever two bands'
+   aspects differ. A threshold on how far some derived share swings would measure the seeded routes
+   instead. */
+function bandBlock(css: string, band: Band): string {
+  const rules = readRules(css).filter((rule) =>
+    rule.at.some((at) => at.includes(`${band.id}`)),
+  );
+  const keyed = readRules(css).filter((rule) =>
+    Object.values(rule.decls).some((value) => value.includes(`-${band.id}`)),
+  );
+  const block = [...rules, ...keyed].map(
+    (rule) =>
+      `${rule.at.join("|")} ${rule.selector} ${JSON.stringify(rule.decls)}`,
+  );
+  assert.ok(block.length > 0, `${band.id} emits nothing`);
+  return block.join("\n");
+}
+
+test("geometry tracks the band's aspect alone", () => {
+  const css = threadCss("wishes");
+  const aspect = (band: Band) => band.box.width / band.box.height;
+  /* Read back what the SHEET declares, never what a second composition would return: the claim is
+     that the generator composes against each band's box, and re-deriving the answer here would hold
+     even if it never passed the box at all. */
+  const composed = new Map(
+    THREAD_BANDS.map((band) => [band.id, bandBlock(css, band)] as const),
+  );
+  for (const a of THREAD_BANDS) {
+    for (const b of THREAD_BANDS) {
+      if (a.id === b.id || Math.abs(aspect(a) - aspect(b)) < 1e-9) continue;
+      assert.notEqual(
+        composed.get(a.id),
+        composed.get(b.id),
+        `${a.id} and ${b.id} differ in aspect but composed identically, so the band box was never read`,
+      );
+    }
+  }
+  /* Hold the pixels and turn the aspect alone, and the geometry has to move. */
+  const shape = (box: { width: number; height: number }) =>
+    threadSegments("wishes", { ...THREAD_BANDS[0], box })
+      .map((segment) => `${segment.length}`)
+      .join("|");
+  assert.notEqual(
+    shape({ width: 1000, height: 1000 }),
+    shape({ width: 1000, height: 2000 }),
+    "the aspect alone does not move the composed geometry",
+  );
+});
+
+/* Each band's query bounds the aspect at both ends, half-open, so no aspect can match two bands —
+   the overlap `thread-grid.test.ts` forbids in the model, held here in the emitted sheet. */
+test("every band emits a bounded aspect query and no two can both match", () => {
+  const css = threadCss("family");
+  const queries = [
+    ...css.matchAll(
+      /@media \((?:([\d.]+) <= )?aspect-ratio(?: < ([\d.]+))?\) \{/g,
+    ),
+  ].map(([, from, to]) => ({
+    from: from === undefined ? 0 : Number(from),
+    to: to === undefined ? Number.POSITIVE_INFINITY : Number(to),
+  }));
+  assert.equal(queries.length, THREAD_BANDS.length);
+  /* Each band's edge is EMITTED once and read by both neighbours, so the rounding that writes it
+     cannot open a gap or an overlap between them — which comparing the emitted numbers to each
+     other, rather than each to its own unrounded constant, is what checks. */
+  for (const [at, query] of queries.entries()) {
+    assert.ok(
+      Math.abs(query.from - THREAD_BANDS[at].min) < 1e-4,
+      `band ${at} starts at ${query.from}, not ${THREAD_BANDS[at].min}`,
+    );
+    if (at > 0) assert.equal(query.from, queries[at - 1].to);
+  }
+  for (const a of queries) {
+    for (const b of queries) {
+      if (a === b) continue;
+      assert.equal(
+        a.from < b.to && b.from < a.to,
+        false,
+        `[${a.from}, ${a.to}) and [${b.from}, ${b.to}) both match some aspect`,
+      );
+    }
+  }
+});
+
+/* ---- the base state and the scrub ------------------------------------------------------------ */
+
 /* DESIGN.md -> Components -> Shell -> `thread-overlay`: "The complete thread is the base state, and
    the reveal subtracts from it." The test is the RULE — with every conditional layer stripped, what
-   remains must already be a complete thread and must ask for no animation — not the spelling any
-   one reveal mechanism happens to use. */
+   remains must already be a complete thread and must ask for no animation. */
 test("at rest the thread is complete and no animation is required to make it so", () => {
-  for (const section of ALL_THREADS) {
-    const rest = readRules(threadCss(section)).filter((r) => !conditional(r));
-    const scope = `.${threadScopeClass(section.id)}`;
+  for (const id of ALL_IDS) {
+    const rest = readRules(threadCss(id)).filter((r) => !conditional(r));
+    const scope = `.${threadScopeClass(id)}`;
 
     for (const rule of rest) {
       for (const property of Object.keys(rule.decls)) {
         assert.doesNotMatch(
           property,
           /^animation/,
-          `${section.id}: ${rule.selector} declares ${property} unconditionally`,
+          `${id}: ${rule.selector} declares ${property} unconditionally`,
         );
       }
       assert.ok(
         rule.selector.startsWith(scope),
-        `${section.id}: ${rule.selector} escapes its section scope`,
+        `${id}: ${rule.selector} escapes its section scope`,
       );
     }
 
     /* The Wishes weave is the one at-rest exception: its two copies are COMPLEMENTARY halves of
-       one complete loop, so neither is fully inked on its own. `the weave's two copies cover the
-       whole loop exactly once` below is what holds them to the same rule. */
+       one complete loop, so neither is fully inked on its own. */
     for (const rule of rest.filter((r) => !r.selector.includes("weave"))) {
       const dash = rule.decls["stroke-dasharray"];
       if (dash !== undefined && rule.selector.includes("ink-reveal")) {
         const [gap, tail, ink] = dash.split(/\s+/).map(Number);
-        assert.equal(gap, 0, `${section.id}: ${rule.selector}`);
-        assert.equal(tail, 0, `${section.id}: ${rule.selector} starts inked`);
-        assert.equal(ink, 1, `${section.id}: ${rule.selector} is fully inked`);
-      }
-      const transform = rule.decls.transform;
-      if (transform !== undefined && rule.selector.includes("ink-reveal")) {
-        assert.match(
-          transform,
-          /^translate\(0px, 0px\) scale\(1, 1\)$/,
-          `${section.id}: ${rule.selector} is not a full wipe at rest`,
-        );
+        assert.equal(gap, 0, `${id}: ${rule.selector}`);
+        assert.equal(tail, 0, `${id}: ${rule.selector} starts inked`);
+        assert.equal(ink, 1, `${id}: ${rule.selector} is fully inked`);
       }
     }
   }
@@ -142,40 +249,36 @@ test("at rest the thread is complete and no animation is required to make it so"
    own box, which differs per segment; one NAMED timeline on the section, read by every segment, is
    the corrected mechanism. */
 test("the scrub is scroll-driven off one named section timeline, never timed", () => {
-  for (const section of ALL_THREADS) {
-    const rules = readRules(threadCss(section));
+  for (const id of ALL_IDS) {
+    const rules = readRules(threadCss(id));
     const named = rules.flatMap((r) =>
       r.decls["view-timeline-name"] === undefined
         ? []
         : [r.decls["view-timeline-name"]],
     );
-    assert.equal(
-      named.length,
-      1,
-      `${section.id} must name exactly one timeline`,
-    );
+    assert.equal(named.length, 1, `${id} must name exactly one timeline`);
 
     const timelines = rules.flatMap((r) =>
       r.decls["animation-timeline"] === undefined
         ? []
         : [r.decls["animation-timeline"]],
     );
-    /* A segment with no measured length draws nothing and is not scrubbed. The tie is deliberate
-       rather than incidental: a section whose every segment measures zero must declare no
-       animation at all, so an undrawn thread can never sit on a live timeline. */
-    const drawable = THREAD_TIERS.some((tier) =>
-      threadSegments(section, tier).some((segment) => segment.length > 0),
+    /* A segment with no measured length draws nothing and is not scrubbed. The tie is deliberate:
+       a section whose every segment measures zero must declare no animation at all, so an undrawn
+       thread can never sit on a live timeline. */
+    const drawable = THREAD_BANDS.some((band) =>
+      threadSegments(id, band).some((segment) => segment.length > 0),
     );
     assert.equal(
       timelines.length > 0,
       drawable,
-      `${section.id}: ${timelines.length} animations against ${drawable ? "a" : "no"} drawable segment`,
+      `${id}: ${timelines.length} animations against ${drawable ? "a" : "no"} drawable segment`,
     );
     for (const timeline of timelines) {
       assert.equal(
         timeline,
         named[0],
-        `${section.id}: a segment reads ${timeline}, not the section's own timeline`,
+        `${id}: a segment reads ${timeline}, not the section's own timeline`,
       );
     }
 
@@ -185,7 +288,7 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
           assert.doesNotMatch(
             value,
             /[0-9](ms|s)\b/,
-            `${section.id}: ${property} is clock-timed`,
+            `${id}: ${property} is clock-timed`,
           );
         }
       }
@@ -194,145 +297,41 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
 });
 
 test("reduced motion removes the animation and nothing else", () => {
-  for (const section of ALL_THREADS) {
-    const reduced = readRules(threadCss(section)).filter((r) =>
+  for (const id of ALL_IDS) {
+    const reduced = readRules(threadCss(id)).filter((r) =>
       r.at.some((at) => /prefers-reduced-motion:\s*reduce/.test(at)),
     );
-    assert.ok(reduced.length > 0, `${section.id} has no reduced-motion block`);
+    assert.ok(reduced.length > 0, `${id} has no reduced-motion block`);
     for (const rule of reduced) {
       assert.deepEqual(
         Object.keys(rule.decls),
         ["animation"],
-        `${section.id}: ${rule.selector} changes more than the animation`,
+        `${id}: ${rule.selector} changes more than the animation`,
       );
       assert.equal(rule.decls.animation, "none");
     }
   }
 });
 
-/* A motif is a square sized off the section's shorter side while its placement is a fraction of each
-   axis, so the section's ASPECT enters the geometry and a connector's endpoints move with it. That
-   is the whole reason geometry is composed per tier rather than once.
-
-   Asserted as the rule, not as a magnitude: the composed connector must DIFFER wherever two tiers'
-   aspects differ, and must be IDENTICAL where they agree. A threshold on how far some derived share
-   swings measures the seeded placements instead — it passed while the motifs were empty and broke
-   the moment they were drawn, without anything being wrong. */
-test("connector geometry is composed per tier, and tracks the aspect alone", () => {
-  const css = threadCss(wishes);
-  for (const tier of THREAD_TIERS) {
-    assert.ok(
-      css.includes(`-${tier.name}`),
-      `wishes emits no ${tier.name} keyframes`,
-    );
-  }
-  const aspect = (tier: (typeof THREAD_TIERS)[number]) =>
-    tier.box.width / tier.box.height;
-  /* Read back the geometry the SHEET declares, never what a second call to `composePath` would
-     return: the claim is that the generator composes against each tier's box, and re-deriving the
-     answer here would hold even if it never passed the box at all. */
-  const composed = new Map(
-    THREAD_TIERS.map((tier) => {
-      const start = css.indexOf(tier.media);
-      assert.notEqual(start, -1, `${tier.name} has no media block`);
-      const next = THREAD_TIERS.map((other) => css.indexOf(other.media))
-        .filter((at) => at > start)
-        .reduce((lowest, at) => Math.min(lowest, at), css.length);
-      const paths = [
-        ...css.slice(start, next).matchAll(/d:\s*path\(\\?"([^"\\]*)/g),
-      ].map((match) => match[1]);
-      assert.ok(
-        paths.length > 0,
-        `${tier.name} declares no connector geometry`,
-      );
-      return [tier.name, paths.join("|")];
-    }),
+/* The handoff law, held in the emitted sheet rather than in the model: the thread leaves a section
+   at its bottom edge and the next one picks it up at its top, so every section but the page's own
+   two ends composes a connector that reaches the edge. */
+test("only the page's first and last sections keep a wisp at rest", () => {
+  const stubbed = THREAD_IDS.filter((id) =>
+    threadCss(id).includes(`${"thread__stub"}--`),
   );
-  for (const a of THREAD_TIERS) {
-    for (const b of THREAD_TIERS) {
-      if (a.name === b.name || Math.abs(aspect(a) - aspect(b)) < 1e-9) continue;
-      assert.notEqual(
-        composed.get(a.name),
-        composed.get(b.name),
-        `${a.name} and ${b.name} differ in aspect but composed identically, so the tier box was never read`,
-      );
-    }
-  }
-  /* Two tiers of the same aspect no longer compose identically, because the join allowance is a
-     PIXEL length and a tier's box states its pixels too. So the aspect claim is made directly:
-     hold the pixels and turn the aspect alone, and the geometry has to move. */
-  const square = { width: 1000, height: 1000 };
-  const tall = { width: 1000, height: 2000 };
-  const shape = (box: { width: number; height: number }) =>
-    threadSegments(wishes, { ...THREAD_TIERS[0], box })
-      .map((segment) => (segment.kind === "connector" ? segment.d : ""))
-      .join("|");
-  assert.notEqual(
-    shape(square),
-    shape(tall),
-    "the aspect alone does not move the composed geometry",
+  assert.deepEqual(stubbed, ["invite", "wishes"]);
+  assert.ok(
+    threadCss("not-found").includes("thread__stub--entry"),
+    "not-found is closed at both ends and keeps both wisps",
   );
+  assert.ok(threadCss("not-found").includes("thread__stub--exit"));
 });
 
-/* `composePath` lifts the pen across each motif's footprint, so its output is one `d` holding every
-   connector as its own subpath. The component renders one path per connector, and this is the guard
-   that its structural walk and `composePath`'s stay the same walk. */
-test("every connector the component renders is a subpath composePath drew", () => {
-  for (const section of ALL_THREADS) {
-    for (const tier of THREAD_TIERS) {
-      const drawn = drawnSubpaths(
-        composePath(section, MOTIFS, tier.box, JOIN_OVERLAP),
-      );
-      const connectors = threadSegments(section, tier).filter(
-        (s) => s.kind === "connector",
-      );
-      assert.equal(
-        connectors.length,
-        drawn.length,
-        `${section.id} at ${tier.name}: ${connectors.length} connectors against ${drawn.length} drawn subpaths`,
-      );
-      assert.deepEqual(
-        connectors.map((s) => s.absolute),
-        drawn,
-      );
-    }
-  }
-});
-
-/* A rect wipe is equivalent to drawing along a connector only where the connector advances
-   monotonically along the axis being wiped. */
-test("every connector advances monotonically along the axis its wipe sweeps", () => {
-  for (const section of ALL_THREADS) {
-    for (const tier of THREAD_TIERS) {
-      for (const segment of threadSegments(section, tier)) {
-        if (segment.kind !== "connector") continue;
-        assert.ok(
-          segment.monotone,
-          `${section.id} at ${tier.name}: a connector reverses along its ${segment.axis} wipe`,
-        );
-      }
-    }
-  }
-});
-
-test("only family declares a stacked variant", () => {
-  const stacked = ALL_THREADS.filter((t) => t.stacked !== undefined).map(
-    (t) => t.id,
-  );
-  assert.deepEqual(stacked, ["family"]);
-});
-
-/* The stacked set is keyed to the arrangement -- below `{breakpoints.md}`, where `MountedPair` is
-   `flex-col` -- never to a device tier. */
-test("the stacked regime is keyed to the arrangement, not to a tier", () => {
-  const css = threadCss(
-    ALL_THREADS.find((t) => t.id === "family") as SectionThread,
-  );
-  assert.ok(css.includes("(width < 48rem)"), "family emits no stacked regime");
-});
+/* ---- the weave -------------------------------------------------------------------------------- */
 
 test("wishes renders two complementary weave segments", () => {
-  const css = threadCss(wishes);
+  const css = threadCss("wishes");
   assert.match(css, /--thread-weave-under/);
   assert.match(css, /--thread-weave-over/);
 });
@@ -340,7 +339,7 @@ test("wishes renders two complementary weave segments", () => {
 /* An under-copy beneath the illustration and an over-copy above it are complementary segments of
    ONE curve: together they draw the loop once, and neither draws any of it twice. */
 test("the weave's two copies cover the whole loop exactly once", () => {
-  const dashes = readRules(threadCss(wishes))
+  const dashes = readRules(threadCss("wishes"))
     .filter(
       (r) =>
         r.selector.includes("weave") &&
@@ -383,11 +382,13 @@ test("the weave's two copies cover the whole loop exactly once", () => {
   }
 });
 
+/* ---- tokens and measurement ------------------------------------------------------------------ */
+
 /* DESIGN.md -> Foundations: every visual value is a token. The sheet computes geometry; it may
    never compute a colour or a stroke width. */
 test("no emitted colour or stroke width is a literal", () => {
-  for (const section of ALL_THREADS) {
-    const css = threadCss(section);
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
     assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}\b/);
     for (const rule of readRules(css)) {
       for (const property of ["stroke", "stroke-width", "color", "z-index"]) {
@@ -396,7 +397,7 @@ test("no emitted colour or stroke width is a literal", () => {
         assert.match(
           value,
           /var\(--/,
-          `${section.id}: ${rule.selector} sets ${property} to ${value}`,
+          `${id}: ${rule.selector} sets ${property} to ${value}`,
         );
       }
     }
@@ -413,16 +414,13 @@ test("pathLength measures a scaled path in the box it is drawn in", () => {
   );
 });
 
-/* A motif's `d` is authored in its own square and a connector's in section fractions, and the two
+/* A motif's `d` is authored in its own square and a connector's in its own box, and the two
    conventions meet in two places: the svg the motif is drawn in, and the box its arc length is
-   measured in. Both read `MOTIF_SIDE`, so both are asserted here against the drawings themselves
-   rather than against a viewBox spelling. The first shipped render had the svg declaring a 0-1 box
+   measured in. Both read `MOTIF_SIDE`. The first shipped render had the svg declaring a 0-1 box
    around a 0-100 drawing: the heart measured 13259x4989 CSS px inside a 133px field, and every gate
    was green. */
 test("every motif is drawn inside its own field", () => {
   for (const motif of Object.values(MOTIFS)) {
-    /* An unscaled box keeps the authored coordinates, which is the whole claim: the field the
-       component renders is `MOTIF_SIDE` across, and the drawing has to be in those units. */
     const { minX, minY, maxX, maxY } = pathBounds(motif.d, {
       width: 1,
       height: 1,
@@ -443,15 +441,15 @@ test("every motif is drawn inside its own field", () => {
 /* The scrub divides ONE arc budget between the connectors and the motifs, so a motif measured in
    the wrong units takes the whole of it and the connectors are drawn in a few frames. */
 test("a motif's measured length is commensurate with the field it is drawn in", () => {
-  for (const section of ALL_THREADS) {
-    for (const tier of THREAD_TIERS) {
-      for (const segment of threadSegments(section, tier)) {
+  for (const id of ALL_IDS) {
+    for (const band of THREAD_BANDS) {
+      for (const segment of threadSegments(id, band)) {
         if (segment.kind !== "motif") continue;
         const side =
-          segment.placement.scale * Math.min(tier.box.width, tier.box.height);
+          segment.place.scale * Math.min(band.box.width, band.box.height);
         assert.ok(
           segment.length > side && segment.length < side * 10,
-          `${section.id} at ${tier.name}: ${segment.motif.id} measures ${segment.length}px in a ${side}px field`,
+          `${id} at ${band.id}: ${segment.place.motif.id} measures ${segment.length}px in a ${side}px field`,
         );
       }
     }
@@ -461,34 +459,21 @@ test("a motif's measured length is commensurate with the field it is drawn in", 
 /* The scrub law: the head grows, both hold, then the TAIL eats forward. A retract that shortens the
    band from the far end instead would read as the thread pulling back the way it came. */
 test("the inked band's start never moves backwards across a segment's keyframes", () => {
-  for (const section of ALL_THREADS) {
-    const css = threadCss(section);
+  for (const id of ALL_IDS) {
     const byName = new Map<string, number[]>();
-    for (const rule of readRules(css)) {
+    for (const rule of readRules(threadCss(id))) {
       const frames = rule.at.filter((at) => at.startsWith("@keyframes"));
       if (frames.length === 0 || !frames[0].includes("-ink-")) continue;
-      const transform = rule.decls.transform;
-      const dash = rule.decls["stroke-dasharray"];
-      const start =
-        transform !== undefined
-          ? Number(
-              (transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/) ??
-                [])[2] ?? Number.NaN,
-            ) ||
-            Number(
-              (transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/) ??
-                [])[1] ?? 0,
-            )
-          : Number(dash?.split(/\s+/)[1]);
+      const start = Number(rule.decls["stroke-dasharray"]?.split(/\s+/)[1]);
       if (Number.isNaN(start)) continue;
       byName.set(frames[0], [...(byName.get(frames[0]) ?? []), start]);
     }
-    assert.ok(byName.size > 0 || section.id === "not-found");
+    assert.ok(byName.size > 0, `${id} scrubs nothing`);
     for (const [name, starts] of byName) {
       for (let index = 1; index < starts.length; index += 1) {
         assert.ok(
           starts[index] >= starts[index - 1] - 1e-9,
-          `${section.id}: ${name} moves its band start from ${starts[index - 1]} back to ${starts[index]}`,
+          `${id}: ${name} moves its band start from ${starts[index - 1]} back to ${starts[index]}`,
         );
       }
     }
@@ -496,17 +481,17 @@ test("the inked band's start never moves backwards across a segment's keyframes"
 });
 
 /* Two `@keyframes` blocks with one name do not collide loudly: the later definition wins wherever
-   both match, so an arrangement variant that reuses a tier's name is right only by accident of
+   both match, so a band variant that reuses another band's name is right only by accident of
    emission order — the same trap as two overlapping media bands. */
 test("no two keyframes in a section's sheet share a name", () => {
-  for (const section of ALL_THREADS) {
-    const names = [
-      ...threadCss(section).matchAll(/@keyframes\s+([\w-]+)/g),
-    ].map((match) => match[1]);
+  for (const id of ALL_IDS) {
+    const names = [...threadCss(id).matchAll(/@keyframes\s+([\w-]+)/g)].map(
+      (match) => match[1],
+    );
     assert.deepEqual(
       names.filter((name, at) => names.indexOf(name) !== at),
       [],
-      `${section.id} defines a keyframes name twice`,
+      `${id} defines a keyframes name twice`,
     );
   }
 });
@@ -515,17 +500,23 @@ test("no two keyframes in a section's sheet share a name", () => {
 
 /* A window, and a section that is at least as tall as it. `svmin` is the WINDOW's shorter side
    while the section's own box is what a percentage resolves against, and the two part company as
-   soon as a section is taller than one screen — which every section on the page is. */
+   soon as a section is taller than one screen — which every section on the page is.
+
+   Each band's own NOMINAL box is in the list, so the pixel-exact case is covered as well as the
+   drifted ones. */
 const WINDOWS = [
+  ...THREAD_BANDS.map((band) => ({
+    width: band.box.width,
+    height: band.box.height,
+    section: band.box.height,
+  })),
   { width: 360, height: 780, section: 780 },
-  { width: 390, height: 844, section: 844 },
   { width: 390, height: 844, section: 2400 },
   { width: 768, height: 1024, section: 1024 },
   { width: 834, height: 1112, section: 2000 },
   { width: 900, height: 900, section: 900 },
   { width: 1024, height: 768, section: 1600 },
   { width: 1280, height: 720, section: 720 },
-  { width: 1440, height: 900, section: 900 },
   { width: 1440, height: 900, section: 3000 },
   { width: 1920, height: 900, section: 900 },
   { width: 2560, height: 900, section: 1400 },
@@ -533,29 +524,77 @@ const WINDOWS = [
 
 type Window = (typeof WINDOWS)[number];
 
-/* The emitted grammar and no more: `min(a, b)`, `max(a, b, c)`, `calc(<terms>)`, and terms in `%`,
-   `svmin` or `px`. `size` is the section side the percentage resolves against — its width for a
-   horizontal value, its height for a vertical one. */
+/* Split at paren depth zero. The generator nests `min()` and `max()` inside `calc()`, so a naive
+   split on "," or " - " reads the inner function's own arguments as the outer one's terms. */
+function splitTop(
+  body: string,
+  separators: readonly string[],
+): { parts: string[]; ops: string[] } {
+  const parts: string[] = [];
+  const ops: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let at = 0; at < body.length; at += 1) {
+    if (body[at] === "(") depth += 1;
+    else if (body[at] === ")") depth -= 1;
+    else if (depth === 0) {
+      const sep = separators.find((candidate) =>
+        body.startsWith(candidate, at),
+      );
+      if (sep !== undefined) {
+        parts.push(body.slice(start, at));
+        ops.push(sep.trim());
+        start = at + sep.length;
+        at += sep.length - 1;
+      }
+    }
+  }
+  parts.push(body.slice(start));
+  return { parts, ops };
+}
+
+/* True when `value` is one call to `name(...)` rather than an expression that merely starts with
+   one — `min(a, b) - min(c, d)` starts with "min(" and ends with ")" and is neither. */
+function wraps(value: string, name: string): boolean {
+  if (!value.startsWith(`${name}(`) || !value.endsWith(")")) return false;
+  let depth = 0;
+  for (let at = name.length; at < value.length; at += 1) {
+    if (value[at] === "(") depth += 1;
+    else if (value[at] === ")") {
+      depth -= 1;
+      if (depth === 0) return at === value.length - 1;
+    }
+  }
+  return false;
+}
+
+/* The emitted grammar and no more: `min(...)`, `max(...)`, `calc(<terms>)` with those nested inside
+   it, and terms in `%`, `svmin` or `px`. `size` is the section side the percentage resolves against
+   — its width for a horizontal value, its height for a vertical one. */
 function resolveLength(value: string, size: number, svmin: number): number {
-  const trimmed = value.trim();
+  let trimmed = value.trim();
+  if (wraps(trimmed, "calc")) trimmed = trimmed.slice(5, -1).trim();
+
+  const term = /^(-?[\d.]+)(%|svmin|px)$/.exec(trimmed);
+  if (term !== null) {
+    const amount = Number(term[1]);
+    return term[2] === "px"
+      ? amount
+      : (amount / 100) * (term[2] === "%" ? size : svmin);
+  }
+
   for (const fn of ["min", "max"] as const) {
-    if (!trimmed.startsWith(`${fn}(`)) continue;
-    const parts = trimmed.slice(fn.length + 1, -1).split(",");
+    if (!wraps(trimmed, fn)) continue;
+    const { parts } = splitTop(trimmed.slice(fn.length + 1, -1), [","]);
     const resolved = parts.map((part) => resolveLength(part, size, svmin));
     return fn === "min" ? Math.min(...resolved) : Math.max(...resolved);
   }
-  const body = (
-    trimmed.startsWith("calc(") ? trimmed.slice(5, -1) : trimmed
-  ).replaceAll(" - ", " + -");
-  let total = 0;
-  for (const term of body.split(" + ")) {
-    const match = /^(-?[\d.]+)(%|svmin|px)$/.exec(term.trim());
-    assert.ok(match, `unreadable length term "${term}" in "${value}"`);
-    const amount = Number(match[1]);
-    total +=
-      match[2] === "px"
-        ? amount
-        : (amount / 100) * (match[2] === "%" ? size : svmin);
+
+  const { parts, ops } = splitTop(trimmed, [" + ", " - "]);
+  assert.ok(parts.length > 1, `unreadable length "${value}"`);
+  let total = resolveLength(parts[0], size, svmin);
+  for (const [at, op] of ops.entries()) {
+    total += (op === "-" ? -1 : 1) * resolveLength(parts[at + 1], size, svmin);
   }
   return total;
 }
@@ -565,7 +604,8 @@ test("the length resolver reads the grammar the generator emits", () => {
   assert.equal(at("50%"), 500);
   assert.equal(at("calc(50% - 25svmin + 2px)"), 500 - 100 + 2);
   assert.equal(at("min(calc(50% - 25svmin), 50%)"), 400);
-  assert.equal(at("max(1px, calc(0% - 25svmin), calc(0% + 25svmin))"), 100);
+  assert.equal(at("max(1px, calc(max(10%, 40%) - min(10%, 40%)))"), 300);
+  assert.equal(at("max(1px, calc(max(10%) - min(10%)))"), 1);
 });
 
 /* Only the conditions the generator writes. A `@supports` block is taken as supported, since the
@@ -573,37 +613,31 @@ test("the length resolver reads the grammar the generator emits", () => {
 function conditionHolds(at: string, window: Window): boolean {
   if (at.startsWith("@supports")) return true;
   if (/prefers-reduced-motion/.test(at)) return false;
-  const rem = window.width / 16;
-  for (const [, from, , to] of at.matchAll(
-    /\(\s*([\d.]+)rem\s*<=\s*width(\s*<\s*([\d.]+)rem)?\s*\)/g,
+  const aspect = window.width / window.height;
+  for (const [, from, operator, bound] of at.matchAll(
+    /\(\s*(?:([\d.]+)\s*<=\s*)?aspect-ratio(?:\s*(<|>=)\s*([\d.]+))?\s*\)/g,
   )) {
-    if (rem < Number(from)) return false;
-    if (to !== undefined && rem >= Number(to)) return false;
-  }
-  for (const [, to] of at.matchAll(/\(\s*width\s*<\s*([\d.]+)rem\s*\)/g)) {
-    if (rem >= Number(to)) return false;
-  }
-  for (const [, operator, ratio] of at.matchAll(
-    /\(\s*aspect-ratio\s*(<|>=)\s*([\d.]+)\s*\)/g,
-  )) {
-    const aspect = window.width / window.height;
-    if (operator === "<" ? aspect >= Number(ratio) : aspect < Number(ratio)) {
-      return false;
-    }
+    if (from !== undefined && aspect < Number(from)) return false;
+    if (operator === "<" && aspect >= Number(bound)) return false;
+    if (operator === ">=" && aspect < Number(bound)) return false;
   }
   return true;
 }
 
 test("the condition reader answers the queries the generator writes", () => {
   const window = { width: 1920, height: 900, section: 900 };
-  assert.equal(conditionHolds("@media (width < 48rem)", window), false);
-  assert.equal(conditionHolds("@media (100rem <= width)", window), true);
   assert.equal(
-    conditionHolds("@media (64rem <= width < 100rem)", window),
+    conditionHolds("@media (1.33333 <= aspect-ratio)", window),
+    true,
+  );
+  assert.equal(
+    conditionHolds("@media (aspect-ratio < 0.62462)", window),
     false,
   );
-  assert.equal(conditionHolds("@media (aspect-ratio >= 2.1)", window), true);
-  assert.equal(conditionHolds("@media (aspect-ratio < 2.1)", window), false);
+  assert.equal(
+    conditionHolds("@media (0.62462 <= aspect-ratio < 1.33333)", window),
+    false,
+  );
   assert.equal(
     conditionHolds("@supports (animation-timeline: view())", window),
     true,
@@ -611,7 +645,7 @@ test("the condition reader answers the queries the generator writes", () => {
 });
 
 /* Every declaration that applies at one window, in cascade order — later wins, which is how the
-   sheet's own tier and aspect blocks are meant to resolve. */
+   sheet's own band blocks are meant to resolve. */
 function declarationsAt(
   css: string,
   window: Window,
@@ -628,25 +662,34 @@ function declarationsAt(
   return winning;
 }
 
-/* THE defect this file exists to keep out: a connector composed against a nominal tier box, and a
-   motif field sized from the real window, disagreeing about where the join is. Measured on a real
-   render before the fix — 3.4px at 900x900, 12px at 1280x720, 67px at 2560x900 — and none of the
-   137 tests that passed alongside it could see it.
+function bandFor(window: Window): Band {
+  const aspect = window.width / window.height;
+  const band = THREAD_BANDS.find(
+    (candidate) => aspect >= candidate.min && aspect < candidate.max,
+  );
+  assert.ok(band, `no band holds aspect ${aspect}`);
+  return band;
+}
+
+/* THE defect this file exists to keep out: a connector composed against a nominal box, and a motif
+   field sized from the real window, disagreeing about where the join is. Measured on a real render
+   before the fix — 3.4px at 900x900, 12px at 1280x720, 67px at 2560x900 — and none of the 137 tests
+   that passed alongside it could see it.
 
    The claim is made against the EMITTED sheet, resolved at a window, on both sides: a connector's
    end is read out of the box the sheet pins it into and the corner its own `d` puts it at, and the
-   motif's end out of the placement the same sheet declares. Neither is re-derived from the model
-   they were both generated from, so a generator that composed against the wrong box would fail
-   here rather than agree with itself. */
+   motif's end out of the placement and the rotation the same sheet declares. Neither is re-derived
+   from the model they were both generated from, so a generator that composed against the wrong box
+   would fail here rather than agree with itself. */
 test("every join lands on the motif it meets, at every window", () => {
-  for (const section of ALL_THREADS) {
-    const css = threadCss(section);
-    const ids = section.placements.map((placement) => placement.motif);
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
 
     for (const window of WINDOWS) {
       const applied = declarationsAt(css, window);
-      const scope = `.${threadScopeClass(section.id)}`;
-      const segment = (index: number) =>
+      const scope = `.${threadScopeClass(id)}`;
+      const segments = threadSegments(id, bandFor(window));
+      const at = (index: number) =>
         applied.get(`${scope} .thread__seg-${index}`) ?? {};
       const across = (value: string) =>
         resolveLength(
@@ -661,40 +704,37 @@ test("every join lands on the motif it meets, at every window", () => {
           Math.min(window.width, window.height),
         );
 
-      /* Where each motif's own square puts the two points a connector has to meet. */
+      /* Where each motif's own square puts the two points a connector has to meet — read out of
+         the sheet, turned by the rotation the sheet declares. */
       const motifs = new Map<number, { x: number; y: number; side: number }>();
-      let placed = 0;
-      for (let index = 0; ; index += 1) {
-        const decls = segment(index);
-        if (Object.keys(decls).length === 0) break;
+      for (const segment of segments) {
+        if (segment.kind !== "motif") continue;
+        const decls = at(segment.index);
         const side = decls["--thread-motif-side"];
-        if (side === undefined) continue;
+        assert.ok(
+          side,
+          `${id}: segment ${segment.index} declares no motif side`,
+        );
         const scale = /calc\(([\d.]+) \* 100svmin\)/.exec(side);
-        assert.ok(scale, `${section.id}: unreadable motif side "${side}"`);
-        motifs.set(index, {
+        assert.ok(scale, `${id}: unreadable motif side "${side}"`);
+        motifs.set(segment.index, {
           x: Number(decls["--thread-motif-x"]) * window.width,
           y: Number(decls["--thread-motif-y"]) * window.section,
           side: Number(scale[1]) * Math.min(window.width, window.height),
         });
-        placed += 1;
       }
-      assert.equal(
-        placed,
-        section.placements.length,
-        `${section.id} at ${window.width}x${window.height}: ${placed} motifs placed of ${section.placements.length}`,
-      );
 
-      for (let index = 0; ; index += 1) {
-        const decls = segment(index);
-        if (Object.keys(decls).length === 0) break;
-        if (decls.left === undefined) continue;
+      for (const segment of segments) {
+        if (segment.kind !== "connector") continue;
+        const decls = at(segment.index);
+        assert.ok(decls.left, `${id}: segment ${segment.index} has no box`);
 
         const curve = applied.get(
-          `${scope} .thread__seg-${index} .thread__connector`,
+          `${scope} .thread__seg-${segment.index} .thread__connector`,
         );
         assert.ok(
           curve?.d,
-          `${section.id}: segment ${index} declares no curve`,
+          `${id}: segment ${segment.index} declares no curve`,
         );
         const numbers = [...curve.d.matchAll(/-?[\d.]+/g)].map((m) =>
           Number(m[0]),
@@ -709,7 +749,7 @@ test("every join lands on the motif it meets, at every window", () => {
         });
         const ends = {
           from: corner(numbers[0], numbers[1]),
-          to: corner(numbers[6], numbers[7]),
+          to: corner(numbers[numbers.length - 2], numbers[numbers.length - 1]),
         };
 
         for (const [which, sign] of [
@@ -717,46 +757,35 @@ test("every join lands on the motif it meets, at every window", () => {
           ["to", 1],
         ] as const) {
           const neighbour = motifs.get(
-            which === "from" ? index - 1 : index + 1,
+            which === "from" ? segment.index - 1 : segment.index + 1,
           );
-          let expected: { x: number; y: number };
-          let tangent: { x: number; y: number; angle: number };
-          if (neighbour === undefined) {
-            /* A terminal: the thread's own entry or exit on the section's edge. */
-            const terminal = which === "from" ? section.entryX : section.exitX;
-            assert.ok(
-              terminal !== null,
-              `${section.id}: segment ${index} has neither motif nor terminal at its ${which} end`,
-            );
-            tangent = { x: 0, y: 0, angle: 90 };
-            expected = {
-              x: terminal * window.width,
-              y: which === "from" ? 0 : window.section,
-            };
-          } else {
-            const at =
-              (index +
-                (which === "from" ? -1 : 1) -
-                (section.entryX === null ? 0 : 1)) /
-              2;
-            const motif = MOTIFS[ids[at]];
-            tangent = which === "from" ? motif.exit : motif.entry;
-            expected = {
-              x: neighbour.x + (tangent.x - 0.5) * neighbour.side,
-              y: neighbour.y + (tangent.y - 0.5) * neighbour.side,
-            };
-          }
-          const radians = (tangent.angle * Math.PI) / 180;
+          if (neighbour === undefined) continue;
+          const sibling =
+            segments[which === "from" ? segment.index - 1 : segment.index + 1];
+          assert.ok(sibling.kind === "motif");
+          const declared =
+            which === "from"
+              ? sibling.place.motif.exit
+              : sibling.place.motif.entry;
+          const tangent = (declared.angle * Math.PI) / 180;
+          const expected = {
+            x:
+              neighbour.x +
+              (declared.x - 0.5) * neighbour.side +
+              sign * JOIN_OVERLAP * Math.cos(tangent),
+            y:
+              neighbour.y +
+              (declared.y - 0.5) * neighbour.side +
+              sign * JOIN_OVERLAP * Math.sin(tangent),
+          };
           const off = Math.hypot(
-            ends[which].x -
-              (expected.x + sign * JOIN_OVERLAP * Math.cos(radians)),
-            ends[which].y -
-              (expected.y + sign * JOIN_OVERLAP * Math.sin(radians)),
+            ends[which].x - expected.x,
+            ends[which].y - expected.y,
           );
           /* The 1px floor under a box that collapses on one axis is the only slack allowed. */
           assert.ok(
             off <= 1.001,
-            `${section.id} at ${window.width}x${window.height} (section ${window.section}): segment ${index}'s ${which} end misses its join by ${off.toFixed(2)}px`,
+            `${id} at ${window.width}x${window.height} (section ${window.section}): segment ${segment.index}'s ${which} end misses its join by ${off.toFixed(2)}px`,
           );
         }
       }
@@ -784,62 +813,32 @@ test("a connector overlaps its join by at least the cap the mask cuts off", () =
 /* The mask's own region is the last thing that can cut a curve, and it did: a fixed "one box-width
    past each edge" held while a connector's box was the whole section and clipped the curve the
    moment the box became the connector's own span — a control point sits many box-widths out when
-   the two ends are close on one axis. Both the wipe's reach and the region have to contain the
-   curve, at every tier, or the thread is cut somewhere no unit test was looking. */
-test("every mask reaches past the curve it reveals, at every tier", () => {
-  for (const section of ALL_THREADS) {
-    const regions = threadMaskRegions(section);
-    const arrangements =
-      section.stacked === undefined
-        ? [section.placements]
-        : [section.placements, section.stacked];
-
-    for (const placements of arrangements) {
-      for (const tier of THREAD_TIERS) {
-        for (const segment of threadSegments(section, tier, placements)) {
-          if (segment.kind !== "connector") continue;
-          const hull = [...segment.d.matchAll(/-?[\d.]+/g)].map((m) =>
-            Number(m[0]),
-          );
-          const low = Math.min(...hull);
-          const high = Math.max(...hull);
-          const region = regions.get(segment.index);
-          assert.ok(
-            region,
-            `${section.id}: segment ${segment.index} has no mask region`,
-          );
-          assert.ok(
-            region.min <= low && region.max >= high,
-            `${section.id} at ${tier.name}: the mask region [${region.min}, ${region.max}] does not hold a curve reaching [${low}, ${high}]`,
-          );
-
-          /* The wipe's own frame: `translate(a, b) scale(sx, sy)` maps the unit rect, and the axis
-             it does NOT sweep has to cover the curve on that axis. */
-          const frame = [...segment.frame.matchAll(/-?[\d.]+/g)].map((m) =>
-            Number(m[0]),
-          );
-          const [tx, ty, sx, sy] = frame;
-          const cross =
-            segment.axis === "y" ? { at: tx, span: sx } : { at: ty, span: sy };
-          const crossHull = hull.filter(
-            (_, at) => at % 2 === (segment.axis === "y" ? 0 : 1),
-          );
-          assert.ok(
-            cross.at <= Math.min(...crossHull) &&
-              cross.at + cross.span >= Math.max(...crossHull),
-            `${section.id} at ${tier.name}: the wipe covers [${cross.at}, ${cross.at + cross.span}] across a curve spanning [${Math.min(...crossHull)}, ${Math.max(...crossHull)}]`,
-          );
-        }
+   the two ends are close on one axis. */
+test("every mask reaches past the curve it reveals, at every band", () => {
+  for (const id of ALL_IDS) {
+    const regions = threadMaskRegions(id);
+    for (const band of THREAD_BANDS) {
+      for (const segment of threadSegments(id, band)) {
+        if (segment.kind !== "connector") continue;
+        const hull = [...segment.d.matchAll(/-?[\d.]+/g)].map((m) =>
+          Number(m[0]),
+        );
+        const region = regions.get(segment.index);
+        assert.ok(region, `${id}: segment ${segment.index} has no mask region`);
+        assert.ok(
+          region.min <= Math.min(...hull) - segment.maskWidth / 2 &&
+            region.max >= Math.max(...hull) + segment.maskWidth / 2,
+          `${id} at ${band.id}: the mask region [${region.min}, ${region.max}] does not hold a curve reaching [${Math.min(...hull)}, ${Math.max(...hull)}] stroked ${segment.maskWidth} wide`,
+        );
       }
     }
   }
 });
 
 /* At both ends of the scrub the thread is fully undrawn, and a reveal that is asked for nothing has
-   to paint nothing. A zero-length dash is a dot under any cap but `butt`, and a wipe rect covers by
-   its fill alone — SVG's default `stroke-width: 1` is a whole user unit, which in the wipe frame's
-   space is the connector's whole span. Both are properties of the module, so both are read from
-   it rather than assumed. */
+   to paint nothing. A zero-length dash is a dot under any cap but `butt`, and a FILLED copy of an
+   open curve floods the mask with everything its two ends enclose. Both are properties of the
+   module, so both are read from it rather than assumed. */
 test("the retracted state is asked for nothing, and paints nothing", () => {
   const module = readFileSync(
     new URL("./thread.module.css", import.meta.url),
@@ -852,69 +851,64 @@ test("the retracted state is asked for nothing, and paints nothing", () => {
     /stroke-linecap:\s*butt/,
     "a zero-length dash paints a dot under any cap but butt",
   );
-  assert.doesNotMatch(
+  assert.match(
     reveal[1],
-    /(^|[^-])stroke:/,
-    "a stroked wipe rect reveals a whole user unit past the band it was asked for",
+    /fill:\s*none/,
+    "a filled copy of an open curve reveals everything its ends enclose",
   );
+  assert.match(reveal[1], /stroke:\s*white/, "a reveal covers by its stroke");
 
-  for (const section of ALL_THREADS) {
-    const css = threadCss(section);
-    for (const [, name, body] of css.matchAll(
+  for (const id of ALL_IDS) {
+    for (const [, name, body] of threadCss(id).matchAll(
       /@keyframes\s+([\w-]+)\s*\{([^}]*(?:\}[^@]*?)*?)\n\}/g,
     )) {
       if (!name.includes("-ink-")) continue;
       for (const edge of ["0%", "100%"]) {
         const frame = new RegExp(`\\n\\s*${edge}\\s*\\{([^}]*)\\}`).exec(body);
-        assert.ok(frame, `${section.id}: ${name} declares no ${edge} frame`);
+        assert.ok(frame, `${id}: ${name} declares no ${edge} frame`);
         const dash = /stroke-dasharray:\s*([^;]*)/.exec(frame[1]);
-        if (dash !== null) {
-          const inked = dash[1]
-            .trim()
-            .split(/\s+/)
-            .map(Number)
-            .filter((_, at) => at % 2 === 0);
-          assert.deepEqual(
-            inked.filter((length) => length > 0),
-            [],
-            `${section.id}: ${name} still inks ${inked} at ${edge}`,
-          );
-        }
-        const transform = /scale\(([^)]*)\)/.exec(frame[1]);
-        if (transform !== null) {
-          const [x, y] = transform[1].split(",").map(Number);
-          assert.equal(
-            Math.min(Math.abs(x), Math.abs(y)),
-            0,
-            `${section.id}: ${name} still wipes ${transform[1]} at ${edge}`,
-          );
-        }
+        assert.ok(dash, `${id}: ${name} declares no dash at ${edge}`);
+        const inked = dash[1]
+          .trim()
+          .split(/\s+/)
+          .map(Number)
+          .filter((_, at) => at % 2 === 0);
+        assert.deepEqual(
+          inked.filter((length) => length > 0),
+          [],
+          `${id}: ${name} still inks ${inked} at ${edge}`,
+        );
       }
     }
   }
 });
 
-/* The generator picks which end of a connector is the near corner of its box. Across the window it
-   can emit both and let an aspect-ratio query choose; DOWN the page it cannot, because the quantity
-   that decides is the section's own height and no media query can see it. A section whose two ends
-   could swap order down the page would need a thread that runs back up it. */
-test("no connector's ends can swap order down the page", () => {
-  for (const section of ALL_THREADS) {
-    const arrangements =
-      section.stacked === undefined
-        ? [section.placements]
-        : [section.placements, section.stacked];
-    for (const placements of arrangements) {
-      for (const connector of composeConnectors(section, MOTIFS, placements)) {
-        const constant = connector.from.fraction.y - connector.to.fraction.y;
-        const perSvmin = connector.from.svmin.y - connector.to.svmin.y;
-        /* `r` is the window's shorter side over the section's height: 1 where a section is exactly
-           as tall as a portrait window, and towards 0 as it grows. */
-        const at = (r: number) => constant + perSvmin * r;
+/* A connector's box is pinned with `min()` and `max()` over every point it passes through, and its
+   `d` is normalised against whichever of them is the nearest corner at the band's own nominal
+   window. Which point that IS must not turn over: an end that carries an `svmin` term and one that
+   does not separate at a rate the section's own height sets, and no media query can see a section's
+   height. A box whose nearest corner changed would render the curve shifted. */
+test("no connector's box changes which point pins it, at any section height", () => {
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
+    for (const rule of readRules(css)) {
+      for (const property of ["top"] as const) {
+        const value = rule.decls[property];
+        if (value === undefined || !wraps(value, "min")) continue;
+        const { parts } = splitTop(value.slice(4, -1), [","]);
+        const order = (ratio: number) => {
+          const resolved = parts.map((part) =>
+            resolveLength(part, 1000, 1000 * ratio),
+          );
+          return [
+            resolved.indexOf(Math.min(...resolved)),
+            resolved.indexOf(Math.max(...resolved)),
+          ].join("/");
+        };
         assert.equal(
-          Math.sign(at(1e-9)),
-          Math.sign(at(1)),
-          `${section.id}: a connector's ends swap order down the page between a section one screen tall and a very tall one`,
+          order(1),
+          order(0.01),
+          `${id}: ${rule.selector}'s ${property} changes which point pins it between a section one screen tall and a very tall one`,
         );
       }
     }

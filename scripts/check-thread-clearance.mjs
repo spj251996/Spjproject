@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* The type-clearance gate (Phase 5b, Task 8): the thread may cross the ring, the mount, any
-   stock, any botanical piece — but never type. This re-runnable script proves that at eight
-   tier/orientation combinations per section.
+   stock, any botanical piece — but never type. This re-runnable script proves that at six
+   aspect-band windows per section.
 
    SELECTOR CONVENTION THIS GATE ASSUMES (the thread is not mounted yet — Task 10 mounts it):
    every SVG element that draws part of the thread — each motif's own square SVG, each
@@ -14,7 +14,7 @@
    of running this gate today, not a bug in it. Steps 2 and 3 below are what prove the gate's
    *machinery* works, independent of the thread's own existence.
 
-   METHOD, per section per tier/orientation:
+   METHOD, per section per aspect-band window:
      1. Collect every thread <path> in the section (via the convention above). Get each path's
         total length (`SVGGeometryElement.getTotalLength`) and apportion a 200-point sample
         budget across every path by arc length (largest-remainder method), so a long connector
@@ -37,7 +37,7 @@
    the launch, not the page. Any measurement here without the pin is void.
 
    CAPS (no unbounded waits, no loops that iterate until they look right):
-     - 6 sections x 4 width tiers x 2 orientations = 48 checks per full sweep — a fixed, finite
+     - 6 sections x 3 aspect bands x 2 windows each = 36 checks per full sweep — a fixed, finite
        loop, not a convergence loop.
      - Navigation: 15s. Font-ready: 5s (best-effort; a timeout here is logged and the check
        proceeds against whatever fonts loaded, since Latin body copy renders close enough
@@ -54,10 +54,11 @@
      node scripts/check-thread-clearance.mjs --section=family
      node scripts/check-thread-clearance.mjs --validate      # Step 2: harness self-check
      node scripts/check-thread-clearance.mjs --falsify       # Step 3: harness self-check
-     node scripts/check-thread-clearance.mjs --falsify --section=wishes --tier=tablet --orientation=landscape
+     node scripts/check-thread-clearance.mjs --falsify --section=wishes --band=upright --orientation=drifted
 */
 
 import { chromium } from "playwright";
+import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
 const NAV_TIMEOUT_MS = 15_000;
@@ -86,20 +87,23 @@ const SECTION_IDS = [
   "wishes",
 ];
 
-/* Real device-ish widths (matching the ones already used across `tmp/botanical-verify/*.mjs`),
-   not the breakpoint-avoiding widths `measure-section-fit.mjs` uses for its own different
-   purpose (sweeping fit regimes). This gate cares about what a guest's actual device renders. */
-const TIERS = [
-  { key: "phone", width: 390 },
-  { key: "tablet", width: 834 },
-  { key: "laptop", width: 1280 },
-  { key: "desktop", width: 1920 },
-];
+/* One window per ASPECT BAND, not per width tier: thread geometry is emitted per band now, so a
+   sweep keyed to widths could miss a band entirely. Each band contributes its own NOMINAL box —
+   where the emitted geometry renders 1:1 — and one real window that DRIFTS from it inside the same
+   band, which is where a placement defect shows. */
+const DRIFTED = {
+  tall: { width: 360, height: 780 },
+  upright: { width: 834, height: 1112 },
+  wide: { width: 1920, height: 900 },
+};
 
-const ORIENTATIONS = [
-  { key: "portrait", heightFor: (width) => Math.round(width * 1.5) },
-  { key: "landscape", heightFor: (width) => Math.round(width * 0.6) },
-];
+const BANDS = THREAD_BANDS.map((band) => ({
+  key: band.id,
+  windows: [
+    { key: "nominal", width: band.box.width, height: band.box.height },
+    { key: "drifted", ...DRIFTED[band.id] },
+  ],
+}));
 
 function parseArgs(argv) {
   const flags = { validate: false, falsify: false };
@@ -436,13 +440,13 @@ async function runValidate(browser) {
   return exitCode;
 }
 
-async function runFalsify(browser, sectionId, tierKey, orientationKey) {
-  const tier = TIERS.find((candidate) => candidate.key === tierKey) ?? TIERS[0];
+async function runFalsify(browser, sectionId, bandKey, windowKey) {
+  const tier = BANDS.find((candidate) => candidate.key === bandKey) ?? BANDS[0];
   const orientation =
-    ORIENTATIONS.find((candidate) => candidate.key === orientationKey) ??
-    ORIENTATIONS[0];
-  const width = tier.width;
-  const height = orientation.heightFor(width);
+    tier.windows.find((candidate) => candidate.key === windowKey) ??
+    tier.windows[0];
+  const width = orientation.width;
+  const height = orientation.height;
 
   console.log(
     "Step 3 — falsifying the gate: planting a violation and confirming it is caught.",
@@ -519,8 +523,8 @@ async function runSweep(browser, sections) {
 
   for (const sectionId of sections) {
     console.log(`\n#${sectionId}`);
-    const initialWidth = TIERS[0].width;
-    const initialHeight = ORIENTATIONS[0].heightFor(initialWidth);
+    const initialWidth = BANDS[0].windows[0].width;
+    const initialHeight = BANDS[0].windows[0].height;
     const page = await browser.newPage({
       viewport: { width: initialWidth, height: initialHeight },
     });
@@ -531,10 +535,10 @@ async function runSweep(browser, sections) {
       });
       await waitForFonts(page);
 
-      for (const tier of TIERS) {
-        for (const orientation of ORIENTATIONS) {
-          const width = tier.width;
-          const height = orientation.heightFor(width);
+      for (const tier of BANDS) {
+        for (const orientation of tier.windows) {
+          const width = orientation.width;
+          const height = orientation.height;
           await page.setViewportSize({ width, height });
           await page.waitForTimeout(SETTLE_MS);
 
@@ -615,8 +619,8 @@ async function main() {
 
     if (args.falsify) {
       const sectionId = args.section ?? "family";
-      const tierKey = args.tier ?? "phone";
-      const orientationKey = args.orientation ?? "portrait";
+      const tierKey = args.band ?? BANDS[0].key;
+      const orientationKey = args.orientation ?? "nominal";
       process.exit(
         await runFalsify(browser, sectionId, tierKey, orientationKey),
       );
@@ -624,8 +628,8 @@ async function main() {
 
     const sections = args.section ? [args.section] : SECTION_IDS;
     console.log(
-      `Thread type-clearance gate — ${sections.length} section(s) x ${TIERS.length} tiers x ` +
-        `${ORIENTATIONS.length} orientations = ${sections.length * TIERS.length * ORIENTATIONS.length} checks.`,
+      `Thread type-clearance gate — ${sections.length} section(s) x ${BANDS.length} aspect bands x ` +
+        `${BANDS[0].windows.length} windows = ${sections.length * BANDS.length * BANDS[0].windows.length} checks.`,
     );
     console.log(`Selector: ${THREAD_SELECTOR}\n`);
 

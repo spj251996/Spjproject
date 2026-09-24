@@ -1,8 +1,8 @@
 import styles from "./thread.module.css";
+import { THREAD_BANDS } from "./thread-bands";
 import {
   MOTIF_SIDE,
   THREAD_CLASS,
-  THREAD_TIERS,
   threadCss,
   threadMaskRegions,
   threadScopeClass,
@@ -10,7 +10,6 @@ import {
   threadStubs,
 } from "./thread-css";
 import type { ThreadId } from "./thread-geometry";
-import { ALL_THREADS } from "./thread-placement";
 
 /* One section's red thread. A SERVER component: the scrub is CSS on the section's own named view
    timeline, so nothing here needs the browser.
@@ -18,10 +17,15 @@ import { ALL_THREADS } from "./thread-placement";
    Every connector and every stub is its OWN svg, in a box the generated sheet pins to that
    connector's two ends — in `%` of the section and `svmin`, the same two units the motif's square
    is placed and sized in, so a join lands on the motif at every window rather than only where the
-   section's aspect matches the tier it was composed for. The curve inside the box is normalised
-   to the box's corners, so only its SHAPE still varies per tier; the sheet swaps that `d` and the
-   wipe's frame. The `d` attributes below are the narrowest tier's, so a browser without the CSS
-   `d` property still paints a complete thread rather than nothing.
+   section's aspect matches the band it was composed for. The curve inside the box is normalised to
+   the box's own corners, so only its SHAPE still varies per band; the sheet swaps that `d`. A
+   waypoint between the two ends may fall outside the box, which `overflow: visible` renders. The
+   `d` attributes below are the first band's, so a browser without the CSS `d` property still paints
+   a complete thread rather than nothing.
+
+   Every reveal is a dashed, butt-capped stroked COPY of the path it reveals — motif and connector
+   alike — so nothing is wiped into view and a route may double back as freely as the owner draws
+   it.
 
    Two contracts bind a caller:
    - The section must be a positioned ancestor, and must gain no `contain`, `content-visibility` or
@@ -40,41 +44,25 @@ const WEAVE_CLASS = {
   over: THREAD_CLASS.weaveOver,
 } as const;
 
-/* The narrowest tier decides the element set and the fallback `d`s; every other tier overrides
-   those values through the generated stylesheet. */
-const BASE_TIER = THREAD_TIERS[0];
+/* The first band decides the element set and the fallback `d`s; every other band overrides those
+   values through the generated stylesheet. */
+const BASE_BAND = THREAD_BANDS[0];
 
 export function SectionThread({ id, weave }: SectionThreadProps) {
-  const section = ALL_THREADS.find((thread) => thread.id === id);
-  if (section === undefined) {
-    throw new Error(`section-thread: no thread is placed for "${id}"`);
-  }
-  /* The stacked set swaps the placements, not the structure: one DOM serves both arrangements and
-     the stylesheet re-places it below `{breakpoints.md}`. A set of a different size would need
-     elements the other arrangement has no geometry for. */
-  if (
-    section.stacked !== undefined &&
-    section.stacked.length !== section.placements.length
-  ) {
-    throw new Error(
-      `section-thread: ${id}'s stacked set places ${section.stacked.length} motifs against ${section.placements.length} — one arrangement would render elements the other cannot place`,
-    );
-  }
-
   const instance = weave === undefined ? id : `${id}-${weave}`;
   const maskId = (index: number, layer: string) =>
     `thread-${instance}-${index}-${layer}`;
 
-  const segments = threadSegments(section, BASE_TIER);
-  const stubs = threadStubs(section);
-  /* One region per connector, wide enough for the widest tier's curve — a `<mask>`'s region is
-     markup and cannot be swapped per tier the way the geometry is. */
-  const regions = threadMaskRegions(section);
+  const segments = threadSegments(id, BASE_BAND);
+  const stubs = threadStubs(id, BASE_BAND);
+  /* One region per connector, wide enough for the widest band's curve and mask — a `<mask>`'s
+     region is markup and cannot be swapped per band the way the geometry is. */
+  const regions = threadMaskRegions(id);
   const region = (index: number) => regions.get(index) ?? { min: -1, max: 2 };
 
   return (
     <>
-      <style>{threadCss(section)}</style>
+      <style>{threadCss(id)}</style>
       <div
         aria-hidden="true"
         className={[
@@ -106,21 +94,15 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                   width={region(segment.index).max - region(segment.index).min}
                   height={region(segment.index).max - region(segment.index).min}
                 >
-                  <g
-                    className={`${styles.wipeFrame} ${THREAD_CLASS.wipeFrame}`}
-                  >
-                    <rect
-                      className={`${styles.reveal} ${
-                        layer === "ink"
-                          ? THREAD_CLASS.inkReveal
-                          : THREAD_CLASS.wispReveal
-                      }`}
-                      x="0"
-                      y="0"
-                      width="1"
-                      height="1"
-                    />
-                  </g>
+                  <path
+                    className={`${styles.reveal} ${
+                      layer === "ink"
+                        ? THREAD_CLASS.inkReveal
+                        : THREAD_CLASS.wispReveal
+                    }`}
+                    d={segment.revealD}
+                    pathLength="1"
+                  />
                 </mask>
               ))}
               <path
@@ -171,24 +153,24 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                     height={MOTIF_SIDE * 3}
                   >
                     <path
-                      className={`${styles.reveal} ${styles.motifMask} ${
+                      className={`${styles.reveal} ${
                         layer === "ink"
                           ? THREAD_CLASS.inkReveal
                           : THREAD_CLASS.wispReveal
                       }`}
-                      d={segment.motif.d}
+                      d={segment.place.motif.d}
                       pathLength="1"
                     />
                   </mask>
                 ))}
                 <path
                   className={`${styles.motifPath} ${THREAD_CLASS.motifPath}`}
-                  d={segment.motif.d}
+                  d={segment.place.motif.d}
                   mask={`url(#${maskId(segment.index, "ink")})`}
                 />
                 <path
                   className={`${styles.wisp} ${THREAD_CLASS.wisp}`}
-                  d={segment.motif.d}
+                  d={segment.place.motif.d}
                   mask={`url(#${maskId(segment.index, "wisp")})`}
                 />
               </svg>

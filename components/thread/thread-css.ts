@@ -1,40 +1,50 @@
 /* Extension-qualified, unlike the rest of components/: plain node resolves a relative import only
    with its extension, and this module stays importable outside the app's bundler. */
+import { type Band, THREAD_BANDS } from "./thread-bands.ts";
 import {
-  type Connector,
   type ConnectorEnd,
-  composeConnectors,
-  connectorCurve,
   type Motif,
-  type Placement,
+  resolveEnd,
   type SectionBox,
-  type SectionThread,
+  type Tangent,
+  TERMINAL_TANGENT,
   type ThreadId,
 } from "./thread-geometry.ts";
+import {
+  motifAngle,
+  routePoints,
+  type SectionRoute,
+  THREAD_IDS,
+  THREAD_ROUTES,
+} from "./thread-grid.ts";
 import { MOTIFS } from "./thread-motifs.ts";
+import { type Point, splinePath } from "./thread-spline.ts";
 
-/* One section's thread as a static stylesheet, generated from the section's own placements. Nothing
-   here reads the page: the output is plain CSS that paints a COMPLETE thread on first render, and
-   the scroll-driven layer subtracts from it (DESIGN.md -> Components -> Shell -> `thread-overlay`:
-   "The complete thread is the base state, and the reveal subtracts from it"). Reduced motion, a
-   page without scripting and a browser without scroll-linked animation therefore all land on the
-   same base with nothing to suppress.
+/* One section's red thread as a static stylesheet, generated from the section's own authored route.
+   Nothing here reads the page: the output is plain CSS that paints a COMPLETE thread on first
+   render, and the scroll-driven layer subtracts from it (DESIGN.md -> Components -> Shell ->
+   `thread-overlay`: "The complete thread is the base state, and the reveal subtracts from it").
+   Reduced motion, a page without scripting and a browser without scroll-linked animation therefore
+   all land on the same base with nothing to suppress.
 
-   The reveal is a MASK per element, never a dash on the visible stroke. Every visible stroke needs
-   `vector-effect: non-scaling-stroke` — a viewBox unit is ~0.78 screen px at phone and ~2.0 at
-   desktop, so one declared width would otherwise render at two — and a non-scaling stroke fragments
-   a `pathLength` dash into disjoint runs, measured, with no stretch at all
-   (`tmp/thread-spike/VERDICT.md` -> Q1). So:
+   Geometry is emitted PER ASPECT BAND, not per width tier. A motif is a square while a section is
+   not, so it is the section's aspect that decides where a connector's ends land; each band's box is
+   the nominal pixel box of the device it was chosen for, and at that device the render is 1:1.
 
-   - a connector descends monotonically by design, so a rect WIPE in the svg's own user space is
-     equivalent to drawing along it, and survives both the stretch and the non-scaling stroke;
-   - a motif loops back on itself, so a wipe would reveal it out of order; its mask is a dashed,
-     BUTT-capped stroked copy of the same `d`, where nothing scales the dash. The butt cap is
-     load-bearing: a round cap on a zero-length dash paints a dot, measured as stray specks.
+   THE WHOLE THREAD DRAWS ITSELF. Every reveal — motif and connector alike — is a MASK per element:
+   a dashed, BUTT-capped stroked copy of the same `d`, carrying `0 {tail} {head - tail} 1` on
+   `pathLength="1"`. The butt cap is load-bearing: a round cap on a zero-length dash paints a dot,
+   measured as stray specks. It is never a dash on the visible stroke, because every visible stroke
+   needs `vector-effect: non-scaling-stroke` — a viewBox unit is ~0.78 screen px at phone and ~2.0
+   at desktop, so one declared width would otherwise render at two — and a non-scaling stroke
+   fragments a `pathLength` dash into disjoint runs, measured, with no stretch at all
+   (`tmp/thread-spike/VERDICT.md` -> Q1).
 
-   Both masks therefore stop exactly where their path stops, and the visible stroke's ROUND CAP
-   reaches half a stroke width further. Every connector runs `JOIN_OVERLAP` past each of its own
-   ends to cover that, rather than either mask reaching past its path — see the constant.
+   A mask stops where its own path stops, while the visible stroke's ROUND CAP reaches half a stroke
+   width further. Every connector runs `JOIN_OVERLAP` past each of its own ends to cover that, rather
+   than a mask reaching past its path — see the constant. A CONNECTOR's mask needs one thing more,
+   because its box is stretched: its copy runs past the ink at both ends, so that the butt cap's
+   oblique cut lands clear of it — see `MASK_LEAD`.
 
    Every selector starts from the section's scope class, so two threads on one page never collide.
    The stylesheet is unlayered, so it wins over the utility and component layers. */
@@ -43,7 +53,6 @@ export const THREAD_CLASS = {
   root: "thread",
   field: "thread__field",
   connector: "thread__connector",
-  wipeFrame: "thread__wipe-frame",
   inkReveal: "thread__ink-reveal",
   wispReveal: "thread__wisp-reveal",
   wisp: "thread__wisp",
@@ -79,6 +88,12 @@ export const THREAD_HOLD = 0.25;
    wisp a width and an opacity but no extent. Owner: design-write. */
 const WISP_EXTENT = 0.04;
 
+/* INFERRED, not stated: how far past a FREE end its stub reaches, in `svmin` — the same unit a
+   motif's square is sized in, so a stub is the same shape at every window. A free end is one with
+   no neighbouring section to hand the thread to; the stub is the wisp it keeps at rest.
+   Owner: design-write. */
+const STUB_REACH = 0.08;
+
 /* Every motif's `d` is authored in a 0-100 square, not a 0-1 one (`thread-motifs.ts`, and
    `thread-geometry.test.ts` asserts each `d` starts at `entry.x * 100`). Both the svg that renders a
    motif and the box that converts its arc length to pixels read it from here, so the two cannot
@@ -102,6 +117,17 @@ export const MOTIF_SIDE = 100;
    mid-scrub; under-width lightens the thread at rest. This takes the bound that has a render behind
    it. Owner: design-write. */
 const MASK_WIDTH = 6;
+
+/* The same knee, in CSS pixels, for a CONNECTOR's mask — which lives in a box stretched
+   non-uniformly, so its width cannot be stated in the box's own units the way a motif's can. The
+   generator converts: a stroke of `w` box-units renders `w x boxSide` px along each axis, so
+   covering the visible stroke on BOTH axes needs `w = COVER / min(boxWidth, boxHeight)`.
+
+   6 units on the 38.4px bow is 2.3px, and this takes 4 for the drift a band carries away from its
+   nominal device. Over-width costs a connector nothing, unlike a motif: a connector is one open
+   curve that never passes near itself, so there is no neighbouring pass for a wide mask to reveal
+   early. Owner: design-write. */
+const CONNECTOR_MASK_COVER = 4;
 
 /* MEASURED, in px: how far past each of its own ends a connector runs, so that a join reads as one
    continuous stroke.
@@ -132,53 +158,54 @@ const MASK_MARGIN = 1;
 
 /* INFERRED, not stated: the arc of the Wishes loop that passes BEHIND the illustration. DESIGN.md
    requires the under-segment to cross the drawn figures rather than the pale surround, which is a
-   routing requirement over a drawing that does not exist yet. Task 11 tunes it against the measured
+   routing requirement over a drawing that does not exist yet. Task 12 tunes it against the measured
    bar (under-segment ink hidden >= 60%). Owner: design-write. */
 const WEAVE_BAND: readonly [number, number] = [0.3, 0.7];
-
-/* The four width tiers, each with the nominal section box the spike measured its aspect spread
-   against. A section spans the window's width and is at least one window tall, so the box is the
-   window's. Only the box's ASPECT is read. */
-export type ThreadTier = {
-  name: string;
-  /* The tier's own width band in rem, half-open [from, to). The media query is derived from it, so
-     a band and the query that states it cannot drift apart, and two bands can be intersected. */
-  from: number;
-  to: number;
-  media: string;
-  box: SectionBox;
-};
-
-/* Bounded ranges, not open-ended minimums: Tailwind emits arbitrary variants in string order, and
-   an open-ended `>=64rem` rule beats an open-ended `>=100rem` one wherever both match. These are
-   hand-emitted rather than variants, but the same collision would apply to two overlapping tiers,
-   and a bounded band cannot have one. */
-function widthQuery(from: number, to: number): string {
-  if (from === 0) return `(width < ${to}rem)`;
-  if (to === Number.POSITIVE_INFINITY) return `(${from}rem <= width)`;
-  return `(${from}rem <= width < ${to}rem)`;
-}
-
-export const THREAD_TIERS: readonly ThreadTier[] = [
-  { name: "phone", from: 0, to: 48, box: { width: 390, height: 844 } },
-  { name: "tablet", from: 48, to: 64, box: { width: 768, height: 1024 } },
-  { name: "laptop", from: 64, to: 100, box: { width: 1440, height: 900 } },
-  {
-    name: "desktop",
-    from: 100,
-    to: Number.POSITIVE_INFINITY,
-    box: { width: 1600, height: 1000 },
-  },
-].map((tier) => ({ ...tier, media: widthQuery(tier.from, tier.to) }));
-
-/* Family's second placement set is keyed to the ARRANGEMENT — below `{breakpoints.md}`, where
-   `MountedPair` is `flex-col` — never to a device tier, because the property belongs to the layout
-   and a per-tier constant is what 5a's botanical sizing got wrong. */
-const STACKED_REGIME = { from: 0, to: 48 };
 
 function round(value: number): string {
   const fixed = value.toFixed(5).replace(/\.?0+$/, "");
   return fixed === "-0" ? "0" : fixed;
+}
+
+/* ---- the bands ------------------------------------------------------------------------------ */
+
+/* Bounded ranges, not open-ended minimums, and half-open so no aspect can match two bands. The
+   brief's `(min-aspect-ratio: a) and (max-aspect-ratio: b)` spelling is inclusive at BOTH ends, so
+   two adjacent bands would both match exactly at their shared edge — the overlap
+   `thread-grid.test.ts` exists to forbid. The range syntax below is what the frame's own generated
+   sheet already uses for widths, for the same reason. */
+function aspectQuery(band: Band): string {
+  if (band.min === 0) return `(aspect-ratio < ${round(band.max)})`;
+  if (band.max === Number.POSITIVE_INFINITY) {
+    return `(${round(band.min)} <= aspect-ratio)`;
+  }
+  return `(${round(band.min)} <= aspect-ratio < ${round(band.max)})`;
+}
+
+/* `not-found` is a one-to-one copy of the invite's thread — the same route, not a placement of its
+   own. It is closed at both ends, because it has no neighbouring section to hand the thread to. */
+function routeFor(id: ThreadId, band: Band): SectionRoute {
+  const of = id === "not-found" ? "invite" : id;
+  const route = THREAD_ROUTES.find(
+    (candidate) => candidate.id === of && candidate.band === band.id,
+  );
+  if (route === undefined) {
+    throw new Error(`thread-css: no route for "${id}" in band "${band.id}"`);
+  }
+  return route;
+}
+
+/* A section hands the thread on to the one after it, so every boundary between two sections is a
+   terminal. The two ends of the PAGE are free instead, and so are both of `not-found`'s — a screen
+   with no neighbours at all. A free end keeps a wisp at rest; a terminal's wisp is the next
+   section's ink. */
+function hasEntry(id: ThreadId): boolean {
+  return THREAD_IDS.indexOf(id) > 0;
+}
+
+function hasExit(id: ThreadId): boolean {
+  const at = THREAD_IDS.indexOf(id);
+  return at !== -1 && at < THREAD_IDS.length - 1;
 }
 
 /* ---- pinning a connector's box ------------------------------------------------------------- */
@@ -186,7 +213,7 @@ function round(value: number): string {
 /* A position the browser resolves rather than the generator: a percentage of the section box, a
    multiple of `svmin` — the unit `--thread-motif-side` is written in — and a pixel allowance. The
    three never collapse into one number at build time, because their ratio is the section's aspect
-   and no tier box knows it. */
+   and no nominal box knows it. */
 type CssLength = { pct: number; svmin: number; px: number };
 
 function endLength(
@@ -201,10 +228,6 @@ function endLength(
     svmin: end.svmin[axis] * 100,
     px: sign * overlap * (axis === "x" ? Math.cos(radians) : Math.sin(radians)),
   };
-}
-
-function difference(a: CssLength, b: CssLength): CssLength {
-  return { pct: a.pct - b.pct, svmin: a.svmin - b.svmin, px: a.px - b.px };
 }
 
 function lengthCss(length: CssLength): string {
@@ -224,32 +247,34 @@ function lengthCss(length: CssLength): string {
   return terms.length === 1 ? sum : `calc(${sum})`;
 }
 
-/* The box an element is given so its two opposite corners land ON the two points, whichever way
-   round they fall: `min` takes the near corner and `max` of the difference with its own negation
-   takes the distance without needing `abs()`. The 1px floor keeps a box that collapses on one axis
-   — a connector that travels only vertically — from becoming a zero-size SVG viewport, which
-   renders nothing at all; it costs at most 1px, and only where the two points are already within
-   1px of each other. */
-function boxCss(
-  from: CssLength,
-  to: CssLength,
-): { start: string; size: string } {
+/* The box an element is given so it spans every point the curve passes through, whichever way round
+   they fall — `min` and `max` are order-free, which is what lets a waypoint sit between the two
+   ends without the generator having to know which end is nearer.
+
+   The 1px floor keeps a box that collapses on one axis — a connector that travels straight down —
+   from becoming a zero-size SVG viewport, which renders nothing at all; it costs at most 1px, and
+   only where every point is already within 1px of the others on that axis. */
+function boxCss(lengths: readonly CssLength[]): {
+  start: string;
+  size: string;
+} {
+  const terms = lengths.map(lengthCss);
+  const start = terms.length === 1 ? terms[0] : `min(${terms.join(", ")})`;
+  const end = terms.length === 1 ? terms[0] : `max(${terms.join(", ")})`;
   return {
-    start: `min(${lengthCss(from)}, ${lengthCss(to)})`,
-    size: `max(1px, ${lengthCss(difference(to, from))}, ${lengthCss(difference(from, to))})`,
+    start,
+    size: terms.length === 1 ? "1px" : `max(1px, calc(${end} - ${start}))`,
   };
 }
 
 /* ---- path reading ------------------------------------------------------------------------- */
-
-type Point = { x: number; y: number };
 
 type Command = { code: string; points: Point[] };
 
 /* Only the commands the thread actually uses. Anything else THROWS rather than being skipped or
    approximated: an arc silently measured as a straight line would put a wrong number into every
    keyframe stop, and a wrong number that looks plausible is the failure this project keeps
-   re-learning. Task 6's drawings must stay inside this set or extend it deliberately. */
+   re-learning. A motif's drawing must stay inside this set or extend it deliberately. */
 function parsePath(d: string): Command[] {
   const tokens = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
   const commands: Command[] = [];
@@ -303,8 +328,9 @@ function cubic(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
 
 const SAMPLES = 48;
 
-/* Every drawn point of a path, in order, in the box it is rendered in. Arc length, the wipe axis
-   and the monotonicity guard all read the same samples, so none of them can disagree with another. */
+/* Every drawn point of a path, in order, in the box it is rendered in. Arc length, the mask region
+   and the reparametrisation below all read the same samples, so none of them can disagree with
+   another. */
 function samplePath(d: string, box: SectionBox): Point[] {
   const scale = (p: Point) => ({ x: p.x * box.width, y: p.y * box.height });
   const points: Point[] = [];
@@ -356,18 +382,25 @@ function samplePath(d: string, box: SectionBox): Point[] {
   return points;
 }
 
+function cumulative(points: readonly Point[]): number[] {
+  const lengths = [0];
+  for (let index = 1; index < points.length; index += 1) {
+    lengths.push(
+      lengths[index - 1] +
+        Math.hypot(
+          points[index].x - points[index - 1].x,
+          points[index].y - points[index - 1].y,
+        ),
+    );
+  }
+  return lengths;
+}
+
 /* Exported so a test can exercise the measurement the keyframe stops are derived from, against
    lengths that are known by construction rather than produced by this same code. */
 export function pathLength(d: string, box: SectionBox): number {
-  const points = samplePath(d, box);
-  let total = 0;
-  for (let index = 1; index < points.length; index += 1) {
-    total += Math.hypot(
-      points[index].x - points[index - 1].x,
-      points[index].y - points[index - 1].y,
-    );
-  }
-  return total;
+  const lengths = cumulative(samplePath(d, box));
+  return lengths[lengths.length - 1] ?? 0;
 }
 
 /* The drawn extent of a path in the box it is rendered in. Test-facing, like `pathLength` above, and
@@ -386,13 +419,249 @@ export function pathBounds(
   };
 }
 
-/* `composePath` returns every connector in one `d`, lifting the pen across each motif's footprint.
-   A subpath that is only a moveto draws nothing — it is the lift itself — and is dropped. */
-export function drawnSubpaths(d: string): string[] {
-  return d
-    .split(/(?=M )/)
-    .map((piece) => piece.trim())
-    .filter((piece) => piece.length > 0 && /[CLQZclqz]/.test(piece));
+/* A `pathLength="1"` dash is measured in the path's OWN user space, and a connector's is the unit
+   square its box stretches. So a band the owner reads as "half drawn" is half of the distorted
+   length, not half of the rendered one, and the pen speeds up and slows down with direction.
+
+   This is the correction: a monotone map from a fraction of the RENDERED arc, in the band's nominal
+   pixels, to the fraction of the user-space arc that reaches the same point. A uniformly scaled path
+   — every motif — maps identically and is left alone. */
+type Reparametrise = (fraction: number) => number;
+
+function reparametrise(
+  d: string,
+  box: SectionBox,
+  /* The stretch of `d` the fraction is a fraction OF, in the box's pixels: a mask copy runs past
+     the ink it reveals at both ends, so "half drawn" is half of the ink, not half of the copy. */
+  window: { from: number; reach: number } | null = null,
+): Reparametrise {
+  const drawn = cumulative(samplePath(d, box));
+  const user = cumulative(samplePath(d, { width: 1, height: 1 }));
+  const total = drawn[drawn.length - 1];
+  const userTotal = user[user.length - 1];
+  if (!(total > 0) || !(userTotal > 0)) return (fraction) => fraction;
+  const from = window?.from ?? 0;
+  const reach = window?.reach ?? total;
+  return (fraction) => {
+    /* The ends SNAP to the copy's own ends rather than to the ink's. A fully drawn band has to
+       cover the lead, or the cap lands back on the ink and the lead buys nothing; a fully
+       retracted one has to start behind it, for the same reason at the other end. In between the
+       rate is the ink's own, so the pen still advances evenly along what the reader sees. */
+    if (fraction <= 0) return 0;
+    if (fraction >= 1) return 1;
+    const target = from + fraction * reach;
+    let at = 1;
+    while (at < drawn.length - 1 && drawn[at] < target) at += 1;
+    const span = drawn[at] - drawn[at - 1];
+    const share = span < 1e-12 ? 0 : (target - drawn[at - 1]) / span;
+    return (user[at - 1] + share * (user[at] - user[at - 1])) / userTotal;
+  };
+}
+
+/* A connector's box is stretched non-uniformly, and that is what makes its mask a different problem
+   from a motif's. A `stroke-linecap: butt` is square-on to the path in the element's OWN space, and
+   an anisotropic stretch turns it into an OBLIQUE cut across the rendered stroke — so the cap slices
+   a wedge back ALONG the path instead of across it. MEASURED at the tall band's Event Info join,
+   where the box is 84.5 x 272.8: the mask ended 5.5 px short of its own path's end and the thread
+   rendered in two pieces. `stroke-linecap: square` closes it and is ruled out — a square cap paints
+   a square on every zero-length dash, which the retracted state is made of — and
+   `vector-effect: non-scaling-stroke` closes it and is ruled out too: re-measured here, it fragments
+   the `pathLength` dash into 81 disjoint runs, exactly as the spike recorded (VERDICT.md -> Q1).
+
+   So the mask copy RUNS PAST the ink at both ends, and the dash is mapped onto the stretch in the
+   middle. The lead SCALES with `cot(the angle between the rendered cap line and the rendered path)`,
+   computed per end rather than guessed, because that is the quantity the wedge grows with — but the
+   multiplier is MEASURED, not derived. The obvious derivation (half the visible stroke times that
+   cotangent) predicts 1.1 px at the tall band's Event Info join against 5.5 px observed, so it is
+   wrong by about 5x and only its SHAPE is trusted here. 8 px at cot 1 is what closes every one of
+   the join gate's 84 renders; 4 px leaves 26 of them broken in the `upright` band. The cap at 96 px
+   is so a near-tangential end cannot produce an absurd path.
+
+   None of the lead is ever inked. It is covered only when a band reaches the ink's own end, where
+   the mapping snaps to the copy's end — see `reparametrise`. Owner: design-write. */
+const MASK_LEAD = 8;
+const MAX_MASK_LEAD = 96;
+
+function maskCopy(
+  d: string,
+  nominal: SectionBox,
+): { d: string; along: Reparametrise } {
+  const drawn = samplePath(d, nominal);
+  const user = samplePath(d, { width: 1, height: 1 });
+  const total = pathLength(d, nominal);
+  if (drawn.length < 2 || !(total > 0)) {
+    return { d, along: reparametrise(d, nominal) };
+  }
+
+  const lead = (at: "start" | "end") => {
+    const [near, far] =
+      at === "start"
+        ? [
+            { drawn: drawn[0], user: user[0] },
+            { drawn: drawn[1], user: user[1] },
+          ]
+        : [
+            { drawn: drawn[drawn.length - 1], user: user[user.length - 1] },
+            { drawn: drawn[drawn.length - 2], user: user[user.length - 2] },
+          ];
+    const tangent = {
+      x: near.drawn.x - far.drawn.x,
+      y: near.drawn.y - far.drawn.y,
+    };
+    const size = Math.hypot(tangent.x, tangent.y);
+    if (size < 1e-9) return { reach: MASK_MARGIN, step: { x: 0, y: 0 } };
+    const step = { x: tangent.x / size, y: tangent.y / size };
+    /* The cap line: the user-space normal, carried through the same stretch the path is. */
+    const normal = {
+      x: -(near.user.y - far.user.y) * nominal.width,
+      y: (near.user.x - far.user.x) * nominal.height,
+    };
+    const cross = Math.abs(step.x * normal.y - step.y * normal.x);
+    const along = Math.abs(step.x * normal.x + step.y * normal.y);
+    const wedge = cross < 1e-9 ? MAX_MASK_LEAD : along / cross;
+    return {
+      reach: Math.min(MAX_MASK_LEAD, MASK_LEAD * (1 + wedge)),
+      step,
+    };
+  };
+
+  const point = (at: "start" | "end") => {
+    const { reach, step } = lead(at);
+    const from = at === "start" ? user[0] : user[user.length - 1];
+    return {
+      reach,
+      x: from.x + (reach * step.x) / nominal.width,
+      y: from.y + (reach * step.y) / nominal.height,
+    };
+  };
+  const head = point("start");
+  const tail = point("end");
+
+  /* `M a L b` in place of the original `M b`, and one `L` past the far end: the copy is the same
+     curve with a straight lead at each end, so the dash's own arithmetic is unchanged. */
+  const body = d.replace(/^M\s+[-\d.]+\s+[-\d.]+\s*/, "");
+  const first = user[0];
+  const extended = `M ${round(head.x)} ${round(head.y)} L ${round(first.x)} ${round(first.y)} ${body} L ${round(tail.x)} ${round(tail.y)}`;
+
+  return {
+    d: extended,
+    along: reparametrise(extended, nominal, {
+      from: head.reach,
+      reach: total,
+    }),
+  };
+}
+
+/* ---- the route, resolved -------------------------------------------------------------------- */
+
+/* A motif is NOT yet turned onto the route it sits on, and the reason is a measurement rather than
+   an omission. Turning it means turning its two attachment points with it, which throws the
+   drawing's whole chord onto the axis the route travels: with the seeded scales, `rings` at 0.44 and
+   `knot` at 0.29 on a four-row grid, their attachment points cross at `r = 0.685` — the window's
+   shorter side over the section's height — so from the `upright` band upward the thread would run
+   back up itself. The scales and the grid are the owner's to tune on the panel; the turn follows
+   them, not the other way round. `motifAngle` is the route's own direction of travel and already
+   aims every free end's stub. */
+
+export type MotifPlacement = {
+  motif: Motif;
+  x: number;
+  y: number;
+  scale: number;
+};
+
+function motifEnd(place: MotifPlacement, tangent: Tangent): ConnectorEnd {
+  return {
+    fraction: { x: place.x, y: place.y },
+    svmin: {
+      x: (tangent.x - 0.5) * place.scale,
+      y: (tangent.y - 0.5) * place.scale,
+    },
+    tangent,
+  };
+}
+
+function plainEnd(point: Point, angle: number): ConnectorEnd {
+  return {
+    fraction: { x: point.x, y: point.y },
+    svmin: { x: 0, y: 0 },
+    tangent: { x: 0, y: 0, angle },
+  };
+}
+
+/* A point where the thread is interrupted: a terminal on the section's edge, a free end at the top
+   or bottom of the page, or a motif — which the thread enters on one side and leaves on the other,
+   so its two ends differ. Everything between two breaks is one connector, and the route's remaining
+   stops are the waypoints it passes through. */
+type Break = {
+  arrive: ConnectorEnd;
+  depart: ConnectorEnd;
+  motif: MotifPlacement | null;
+  stub: "entry" | "exit" | null;
+};
+
+function breaksAndWaypoints(
+  id: ThreadId,
+  band: Band,
+): { breaks: Break[]; between: Point[][] } {
+  const route = routeFor(id, band);
+  const points = routePoints(route);
+  const last = points.length - 1;
+
+  const breaks: Break[] = [];
+  const between: Point[][] = [];
+  let pending: Point[] = [];
+
+  const push = (made: Break) => {
+    if (breaks.length > 0) between.push(pending);
+    pending = [];
+    breaks.push(made);
+  };
+
+  if (hasEntry(id)) {
+    const end = plainEnd({ x: points[0].x, y: 0 }, TERMINAL_TANGENT.angle);
+    push({ arrive: end, depart: end, motif: null, stub: null });
+  }
+
+  route.stops.forEach((stop, at) => {
+    const free =
+      (at === 0 && !hasEntry(id)) || (at === last && !hasExit(id))
+        ? at === 0 && !hasEntry(id)
+          ? "entry"
+          : "exit"
+        : null;
+
+    if (stop.motif === undefined) {
+      if (free === null) {
+        pending.push(points[at]);
+        return;
+      }
+      const end = plainEnd(points[at], motifAngle(route, at));
+      push({ arrive: end, depart: end, motif: null, stub: free });
+      return;
+    }
+
+    const motif = MOTIFS[stop.motif];
+    const place: MotifPlacement = {
+      motif,
+      x: points[at].x,
+      y: points[at].y,
+      scale: stop.scale ?? 0.3,
+    };
+    push({
+      arrive: motifEnd(place, motif.entry),
+      depart: motifEnd(place, motif.exit),
+      motif: place,
+      stub: free,
+    });
+  });
+
+  if (hasExit(id)) {
+    const end = plainEnd({ x: points[last].x, y: 1 }, TERMINAL_TANGENT.angle);
+    push({ arrive: end, depart: end, motif: null, stub: null });
+  }
+
+  return { breaks, between };
 }
 
 /* ---- segments ----------------------------------------------------------------------------- */
@@ -401,148 +670,104 @@ export type ThreadSegment =
   | {
       kind: "connector";
       index: number;
-      /* The two ends this connector was composed from — an alternate geometry for a window where
-         they fall the other way round is re-composed from them. */
-      connector: Connector;
+      /* The two ends and the stops between them this connector was composed from — an alternate
+         geometry for a window where the ends fall the other way round is re-composed from them. */
+      from: ConnectorEnd;
+      to: ConnectorEnd;
+      waypoints: readonly Point[];
       /* Normalised into this connector's own box: its two ends are the box's opposite corners, so
          nothing here carries the section's aspect. The box does, in CSS. */
       d: string;
-      /* The same curve in section fractions, against the nominal box — what the length and the
-         wipe axis are measured from. */
-      absolute: string;
+      /* The same curve, run past both ends, for the mask copy to be dashed along. */
+      revealD: string;
       length: number;
-      axis: "x" | "y";
-      monotone: boolean;
-      frame: string;
-      /* How far past its box, in box units, this tier's curve reaches. The mask's own region is a
-         markup attribute and cannot vary per tier, so the component takes the widest. */
+      /* Rendered arc fraction -> user-space arc fraction, so the dash advances evenly on screen. */
+      along: Reparametrise;
+      /* The mask's stroke width in this box's own units, sized to cover the visible stroke on
+         whichever axis the box compresses hardest. */
+      maskWidth: number;
+      /* How far past its box, in box units, this band's curve and its mask reach. The mask's own
+         region is a markup attribute and cannot vary per band, so the component takes the widest. */
       region: { min: number; max: number };
       box: { left: string; top: string; width: string; height: string };
     }
   | {
       kind: "motif";
       index: number;
-      motif: Motif;
-      placement: Placement;
+      place: MotifPlacement;
       length: number;
     };
 
 function connectorSegment(
   index: number,
-  connector: Connector,
+  from: ConnectorEnd,
+  to: ConnectorEnd,
+  waypoints: readonly Point[],
   box: SectionBox,
 ): ThreadSegment {
-  const curve = connectorCurve(connector, box, JOIN_OVERLAP);
-  const d = curve.d;
-  const points = samplePath(d, box);
-  const first = points[0];
-  const last = points[points.length - 1];
+  /* Both ends run `JOIN_OVERLAP` past themselves along the tangent they are met on, so the ink
+     covers the round cap the neighbour's butt-capped mask cuts away. */
+  const start = resolveEnd(from, box, JOIN_OVERLAP, -1);
+  const finish = resolveEnd(to, box, JOIN_OVERLAP, 1);
+  const through = [start, ...waypoints, finish];
 
-  const advances = (candidate: "x" | "y") => {
-    const along = points.map((p) => (candidate === "y" ? p.y : p.x));
-    const forward = along[along.length - 1] >= along[0];
-    return along.every((value, at) =>
-      at === 0
-        ? true
-        : forward
-          ? value >= along[at - 1] - 1e-9
-          : value <= along[at - 1] + 1e-9,
-    );
+  /* The box is pinned to the connector's two ENDS and to nothing else, so its two corners ARE the
+     two points the curve has to meet and a join costs nothing at any window. A waypoint between
+     them is normalised into that same frame and may fall outside the box, which `.field`'s
+     `overflow: visible` renders. */
+  const horizontal = boxCss([
+    endLength(from, "x", -1, JOIN_OVERLAP),
+    endLength(to, "x", 1, JOIN_OVERLAP),
+  ]);
+  const vertical = boxCss([
+    endLength(from, "y", -1, JOIN_OVERLAP),
+    endLength(to, "y", 1, JOIN_OVERLAP),
+  ]);
+
+  /* The same span, in the band's nominal pixels, with the same 1px floor the CSS above takes — so
+     the two cannot disagree about a collapsed axis. On a collapsed axis one box unit is one nominal
+     pixel, which keeps both ends exactly on the box's own edge and lets a waypoint's excursion
+     still be drawn rather than flattened to the middle. */
+  const span = (axis: "x" | "y") => {
+    const side = axis === "x" ? box.width : box.height;
+    const at = [start[axis] * side, finish[axis] * side];
+    const min = Math.min(...at);
+    return { min, size: Math.max(1, Math.max(...at) - min), side };
   };
-
-  /* The widest sweep is the axis a wipe reads best along, but a connector that leaves its motif
-     along the exit tangent and then turns back reverses on that axis — and a wipe is equivalent to
-     drawing along the curve only where the curve advances. The other axis is taken when the wide
-     one turns back, because a wipe that reveals the arc OUT OF ORDER is a worse defect than one
-     that reveals it unevenly. */
-  const travelX = Math.abs(last.x - first.x);
-  const travelY = Math.abs(last.y - first.y);
-  const widest: "x" | "y" = travelY >= travelX ? "y" : "x";
-  const other: "x" | "y" = widest === "y" ? "x" : "y";
-  const axis = advances(widest) || !advances(other) ? widest : other;
-  const monotone = advances(axis);
-
-  /* The connector's own box spans its two ends, so the curve normalises into a unit square whose
-     corners ARE those ends — and the box itself is pinned in CSS, where `%` and `svmin` resolve
-     against the real section and the real window. A degenerate axis (a connector that travels only
-     one way) keeps its points at the middle of a box the floor holds open. */
-  const spanX = {
-    min: Math.min(curve.from.x, curve.to.x),
-    max: Math.max(curve.from.x, curve.to.x),
-  };
-  const spanY = {
-    min: Math.min(curve.from.y, curve.to.y),
-    max: Math.max(curve.from.y, curve.to.y),
-  };
-  const unit = (value: number, span: { min: number; max: number }) =>
-    span.max - span.min < 1e-9
-      ? 0.5
-      : (value - span.min) / (span.max - span.min);
-  const local = (point: { x: number; y: number }) =>
-    `${round(unit(point.x, spanX))} ${round(unit(point.y, spanY))}`;
-
-  /* A cubic stays inside the hull of its four points, so those four bound the curve — in the box's
-     own units, where a control point can sit many box-widths out: the box is only as wide as the
-     two ends are apart, and a connector that travels 262px down and 6px across reaches 34px to the
-     side on the way. That reach is what the wipe has to cover on the CROSS axis, and what the
-     mask's own region has to hold; a fixed "one box-width past each edge" cut the curve off. */
-  const hull = [curve.from, curve.c1, curve.c2, curve.to].map((point) => ({
-    x: unit(point.x, spanX),
-    y: unit(point.y, spanY),
-  }));
-  const reach = (of: "x" | "y") => ({
-    min: Math.min(0, ...hull.map((point) => point[of])) - MASK_MARGIN,
-    max: Math.max(1, ...hull.map((point) => point[of])) + MASK_MARGIN,
+  const spanX = span("x");
+  const spanY = span("y");
+  const unit = (point: Point): Point => ({
+    x: (point.x * spanX.side - spanX.min) / spanX.size,
+    y: (point.y * spanY.side - spanY.min) / spanY.size,
   });
-  const cross = reach(axis === "y" ? "x" : "y");
+
+  const d = splinePath(through.map(unit));
+  const maskWidth = CONNECTOR_MASK_COVER / Math.min(spanX.size, spanY.size);
+  const nominal = { width: spanX.size, height: spanY.size };
+  const reveal = maskCopy(d, nominal);
+
+  /* A cubic stays inside the hull of its four points, so the emitted numbers bound the curve — and
+     the mask's stroke reaches half its own width further than that. The mask copy runs past both
+     ends, so it is the copy's hull the region has to hold. */
+  const hull = [...reveal.d.matchAll(/-?[\d.]+/g)].map((match) =>
+    Number(match[0]),
+  );
   const region = {
-    min: Math.min(reach("x").min, reach("y").min),
-    max: Math.max(reach("x").max, reach("y").max),
+    min: Math.min(0, ...hull) - MASK_MARGIN - maskWidth / 2,
+    max: Math.max(1, ...hull) + MASK_MARGIN + maskWidth / 2,
   };
-
-  /* The wipe rect is a unit square and the box is the connector's own span, so the frame maps it
-     across the cross axis and runs the band from the end the curve starts at — the far corner
-     wherever the curve descends against the axis.
-
-     ALONG the axis the band reaches `JOIN_OVERLAP` past both ends, because a connector arrives at a
-     motif along its tangent and therefore runs PARALLEL to the box's own edge as it gets there: a
-     mask that stopped at the edge cut the last stroke in half lengthwise, measured as a 7px break
-     at 1920x900 where a band that stopped at the endpoint would have cost nothing. Mid-scrub it
-     makes the head lead and the tail lag by those same two pixels. An empty band is still empty:
-     the keyframes scale it to nothing and a factor on nothing is nothing. */
-  const forward =
-    axis === "y" ? curve.to.y >= curve.from.y : curve.to.x >= curve.from.x;
-  const travelled =
-    axis === "y"
-      ? (spanY.max - spanY.min) * box.height
-      : (spanX.max - spanX.min) * box.width;
-  const ease = Math.min(0.5, travelled < 1e-9 ? 0.5 : JOIN_OVERLAP / travelled);
-  const along = round(1 + 2 * ease);
-  const lead = round(forward ? -ease : 1 + ease);
-  const span = round(cross.max - cross.min);
-  const at = round(cross.min);
-  const frame =
-    axis === "y"
-      ? `translate(${at}px, ${lead}px) scale(${span}, ${forward ? along : round(-(1 + 2 * ease))})`
-      : `translate(${lead}px, ${at}px) scale(${forward ? along : round(-(1 + 2 * ease))}, ${span})`;
-
-  const from = (axis: "x" | "y") =>
-    endLength(connector.from, axis, -1, JOIN_OVERLAP);
-  const to = (axis: "x" | "y") =>
-    endLength(connector.to, axis, 1, JOIN_OVERLAP);
-  const horizontal = boxCss(from("x"), to("x"));
-  const vertical = boxCss(from("y"), to("y"));
 
   return {
     kind: "connector",
     index,
-    connector,
-    d: `M ${local(curve.from)} C ${local(curve.c1)}, ${local(curve.c2)}, ${local(curve.to)}`,
-    absolute: d,
-    length: pathLength(d, box),
-    axis,
-    monotone,
-    frame,
+    from,
+    to,
+    waypoints,
+    d,
+    revealD: reveal.d,
+    length: pathLength(d, nominal),
+    along: reveal.along,
+    maskWidth,
     region,
     box: {
       left: horizontal.start,
@@ -553,101 +778,85 @@ function connectorSegment(
   };
 }
 
-/* The thread's segments in drawing order, connectors and motifs alternating. The connectors come
-   from `composePath`'s own output rather than being re-derived, so there is one composition walk in
-   the repo, not two — and `every connector the component renders is a subpath composePath drew`
-   fails the moment the two disagree. */
-export function threadSegments(
-  section: SectionThread,
-  tier: ThreadTier,
-  placements: readonly Placement[] = section.placements,
-): ThreadSegment[] {
-  const connectors = composeConnectors(section, MOTIFS, placements);
-  const segments: ThreadSegment[] = [];
-  let next = 0;
-  const take = () => {
-    const connector = connectors[next];
-    next += 1;
-    return connectorSegment(segments.length, connector, tier.box);
-  };
-
-  if (placements.length === 0) {
-    if (section.entryX !== null && section.exitX !== null)
-      segments.push(take());
-    return segments;
-  }
-
-  placements.forEach((placement, at) => {
-    if (at > 0 || section.entryX !== null) segments.push(take());
-    const motif = MOTIFS[placement.motif];
-    const side = placement.scale * Math.min(tier.box.width, tier.box.height);
-    /* A connector's `d` is in section fractions and a motif's is in its own 0-100 square, so the
-       two need different boxes to come out in the same pixels — and they have to, because the
-       scrub divides one arc budget between them. */
-    const unit = side / MOTIF_SIDE;
-    segments.push({
-      kind: "motif",
-      index: segments.length,
-      motif,
-      placement,
-      length: pathLength(motif.d, { width: unit, height: unit }),
-    });
-  });
-  if (section.exitX !== null) segments.push(take());
-  return segments;
-}
-
 /* A connector's box holds its two ends whichever way round they fall, but the curve inside it is
-   drawn to named corners — so the generator has to know which end is the near one, and that can
-   change with the window.
+   normalised to named corners — so the generator has to know which end is the near one, and that
+   can change with the window.
 
    An end sits at `fraction x sectionSide + svmin x window`, so the order of two ends turns on
    `r = svmin / sectionSide`: their separation is `a + b*r`, and where that crosses zero the two
-   swap. Measured, not supposed: Wishes' first connector crosses at r = 0.476, and at 1920x900 —
-   an ordinary maximised window — its end landed 5px from the motif and at 2560x900, 67px.
+   swap. Measured, not supposed: under the retired placements Wishes' first connector crossed at
+   r = 0.476, and at 1920x900 — an ordinary maximised window — its end landed 5px from the motif and
+   at 2560x900, 67px.
 
    Across the WIDTH axis `r` is `min(1, height/width)` of the window itself, which a media query can
-   state as an aspect ratio, so the crossing is emitted as two geometries and the browser picks.
-   Down the HEIGHT axis `r` is the window's shorter side over the SECTION's height, which no media
-   query can see — and an end order that turns over down the page would mean a thread running back
-   up it. `no connector's ends can swap order down the page` is what holds that, since the
-   generator cannot. */
-function flipAspect(connector: Connector): number | null {
-  const separation = (of: "fraction" | "svmin") =>
-    connector.from[of].x - connector.to[of].x;
-  const constant = separation("fraction");
-  const perSvmin = separation("svmin");
+   state as an aspect ratio, so a crossing inside the band's own range is emitted as a second
+   geometry and the browser picks. Down the HEIGHT axis `r` is the window's shorter side over the
+   SECTION's height, which no media query can see — and an end order that turned over down the page
+   would mean a thread running back up it. `no connector's box changes which point pins it` is what
+   holds that, since the generator cannot. */
+function flipAspect(from: ConnectorEnd, to: ConnectorEnd): number | null {
+  const constant = from.fraction.x - to.fraction.x;
+  const perSvmin = from.svmin.x - to.svmin.x;
   if (Math.abs(perSvmin) < 1e-9) return null;
   const crossing = -constant / perSvmin;
   return crossing > 0 && crossing < 1 ? 1 / crossing : null;
 }
 
-/* The box a tier's own aspect would have if the window sat at `r` across its width — the tier's
-   height is kept, so only the quantity under test moves. */
-function aspectBox(tier: ThreadTier, ratio: number): SectionBox {
-  return { width: tier.box.height / ratio, height: tier.box.height };
+/* The box a band's own aspect would have if the window sat at `aspect` — the band's height is kept,
+   so only the quantity under test moves. */
+function aspectBox(band: Band, aspect: number): SectionBox {
+  return { width: band.box.height * aspect, height: band.box.height };
 }
 
-/* A `<mask>`'s own region is markup, not CSS, so one value has to hold every tier and — where a
-   section has one — both arrangements. This is the widest any of them reaches, per segment. */
+/* The thread's segments in drawing order, connectors and motifs alternating. One walk of the route,
+   read by the generator and by the component alike — neither re-derives the order. */
+export function threadSegments(id: ThreadId, band: Band): ThreadSegment[] {
+  const { breaks, between } = breaksAndWaypoints(id, band);
+  const segments: ThreadSegment[] = [];
+
+  breaks.forEach((made, at) => {
+    if (at > 0) {
+      segments.push(
+        connectorSegment(
+          segments.length,
+          breaks[at - 1].depart,
+          made.arrive,
+          between[at - 1],
+          band.box,
+        ),
+      );
+    }
+    if (made.motif === null) return;
+    const side = made.motif.scale * Math.min(band.box.width, band.box.height);
+    /* A connector's `d` is in its own box and a motif's is in its own 0-100 square, so the two need
+       different boxes to come out in the same pixels — and they have to, because the scrub divides
+       one arc budget between them. */
+    const step = side / MOTIF_SIDE;
+    segments.push({
+      kind: "motif",
+      index: segments.length,
+      place: made.motif,
+      length: pathLength(made.motif.motif.d, { width: step, height: step }),
+    });
+  });
+
+  return segments;
+}
+
+/* A `<mask>`'s own region is markup, not CSS, so one value has to hold every band. This is the
+   widest any of them reaches, per segment. */
 export function threadMaskRegions(
-  section: SectionThread,
+  id: ThreadId,
 ): Map<number, { min: number; max: number }> {
   const widest = new Map<number, { min: number; max: number }>();
-  const arrangements =
-    section.stacked === undefined
-      ? [section.placements]
-      : [section.placements, section.stacked];
-  for (const placements of arrangements) {
-    for (const tier of THREAD_TIERS) {
-      for (const segment of threadSegments(section, tier, placements)) {
-        if (segment.kind !== "connector") continue;
-        const held = widest.get(segment.index);
-        widest.set(segment.index, {
-          min: Math.min(held?.min ?? segment.region.min, segment.region.min),
-          max: Math.max(held?.max ?? segment.region.max, segment.region.max),
-        });
-      }
+  for (const band of THREAD_BANDS) {
+    for (const segment of threadSegments(id, band)) {
+      if (segment.kind !== "connector") continue;
+      const held = widest.get(segment.index);
+      widest.set(segment.index, {
+        min: Math.min(held?.min ?? segment.region.min, segment.region.min),
+        max: Math.max(held?.max ?? segment.region.max, segment.region.max),
+      });
     }
   }
   return widest;
@@ -696,13 +905,13 @@ function stops(span: Span, extra: readonly number[]): number[] {
   );
 }
 
-type Band = readonly [number, number];
+type Band01 = readonly [number, number];
 
-function inkBands(progress: number, span: Span): Band[] {
+function inkBands(progress: number, span: Span): Band01[] {
   return [[localise(tailAt(progress), span), localise(headAt(progress), span)]];
 }
 
-function wispBands(progress: number, span: Span): Band[] {
+function wispBands(progress: number, span: Span): Band01[] {
   const head = headAt(progress);
   const tail = tailAt(progress);
   return [
@@ -711,8 +920,11 @@ function wispBands(progress: number, span: Span): Band[] {
   ];
 }
 
-function intersect(bands: readonly Band[], within: readonly Band[]): Band[] {
-  const out: Band[] = [];
+function intersect(
+  bands: readonly Band01[],
+  within: readonly Band01[],
+): Band01[] {
+  const out: Band01[] = [];
   for (const [a0, a1] of bands) {
     for (const [b0, b1] of within) {
       const lo = Math.max(a0, b0);
@@ -731,27 +943,22 @@ function intersect(bands: readonly Band[], within: readonly Band[]): Band[] {
    `0 {tail} {head - tail} 1`; two arcs simply extend the same alternation. An empty list still has
    to paint nothing, which `0 1` does — a lone zero-length dash would paint a dot under a round cap,
    and the mask is butt-capped precisely so it cannot. */
-function dashArray(bands: readonly Band[]): string {
+function dashArray(bands: readonly Band01[], along: Reparametrise): string {
   if (bands.length === 0) return "0 1";
   const values: number[] = [0];
   let cursor = 0;
   for (const [start, end] of bands) {
-    values.push(start - cursor, end - start);
-    cursor = end;
+    const from = along(start);
+    const to = Math.max(from, along(end));
+    values.push(from - cursor, to - from);
+    cursor = to;
   }
   values.push(1);
   return values.map((value) => round(Math.max(0, value))).join(" ");
 }
 
-function wipeTransform(band: Band, axis: "x" | "y"): string {
-  const [start, end] = band;
-  const extent = Math.max(0, end - start);
-  return axis === "y"
-    ? `translate(0px, ${round(start)}px) scale(1, ${round(extent)})`
-    : `translate(${round(start)}px, 0px) scale(${round(extent)}, 1)`;
-}
-
-const FULL: Band = [0, 1];
+const FULL: Band01 = [0, 1];
+const IDENTITY: Reparametrise = (fraction) => fraction;
 
 /* ---- emission ------------------------------------------------------------------------------ */
 
@@ -773,97 +980,47 @@ type Layer = {
   /* The suffix that separates this layer's animation and keyframes from the segment's others. */
   suffix: string;
   /* `[tail, head]` and the wisp bands are both a list of arcs; a layer is the list it paints. */
-  bands: (progress: number, span: Span) => Band[];
+  bands: (progress: number, span: Span) => Band01[];
   /* The weave restricts a layer to part of the motif; every other layer sees the whole of it. */
-  within: readonly Band[];
+  within: readonly Band01[];
   /* A class on the thread's ROOT that this layer's rules are additionally qualified by — the weave
      variant is chosen per mount, not per segment. */
   root: string;
   /* The element the mask lives on, relative to the segment. */
   target: string;
-  /* `transform` for a connector's wipe, `stroke-dasharray` for a motif's dashed copy. */
-  declare: (bands: Band[], axis: "x" | "y") => string;
 };
 
-function emitSegment(
-  section: SectionThread,
-  tier: ThreadTier,
-  segment: ThreadSegment,
-  span: Span,
-  layers: readonly Layer[],
-  extraStops: readonly number[],
-  variant: string,
-): { animations: string[]; keyframes: string[] } {
-  const scope = `.${threadScopeClass(section.id)}`;
-  const animations: string[] = [];
-  const emitted: string[] = [];
-  const axis = segment.kind === "connector" ? segment.axis : "y";
+const BASE_LAYERS: readonly Layer[] = [
+  {
+    suffix: "ink",
+    bands: inkBands,
+    within: [FULL],
+    root: "",
+    target: `.${THREAD_CLASS.inkReveal}`,
+  },
+  {
+    suffix: "wisp",
+    bands: wispBands,
+    within: [FULL],
+    root: "",
+    target: `.${THREAD_CLASS.wispReveal}`,
+  },
+];
 
-  for (const layer of layers) {
-    const name = `thread-${section.id}-${segment.index}-${layer.suffix}-${tier.name}${variant}`;
-    const selector = `${scope}${layer.root} .${segmentClass(segment.index)} ${layer.target}`;
-    const frames = stops(span, extraStops).map((at) => ({
-      at,
-      decl: layer.declare(intersect(layer.bands(at, span), layer.within), axis),
-    }));
-    animations.push(
-      rule(selector, [
-        `animation-name: ${name};`,
-        `animation-timeline: ${timelineName(section.id)};`,
-        "animation-fill-mode: both;",
-        "animation-timing-function: linear;",
-      ]),
-    );
-    emitted.push(keyframes(name, frames));
-  }
-  return { animations, keyframes: emitted };
-}
-
-function layersFor(segment: ThreadSegment, weave: boolean): Layer[] {
-  const ink: Layer["declare"] =
-    segment.kind === "connector"
-      ? (bands, axis) =>
-          `transform: ${wipeTransform(bands[0] ?? [0, 0], axis)};`
-      : (bands) => `stroke-dasharray: ${dashArray(bands)};`;
-
-  const base: Layer[] = [
-    {
-      suffix: "ink",
-      bands: inkBands,
-      within: [FULL],
-      root: "",
-      target: `.${THREAD_CLASS.inkReveal}`,
-      declare: ink,
-    },
-    {
-      suffix: "wisp",
-      bands: wispBands,
-      within: [FULL],
-      root: "",
-      target: `.${THREAD_CLASS.wispReveal}`,
-      declare:
-        segment.kind === "connector"
-          ? (bands, axis) =>
-              `transform: ${wipeTransform(bands[0] ?? [0, 0], axis)};`
-          : (bands) => `stroke-dasharray: ${dashArray(bands)};`,
-    },
-  ];
-
-  if (!weave) return base;
-
-  /* The loop renders twice, as complementary segments of one curve: an under-copy beneath the
-     illustration and an over-copy above it, both on the same scrub, so the stroke passes from one
-     to the other mid-draw. Both are the SAME `d` — the split is in the mask, not in the geometry. */
+/* The loop renders twice, as complementary segments of one curve: an under-copy beneath the
+   illustration and an over-copy above it, both on the same scrub, so the stroke passes from one to
+   the other mid-draw. Both are the SAME `d` — the split is in the mask, not in the geometry. */
+function layersFor(weave: boolean): readonly Layer[] {
+  if (!weave) return BASE_LAYERS;
   const [under0, under1] = WEAVE_BAND;
   return [
-    ...base,
+    ...BASE_LAYERS,
     {
       suffix: "under",
       bands: inkBands,
       within: [[under0, under1]],
       root: `.${THREAD_CLASS.weaveUnder}`,
       target: `.${THREAD_CLASS.inkReveal}`,
-      declare: ink,
     },
     {
       suffix: "over",
@@ -874,51 +1031,101 @@ function layersFor(segment: ThreadSegment, weave: boolean): Layer[] {
       ],
       root: `.${THREAD_CLASS.weaveOver}`,
       target: `.${THREAD_CLASS.inkReveal}`,
-      declare: ink,
     },
   ];
 }
 
-function isWeave(section: SectionThread, segment: ThreadSegment): boolean {
+function isWeave(id: ThreadId, segment: ThreadSegment): boolean {
   return (
-    section.id === "wishes" &&
+    id === "wishes" &&
     segment.kind === "motif" &&
-    segment.motif.id === "wishesLoop"
+    segment.place.motif.id === "wishesLoop"
   );
 }
 
-/* Every per-tier rule this section needs: the connectors' own path data and wipe frames, the
-   motifs' boxes, and one set of keyframes per segment per layer. The path data is per tier because
-   a motif is a square off `min(width, height)` while its placement is a fraction of the section, so
-   the section's aspect enters the geometry and cannot be removed at build time. */
-/* A connector's curve and the frame its wipe sweeps: the two things that move together, since the
-   frame runs the band from the end the curve starts at. The wisp is the same curve as the ink it
-   trails, so it takes the same `d` on the same rule — a tier cannot move one without the other. */
+function emitSegment(
+  id: ThreadId,
+  band: Band,
+  segment: ThreadSegment,
+  span: Span,
+  layers: readonly Layer[],
+  extraStops: readonly number[],
+): { animations: string[]; keyframes: string[] } {
+  const scope = `.${threadScopeClass(id)}`;
+  const along = segment.kind === "connector" ? segment.along : IDENTITY;
+  const animations: string[] = [];
+  const emitted: string[] = [];
+
+  for (const layer of layers) {
+    const name = `thread-${id}-${segment.index}-${layer.suffix}-${band.id}`;
+    const selector = `${scope}${layer.root} .${segmentClass(segment.index)} ${layer.target}`;
+    const frames = stops(span, extraStops).map((at) => ({
+      at,
+      decl: `stroke-dasharray: ${dashArray(
+        intersect(layer.bands(at, span), layer.within),
+        along,
+      )};`,
+    }));
+    animations.push(
+      rule(selector, [
+        `animation-name: ${name};`,
+        `animation-timeline: ${timelineName(id)};`,
+        "animation-fill-mode: both;",
+        "animation-timing-function: linear;",
+      ]),
+    );
+    emitted.push(keyframes(name, frames));
+  }
+  return { animations, keyframes: emitted };
+}
+
+/* A connector's curve, and the mask width its box's own units need. The visible stroke, the wisp
+   and both reveal copies are the same curve, so all four take the same `d` on one rule — a band
+   cannot move one without the others. */
 function curveRules(selector: string, segment: ThreadSegment): string {
   if (segment.kind !== "connector") return "";
   return [
     rule(
-      `${selector} .${THREAD_CLASS.connector}, ${selector} .${THREAD_CLASS.wisp}`,
+      [
+        `${selector} .${THREAD_CLASS.connector}`,
+        `${selector} .${THREAD_CLASS.wisp}`,
+      ].join(", "),
       [`d: path("${segment.d}");`],
     ),
-    rule(`${selector} .${THREAD_CLASS.wipeFrame}`, [
-      `transform: ${segment.frame};`,
-    ]),
+    rule(
+      [
+        `${selector} .${THREAD_CLASS.inkReveal}`,
+        `${selector} .${THREAD_CLASS.wispReveal}`,
+      ].join(", "),
+      [`d: path("${segment.revealD}");`],
+    ),
+    rule(selector, [`--thread-mask-width: ${round(segment.maskWidth)};`]),
   ].join("\n");
 }
 
-function tierRules(
-  section: SectionThread,
-  tier: ThreadTier,
-  placements: readonly Placement[],
-  variant: string,
-): string {
-  const scope = `.${threadScopeClass(section.id)}`;
-  const segments = threadSegments(section, tier, placements);
+/* Everything a band fixes: where each motif's square sits, how big it is and how far it is turned,
+   the box each connector and each stub is pinned into, the connectors' own path data, and one set of
+   keyframes per segment per layer. All of it is per band, because a motif is a square off
+   `min(width, height)` while its cell is a fraction of the section, so the section's aspect enters
+   the geometry and cannot be removed at build time. */
+function bandRules(id: ThreadId, band: Band): string {
+  const scope = `.${threadScopeClass(id)}`;
+  const segments = threadSegments(id, band);
   const total = segments.reduce((sum, segment) => sum + segment.length, 0);
   const geometry: string[] = [];
   const animations: string[] = [];
   const frames: string[] = [];
+
+  const boxRule = (
+    selector: string,
+    box: { left: string; top: string; width: string; height: string },
+  ) =>
+    rule(selector, [
+      `left: ${box.left};`,
+      `top: ${box.top};`,
+      `width: ${box.width};`,
+      `height: ${box.height};`,
+    ]);
 
   let travelled = 0;
   for (const segment of segments) {
@@ -933,113 +1140,132 @@ function tierRules(
     travelled += segment.length;
 
     if (segment.kind === "connector") {
-      geometry.push(curveRules(selector, segment));
+      geometry.push(
+        boxRule(selector, segment.box),
+        curveRules(selector, segment),
+      );
 
-      /* The one window-dependent thing left in the composed curve: which of the connector's two
-         ends is the near corner of its box. Where that can turn over, both geometries are emitted
-         and the aspect ratio the crossing sits at chooses between them. */
-      const flip = flipAspect(segment.connector);
-      if (flip !== null) {
-        const composedAspect = Math.max(1, tier.box.width / tier.box.height);
-        const below = composedAspect < flip;
-        const alternate = below ? flip * 1.5 : (flip + 1) / 2;
+      /* The one window-dependent thing left in the normalised curve: which of the connector's two
+         ends is the near corner of its box. Where that can turn over INSIDE this band, both
+         geometries are emitted and the aspect ratio the crossing sits at chooses between them. */
+      const flip = flipAspect(segment.from, segment.to);
+      if (flip !== null && flip > band.min && flip < band.max) {
+        const composed = Math.max(1, band.box.width / band.box.height);
+        const below = composed < flip;
+        const alternate = below
+          ? Math.min(
+              flip * 1.5,
+              band.max === Number.POSITIVE_INFINITY
+                ? flip * 1.5
+                : (flip + band.max) / 2,
+            )
+          : (flip + band.min) / 2;
         geometry.push(
           `@media (aspect-ratio ${below ? ">=" : "<"} ${round(flip)}) {\n${curveRules(
             selector,
             connectorSegment(
               segment.index,
-              segment.connector,
-              aspectBox(tier, 1 / alternate),
+              segment.from,
+              segment.to,
+              segment.waypoints,
+              aspectBox(band, alternate),
             ),
           )}\n}`,
         );
       }
+    } else {
+      geometry.push(
+        rule(selector, [
+          `--thread-motif-x: ${round(segment.place.x)};`,
+          `--thread-motif-y: ${round(segment.place.y)};`,
+          `--thread-motif-side: calc(${round(segment.place.scale)} * 100svmin);`,
+        ]),
+      );
     }
 
-    /* A zero-length segment cannot be scrubbed and does not need to be: it draws nothing. Every
-       motif measures zero until Task 6 supplies its `d`, at which point these stops start moving
-       without a second edit here. */
+    /* A zero-length segment cannot be scrubbed and does not need to be: it draws nothing. */
     if (segment.length === 0) continue;
 
-    const weave = isWeave(section, segment);
+    const weave = isWeave(id, segment);
     const emitted = emitSegment(
-      section,
-      tier,
+      id,
+      band,
       segment,
       span,
-      layersFor(segment, weave),
+      layersFor(weave),
       weave ? WEAVE_BAND : [],
-      variant,
     );
     animations.push(...emitted.animations);
     frames.push(...emitted.keyframes);
+  }
+
+  for (const stub of threadStubs(id, band)) {
+    const selector = `${scope} .${THREAD_CLASS.stub}--${stub.which}`;
+    geometry.push(
+      boxRule(selector, stub.box),
+      rule(`${selector} path`, [`d: path("${stub.d}");`]),
+    );
   }
 
   const scrub =
     animations.length === 0
       ? ""
       : `\n@supports (animation-timeline: view()) {\n${[...animations, ...frames].join("\n")}\n}`;
-  return `${geometry.join("\n")}${scrub}`;
+  return `${geometry.filter((piece) => piece.length > 0).join("\n")}${scrub}`;
 }
+
+/* ---- the free ends --------------------------------------------------------------------------- */
 
 /* The wisp is the thread's cut end, not an ornament, so a head or a tail mid-scrub carries one
    exactly as a terminal does — those are handled by the wisp layer above, which paints just outside
    the inked arc and so collapses to nothing at rest. The two ends that keep a wisp AT REST are the
-   invite's top and Wishes' closing terminal (and both of `not-found`'s), and they are the ones with
-   no connector to carry them: a stub past the free end is their whole geometry. */
+   ones with no connector to carry them: the page's own top and bottom, and both of `not-found`'s. A
+   short stub past the free end, along that end's own direction of travel, is their whole geometry. */
 export type ThreadStub = {
   which: "entry" | "exit";
   d: string;
   box: { left: string; top: string; width: string; height: string };
 };
 
-/* The two ends that keep a wisp AT REST are the ones with no connector to carry them: the invite's
-   top, Wishes' closing terminal, and both of `not-found`'s. A short stub past the free end, along
-   that end's own tangent, is their whole geometry. Every other free end is a head or a tail
-   mid-scrub, and the wisp layer paints those just outside the inked arc. */
-export function threadStubs(
-  section: SectionThread,
-  placements: readonly Placement[] = section.placements,
-): ThreadStub[] {
+export function threadStubs(id: ThreadId, band: Band): ThreadStub[] {
+  const { breaks } = breaksAndWaypoints(id, band);
   const stubs: ThreadStub[] = [];
-  const draw = (
-    placement: Placement,
-    tangent: { x: number; y: number; angle: number },
-    direction: 1 | -1,
-    which: "entry" | "exit",
-  ) => {
-    const radians = (tangent.angle * Math.PI) / 180;
-    /* A stub is the same shape at every tier — its length is a multiple of the motif's own side,
-       so both of its ends are an `svmin` term like the motif's, and neither carries an aspect. It
-       runs `JOIN_OVERLAP` INTO the motif at the end it meets, for the same reason a connector
-       does: the motif's mask cuts its round cap off there. */
-    const reach = (at: number) => ({
-      fraction: { x: placement.x, y: placement.y },
+
+  for (const made of breaks) {
+    if (made.stub === null) continue;
+    const which = made.stub;
+    const direction: 1 | -1 = which === "entry" ? -1 : 1;
+    const end = which === "entry" ? made.arrive : made.depart;
+    const radians = (end.tangent.angle * Math.PI) / 180;
+    /* A stub is the same shape at every band — its reach is a multiple of `svmin`, like the motif's
+       own square, so neither of its ends carries an aspect. It runs `JOIN_OVERLAP` INTO whatever it
+       meets, for the same reason a connector does: the neighbour's butt-capped mask cuts its round
+       cap off there. */
+    const away: ConnectorEnd = {
+      fraction: end.fraction,
       svmin: {
-        x: (tangent.x - 0.5 + at * Math.cos(radians)) * placement.scale,
-        y: (tangent.y - 0.5 + at * Math.sin(radians)) * placement.scale,
+        x: end.svmin.x + direction * STUB_REACH * Math.cos(radians),
+        y: end.svmin.y + direction * STUB_REACH * Math.sin(radians),
       },
-      tangent,
-    });
-    const point = reach(0);
-    const away = reach(direction * WISP_EXTENT * 6);
+      tangent: end.tangent,
+    };
     const into: 1 | -1 = direction === 1 ? -1 : 1;
-    const horizontal = boxCss(
+    const horizontal = boxCss([
       endLength(away, "x", 1, 0),
-      endLength(point, "x", into, JOIN_OVERLAP),
-    );
-    const vertical = boxCss(
+      endLength(end, "x", into, JOIN_OVERLAP),
+    ]);
+    const vertical = boxCss([
       endLength(away, "y", 1, 0),
-      endLength(point, "y", into, JOIN_OVERLAP),
-    );
-    /* `away` is the box's first corner and `point` the opposite one on each axis the stub
-       actually travels along; a tangent is horizontal or vertical, so exactly one axis moves and
-       the other sits at the middle of a box the 1px floor holds open. */
-    const corner = (end: "away" | "point", axis: "x" | "y") => {
+      endLength(end, "y", into, JOIN_OVERLAP),
+    ]);
+    /* `away` is the box's first corner and the free end the opposite one on each axis the stub
+       actually travels along; where it travels on neither, both sit at the middle of a box the 1px
+       floor holds open. */
+    const corner = (at: "away" | "point", axis: "x" | "y") => {
       const moves = axis === "x" ? Math.cos(radians) : Math.sin(radians);
-      if (Math.abs(moves) < 1e-9) return 0.5;
+      if (Math.abs(moves) < 1e-6) return 0.5;
       const greater = moves * direction > 0 ? "away" : "point";
-      return end === greater ? 1 : 0;
+      return at === greater ? 1 : 0;
     };
     stubs.push({
       which,
@@ -1051,70 +1277,18 @@ export function threadStubs(
         height: vertical.size,
       },
     });
-  };
-
-  const first = placements[0];
-  const last = placements[placements.length - 1];
-  if (section.entryX === null && first !== undefined) {
-    draw(first, MOTIFS[first.motif].entry, -1, "entry");
-  }
-  if (section.exitX === null && last !== undefined) {
-    draw(last, MOTIFS[last.motif].exit, 1, "exit");
   }
   return stubs;
 }
 
-/* Everything a placement set fixes that no tier can move: where each motif's square sits and how
-   big it is, and the box each connector and each stub is pinned into. None of it carries a section
-   aspect — `%` is the section's own box and `svmin` the window's shorter side, both resolved by the
-   browser — so one emission serves every tier, and the stacked arrangement overrides the set rather
-   than a tier's copy of it. */
-function placementRules(
-  section: SectionThread,
-  placements: readonly Placement[],
-): string {
-  const scope = `.${threadScopeClass(section.id)}`;
-  const boxRule = (
-    selector: string,
-    box: { left: string; top: string; width: string; height: string },
-  ) =>
-    rule(selector, [
-      `left: ${box.left};`,
-      `top: ${box.top};`,
-      `width: ${box.width};`,
-      `height: ${box.height};`,
-    ]);
+/* ---- the sheet ------------------------------------------------------------------------------ */
 
-  /* Any tier serves: a connector's box and a motif's placement read the placement set alone. */
-  const rules = threadSegments(section, THREAD_TIERS[0], placements).map(
-    (segment) => {
-      const selector = `${scope} .${segmentClass(segment.index)}`;
-      return segment.kind === "connector"
-        ? boxRule(selector, segment.box)
-        : rule(selector, [
-            `--thread-motif-x: ${round(segment.placement.x)};`,
-            `--thread-motif-y: ${round(segment.placement.y)};`,
-            `--thread-motif-side: calc(${round(segment.placement.scale)} * 100svmin);`,
-          ]);
-    },
-  );
+export function threadCss(id: ThreadId): string {
+  const scope = `.${threadScopeClass(id)}`;
+  const timeline = timelineName(id);
 
-  for (const stub of threadStubs(section, placements)) {
-    const selector = `${scope} .${THREAD_CLASS.stub}--${stub.which}`;
-    rules.push(
-      boxRule(selector, stub.box),
-      rule(`${selector} path`, [`d: path("${stub.d}");`]),
-    );
-  }
-  return rules.join("\n");
-}
-
-export function threadCss(section: SectionThread): string {
-  const scope = `.${threadScopeClass(section.id)}`;
-  const timeline = timelineName(section.id);
-
-  const woven = threadSegments(section, THREAD_TIERS[0]).filter((segment) =>
-    isWeave(section, segment),
+  const woven = threadSegments(id, THREAD_BANDS[0]).filter((segment) =>
+    isWeave(id, segment),
   );
 
   const base: string[] = [
@@ -1129,15 +1303,13 @@ export function threadCss(section: SectionThread): string {
             `--thread-weave-over: 0 ${round(WEAVE_BAND[0])}, ${round(WEAVE_BAND[1])} 1;`,
           ]),
     ]),
-    /* The complete thread, declared unconditionally: a full wipe on every connector and a fully
-       inked dash on every motif. Everything below only ever narrows it. */
+    /* The complete thread, declared unconditionally: every reveal fully inked. Everything below
+       only ever narrows it. */
     rule(`${scope} .${THREAD_CLASS.inkReveal}`, [
-      `transform: ${wipeTransform(FULL, "y")};`,
-      `stroke-dasharray: ${dashArray([FULL])};`,
+      `stroke-dasharray: ${dashArray([FULL], IDENTITY)};`,
     ]),
     rule(`${scope} .${THREAD_CLASS.wispReveal}`, [
-      `transform: ${wipeTransform([0, 0], "y")};`,
-      `stroke-dasharray: ${dashArray([])};`,
+      `stroke-dasharray: ${dashArray([], IDENTITY)};`,
     ]),
   ];
 
@@ -1149,42 +1321,26 @@ export function threadCss(section: SectionThread): string {
     base.push(
       rule(
         `${scope}.${THREAD_CLASS.weaveUnder} .${segmentClass(segment.index)} .${THREAD_CLASS.inkReveal}`,
-        [`stroke-dasharray: ${dashArray([[under0, under1]])};`],
+        [`stroke-dasharray: ${dashArray([[under0, under1]], IDENTITY)};`],
       ),
       rule(
         `${scope}.${THREAD_CLASS.weaveOver} .${segmentClass(segment.index)} .${THREAD_CLASS.inkReveal}`,
         [
-          `stroke-dasharray: ${dashArray([
-            [0, under0],
-            [under1, 1],
-          ])};`,
+          `stroke-dasharray: ${dashArray(
+            [
+              [0, under0],
+              [under1, 1],
+            ],
+            IDENTITY,
+          )};`,
         ],
       ),
     );
   }
 
-  base.push(placementRules(section, section.placements));
-
-  const tiers = THREAD_TIERS.flatMap((tier) => {
-    const blocks = [
-      `@media ${tier.media} {\n${tierRules(section, tier, section.placements, "")}\n}`,
-    ];
-
-    /* The stacked band and this tier's band are intersected rather than `and`-ed, so a tier the
-       arrangement cannot reach emits no block at all instead of a query that is never true. */
-    const from = Math.max(tier.from, STACKED_REGIME.from);
-    const to = Math.min(tier.to, STACKED_REGIME.to);
-    if (section.stacked !== undefined && from < to) {
-      const stackedBody = [
-        placementRules(section, section.stacked),
-        tierRules(section, tier, section.stacked, "-stacked"),
-      ]
-        .filter((piece) => piece.length > 0)
-        .join("\n");
-      blocks.push(`@media ${widthQuery(from, to)} {\n${stackedBody}\n}`);
-    }
-    return blocks;
-  });
+  const bands = THREAD_BANDS.map(
+    (band) => `@media ${aspectQuery(band)} {\n${bandRules(id, band)}\n}`,
+  );
 
   /* Reduced motion removes the animation and nothing else, which lands on the complete base above —
      one code path, not a second rendering of the same thread. */
@@ -1193,5 +1349,5 @@ export function threadCss(section: SectionThread): string {
     ["animation: none;"],
   )}\n}`;
 
-  return [...base, ...tiers, reduced].join("\n");
+  return [...base, ...bands, reduced].join("\n");
 }
