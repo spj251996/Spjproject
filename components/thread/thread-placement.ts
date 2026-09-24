@@ -2,7 +2,13 @@ import type { SectionThread } from "./thread-geometry.ts";
 
 /* The ONE source for where the thread enters, leaves and what it draws on the way. `x`/`y` are
    fractions of the section box; `anchor` names an element the motif centres on instead, so the
-   motif follows the content when the content moves. Values are seeds — Task 11 tunes them live. */
+   motif follows the content when the content moves. Values are seeds — Task 11 tunes them live.
+
+   `scale` sizes the motif's SQUARE FIELD, not its ink, so two motifs sharing a scale do not share a
+   visual weight: the art sits in a square viewBox, so a wide drawing fills the width and leaves the
+   height to its aspect. `rings` at aspect 3.39 draws a third as tall as `wishesLoop` at aspect 1.01
+   from the same number. The seeds below therefore equalise drawn HEIGHT against `heart`, the one
+   motif reviewed and accepted so far, rather than sharing a scale. */
 export const SECTION_THREADS: readonly SectionThread[] = [
   {
     id: "invite",
@@ -17,19 +23,22 @@ export const SECTION_THREADS: readonly SectionThread[] = [
     entryX: 0.68,
     exitX: 0.32,
     placements: [
+      /* Betrothal above, wedding below, following the plates' own order down the page. Both sat at
+         the section's centre until the first owner review, where — the anchors being inert — they
+         resolved to the same point and drew on top of each other. */
       {
         motif: "rings",
         anchor: "[data-event-plate='betrothal']",
-        x: 0.5,
-        y: 0.5,
-        scale: 0.26,
+        x: 0.58,
+        y: 0.35,
+        scale: 0.44,
       },
       {
         motif: "knot",
         anchor: "[data-event-plate='wedding']",
-        x: 0.5,
-        y: 0.5,
-        scale: 0.18,
+        x: 0.42,
+        y: 0.68,
+        scale: 0.29,
       },
     ],
   },
@@ -45,7 +54,7 @@ export const SECTION_THREADS: readonly SectionThread[] = [
         anchor: "[data-contact-plate='groom']",
         x: 0.5,
         y: 0.62,
-        scale: 0.24,
+        scale: 0.28,
       },
     ],
   },
@@ -56,35 +65,39 @@ export const SECTION_THREADS: readonly SectionThread[] = [
     entryX: 0.3,
     exitX: 0.7,
     placements: [
+      /* Side by side, the two loops are neighbours and the join between them is a short sweep. Like
+         Event Info's pair, both sat at the section's centre and drew on top of each other until the
+         anchors resolve. */
       {
         motif: "portraitLoop",
         anchor: "[data-portrait='flemy']",
-        x: 0.5,
-        y: 0.5,
-        scale: 0.2,
+        x: 0.32,
+        y: 0.45,
+        scale: 0.3,
       },
       {
         motif: "portraitLoop",
         anchor: "[data-portrait='sebastian']",
-        x: 0.5,
-        y: 0.5,
-        scale: 0.2,
+        x: 0.68,
+        y: 0.58,
+        scale: 0.3,
       },
     ],
     stacked: [
+      /* Stacked, six portraits and a long run separate them: the join is down the page, not across.  */
       {
         motif: "portraitLoop",
         anchor: "[data-portrait='flemy']",
         x: 0.5,
-        y: 0.5,
-        scale: 0.28,
+        y: 0.3,
+        scale: 0.38,
       },
       {
         motif: "portraitLoop",
         anchor: "[data-portrait='sebastian']",
         x: 0.5,
-        y: 0.5,
-        scale: 0.28,
+        y: 0.72,
+        scale: 0.38,
       },
     ],
   },
