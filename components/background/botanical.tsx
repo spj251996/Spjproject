@@ -4,17 +4,28 @@ import {
   tallScopeClass,
 } from "@/components/layout/mounted-sheet-frame-css";
 import styles from "./botanical.module.css";
+import { botanicalCss, pieceClass } from "./botanical-css";
 import {
   MEADOW_NATURAL_HEIGHT,
   MEADOW_NATURAL_WIDTH,
   MEADOW_VISIBLE_FRACTION,
 } from "./botanical-meadow";
+import type { BotanicalPiece, NonMeadowPiece } from "./botanical-tuning";
 
 export {
   MEADOW_NATURAL_HEIGHT,
   MEADOW_NATURAL_WIDTH,
   MEADOW_VISIBLE_FRACTION,
 } from "./botanical-meadow";
+
+export type {
+  Anchor,
+  BotanicalPiece,
+  NonMeadowPiece,
+  PieceTuning,
+  Tier,
+} from "./botanical-tuning";
+export { TIERS, TUNING } from "./botanical-tuning";
 
 /* Sparse wildflower elements at the screen edges — DESIGN.md → Botanical Edge. Full opacity,
    `mix-blend-mode: multiply` against the ivory ground, no `z-index` anywhere in this layer: the
@@ -23,141 +34,40 @@ export {
    z-index either (removed from `app/page.tsx`), which is what frees the blend from an isolating
    stacking context in the first place.
 
-   Sizing reads `--ring-block`/`--ring-side`, the two custom properties `mounted-sheet-frame-css.ts`
-   emits on the section's own frame-scope div (`.mounted-sheet-frame--<section>` /
-   `.mounted-sheet-frame--tall-section`) — one source for the ring ladder, shared with the card's own
-   padding. This component's wrapper carries that same class so it resolves those properties
-   directly, since it cannot reach inside `MountedSheet`/`MountedPair` to become a literal DOM child
-   of their own instance of that div. */
+   Size and placement are per width tier and read from the viewport, not from the frame's ring
+   bands — `botanical-tuning.ts` holds the records and `botanical-css.ts` emits them as this
+   layer's own stylesheet. The wrapper still carries the section's frame-scope class, because the
+   frame's own rule is what gives this layer the section's box to position against. */
 
-export type BotanicalPiece =
-  | "falling-spray"
-  | "tied-bouquet"
-  | "crossing-stems"
-  | "drooping-stem"
-  | "corner-spray"
-  | "horizontal-garland"
-  | "side-spread-left"
-  | "side-spread-right"
-  | "sprig-cross-left"
-  | "sprig-cross-right"
-  | "tall-column-a"
-  | "tall-column-b"
-  | "meadow-band";
-
-type RingBand = "block" | "side";
-
-type Anchor =
-  | "top-span"
-  | "low-right"
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "mid-left"
-  | "mid-right"
-  | "gap-left"
-  | "gap-right"
-  | "band-bottom";
-
-/* Which pieces each section carries, and the anchor each sits on. This is the ONE place the
-   assignment lives: `app/page.tsx` renders from it and the dev tuning panel reads it to group its
-   controls. A second copy has twice drifted out of step with a swap and sent nudges along an axis
-   the piece was no longer anchored on, which moves it nowhere and reads as a dead slider. */
+/* Which pieces each section carries. This is the ONE place the assignment lives: `app/page.tsx`
+   renders from it and the dev tuning panel reads it to group its controls. A second copy has twice
+   drifted out of step with a swap and sent nudges along an axis the piece was no longer anchored
+   on, which moves it nowhere and reads as a dead slider. Where each piece sits is per tier and
+   lives in `botanical-tuning.ts`. */
 export const SECTION_PLACEMENT = {
-  invite: [
-    { piece: "falling-spray", anchor: "top-span" },
-    { piece: "corner-spray", anchor: "low-right" },
-  ],
-  "event-info": [
-    { piece: "tied-bouquet", anchor: "top-right" },
-    { piece: "horizontal-garland", anchor: "gap-left" },
-  ],
-  family: [
-    { piece: "side-spread-left", anchor: "mid-left" },
-    { piece: "side-spread-right", anchor: "mid-right" },
-  ],
+  invite: [{ piece: "falling-spray" }, { piece: "corner-spray" }],
+  "event-info": [{ piece: "tied-bouquet" }, { piece: "horizontal-garland" }],
+  family: [{ piece: "side-spread-left" }, { piece: "side-spread-right" }],
   celebrations: [
-    { piece: "crossing-stems", anchor: "top-left" },
-    { piece: "drooping-stem", anchor: "top-right" },
-    { piece: "tall-column-a", anchor: "mid-left" },
-    { piece: "tall-column-b", anchor: "mid-right" },
+    { piece: "crossing-stems" },
+    { piece: "drooping-stem" },
+    { piece: "tall-column-a" },
+    { piece: "tall-column-b" },
   ],
   wishes: [
-    { piece: "meadow-band", anchor: "band-bottom" },
-    { piece: "sprig-cross-left", anchor: "gap-left" },
-    { piece: "sprig-cross-right", anchor: "gap-right" },
+    { piece: "meadow-band" },
+    { piece: "sprig-cross-left" },
+    { piece: "sprig-cross-right" },
   ],
   /* The not-found screen is a standalone single-screen composition like the invite, not a closing
-     section, so it takes the invite's own placement rather than a section's gap-straddling one —
-     DESIGN.md → Not found. */
-  "not-found": [
-    { piece: "falling-spray", anchor: "top-span" },
-    { piece: "corner-spray", anchor: "low-right" },
-  ],
+     section, so it takes the invite's own pieces rather than a section's gap-straddling ones —
+     DESIGN.md → Not found. It stands outside the scroll, so nothing repeats in one reading. */
+  "not-found": [{ piece: "falling-spray" }, { piece: "corner-spray" }],
 } as const satisfies Readonly<Record<string, readonly BotanicalPlacement[]>>;
 
 export interface BotanicalPlacement {
   piece: BotanicalPiece;
-  anchor: Anchor;
 }
-
-/* Exported, along with the three tables below, so the uncommitted `/preview` tuning panel
-   (`app/preview/`) can read the live baseline rather than duplicating it as a second copy that
-   would drift the moment a value is tuned here. */
-export type NonMeadowPiece = Exclude<BotanicalPiece, "meadow-band">;
-
-/* One knob per piece: k, the fraction of its ring band a piece's width occupies — width is
-   `k × the ring band it enters from`. `meadow-band` is exempt — it is sized against the window,
-   never the ring, and its own crop constants sit below.
-
-   These are a MECHANICAL starting point, not a tuned one: the mock-derived seed (`k ≈ g × 0.6`,
-   `tmp/botanical-preview/index.html`) let several pieces bleed off a section's top or bottom edge
-   at wide tiers — `side-spread-left` measured far taller than its section at laptop-landscape
-   card, 545px past the top. DESIGN.md → Botanical Edge allows a piece to bleed off the left or
-   right window edge only, never the top or bottom.
-
-   Each value here is the largest k at which that piece's height (its width, via its own aspect
-   ratio) does not exceed its own section's real height, at every measured tier and orientation
-   (phone/tablet/compact/laptop portrait and landscape, read off the built page — see
-   `tmp/botanical-tune/`). It is a ceiling, not a design value: the owner tunes every piece down by
-   eye from here, one section at a time (Wave 3), and cross-piece bloom-matching is explicitly out
-   of scope (owner decision — every piece is tuned individually). */
-export const RING_FRACTION: Readonly<Record<NonMeadowPiece, number>> = {
-  "falling-spray": 7.33,
-  "tied-bouquet": 4.14,
-  "crossing-stems": 4.96,
-  "drooping-stem": 5.04,
-  "corner-spray": 2.74,
-  "horizontal-garland": 7,
-  "side-spread-left": 2.25,
-  "side-spread-right": 2.09,
-  "sprig-cross-left": 2.99,
-  "sprig-cross-right": 2,
-  "tall-column-a": 2.25,
-  "tall-column-b": 2.82,
-};
-
-/* A piece entering from a section's top or bottom edge is sized against `--ring-block`; one
-   entering from a side edge against `--ring-side`. */
-export const RING_BAND: Readonly<Record<NonMeadowPiece, RingBand>> = {
-  "falling-spray": "block",
-  "tied-bouquet": "block",
-  "crossing-stems": "block",
-  "drooping-stem": "block",
-  "corner-spray": "side",
-  "horizontal-garland": "block",
-  "side-spread-left": "side",
-  "side-spread-right": "side",
-  "sprig-cross-left": "side",
-  "sprig-cross-right": "side",
-  "tall-column-a": "side",
-  "tall-column-b": "side",
-};
-
-const RING_VAR: Readonly<Record<RingBand, string>> = {
-  block: "var(--ring-block)",
-  side: "var(--ring-side)",
-};
 
 /* Each piece's own aspect ratio, read from its shipped laptop-tier file
    (`public/botanical/<piece>-laptop.avif`) so the box matches the art with no letterboxing —
@@ -184,34 +94,28 @@ function aspectNumber(ratio: string): number {
   return w / h;
 }
 
-function Bloom({ piece, anchor }: BotanicalPlacement) {
+function Bloom({ piece }: BotanicalPlacement) {
   if (piece === "meadow-band") {
     return (
       <div
-        className={`${styles.bloom} ${styles["meadow-band"]} ${styles[anchor]}`}
+        className={`${styles.bloom} ${styles["meadow-band"]} ${pieceClass(piece)}`}
         style={{
           aspectRatio: `${MEADOW_NATURAL_WIDTH} / ${MEADOW_NATURAL_HEIGHT * MEADOW_VISIBLE_FRACTION}`,
         }}
       />
     );
   }
-  const band = RING_BAND[piece];
   return (
     <div
-      className={`${styles.bloom} ${styles[piece]} ${styles[anchor]}`}
+      className={`${styles.bloom} ${styles[piece]} ${pieceClass(piece)}`}
       style={{
         aspectRatio: ASPECT_RATIO[piece],
         /* The same ratio as a bare number, so `.bloom` can cap its width by the block extent it has
-           to live in. Without this cap a piece is sized purely by the ring, and the ring itself
-           grows with window height once the frame's `max()` takes over above ~1104px — so a `k`
-           tuned at one window silently bleeds past a section's top or bottom at a taller one, which
+           to live in. Without the cap a tuned width alone decides the height, and a width settled
+           against one window bleeds past a section's top or bottom edge at a shorter one, which
            `DESIGN.md` forbids. The cap enforces that rule structurally rather than by hoping every
-           hand-tuned constant was checked at every window. */
+           tuned value was checked at every window. */
         ["--piece-aspect" as string]: aspectNumber(ASPECT_RATIO[piece]),
-        /* `--piece-ring`/`--piece-k` feed `.bloom`'s own `width: calc(...)` in the stylesheet, so
-           the fraction lives once, here, rather than being restated as a literal in CSS. */
-        ["--piece-ring" as string]: RING_VAR[band],
-        ["--piece-k" as string]: RING_FRACTION[piece],
       }}
     />
   );
@@ -229,6 +133,7 @@ export function Botanical({ fit, pieces }: BotanicalProps) {
     fit !== undefined ? frameScopeClass(fit) : tallScopeClass(false);
   return (
     <div className={`${scopeClass} ${styles.layer}`}>
+      <style>{botanicalCss(pieces.map((placement) => placement.piece))}</style>
       <div className={styles.clip}>
         {pieces.map((placement) => (
           <Bloom key={placement.piece} {...placement} />
