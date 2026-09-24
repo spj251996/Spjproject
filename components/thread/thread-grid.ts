@@ -18,6 +18,13 @@ export type GridCell = { col: number; row: number };
 /* `nudge` turns the motif off the route's own direction of travel, in degrees; `scale` sizes the
    motif's SQUARE FIELD, not its ink, so two motifs sharing a scale do not share a visual weight.
 
+   `offsetX` and `offsetY` move the stop off its cell's CENTRE — the grid alone cannot land a motif
+   exactly where it is wanted, and this is the sub-cell correction. Each is a fraction of the
+   SECTION on its own axis, the same unit `routePoints` returns, so nothing converts between the two
+   and a tuned value keeps its absolute size when the panel changes the grid's granularity: the cell
+   the stop sits in moves, the offset does not. Neither turns anything — `nudge` is the only field
+   that rotates.
+
    `anchor` is a CSS selector for content this motif wraps, resolved inside the section at runtime by
    `thread-anchors.ts`. It OVERRIDES the cell rather than replacing it: the cell is still authored
    and is still what the motif sits on before the script runs, or if it never runs at all. */
@@ -25,6 +32,8 @@ export type GridStop = GridCell & {
   motif?: MotifId;
   nudge?: number;
   scale?: number;
+  offsetX?: number;
+  offsetY?: number;
   anchor?: string;
 };
 
@@ -350,12 +359,20 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
   },
 ] as const;
 
-/* A stop's cell CENTRE, as a fraction of the section on each axis — never pixels, because the
-   section's own size is not known until the page lays out. */
+/* Clamped to the section rather than carried past its edge: a point outside has no cell, hands
+   nothing usable to the next section's terminal (which inherits the last stop's resolved x) and
+   paints the thread where it cannot be seen. The slider stops having effect at the edge, which is
+   visible; a motif that has silently left the page is not. */
+function insideSection(fraction: number): number {
+  return Math.min(1, Math.max(0, fraction));
+}
+
+/* A stop's cell CENTRE plus its own offset, as a fraction of the section on each axis — never
+   pixels, because the section's own size is not known until the page lays out. */
 export function routePoints(route: SectionRoute): Point[] {
   return route.stops.map((stop) => ({
-    x: (stop.col + 0.5) / route.cols,
-    y: (stop.row + 0.5) / route.rows,
+    x: insideSection((stop.col + 0.5) / route.cols + (stop.offsetX ?? 0)),
+    y: insideSection((stop.row + 0.5) / route.rows + (stop.offsetY ?? 0)),
   }));
 }
 
