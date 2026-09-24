@@ -9,33 +9,41 @@ export type BandId = "tall" | "upright" | "wide";
 export type Band = { id: BandId; box: SectionBox; min: number; max: number };
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────────
-   `tall`'s HEIGHT IS NOT MEASURED, AND `Number.NaN` IS THE POINT.
+   AN ESTIMATE, NOT A MEASUREMENT. A real reading replaces it.
 
-   A page section is `100svh`, so the band's shape is the VIEWPORT's, not the phone's screen. `svh`
-   is the viewport with the browser's bars shown, and a headless browser has no bars: under
-   Playwright's own iPhone 16 descriptor `svh`, `lvh`, `dvh` and `vh` all come back equal to the
-   screen (393x852, aspect 0.4613), which is the screen wearing a viewport's clothes. Deriving the
-   band from it would ship a number nobody measured.
+   A page section is `100svh`, so the band's shape is the VIEWPORT's, not the phone's screen. The
+   owner's iPhone 16 is 393x852 CSS px, and iOS Safari's small viewport subtracts its top and bottom
+   bars — roughly 150 px of them, giving 700. It could not be measured: no headless browser has
+   browser chrome, so `svh`, `lvh`, `dvh` and `vh` all come back equal to the screen under emulation
+   (aspect 0.4613, the screen wearing a viewport's clothes), and the owner cannot open a local file
+   on the phone to read the real one.
 
-   The real value is one reading of `100svh` in Safari, portrait, on the owner's own iPhone 16
-   (`tmp/thread-head-spike/svh.html` prints it). Until it arrives this stays `NaN`, so any geometry
-   composed against the `tall` box emits `NaN` into the stylesheet and cannot be mistaken for a
-   tuned value — a placeholder that is plausible is the failure this avoids.
+   WHY AN ESTIMATE IS SAFE HERE, which is not obvious and is why this does not block:
+
+   - In portrait the `svmin` unit is the WIDTH, and the width is exact. `min(393, 700)` and
+     `min(393, 852)` are both 393, so a wrong height cannot move a motif's attachment point at all
+     — it changes only the vertical stretch of the composed curve.
+   - The cost of being wrong is bounded and small. Anisotropy against this estimate: 6.1% off at
+     h=660, 7.9% off at h=760, and 17.8% off even at the raw 852 with the chrome ignored entirely.
+     The `wide` band is already accepted at 40% off at its own worst member, so this sits well
+     inside tolerance the design already carries.
    ──────────────────────────────────────────────────────────────────────────────────────────────── */
-export const TALL_BOX_HEIGHT = Number.NaN;
+export const TALL_BOX_HEIGHT = 700;
 
+const TALL_BOX: SectionBox = { width: 393, height: TALL_BOX_HEIGHT };
 const UPRIGHT_BOX: SectionBox = { width: 820, height: 1180 };
 
-/* PROVISIONAL, and it moves when `TALL_BOX_HEIGHT` arrives. The settled boundary is between the two
-   bands' nominal aspects, and one of them is unknown — so `upright` provisionally claims nothing
-   below its own nominal aspect. That is wrong in the safe direction: every portrait phone viewport
-   is narrower than a portrait tablet, so every phone still lands in `tall`, and only the strip
-   between the true boundary and 0.6949 is misrouted. Nothing is known to sit there. */
-export const TALL_UPRIGHT_BOUNDARY = UPRIGHT_BOX.width / UPRIGHT_BOX.height;
+/* The GEOMETRIC mean of the two bands' nominal aspects (0.5614 and 0.6949), not the arithmetic one.
+   A section drawn away from its band's nominal is stretched by the RATIO of the two aspects, so the
+   geometric mean is the aspect that costs both neighbours the same factor — 1.1125 either side. */
+export const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
+  (TALL_BOX.width / TALL_BOX.height) * (UPRIGHT_BOX.width / UPRIGHT_BOX.height),
+);
 
 /* A 4:3 landscape window. This is the edge Task 1's Q4 swept the anisotropy against (`wide` as
    `[1.33, oo)`, worst factor 40%, the worst case a landscape tablet), so its verdict — three bands,
-   not four — is a verdict about THIS edge. Moving it voids that measurement. */
+   not four — is a verdict about THIS edge. Moving it voids that measurement, which is why this one
+   is authored where its neighbour above is the geometric mean of two nominals. */
 export const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
 
 /* Thread geometry is emitted per ASPECT BAND, not per width tier: a motif is a square while a
@@ -50,7 +58,7 @@ export const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
 export const THREAD_BANDS = [
   {
     id: "tall",
-    box: { width: 393, height: TALL_BOX_HEIGHT },
+    box: TALL_BOX,
     min: 0,
     max: TALL_UPRIGHT_BOUNDARY,
   },
