@@ -589,6 +589,7 @@ function ContactMark() {
 export function ContactSection() {
   return (
     <section className="relative" id="contact">
+      <Botanical fit={contactFit} pieces={SECTION_PLACEMENT.contact} />
       <MountedSheet fit={contactFit}>
         <div
           className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1"
@@ -801,7 +802,7 @@ export function WishesSection() {
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col overflow-y-clip">
       <InviteSection />
       <EventInfoSection />
       <ContactSection />

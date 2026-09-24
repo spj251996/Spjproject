@@ -1,61 +1,14 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import sharp from "sharp";
 import { botanicalCss, pieceOverrideCss } from "./botanical-css.ts";
 import {
-  MEADOW_NATURAL_HEIGHT,
-  MEADOW_NATURAL_WIDTH,
-} from "./botanical-meadow.ts";
-import {
-  type Anchor,
+  ANCHORS,
   type BotanicalPiece,
   TIERS,
   TUNING,
 } from "./botanical-tuning.ts";
-
-/* `MEADOW_NATURAL_WIDTH`/`MEADOW_NATURAL_HEIGHT` feed the meadow band's CSS crop
-   (`botanical.module.css` → `.meadow-band`'s `aspect-ratio`), read once from the shipped file rather
-   than typed as a bare fraction. This re-reads every shipped tier's own file and asserts they still
-   agree, so a regenerated file that changes the crop fails here instead of silently mis-cropping the
-   page — `lessons.md`, 2026-09-18: "DERIVE or ASSERT... so a regenerated file cannot silently break
-   it." */
-
-const BOTANICAL_DIR = path.join(
-  import.meta.dirname,
-  "..",
-  "..",
-  "public",
-  "botanical",
-);
-const TOLERANCE = 0.01;
-
-test("every shipped meadow-band tier matches the natural aspect ratio the CSS crop assumes", async () => {
-  const expected = MEADOW_NATURAL_WIDTH / MEADOW_NATURAL_HEIGHT;
-  const files = readdirSync(BOTANICAL_DIR).filter((file) =>
-    file.startsWith("meadow-band-"),
-  );
-  assert.ok(
-    files.length > 0,
-    `no meadow-band files found in ${BOTANICAL_DIR} — has npm run images been run?`,
-  );
-  for (const file of files) {
-    const metadata = await sharp(path.join(BOTANICAL_DIR, file)).metadata();
-    assert.ok(
-      metadata.width !== undefined && metadata.height !== undefined,
-      `${file}: sharp returned no dimensions`,
-    );
-    const actual = (metadata.width as number) / (metadata.height as number);
-    const deviation = Math.abs(actual - expected) / expected;
-    assert.ok(
-      deviation <= TOLERANCE,
-      `${file}: aspect ratio ${actual.toFixed(4)} deviates from the assumed ${expected.toFixed(4)} ` +
-        `(${MEADOW_NATURAL_WIDTH}/${MEADOW_NATURAL_HEIGHT}) by ${(deviation * 100).toFixed(2)}% — ` +
-        "update MEADOW_NATURAL_WIDTH/MEADOW_NATURAL_HEIGHT in botanical-meadow.ts to match the regenerated file",
-    );
-  }
-});
 
 /* The clip box is one property away from being the bug it fixes: `contain: paint` clips
    identically and creates a stacking context, which isolates `mix-blend-mode: multiply` so every
@@ -114,29 +67,30 @@ test("every botanical clip rule clips by overflow alone and creates no stacking 
    Three of these guard a failure no other gate sees: a piece sized 181% of a phone screen passed
    every build, lint and test run there has ever been, because nothing asserted a size at all. */
 
-const ANCHORS: readonly Anchor[] = [
-  "top-span",
-  "low-right",
-  "top-left",
-  "top-right",
-  "bottom-left",
-  "mid-left",
-  "mid-right",
-  "gap-left",
-  "gap-right",
-  "band-bottom",
-];
+/* The widest a piece may be tuned at any tier, as a fraction of the viewport. Stated here rather
+   than clamped in CSS — a clamp would silently contradict a tuned value, and the point is to fail
+   loudly.
 
-/* The widest a piece may be tuned at any tier, as a fraction of the viewport. `meadow-band` is
-   exempt: it spans the section by design. Stated here rather than clamped in CSS — a clamp would
-   silently contradict a tuned value, and the point is to fail loudly. */
-const SIZE_CEILING = 60;
+   The meadow band's two halves carry their own, looser ceiling: they span the section's bottom edge
+   by design, so each half reaches most of the way across on a phone. The exemption had been stated
+   in prose here while the check applied one number to every piece — which held only while the band
+   was a single piece sized under it. */
+/* 85, raised from 60 once the phone tier was tuned (owner, 2026-09-24): a phone is narrow enough
+   that a piece reading as a corner spray there is a large fraction of the window — `horizontal-
+   garland` is tuned to 84.2vw. The number is a tripwire, not a design value: it exists to catch the
+   failure that started this pass, a piece rendering at 181% of a phone screen. */
+const SIZE_CEILING = 85;
+const BAND_SIZE_CEILING = 100;
+const BAND_PIECES: readonly BotanicalPiece[] = [
+  "meadow-band-left",
+  "meadow-band-right",
+];
 
 test("every piece carries a complete, well-formed record at every tier", () => {
   const pieces = Object.keys(TUNING);
   assert.equal(
     pieces.length,
-    13,
+    20,
     "the table must carry one record set per piece — a piece added to the union without a row renders at no size",
   );
   for (const piece of pieces) {
@@ -165,17 +119,12 @@ test("no piece is tuned past its size ceiling", () => {
   for (const [piece, tiers] of Object.entries(TUNING)) {
     for (const tier of TIERS) {
       const { size } = tiers[tier];
-      if (piece === "meadow-band") {
-        assert.equal(
-          size,
-          100,
-          "meadow-band spans the section: its size is read as a percentage and 100 is the whole band",
-        );
-        continue;
-      }
+      const ceiling = BAND_PIECES.includes(piece as BotanicalPiece)
+        ? BAND_SIZE_CEILING
+        : SIZE_CEILING;
       assert.ok(
-        size <= SIZE_CEILING,
-        `${piece}/${tier}: ${size}vw is past the ${SIZE_CEILING}vw ceiling — ` +
+        size <= ceiling,
+        `${piece}/${tier}: ${size}vw is past the ${ceiling}vw ceiling — ` +
           "a piece wider than that is the 181%-of-a-phone-screen failure this check exists for",
       );
     }
@@ -199,9 +148,9 @@ function resolvePosition(
     if (match === null) return null;
     const raw = match[1].trim();
     if (raw === "auto") return null;
-    /* Sum the signed `vw` terms: `low-right` subtracts its nudge from a percentage inside a
-       `calc()`, so reading the first number alone would invert the axis. Percentage terms are not
-       modelled — every assertion here compares two positions, so a constant drops out. */
+    /* Sum the signed `vw` terms: an `above-bottom-*` anchor subtracts its nudge from a percentage
+       inside a `calc()`, so reading the first number alone would invert the axis. Percentage terms
+       are not modelled — every assertion here compares two positions, so a constant drops out. */
     let total = 0;
     for (const term of raw.matchAll(/([+-])?\s*(-?[\d.]+)vw/g)) {
       total += (term[1] === "-" ? -1 : 1) * Number(term[2]);
@@ -254,8 +203,8 @@ test("a positive nudge moves a piece right and down by exactly that many vw, at 
       size: 20,
       rotation: 0,
     });
-    /* `low-right` anchors on a percentage of the section, which this model does not resolve; its
-       own vw term is what the nudge moves, so the difference is still exact. */
+    /* An `above-bottom-*` anchor sits on a percentage of the section, which this model does not
+       resolve; its own vw term is what the nudge moves, so the difference is still exact. */
     const at = resolvePosition(base, box, piece);
     const to = resolvePosition(moved, box, piece);
     assert.ok(
@@ -272,8 +221,10 @@ test("a positive nudge moves a piece right and down by exactly that many vw, at 
 /* The same class of failure as the clip box's: any of these properties makes the piece's nearest
    ancestor — or the piece's own group — an isolated one, and `mix-blend-mode: multiply` then
    composites the drawing's opaque white ground as a visible rectangle, with every gate green.
-   `rotate` is the one transform the spike cleared: an element's own stacking context isolates its
-   children, not its own blending with the ground behind it. */
+   `rotate` and `scale` are the two the spike cleared, and only on the piece itself: an element's
+   own stacking context isolates its children — a bloom has none — not its own blending with the
+   ground behind it. A bare `transform` is still refused, because it is the property an ANCESTOR
+   would carry. */
 test("the generated stylesheet carries no blend-isolating property", () => {
   const css = botanicalCss(Object.keys(TUNING) as BotanicalPiece[]);
   for (const property of [
@@ -285,7 +236,6 @@ test("the generated stylesheet carries no blend-isolating property", () => {
     /content-visibility\s*:/,
     /(?:^|[;{ ])transform\s*:/,
     /translate\s*:/,
-    /scale\s*:/,
     /perspective\s*:/,
   ]) {
     assert.ok(
@@ -297,6 +247,17 @@ test("the generated stylesheet carries no blend-isolating property", () => {
     css,
     /rotate: (none|-?[\d.]+deg)/,
     "rotation is a tuned value and must reach the stylesheet",
+  );
+  assert.match(
+    css,
+    /scale: (none|-1 1)/,
+    "the mirror is a tuned value and must reach the stylesheet",
+  );
+  /* The mirror is exactly `-1 1`: any other scale resizes the piece and silently contradicts its
+     tuned width. */
+  assert.ok(
+    !/scale: (?!none|-1 1)/.test(css),
+    "the only scale this layer may carry is the horizontal mirror",
   );
 });
 

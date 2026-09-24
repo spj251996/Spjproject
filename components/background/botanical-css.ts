@@ -32,22 +32,30 @@ function selector(piece: BotanicalPiece): string {
 /* Phone is the base rule and each wider tier a min-width query, emitted narrowest first: two
    open-ended queries both match on a wide window, so the later rule has to be the wider tier's.
    Ordering is the whole guarantee here — a bounded range per tier would say the same thing, at the
-   cost of a second threshold per tier to keep in step with the frame's. */
+   cost of a second threshold per tier to keep in step with the frame's.
+
+   **Laptop and desktop are landscape-only, and that is the point.** A tier is a width band, but
+   what a section LOOKS like depends on its height too: a portrait window stacks its two cards into
+   a section twice as tall, however wide it is. A 1024x1366 tablet held upright is one pixel into
+   the laptop band and lays out nothing like a laptop — pieces tuned against a short side-by-side
+   section arrive in a tall stacked one, sized small and stranded in a gap that does not exist at
+   the window they were tuned at. So a portrait window keeps the tablet record, which is the one
+   tuned against stacked cards, at every width. Nothing has to be tuned twice for it. */
 const TIER_QUERY: Readonly<Record<Tier, string | null>> = {
   phone: null,
   tablet: `(width >= ${BREAKPOINT_REM.md}rem)`,
-  laptop: `(width >= ${BREAKPOINT_REM.lg}rem)`,
-  desktop: `(width >= ${BREAKPOINT_REM.xl}rem)`,
+  laptop: `(width >= ${BREAKPOINT_REM.lg}rem) and (orientation: landscape)`,
+  desktop: `(width >= ${BREAKPOINT_REM.xl}rem) and (orientation: landscape)`,
 };
 
-/* `low-right` spends 14% of the block extent before the piece begins, so its cap has to account for
-   it — otherwise a piece tall enough to fill the section would start 14% down and run off the
-   bottom, which DESIGN.md → Background → Botanical Edge forbids. */
-const LOW_RIGHT_BOTTOM = "14%";
-const LOW_RIGHT_MAX_BLOCK = "86svh";
+/* An `above-bottom-*` anchor spends 14% of the block extent before the piece begins, so its cap
+   has to account for it — otherwise a piece tall enough to fill the section would start 14% down and run
+   off the bottom, which DESIGN.md → Background → Botanical Edge forbids. */
+const ABOVE_BOTTOM_OFFSET = "14%";
+const ABOVE_BOTTOM_MAX_BLOCK = "86svh";
 const DEFAULT_MAX_BLOCK = "100svh";
 
-/* A zero keeps its unit: the `low-right` anchor subtracts this term inside a `calc()`, and
+/* A zero keeps its unit: an `above-bottom-*` anchor subtracts this term inside a `calc()`, and
    `calc(14% - 0)` is invalid — the declaration would be dropped and the piece would fall back to
    `bottom: auto`, at no tier the emitter could warn about. */
 function vw(value: number): string {
@@ -68,33 +76,23 @@ function vw(value: number): string {
    narrower tier would otherwise fight the `bottom` a wider one sets. */
 function anchorDeclarations(anchor: Anchor, x: number, y: number): string {
   switch (anchor) {
-    case "top-span":
     case "top-left":
-    case "gap-left":
       return `top: ${vw(y)}; left: ${vw(x)};`;
     case "top-right":
-    case "gap-right":
       return `top: ${vw(y)}; right: ${vw(-x)};`;
     case "bottom-left":
-    case "band-bottom":
       return `bottom: ${vw(-y)}; left: ${vw(x)};`;
-    case "low-right":
-      return `bottom: calc(${LOW_RIGHT_BOTTOM} - ${vw(y)}); right: ${vw(-x)}; --piece-max-block: ${LOW_RIGHT_MAX_BLOCK};`;
-    case "mid-left":
+    case "bottom-right":
+      return `bottom: ${vw(-y)}; right: ${vw(-x)};`;
+    case "above-bottom-right":
+      return `bottom: calc(${ABOVE_BOTTOM_OFFSET} - ${vw(y)}); right: ${vw(-x)}; --piece-max-block: ${ABOVE_BOTTOM_MAX_BLOCK};`;
+    case "above-bottom-left":
+      return `bottom: calc(${ABOVE_BOTTOM_OFFSET} - ${vw(y)}); left: ${vw(x)}; --piece-max-block: ${ABOVE_BOTTOM_MAX_BLOCK};`;
+    case "middle-left":
       return `inset-block: ${vw(2 * y)} 0; margin-block: auto; left: ${vw(x)};`;
-    case "mid-right":
+    case "middle-right":
       return `inset-block: ${vw(2 * y)} 0; margin-block: auto; right: ${vw(-x)};`;
   }
-}
-
-/* The meadow band spans the section rather than the viewport: `100vw` counts the classic scrollbar,
-   which `overflow-x: clip` would then cut off the band's right end by. It is the one piece whose
-   size reads as a percentage of the section; every other piece is far enough from full width for
-   the difference to sit below tuning resolution. */
-function sizeDeclaration(piece: BotanicalPiece, size: number): string {
-  return piece === "meadow-band"
-    ? `width: ${size}%;`
-    : `--piece-size: ${vw(size)};`;
 }
 
 /* `none`, not `0deg`, at rest: a zero rotation is still a transform, which gives the piece its own
@@ -105,10 +103,32 @@ function rotationDeclaration(rotation: number): string {
   return rotation === 0 ? "rotate: none;" : `rotate: ${rotation}deg;`;
 }
 
+/* The mirror, on the element rather than baked into the art — DESIGN.md → Background → Botanical
+   Edge. An element's own transform gives it its own stacking context, which isolates its CHILDREN
+   — a bloom has none — and not its own blending with the ground behind it, so one drawing serves
+   both edges and no piece needs a mirrored twin on disk. `none` at rest, never `1 1`, so an
+   unmirrored piece is not handed to the compositor for nothing. */
+function flipDeclaration(flip: true | undefined): string {
+  return flip === true ? "scale: -1 1;" : "scale: none;";
+}
+
+/* Delivery is a CSS background, not an `<img>`: a non-matching media query fetches nothing, so a
+   phone never learns the desktop file exists, and the layer needs no alt text — it is decorative by
+   construction. The ladder lives here rather than in the stylesheet because only this module knows
+   which tiers a piece is dropped at, and a dropped tier has no file to name. */
+function imageDeclaration(piece: BotanicalPiece, tier: Tier): string {
+  return (
+    `background-image: image-set(` +
+    `url("/botanical/${piece}-${tier}.avif") type("image/avif") 1x, ` +
+    `url("/botanical/${piece}-${tier}.webp") type("image/webp") 1x);`
+  );
+}
+
 function pieceRule(
   piece: BotanicalPiece,
   tuning: PieceTuning,
   at = selector(piece),
+  tier?: Tier,
 ): string {
   if (tuning.drop === true) {
     return `${at} { display: none; }`;
@@ -119,8 +139,10 @@ function pieceRule(
     "margin-block: 0;",
     `--piece-max-block: ${DEFAULT_MAX_BLOCK};`,
     anchorDeclarations(tuning.anchor, tuning.x, tuning.y),
-    sizeDeclaration(piece, tuning.size),
+    `--piece-size: ${vw(tuning.size)};`,
     rotationDeclaration(tuning.rotation),
+    flipDeclaration(tuning.flip),
+    ...(tier === undefined ? [] : [imageDeclaration(piece, tier)]),
   ].join(" ");
   return `${at} { ${declarations} }`;
 }
@@ -144,7 +166,7 @@ export function pieceOverrideCss(
 export function botanicalCss(pieces: readonly BotanicalPiece[]): string {
   return TIERS.map((tier) => {
     const rules = pieces
-      .map((piece) => pieceRule(piece, TUNING[piece][tier]))
+      .map((piece) => pieceRule(piece, TUNING[piece][tier], undefined, tier))
       .join("\n");
     const query = TIER_QUERY[tier];
     return query === null ? rules : `@media ${query} {\n${rules}\n}`;

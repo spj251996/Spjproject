@@ -5,27 +5,15 @@ import {
 } from "@/components/layout/mounted-sheet-frame-css";
 import styles from "./botanical.module.css";
 import { botanicalCss, pieceClass } from "./botanical-css";
-import {
-  MEADOW_NATURAL_HEIGHT,
-  MEADOW_NATURAL_WIDTH,
-  MEADOW_VISIBLE_FRACTION,
-} from "./botanical-meadow";
-import type { BotanicalPiece, NonMeadowPiece } from "./botanical-tuning";
-
-export {
-  MEADOW_NATURAL_HEIGHT,
-  MEADOW_NATURAL_WIDTH,
-  MEADOW_VISIBLE_FRACTION,
-} from "./botanical-meadow";
+import type { BotanicalPiece } from "./botanical-tuning";
 
 export type {
   Anchor,
   BotanicalPiece,
-  NonMeadowPiece,
   PieceTuning,
   Tier,
 } from "./botanical-tuning";
-export { TIERS, TUNING } from "./botanical-tuning";
+export { ANCHORS, TIERS, TUNING } from "./botanical-tuning";
 
 /* Sparse wildflower elements at the screen edges — DESIGN.md → Botanical Edge. Full opacity,
    `mix-blend-mode: multiply` against the ivory ground, no `z-index` anywhere in this layer: the
@@ -46,16 +34,34 @@ export { TIERS, TUNING } from "./botanical-tuning";
    lives in `botanical-tuning.ts`. */
 export const SECTION_PLACEMENT = {
   invite: [{ piece: "falling-spray" }, { piece: "corner-spray" }],
-  "event-info": [{ piece: "tied-bouquet" }, { piece: "horizontal-garland" }],
-  family: [{ piece: "side-spread-left" }, { piece: "side-spread-right" }],
+  /* `tall-column-a` carries the left rail and `blush-stem` the right one, both of which run bare
+     for the height of two stacked cards at the tiers that stack them. The column is dropped at
+     every other tier, where the cards sit side by side and there is no rail to carry. */
+  "event-info": [
+    { piece: "tied-bouquet" },
+    { piece: "horizontal-garland" },
+    { piece: "tall-column-a" },
+    { piece: "blush-stem" },
+  ],
+  contact: [{ piece: "poppy-spread" }, { piece: "cosmos-arc" }],
+  family: [
+    { piece: "tall-column-b" },
+    { piece: "meadow-tuft" },
+    { piece: "arching-branch" },
+    { piece: "cascade-sprigs" },
+  ],
+  /* The timeline lost its two tall columns to the vines; they now carry Event Info's and Family's
+     bare side rails at the tiers whose cards stack. They are still the pieces to reach for when the
+     timeline grows with the photo gallery — a piece may sit in more than one section. */
   celebrations: [
     { piece: "crossing-stems" },
     { piece: "drooping-stem" },
-    { piece: "tall-column-a" },
-    { piece: "tall-column-b" },
+    { piece: "wall-vine-left" },
+    { piece: "wall-vine-right" },
   ],
   wishes: [
-    { piece: "meadow-band" },
+    { piece: "meadow-band-left" },
+    { piece: "meadow-band-right" },
     { piece: "sprig-cross-left" },
     { piece: "sprig-cross-right" },
   ],
@@ -73,19 +79,29 @@ export interface BotanicalPlacement {
    (`public/botanical/<piece>-laptop.avif`) so the box matches the art with no letterboxing —
    `background-size: contain` then fills it exactly. Unlike the meadow band's crop, a mismatch here
    only wastes canvas inside the box; it never breaks a crop, so no test asserts it. */
-export const ASPECT_RATIO: Readonly<Record<NonMeadowPiece, string>> = {
+export const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
   "falling-spray": "998 / 748",
   "tied-bouquet": "387 / 623",
   "crossing-stems": "1312 / 1199",
   "drooping-stem": "1312 / 1199",
   "corner-spray": "715 / 689",
   "horizontal-garland": "1536 / 1024",
-  "side-spread-left": "738 / 1050",
-  "side-spread-right": "713 / 1106",
+  "poppy-spread": "1024 / 1536",
+  "cosmos-arc": "1024 / 1536",
   "sprig-cross-left": "635 / 400",
   "sprig-cross-right": "491 / 578",
   "tall-column-a": "827 / 1902",
   "tall-column-b": "821 / 1915",
+  /* Every piece added after the first thirteen carries its SOURCE ratio, since the generator
+     preserves it and the shipped files are generated from exactly these. */
+  "meadow-tuft": "1448 / 1086",
+  "arching-branch": "1536 / 1024",
+  "cascade-sprigs": "1024 / 1536",
+  "wall-vine-left": "809 / 1942",
+  "wall-vine-right": "809 / 1942",
+  "meadow-band-left": "1983 / 793",
+  "meadow-band-right": "2089 / 753",
+  "blush-stem": "1024 / 1536",
 };
 
 /* `"998 / 748"` -> `1.3342`. Kept beside the table it reads so the two cannot drift. */
@@ -95,19 +111,9 @@ function aspectNumber(ratio: string): number {
 }
 
 function Bloom({ piece }: BotanicalPlacement) {
-  if (piece === "meadow-band") {
-    return (
-      <div
-        className={`${styles.bloom} ${styles["meadow-band"]} ${pieceClass(piece)}`}
-        style={{
-          aspectRatio: `${MEADOW_NATURAL_WIDTH} / ${MEADOW_NATURAL_HEIGHT * MEADOW_VISIBLE_FRACTION}`,
-        }}
-      />
-    );
-  }
   return (
     <div
-      className={`${styles.bloom} ${styles[piece]} ${pieceClass(piece)}`}
+      className={`${styles.bloom} ${pieceClass(piece)}`}
       style={{
         aspectRatio: ASPECT_RATIO[piece],
         /* The same ratio as a bare number, so `.bloom` can cap its width by the block extent it has

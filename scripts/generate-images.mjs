@@ -8,11 +8,16 @@
 
    Usage: npm run images */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { copyFile, mkdir, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { TUNING } from "../components/background/botanical-tuning.ts";
+/* Extension-qualified and a plain `.ts`: node's type stripping runs it directly, so the tuned
+   widths are imported from the one table that paints them instead of parsed out of a component —
+   and a regex that silently matches nothing can no longer look exactly like success. */
+import { BREAKPOINT_REM } from "../components/layout/mounted-sheet-frame.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -63,160 +68,72 @@ function clampWhite(data, channels) {
   return out;
 }
 
-/* `tall-column-a`/`-b` carry real ink on their own final row, and `side-spread-right` /
-   `side-spread-right` ends within a few px of its own — a hard crop would only move the cut, not remove
-   it. This dissolves the bottom 38% into the paper instead, eased rather than linear (a 16% linear
-   version read as an abrupt edge). Composited as a white gradient over the image (sharp's default
-   "over" blend), so it must be re-clamped afterward — the blend reintroduces 250-254 values at the
-   soft end. */
-const FADE_STOPS = [
-  [0, 0],
-  [0.3, 0.04],
-  [0.55, 0.16],
-  [0.75, 0.42],
-  [0.9, 0.74],
-  [1, 1],
-];
-const FADE_FRACTION = 0.38;
-
-async function fadeBase(data, width, height, channels) {
-  const y1 = (1 - FADE_FRACTION).toFixed(4);
-  const stops = FADE_STOPS.map(
-    ([offset, opacity]) =>
-      `<stop offset="${offset}" stop-color="#ffffff" stop-opacity="${opacity}"/>`,
-  ).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><linearGradient id="g" x1="0" y1="${y1}" x2="0" y2="1">${stops}</linearGradient></defs><rect width="${width}" height="${height}" fill="url(#g)"/></svg>`;
-  const gradient = await sharp(Buffer.from(svg))
-    .resize({ width, height, fit: "fill" })
-    .png()
-    .toBuffer();
-  /* `composite()` promotes its output to 4 channels (an alpha band), even though the result is
-     already fully opaque — the base carries no alpha, so "over" compositing an alpha-carrying
-     overlay onto it always yields outA = 1. Reading the result back declaring the base's original
-     channel count would misalign every byte; `removeAlpha` drops the redundant band rather than
-     re-flattening a colour that is already correct. */
-  const { data: faded } = await sharp(data, {
-    raw: { width, height, channels },
-  })
-    .composite([{ input: gradient }])
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return faded;
-}
-
-const FADE_PIECES = new Set(["side-spread-right"]);
-
-/* A piece's on-page width is `k × the ring band it lives in`
-   (`components/layout/mounted-sheet-frame.ts` GROUND_TIERS), never a fixed pixel value, so it
-   scales with the frame at every tier — `DESIGN.md` → Botanical Edge. `k ≈ g × 0.6` is seeded from
-   the placement mock (`tmp/botanical-preview/index.html`'s MADE table) and is PROVISIONAL: Wave 3
-   re-measures every piece against real cards with the owner and re-tunes it. Kept as a small,
-   re-runnable derivation rather than baked widths so that re-tuning is a constant change, not a
-   re-derivation.
-
-   The ring has two bands and a piece lives in one of them, so the band is a property of the PIECE,
-   not of the tier: a piece entering from a section's top or bottom edge is sized against
-   `--ring-block`, one entering from a side edge against `--ring-side`. Each tier's side figure is
-   its LANDSCAPE value, which is the wider of the two orientations and so the worst case the one
-   shared file has to cover. */
-const RING_BAND = {
-  phoneTablet: { block: 48, side: 96 },
-  compact: { block: 64, side: 128 },
-  laptop: { block: 96, side: 192 },
-};
-
-/* Delivery density. 2x is the target so a piece is sharp on a retina screen at the size it actually
-   renders; where a source cannot reach it, the resize clamps to the source and the piece ships at
-   whatever it has. */
+/* Delivery density. 2x is the target so a piece is sharp on a retina screen at the size it
+   actually renders; where a source cannot reach it, the resize clamps to the source and the piece
+   ships at whatever it has. */
 const BOTANICAL_DENSITY = 2;
 
-/* The tuned sizes live in `components/background/botanical.tsx` and are READ from it, never copied.
-   A copy here silently drifted once already: the owner re-tuned `k` in the component and the
-   delivered rasters kept their original seeded widths, so three pieces shipped below 1x of the size
-   they were being drawn at — soft on screen, with nothing failing. Parsed rather than imported
-   because this is a plain node script and that file is TSX; the count assertion below is what makes
-   the parse trustworthy, since a regex that silently matches nothing looks exactly like success. */
-function readTunedTable(name) {
-  const source = readFileSync(
-    join(ROOT, "components/background/botanical.tsx"),
-    "utf8",
-  );
-  const block = new RegExp(`export const ${name}[^{]*\\{([^}]*)\\}`).exec(
-    source,
-  );
-  if (!block)
-    throw new Error(`generate-images: could not find ${name} in botanical.tsx`);
-  const table = {};
-  for (const [, key, value] of block[1].matchAll(
-    /"([a-z-]+)":\s*"?([\w.-]+)"?,/g,
-  )) {
-    table[key] = Number.isNaN(Number(value)) ? value : Number(value);
-  }
-  return table;
-}
+/* The tuned widths are IMPORTED from the table that paints them, never parsed or copied. A copy
+   here silently drifted once already: the owner re-tuned a piece in the component and the
+   delivered rasters kept their original seeded widths, so three pieces shipped below 1x of the
+   size they were drawn at — soft on screen, with nothing failing.
 
-const RING_FRACTION = readTunedTable("RING_FRACTION");
-const PIECE_BAND = readTunedTable("RING_BAND");
+   A piece's width is a fraction of the VIEWPORT, per width tier, so a raster's width is that
+   fraction of the widest viewport its tier has to cover. One file per tuning tier: a phone and a
+   laptop can tune the same piece to very different fractions, and a file shared between them is
+   sized for whichever asked for more.
 
-const BOTANICAL_PIECES = Object.keys(RING_FRACTION).map((name) => ({
+   `desktop` is unbounded above, so its raster is sized for an assumed 1920 — wider monitors exist
+   and would render it softer, but sizing for them costs bytes on every desktop visitor. */
+/* The band edges are DERIVED from the layout's own breakpoints, never restated: a raster sized
+   against a threshold the CSS no longer gates on is soft at a window nothing would report. One
+   pixel below the next breakpoint is the widest window the band still covers. */
+const ROOT_FONT_SIZE = 16;
+const bandEdge = (rem) => rem * ROOT_FONT_SIZE - 1;
+
+const FILE_TIER = {
+  phone: { widest: bandEdge(BREAKPOINT_REM.md), tuning: "phone" },
+  /* 1366, not the 1023 that tops the tablet BAND: a portrait window keeps the tablet record at any
+     width (`botanical-css.ts`), and the widest portrait screen this has to serve is a 13" tablet
+     held upright. Sized for 1023 it would render a third large there, at 1.5x rather than 2x. */
+  tablet: { widest: 1366, tuning: "tablet" },
+  laptop: { widest: bandEdge(BREAKPOINT_REM.xl), tuning: "laptop" },
+  desktop: { widest: 1920, tuning: "desktop" },
+};
+
+const BOTANICAL_PIECES = Object.entries(TUNING).map(([name, tiers]) => ({
   name,
-  k: RING_FRACTION[name],
-  band: PIECE_BAND[name],
+  tiers,
 }));
 
-if (BOTANICAL_PIECES.length !== 12) {
-  throw new Error(
-    `generate-images: parsed ${BOTANICAL_PIECES.length} botanical pieces, expected 12`,
-  );
-}
-for (const piece of BOTANICAL_PIECES) {
-  if (!piece.band || !piece.k) {
-    throw new Error(
-      `generate-images: incomplete tuned values for ${piece.name}`,
-    );
-  }
-}
-
-/* `meadow-band` is the exception: it renders at full window width, not `k × ring`, so its width
-   steps are representative window widths rather than a ring multiple — `{breakpoints.md}` for the
-   phone+tablet bucket's upper edge, `{breakpoints.xl}` for the compact tier's, and a representative
-   wide desktop for laptop (the tier itself is unbounded above). */
-const MEADOW_BAND_WIDTH = { phoneTablet: 768, compact: 1600, laptop: 1920 };
-
-/* A piece whose composition roots in one side edge points the wrong way once it is anchored to the
-   opposite one, so it is mirrored. The flip is BAKED IN here rather than applied as CSS, because
-   `transform: scaleX(-1)` and the standalone `scale` property both create a stacking context, and a
-   stacking context isolates the botanical layer's `mix-blend-mode: multiply` — the drawing would
-   then paint its white background as a visible rectangle on the ivory. */
-const FLIP_H_PIECES = new Set(["corner-spray"]);
+/* One piece is still baked upside down: `tied-bouquet` hangs from a top edge rather than standing
+   on a bottom one, and the tuned record has no vertical mirror to express that with. The
+   HORIZONTAL mirror is never baked — it is a tuned value on the element
+   (`botanical-tuning.ts` → `flip`), since an element's own transform isolates its children and not
+   its own blending with the ground behind it. Two mechanisms for one mirror is one too many: a
+   baked flop and a tuned flip compose, and the file then disagrees with the value that appears to
+   set its facing. */
 const FLIP_V_PIECES = new Set(["tied-bouquet"]);
 
-/* Resizes (never upscaling past the source), mirrors the flipped pieces, clamps to white, and — for
-   the four bad-base pieces — fades the bottom edge, re-clamping after. Returns a sharp pipeline
-   ready for `.avif()`/`.webp()`. */
+/* Resizes (never upscaling past the source), applies the one baked mirror, and clamps near-white to
+   pure white so the multiply blend has no halo. Returns a sharp pipeline ready for
+   `.avif()`/`.webp()`. */
 async function prepareBotanicalPiece(image, name, width) {
   const sized = image.resize({ width, withoutEnlargement: true });
-  let oriented = sized;
-  if (FLIP_H_PIECES.has(name)) oriented = oriented.flop();
-  if (FLIP_V_PIECES.has(name)) oriented = oriented.flip();
-  const resized = oriented;
+  const resized = FLIP_V_PIECES.has(name) ? sized.flip() : sized;
   const { data, info } = await resized
     .raw()
     .toBuffer({ resolveWithObject: true });
-  let pixels = clampWhite(data, info.channels);
-  if (FADE_PIECES.has(name)) {
-    pixels = await fadeBase(pixels, info.width, info.height, info.channels);
-    pixels = clampWhite(pixels, info.channels);
-  }
+  const pixels = clampWhite(data, info.channels);
   return sharp(pixels, {
     raw: { width: info.width, height: info.height, channels: info.channels },
   });
 }
 
-/* Most pieces survive only as the cropped `.webp` — their lossless originals cannot reproduce them
-   (the crop step is lost). Where a true lossless original DOES exist it is the source of record and
-   is used directly, so that piece never pays a second generation of encoding loss. */
+/* Sources are high-quality WebP, not PNG: at the sizes these pieces are delivered the difference
+   the container makes is about 1/255 mean against a PNG master — below perception, and the
+   delivery step is itself lossy — while the sources go from 19.5MB of committed weight to 2.5MB.
+   A PNG is still preferred where one exists, so a piece that arrives lossless stays lossless. */
 function botanicalSource(name) {
   const png = join(ROOT, `assets/botanical/${name}.png`);
   return existsSync(png)
@@ -226,26 +143,19 @@ function botanicalSource(name) {
 
 function botanicalRecipes() {
   const entries = [];
-  const pieces = [
-    ...BOTANICAL_PIECES.map((p) => ({
-      name: p.name,
-      widths: Object.fromEntries(
-        Object.entries(RING_BAND).map(([tier, bands]) => [
+  /* A piece dropped at a tier gets no file for it: nothing would ever load it, and a file that
+     nothing loads is the kind of weight that survives every review. */
+  const pieces = BOTANICAL_PIECES.map((p) => ({
+    name: p.name,
+    widths: Object.fromEntries(
+      Object.entries(FILE_TIER)
+        .filter(([, { tuning }]) => p.tiers[tuning].drop !== true)
+        .map(([tier, { widest, tuning }]) => [
           tier,
-          Math.round(p.k * bands[p.band] * BOTANICAL_DENSITY),
+          Math.round((p.tiers[tuning].size / 100) * widest * BOTANICAL_DENSITY),
         ]),
-      ),
-    })),
-    {
-      name: "meadow-band",
-      widths: Object.fromEntries(
-        Object.entries(MEADOW_BAND_WIDTH).map(([tier, cssWidth]) => [
-          tier,
-          Math.round(cssWidth * BOTANICAL_DENSITY),
-        ]),
-      ),
-    },
-  ];
+    ),
+  }));
   for (const piece of pieces) {
     for (const [tier, width] of Object.entries(piece.widths)) {
       for (const [format, options] of [
@@ -342,7 +252,7 @@ async function run() {
     const out = join(ROOT, entry.out);
     await mkdir(dirname(out), { recursive: true });
     /* `await` on a recipe's return value is a no-op for the couple's synchronous chains and
-       resolves the botanical recipes' async pixel processing (clampWhite/fadeBase) alike. */
+       resolves the botanical recipes' async pixel processing (clampWhite) alike. */
     const pipeline = await entry.recipe(sharp(join(ROOT, entry.source)));
     const info = await pipeline.toFile(out);
     console.log(
