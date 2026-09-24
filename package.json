@@ -14,7 +14,8 @@
     "test": "node --test content/*.test.ts components/**/*.test.ts",
     "validate:content": "node content/verify.ts",
     "verify:section": "node scripts/verify-section.mjs",
-    "measure:fit": "node scripts/measure-section-fit.mjs"
+    "measure:fit": "node scripts/measure-section-fit.mjs",
+    "check:thread": "node scripts/check-thread-clearance.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
