@@ -155,11 +155,15 @@ if (!reachable) {
 }
 
 const browser = await chromium.launch({ channel: "chromium" });
+/* `rest` and `scrub` are named once: the loop and the coverage assertion below read the
+   same list, so neither can drift from the other. */
+const STATES = ["rest", "scrub"];
 const failures = [];
+let measured = 0;
 try {
   for (const viewport of VIEWPORTS) {
     if (onlyViewport !== null && viewport.name !== onlyViewport) continue;
-    for (const state of ["rest", "scrub"]) {
+    for (const state of STATES) {
       const page = await browser.newPage({
         viewport: { width: viewport.width, height: viewport.height },
         deviceScaleFactor: viewport.dpr,
@@ -186,8 +190,22 @@ try {
 
       for (const id of SECTIONS) {
         if (only !== null && id !== only) continue;
+        measured += 1;
         const section = page.locator(`#${id}`);
-        if ((await section.count()) === 0) continue;
+        /* A MISSING section is a failure, not a skip. `waitUntil: "load"` does not wait for React,
+           so a dev recompile mid-run can leave `#id` matching nothing — and silently continuing
+           made that indistinguishable from a section that was never there. Measured: four whole
+           viewports produced no line at all and the gate still exited 0, reporting 28 cases where
+           it should have reported 84. A gate that can measure a third of its surface and call it
+           success is not a gate. */
+        if ((await section.count()) === 0) {
+          const label = `${id} ${viewport.name} ${state}`;
+          console.log(
+            `  MISSING ${label}: no element matches #${id} — not rendered`,
+          );
+          failures.push(label);
+          continue;
+        }
         /* Three things that are not this section's thread and would read as a second piece of ink:
            a NEIGHBOUR's thread, which legitimately runs past a section boundary and lands inside
            this section's box (a placement question, not a join); the Next dev-tools badge, which
@@ -270,4 +288,13 @@ console.log(
     ? "\nevery section renders as one connected run of ink."
     : `\n${failures.length} render(s) show a thread in pieces:\n${failures.map((f) => `  ${f.label}`).join("\n")}`,
 );
+/* The expected case count is asserted outright, so a whole viewport dropping out can never read as
+   a pass: every section, at every viewport, in every state. */
+const expected = SECTIONS.length * VIEWPORTS.length * STATES.length;
+if (only === null && onlyViewport === null && measured !== expected) {
+  console.log(
+    `\nMEASURED ${measured} of ${expected} expected cases — the gate did not cover its surface.`,
+  );
+  process.exit(1);
+}
 process.exit(failures.length === 0 ? 0 : 1);
