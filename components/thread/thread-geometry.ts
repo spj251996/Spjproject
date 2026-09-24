@@ -65,14 +65,10 @@ function controlPoint(
 }
 
 function connector(
-  from: { x: number; y: number },
-  fromTangent: Tangent,
+  c1: { x: number; y: number },
+  c2: { x: number; y: number },
   to: { x: number; y: number },
-  toTangent: Tangent,
 ): string {
-  const reach = Math.hypot(to.x - from.x, to.y - from.y) / 3;
-  const c1 = controlPoint(from, fromTangent, reach, 1);
-  const c2 = controlPoint(to, toTangent, reach, -1);
   return `C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
 }
 
@@ -80,29 +76,71 @@ function connector(
    the real window box of the same shape compose identically. */
 export type SectionBox = { width: number; height: number };
 
-/* A square section: the aspect-neutral default, under which `place` reduces to scaling both axes by
-   `scale` — the shape this module had before the box entered it. */
+/* A square section: the aspect-neutral default, under which a motif's two offsets scale both axes
+   by `scale` — the shape this module had before the box entered it. */
 const SQUARE_BOX: SectionBox = { width: 1, height: 1 };
 
-/* Placements' unit-square points, scaled and moved to where the section wants them. `anchor`
-   itself is resolved by the component (it names a live DOM element); this function only knows
-   `x`/`y`/`scale`, so it works identically whether the caller already resolved an anchor to a
-   fraction or used a literal one.
+/* Where one end of a connector sits, in the two units the PAGE resolves it in: a fraction of the
+   section box, plus a multiple of `svmin`, the unit a motif's own square field is sized in. A
+   terminal sits on the section's edge and carries no `svmin` term.
 
-   A motif renders as a SQUARE of side `scale x min(section width, section height)`, while `x`/`y`
-   are fractions of the section — so the one side covers a different fraction of each axis, and the
-   section's aspect enters the geometry. It cannot be removed: a square that is 0.34 of a 390x844
-   phone's shorter side spans 34% of its width and 16% of its height. The caller composes once per
-   tier with that tier's box rather than pretending one path serves every aspect. */
-function place(
-  point: { x: number; y: number },
-  placement: Placement,
-  box: SectionBox,
-) {
-  const side = placement.scale * Math.min(box.width, box.height);
+   Keeping the two apart is what makes a join exact. Collapsing them into one fraction needs the
+   section's aspect, and the aspect is not known until the page lays out: a motif's square covers a
+   different fraction of each axis at every window, so a fraction composed against a nominal box
+   lands beside the motif rather than on it. The renderer pins each connector's own box to these
+   same two numbers in CSS, where `svmin` and `%` both resolve for real; composing resolves them
+   against a nominal box, which is all the connector's SHAPE needs. */
+export type ConnectorEnd = {
+  fraction: { x: number; y: number };
+  svmin: { x: number; y: number };
+  tangent: Tangent;
+};
+
+export type Connector = { from: ConnectorEnd; to: ConnectorEnd };
+
+function terminalEnd(x: number, y: number): ConnectorEnd {
   return {
-    x: placement.x + (point.x - 0.5) * (side / box.width),
-    y: placement.y + (point.y - 0.5) * (side / box.height),
+    fraction: { x, y },
+    svmin: { x: 0, y: 0 },
+    tangent: TERMINAL_TANGENT,
+  };
+}
+
+/* `anchor` is resolved by the component (it names a live DOM element); this only knows
+   `x`/`y`/`scale`, so it works identically whether the caller already resolved an anchor to a
+   fraction or used a literal one. */
+function motifEnd(placement: Placement, tangent: Tangent): ConnectorEnd {
+  return {
+    fraction: { x: placement.x, y: placement.y },
+    svmin: {
+      x: (tangent.x - 0.5) * placement.scale,
+      y: (tangent.y - 0.5) * placement.scale,
+    },
+    tangent,
+  };
+}
+
+/* An end's point in section fractions, against a nominal box — and `overlap` past it, in that box's
+   pixels, along the tangent it is met on. `sign` is -1 at the end a connector LEAVES and 1 at the
+   end it arrives at, so both run past the join in the same sense: into the motif, or past the
+   section's own edge at a terminal. */
+export function resolveEnd(
+  end: ConnectorEnd,
+  box: SectionBox,
+  overlap: number,
+  sign: 1 | -1,
+): { x: number; y: number } {
+  const unit = Math.min(box.width, box.height);
+  const radians = (end.tangent.angle * Math.PI) / 180;
+  return {
+    x:
+      end.fraction.x +
+      end.svmin.x * (unit / box.width) +
+      (sign * overlap * Math.cos(radians)) / box.width,
+    y:
+      end.fraction.y +
+      end.svmin.y * (unit / box.height) +
+      (sign * overlap * Math.sin(radians)) / box.height,
   };
 }
 
@@ -114,49 +152,74 @@ function place(
 const TERMINAL_TANGENT: Tangent = { x: 0, y: 0, angle: 90 };
 
 /* Each motif renders as its own separately-positioned square SVG (the spike's settled mechanism —
-   a non-uniform stretch cannot both scale a motif uniformly and stretch a connector). `composePath`
-   therefore draws only the CONNECTORS: a cubic from the previous exit tangent to the next entry
-   tangent, lifting the pen (`M`, no line drawn) across the gap a motif itself occupies, so the
-   returned path never doubles what the motif's own artwork already draws. */
+   a non-uniform stretch cannot both scale a motif uniformly and stretch a connector). The thread's
+   composition is therefore the CONNECTORS alone: one cubic from each exit tangent to the next entry
+   tangent, spanning the gap a motif itself occupies, so nothing composed here doubles what a
+   motif's own artwork already draws.
+
+   This is the ONE walk. `composePath` spells it as a path and the renderer draws it a connector at
+   a time; neither re-derives the order. */
+export function composeConnectors(
+  section: SectionThread,
+  motifs: Record<MotifId, Motif>,
+  placements: readonly Placement[] = section.placements,
+): Connector[] {
+  const connectors: Connector[] = [];
+  let cursor: ConnectorEnd | null =
+    section.entryX === null ? null : terminalEnd(section.entryX, 0);
+
+  for (const placement of placements) {
+    const motif = motifs[placement.motif];
+    if (cursor !== null) {
+      connectors.push({ from: cursor, to: motifEnd(placement, motif.entry) });
+    }
+    cursor = motifEnd(placement, motif.exit);
+  }
+
+  if (section.exitX !== null && cursor !== null) {
+    connectors.push({ from: cursor, to: terminalEnd(section.exitX, 1) });
+  }
+  return connectors;
+}
+
+/* One connector's curve against a nominal box: its two resolved ends, the control points that make
+   it leave and arrive along their tangents, and the `d` those four points spell. */
+export function connectorCurve(
+  { from, to }: Connector,
+  box: SectionBox = SQUARE_BOX,
+  overlap = 0,
+): {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  c1: { x: number; y: number };
+  c2: { x: number; y: number };
+  d: string;
+} {
+  const start = resolveEnd(from, box, overlap, -1);
+  const end = resolveEnd(to, box, overlap, 1);
+  const reach = Math.hypot(end.x - start.x, end.y - start.y) / 3;
+  const c1 = controlPoint(start, from.tangent, reach, 1);
+  const c2 = controlPoint(end, to.tangent, reach, -1);
+  return {
+    from: start,
+    to: end,
+    c1,
+    c2,
+    d: `M ${start.x} ${start.y} ${connector(c1, c2, end)}`,
+  };
+}
+
+/* The whole thread as one path, in section fractions: every connector as its own subpath, with the
+   pen lifted across the footprint each motif draws for itself. The renderer draws each connector in
+   its own pinned box instead, from the same walk — this is the composition in one piece, and what
+   its own tests read. */
 export function composePath(
   section: SectionThread,
   motifs: Record<MotifId, Motif>,
   box: SectionBox = SQUARE_BOX,
+  overlap = 0,
 ): string {
-  let cursor = section.entryX === null ? null : { x: section.entryX, y: 0 };
-  let cursorTangent: Tangent = TERMINAL_TANGENT;
-  const segments: string[] = [];
-
-  if (cursor !== null) {
-    segments.push(`M ${cursor.x} ${cursor.y}`);
-  }
-
-  for (const placement of section.placements) {
-    const motif = motifs[placement.motif];
-    const entryPoint = place(motif.entry, placement, box);
-    const exitPoint = place(motif.exit, placement, box);
-
-    if (cursor === null) {
-      segments.push(`M ${entryPoint.x} ${entryPoint.y}`);
-    } else {
-      segments.push(connector(cursor, cursorTangent, entryPoint, motif.entry));
-    }
-
-    segments.push(`M ${exitPoint.x} ${exitPoint.y}`);
-    cursor = exitPoint;
-    cursorTangent = motif.exit;
-  }
-
-  if (section.exitX !== null) {
-    const exitTerminal = { x: section.exitX, y: 1 };
-    if (cursor === null) {
-      segments.push(`M ${exitTerminal.x} ${exitTerminal.y}`);
-    } else {
-      segments.push(
-        connector(cursor, cursorTangent, exitTerminal, TERMINAL_TANGENT),
-      );
-    }
-  }
-
-  return segments.join(" ");
+  return composeConnectors(section, motifs)
+    .map((piece) => connectorCurve(piece, box, overlap).d)
+    .join(" ");
 }

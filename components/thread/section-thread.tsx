@@ -4,6 +4,7 @@ import {
   THREAD_CLASS,
   THREAD_TIERS,
   threadCss,
+  threadMaskRegions,
   threadScopeClass,
   threadSegments,
   threadStubs,
@@ -14,12 +15,13 @@ import { ALL_THREADS } from "./thread-placement";
 /* One section's red thread. A SERVER component: the scrub is CSS on the section's own named view
    timeline, so nothing here needs the browser.
 
-   The markup is tier-independent and the geometry is not — a motif is a square off
-   `min(section width, section height)` while its placement is a fraction of the section, so the
-   section's aspect enters the path and four tiers need four paths. The element set is the same at
-   every tier, and the generated stylesheet swaps each path's `d` and each wipe's frame per tier.
-   The `d` attributes below are the narrowest tier's, so a browser without the CSS `d` property
-   still paints a complete thread rather than nothing.
+   Every connector and every stub is its OWN svg, in a box the generated sheet pins to that
+   connector's two ends — in `%` of the section and `svmin`, the same two units the motif's square
+   is placed and sized in, so a join lands on the motif at every window rather than only where the
+   section's aspect matches the tier it was composed for. The curve inside the box is normalised
+   to the box's corners, so only its SHAPE still varies per tier; the sheet swaps that `d` and the
+   wipe's frame. The `d` attributes below are the narrowest tier's, so a browser without the CSS
+   `d` property still paints a complete thread rather than nothing.
 
    Two contracts bind a caller:
    - The section must be a positioned ancestor, and must gain no `contain`, `content-visibility` or
@@ -64,7 +66,11 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
     `thread-${instance}-${index}-${layer}`;
 
   const segments = threadSegments(section, BASE_TIER);
-  const stubs = threadStubs(section, BASE_TIER);
+  const stubs = threadStubs(section);
+  /* One region per connector, wide enough for the widest tier's curve — a `<mask>`'s region is
+     markup and cannot be swapped per tier the way the geometry is. */
+  const regions = threadMaskRegions(section);
+  const region = (index: number) => regions.get(index) ?? { min: -1, max: 2 };
 
   return (
     <>
@@ -80,64 +86,68 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
           .filter(Boolean)
           .join(" ")}
       >
-        <svg
-          aria-hidden
-          className={`${styles.field} ${THREAD_CLASS.field}`}
-          preserveAspectRatio="none"
-          role="presentation"
-          viewBox="0 0 1 1"
-        >
-          {segments.map((segment) =>
-            segment.kind !== "connector" ? null : (
-              <g key={segment.index} className={`thread__seg-${segment.index}`}>
-                {["ink", "wisp"].map((layer) => (
-                  <mask
-                    key={layer}
-                    id={maskId(segment.index, layer)}
-                    maskUnits="userSpaceOnUse"
-                    x="-1"
-                    y="-1"
-                    width="3"
-                    height="3"
+        {segments.map((segment) =>
+          segment.kind !== "connector" ? null : (
+            <svg
+              key={segment.index}
+              aria-hidden
+              className={`${styles.field} ${THREAD_CLASS.field} thread__seg-${segment.index}`}
+              preserveAspectRatio="none"
+              role="presentation"
+              viewBox="0 0 1 1"
+            >
+              {["ink", "wisp"].map((layer) => (
+                <mask
+                  key={layer}
+                  id={maskId(segment.index, layer)}
+                  maskUnits="userSpaceOnUse"
+                  x={region(segment.index).min}
+                  y={region(segment.index).min}
+                  width={region(segment.index).max - region(segment.index).min}
+                  height={region(segment.index).max - region(segment.index).min}
+                >
+                  <g
+                    className={`${styles.wipeFrame} ${THREAD_CLASS.wipeFrame}`}
                   >
-                    <g
-                      className={`${styles.wipeFrame} ${THREAD_CLASS.wipeFrame}`}
-                    >
-                      <rect
-                        className={`${styles.reveal} ${
-                          layer === "ink"
-                            ? THREAD_CLASS.inkReveal
-                            : THREAD_CLASS.wispReveal
-                        }`}
-                        x="0"
-                        y="0"
-                        width="1"
-                        height="1"
-                      />
-                    </g>
-                  </mask>
-                ))}
-                <path
-                  className={`${styles.ink} ${THREAD_CLASS.connector}`}
-                  d={segment.d}
-                  mask={`url(#${maskId(segment.index, "ink")})`}
-                />
-                <path
-                  className={`${styles.wisp} ${THREAD_CLASS.wisp}`}
-                  d={segment.d}
-                  mask={`url(#${maskId(segment.index, "wisp")})`}
-                />
-              </g>
-            ),
-          )}
-          {stubs.map((stub) => (
-            <path
-              key={stub.which}
-              className={`${styles.stub} ${THREAD_CLASS.stub}--${stub.which}`}
-              d={stub.d}
-            />
-          ))}
-        </svg>
+                    <rect
+                      className={`${styles.reveal} ${
+                        layer === "ink"
+                          ? THREAD_CLASS.inkReveal
+                          : THREAD_CLASS.wispReveal
+                      }`}
+                      x="0"
+                      y="0"
+                      width="1"
+                      height="1"
+                    />
+                  </g>
+                </mask>
+              ))}
+              <path
+                className={`${styles.ink} ${THREAD_CLASS.connector}`}
+                d={segment.d}
+                mask={`url(#${maskId(segment.index, "ink")})`}
+              />
+              <path
+                className={`${styles.wisp} ${THREAD_CLASS.wisp}`}
+                d={segment.d}
+                mask={`url(#${maskId(segment.index, "wisp")})`}
+              />
+            </svg>
+          ),
+        )}
+        {stubs.map((stub) => (
+          <svg
+            key={stub.which}
+            aria-hidden
+            className={`${styles.field} ${THREAD_CLASS.stub}--${stub.which}`}
+            preserveAspectRatio="none"
+            role="presentation"
+            viewBox="0 0 1 1"
+          >
+            <path className={styles.stub} d={stub.d} />
+          </svg>
+        ))}
         {segments.map((segment) =>
           segment.kind !== "motif" ? null : (
             <div

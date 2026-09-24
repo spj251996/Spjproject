@@ -18,14 +18,15 @@
   z-index: auto;
 }
 
-/* Section fractions ARE the user space, so `composePath`'s output needs no conversion. Stretching
-   is correct here: a plain curve has no shape to lose, and every motif is drawn in its own square
-   svg instead. */
+/* One connector, or one stub, in a box the generated sheet pins to its own two ends — so the two
+   corners of this element ARE the two points the curve has to meet, and the aspect of the box in
+   between costs the join nothing. Stretching what is in it is correct: a plain curve has no shape
+   to lose, and every motif is drawn in its own square svg instead.
+
+   `overflow: visible` because a cubic leaves its endpoints' box wherever a control point reaches
+   past a corner, and because a round cap reaches half a stroke past each end. */
 .field {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   overflow: visible;
 }
 
@@ -55,14 +56,16 @@
   opacity: 0.7;
 }
 
-/* Mask content: `white` here is full coverage on the alpha channel, not a colour the page shows. */
+/* Mask content: `white` here is full coverage on the alpha channel, not a colour the page shows.
+   A wipe rect covers by its FILL alone — SVG's default `stroke-width: 1` is one whole user unit,
+   which in the wipe frame's own space is the connector's whole span, so a stroked rect revealed
+   roughly twice the band it was asked for at every frame but the empty one. */
 .reveal {
   fill: white;
-  stroke: white;
+  fill-rule: nonzero;
   /* A round cap on a zero-length dash paints a dot, measured as two stray specks on a fully
      undrawn segment. */
   stroke-linecap: butt;
-  fill-rule: nonzero;
 }
 
 /* The generated sheet animates `transform` on these, so both the reference box and the origin are
@@ -94,7 +97,10 @@
   overflow: visible;
 }
 
+/* A motif's mask covers by its STROKE instead — a dashed copy of the drawing, wide enough to hold
+   the visible stroke inside it. */
 .motifMask {
   fill: none;
+  stroke: white;
   stroke-width: var(--thread-mask-width);
 }

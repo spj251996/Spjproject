@@ -1,16 +1,23 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   drawnSubpaths,
+  JOIN_OVERLAP,
   MOTIF_SIDE,
   pathBounds,
   pathLength,
   THREAD_TIERS,
   threadCss,
+  threadMaskRegions,
   threadScopeClass,
   threadSegments,
 } from "./thread-css.ts";
-import { composePath, type SectionThread } from "./thread-geometry.ts";
+import {
+  composeConnectors,
+  composePath,
+  type SectionThread,
+} from "./thread-geometry.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 import { ALL_THREADS, SECTION_THREADS } from "./thread-placement.ts";
 
@@ -243,18 +250,28 @@ test("connector geometry is composed per tier, and tracks the aspect alone", () 
   );
   for (const a of THREAD_TIERS) {
     for (const b of THREAD_TIERS) {
-      if (a.name === b.name) continue;
-      const sameAspect = Math.abs(aspect(a) - aspect(b)) < 1e-9;
-      const samePath = composed.get(a.name) === composed.get(b.name);
-      assert.equal(
-        samePath,
-        sameAspect,
-        sameAspect
-          ? `${a.name} and ${b.name} share an aspect but composed differently`
-          : `${a.name} and ${b.name} differ in aspect but composed identically, so the tier box was never read`,
+      if (a.name === b.name || Math.abs(aspect(a) - aspect(b)) < 1e-9) continue;
+      assert.notEqual(
+        composed.get(a.name),
+        composed.get(b.name),
+        `${a.name} and ${b.name} differ in aspect but composed identically, so the tier box was never read`,
       );
     }
   }
+  /* Two tiers of the same aspect no longer compose identically, because the join allowance is a
+     PIXEL length and a tier's box states its pixels too. So the aspect claim is made directly:
+     hold the pixels and turn the aspect alone, and the geometry has to move. */
+  const square = { width: 1000, height: 1000 };
+  const tall = { width: 1000, height: 2000 };
+  const shape = (box: { width: number; height: number }) =>
+    threadSegments(wishes, { ...THREAD_TIERS[0], box })
+      .map((segment) => (segment.kind === "connector" ? segment.d : ""))
+      .join("|");
+  assert.notEqual(
+    shape(square),
+    shape(tall),
+    "the aspect alone does not move the composed geometry",
+  );
 });
 
 /* `composePath` lifts the pen across each motif's footprint, so its output is one `d` holding every
@@ -263,7 +280,9 @@ test("connector geometry is composed per tier, and tracks the aspect alone", () 
 test("every connector the component renders is a subpath composePath drew", () => {
   for (const section of ALL_THREADS) {
     for (const tier of THREAD_TIERS) {
-      const drawn = drawnSubpaths(composePath(section, MOTIFS, tier.box));
+      const drawn = drawnSubpaths(
+        composePath(section, MOTIFS, tier.box, JOIN_OVERLAP),
+      );
       const connectors = threadSegments(section, tier).filter(
         (s) => s.kind === "connector",
       );
@@ -273,7 +292,7 @@ test("every connector the component renders is a subpath composePath drew", () =
         `${section.id} at ${tier.name}: ${connectors.length} connectors against ${drawn.length} drawn subpaths`,
       );
       assert.deepEqual(
-        connectors.map((s) => s.d),
+        connectors.map((s) => s.absolute),
         drawn,
       );
     }
@@ -489,5 +508,415 @@ test("no two keyframes in a section's sheet share a name", () => {
       [],
       `${section.id} defines a keyframes name twice`,
     );
+  }
+});
+
+/* ---- the joins ------------------------------------------------------------------------------ */
+
+/* A window, and a section that is at least as tall as it. `svmin` is the WINDOW's shorter side
+   while the section's own box is what a percentage resolves against, and the two part company as
+   soon as a section is taller than one screen — which every section on the page is. */
+const WINDOWS = [
+  { width: 360, height: 780, section: 780 },
+  { width: 390, height: 844, section: 844 },
+  { width: 390, height: 844, section: 2400 },
+  { width: 768, height: 1024, section: 1024 },
+  { width: 834, height: 1112, section: 2000 },
+  { width: 900, height: 900, section: 900 },
+  { width: 1024, height: 768, section: 1600 },
+  { width: 1280, height: 720, section: 720 },
+  { width: 1440, height: 900, section: 900 },
+  { width: 1440, height: 900, section: 3000 },
+  { width: 1920, height: 900, section: 900 },
+  { width: 2560, height: 900, section: 1400 },
+];
+
+type Window = (typeof WINDOWS)[number];
+
+/* The emitted grammar and no more: `min(a, b)`, `max(a, b, c)`, `calc(<terms>)`, and terms in `%`,
+   `svmin` or `px`. `size` is the section side the percentage resolves against — its width for a
+   horizontal value, its height for a vertical one. */
+function resolveLength(value: string, size: number, svmin: number): number {
+  const trimmed = value.trim();
+  for (const fn of ["min", "max"] as const) {
+    if (!trimmed.startsWith(`${fn}(`)) continue;
+    const parts = trimmed.slice(fn.length + 1, -1).split(",");
+    const resolved = parts.map((part) => resolveLength(part, size, svmin));
+    return fn === "min" ? Math.min(...resolved) : Math.max(...resolved);
+  }
+  const body = (
+    trimmed.startsWith("calc(") ? trimmed.slice(5, -1) : trimmed
+  ).replaceAll(" - ", " + -");
+  let total = 0;
+  for (const term of body.split(" + ")) {
+    const match = /^(-?[\d.]+)(%|svmin|px)$/.exec(term.trim());
+    assert.ok(match, `unreadable length term "${term}" in "${value}"`);
+    const amount = Number(match[1]);
+    total +=
+      match[2] === "px"
+        ? amount
+        : (amount / 100) * (match[2] === "%" ? size : svmin);
+  }
+  return total;
+}
+
+test("the length resolver reads the grammar the generator emits", () => {
+  const at = (value: string) => resolveLength(value, 1000, 400);
+  assert.equal(at("50%"), 500);
+  assert.equal(at("calc(50% - 25svmin + 2px)"), 500 - 100 + 2);
+  assert.equal(at("min(calc(50% - 25svmin), 50%)"), 400);
+  assert.equal(at("max(1px, calc(0% - 25svmin), calc(0% + 25svmin))"), 100);
+});
+
+/* Only the conditions the generator writes. A `@supports` block is taken as supported, since the
+   claim under test is geometry, not the fallback. */
+function conditionHolds(at: string, window: Window): boolean {
+  if (at.startsWith("@supports")) return true;
+  if (/prefers-reduced-motion/.test(at)) return false;
+  const rem = window.width / 16;
+  for (const [, from, , to] of at.matchAll(
+    /\(\s*([\d.]+)rem\s*<=\s*width(\s*<\s*([\d.]+)rem)?\s*\)/g,
+  )) {
+    if (rem < Number(from)) return false;
+    if (to !== undefined && rem >= Number(to)) return false;
+  }
+  for (const [, to] of at.matchAll(/\(\s*width\s*<\s*([\d.]+)rem\s*\)/g)) {
+    if (rem >= Number(to)) return false;
+  }
+  for (const [, operator, ratio] of at.matchAll(
+    /\(\s*aspect-ratio\s*(<|>=)\s*([\d.]+)\s*\)/g,
+  )) {
+    const aspect = window.width / window.height;
+    if (operator === "<" ? aspect >= Number(ratio) : aspect < Number(ratio)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+test("the condition reader answers the queries the generator writes", () => {
+  const window = { width: 1920, height: 900, section: 900 };
+  assert.equal(conditionHolds("@media (width < 48rem)", window), false);
+  assert.equal(conditionHolds("@media (100rem <= width)", window), true);
+  assert.equal(
+    conditionHolds("@media (64rem <= width < 100rem)", window),
+    false,
+  );
+  assert.equal(conditionHolds("@media (aspect-ratio >= 2.1)", window), true);
+  assert.equal(conditionHolds("@media (aspect-ratio < 2.1)", window), false);
+  assert.equal(
+    conditionHolds("@supports (animation-timeline: view())", window),
+    true,
+  );
+});
+
+/* Every declaration that applies at one window, in cascade order — later wins, which is how the
+   sheet's own tier and aspect blocks are meant to resolve. */
+function declarationsAt(
+  css: string,
+  window: Window,
+): Map<string, Record<string, string>> {
+  const winning = new Map<string, Record<string, string>>();
+  for (const rule of readRules(css)) {
+    if (rule.at.some((at) => at.startsWith("@keyframes"))) continue;
+    if (!rule.at.every((at) => conditionHolds(at, window))) continue;
+    winning.set(rule.selector, {
+      ...(winning.get(rule.selector) ?? {}),
+      ...rule.decls,
+    });
+  }
+  return winning;
+}
+
+/* THE defect this file exists to keep out: a connector composed against a nominal tier box, and a
+   motif field sized from the real window, disagreeing about where the join is. Measured on a real
+   render before the fix — 3.4px at 900x900, 12px at 1280x720, 67px at 2560x900 — and none of the
+   137 tests that passed alongside it could see it.
+
+   The claim is made against the EMITTED sheet, resolved at a window, on both sides: a connector's
+   end is read out of the box the sheet pins it into and the corner its own `d` puts it at, and the
+   motif's end out of the placement the same sheet declares. Neither is re-derived from the model
+   they were both generated from, so a generator that composed against the wrong box would fail
+   here rather than agree with itself. */
+test("every join lands on the motif it meets, at every window", () => {
+  for (const section of ALL_THREADS) {
+    const css = threadCss(section);
+    const ids = section.placements.map((placement) => placement.motif);
+
+    for (const window of WINDOWS) {
+      const applied = declarationsAt(css, window);
+      const scope = `.${threadScopeClass(section.id)}`;
+      const segment = (index: number) =>
+        applied.get(`${scope} .thread__seg-${index}`) ?? {};
+      const across = (value: string) =>
+        resolveLength(
+          value,
+          window.width,
+          Math.min(window.width, window.height),
+        );
+      const down = (value: string) =>
+        resolveLength(
+          value,
+          window.section,
+          Math.min(window.width, window.height),
+        );
+
+      /* Where each motif's own square puts the two points a connector has to meet. */
+      const motifs = new Map<number, { x: number; y: number; side: number }>();
+      let placed = 0;
+      for (let index = 0; ; index += 1) {
+        const decls = segment(index);
+        if (Object.keys(decls).length === 0) break;
+        const side = decls["--thread-motif-side"];
+        if (side === undefined) continue;
+        const scale = /calc\(([\d.]+) \* 100svmin\)/.exec(side);
+        assert.ok(scale, `${section.id}: unreadable motif side "${side}"`);
+        motifs.set(index, {
+          x: Number(decls["--thread-motif-x"]) * window.width,
+          y: Number(decls["--thread-motif-y"]) * window.section,
+          side: Number(scale[1]) * Math.min(window.width, window.height),
+        });
+        placed += 1;
+      }
+      assert.equal(
+        placed,
+        section.placements.length,
+        `${section.id} at ${window.width}x${window.height}: ${placed} motifs placed of ${section.placements.length}`,
+      );
+
+      for (let index = 0; ; index += 1) {
+        const decls = segment(index);
+        if (Object.keys(decls).length === 0) break;
+        if (decls.left === undefined) continue;
+
+        const curve = applied.get(
+          `${scope} .thread__seg-${index} .thread__connector`,
+        );
+        assert.ok(
+          curve?.d,
+          `${section.id}: segment ${index} declares no curve`,
+        );
+        const numbers = [...curve.d.matchAll(/-?[\d.]+/g)].map((m) =>
+          Number(m[0]),
+        );
+        const left = across(decls.left);
+        const top = down(decls.top);
+        const width = across(decls.width);
+        const height = down(decls.height);
+        const corner = (u: number, v: number) => ({
+          x: left + u * width,
+          y: top + v * height,
+        });
+        const ends = {
+          from: corner(numbers[0], numbers[1]),
+          to: corner(numbers[6], numbers[7]),
+        };
+
+        for (const [which, sign] of [
+          ["from", -1],
+          ["to", 1],
+        ] as const) {
+          const neighbour = motifs.get(
+            which === "from" ? index - 1 : index + 1,
+          );
+          let expected: { x: number; y: number };
+          let tangent: { x: number; y: number; angle: number };
+          if (neighbour === undefined) {
+            /* A terminal: the thread's own entry or exit on the section's edge. */
+            const terminal = which === "from" ? section.entryX : section.exitX;
+            assert.ok(
+              terminal !== null,
+              `${section.id}: segment ${index} has neither motif nor terminal at its ${which} end`,
+            );
+            tangent = { x: 0, y: 0, angle: 90 };
+            expected = {
+              x: terminal * window.width,
+              y: which === "from" ? 0 : window.section,
+            };
+          } else {
+            const at =
+              (index +
+                (which === "from" ? -1 : 1) -
+                (section.entryX === null ? 0 : 1)) /
+              2;
+            const motif = MOTIFS[ids[at]];
+            tangent = which === "from" ? motif.exit : motif.entry;
+            expected = {
+              x: neighbour.x + (tangent.x - 0.5) * neighbour.side,
+              y: neighbour.y + (tangent.y - 0.5) * neighbour.side,
+            };
+          }
+          const radians = (tangent.angle * Math.PI) / 180;
+          const off = Math.hypot(
+            ends[which].x -
+              (expected.x + sign * JOIN_OVERLAP * Math.cos(radians)),
+            ends[which].y -
+              (expected.y + sign * JOIN_OVERLAP * Math.sin(radians)),
+          );
+          /* The 1px floor under a box that collapses on one axis is the only slack allowed. */
+          assert.ok(
+            off <= 1.001,
+            `${section.id} at ${window.width}x${window.height} (section ${window.section}): segment ${index}'s ${which} end misses its join by ${off.toFixed(2)}px`,
+          );
+        }
+      }
+    }
+  }
+});
+
+/* The overlap has to be stated against the thing it covers, not against itself: half of the visible
+   stroke is exactly what a butt-capped mask cuts off at a join. Reading the token rather than
+   restating it means a change to the stroke's width is a change to this bound. */
+test("a connector overlaps its join by at least the cap the mask cuts off", () => {
+  const tokens = readFileSync(
+    new URL("../../app/styles/tokens.css", import.meta.url),
+    "utf8",
+  );
+  const declared = /--stroke-thread:\s*([\d.]+)px/.exec(tokens);
+  assert.ok(declared, "tokens.css declares no --stroke-thread");
+  const cap = Number(declared[1]) / 2;
+  assert.ok(
+    JOIN_OVERLAP >= cap,
+    `a join overlaps by ${JOIN_OVERLAP}px against a ${cap}px round cap`,
+  );
+});
+
+/* The mask's own region is the last thing that can cut a curve, and it did: a fixed "one box-width
+   past each edge" held while a connector's box was the whole section and clipped the curve the
+   moment the box became the connector's own span — a control point sits many box-widths out when
+   the two ends are close on one axis. Both the wipe's reach and the region have to contain the
+   curve, at every tier, or the thread is cut somewhere no unit test was looking. */
+test("every mask reaches past the curve it reveals, at every tier", () => {
+  for (const section of ALL_THREADS) {
+    const regions = threadMaskRegions(section);
+    const arrangements =
+      section.stacked === undefined
+        ? [section.placements]
+        : [section.placements, section.stacked];
+
+    for (const placements of arrangements) {
+      for (const tier of THREAD_TIERS) {
+        for (const segment of threadSegments(section, tier, placements)) {
+          if (segment.kind !== "connector") continue;
+          const hull = [...segment.d.matchAll(/-?[\d.]+/g)].map((m) =>
+            Number(m[0]),
+          );
+          const low = Math.min(...hull);
+          const high = Math.max(...hull);
+          const region = regions.get(segment.index);
+          assert.ok(
+            region,
+            `${section.id}: segment ${segment.index} has no mask region`,
+          );
+          assert.ok(
+            region.min <= low && region.max >= high,
+            `${section.id} at ${tier.name}: the mask region [${region.min}, ${region.max}] does not hold a curve reaching [${low}, ${high}]`,
+          );
+
+          /* The wipe's own frame: `translate(a, b) scale(sx, sy)` maps the unit rect, and the axis
+             it does NOT sweep has to cover the curve on that axis. */
+          const frame = [...segment.frame.matchAll(/-?[\d.]+/g)].map((m) =>
+            Number(m[0]),
+          );
+          const [tx, ty, sx, sy] = frame;
+          const cross =
+            segment.axis === "y" ? { at: tx, span: sx } : { at: ty, span: sy };
+          const crossHull = hull.filter(
+            (_, at) => at % 2 === (segment.axis === "y" ? 0 : 1),
+          );
+          assert.ok(
+            cross.at <= Math.min(...crossHull) &&
+              cross.at + cross.span >= Math.max(...crossHull),
+            `${section.id} at ${tier.name}: the wipe covers [${cross.at}, ${cross.at + cross.span}] across a curve spanning [${Math.min(...crossHull)}, ${Math.max(...crossHull)}]`,
+          );
+        }
+      }
+    }
+  }
+});
+
+/* At both ends of the scrub the thread is fully undrawn, and a reveal that is asked for nothing has
+   to paint nothing. A zero-length dash is a dot under any cap but `butt`, and a wipe rect covers by
+   its fill alone — SVG's default `stroke-width: 1` is a whole user unit, which in the wipe frame's
+   space is the connector's whole span. Both are properties of the module, so both are read from
+   it rather than assumed. */
+test("the retracted state is asked for nothing, and paints nothing", () => {
+  const module = readFileSync(
+    new URL("./thread.module.css", import.meta.url),
+    "utf8",
+  );
+  const reveal = /\.reveal\s*\{([^}]*)\}/.exec(module);
+  assert.ok(reveal, "thread.module.css declares no .reveal");
+  assert.match(
+    reveal[1],
+    /stroke-linecap:\s*butt/,
+    "a zero-length dash paints a dot under any cap but butt",
+  );
+  assert.doesNotMatch(
+    reveal[1],
+    /(^|[^-])stroke:/,
+    "a stroked wipe rect reveals a whole user unit past the band it was asked for",
+  );
+
+  for (const section of ALL_THREADS) {
+    const css = threadCss(section);
+    for (const [, name, body] of css.matchAll(
+      /@keyframes\s+([\w-]+)\s*\{([^}]*(?:\}[^@]*?)*?)\n\}/g,
+    )) {
+      if (!name.includes("-ink-")) continue;
+      for (const edge of ["0%", "100%"]) {
+        const frame = new RegExp(`\\n\\s*${edge}\\s*\\{([^}]*)\\}`).exec(body);
+        assert.ok(frame, `${section.id}: ${name} declares no ${edge} frame`);
+        const dash = /stroke-dasharray:\s*([^;]*)/.exec(frame[1]);
+        if (dash !== null) {
+          const inked = dash[1]
+            .trim()
+            .split(/\s+/)
+            .map(Number)
+            .filter((_, at) => at % 2 === 0);
+          assert.deepEqual(
+            inked.filter((length) => length > 0),
+            [],
+            `${section.id}: ${name} still inks ${inked} at ${edge}`,
+          );
+        }
+        const transform = /scale\(([^)]*)\)/.exec(frame[1]);
+        if (transform !== null) {
+          const [x, y] = transform[1].split(",").map(Number);
+          assert.equal(
+            Math.min(Math.abs(x), Math.abs(y)),
+            0,
+            `${section.id}: ${name} still wipes ${transform[1]} at ${edge}`,
+          );
+        }
+      }
+    }
+  }
+});
+
+/* The generator picks which end of a connector is the near corner of its box. Across the window it
+   can emit both and let an aspect-ratio query choose; DOWN the page it cannot, because the quantity
+   that decides is the section's own height and no media query can see it. A section whose two ends
+   could swap order down the page would need a thread that runs back up it. */
+test("no connector's ends can swap order down the page", () => {
+  for (const section of ALL_THREADS) {
+    const arrangements =
+      section.stacked === undefined
+        ? [section.placements]
+        : [section.placements, section.stacked];
+    for (const placements of arrangements) {
+      for (const connector of composeConnectors(section, MOTIFS, placements)) {
+        const constant = connector.from.fraction.y - connector.to.fraction.y;
+        const perSvmin = connector.from.svmin.y - connector.to.svmin.y;
+        /* `r` is the window's shorter side over the section's height: 1 where a section is exactly
+           as tall as a portrait window, and towards 0 as it grows. */
+        const at = (r: number) => constant + perSvmin * r;
+        assert.equal(
+          Math.sign(at(1e-9)),
+          Math.sign(at(1)),
+          `${section.id}: a connector's ends swap order down the page between a section one screen tall and a very tall one`,
+        );
+      }
+    }
   }
 });
