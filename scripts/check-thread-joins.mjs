@@ -188,10 +188,17 @@ try {
         if (only !== null && id !== only) continue;
         const section = page.locator(`#${id}`);
         if ((await section.count()) === 0) continue;
-        /* Two things that are not this section's thread and would read as a second piece of ink:
+        /* Three things that are not this section's thread and would read as a second piece of ink:
            a NEIGHBOUR's thread, which legitimately runs past a section boundary and lands inside
-           this section's box (a placement question, not a join), and the Next dev-tools badge,
-           which turns into a red pill the moment the dev server has anything to say. */
+           this section's box (a placement question, not a join); the Next dev-tools badge, which
+           turns into a red pill the moment the dev server has anything to say; and the tuning
+           panel's own chrome, which is `position: fixed` over the whole route.
+
+           The panel is untracked scratch, so this hides it by a marker it opts into rather than by
+           naming a file that may not exist — with no panel present the selector simply matches
+           nothing. Without it the gate reports every section broken into the SAME 212 pieces at
+           the SAME coordinates, which is the tell: a sweep whose answer is "everything is broken"
+           is a bug in the sweep. */
         await page.evaluate((id) => {
           for (const thread of document.querySelectorAll(".thread")) {
             thread.style.visibility =
@@ -199,6 +206,9 @@ try {
           }
           for (const portal of document.querySelectorAll("nextjs-portal")) {
             portal.style.display = "none";
+          }
+          for (const chrome of document.querySelectorAll("[data-lab-chrome]")) {
+            chrome.style.display = "none";
           }
         }, id);
         await section.evaluate((node, at) => {
