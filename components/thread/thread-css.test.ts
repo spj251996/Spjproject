@@ -76,6 +76,13 @@ function readRules(css: string): Rule[] {
 const conditional = (rule: Rule) =>
   rule.at.some((at) => at.startsWith("@media") || at.startsWith("@supports"));
 
+/* A `@keyframes` frame is not a rule that applies to anything on its own — it is data the animation
+   that names it reads, and its prelude is a percentage rather than a selector. Every sheet used to
+   nest its frames under `@supports`, so `conditional` happened to exclude them; `not-found`'s timed
+   draw needs no `@supports`, so the exclusion has to be stated. */
+const inKeyframes = (rule: Rule) =>
+  rule.at.some((at) => at.startsWith("@keyframes"));
+
 test("the rule reader finds every block the sheet declares", () => {
   const rules = readRules(
     "a { color: red } @media (width > 1px) { b { color: blue; --x: 2 } @keyframes k { from { opacity: 0 } } }",
@@ -215,11 +222,25 @@ test("every band emits a bounded aspect query and no two can both match", () => 
    remains must already be a complete thread and must ask for no animation. */
 test("at rest the thread is complete and no animation is required to make it so", () => {
   for (const id of ALL_IDS) {
-    const rest = readRules(threadCss(id)).filter((r) => !conditional(r));
+    const rest = readRules(threadCss(id)).filter(
+      (r) => !conditional(r) && !inKeyframes(r),
+    );
     const scope = `.${threadScopeClass(id)}`;
 
     for (const rule of rest) {
       for (const property of Object.keys(rule.decls)) {
+        /* `not-found` is the one TIMED surface. Nothing scrolls there, so its draw cannot be gated
+           on `animation-timeline: view()` and is declared outright — but the law is unchanged, and
+           this is what holds it: the only unconditional animation it may declare is the re-trace's
+           gate, which drives the LIGHT. Ignore every animation on that sheet and the ink below is
+           still the complete thread the assertions further down check. */
+        if (id === "not-found" && /^animation/.test(property)) {
+          assert.ok(
+            rule.selector.includes(THREAD_CLASS.retrace),
+            `${id}: ${rule.selector} animates unconditionally outside the re-trace gate`,
+          );
+          continue;
+        }
         assert.doesNotMatch(
           property,
           /^animation/,
@@ -257,6 +278,20 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
         ? []
         : [r.decls["view-timeline-name"]],
     );
+
+    /* `not-found` reads no timeline at all, and declaring one would be the tell that it still
+       thinks it can: a single screen a wrong turn lands on never travels through the viewport, so
+       a view timeline there reports no progress and the thread would never draw. */
+    if (id === "not-found") {
+      assert.equal(named.length, 0, "not-found must name no timeline");
+      assert.equal(
+        rules.filter((r) => r.decls["animation-timeline"] !== undefined).length,
+        0,
+        "not-found must read no timeline",
+      );
+      continue;
+    }
+
     assert.equal(named.length, 1, `${id} must name exactly one timeline`);
 
     const timelines = rules.flatMap((r) =>
@@ -300,6 +335,72 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
         }
       }
     }
+  }
+});
+
+/* The one timed draw on the site, and the shape it has to have: it runs once, ends with the thread
+   complete, and holds it there. A draw that looped, or that ran the retract half of the law, would
+   take the heart away again on a screen the guest is still reading. */
+test("not-found draws on the clock, once, and ends complete", () => {
+  const css = threadCss("not-found");
+  const rules = readRules(css).filter(
+    (rule) => rule.decls["animation-name"] !== undefined,
+  );
+  assert.ok(rules.length > 0, "not-found declares no animation at all");
+
+  for (const rule of rules) {
+    assert.match(
+      rule.decls["animation-duration"] ?? "",
+      /^[\d.]+s$/,
+      `${rule.selector} is not driven by a clock`,
+    );
+    assert.equal(
+      rule.decls["animation-timeline"],
+      undefined,
+      `${rule.selector} still reads a timeline`,
+    );
+    /* The re-trace alone repeats; the draw runs once and its fill holds the last frame. */
+    const repeats = rule.decls["animation-iteration-count"];
+    assert.equal(
+      repeats,
+      rule.selector.includes(THREAD_CLASS.retraceReveal)
+        ? "infinite"
+        : undefined,
+      `${rule.selector} repeats ${repeats}`,
+    );
+    assert.equal(rule.decls["animation-fill-mode"], "both", rule.selector);
+  }
+
+  /* The draw and the gate that opens the resting re-trace behind it run on ONE clock — a gate on a
+     different duration or delay would uncover the re-trace over a thread still being drawn. */
+  const timings = new Set(
+    rules
+      .filter((rule) => !rule.selector.includes(THREAD_CLASS.retraceReveal))
+      .map(
+        (rule) =>
+          `${rule.decls["animation-duration"]}/${rule.decls["animation-delay"]}`,
+      ),
+  );
+  assert.equal(timings.size, 1, `the draw runs on ${timings.size} clocks`);
+
+  for (const [, name, body] of css.matchAll(
+    /@keyframes\s+([\w-]+)\s*\{([^}]*(?:\}[^@]*?)*?)\n\}/g,
+  )) {
+    const last = [...body.matchAll(/\n\s*([\d.]+)%\s*\{([^}]*)\}/g)].at(-1);
+    assert.ok(last, `${name} declares no frames`);
+    assert.equal(Number(last[1]), 100, `${name} stops short of its own end`);
+    if (name.endsWith("-retrace-gate")) {
+      assert.match(last[2], /opacity:\s*1/, "the re-trace never comes to rest");
+      continue;
+    }
+    if (!name.includes("-ink-")) continue;
+    const dash = /stroke-dasharray:\s*([^;]*)/.exec(last[2]);
+    assert.ok(dash, `${name} declares no dash at its end`);
+    assert.deepEqual(
+      dash[1].trim().split(/\s+/).map(Number),
+      [0, 0, 1, 1],
+      `${name} does not end with the thread complete`,
+    );
   }
 });
 
@@ -937,7 +1038,10 @@ test("the retracted state is asked for nothing, and paints nothing", () => {
       /@keyframes\s+([\w-]+)\s*\{([^}]*(?:\}[^@]*?)*?)\n\}/g,
     )) {
       if (!name.includes("-ink-")) continue;
-      for (const edge of ["0%", "100%"]) {
+      /* A timed draw has ONE retracted end. It runs the draw-in half of the law and stops where
+         the ink is complete, and `animation-fill-mode: both` leaves it there — a screen that never
+         leaves the viewport has nothing to retract for. */
+      for (const edge of id === "not-found" ? ["0%"] : ["0%", "100%"]) {
         const frame = new RegExp(`\\n\\s*${edge}\\s*\\{([^}]*)\\}`).exec(body);
         assert.ok(frame, `${id}: ${name} declares no ${edge} frame`);
         const dash = /stroke-dasharray:\s*([^;]*)/.exec(frame[1]);

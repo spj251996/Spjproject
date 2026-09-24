@@ -160,3 +160,12 @@ test("every band anchors the same stops", () => {
     }
   }
 });
+
+/* `not-found` draws the invite's thread, not a copy of it. A second table would drift from the
+   first — the generator resolves the id instead, which keeps the two identical by construction. */
+test("not-found renders invite's own route, not a copy of it", () => {
+  const invite = THREAD_ROUTES.filter((r) => r.id === "invite");
+  const notFound = THREAD_ROUTES.filter((r) => r.id === "not-found");
+  assert.equal(notFound.length, 0, "not-found must not declare its own stops");
+  assert.ok(invite.length > 0);
+});

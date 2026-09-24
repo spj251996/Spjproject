@@ -4,6 +4,7 @@ import {
   SECTION_PLACEMENT,
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
+import { SectionThread } from "@/components/thread/section-thread";
 import { ButtonAction } from "@/components/ui/button-action";
 
 /* The screen an unmatched path reaches. It takes the section frame so a wrong turn still reads as
@@ -15,12 +16,18 @@ import { ButtonAction } from "@/components/ui/button-action";
    what happened. It carries no body line beneath it for the same reason.
 
    Nothing redirects. A timed redirect is a time limit, and none of the exceptions in the site's
-   conformance target cover a courtesy one — the guest leaves by the action. */
+   conformance target cover a courtesy one — the guest leaves by the action. What IS timed here is
+   the thread: this is the one screen with nothing to scroll, so its draw runs on the clock rather
+   than on a view timeline. It draws the invite's own route — the same heart, the same connectors —
+   and the action is present from the first frame and lands with it, so the drawing is something to
+   watch rather than something to wait for. Under reduced motion the thread is simply complete on
+   arrival; nothing about the way out depends on the draw having finished. */
 export default function NotFound() {
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col overflow-y-clip">
       <section className="relative" id="not-found">
         <Botanical fit={notFoundFit} pieces={SECTION_PLACEMENT["not-found"]} />
+        <SectionThread id="not-found" />
         <MountedSheet fit={notFoundFit}>
           <div
             className="flex w-full flex-col items-center text-center"

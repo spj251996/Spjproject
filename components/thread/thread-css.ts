@@ -232,6 +232,14 @@ const RETRACE_ACTIVE = RETRACE_PASS / RETRACE_CYCLE;
    the pen runs off the end instead of parking on it. */
 const RETRACE_REACH = 1 + HEAD_EXTENT;
 
+/* UNSET, and provisional until the owner tunes it: how long `not-found`'s draw takes and how long
+   it waits before starting, in seconds. Every other surface takes its pace from the reader's own
+   scroll, so there is no duration anywhere in the system to read this one off, and DESIGN.md gives
+   none. The two values below are placeholders chosen to be obviously watchable, nothing more.
+   Owner: design-write. */
+const TIMED_DRAW_DELAY = 0.4;
+const TIMED_DRAW_DURATION = 2.4;
+
 function round(value: number): string {
   const fixed = value.toFixed(5).replace(/\.?0+$/, "");
   return fixed === "-0" ? "0" : fixed;
@@ -991,6 +999,31 @@ function stops(span: Span, extra: readonly number[]): number[] {
   );
 }
 
+/* `not-found` is the ONE surface whose draw runs on the clock, because it is the one surface with
+   nothing to scroll — a single screen a wrong turn lands on, which never travels through the
+   viewport and so reports no progress to a view timeline at all.
+
+   It is the same law on a different driver, not a second law: the clock runs the scrub's own
+   progress from 0 to `DRAW_REACH` and stops there, and `animation-fill-mode: both` leaves it at the
+   last frame. A screen that never leaves the viewport never retracts, so the retract half of the
+   law is simply never reached. */
+function isTimed(id: ThreadId): boolean {
+  return id === "not-found";
+}
+
+/* The progress a timed draw runs TO. The ink is complete at `THREAD_HOLD`; the head is carried its
+   own extent past that so the pen runs off the end instead of parking on it — the same reach the
+   scrub gets from the hold band and a re-trace pass gets from `RETRACE_REACH`. */
+const DRAW_REACH = THREAD_HOLD * (1 + HEAD_EXTENT);
+
+/* The scrub's own stops, up to the point a timed draw ends. The dash at each is still computed at
+   the scrub progress it belongs to — only where the frame is WRITTEN changes, which is what keeps
+   the two drivers off separate implementations of the law. */
+function drawStops(scrub: readonly number[]): number[] {
+  const within = scrub.filter((stop) => stop <= DRAW_REACH);
+  return [...new Set([...within, DRAW_REACH])].sort((a, b) => a - b);
+}
+
 type Band01 = readonly [number, number];
 
 function inkBands(progress: number, span: Span): Band01[] {
@@ -1060,6 +1093,20 @@ function keyframes(
     .map(({ at, decl }) => `  ${round(at * 100)}% { ${decl} }`)
     .join("\n");
   return `@keyframes ${name} {\n${body}\n}`;
+}
+
+/* The declarations a timed draw takes — shared by every layer of it and by the re-trace's gate, so
+   the gate cannot drift out of step with the draw it waits on. It runs ONCE: `animation-fill-mode:
+   both` holds the first frame through the delay and the last one forever after, and the last frame
+   is the complete thread the base state already declares. */
+function timedDrawDecls(name: string): string[] {
+  return [
+    `animation-name: ${name};`,
+    `animation-duration: ${round(TIMED_DRAW_DURATION)}s;`,
+    `animation-delay: ${round(TIMED_DRAW_DELAY)}s;`,
+    "animation-fill-mode: both;",
+    "animation-timing-function: linear;",
+  ];
 }
 
 type Layer = {
@@ -1244,13 +1291,21 @@ function emitSegment(
   const animations: string[] = [];
   const emitted: string[] = [];
 
+  /* The re-trace is on the clock everywhere and keeps its own cadence; what a timed SURFACE changes
+     is the driver of every other layer. */
+  const timed = isTimed(id);
+
   for (const layer of layers) {
     const name = `thread-${id}-${segment.index}-${layer.suffix}-${band.id}`;
     const selector = `${scope}${layer.root} .${segmentClass(segment.index)} ${layer.target}`;
-    const at =
+    /* A layer this surface drives on the clock rather than on the reader's scroll: every layer of
+       a timed surface except the re-trace, which is already timed. */
+    const onClock = timed && layer.clock === "view";
+    const scrub =
       layer.clock === "time"
         ? cycleStops(span)
         : stops(span, [...extraStops, ...layer.arcs(span)]);
+    const at = onClock ? drawStops(scrub) : scrub;
     const frames = at.map((stop) => {
       const dash = dashArray(
         intersect(layer.bands(stop, span), layer.within),
@@ -1269,7 +1324,9 @@ function emitSegment(
           .some((length) => Number(length) > 0);
         decls.push(`stroke-linecap: ${draws ? "round" : "butt"};`);
       }
-      return { at: stop, decl: decls.join(" ") };
+      /* The dash belongs to the scrub progress it was computed at; a timed draw only writes it
+         somewhere else, at that progress's share of the draw's own reach. */
+      return { at: onClock ? stop / DRAW_REACH : stop, decl: decls.join(" ") };
     });
     animations.push(
       rule(
@@ -1282,12 +1339,14 @@ function emitSegment(
               "animation-fill-mode: both;",
               "animation-timing-function: linear;",
             ]
-          : [
-              `animation-name: ${name};`,
-              `animation-timeline: ${timelineName(id)};`,
-              "animation-fill-mode: both;",
-              "animation-timing-function: linear;",
-            ],
+          : onClock
+            ? timedDrawDecls(name)
+            : [
+                `animation-name: ${name};`,
+                `animation-timeline: ${timelineName(id)};`,
+                "animation-fill-mode: both;",
+                "animation-timing-function: linear;",
+              ],
       ),
     );
     animated.add(selector);
@@ -1428,10 +1487,17 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
     );
   }
 
+  /* A scroll-driven scrub is gated on `view()` so a browser without it lands on the complete base
+     state instead of on a stuck first frame. A TIMED draw needs no such gate — it asks for nothing
+     the animation shorthand has not supported for years — and putting it behind one would hide the
+     one draw that does not depend on scrolling from exactly the browsers that cannot scrub. */
+  const draw = [...animations, ...frames].join("\n");
   const scrub =
     animations.length === 0
       ? ""
-      : `\n@supports (animation-timeline: view()) {\n${[...animations, ...frames].join("\n")}\n}`;
+      : isTimed(id)
+        ? `\n${draw}`
+        : `\n@supports (animation-timeline: view()) {\n${draw}\n}`;
   return `${geometry.filter((piece) => piece.length > 0).join("\n")}${scrub}`;
 }
 
@@ -1520,8 +1586,11 @@ export function threadCss(id: ThreadId): string {
 
   const base: string[] = [
     rule(scope, [
-      `view-timeline-name: ${timeline};`,
-      "view-timeline-axis: block;",
+      /* A timed surface declares no timeline, because nothing on it reads one — a screen a wrong
+         turn lands on does not travel through the viewport. */
+      ...(isTimed(id)
+        ? []
+        : [`view-timeline-name: ${timeline};`, "view-timeline-axis: block;"]),
       `--thread-mask-width: ${round(MASK_WIDTH)};`,
       ...(woven.length === 0
         ? []
@@ -1607,31 +1676,56 @@ export function threadCss(id: ThreadId): string {
      carries state, and a property carrying state is correct on its first frame.
 
      One block, outside the bands: the gate is the same at every aspect, and a per-band copy would
-     define one `@keyframes` name three times, where the later definition silently wins. */
+     define one `@keyframes` name three times, where the later definition silently wins.
+
+     On a TIMED surface the gate rides the same clock as the draw, so it opens as the pen runs off
+     the end and never closes again — there is no leaving the viewport to close it, and a screen a
+     guest is reading rather than scrolling past is exactly where a resting re-trace belongs. */
   const gateName = `thread-${id}-retrace-gate`;
   const edge = 0.001;
-  const gate =
+  const gateFrames: readonly (readonly [number, number])[] = isTimed(id)
+    ? [
+        [0, 0],
+        [1 - edge, 0],
+        [1, 1],
+      ]
+    : [
+        [0, 0],
+        [THREAD_HOLD - edge, 0],
+        [THREAD_HOLD, 1],
+        [1 - THREAD_HOLD, 1],
+        [1 - THREAD_HOLD + edge, 0],
+        [1, 0],
+      ];
+  const gateBody =
     animated.size === 0
       ? ""
-      : `\n@supports (animation-timeline: view()) {\n${[
-          rule(`${scope} .${THREAD_CLASS.retrace}`, [
-            `animation-name: ${gateName};`,
-            `animation-timeline: ${timeline};`,
-            "animation-fill-mode: both;",
-            "animation-timing-function: linear;",
-          ]),
+      : [
+          rule(
+            `${scope} .${THREAD_CLASS.retrace}`,
+            isTimed(id)
+              ? timedDrawDecls(gateName)
+              : [
+                  `animation-name: ${gateName};`,
+                  `animation-timeline: ${timeline};`,
+                  "animation-fill-mode: both;",
+                  "animation-timing-function: linear;",
+                ],
+          ),
           keyframes(
             gateName,
-            [
-              [0, 0],
-              [THREAD_HOLD - edge, 0],
-              [THREAD_HOLD, 1],
-              [1 - THREAD_HOLD, 1],
-              [1 - THREAD_HOLD + edge, 0],
-              [1, 0],
-            ].map(([at, opacity]) => ({ at, decl: `opacity: ${opacity};` })),
+            gateFrames.map(([at, opacity]) => ({
+              at,
+              decl: `opacity: ${opacity};`,
+            })),
           ),
-        ].join("\n")}\n}`;
+        ].join("\n");
+  const gate =
+    gateBody === ""
+      ? ""
+      : isTimed(id)
+        ? `\n${gateBody}`
+        : `\n@supports (animation-timeline: view()) {\n${gateBody}\n}`;
   if (animated.size > 0) animated.add(`${scope} .${THREAD_CLASS.retrace}`);
 
   /* Reduced motion removes the animation and nothing else, which lands on the complete base above —
