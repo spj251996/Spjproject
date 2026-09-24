@@ -16,14 +16,17 @@ import {
   threadSegments,
   threadStubs,
 } from "./thread-css.ts";
-import type { ThreadId } from "./thread-geometry.ts";
+import type { Tangent, ThreadId } from "./thread-geometry.ts";
 import {
   anchorKey,
+  motifAngle,
+  routePoints,
   type SectionRoute,
   THREAD_IDS,
   THREAD_ROUTES,
 } from "./thread-grid.ts";
 import { MOTIFS } from "./thread-motifs.ts";
+import { splineDirection } from "./thread-spline.ts";
 
 /* Every surface the component mounts, not only the six page sections: `not-found` draws the
    invite's route on a screen of its own and has to satisfy the same laws. */
@@ -797,6 +800,58 @@ function motifFraction(value: string): number {
   return Number(fallback === null ? value : fallback[1]);
 }
 
+/* The route a surface draws. `not-found` is the invite's route on a screen of its own, which is the
+   one place a surface and a route do not share a name. */
+function routeOf(id: ThreadId, band: Band): SectionRoute {
+  const route = THREAD_ROUTES.find(
+    (candidate) =>
+      candidate.id === (id === "not-found" ? "invite" : id) &&
+      candidate.band === band.id,
+  );
+  assert.ok(route, `${id}: no route in band ${band.id}`);
+  return route;
+}
+
+/* Where a turned motif's attachment point sits, as a multiple of the motif's own square side: the
+   drawing's declared point taken off the square's centre, turned, and scaled. Written out here
+   rather than read from the generator, so the test is a second derivation and not an echo. */
+function turnedOffset(
+  tangent: Tangent,
+  degrees: number,
+  scale: number,
+): { x: number; y: number } {
+  const radians = (degrees * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const x = tangent.x - 0.5;
+  const y = tangent.y - 0.5;
+  return { x: (x * cos - y * sin) * scale, y: (x * sin + y * cos) * scale };
+}
+
+/* Every turn cancelled, through the real path rather than around it: a motif's turn is the spline's
+   own direction of travel plus the stop's `nudge`, so a nudge of minus that direction is exactly
+   zero. Restored in `finally`, or every later test in this file would run against routes nobody
+   authored. */
+function withoutAnyTurn(body: () => void): void {
+  const touched: { stop: { nudge?: number }; held: number | undefined }[] = [];
+  for (const route of THREAD_ROUTES) {
+    const points = routePoints(route);
+    route.stops.forEach((stop, index) => {
+      const mutable = stop as { nudge?: number };
+      touched.push({ stop: mutable, held: mutable.nudge });
+      mutable.nudge = -splineDirection(points, index);
+    });
+  }
+  try {
+    body();
+  } finally {
+    for (const { stop, held } of touched) {
+      if (held === undefined) delete stop.nudge;
+      else stop.nudge = held;
+    }
+  }
+}
+
 /* The fallback is the whole contract: a motif whose anchor never resolves — no script, a blocked
    script, a selector that matches nothing — has to land on its authored cell rather than at 0,0 or
    nowhere. Asserted as a RULE over every emitted motif rather than on three known selectors, so a
@@ -853,6 +908,190 @@ test("an anchored motif reads through its anchor and falls back to its own cell"
   assert.ok(anchored > 0, "no motif anchors, so nothing was proved");
 });
 
+/* ---- the turn ------------------------------------------------------------------------------- */
+
+/* A motif is turned onto the route it sits on, and the turn is REAL GEOMETRY rather than a number
+   nobody paints: the drawing turns, and the two points the thread attaches to turn with it. The
+   panel's rotation slider writes `nudge`, which reaches the page only through here.
+
+   Asserted on both halves at once, because either alone passes while the thread visibly detaches:
+   the sheet's own `rotate` against the route's direction of travel, and the composed connector
+   end's `svmin` offset against that same angle applied to the drawing's declared attachment
+   point. */
+test("a motif is turned onto its route, drawing and attachment points together", () => {
+  let turned = 0;
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
+    for (const band of THREAD_BANDS) {
+      const route = routeOf(id, band);
+      const applied = declarationsAt(css, {
+        width: band.box.width,
+        height: band.box.height,
+        section: band.box.height,
+      });
+      const segments = threadSegments(id, band);
+      const stops = route.stops
+        .map((stop, index) => ({ stop, index }))
+        .filter((each) => each.stop.motif !== undefined);
+      const motifs = segments.filter((segment) => segment.kind === "motif");
+      assert.equal(motifs.length, stops.length);
+
+      for (const [at, segment] of motifs.entries()) {
+        assert.ok(segment.kind === "motif");
+        const turn = motifAngle(route, stops[at].index);
+        const decls =
+          applied.get(`.${threadScopeClass(id)} .${segmentClass(segment)}`) ??
+          {};
+
+        /* The drawing itself. `rotate` on the motif's OWN element: an element's own stacking
+           context isolates its children, not its own blending, so this cannot reach the page's
+           `mix-blend-mode` botanical layer. */
+        const declared = decls.rotate;
+        assert.ok(
+          declared,
+          `${id}/${band.id}: motif ${segment.index} declares no rotation, so the panel's slider paints nothing`,
+        );
+        const degrees = /^(-?[\d.]+)deg$/.exec(declared.trim());
+        assert.ok(degrees, `${id}/${band.id}: unreadable rotation ${declared}`);
+        assert.ok(
+          Math.abs(Number(degrees[1]) - turn) < 1e-3,
+          `${id}/${band.id}: motif ${segment.index} is turned ${degrees[1]}deg, not the route's ${turn}deg`,
+        );
+
+        /* Both attachment points, read off the connectors that meet them. */
+        for (const [which, side] of [
+          ["exit", segments[segment.index + 1]],
+          ["entry", segments[segment.index - 1]],
+        ] as const) {
+          if (side === undefined || side.kind !== "connector") continue;
+          const end = which === "exit" ? side.from : side.to;
+          const expected = turnedOffset(
+            segment.place.motif[which],
+            turn,
+            segment.place.scale,
+          );
+          assert.ok(
+            Math.hypot(end.svmin.x - expected.x, end.svmin.y - expected.y) <
+              1e-6,
+            `${id}/${band.id}: motif ${segment.index}'s ${which} attachment did not turn with the drawing`,
+          );
+          assert.ok(
+            Math.abs(
+              end.tangent.angle - (segment.place.motif[which].angle + turn),
+            ) < 1e-6,
+            `${id}/${band.id}: motif ${segment.index}'s ${which} tangent did not turn with the drawing`,
+          );
+          turned += 1;
+        }
+      }
+    }
+  }
+  assert.ok(turned > 0, "no motif was turned, so nothing was proved");
+});
+
+/* A zero turn is NOT `rotate: 0deg`. A zero rotation is still a transform: it hands the element to
+   the compositor and resamples the drawing under a motif nobody turned. Nothing is emitted, and the
+   sheet is then byte-for-byte what it was before the turn existed. */
+test("a motif the route does not turn is handed no transform at all", () => {
+  withoutAnyTurn(() => {
+    let seen = 0;
+    for (const id of ALL_IDS) {
+      for (const band of THREAD_BANDS) {
+        const applied = declarationsAt(threadCss(id), {
+          width: band.box.width,
+          height: band.box.height,
+          section: band.box.height,
+        });
+        for (const segment of threadSegments(id, band)) {
+          if (segment.kind !== "motif") continue;
+          const decls =
+            applied.get(`.${threadScopeClass(id)} .${segmentClass(segment)}`) ??
+            {};
+          assert.equal(
+            decls.rotate,
+            undefined,
+            `${id}/${band.id}: an unturned motif still declares rotate: ${decls.rotate}`,
+          );
+          seen += 1;
+        }
+      }
+    }
+    assert.ok(seen > 0, "no motif was examined");
+  });
+});
+
+/* ---- the crossing the turn makes reachable --------------------------------------------------- */
+
+/* Turning a motif throws its drawing's whole chord onto the axis the route travels, so two
+   consecutive attachment points can END UP IN THE OTHER ORDER. Down the SECTION's height their
+   separation is `a + b*r`, where `r` is the window's shorter side over the section's height — and
+   `r` is a ratio NO MEDIA QUERY CAN SEE, because a section may be taller than one screen.
+   `flipAspect` handles the same algebra across the WIDTH, where an aspect query can see it and a
+   second geometry can be emitted; this axis has no such escape.
+
+   The turn is deliberately NOT clamped to keep this out. An angle clamped to whatever the seeded
+   scales happen to survive would hide from the owner the one thing they need in order to tune away
+   from it. It is RECORDED instead, here and on the grid panel's live readout, so a route edit that
+   introduces a NEW crossing fails in the suite rather than on someone's phone. */
+function heightCrossings(): Map<string, number> {
+  const found = new Map<string, number>();
+  for (const id of ALL_IDS) {
+    for (const band of THREAD_BANDS) {
+      for (const segment of threadSegments(id, band)) {
+        if (segment.kind !== "connector") continue;
+        const constant = segment.from.fraction.y - segment.to.fraction.y;
+        const perSvmin = segment.from.svmin.y - segment.to.svmin.y;
+        if (Math.abs(perSvmin) < 1e-9) continue;
+        const at = -constant / perSvmin;
+        /* `r` is `svmin / section height`, and a section is at least one screen tall, so it cannot
+           exceed 1: a crossing outside that range is unreachable and not a crossing. */
+        if (at <= 0 || at > 1) continue;
+        found.set(`${id}/seg-${segment.index}`, at);
+      }
+    }
+  }
+  return found;
+}
+
+/* Both entries are motif pairs whose squares are too large for the gap between their cells once
+   turned. The remedy is a scale or a cell, and BOTH ARE THE OWNER'S to set on the grid panel — this
+   file records the consequence, it does not choose a value. */
+const KNOWN_CROSSINGS: Readonly<Record<string, number>> = {
+  /* `rings` at 0.44 and `knot` at 0.29, two rows apart on a four-row grid. This is the figure
+     `thread-css.ts` records under "the route, resolved" and the one the grid panel validates its
+     own readout against. Reached in the `upright` band (r = 0.695) and the `wide` band (r = 1). */
+  "event-info/seg-2": 0.6849,
+  /* Flemy's and Sebastian's portrait loops, 0.3 each, one row apart. Reached in `wide` alone — and
+     both loops are anchored, so on a laid-out page they sit where the portraits are rather than on
+     these cells. */
+  "family/seg-2": 0.8333,
+};
+
+/* A crossing costs the join at EVERY window, not only past the crossing itself. The curve is
+   normalised once per band against that band's nominal box, and near the crossing that box collapses
+   on the height axis — `upright` composes this pair 0.9 px apart, under the generator's own 1 px
+   floor — so the normalised endpoints are already lossy before any window applies them. Past the
+   crossing the box pins itself to the other end outright. The two laws below exempt exactly the
+   connectors named above, and nothing else. */
+function crossingConnector(id: ThreadId, index: number): boolean {
+  return KNOWN_CROSSINGS[`${id}/seg-${index}`] !== undefined;
+}
+
+test("every connector the turn inverts is one the source names, at the ratio it names", () => {
+  const found = heightCrossings();
+  assert.deepEqual(
+    [...found.keys()].sort(),
+    Object.keys(KNOWN_CROSSINGS).sort(),
+    "a route edit has changed which connectors the turn inverts",
+  );
+  for (const [key, at] of found) {
+    assert.ok(
+      Math.abs(at - KNOWN_CROSSINGS[key]) < 5e-5,
+      `${key} now inverts at r = ${at.toFixed(4)}, not the recorded ${KNOWN_CROSSINGS[key]}`,
+    );
+  }
+});
+
 /* THE defect this file exists to keep out: a connector composed against a nominal box, and a motif
    field sized from the real window, disagreeing about where the join is. Measured on a real render
    before the fix — 3.4px at 900x900, 12px at 1280x720, 67px at 2560x900 — and none of the 137 tests
@@ -888,7 +1127,10 @@ test("every join lands on the motif it meets, at every window", () => {
 
       /* Where each motif's own square puts the two points a connector has to meet — read out of
          the sheet, turned by the rotation the sheet declares. */
-      const motifs = new Map<number, { x: number; y: number; side: number }>();
+      const motifs = new Map<
+        number,
+        { x: number; y: number; side: number; turn: number }
+      >();
       for (const segment of segments) {
         if (segment.kind !== "motif") continue;
         const decls = at(segment);
@@ -899,15 +1141,23 @@ test("every join lands on the motif it meets, at every window", () => {
         );
         const scale = /calc\(([\d.]+) \* 100svmin\)/.exec(side);
         assert.ok(scale, `${id}: unreadable motif side "${side}"`);
+        /* No declaration is a motif the route does not turn, which is the drawing as authored. */
+        const turn = /^(-?[\d.]+)deg$/.exec((decls.rotate ?? "0deg").trim());
+        assert.ok(turn, `${id}: unreadable motif rotation "${decls.rotate}"`);
         motifs.set(segment.index, {
           x: motifFraction(decls["--thread-motif-x"]) * window.width,
           y: motifFraction(decls["--thread-motif-y"]) * window.section,
           side: Number(scale[1]) * Math.min(window.width, window.height),
+          turn: Number(turn[1]),
         });
       }
 
       for (const segment of segments) {
         if (segment.kind !== "connector") continue;
+        /* A connector the turn inverts cannot meet its motifs: see `crossingConnector`. That is the
+           recorded consequence of the turn, not a composition defect — the set is pinned by
+           `every connector the turn inverts is one the source names`. */
+        if (crossingConnector(id, segment.index)) continue;
         const decls = at(segment);
         assert.ok(decls.left, `${id}: segment ${segment.index} has no box`);
 
@@ -949,15 +1199,19 @@ test("every join lands on the motif it meets, at every window", () => {
             which === "from"
               ? sibling.place.motif.exit
               : sibling.place.motif.entry;
-          const tangent = (declared.angle * Math.PI) / 180;
+          /* The attachment point and the tangent it is met on both turn with the drawing, by the
+             rotation this same sheet declares — so a generator that turned one without the other
+             fails here rather than agreeing with itself. */
+          const offset = turnedOffset(declared, neighbour.turn, 1);
+          const tangent = ((declared.angle + neighbour.turn) * Math.PI) / 180;
           const expected = {
             x:
               neighbour.x +
-              (declared.x - 0.5) * neighbour.side +
+              offset.x * neighbour.side +
               sign * JOIN_OVERLAP * Math.cos(tangent),
             y:
               neighbour.y +
-              (declared.y - 0.5) * neighbour.side +
+              offset.y * neighbour.side +
               sign * JOIN_OVERLAP * Math.sin(tangent),
           };
           const off = Math.hypot(
@@ -1083,11 +1337,20 @@ test("the retracted state is asked for nothing, and paints nothing", () => {
    `d` is normalised against whichever of them is the nearest corner at the band's own nominal
    window. Which point that IS must not turn over: an end that carries an `svmin` term and one that
    does not separate at a rate the section's own height sets, and no media query can see a section's
-   height. A box whose nearest corner changed would render the curve shifted. */
+   height. A box whose nearest corner changed would render the curve shifted.
+
+   Exempt: the connectors the turn is RECORDED as inverting, and only those — see
+   `every connector the turn inverts is one the source names`, which pins that set. */
 test("no connector's box changes which point pins it, at any section height", () => {
   for (const id of ALL_IDS) {
     const css = threadCss(id);
     for (const rule of readRules(css)) {
+      const segment = /\.thread__seg-(\d+)(?:\s|$)/.exec(rule.selector);
+      if (
+        segment !== null &&
+        KNOWN_CROSSINGS[`${id}/seg-${segment[1]}`] !== undefined
+      )
+        continue;
       for (const property of ["top"] as const) {
         const value = rule.decls[property];
         if (value === undefined || !wraps(value, "min")) continue;

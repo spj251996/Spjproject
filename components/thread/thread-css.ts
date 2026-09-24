@@ -651,20 +651,38 @@ function maskCopy(
 
 /* ---- the route, resolved -------------------------------------------------------------------- */
 
-/* A motif is NOT yet turned onto the route it sits on, and the reason is a measurement rather than
-   an omission. Turning it means turning its two attachment points with it, which throws the
-   drawing's whole chord onto the axis the route travels: with the seeded scales, `rings` at 0.44 and
-   `knot` at 0.29 on a four-row grid, their attachment points cross at `r = 0.685` — the window's
-   shorter side over the section's height — so from the `upright` band upward the thread would run
-   back up itself. The scales and the grid are the owner's to tune on the panel; the turn follows
-   them, not the other way round. `motifAngle` is the route's own direction of travel and already
-   aims every free end's stub. */
+/* A motif IS turned onto the route it sits on: `motifAngle` — the spline's own direction of travel
+   through the stop, plus that stop's `nudge` — turns the drawing and both of its attachment points
+   together. Every drawing is authored travelling left to right, so a route running down the page
+   turns its motifs a quarter turn and the thread reads as one continuous line rather than a
+   vertical run interrupted by sideways glyphs.
+
+   BOTH HALVES OR NEITHER. The drawing turns in CSS, on the motif's own element; the two points the
+   connectors attach to are turned here, in the composed geometry. Turning one without the other
+   detaches the thread from its own motif, which is worse than not turning it at all — the join gate
+   (`npm run check:thread-joins`) is what proves it on a render, and
+   `a motif is turned onto its route, drawing and attachment points together` proves it in the
+   model.
+
+   THE TURN CAN PUT A MOTIF'S EXIT BEHIND ITS ENTRY, and that is deliberately not prevented here.
+   Turning throws the drawing's whole chord onto the axis the route travels, so two consecutive
+   attachment points can invert: with the seeded scales, `rings` at 0.44 and `knot` at 0.29 on a
+   four-row grid, they cross at `r = 0.685` — the window's shorter side over the section's height,
+   which no media query can see. Past that the thread runs back up itself. Clamping the angle would
+   hide the very thing the owner has to see to tune around it, so the crossing is made VISIBLE
+   instead: the grid panel carries a live readout of the `r` each connector inverts at, validated
+   against that same 0.685. The scales and the grid are the owner's to tune; the turn follows
+   them. */
 
 export type MotifPlacement = {
   motif: Motif;
   x: number;
   y: number;
   scale: number;
+  /* How far the route turns this motif, in degrees. Zero is the drawing as authored, and is emitted
+     as NO declaration at all: `rotate: 0deg` is still a transform, which hands the element to the
+     compositor and resamples a drawing nobody turned. */
+  turn: number;
   /* The stop's own `anchor` selector, carried through so the emitted position can fall back to this
      placement's cell. Composition itself never reads it: a connector is still built against the
      cell, because the anchor's own position is not known until the page lays out. */
@@ -682,14 +700,26 @@ function motifAxis(place: MotifPlacement, axis: "x" | "y"): string {
     : `var(--thread-anchor-${anchorKey(place.anchor)}-${axis}, ${cell})`;
 }
 
+/* One attachment point, turned with the drawing it sits on. The offset is taken off the square's
+   CENTRE, which is what the element rotates about — `.motif` is translated to its cell by -50%/-50%
+   before `rotate` applies, so the turn's origin is the same point on both sides. The square is
+   sized off `svmin` on both axes, so the turn is isotropic here exactly as it is on screen; a
+   connector's stretched box never enters this. */
 function motifEnd(place: MotifPlacement, tangent: Tangent): ConnectorEnd {
+  const radians = (place.turn * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const x = tangent.x - 0.5;
+  const y = tangent.y - 0.5;
   return {
     fraction: { x: place.x, y: place.y },
     svmin: {
-      x: (tangent.x - 0.5) * place.scale,
-      y: (tangent.y - 0.5) * place.scale,
+      x: (x * cos - y * sin) * place.scale,
+      y: (x * sin + y * cos) * place.scale,
     },
-    tangent,
+    /* The connector is built THROUGH the point this tangent names, so the angle has to turn with
+       the offset or the two meet at a kink. */
+    tangent: { ...tangent, angle: tangent.angle + place.turn },
   };
 }
 
@@ -759,6 +789,7 @@ function breaksAndWaypoints(
       x: points[at].x,
       y: points[at].y,
       scale: stop.scale ?? 0.3,
+      turn: motifAngle(route, at),
       anchor: stop.anchor,
     };
     push({
@@ -1569,6 +1600,10 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
           `--thread-motif-x: ${motifAxis(segment.place, "x")};`,
           `--thread-motif-y: ${motifAxis(segment.place, "y")};`,
           `--thread-motif-side: calc(${round(segment.place.scale)} * 100svmin);`,
+          /* Nothing at all when the route does not turn this motif — see `MotifPlacement.turn`. */
+          ...(round(segment.place.turn) === "0"
+            ? []
+            : [`rotate: ${round(segment.place.turn)}deg;`]),
         ]),
       );
     }
