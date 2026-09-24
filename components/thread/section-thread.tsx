@@ -1,4 +1,5 @@
 import styles from "./thread.module.css";
+import { ThreadAnchors } from "./thread-anchors";
 import { THREAD_BANDS } from "./thread-bands";
 import {
   HEAD_LAYERS,
@@ -11,6 +12,7 @@ import {
   threadStubs,
 } from "./thread-css";
 import type { ThreadId } from "./thread-geometry";
+import { sectionAnchors } from "./thread-grid";
 
 /* One section's red thread. A SERVER component: the scrub is CSS on the section's own named view
    timeline, so nothing here needs the browser.
@@ -39,7 +41,12 @@ import type { ThreadId } from "./thread-geometry";
      `isolation` — each isolates the page's `mix-blend-mode` botanical layer.
    - Wishes mounts TWICE, once `weave="under"` before the illustration and once `weave="over"`
      after it. Document order alone puts the two copies either side of it; neither takes a z-index,
-     because a stacking context between them would put both on the same side. */
+     because a stacking context between them would put both on the same side.
+
+   Three motifs wrap real content rather than sitting on their grid cell, and those carry the one
+   piece of client JavaScript the thread has — `thread-anchors.ts`, which measures the content and
+   writes two custom properties the generated sheet already reads THROUGH the cell. A section that
+   anchors nothing ships no client component at all. */
 
 interface SectionThreadProps {
   id: ThreadId;
@@ -59,6 +66,10 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
   const instance = weave === undefined ? id : `${id}-${weave}`;
   const maskId = (index: number, layer: string) =>
     `thread-${instance}-${index}-${layer}`;
+
+  /* One measurement serves both of Wishes' woven copies: the module writes to every root carrying
+     the section's scope class, so mounting it on the second copy would repeat the same work. */
+  const anchors = weave === "over" ? [] : sectionAnchors(id);
 
   const segments = threadSegments(id, BASE_BAND);
   const stubs = threadStubs(id, BASE_BAND);
@@ -121,6 +132,9 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
   return (
     <>
       <style>{threadCss(id)}</style>
+      {anchors.length === 0 ? null : (
+        <ThreadAnchors anchors={anchors} scope={threadScopeClass(id)} />
+      )}
       <div
         aria-hidden="true"
         className={[

@@ -109,3 +109,54 @@ test("route points are fractions of the section, never pixels", () => {
     }
   }
 });
+
+/* Exactly three motifs wrap specific content — Flemy's portrait, Sebastian's, and the couple
+   illustration — and a few percent off on those reads as a mistake rather than a placement. Every
+   other motif sits on its cell, which is what naming the whole set here holds. */
+test("exactly three stops anchor, and each names an element", () => {
+  const anchored = THREAD_ROUTES.flatMap((r) =>
+    r.stops
+      .filter((s) => s.anchor !== undefined)
+      .map((s) => `${r.id}/${s.anchor}`),
+  );
+  const distinct = new Set(anchored.map((a) => a.split("/")[1]));
+  assert.deepEqual([...distinct].sort(), [
+    "[data-portrait='flemy']",
+    "[data-portrait='sebastian']",
+    "[data-wishes-figure]",
+  ]);
+});
+
+/* The grid cell is the fallback, so a motif whose anchor never resolves is slightly off, never
+   missing. A stop that anchors without a cell has nothing to fall back to. */
+test("every anchored stop still declares its own cell", () => {
+  for (const route of THREAD_ROUTES) {
+    for (const stop of route.stops) {
+      if (stop.anchor === undefined) continue;
+      assert.equal(typeof stop.col, "number");
+      assert.equal(typeof stop.row, "number");
+    }
+  }
+});
+
+/* An anchor must not vary by band. A section's route is the same stops in every band, so an anchor
+   missing from one is a motif that follows its content on two devices and drifts on the third —
+   which the set assertion above cannot see, because the other bands still name the selector. */
+test("every band anchors the same stops", () => {
+  for (const id of THREAD_IDS) {
+    const perBand = THREAD_BANDS.map((band) => {
+      const route = THREAD_ROUTES.find(
+        (r) => r.id === id && r.band === band.id,
+      );
+      assert.ok(route, `${id} has no route in band ${band.id}`);
+      return route.stops.map((stop) => stop.anchor ?? null);
+    });
+    for (const anchors of perBand) {
+      assert.deepEqual(
+        anchors,
+        perBand[0],
+        `${id} does not anchor the same stops in every band`,
+      );
+    }
+  }
+});

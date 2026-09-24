@@ -16,12 +16,42 @@ export const THREAD_IDS: readonly ThreadId[] = [
 export type GridCell = { col: number; row: number };
 
 /* `nudge` turns the motif off the route's own direction of travel, in degrees; `scale` sizes the
-   motif's SQUARE FIELD, not its ink, so two motifs sharing a scale do not share a visual weight. */
+   motif's SQUARE FIELD, not its ink, so two motifs sharing a scale do not share a visual weight.
+
+   `anchor` is a CSS selector for content this motif wraps, resolved inside the section at runtime by
+   `thread-anchors.ts`. It OVERRIDES the cell rather than replacing it: the cell is still authored
+   and is still what the motif sits on before the script runs, or if it never runs at all. */
 export type GridStop = GridCell & {
   motif?: MotifId;
   nudge?: number;
   scale?: number;
+  anchor?: string;
 };
+
+/* The custom-property segment an anchor writes to: `[data-portrait='flemy']` becomes
+   `data-portrait-flemy`, so the generated sheet reads `var(--thread-anchor-data-portrait-flemy-x,
+   <cell>)`. Derived rather than authored beside the selector, so the two cannot drift. */
+export function anchorKey(selector: string): string {
+  return selector
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Every distinct anchor a section's route names, in the shape the client module consumes. */
+export function sectionAnchors(
+  id: ThreadId,
+): { key: string; selector: string }[] {
+  const found = new Map<string, string>();
+  for (const route of THREAD_ROUTES) {
+    if (route.id !== id) continue;
+    for (const stop of route.stops) {
+      if (stop.anchor !== undefined)
+        found.set(anchorKey(stop.anchor), stop.anchor);
+    }
+  }
+  return [...found].map(([key, selector]) => ({ key, selector }));
+}
 
 export type SectionRoute = {
   id: ThreadId;
@@ -76,6 +106,9 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
       { col: 1, row: 3 },
     ],
   },
+  /* The bride's family is rendered first, so the descending thread meets Flemy's portrait before
+     Sebastian's — which is why the upper loop anchors to hers. Re-pairing them is a content change,
+     not a tuning one: the selectors follow the page's order, not the grid's. */
   {
     id: "family",
     band: "tall",
@@ -83,8 +116,20 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     rows: 4,
     stops: [
       { col: 1, row: 0 },
-      { col: 1, row: 1, motif: "portraitLoop", scale: 0.3 },
-      { col: 1, row: 2, motif: "portraitLoop", scale: 0.3 },
+      {
+        col: 1,
+        row: 1,
+        motif: "portraitLoop",
+        scale: 0.3,
+        anchor: "[data-portrait='flemy']",
+      },
+      {
+        col: 1,
+        row: 2,
+        motif: "portraitLoop",
+        scale: 0.3,
+        anchor: "[data-portrait='sebastian']",
+      },
       { col: 1, row: 3 },
     ],
   },
@@ -108,7 +153,13 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     rows: 4,
     stops: [
       { col: 1, row: 0 },
-      { col: 1, row: 1, motif: "wishesLoop", scale: 0.42 },
+      {
+        col: 1,
+        row: 1,
+        motif: "wishesLoop",
+        scale: 0.42,
+        anchor: "[data-wishes-figure]",
+      },
       { col: 1, row: 2 },
       { col: 1, row: 3, motif: "bow", scale: 0.12 },
     ],
@@ -158,8 +209,20 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     rows: 4,
     stops: [
       { col: 2, row: 0 },
-      { col: 2, row: 1, motif: "portraitLoop", scale: 0.3 },
-      { col: 2, row: 2, motif: "portraitLoop", scale: 0.3 },
+      {
+        col: 2,
+        row: 1,
+        motif: "portraitLoop",
+        scale: 0.3,
+        anchor: "[data-portrait='flemy']",
+      },
+      {
+        col: 2,
+        row: 2,
+        motif: "portraitLoop",
+        scale: 0.3,
+        anchor: "[data-portrait='sebastian']",
+      },
       { col: 2, row: 3 },
     ],
   },
@@ -182,7 +245,13 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     rows: 4,
     stops: [
       { col: 2, row: 0 },
-      { col: 2, row: 1, motif: "wishesLoop", scale: 0.42 },
+      {
+        col: 2,
+        row: 1,
+        motif: "wishesLoop",
+        scale: 0.42,
+        anchor: "[data-wishes-figure]",
+      },
       { col: 2, row: 2 },
       { col: 2, row: 3, motif: "bow", scale: 0.12 },
     ],
@@ -232,8 +301,20 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     rows: 4,
     stops: [
       { col: 3, row: 0 },
-      { col: 3, row: 1, motif: "portraitLoop", scale: 0.3 },
-      { col: 3, row: 2, motif: "portraitLoop", scale: 0.3 },
+      {
+        col: 3,
+        row: 1,
+        motif: "portraitLoop",
+        scale: 0.3,
+        anchor: "[data-portrait='flemy']",
+      },
+      {
+        col: 3,
+        row: 2,
+        motif: "portraitLoop",
+        scale: 0.3,
+        anchor: "[data-portrait='sebastian']",
+      },
       { col: 3, row: 3 },
     ],
   },
@@ -256,7 +337,13 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     rows: 4,
     stops: [
       { col: 3, row: 0 },
-      { col: 3, row: 1, motif: "wishesLoop", scale: 0.42 },
+      {
+        col: 3,
+        row: 1,
+        motif: "wishesLoop",
+        scale: 0.42,
+        anchor: "[data-wishes-figure]",
+      },
       { col: 3, row: 2 },
       { col: 3, row: 3, motif: "bow", scale: 0.12 },
     ],

@@ -14,7 +14,7 @@ import {
   threadSegments,
 } from "./thread-css.ts";
 import type { ThreadId } from "./thread-geometry.ts";
-import { THREAD_IDS } from "./thread-grid.ts";
+import { anchorKey, THREAD_IDS, THREAD_ROUTES } from "./thread-grid.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 
 /* Every surface the component mounts, not only the six page sections: `not-found` draws the
@@ -678,6 +678,73 @@ function bandFor(window: Window): Band {
   return band;
 }
 
+/* An anchored motif's position is emitted as `var(--thread-anchor-<key>-<axis>, <cell>)` — the
+   measured position with its authored cell as the fallback. Every claim in this file is made
+   against the CELL, because the cell is the only position a connector is composed against. A
+   resolved anchor moves the motif off that connector by however far the content sits from its cell;
+   that is an open item for the tuning pass, not something this reader is hiding. */
+function motifFraction(value: string): number {
+  const fallback = /^var\(--[\w-]+,\s*([-\d.]+)\)$/.exec(value.trim());
+  return Number(fallback === null ? value : fallback[1]);
+}
+
+/* The fallback is the whole contract: a motif whose anchor never resolves — no script, a blocked
+   script, a selector that matches nothing — has to land on its authored cell rather than at 0,0 or
+   nowhere. Asserted as a RULE over every emitted motif rather than on three known selectors, so a
+   stop that gains an anchor later cannot quietly ship without one. */
+test("an anchored motif reads through its anchor and falls back to its own cell", () => {
+  let anchored = 0;
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
+    for (const window of WINDOWS) {
+      const applied = declarationsAt(css, window);
+      const band = bandFor(window);
+      const route = THREAD_ROUTES.find(
+        (candidate) =>
+          candidate.id === (id === "not-found" ? "invite" : id) &&
+          candidate.band === band.id,
+      );
+      assert.ok(route, `${id}: no route in band ${band.id}`);
+
+      const stops = route.stops.filter((stop) => stop.motif !== undefined);
+      const segments = threadSegments(id, band).filter(
+        (segment) => segment.kind === "motif",
+      );
+      assert.equal(segments.length, stops.length);
+
+      for (const [at, segment] of segments.entries()) {
+        const decls =
+          applied.get(
+            `.${threadScopeClass(id)} .thread__seg-${segment.index}`,
+          ) ?? {};
+        for (const axis of ["x", "y"] as const) {
+          const emitted = decls[`--thread-motif-${axis}`];
+          assert.ok(emitted, `${id}: segment ${segment.index} has no ${axis}`);
+          const cell = segment.place[axis];
+          assert.ok(
+            Math.abs(motifFraction(emitted) - cell) < 1e-4,
+            `${id}: segment ${segment.index} falls back to ${emitted}, not its cell ${cell}`,
+          );
+          const anchor = stops[at].anchor;
+          if (anchor === undefined) {
+            assert.equal(emitted.includes("var("), false);
+            continue;
+          }
+          assert.equal(
+            emitted.startsWith(
+              `var(--thread-anchor-${anchorKey(anchor)}-${axis},`,
+            ),
+            true,
+            `${id}: segment ${segment.index} does not read its anchor: ${emitted}`,
+          );
+          anchored += 1;
+        }
+      }
+    }
+  }
+  assert.ok(anchored > 0, "no motif anchors, so nothing was proved");
+});
+
 /* THE defect this file exists to keep out: a connector composed against a nominal box, and a motif
    field sized from the real window, disagreeing about where the join is. Measured on a real render
    before the fix — 3.4px at 900x900, 12px at 1280x720, 67px at 2560x900 — and none of the 137 tests
@@ -725,8 +792,8 @@ test("every join lands on the motif it meets, at every window", () => {
         const scale = /calc\(([\d.]+) \* 100svmin\)/.exec(side);
         assert.ok(scale, `${id}: unreadable motif side "${side}"`);
         motifs.set(segment.index, {
-          x: Number(decls["--thread-motif-x"]) * window.width,
-          y: Number(decls["--thread-motif-y"]) * window.section,
+          x: motifFraction(decls["--thread-motif-x"]) * window.width,
+          y: motifFraction(decls["--thread-motif-y"]) * window.section,
           side: Number(scale[1]) * Math.min(window.width, window.height),
         });
       }

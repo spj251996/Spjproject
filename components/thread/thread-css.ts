@@ -11,6 +11,7 @@ import {
   type ThreadId,
 } from "./thread-geometry.ts";
 import {
+  anchorKey,
   motifAngle,
   routePoints,
   type SectionRoute,
@@ -637,7 +638,22 @@ export type MotifPlacement = {
   x: number;
   y: number;
   scale: number;
+  /* The stop's own `anchor` selector, carried through so the emitted position can fall back to this
+     placement's cell. Composition itself never reads it: a connector is still built against the
+     cell, because the anchor's own position is not known until the page lays out. */
+  anchor?: string;
 };
+
+/* A motif's position on one axis: the authored cell, or — where the stop anchors — the custom
+   property `thread-anchors.ts` writes, WITH the cell as its fallback. Before that script runs, or
+   if it never runs at all, the cell is what paints; the motif is then slightly off rather than
+   missing. */
+function motifAxis(place: MotifPlacement, axis: "x" | "y"): string {
+  const cell = round(place[axis]);
+  return place.anchor === undefined
+    ? cell
+    : `var(--thread-anchor-${anchorKey(place.anchor)}-${axis}, ${cell})`;
+}
 
 function motifEnd(place: MotifPlacement, tangent: Tangent): ConnectorEnd {
   return {
@@ -716,6 +732,7 @@ function breaksAndWaypoints(
       x: points[at].x,
       y: points[at].y,
       scale: stop.scale ?? 0.3,
+      anchor: stop.anchor,
     };
     push({
       arrive: motifEnd(place, motif.entry),
@@ -1379,8 +1396,8 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
     } else {
       geometry.push(
         rule(selector, [
-          `--thread-motif-x: ${round(segment.place.x)};`,
-          `--thread-motif-y: ${round(segment.place.y)};`,
+          `--thread-motif-x: ${motifAxis(segment.place, "x")};`,
+          `--thread-motif-y: ${motifAxis(segment.place, "y")};`,
           `--thread-motif-side: calc(${round(segment.place.scale)} * 100svmin);`,
         ]),
       );
