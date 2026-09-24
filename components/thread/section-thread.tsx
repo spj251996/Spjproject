@@ -1,15 +1,12 @@
 import styles from "./thread.module.css";
 import { ThreadAnchors } from "./thread-anchors";
-import { THREAD_BANDS } from "./thread-bands";
 import {
   HEAD_LAYERS,
   MOTIF_SIDE,
   THREAD_CLASS,
   threadCss,
-  threadMaskRegions,
+  threadMounts,
   threadScopeClass,
-  threadSegments,
-  threadStubs,
 } from "./thread-css";
 import type { ThreadId } from "./thread-geometry";
 import { sectionAnchors } from "./thread-grid";
@@ -23,8 +20,13 @@ import { sectionAnchors } from "./thread-grid";
    section's aspect matches the band it was composed for. The curve inside the box is normalised to
    the box's own corners, so only its SHAPE still varies per band; the sheet swaps that `d`. A
    waypoint between the two ends may fall outside the box, which `overflow: visible` renders. The
-   `d` attributes below are the first band's, so a browser without the CSS `d` property still paints
-   a complete thread rather than nothing.
+   `d` attributes below are the first band that mounts each element, so a browser without the CSS
+   `d` property still paints a complete thread rather than nothing.
+
+   The element set is the UNION of every band's, never one band's — `threadMounts`. A band's route
+   may carry a different number of stops and a different sequence of motifs, and a motif's own `d`
+   is markup rather than CSS, so markup built from a single band would leave every other band's
+   rules addressing elements that do not exist. The sheet hides whatever its own band does not use.
 
    Every reveal is a dashed, butt-capped stroked COPY of the path it reveals — motif and connector
    alike — so nothing is wiped into view and a route may double back as freely as the owner draws
@@ -58,32 +60,25 @@ const WEAVE_CLASS = {
   over: THREAD_CLASS.weaveOver,
 } as const;
 
-/* The first band decides the element set and the fallback `d`s; every other band overrides those
-   values through the generated stylesheet. */
-const BASE_BAND = THREAD_BANDS[0];
-
 export function SectionThread({ id, weave }: SectionThreadProps) {
   const instance = weave === undefined ? id : `${id}-${weave}`;
-  const maskId = (index: number, layer: string) =>
-    `thread-${instance}-${index}-${layer}`;
+  const maskId = (key: string, layer: string) =>
+    `thread-${instance}-${key}-${layer}`;
 
   /* One measurement serves both of Wishes' woven copies: the module writes to every root carrying
      the section's scope class, so mounting it on the second copy would repeat the same work. */
   const anchors = weave === "over" ? [] : sectionAnchors(id);
 
-  const segments = threadSegments(id, BASE_BAND);
-  const stubs = threadStubs(id, BASE_BAND);
-  /* One region per connector, wide enough for the widest band's curve and mask — a `<mask>`'s
+  /* Every element any band needs. Each carries the widest band's mask region too — a `<mask>`'s
      region is markup and cannot be swapped per band the way the geometry is. */
-  const regions = threadMaskRegions(id);
-  const region = (index: number) => regions.get(index) ?? { min: -1, max: 2 };
+  const mounts = threadMounts(id);
 
   /* The head and the re-trace are the same stack of stroked copies of the path on two different
      clocks — the scrub for one, a loop gated to the hold band for the other — so one function
      draws both. A copy of the PATH, never an element travelling along it: an element is rigid and
      its far end leaves the line on a bend, measured at 4.16px of departure against 0.21px here. */
   const lightStack = (
-    index: number,
+    key: string,
     ink: string,
     reveal: string,
     box: { x: number; y: number; side: number },
@@ -100,7 +95,7 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
         {HEAD_LAYERS.map((layer) => (
           <g key={layer.name}>
             <mask
-              id={maskId(index, `${kind}-${layer.name}`)}
+              id={maskId(key, `${kind}-${layer.name}`)}
               maskUnits="userSpaceOnUse"
               x={box.x}
               y={box.y}
@@ -122,7 +117,7 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
             <path
               className={`${styles.light} ${THREAD_CLASS.light} ${THREAD_CLASS.light}--${layer.name}`}
               d={ink}
-              mask={`url(#${maskId(index, `${kind}-${layer.name}`)})`}
+              mask={`url(#${maskId(key, `${kind}-${layer.name}`)})`}
             />
           </g>
         ))}
@@ -147,12 +142,12 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
           .join(" ")}
       >
         <div className={`${styles.inkLayer} ${THREAD_CLASS.inkLayer}`}>
-          {segments.map((segment) =>
-            segment.kind !== "connector" ? null : (
+          {mounts.map((mount) =>
+            mount.kind !== "connector" ? null : (
               <svg
-                key={segment.index}
+                key={mount.key}
                 aria-hidden
-                className={`${styles.field} ${THREAD_CLASS.field} thread__seg-${segment.index}`}
+                className={`${styles.field} ${THREAD_CLASS.field} ${mount.className}`}
                 preserveAspectRatio="none"
                 role="presentation"
                 viewBox="0 0 1 1"
@@ -160,16 +155,12 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                 {["ink", "wisp"].map((layer) => (
                   <mask
                     key={layer}
-                    id={maskId(segment.index, layer)}
+                    id={maskId(mount.key, layer)}
                     maskUnits="userSpaceOnUse"
-                    x={region(segment.index).min}
-                    y={region(segment.index).min}
-                    width={
-                      region(segment.index).max - region(segment.index).min
-                    }
-                    height={
-                      region(segment.index).max - region(segment.index).min
-                    }
+                    x={mount.region.min}
+                    y={mount.region.min}
+                    width={mount.region.max - mount.region.min}
+                    height={mount.region.max - mount.region.min}
                   >
                     <path
                       className={`${styles.reveal} ${
@@ -177,41 +168,43 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                           ? THREAD_CLASS.inkReveal
                           : THREAD_CLASS.wispReveal
                       }`}
-                      d={segment.revealD}
+                      d={mount.revealD}
                       pathLength="1"
                     />
                   </mask>
                 ))}
                 <path
                   className={`${styles.ink} ${THREAD_CLASS.connector}`}
-                  d={segment.d}
-                  mask={`url(#${maskId(segment.index, "ink")})`}
+                  d={mount.d}
+                  mask={`url(#${maskId(mount.key, "ink")})`}
                 />
                 <path
                   className={`${styles.wisp} ${THREAD_CLASS.wisp}`}
-                  d={segment.d}
-                  mask={`url(#${maskId(segment.index, "wisp")})`}
+                  d={mount.d}
+                  mask={`url(#${maskId(mount.key, "wisp")})`}
                 />
               </svg>
             ),
           )}
-          {stubs.map((stub) => (
-            <svg
-              key={stub.which}
-              aria-hidden
-              className={`${styles.field} ${THREAD_CLASS.stub}--${stub.which}`}
-              preserveAspectRatio="none"
-              role="presentation"
-              viewBox="0 0 1 1"
-            >
-              <path className={styles.stub} d={stub.d} />
-            </svg>
-          ))}
-          {segments.map((segment) =>
-            segment.kind !== "motif" ? null : (
+          {mounts.map((mount) =>
+            mount.kind !== "stub" ? null : (
+              <svg
+                key={mount.key}
+                aria-hidden
+                className={`${styles.field} ${mount.className}`}
+                preserveAspectRatio="none"
+                role="presentation"
+                viewBox="0 0 1 1"
+              >
+                <path className={styles.stub} d={mount.d} />
+              </svg>
+            ),
+          )}
+          {mounts.map((mount) =>
+            mount.kind !== "motif" ? null : (
               <div
-                key={segment.index}
-                className={`${styles.motif} ${THREAD_CLASS.motif} thread__seg-${segment.index}`}
+                key={mount.key}
+                className={`${styles.motif} ${THREAD_CLASS.motif} ${mount.className}`}
               >
                 <svg
                   aria-hidden
@@ -222,7 +215,7 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                   {["ink", "wisp"].map((layer) => (
                     <mask
                       key={layer}
-                      id={maskId(segment.index, layer)}
+                      id={maskId(mount.key, layer)}
                       maskUnits="userSpaceOnUse"
                       x={-MOTIF_SIDE}
                       y={-MOTIF_SIDE}
@@ -235,20 +228,20 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                             ? THREAD_CLASS.inkReveal
                             : THREAD_CLASS.wispReveal
                         }`}
-                        d={segment.place.motif.d}
+                        d={mount.d}
                         pathLength="1"
                       />
                     </mask>
                   ))}
                   <path
                     className={`${styles.motifPath} ${THREAD_CLASS.motifPath}`}
-                    d={segment.place.motif.d}
-                    mask={`url(#${maskId(segment.index, "ink")})`}
+                    d={mount.d}
+                    mask={`url(#${maskId(mount.key, "ink")})`}
                   />
                   <path
                     className={`${styles.wisp} ${THREAD_CLASS.wisp}`}
-                    d={segment.place.motif.d}
-                    mask={`url(#${maskId(segment.index, "wisp")})`}
+                    d={mount.d}
+                    mask={`url(#${maskId(mount.key, "wisp")})`}
                   />
                 </svg>
               </div>
@@ -256,29 +249,29 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
           )}
         </div>
         <div className={`${styles.lightLayer} ${THREAD_CLASS.lightLayer}`}>
-          {segments.map((segment) =>
-            segment.kind !== "connector" ? null : (
+          {mounts.map((mount) =>
+            mount.kind !== "connector" ? null : (
               <svg
-                key={segment.index}
+                key={mount.key}
                 aria-hidden
-                className={`${styles.field} ${THREAD_CLASS.field} thread__seg-${segment.index}`}
+                className={`${styles.field} ${THREAD_CLASS.field} ${mount.className}`}
                 preserveAspectRatio="none"
                 role="presentation"
                 viewBox="0 0 1 1"
               >
-                {lightStack(segment.index, segment.d, segment.revealD, {
-                  x: region(segment.index).min,
-                  y: region(segment.index).min,
-                  side: region(segment.index).max - region(segment.index).min,
+                {lightStack(mount.key, mount.d, mount.revealD, {
+                  x: mount.region.min,
+                  y: mount.region.min,
+                  side: mount.region.max - mount.region.min,
                 })}
               </svg>
             ),
           )}
-          {segments.map((segment) =>
-            segment.kind !== "motif" ? null : (
+          {mounts.map((mount) =>
+            mount.kind !== "motif" ? null : (
               <div
-                key={segment.index}
-                className={`${styles.motif} ${THREAD_CLASS.motif} thread__seg-${segment.index}`}
+                key={mount.key}
+                className={`${styles.motif} ${THREAD_CLASS.motif} ${mount.className}`}
               >
                 <svg
                   aria-hidden
@@ -286,12 +279,11 @@ export function SectionThread({ id, weave }: SectionThreadProps) {
                   role="presentation"
                   viewBox={`0 0 ${MOTIF_SIDE} ${MOTIF_SIDE}`}
                 >
-                  {lightStack(
-                    segment.index,
-                    segment.place.motif.d,
-                    segment.place.motif.d,
-                    { x: -MOTIF_SIDE, y: -MOTIF_SIDE, side: MOTIF_SIDE * 3 },
-                  )}
+                  {lightStack(mount.key, mount.d, mount.d, {
+                    x: -MOTIF_SIDE,
+                    y: -MOTIF_SIDE,
+                    side: MOTIF_SIDE * 3,
+                  })}
                 </svg>
               </div>
             ),

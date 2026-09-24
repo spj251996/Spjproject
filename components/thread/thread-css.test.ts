@@ -7,14 +7,22 @@ import {
   MOTIF_SIDE,
   pathBounds,
   pathLength,
+  segmentClass,
   THREAD_CLASS,
   threadCss,
   threadMaskRegions,
+  threadMounts,
   threadScopeClass,
   threadSegments,
+  threadStubs,
 } from "./thread-css.ts";
 import type { ThreadId } from "./thread-geometry.ts";
-import { anchorKey, THREAD_IDS, THREAD_ROUTES } from "./thread-grid.ts";
+import {
+  anchorKey,
+  type SectionRoute,
+  THREAD_IDS,
+  THREAD_ROUTES,
+} from "./thread-grid.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 
 /* Every surface the component mounts, not only the six page sections: `not-found` draws the
@@ -815,9 +823,8 @@ test("an anchored motif reads through its anchor and falls back to its own cell"
 
       for (const [at, segment] of segments.entries()) {
         const decls =
-          applied.get(
-            `.${threadScopeClass(id)} .thread__seg-${segment.index}`,
-          ) ?? {};
+          applied.get(`.${threadScopeClass(id)} .${segmentClass(segment)}`) ??
+          {};
         for (const axis of ["x", "y"] as const) {
           const emitted = decls[`--thread-motif-${axis}`];
           assert.ok(emitted, `${id}: segment ${segment.index} has no ${axis}`);
@@ -864,8 +871,8 @@ test("every join lands on the motif it meets, at every window", () => {
       const applied = declarationsAt(css, window);
       const scope = `.${threadScopeClass(id)}`;
       const segments = threadSegments(id, bandFor(window));
-      const at = (index: number) =>
-        applied.get(`${scope} .thread__seg-${index}`) ?? {};
+      const at = (segment: (typeof segments)[number]) =>
+        applied.get(`${scope} .${segmentClass(segment)}`) ?? {};
       const across = (value: string) =>
         resolveLength(
           value,
@@ -884,7 +891,7 @@ test("every join lands on the motif it meets, at every window", () => {
       const motifs = new Map<number, { x: number; y: number; side: number }>();
       for (const segment of segments) {
         if (segment.kind !== "motif") continue;
-        const decls = at(segment.index);
+        const decls = at(segment);
         const side = decls["--thread-motif-side"];
         assert.ok(
           side,
@@ -901,11 +908,11 @@ test("every join lands on the motif it meets, at every window", () => {
 
       for (const segment of segments) {
         if (segment.kind !== "connector") continue;
-        const decls = at(segment.index);
+        const decls = at(segment);
         assert.ok(decls.left, `${id}: segment ${segment.index} has no box`);
 
         const curve = applied.get(
-          `${scope} .thread__seg-${segment.index} .thread__connector`,
+          `${scope} .${segmentClass(segment)} .thread__connector`,
         );
         assert.ok(
           curve?.d,
@@ -990,21 +997,32 @@ test("a connector overlaps its join by at least the cap the mask cuts off", () =
    moment the box became the connector's own span — a control point sits many box-widths out when
    the two ends are close on one axis. */
 test("every mask reaches past the curve it reveals, at every band", () => {
-  for (const id of ALL_IDS) {
-    const regions = threadMaskRegions(id);
-    for (const band of THREAD_BANDS) {
-      for (const segment of threadSegments(id, band)) {
-        if (segment.kind !== "connector") continue;
-        const hull = [...segment.d.matchAll(/-?[\d.]+/g)].map((m) =>
-          Number(m[0]),
-        );
-        const region = regions.get(segment.index);
-        assert.ok(region, `${id}: segment ${segment.index} has no mask region`);
-        assert.ok(
-          region.min <= Math.min(...hull) - segment.maskWidth / 2 &&
-            region.max >= Math.max(...hull) + segment.maskWidth / 2,
-          `${id} at ${band.id}: the mask region [${region.min}, ${region.max}] does not hold a curve reaching [${Math.min(...hull)}, ${Math.max(...hull)}] stroked ${segment.maskWidth} wide`,
-        );
+  /* Under the DIVERGENT route as well as the seeded ones: a `<mask>`'s region is markup and so is
+     one value for all three bands, and while the bands agree a region narrowed to the first band
+     is indistinguishable from the widest. */
+  check();
+  withDivergentWideRoute(check);
+
+  function check() {
+    for (const id of ALL_IDS) {
+      const regions = threadMaskRegions(id);
+      for (const band of THREAD_BANDS) {
+        for (const segment of threadSegments(id, band)) {
+          if (segment.kind !== "connector") continue;
+          const hull = [...segment.d.matchAll(/-?[\d.]+/g)].map((m) =>
+            Number(m[0]),
+          );
+          const region = regions.get(segmentClass(segment));
+          assert.ok(
+            region,
+            `${id}: segment ${segment.index} has no mask region`,
+          );
+          assert.ok(
+            region.min <= Math.min(...hull) - segment.maskWidth / 2 &&
+              region.max >= Math.max(...hull) + segment.maskWidth / 2,
+            `${id} at ${band.id}: the mask region [${region.min}, ${region.max}] does not hold a curve reaching [${Math.min(...hull)}, ${Math.max(...hull)}] stroked ${segment.maskWidth} wide`,
+          );
+        }
       }
     }
   }
@@ -1211,5 +1229,210 @@ test("the head's brightest layer caps round only where its dash has length", () 
       checked += 1;
     }
     assert.ok(checked > 0, `${id}: no frame animates a cap`);
+  }
+});
+
+/* ---- the markup covers every band ------------------------------------------------------------ */
+
+/* THE defect this pair exists to keep out. Geometry is emitted once per ASPECT BAND, and a band's
+   route may differ from its neighbour's in how many stops it has and which motifs they carry — that
+   is the whole point of bands. The markup was built from `THREAD_BANDS[0]` alone, so every other
+   band's rules addressed elements that were never mounted and that band rendered wrong.
+
+   NOTHING ELSE CAN SEE IT. The sheet is valid CSS either way; the rules that do match still match;
+   `tsc`, lint, the whole suite, the build and the join gate were all green over it, because the
+   seeded routes are the same straight run in all three bands and the element sets coincide. It
+   becomes real the first time the owner authors one band differently — which is the first thing
+   they will do — so the test AUTHORS that divergence rather than waiting for it. */
+
+/* Every element class the sheet names, taken out of its selectors rather than re-derived from the
+   model both sides were generated from. */
+const MOUNT_CLASS = /thread__(?:seg-\d+(?:-[A-Za-z]+)?|stub--(?:entry|exit))/g;
+
+function addressedClasses(css: string): Set<string> {
+  const found = new Set<string>();
+  for (const rule of readRules(css)) {
+    if (rule.at.some((at) => at.startsWith("@keyframes"))) continue;
+    for (const match of rule.selector.matchAll(MOUNT_CLASS))
+      found.add(match[0]);
+  }
+  return found;
+}
+
+function mountedClasses(id: ThreadId): Set<string> {
+  return new Set(threadMounts(id).map((mount) => mount.className));
+}
+
+/* A `wide` route that diverges from `tall`'s on both axes the markup depends on: SIX stops against
+   four, and `bow` then `phone` against a single `heart`. The entry and exit columns are left on the
+   band's centre column, so the handoff law is untouched and this tests one thing. */
+const DIVERGENT: SectionRoute = {
+  id: "invite",
+  band: "wide",
+  cols: 7,
+  rows: 6,
+  stops: [
+    { col: 3, row: 0 },
+    { col: 2, row: 1, motif: "bow", scale: 0.12 },
+    { col: 2, row: 2 },
+    { col: 4, row: 3 },
+    { col: 4, row: 4, motif: "phone", scale: 0.28 },
+    { col: 3, row: 5 },
+  ],
+};
+
+/* Swapped into the ONE routing source for the length of one assertion, because the defect is a
+   property of the routes disagreeing and the seeds agree. Restored in `finally`, or every later
+   test in this file would run against a route nobody authored. */
+function withDivergentWideRoute(body: () => void): void {
+  const routes = THREAD_ROUTES as SectionRoute[];
+  const at = routes.findIndex(
+    (route) => route.id === DIVERGENT.id && route.band === DIVERGENT.band,
+  );
+  assert.ok(at >= 0, "no wide route for the invite to diverge from");
+  const held = routes[at];
+  routes[at] = DIVERGENT;
+  try {
+    body();
+  } finally {
+    routes[at] = held;
+  }
+}
+
+test("every element the sheet addresses is mounted, in every band", () => {
+  for (const id of ALL_IDS) {
+    const mounted = mountedClasses(id);
+    for (const addressed of addressedClasses(threadCss(id))) {
+      assert.ok(
+        mounted.has(addressed),
+        `${id}: the sheet addresses .${addressed}, which the markup never mounts`,
+      );
+    }
+  }
+
+  withDivergentWideRoute(() => {
+    /* The divergence is asserted, not assumed: a seed edit that made the bands agree again would
+       otherwise leave this test passing while testing nothing. */
+    const tall = threadSegments("invite", THREAD_BANDS[0]);
+    const wide = threadSegments(
+      "invite",
+      THREAD_BANDS.find((band) => band.id === "wide") as Band,
+    );
+    const motifs = (
+      segments: readonly ReturnType<typeof threadSegments>[number][],
+    ) =>
+      segments
+        .filter((segment) => segment.kind === "motif")
+        .map((segment) =>
+          segment.kind === "motif" ? segment.place.motif.id : "",
+        )
+        .join(",");
+    assert.notEqual(
+      tall.length,
+      wide.length,
+      "the two bands have equal stop counts",
+    );
+    assert.notEqual(
+      motifs(tall),
+      motifs(wide),
+      "the two bands carry equal motifs",
+    );
+
+    /* `not-found` resolves to the invite's own route, so it diverges with it and is checked here
+       rather than being left to the seeded pass above. */
+    for (const id of ["invite", "not-found"] as const) {
+      const mounted = mountedClasses(id);
+      for (const addressed of addressedClasses(threadCss(id))) {
+        assert.ok(
+          mounted.has(addressed),
+          `${id}, wide route diverging: the sheet addresses .${addressed}, which the markup never mounts`,
+        );
+      }
+    }
+  });
+});
+
+/* The other half of the contract: the markup is the union, so a band has to PUT AWAY what its own
+   route does not use — otherwise a spare element paints its fallback `d` in a box no rule pins.
+   Asserted at a real window per band, through the same cascade reader the join test uses. */
+test("each band hides exactly the elements its own route does not use", () => {
+  const check = () => {
+    for (const id of ALL_IDS) {
+      const css = threadCss(id);
+      const scope = `.${threadScopeClass(id)}`;
+      for (const window of WINDOWS) {
+        const applied = declarationsAt(css, window);
+        const band = bandFor(window);
+        const used = new Set<string>([
+          ...threadSegments(id, band).map(segmentClass),
+          ...threadStubs(id, band).map(
+            (stub) => `${THREAD_CLASS.stub}--${stub.which}`,
+          ),
+        ]);
+
+        for (const mount of threadMounts(id)) {
+          const decls = applied.get(`${scope} .${mount.className}`) ?? {};
+          assert.equal(
+            decls.display === "none",
+            !used.has(mount.className),
+            `${id} at ${window.width}x${window.height} (${band.id}): .${mount.className} is ${
+              decls.display === "none" ? "hidden" : "shown"
+            } where its band ${used.has(mount.className) ? "uses" : "does not use"} it`,
+          );
+        }
+      }
+    }
+  };
+
+  check();
+  withDivergentWideRoute(check);
+});
+
+/* A motif's OWN drawing is markup, not CSS — the sheet moves, sizes and turns the square but never
+   swaps the `d` inside it. So a mount is not interchangeable by position: two bands placing
+   different motifs on the same segment index need two elements, or one band paints the other's
+   drawing at its own coordinates and every geometric claim in this file still passes. */
+test("every band's motif is mounted with its own drawing", () => {
+  const check = () => {
+    for (const id of ALL_IDS) {
+      const drawn = new Map(
+        threadMounts(id)
+          .filter((mount) => mount.kind === "motif")
+          .map((mount) => [mount.className, mount.d]),
+      );
+      for (const band of THREAD_BANDS) {
+        for (const segment of threadSegments(id, band)) {
+          if (segment.kind !== "motif") continue;
+          assert.equal(
+            drawn.get(segmentClass(segment)),
+            segment.place.motif.d,
+            `${id} at ${band.id}: .${segmentClass(segment)} does not carry ${segment.place.motif.id}'s drawing`,
+          );
+        }
+      }
+    }
+  };
+
+  check();
+  withDivergentWideRoute(check);
+});
+
+/* The tests above are made against the mount list; this one pins the markup to it. The component
+   is a `.tsx` and cannot be imported here — node strips types but does not compile JSX, and it
+   imports a CSS module besides — so the claim is made against its source. Narrow on purpose: the
+   defect was the component reaching for ONE band's segments, and these are the three names that
+   reach for one. `check:thread-joins` renders the result. */
+test("the thread's markup is built from the mount union, not from one band", () => {
+  const source = readFileSync(
+    new URL("./section-thread.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /\bthreadMounts\b/);
+  for (const banned of ["threadSegments", "threadStubs", "THREAD_BANDS"]) {
+    assert.equal(
+      new RegExp(`\\b${banned}\\b`).test(source),
+      false,
+      `section-thread.tsx reads ${banned}, which resolves against one band`,
+    );
   }
 });

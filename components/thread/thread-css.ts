@@ -80,8 +80,27 @@ export function threadScopeClass(id: ThreadId): string {
   return `thread--${id}`;
 }
 
-function segmentClass(index: number): string {
-  return `thread__seg-${index}`;
+/* A segment's MOUNT KEY: which element in the markup carries it. Keyed by kind and, for a motif, by
+   the drawing itself — because a motif's `d` is markup, not CSS, so two bands placing different
+   motifs cannot share one element. The index alone is not enough: a break that carries a stub but
+   no motif shifts the connector/motif parity, so a connector and a motif can land on the same index
+   in two different bands. */
+function segmentKey(segment: ThreadSegment): string {
+  return segment.kind === "connector"
+    ? `seg-${segment.index}`
+    : `seg-${segment.index}-${segment.place.motif.id}`;
+}
+
+export function segmentClass(segment: ThreadSegment): string {
+  return `thread__${segmentKey(segment)}`;
+}
+
+function stubKey(which: ThreadStub["which"]): string {
+  return `stub-${which}`;
+}
+
+function stubClass(which: ThreadStub["which"]): string {
+  return `${THREAD_CLASS.stub}--${which}`;
 }
 
 /* One name per section, declared on the thread's own root — which spans the section edge to edge,
@@ -938,22 +957,100 @@ export function threadSegments(id: ThreadId, band: Band): ThreadSegment[] {
 }
 
 /* A `<mask>`'s own region is markup, not CSS, so one value has to hold every band. This is the
-   widest any of them reaches, per segment. */
+   widest any of them reaches, per mounted connector, keyed by that connector's own class. */
 export function threadMaskRegions(
   id: ThreadId,
-): Map<number, { min: number; max: number }> {
-  const widest = new Map<number, { min: number; max: number }>();
+): Map<string, { min: number; max: number }> {
+  const widest = new Map<string, { min: number; max: number }>();
   for (const band of THREAD_BANDS) {
     for (const segment of threadSegments(id, band)) {
       if (segment.kind !== "connector") continue;
-      const held = widest.get(segment.index);
-      widest.set(segment.index, {
+      const held = widest.get(segmentClass(segment));
+      widest.set(segmentClass(segment), {
         min: Math.min(held?.min ?? segment.region.min, segment.region.min),
         max: Math.max(held?.max ?? segment.region.max, segment.region.max),
       });
     }
   }
   return widest;
+}
+
+/* ---- what the markup mounts ------------------------------------------------------------------ */
+
+/* Every element the thread needs across EVERY band, not just the first — the one list the component
+   renders from.
+
+   The geometry is emitted once per aspect band, and a band's route may differ from its neighbour's
+   in stop count and in which motifs it carries, so markup built from one band leaves the other
+   bands' rules addressing elements that were never mounted. The band whose route diverges then
+   renders wrong, and nothing but a render in that band can see it: the sheet is still valid CSS,
+   every element it does mount still matches, and types, lint, tests and the build all pass.
+
+   So the markup is the UNION and the sheet does the selecting: `bandRules` hides whatever its own
+   band does not use. `display: none` rather than a visibility or opacity knob, because an unused
+   element should cost no paint at all — and it is safe here where containment is not, since the
+   thread contributes no layout to begin with. */
+export type ThreadMount = {
+  /* Stable across bands, and the stem of both the element's class and its mask ids.  */
+  key: string;
+  className: string;
+} & (
+  | {
+      kind: "connector";
+      /* The first band that mounts this connector, as the fallback a browser without the CSS `d`
+         property paints — a complete thread rather than nothing. */
+      d: string;
+      revealD: string;
+      region: { min: number; max: number };
+    }
+  | { kind: "motif"; d: string }
+  | { kind: "stub"; which: ThreadStub["which"]; d: string }
+);
+
+export function threadMounts(id: ThreadId): ThreadMount[] {
+  const regions = threadMaskRegions(id);
+  const found = new Map<string, ThreadMount>();
+
+  for (const band of THREAD_BANDS) {
+    for (const segment of threadSegments(id, band)) {
+      const key = segmentKey(segment);
+      if (found.has(key)) continue;
+      const common = { key, className: `thread__${key}` };
+      found.set(
+        key,
+        segment.kind === "connector"
+          ? {
+              ...common,
+              kind: "connector",
+              d: segment.d,
+              revealD: segment.revealD,
+              region: regions.get(common.className) ?? { min: -1, max: 2 },
+            }
+          : { ...common, kind: "motif", d: segment.place.motif.d },
+      );
+    }
+    for (const stub of threadStubs(id, band)) {
+      const key = stubKey(stub.which);
+      if (found.has(key)) continue;
+      found.set(key, {
+        key,
+        className: stubClass(stub.which),
+        kind: "stub",
+        which: stub.which,
+        d: stub.d,
+      });
+    }
+  }
+
+  return [...found.values()];
+}
+
+/** The mount keys one band actually uses — everything else is hidden for the width of that band. */
+function bandKeys(id: ThreadId, band: Band): Set<string> {
+  return new Set([
+    ...threadSegments(id, band).map(segmentKey),
+    ...threadStubs(id, band).map((stub) => stubKey(stub.which)),
+  ]);
 }
 
 /* ---- the scrub law ------------------------------------------------------------------------- */
@@ -1297,7 +1394,7 @@ function emitSegment(
 
   for (const layer of layers) {
     const name = `thread-${id}-${segment.index}-${layer.suffix}-${band.id}`;
-    const selector = `${scope}${layer.root} .${segmentClass(segment.index)} ${layer.target}`;
+    const selector = `${scope}${layer.root} .${segmentClass(segment)} ${layer.target}`;
     /* A layer this surface drives on the clock rather than on the reader's scroll: every layer of
        a timed surface except the re-trace, which is already timed. */
     const onClock = timed && layer.clock === "view";
@@ -1392,6 +1489,20 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
   const segments = threadSegments(id, band);
   const total = segments.reduce((sum, segment) => sum + segment.length, 0);
   const geometry: string[] = [];
+
+  /* The markup is the union of every band's elements, so this band puts away the ones its own route
+     does not use — otherwise they paint their fallback `d` in a box no rule ever pins. Empty while
+     the seeded routes agree, and the first differing route the owner authors is what fills it. */
+  const used = bandKeys(id, band);
+  const spare = threadMounts(id).filter((mount) => !used.has(mount.key));
+  if (spare.length > 0) {
+    geometry.push(
+      rule(spare.map((mount) => `${scope} .${mount.className}`).join(", "), [
+        "display: none;",
+      ]),
+    );
+  }
+
   const animations: string[] = [];
   const frames: string[] = [];
 
@@ -1408,7 +1519,7 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
 
   let travelled = 0;
   for (const segment of segments) {
-    const selector = `${scope} .${segmentClass(segment.index)}`;
+    const selector = `${scope} .${segmentClass(segment)}`;
     const span: Span =
       total === 0
         ? { start: 0, end: 0 }
@@ -1480,7 +1591,7 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
   }
 
   for (const stub of threadStubs(id, band)) {
-    const selector = `${scope} .${THREAD_CLASS.stub}--${stub.which}`;
+    const selector = `${scope} .${stubClass(stub.which)}`;
     geometry.push(
       boxRule(selector, stub.box),
       rule(`${selector} path`, [`d: path("${stub.d}");`]),
@@ -1580,9 +1691,15 @@ export function threadCss(id: ThreadId): string {
      scrub running — invisible on a parked section, and no gate could see it. */
   const animated = new Set<string>();
 
-  const woven = threadSegments(id, THREAD_BANDS[0]).filter((segment) =>
-    isWeave(id, segment),
-  );
+  /* Across every band, not just the first: a band that places the woven loop at another stop mounts
+     its own element, and the weave splits the COMPLETE thread, so the resting split has to reach
+     that element too. Deduplicated by mount key, because two bands sharing a placement share one. */
+  const woven = new Map<string, ThreadSegment>();
+  for (const band of THREAD_BANDS) {
+    for (const segment of threadSegments(id, band)) {
+      if (isWeave(id, segment)) woven.set(segmentClass(segment), segment);
+    }
+  }
 
   const base: string[] = [
     rule(scope, [
@@ -1592,7 +1709,7 @@ export function threadCss(id: ThreadId): string {
         ? []
         : [`view-timeline-name: ${timeline};`, "view-timeline-axis: block;"]),
       `--thread-mask-width: ${round(MASK_WIDTH)};`,
-      ...(woven.length === 0
+      ...(woven.size === 0
         ? []
         : [
             `--thread-weave-under: ${round(WEAVE_BAND[0])} ${round(WEAVE_BAND[1])};`,
@@ -1642,15 +1759,15 @@ export function threadCss(id: ThreadId): string {
   /* The weave is a property of the COMPLETE thread, not of the scrub, so the two copies split the
      loop at rest as well as mid-draw — otherwise a resting page paints both copies whole and the
      pass behind the illustration never reads. */
-  for (const segment of woven) {
+  for (const segment of woven.values()) {
     const [under0, under1] = WEAVE_BAND;
     base.push(
       rule(
-        `${scope}.${THREAD_CLASS.weaveUnder} .${segmentClass(segment.index)} .${THREAD_CLASS.inkReveal}`,
+        `${scope}.${THREAD_CLASS.weaveUnder} .${segmentClass(segment)} .${THREAD_CLASS.inkReveal}`,
         [`stroke-dasharray: ${dashArray([[under0, under1]], IDENTITY)};`],
       ),
       rule(
-        `${scope}.${THREAD_CLASS.weaveOver} .${segmentClass(segment.index)} .${THREAD_CLASS.inkReveal}`,
+        `${scope}.${THREAD_CLASS.weaveOver} .${segmentClass(segment)} .${THREAD_CLASS.inkReveal}`,
         [
           `stroke-dasharray: ${dashArray(
             [
