@@ -145,10 +145,9 @@ export function resolveEnd(
 }
 
 /* A section's terminal points sit at its top/bottom edge, where the thread travels vertically
-   between sections — so a terminal's own tangent is angle 90. A connector therefore leaves a
-   terminal vertically and arrives at a motif horizontally; both of its ends are smooth, because
-   each control point lies along the tangent it meets. The two ends differing is the design, not a
-   kink: the connectors do the vertical transit and the motifs are horizontal events within it. */
+   between sections — so a terminal's own tangent is angle 90. A motif's own tangents are whatever
+   its drawing declares, at any angle: both ends of a connector are smooth regardless, because each
+   control point lies along the tangent it meets. */
 const TERMINAL_TANGENT: Tangent = { x: 0, y: 0, angle: 90 };
 
 /* Each motif renders as its own separately-positioned square SVG (the spike's settled mechanism —

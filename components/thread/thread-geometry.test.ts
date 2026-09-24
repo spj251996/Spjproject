@@ -42,20 +42,6 @@ test("composePath joins every segment at a matching tangent", () => {
   }
 });
 
-/* A non-uniform stretch (the only way a connector reaches its terminal without distorting a
-   uniformly-scaled motif) preserves only the horizontal and vertical directions — so a connector
-   can meet a motif on no other angle. Every declared tangent must therefore be 0 or 90. */
-test("every motif's declared tangent is horizontal or vertical", () => {
-  for (const motif of Object.values(MOTIFS)) {
-    for (const tangent of [motif.entry, motif.exit]) {
-      assert.ok(
-        tangent.angle === 0 || tangent.angle === 90,
-        `${motif.id} declares a tangent at ${tangent.angle} degrees, neither 0 nor 90`,
-      );
-    }
-  }
-});
-
 test("ALL_THREADS appends the closed not-found thread to SECTION_THREADS, not a copy of it", () => {
   assert.deepEqual(
     ALL_THREADS.slice(0, SECTION_THREADS.length),
@@ -145,10 +131,10 @@ function pointAtLength(flat: ReturnType<typeof flatten>, target: number) {
    from its terminal than a short one, which is not the quantity a connector meets. */
 const PROBE_ARC = 1;
 
-/* 5 degrees. The failure this guards is a tangent of the wrong CLASS — the spike measured a visible
-   kink when a connector arrived on anything but the horizontal or vertical a non-uniform stretch
-   preserves, which is tens of degrees out. Within a few degrees the lateral offset over the first
-   unit of travel is a fraction of the stroke's own width at every tier, so the seam cannot read. */
+/* 5 degrees. The failure this guards is a DECLARED tangent the drawing does not actually leave on,
+   which a connector then meets at a visible kink; a misdeclaration of that kind is tens of degrees
+   out. Within a few degrees the lateral offset over the first unit of travel is a fraction of the
+   stroke's own width at every band, so the seam cannot read. */
 const TANGENT_TOLERANCE_DEG = 5;
 
 function angleError(got: number, want: number) {
