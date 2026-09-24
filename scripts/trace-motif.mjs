@@ -22,7 +22,17 @@
  *      turns at a crossing emits one rope as two loops meeting, which is the wrong drawing and not
  *      a wrong-looking one.
  *   5. `fitPath` — resamples by arc length, converts a Catmull-Rom spline to cubics, and scales
- *      the ink uniformly into a 0-100 square, centred, matching `thread-motifs.ts`.
+ *      the ink uniformly into a 0-100 square, matching `thread-motifs.ts`'s format. Two things
+ *      that format does NOT pin, so a retrace will differ from a hand-authored record by them:
+ *      the ink is centred on its shorter axis (the authored records are not — `heart`'s ink
+ *      centres at y 44.8), and a Catmull-Rom control point may sit a hundredth of a unit outside
+ *      the 0-100 box, which holds for the anchors rather than for the curve.
+ *
+ * COVERAGE, and why it is printed. `walk` stops at the first terminal cluster it reaches, which is
+ * correct — a skeleton with more than two loose ends cannot be one open path — so on a drawing that
+ * crosses itself the emitted `d` is a FRAGMENT, and its aspect is that fragment's. The run reports
+ * how much of the skeleton it walked so a partial trace cannot be read as a measurement of the
+ * motif, and the aspect is labelled as the fragment's whenever it is one.
  *
  * CAPS: every loop here states its maximum. Thinning 100 passes, spur pruning 20 rounds, and
  * every skeleton traversal is bounded by the pixel count it walks.
@@ -136,7 +146,8 @@ export function thin(field, { passes = THINNING_PASSES } = {}) {
  * already carries. Without this every step of a 1px diagonal counts three or four neighbours and
  * reads as a junction: `heart` measured 393 of them where the drawing has two crossings.
  */
-function neighboursOf(ink, width, height, at) {
+export function neighboursOf(field, at) {
+  const { ink, width, height } = field;
   const x = at % width;
   const y = (at - x) / width;
   const inside = (nx, ny) => nx >= 0 && ny >= 0 && nx < width && ny < height;
@@ -167,11 +178,10 @@ function neighboursOf(ink, width, height, at) {
  * the walk then turns at exactly the crossing it exists to pass through.
  */
 function branchesOf(field) {
-  const { ink, width, height } = field;
+  const { ink } = field;
   const degree = new Map();
   for (let at = 0; at < ink.length; at += 1) {
-    if (ink[at] === 1)
-      degree.set(at, neighboursOf(ink, width, height, at).length);
+    if (ink[at] === 1) degree.set(at, neighboursOf(field, at).length);
   }
 
   const nodePixels = [...degree.keys()].filter((at) => degree.get(at) !== 2);
@@ -181,12 +191,15 @@ function branchesOf(field) {
     const id = clusterOf.size;
     const queue = [seed];
     clusterOf.set(seed, id);
-    for (
-      let head = 0;
-      head < queue.length && head < nodePixels.length;
-      head += 1
-    ) {
-      for (const next of neighboursOf(ink, width, height, queue[head])) {
+    /* Bounded by the node-pixel count: the queue admits only node pixels, and only ones no cluster
+       has claimed yet, so it can never grow past them. Exceeding it would mean that invariant had
+       broken, and silently stopping there would split one junction into two. */
+    for (let head = 0; head < queue.length; head += 1) {
+      if (head >= nodePixels.length)
+        throw new Error(
+          `a junction cluster grew past ${nodePixels.length} node pixels`,
+        );
+      for (const next of neighboursOf(field, queue[head])) {
         if (degree.get(next) === 2 || clusterOf.has(next)) continue;
         clusterOf.set(next, id);
         queue.push(next);
@@ -198,16 +211,14 @@ function branchesOf(field) {
   const seen = new Set();
   const cap = degree.size + 1;
   for (const node of nodePixels) {
-    for (const first of neighboursOf(ink, width, height, node)) {
+    for (const first of neighboursOf(field, node)) {
       if (clusterOf.get(first) === clusterOf.get(node)) continue;
       if (seen.has(`${node}:${first}`)) continue;
       const pixels = [node, first];
       let previous = node;
       let current = first;
       for (let step = 0; step < cap && !clusterOf.has(current); step += 1) {
-        const next = neighboursOf(ink, width, height, current).find(
-          (p) => p !== previous,
-        );
+        const next = neighboursOf(field, current).find((p) => p !== previous);
         if (next === undefined) break;
         pixels.push(next);
         previous = current;
@@ -215,7 +226,13 @@ function branchesOf(field) {
       }
       seen.add(`${node}:${first}`);
       seen.add(`${current}:${pixels[pixels.length - 2]}`);
-      if (!clusterOf.has(current)) continue;
+      /* Every degree-2 run ends on a non-degree-2 pixel, and every one of those is clustered — so
+         falling out of the follow above means the skeleton's degrees and clusters disagree.
+         Dropping the branch there would delete a real stroke from the drawing without a word. */
+      if (!clusterOf.has(current))
+        throw new Error(
+          `a branch left a junction and reached no junction within ${cap} pixels`,
+        );
       branches.push({
         from: clusterOf.get(node),
         to: clusterOf.get(current),
@@ -305,8 +322,14 @@ function chooseContinuation(incoming, candidates, field) {
 function oriented(candidates, junction) {
   return candidates.map((b) =>
     b.from === junction
-      ? b
-      : { ...b, pixels: [...b.pixels].reverse(), from: b.to, to: b.from },
+      ? { ...b, source: b }
+      : {
+          ...b,
+          pixels: [...b.pixels].reverse(),
+          from: b.to,
+          to: b.from,
+          source: b,
+        },
   );
 }
 
@@ -323,8 +346,10 @@ export function walk(field) {
       "the skeleton is a closed loop, so it has no end to start a centreline from",
     );
   }
-  /* Start at the leftmost loose end so a traced motif runs left to right, the direction of travel
-     `thread-motifs.ts` measures its entry and exit tangents in. */
+  /* Start at the leftmost loose end, so a motif drawn across the page runs left to right — the
+     direction of travel `thread-motifs.ts` measures most of its entry and exit tangents in. It
+     settles nothing for a motif drawn on the vertical axis (`bow` enters and exits at 90 degrees):
+     there the two ends are level and scan order picks, so such a trace may need reversing by hand. */
   const start = ends.reduce((a, b) =>
     Math.min(...a[1].pixels.map((p) => p % width)) <=
     Math.min(...b[1].pixels.map((p) => p % width))
@@ -349,13 +374,15 @@ export function walk(field) {
     const candidates = (incident.get(junction) ?? []).filter(
       (b) => !used.has(b),
     );
+    /* A terminal cluster: one open path cannot continue past it. Whatever of the skeleton lies
+       beyond is left untraced, and `coverageOf` is what reports it. */
     if (candidates.length === 0) break;
     const facing = oriented(candidates, junction);
     const chosen =
       incoming === null
         ? facing[0]
         : chooseContinuation(incoming, facing, field);
-    used.add(candidates[facing.indexOf(chosen)]);
+    used.add(chosen.source);
     for (const at of chosen.pixels) {
       if (ordered.length > 0 && ordered[ordered.length - 1] === at) continue;
       ordered.push(at);
@@ -370,6 +397,44 @@ export function walk(field) {
   }
 
   return ordered.map((at) => ({ x: at % width, y: Math.floor(at / width) }));
+}
+
+/**
+ * How much of the skeleton the walk actually covered. The emitted `d` is one open path, so on a
+ * drawing with more than two loose ends it is a fragment — and `fitPath`'s aspect is then that
+ * fragment's bounding box, not the motif's. This is the figure that tells the two apart without a
+ * render, and the aspect is the number a later task pastes into `thread-motifs.ts`.
+ */
+export function coverageOf(field, points) {
+  const { ink } = field;
+  let skeleton = 0;
+  for (const at of ink) skeleton += at;
+  const walked = new Set(points.map((p) => `${p.x},${p.y}`)).size;
+
+  /* A component with no non-degree-2 pixel is a closed loop. `branchesOf` starts every branch at a
+     non-degree-2 pixel, so such a component yields no branch and disappears from the skeleton with
+     nothing raised; counting its pixels here is what keeps that visible. */
+  const visited = new Set();
+  let closedLoop = 0;
+  for (let at = 0; at < ink.length; at += 1) {
+    if (ink[at] !== 1 || visited.has(at)) continue;
+    const queue = [at];
+    visited.add(at);
+    let loose = false;
+    /* Bounded by the component's own size: a pixel is queued once, the first time it is seen. */
+    for (let head = 0; head < queue.length; head += 1) {
+      const neighbours = neighboursOf(field, queue[head]);
+      if (neighbours.length !== 2) loose = true;
+      for (const next of neighbours) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+    if (!loose) closedLoop += queue.length;
+  }
+
+  return { skeleton, walked, closedLoop, fraction: walked / skeleton };
 }
 
 function resample(points, segments) {
@@ -450,18 +515,28 @@ export function fitPath(points, { segments = SEGMENTS } = {}) {
   return { d, aspect: Number((box.width / box.height).toFixed(3)) };
 }
 
-/** The whole pipeline: outline SVG in, one continuous open centreline and its aspect out. */
+/** The whole pipeline: outline SVG in, one continuous open centreline, its aspect and its coverage. */
 export async function centreline(svg, options = {}) {
-  const raster = await rasterise(svg, options);
-  const skeleton = pruneSpurs(thin(raster, options), options);
+  const skeleton = pruneSpurs(
+    thin(await rasterise(svg, options), options),
+    options,
+  );
   const points = walk(skeleton);
   const { d, aspect } = fitPath(points, options);
-  return { points, d, aspect, width: raster.width, height: raster.height };
+  return { points, d, aspect, coverage: coverageOf(skeleton, points) };
 }
 
-function flag(argv, name, fallback) {
+/** A numeric CLI flag. An unreadable value stops the run rather than reaching sharp as NaN. */
+function flag(argv, name, fallback, minimum) {
   const hit = argv.find((a) => a.startsWith(`--${name}=`));
-  return hit === undefined ? fallback : Number(hit.slice(name.length + 3));
+  if (hit === undefined) return fallback;
+  const raw = hit.slice(name.length + 3);
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < minimum)
+    throw new Error(
+      `--${name} needs a number of at least ${minimum}, not "${raw}"`,
+    );
+  return value;
 }
 
 async function main(argv) {
@@ -473,13 +548,38 @@ async function main(argv) {
     process.exitCode = 1;
     return;
   }
-  const { d, aspect } = await centreline(await readFile(file), {
-    width: flag(argv, "width", RASTER_WIDTH),
-    fraction: flag(argv, "spur", SPUR_FRACTION),
-    segments: flag(argv, "segments", SEGMENTS),
-  });
+  let options;
+  try {
+    options = {
+      width: flag(argv, "width", RASTER_WIDTH, 1),
+      fraction: flag(argv, "spur", SPUR_FRACTION, 0),
+      segments: flag(argv, "segments", SEGMENTS, 1),
+    };
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+    return;
+  }
+
+  const { d, aspect, coverage } = await centreline(
+    await readFile(file),
+    options,
+  );
+  const percent = (coverage.fraction * 100).toFixed(1);
   console.log(d);
-  console.log(`aspect: ${aspect}`);
+  console.log(
+    `covered: ${coverage.walked} of ${coverage.skeleton} skeleton pixels (${percent}%)`,
+  );
+  if (coverage.closedLoop > 0) {
+    console.log(
+      `dropped: ${coverage.closedLoop} of those pixels form closed loops with no loose end, which one open path cannot reach`,
+    );
+  }
+  console.log(
+    coverage.walked === coverage.skeleton
+      ? `aspect: ${aspect}`
+      : `aspect: ${aspect} — of the traced FRAGMENT, not of the motif: ${percent}% of the skeleton was walked`,
+  );
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

@@ -1,7 +1,7 @@
 // scripts/trace-motif.test.mjs — a straight stroke's centreline is a straight line
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { centreline } from "./trace-motif.mjs";
+import { centreline, neighboursOf } from "./trace-motif.mjs";
 
 test("a rectangle's centreline is its long axis", async () => {
   // A 200x20 filled rectangle is a straight stroke 20 wide; its skeleton is the horizontal midline.
@@ -17,9 +17,9 @@ test("a rectangle's centreline is its long axis", async () => {
 });
 
 /* The junction rule is the whole reason a self-crossing motif comes out as one rope: at a crossing
-   the walk must carry on rather than turn into the other stroke. Falsified in Task 3 by swapping
-   `chooseContinuation` for a nearest-branch rule, which turns this X's corner and fails the 30deg
-   assertion — see .superpowers/sdd/task-3-report.md for the measured angles. */
+   the walk must carry on rather than turn into the other stroke. Falsified by swapping
+   `chooseContinuation` for a nearest-branch rule: this X measures a 0.0deg turn under the shipped
+   best-continuation rule and 90.0deg under the nearest-branch one, which fails the assertion. */
 test("the walk passes straight through a crossing rather than turning", async () => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><path fill="none" stroke="#000" stroke-width="14" d="M 20 20 L 220 220 M 220 20 L 20 220"/></svg>`;
   const { points } = await centreline(svg, { width: 240 });
@@ -48,4 +48,88 @@ test("the walk passes straight through a crossing rather than turning", async ()
     turn < 30,
     `the walk turned ${turn.toFixed(1)} degrees at the crossing`,
   );
+});
+
+/* Without the 8-connectivity rule in `neighboursOf` every staircase pixel of a 1px diagonal counts
+   three or four neighbours purely from the staircase and reads as a junction — `heart` measured 393
+   of them against its true 2, which fragmented the skeleton, made spur pruning match nothing and cut
+   the walk's coverage from 65.4% to 51.8%. Nothing else in this file fails when that rule is
+   removed, so this is its only guard. */
+const fieldOf = (width, height, pixels) => {
+  const ink = new Uint8Array(width * height);
+  for (const [x, y] of pixels) ink[y * width + x] = 1;
+  return { ink, width, height };
+};
+
+const degrees = (field) => {
+  const histogram = new Map();
+  for (let at = 0; at < field.ink.length; at += 1) {
+    if (field.ink[at] !== 1) continue;
+    const degree = neighboursOf(field, at).length;
+    histogram.set(degree, (histogram.get(degree) ?? 0) + 1);
+  }
+  return histogram;
+};
+
+test("a 1px diagonal is a path of degree-2 pixels, not a row of junctions", () => {
+  /* A unit staircase, which is what Zhang-Suen leaves on any near-diagonal stroke: each pixel sits
+     both orthogonally and diagonally next to its neighbours' neighbours. */
+  const stair = [];
+  for (let step = 0; step < 12; step += 1)
+    stair.push([step, step], [step + 1, step]);
+  const staircase = degrees(fieldOf(20, 20, stair));
+  assert.equal(
+    staircase.get(1),
+    2,
+    "a staircase should have exactly two loose ends",
+  );
+  assert.equal(
+    [...staircase.keys()].filter((degree) => degree > 2).length,
+    0,
+    `a staircase should hold no junction, measured degrees ${JSON.stringify([...staircase])}`,
+  );
+
+  /* The other direction: a true 45-degree diagonal shares no orthogonal neighbour, so its diagonal
+     links are the only connection there is and must survive. A rule that dropped them would leave
+     every pixel isolated at degree 0. */
+  const diagonal = degrees(
+    fieldOf(
+      20,
+      20,
+      Array.from({ length: 12 }, (_, i) => [i + 2, i + 2]),
+    ),
+  );
+  assert.equal(
+    diagonal.get(1),
+    2,
+    "a 45-degree diagonal should stay one connected path",
+  );
+  assert.equal(
+    diagonal.get(2),
+    10,
+    "a 45-degree diagonal should be degree-2 throughout",
+  );
+});
+
+/* `walk` stops at the first terminal cluster, so a skeleton with more than two loose ends is traced
+   only in part and `fitPath`'s aspect is the fragment's. Coverage is the one figure that tells a
+   fragment from the whole drawing without a render. */
+test("coverage reports how much of the skeleton the walk reached", async () => {
+  const rectangle = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60"><path fill="#000" d="M 20 20 H 220 V 40 H 20 Z"/></svg>`;
+  const straight = await centreline(rectangle, { width: 240 });
+  assert.equal(
+    straight.coverage.walked,
+    straight.coverage.skeleton,
+    "a single open stroke should be walked end to end",
+  );
+  assert.equal(straight.coverage.closedLoop, 0);
+
+  /* An X has four loose ends; one open path can hold two of its four arms. */
+  const cross = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><path fill="none" stroke="#000" stroke-width="14" d="M 20 20 L 220 220 M 220 20 L 20 220"/></svg>`;
+  const crossing = await centreline(cross, { width: 240 });
+  assert.ok(
+    crossing.coverage.fraction < 0.75,
+    `a four-armed skeleton cannot be one open path, yet coverage read ${crossing.coverage.fraction.toFixed(3)}`,
+  );
+  assert.ok(crossing.coverage.walked < crossing.coverage.skeleton);
 });
