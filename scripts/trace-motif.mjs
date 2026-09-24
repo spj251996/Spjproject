@@ -18,9 +18,10 @@
  *      a spur only when it is terminal at one end and meets a junction at the other, so a drawing
  *      that is one open curve with no junctions can never have its whole self pruned away.
  *   4. `walk` — orders the skeleton into one polyline, choosing at each junction the branch that
- *      best CONTINUES the incoming direction. `knot` and `rings` cross themselves; a walk that
- *      turns at a crossing emits one rope as two loops meeting, which is the wrong drawing and not
- *      a wrong-looking one.
+ *      best CONTINUES the incoming direction, then splicing every circuit that rule leaves behind
+ *      back in at a junction the trail already crosses. `knot` and `rings` cross themselves; a walk
+ *      that turns at a crossing emits one rope as two loops meeting, which is the wrong drawing and
+ *      not a wrong-looking one.
  *   5. `fitPath` — resamples by arc length, converts a Catmull-Rom spline to cubics, and scales
  *      the ink uniformly into a 0-100 square, matching `thread-motifs.ts`'s format. Two things
  *      that format does NOT pin, so a retrace will differ from a hand-authored record by them:
@@ -28,18 +29,18 @@
  *      centres at y 44.8), and a Catmull-Rom control point may sit a hundredth of a unit outside
  *      the 0-100 box, which holds for the anchors rather than for the curve.
  *
- * COVERAGE, and why it is printed. `walk` stops at the first terminal cluster it reaches, which is
- * correct — a skeleton with more than two loose ends cannot be one open path — so on a drawing that
- * crosses itself the emitted `d` is a FRAGMENT, and its aspect is that fragment's. The run reports
- * how much of the skeleton it walked so a partial trace cannot be read as a measurement of the
- * motif, and the aspect is labelled as the fragment's whenever it is one.
+ * COVERAGE, and why it is printed. A skeleton whose loose ends number more than two cannot be one
+ * open path at all, so part of it is necessarily left undrawn and the emitted `d` is a FRAGMENT
+ * whose aspect is that fragment's. The run reports how much of the skeleton it walked so a partial
+ * trace cannot be read as a measurement of the motif, and the aspect is labelled as the fragment's
+ * whenever it is one.
  *
  * CAPS: every loop here states its maximum. Thinning 100 passes, spur pruning 20 rounds, and
  * every skeleton traversal is bounded by the pixel count it walks.
  *
  * USAGE:
  *   npm run trace:motif -- "tmp/aaa/thread paths/heart.svg"
- *   npm run trace:motif -- <file.svg> --width=1600 --spur=0.06 --segments=64
+ *   npm run trace:motif -- <file.svg> --width=1600 --spur=0.06 --segments=64 --bridge=5
  */
 
 import { Buffer } from "node:buffer";
@@ -58,6 +59,14 @@ const SEGMENTS = 48;
 /* A junction's outgoing directions are measured over this many pixels, not over the first one: a
    single 8-connected step quantises to 45 degrees, which cannot tell two arms of an X apart. */
 const LOOKAHEAD = 8;
+/* In stroke widths: how far apart the two halves of a thinned crossing may sit and still be read as
+   one crossing. Measured on the five sources, the artifact stubs run 3-17px against strokes of
+   3-18px, and the shortest REAL stroke between two crossings is 82px against a 7.9px stroke — so 2
+   covers a clean crossing with headroom. A drawing whose crossings are TIGHT needs more, because
+   two strokes meeting at a shallow angle thin into a longer shared stub: `final knot`'s bow loops
+   need 5, which raises its coverage from 33% to 94%. `--bridge` is that number, and the run prints
+   the coverage it bought, so raising it is never a silent change to the drawing. */
+const BRIDGE_STROKES = 2;
 
 const NEIGHBOURS = [
   [0, -1],
@@ -177,7 +186,7 @@ export function neighboursOf(field, at) {
  * branches between them, and a direction measured over one pixel cannot tell an X's arms apart —
  * the walk then turns at exactly the crossing it exists to pass through.
  */
-function branchesOf(field) {
+function branchesOf(field, bridge = 0) {
   const { ink } = field;
   const degree = new Map();
   for (let at = 0; at < ink.length; at += 1) {
@@ -250,7 +259,74 @@ function branchesOf(field) {
     clusters.get(branch.from).incident += 1;
     clusters.get(branch.to).incident += 1;
   }
-  return { branches, clusters, clusterOf };
+  return bridge > 0
+    ? mergeBridges({ branches, clusters, clusterOf }, bridge)
+    : { branches, clusters, clusterOf };
+}
+
+/**
+ * Thinning rarely leaves a crossing as one cluster of touching pixels: an X of stroke width w comes
+ * out as two T-nodes about w apart, joined by a stub of skeleton. Each T is then degree 3 — odd —
+ * and a drawing whose crossings are all odd has no route that covers it, so the whole lobe beyond
+ * one is unreachable however the walk chooses. Merging the two back into one crossing is what makes
+ * the degrees even again; `bridge` is the longest stub that counts as one, in pixels.
+ *
+ * Only a stub between two junctions merges. A short branch reaching a loose end is a spur, which
+ * `pruneSpurs` owns and judges on quite different grounds.
+ */
+function mergeBridges({ branches, clusters, clusterOf }, bridge) {
+  const parent = new Map([...clusters.keys()].map((id) => [id, id]));
+  const find = (id) => {
+    /* Bounded by the cluster count: every hop moves strictly closer to a root. */
+    for (let hop = 0; hop <= clusters.size; hop += 1) {
+      if (parent.get(id) === id) return id;
+      id = parent.get(id);
+    }
+    throw new Error("a junction merge left a cycle in its union-find");
+  };
+
+  const merged = new Set();
+  for (const branch of branches) {
+    if (branch.pixels.length > bridge) continue;
+    if (clusters.get(branch.from).incident < 3) continue;
+    if (clusters.get(branch.to).incident < 3) continue;
+    const from = find(branch.from);
+    const to = find(branch.to);
+    merged.add(branch);
+    if (from !== to) parent.set(to, from);
+  }
+  if (merged.size === 0) return { branches, clusters, clusterOf };
+
+  const grown = new Map();
+  const at = (id) => {
+    const root = find(id);
+    if (!grown.has(root)) grown.set(root, { pixels: [], incident: 0 });
+    return grown.get(root);
+  };
+  const owner = new Map();
+  for (const [pixel, id] of clusterOf) {
+    at(id).pixels.push(pixel);
+    owner.set(pixel, find(id));
+  }
+  /* A merged stub's own pixels become part of the crossing, so they are neither walked nor lost:
+     the walk steps across them exactly as it steps across a multi-pixel junction. */
+  for (const branch of merged) {
+    const root = find(branch.from);
+    for (const pixel of branch.pixels) {
+      if (owner.has(pixel)) continue;
+      grown.get(root).pixels.push(pixel);
+      owner.set(pixel, root);
+    }
+  }
+
+  const kept = branches
+    .filter((b) => !merged.has(b))
+    .map((b) => ({ from: find(b.from), to: find(b.to), pixels: b.pixels }));
+  for (const branch of kept) {
+    at(branch.from).incident += 1;
+    at(branch.to).incident += 1;
+  }
+  return { branches: kept, clusters: grown, clusterOf: owner };
 }
 
 /**
@@ -333,10 +409,47 @@ function oriented(candidates, junction) {
   );
 }
 
+/** The direction of travel the pen arrives at a branch's far junction on. */
+function arrivalDirection(field, branch) {
+  const leaving = directionAlong(
+    field,
+    [...branch.pixels].reverse(),
+    LOOKAHEAD,
+  );
+  return { x: -leaving.x, y: -leaving.y };
+}
+
+/**
+ * One greedy trail from `junction`, taking the best continuation at every junction and stopping
+ * when nothing unused leaves the one it has reached. `incoming` is the direction the pen arrives
+ * on, or null at a loose end where there is nothing to continue.
+ */
+function greedyTrail(field, incident, used, junction, incoming) {
+  const total = [...incident.values()].reduce((n, list) => n + list.length, 0);
+  const trail = [];
+  let at = junction;
+  let direction = incoming;
+  /* Bounded by the incidence count, which every step consumes one of. */
+  for (let step = 0; step < total; step += 1) {
+    const candidates = (incident.get(at) ?? []).filter((b) => !used.has(b));
+    if (candidates.length === 0) break;
+    const facing = oriented(candidates, at);
+    const chosen =
+      direction === null
+        ? facing[0]
+        : chooseContinuation(direction, facing, field);
+    used.add(chosen.source);
+    trail.push(chosen);
+    direction = arrivalDirection(field, chosen);
+    at = chosen.to;
+  }
+  return trail;
+}
+
 /** Order a pruned skeleton into a single polyline, from one loose end through to the far one. */
-export function walk(field) {
+export function walk(field, { bridge = 0 } = {}) {
   const { width } = field;
-  const { branches, clusters } = branchesOf(field);
+  const { branches, clusters } = branchesOf(field, bridge);
   if (branches.length === 0)
     throw new Error("the skeleton holds no traceable branch");
 
@@ -366,36 +479,47 @@ export function walk(field) {
   }
 
   const used = new Set();
-  const ordered = [];
-  let junction = start;
-  let incoming = null;
+  const trail = greedyTrail(field, incident, used, start, null);
 
-  for (let step = 0; step < branches.length; step += 1) {
-    const candidates = (incident.get(junction) ?? []).filter(
-      (b) => !used.has(b),
-    );
-    /* A terminal cluster: one open path cannot continue past it. Whatever of the skeleton lies
-       beyond is left untraced, and `coverageOf` is what reports it. */
-    if (candidates.length === 0) break;
-    const facing = oriented(candidates, junction);
-    const chosen =
-      incoming === null
-        ? facing[0]
-        : chooseContinuation(incoming, facing, field);
-    used.add(chosen.source);
-    for (const at of chosen.pixels) {
+  /* The junction rule says WHICH arm continues a rope through a crossing; it says nothing about
+     which of a crossing's two through-routes the pen should take FIRST. So the greedy trail can
+     reach the far loose end with a whole lobe still untouched — `heart` is a long line with the
+     heart hanging off one crossing, and straight on IS the right choice there, which left 65% of
+     the skeleton undrawn.
+
+     Splicing each remaining circuit back in at a junction the trail already passes through is
+     Hierholzer's construction, and it adds no join the drawing does not have: the pen arrives at
+     the crossing, runs the lobe, and returns to that same point to carry on — which is what a rope
+     crossing its own body does. It stays ONE continuous stroke because only a trail that ENDS where
+     it began is spliced; a detour that runs off to a loose end instead would tear the path, so it
+     is unwound and the search moves on. A skeleton with more than two loose ends has such detours
+     and cannot be covered — `coverageOf` is what reports the shortfall. */
+  for (let round = 0; round < branches.length; round += 1) {
+    if (used.size === branches.length) break;
+    let spliced = false;
+    /* Position -1 is the start itself, before the first branch. */
+    for (let i = -1; i < trail.length; i += 1) {
+      const node = i === -1 ? start : trail[i].to;
+      if (!(incident.get(node) ?? []).some((b) => !used.has(b))) continue;
+      const incoming = i === -1 ? null : arrivalDirection(field, trail[i]);
+      const detour = greedyTrail(field, incident, used, node, incoming);
+      if (detour.length > 0 && detour[detour.length - 1].to === node) {
+        trail.splice(i + 1, 0, ...detour);
+        spliced = true;
+        break;
+      }
+      for (const branch of detour) used.delete(branch.source);
+    }
+    if (!spliced) break;
+  }
+
+  const ordered = [];
+  for (const branch of trail) {
+    for (const at of branch.pixels) {
       if (ordered.length > 0 && ordered[ordered.length - 1] === at) continue;
       ordered.push(at);
     }
-    const leaving = directionAlong(
-      field,
-      [...chosen.pixels].reverse(),
-      LOOKAHEAD,
-    );
-    incoming = { x: -leaving.x, y: -leaving.y };
-    junction = chosen.to;
   }
-
   return ordered.map((at) => ({ x: at % width, y: Math.floor(at / width) }));
 }
 
@@ -517,13 +641,26 @@ export function fitPath(points, { segments = SEGMENTS } = {}) {
 
 /** The whole pipeline: outline SVG in, one continuous open centreline, its aspect and its coverage. */
 export async function centreline(svg, options = {}) {
-  const skeleton = pruneSpurs(
-    thin(await rasterise(svg, options), options),
-    options,
-  );
-  const points = walk(skeleton);
+  const raster = await rasterise(svg, options);
+  const skeleton = pruneSpurs(thin(raster, options), options);
+  const points = walk(skeleton, {
+    bridge: bridgeSpan(raster, skeleton, options),
+  });
   const { d, aspect } = fitPath(points, options);
   return { points, d, aspect, coverage: coverageOf(skeleton, points) };
+}
+
+/**
+ * The longest skeleton stub that counts as part of one crossing, measured from the drawing rather
+ * than assumed: ink pixels over skeleton pixels is the mean stroke width, and thinning an X of
+ * width w separates its two T-nodes by about w. BRIDGE_STROKES gives that headroom.
+ */
+function bridgeSpan(raster, skeleton, { strokes = BRIDGE_STROKES } = {}) {
+  let ink = 0;
+  for (const pixel of raster.ink) ink += pixel;
+  let bone = 0;
+  for (const pixel of skeleton.ink) bone += pixel;
+  return bone === 0 ? 0 : strokes * (ink / bone);
 }
 
 /** A numeric CLI flag. An unreadable value stops the run rather than reaching sharp as NaN. */
@@ -543,7 +680,7 @@ async function main(argv) {
   const file = argv.find((a) => !a.startsWith("--"));
   if (file === undefined) {
     console.error(
-      "usage: npm run trace:motif -- <file.svg> [--width=1200] [--spur=0.04] [--segments=48]",
+      "usage: npm run trace:motif -- <file.svg> [--width=1200] [--spur=0.04] [--segments=48] [--bridge=2]",
     );
     process.exitCode = 1;
     return;
@@ -554,6 +691,7 @@ async function main(argv) {
       width: flag(argv, "width", RASTER_WIDTH, 1),
       fraction: flag(argv, "spur", SPUR_FRACTION, 0),
       segments: flag(argv, "segments", SEGMENTS, 1),
+      strokes: flag(argv, "bridge", BRIDGE_STROKES, 0),
     };
   } catch (error) {
     console.error(error.message);

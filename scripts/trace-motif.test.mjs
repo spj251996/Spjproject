@@ -111,9 +111,45 @@ test("a 1px diagonal is a path of degree-2 pixels, not a row of junctions", () =
   );
 });
 
-/* `walk` stops at the first terminal cluster, so a skeleton with more than two loose ends is traced
-   only in part and `fitPath`'s aspect is the fragment's. Coverage is the one figure that tells a
-   fragment from the whole drawing without a render. */
+/* A lobe hanging off a crossing is the shape of every motif here: `heart` is one long line with the
+   heart itself on a single self-crossing, and the best-continuation rule correctly runs straight on
+   past it, which left the heart undrawn at 65.4% coverage. Two things draw the lobe and neither is
+   guarded anywhere else: merging the two halves of a thinned crossing, without which every crossing
+   is odd and no route can cover the drawing (mutated to 0 stroke widths, coverage falls to 0.503),
+   and splicing the leftover circuit back in (mutated away, 0.497). It must also draw the lobe
+   WITHOUT lifting the pen, which is what the jump bound below holds. */
+test("a lobe hanging off a crossing is drawn, and drawn without lifting the pen", async () => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><path fill="none" stroke="#000" stroke-width="8" d="M 20 170 C 90 170, 120 170, 150 150 C 190 110, 190 40, 150 40 C 110 40, 110 110, 150 150 C 180 170, 230 170, 300 170"/></svg>`;
+  const { points, coverage } = await centreline(svg, { width: 320 });
+
+  assert.ok(
+    coverage.fraction > 0.95,
+    `the lobe was left undrawn: coverage ${coverage.fraction.toFixed(3)}`,
+  );
+  assert.ok(
+    points.some((p) => p.y < 70),
+    "the walk never climbed into the lobe",
+  );
+
+  /* One continuous stroke: consecutive points are pixel neighbours, bar the width of a junction
+     cluster the walk steps across. A spliced detour that did not close would show here as a jump
+     the length of the lobe. */
+  const jump = points.reduce(
+    (worst, p, i) =>
+      i === 0
+        ? worst
+        : Math.max(
+            worst,
+            Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y),
+          ),
+    0,
+  );
+  assert.ok(jump < 6, `the walk jumped ${jump.toFixed(1)}px, lifting the pen`);
+});
+
+/* A skeleton with more than two loose ends is traced only in part and `fitPath`'s aspect is the
+   fragment's. Coverage is the one figure that tells a fragment from the whole drawing without a
+   render. */
 test("coverage reports how much of the skeleton the walk reached", async () => {
   const rectangle = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60"><path fill="#000" d="M 20 20 H 220 V 40 H 20 Z"/></svg>`;
   const straight = await centreline(rectangle, { width: 240 });
