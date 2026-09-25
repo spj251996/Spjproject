@@ -673,7 +673,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of eight marks, plus the seal mark that serves as the site's icon. Six are traced from drawings made for this invitation; call and chat are adapted stock line drawings, squared at the ends and matched on line weight."
+        intro="A closed set of nine marks, plus the seal mark that serves as the site's icon. Seven are traced from drawings made for this invitation; call and chat are adapted stock line drawings, squared at the ends and matched on line weight."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
