@@ -492,16 +492,31 @@ test("side-by-side sheets align to the top; stacked and single cards stay centre
   assert.ok(!mountedSheetFrameCss(makeFit(), false).includes("flex-start"));
 });
 
-test("a stacked pair's leaf keeps the mount's fill and its lift at every width", () => {
+test("a stacked pair's leaf drops its fill in the phone ground tier and keeps it from md", () => {
   const pair = mountedSheetFrameCss(makeFit(), false, "pair");
-  const leafRules =
-    pair.match(/mounted-sheet-frame__leaf \{ min-height:[^}]*\}/g) ?? [];
-  assert.equal(leafRules.length, 11);
-  for (const rule of leafRules) {
-    assert.ok(!rule.includes("background-image: none"), rule);
-    assert.ok(!rule.includes("background-color: transparent"), rule);
-    assert.ok(!rule.includes("box-shadow"), rule);
+  const blocks =
+    pair.match(/@media [^{]*\{\n[^\n]*\n[^\n]*__leaf \{ min-height:[^}]*\}/g) ??
+    [];
+  assert.equal(blocks.length, 11);
+  let bare = 0;
+  let filled = 0;
+  for (const block of blocks) {
+    const leafRule = block.match(/__leaf \{ min-height:[^}]*\}/)?.[0] ?? "";
+    assert.ok(!leafRule.includes("box-shadow"), leafRule);
+    const stripped =
+      leafRule.includes("background-image: none") &&
+      leafRule.includes("background-color: transparent");
+    const belowMd = block.startsWith("@media (width < 48rem)");
+    const portraitFromMd =
+      !belowMd && block.includes("(orientation: portrait)");
+    if (stripped) bare++;
+    else filled++;
+    if (belowMd) assert.ok(stripped, block);
+    /* A short landscape window is in the phone ground tier at any width, where a single section
+       is bare too; only portrait from md is unambiguous. */
+    if (portraitFromMd) assert.ok(!stripped, block);
   }
+  assert.ok(bare > 0 && filled > 0);
 });
 
 test("a malformed fit fails validation before the hero-pair guard", () => {

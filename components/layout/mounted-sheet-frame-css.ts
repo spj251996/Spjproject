@@ -314,7 +314,7 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
    Stacked, the mount stops being a surface and its gap is the ground below one card plus the
    ground above the next. The leaf takes the fill and the reveal instead, so every card down the
    page is one sheet in one mount whether or not it belongs to a pair, and it keeps its own
-   `shadow-mount`. */
+   `shadow-mount`. Its fill follows the single sections' rule: none in the phone ground tier. */
 function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
@@ -336,9 +336,12 @@ ${sheet} { justify-content: flex-start; }
 ${crease} { display: block; }
 }`;
       }
+      /* A single section drops its fill below `{breakpoints.md}` (`mountRules`), so the leaf that
+         stands in for its mount drops it by the same test. */
+      const leafFill = mountShows(windowClass, false) ? "" : ` ${strip}`;
       return `${prelude} {
 ${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(cardReveal(windowClass, false, "pair", landscape))}; }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(cardReveal(windowClass, false, "pair", landscape))};${leafFill} }
 }`;
     })
     .join("\n");
