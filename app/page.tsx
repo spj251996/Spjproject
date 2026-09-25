@@ -29,6 +29,7 @@ import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
+import { SectionThread } from "@/components/thread/section-thread";
 import { ButtonAction } from "@/components/ui/button-action";
 import {
   type ContactPerson,
@@ -783,9 +784,18 @@ export function WishesSection() {
             </p>
           </div>
 
+          {/* The weave, and the one reason the thread is mounted inside a card rather than on the
+              section: the card's `mounted-sheet-frame__box` is a stacking context at
+              `{z.content}`, so a section-level thread at `{z.thread}` can only paint entirely in
+              front of the illustration. These two copies are siblings of `.figureCol` and carry no
+              z-index of their own, so document order alone puts one either side of it. Their
+              containing block is that same `__box` — the card, not the section — which is the
+              nearest positioned ancestor available inside the stacking context the weave needs. */}
+          <SectionThread id="wishes" weave="under" />
           <div className={wishesStyles.figureCol}>
             <div aria-hidden className={wishesStyles.figure} />
           </div>
+          <SectionThread id="wishes" weave="over" />
 
           <p className="type-heading-script mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
             {wishesNames ? (

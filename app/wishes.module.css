@@ -32,6 +32,11 @@
   background-size: contain;
   background-repeat: no-repeat;
   pointer-events: none;
+  /* Positioned with no offsets, so it costs no layout and creates no stacking context: it is here
+     only so the drawing paints in the positioned layer, where the thread's two woven copies are.
+     Stacked, an unpositioned drawing would have both copies in front of it and there would be no
+     weave. Side by side (below) it is `absolute` for its own reasons and this is redundant. */
+  position: relative;
 }
 
 /* Two lines in both layouts: the lead in italic above the names who send it, who stay regular. */
@@ -71,7 +76,13 @@
     align-items: center;
   }
 
-  .stack > *:not(.figureCol) {
+  /* Text only. `[aria-hidden]` excludes the thread's two woven copies: this rule's `position` and
+     `z-index` would take them out of `absolute` into the flow and put both on the same side of the
+     illustration, which is the whole mechanism. Leaving them at `auto` is also what keeps the
+     thread behind the type here. `style` excludes each copy's own generated sheet, which sits
+     between them — inert while it is `display: none`, a stacking context across the weave if it
+     ever is not. */
+  .stack > *:not(.figureCol):not([aria-hidden]):not(style) {
     grid-column: 1;
     justify-self: center;
     position: relative;
