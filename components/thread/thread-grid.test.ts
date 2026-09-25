@@ -210,19 +210,35 @@ test("every route's points stay fractions under any offset", () => {
   }
 });
 
-/* Offsets are optional and the shipping table sets none — every number here is the owner's, tuned
-   on the panel. Asserted rather than assumed, because it is what holds the emitted geometry
-   identical to the pre-offset thread. */
-test("no authored route sets an offset, and an unset offset moves nothing", () => {
+/* Offsets are optional and the table authors exactly THREE, all of them the same stop — `wishes`'
+   bow, once per band — where the offset is a JOIN-GATE value rather than a design one: it widens
+   that connector's box so the reveal mask's oblique cut lands clear of the ink, and without it the
+   section renders in two pieces. `thread-grid.ts`'s routing note carries the mechanism.
+
+   Every other stop is unset and moves nothing, which is what holds the rest of the emitted geometry
+   identical to the pre-offset thread. The exception is pinned BY NAME rather than merely tolerated,
+   so a stray offset anywhere else still fails this — and so does the bow's going missing. */
+test("only the bow's stop authors an offset, and an unset offset moves nothing", () => {
+  const authored: string[] = [];
   for (const route of THREAD_ROUTES) {
     const points = routePoints(route);
     route.stops.forEach((stop, at) => {
-      assert.equal(stop.offsetX, undefined, `${route.id}/${route.band}`);
       assert.equal(stop.offsetY, undefined, `${route.id}/${route.band}`);
+      if (stop.offsetX !== undefined) {
+        authored.push(
+          `${route.id}/${route.band}:${stop.motif}:${stop.offsetX}`,
+        );
+        return;
+      }
       assert.equal(points[at].x, (stop.col + 0.5) / route.cols);
       assert.equal(points[at].y, (stop.row + 0.5) / route.rows);
     });
   }
+  assert.deepEqual(authored, [
+    "wishes/tall:bow:0.06",
+    "wishes/upright:bow:0.06",
+    "wishes/wide:bow:0.06",
+  ]);
 });
 
 /* `motifAngle` is the spline's direction of travel plus the stop's `nudge`, and the spline is drawn

@@ -76,7 +76,21 @@ export type SectionRoute = {
 
    SEEDS. Every route below is a straight descending run down the band's centre column, satisfying
    the handoff law and nothing more; the owner authors the real ones on the grid panel in Task 12.
-   Grid sizes follow the band's shape — a tall section gets few columns and a wide one gets many. */
+   Grid sizes follow the band's shape — a tall section gets few columns and a wide one gets many.
+
+   A ROUTE CAN BREAK THE THREAD'S RENDER, and it will not look like a routing problem. A connector's
+   reveal mask runs past its ink by `MASK_LEAD` (`thread-css.ts`) so the butt cap's oblique cut lands
+   clear of it, and that cut deepens as the connector's own box collapses toward one axis — a stop
+   directly below its neighbour gives a box that is all height and no width. `MASK_LEAD` is MEASURED
+   against one route's 84 renders rather than derived, so it covers the cut for the placements that
+   were in front of whoever measured it and no others.
+
+   Concretely: reversing `bow`'s direction of travel, with no placement touched, took the lead needed
+   from 8 to 16, and `npm run check:thread-joins` reported `wishes` rendering in two pieces — never
+   "the mask lead is short". SO ANY PLACEMENT TUNED IN TASK 12 CAN RE-OPEN THIS, AND IT WILL PRESENT
+   AS A BROKEN THREAD. Widen the connector's box before reaching for the constant: measured
+   on that break, `offsetX` closed it from 0.04 upward, while `nudge` alone closed nothing at any
+   angle tried and a larger `scale` made it worse. */
 export const THREAD_ROUTES: readonly SectionRoute[] = [
   // tall — 3 x 4, centre column 1
   {
@@ -170,7 +184,8 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
         anchor: "[data-wishes-figure]",
       },
       { col: 1, row: 2 },
-      { col: 1, row: 3, motif: "bow", scale: 0.12 },
+      /* `offsetX` is a GATE value, not a design one — see the routing note above. */
+      { col: 1, row: 3, motif: "bow", scale: 0.12, offsetX: 0.06 },
     ],
   },
 
@@ -262,7 +277,8 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
         anchor: "[data-wishes-figure]",
       },
       { col: 2, row: 2 },
-      { col: 2, row: 3, motif: "bow", scale: 0.12 },
+      /* `offsetX` is a GATE value, not a design one — see the routing note above. */
+      { col: 2, row: 3, motif: "bow", scale: 0.12, offsetX: 0.06 },
     ],
   },
 
@@ -354,7 +370,8 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
         anchor: "[data-wishes-figure]",
       },
       { col: 3, row: 2 },
-      { col: 3, row: 3, motif: "bow", scale: 0.12 },
+      /* `offsetX` is a GATE value, not a design one — see the routing note above. */
+      { col: 3, row: 3, motif: "bow", scale: 0.12, offsetX: 0.06 },
     ],
   },
 ] as const;
