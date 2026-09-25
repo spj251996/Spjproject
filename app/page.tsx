@@ -117,6 +117,11 @@ function InvitePassage() {
 
           Growth shares, never `1fr` rows — the reason is on the stack in `InviteSection`.
 
+          From `{breakpoints.xl}` the floor below jumps to 32px and the 60 : 40 deliberately does
+          not hold — a desktop window leaves this stack about 190px unused, so the tier with the
+          most room was the one giving the passage the least air beneath the mark. DESIGN.md →
+          `ornamental-divider` states the exception.
+
           The tablet band's block is 23px rather than 55px, and its mark is the one that does not
           grow: its landscape card already stands 717px against a 720px cap, so a 55px block leaves
           the frame no tier line and the build refuses. */}
@@ -130,7 +135,7 @@ function InvitePassage() {
       <div className="flex grow-2 flex-col items-center">
         <div
           aria-hidden
-          className="shrink-0 grow basis-[10.845px] md:basis-[1.182px] lg:basis-[5.268px]"
+          className="shrink-0 grow basis-[10.845px] md:basis-[1.182px] lg:basis-[5.268px] xl:basis-[32px]"
         />
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
             hold it, and the card's own content width is the only limit that should apply. */}
