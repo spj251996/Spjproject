@@ -492,14 +492,14 @@ test("side-by-side sheets align to the top; stacked and single cards stay centre
   assert.ok(!mountedSheetFrameCss(makeFit(), false).includes("flex-start"));
 });
 
-test("a stacked pair's leaf carries no mount at any width but keeps its lift", () => {
+test("a stacked pair's leaf keeps the mount's fill and its lift at every width", () => {
   const pair = mountedSheetFrameCss(makeFit(), false, "pair");
   const leafRules =
     pair.match(/mounted-sheet-frame__leaf \{ min-height:[^}]*\}/g) ?? [];
   assert.equal(leafRules.length, 11);
   for (const rule of leafRules) {
-    assert.ok(rule.includes("padding: var(--spacing-0)"), rule);
-    assert.ok(rule.includes("background-image: none"), rule);
+    assert.ok(!rule.includes("background-image: none"), rule);
+    assert.ok(!rule.includes("background-color: transparent"), rule);
     assert.ok(!rule.includes("box-shadow"), rule);
   }
 });

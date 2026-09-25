@@ -312,8 +312,9 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
    Side by side, the shared mount is the card and each leaf is only a column holding its sheet.
 
    Stacked, the mount stops being a surface and its gap is the ground below one card plus the
-   ground above the next. The leaf rule strips fill and grain but never `box-shadow`, so each
-   stacked card keeps `shadow-mount`. */
+   ground above the next. The leaf takes the fill and the reveal instead, so every card down the
+   page is one sheet in one mount whether or not it belongs to a pair, and it keeps its own
+   `shadow-mount`. */
 function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
@@ -337,7 +338,7 @@ ${crease} { display: block; }
       }
       return `${prelude} {
 ${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; background-color: transparent; background-image: none; }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(cardReveal(windowClass, false, "pair", landscape))}; }
 }`;
     })
     .join("\n");
