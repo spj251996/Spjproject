@@ -1,11 +1,24 @@
 .rule {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Clear space either side of the mark, so a hairline never runs into its outermost leaf. */
+  gap: var(--spacing-space-sm);
   width: min(100%, 21em);
-  /* A FIXED height, not one derived from the width. At 30:1 an auto height grows with the card,
-     and a framed section's measured fit requires that its content never stand taller at a wider
-     column — the sweep fails outright on the rise. `meet` keeps the sprig's proportion and centres
-     the drawing in the box, so a narrower card gets a shorter line, not a stretched one. */
-  height: 0.6875rem;
   color: var(--color-accent-gold);
-  fill: currentColor;
+}
+
+/* The hairlines take whatever the mark leaves, so the ornament centres at any card width without
+   either line carrying a length of its own.
+
+   Height comes from the mark and is NOT set here. A fixed height would put the drawing back inside
+   a box that scales it to fit, which is the defect this layout replaced: the box was bound by its
+   WIDTH, so the mark rendered at 7.75px on a laptop and smaller still on a phone. The rule that
+   still holds is the one that box was protecting — a framed section's measured fit refuses content
+   that grows taller in a wider column — and a px-sized mark satisfies it outright, since it is the
+   same height at every width inside a tier. */
+.hairline {
+  flex: 1;
+  height: var(--stroke-divider);
+  background-color: currentColor;
 }

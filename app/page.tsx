@@ -101,23 +101,28 @@ function InvitePassage() {
     <>
       {/* The rule sits 60 : 40 between the place line above it and the passage below it, centre to
           centre, whatever slack the card has: the space above grows 3 where the space below grows
-          2, over floors of 27.5px and 16.5px that already hold the ratio on a card with no slack at
-          all. The floors are the split's own rather than scale steps (Cross-Cutting Rules), and
-          they are derived from the rule's MEASURED height: `ornamental-divider` is 0.6875rem, 11px
-          at every tier, so 27.5 + 5.5 of 55 is exactly 60 %.
+          2, over floors that already hold the ratio on a card with no slack at all. The floors are
+          the split's own rather than scale steps (Cross-Cutting Rules), and each is derived from
+          its tier's MEASURED mark height — 22px on phone, 16px in the tablet band, 33px from
+          `{breakpoints.lg}`:
+
+            phone  21.845 + 22.310 + 10.845 = 55, and (21.845 + 11.155) / 55 = 60 %
+            tablet  5.782 + 16.035 +  1.182 = 23, and ( 5.782 +  8.018) / 23 = 60 %
+            laptop 16.268 + 33.465 +  5.268 = 55, and (16.268 + 16.733) / 55 = 60 %
+
+          The mark grew from the 11px the whole drawing used to stand at, and **that growth is taken
+          equally from the floor above and the floor below** — which is what keeps every block at
+          the height it had before, so no measured fit moves, and keeps the 60 : 40 exact, since
+          subtracting the same amount from both floors changes neither the ratio nor the total.
 
           Growth shares, never `1fr` rows — the reason is on the stack in `InviteSection`.
 
-          The floors drop to 8.3 and 3.7 between `{breakpoints.md}` and `{breakpoints.lg}`, taking
-          the floor block from 55px to 23px. That band is the one tier where the card has no height
-          to spare: its landscape card already stands 717px against a 720px cap, so a 55px floor
-          block leaves the frame no tier line and the build refuses. 12px of floor is what the
-          layout this replaces already left there — it zeroed its own gap in the same band — so the
-          band's card measures within 0.015625px of what it always did. 8.3 + 5.5 of 23 is 60 %
-          exactly, the same derivation as 27.5 + 5.5 of 55. */}
+          The tablet band's block is 23px rather than 55px, and its mark is the one that does not
+          grow: its landscape card already stands 717px against a 720px cap, so a 55px block leaves
+          the frame no tier line and the build refuses. */}
       <div
         aria-hidden
-        className="shrink-0 grow-3 basis-[27.5px] md:basis-[8.3px] lg:basis-[27.5px]"
+        className="shrink-0 grow-3 basis-[21.845px] md:basis-[5.782px] lg:basis-[16.268px]"
       />
 
       <OrnamentalDivider />
@@ -125,7 +130,7 @@ function InvitePassage() {
       <div className="flex grow-2 flex-col items-center">
         <div
           aria-hidden
-          className="shrink-0 grow basis-[16.5px] md:basis-[3.7px] lg:basis-[16.5px]"
+          className="shrink-0 grow basis-[10.845px] md:basis-[1.182px] lg:basis-[5.268px]"
         />
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
             hold it, and the card's own content width is the only limit that should apply. */}
