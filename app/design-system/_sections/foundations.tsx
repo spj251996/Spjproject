@@ -526,7 +526,7 @@ export function FoundationsSections() {
           description="The card every section is built on: a backing mount with an inner sheet laid onto it."
           id="layout-mounted-sheet"
           name="mounted-sheet"
-          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung."
+          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere."
           source="@/components/layout/mounted-sheet"
           spec={[
             "mount · surface-mount · shadow-mount · carries no text, ever",
