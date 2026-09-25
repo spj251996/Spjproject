@@ -701,11 +701,7 @@ export function CelebrationsSection() {
           className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center"
           style={{
             ["--celebrations-measure" as string]: "36rem",
-            ["--celebrations-spine-x" as string]: "0.5rem",
-            ["--celebrations-row-indent" as string]: "2.5rem",
             ["--celebrations-row-gap" as string]: "var(--spacing-space-xl)",
-            ["--celebrations-mark-size" as string]: "0.5rem",
-            ["--celebrations-mark-offset" as string]: "0.5rem",
             ["--celebrations-intro-gap" as string]: "var(--spacing-space-lg)",
           }}
         >
@@ -728,15 +724,13 @@ export function CelebrationsSection() {
           <ol className={CELEBRATIONS_LIST_CLASS} role="list">
             {rituals.map((ritual) => (
               <li className={`${celebrations.row} text-left`} key={ritual.id}>
-                {/* `rounded-full` is the project's circle shape (DESIGN.md → Foundations → Shapes
-                    lists Circle for `timeline-node`'s node dot, drawn the same way): Circle has no
-                    dedicated radius token, so this matches the codebase's own convention rather
-                    than a raw `border-radius: 50%`. */}
-                <span
-                  aria-hidden
-                  className={`${celebrations.mark} rounded-full`}
-                />
-                <h3 className="type-heading-lg text-ink">{ritual.title}</h3>
+                {/* The mark sits on the title's own line so a wrapping description cannot orphan
+                    it. `items-baseline` rather than `items-center`: the mark reads as punctuation
+                    opening the title, and punctuation sits on the text's baseline. */}
+                <div className="flex items-baseline gap-space-2xs">
+                  <SprigIcon className="shrink-0 text-accent-gold" size={32} />
+                  <h3 className="type-heading-lg text-ink">{ritual.title}</h3>
+                </div>
                 <p className="type-body text-ink mt-space-2xs text-pretty">
                   {ritual.description}
                 </p>
