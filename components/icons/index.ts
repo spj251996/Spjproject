@@ -6,4 +6,5 @@ export { LunchIcon } from "./lunch";
 export { MapIcon } from "./map";
 export { ReceptionIcon } from "./reception";
 export { SprigIcon } from "./sprig";
+export { SprigSymbol } from "./sprig-symbol";
 export { WeddingIcon } from "./wedding";

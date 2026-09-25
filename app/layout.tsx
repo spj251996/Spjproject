@@ -5,6 +5,7 @@ import {
   Libre_Baskerville,
   Playfair_Display,
 } from "next/font/google";
+import { SprigSymbol } from "@/components/icons";
 import "./globals.css";
 
 /* Corinthia and Libre Baskerville ship as static faces and need explicit weights; Playfair Display
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           which matters on a site whose whole policy is that it is shared by link and listed
           nowhere. It is cookieless and counts visits rather than identifying visitors. */}
       <body className="min-h-full flex flex-col">
+        <SprigSymbol />
         {children}
         <Analytics />
       </body>
