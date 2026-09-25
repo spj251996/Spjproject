@@ -5,4 +5,5 @@ export { LoveIcon } from "./love";
 export { LunchIcon } from "./lunch";
 export { MapIcon } from "./map";
 export { ReceptionIcon } from "./reception";
+export { SprigIcon } from "./sprig";
 export { WeddingIcon } from "./wedding";
