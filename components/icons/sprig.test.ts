@@ -1,17 +1,19 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const icon = readFileSync("components/icons/sprig.tsx", "utf8");
 const symbol = readFileSync("components/icons/sprig-symbol.tsx", "utf8");
-const reference = readFileSync(
-  "/home/ag-95/.claude/plans/leaf-mark-sprig-path.txt",
-  "utf8",
-).trim();
+const tracedPath = symbol.match(/<path d="([^"]+)"/)?.[1] ?? "";
 
 test("the traced path lives in exactly one file", () => {
-  assert.equal(icon.includes(reference), false);
-  assert.equal(symbol.includes(reference), true);
+  assert.ok(tracedPath.length > 2000, "the symbol must carry the whole trace");
+  const holders = readdirSync("components/icons")
+    .filter((name) => name.endsWith(".tsx"))
+    .filter((name) =>
+      readFileSync(`components/icons/${name}`, "utf8").includes(tracedPath),
+    );
+  assert.deepEqual(holders, ["sprig-symbol.tsx"]);
 });
 
 test("the symbol carries the traced viewBox, not a re-fitted one", () => {
