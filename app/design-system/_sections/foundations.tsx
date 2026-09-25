@@ -30,6 +30,7 @@ import {
   SprigIcon,
   WeddingIcon,
 } from "@/components/icons";
+import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
@@ -578,11 +579,23 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider, the sprig mark set inline between grouped content elsewhere in a section (Event Info, Contact, the Celebrations rows)."
+          description="Thin rule separating grouped content within a section. Its only consumer is Event Info's event sheet, after the heading block — the sprig mark was tried there and reverted, since the rule shows only in Event Info's tightest band and a mark that size earns nothing there."
+          id="layout-divider"
+          name="divider"
+          source="@/components/layout/divider"
+          spec="stroke-divider (1px) in accent-gold · space-lg above and below · never between sections or between event segments"
+        >
+          <div className="bg-surface-elevated p-space-xl">
+            <Divider />
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are Contact and the Celebrations rows, each set inline rather than through this component."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
-          spec="two even hairlines · the sprig mark centred in the gap · no taper · height fixed, never derived from width"
+          spec="two even hairlines · the sprig mark sized in px per tier, never fitted into a shared box — phone 32 · tablet 23 · laptop and desktop 48, rendering 22px · 16px · 33px · no taper · height fixed, never derived from width"
         >
           <div className="bg-surface-elevated p-space-xl">
             <OrnamentalDivider />
@@ -697,6 +710,14 @@ export function FoundationsSections() {
                 <span className="type-caption text-ink">{name}</span>
               </span>
             ))}
+            {/* sprig is punctuation rather than a label's companion, so it sits outside the table
+                below — but it is still a member of the set, and "every mark" has to include it. */}
+            <span className="flex flex-col items-center gap-space-2xs">
+              <span className="text-accent-gold">
+                <SprigIcon size={96} />
+              </span>
+              <span className="type-caption text-ink">sprig</span>
+            </span>
           </div>
         </Specimen>
 
@@ -734,6 +755,7 @@ export function FoundationsSections() {
               { label: "default", size: undefined },
               { label: "23px", size: 23 },
               { label: "32px", size: 32 },
+              { label: "48px", size: 48 },
             ].map(({ label, size }) => (
               <span
                 className="flex flex-col items-center gap-space-2xs"

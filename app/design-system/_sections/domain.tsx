@@ -13,7 +13,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · gold rule, sitting at 60 : 40 between the place line and the passage at every tier · passage in caption · citation in caption-italic",
+      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at space-lg (32px) instead · passage in caption · citation in caption-italic",
     note: "Live at /. The thread that leaves the screen still going — the only thing cueing the scroll — arrives in Phase 5.",
   },
 ];
@@ -23,7 +23,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     name: "Event Info",
     home: "app/page.tsx",
     composes:
-      "mounted-pair · per sheet: eyebrow, heading-xl heading, date line, address, the sprig mark where the layout shows one, segment plates · per plate: mark, segment line, venue, button-action with map",
+      "mounted-pair · per sheet: eyebrow, heading-xl heading, date line, address, a divider rule after the heading block (tablet band only), segment plates · per plate: mark, segment line, venue, button-action with map",
     note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI.",
   },
 ];
@@ -33,8 +33,8 @@ const CONTACT_ENTRIES: InlineEntry[] = [
     name: "Contact",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet · mark, eyebrow, heading-xl heading, the sprig mark (side by side only) · two plates: side eyebrow, name, relationship, number, two button-actions stacked",
-    note: "Live at /. Things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one rule serves both; the rule shows only when the plates sit side by side and is absent when they stack — inverted from Event Info's, which shows when its sheets stack; the two actions always stack, never side by side, at every width; the number is the site's one selectable text, which only a real selection proves; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
+      "mounted-sheet · eyebrow, heading-xl heading, the sprig mark sized as an ornament (48px on the diagonal, side by side only) · two plates: side eyebrow, name, relationship, number, two button-actions stacked",
+    note: "Live at /. Things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one condition serves both; the mark shows only from the landscape-lg switch, the opposite band from Event Info's rule, which is a tablet-band-only ornament and hides again at that same switch; the two actions always stack, never side by side, at every width; the number is the site's one selectable text, which only a real selection proves; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
   },
 ];
 
