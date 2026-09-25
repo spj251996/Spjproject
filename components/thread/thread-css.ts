@@ -616,6 +616,7 @@ function maskCopy(
     const cross = Math.abs(step.x * normal.y - step.y * normal.x);
     const along = Math.abs(step.x * normal.x + step.y * normal.y);
     const wedge = cross < 1e-9 ? MAX_MASK_LEAD : along / cross;
+
     return {
       reach: Math.min(MAX_MASK_LEAD, MASK_LEAD * (1 + wedge)),
       step,
@@ -880,25 +881,57 @@ function connectorSegment(
   };
   const spanX = span("x");
   const spanY = span("y");
-  const unit = (point: Point): Point => ({
-    x: (point.x * spanX.side - spanX.min) / spanX.size,
-    y: (point.y * spanY.side - spanY.min) / spanY.size,
+  /* The band's own pixels, which is where the curve is SHAPED: a bisector and a control arm only
+     mean what they say in a space where a distance is a distance. */
+  const pixels = (point: Point): Point => ({
+    x: point.x * spanX.side,
+    y: point.y * spanY.side,
+  });
+  /* And the box the curve is EMITTED in, whose two corners are the connector's two ends. */
+  const inBox = (point: Point): Point => ({
+    x: (point.x - spanX.min) / spanX.size,
+    y: (point.y - spanY.min) / spanY.size,
   });
 
-  const d = splinePath(through.map(unit));
+  /* The curve LEAVES `from` and ARRIVES at `to` along the tangent it is met on — a motif's own
+     entry/exit, or a section terminal's vertical one — instead of pointing at the nearest waypoint,
+     which is what a Catmull-Rom end duplicating its neighbour gives. That mismatch is the kink that
+     makes a drawing read as pasted on rather than threaded through, and it became permanent when the
+     panel started PINNING a motif's angle: before that the motif drifted toward the spline's
+     direction and hid it.
+
+     The angle is the one `resolveEnd` runs the join overlap along, so it is stated in the band's
+     pixels — the same space the points are handed over in, and the reason none of this has to know
+     the box's stretch. */
+  const direction = (end: ConnectorEnd): Point => {
+    const radians = (end.tangent.angle * Math.PI) / 180;
+    return { x: Math.cos(radians), y: Math.sin(radians) };
+  };
+
+  const d = splinePath(through.map(pixels), {
+    ends: { start: direction(from), end: direction(to) },
+    project: inBox,
+  });
   const maskWidth = CONNECTOR_MASK_COVER / Math.min(spanX.size, spanY.size);
   const nominal = { width: spanX.size, height: spanY.size };
   const reveal = maskCopy(d, nominal);
 
-  /* A cubic stays inside the hull of its four points, so the emitted numbers bound the curve — and
-     the mask's stroke reaches half its own width further than that. The mask copy runs past both
-     ends, so it is the copy's hull the region has to hold. */
-  const hull = [...reveal.d.matchAll(/-?[\d.]+/g)].map((match) =>
-    Number(match[0]),
+  /* The region has to hold the mask's own stroke, so it is measured off the CURVE — sampled — and
+     not off the control points that shape it. A cubic does stay inside the hull of its four points,
+     which is why the hull was used, but that bound is loose exactly where it matters: a connector
+     whose two ends nearly share an axis has a box one pixel wide on it, and a control point then
+     sits HUNDREDS of box widths out while the curve itself stays within a few. The region is
+     `userSpaceOnUse` markup, so that number became the size of the mask buffer the browser is asked
+     to rasterise — and at the tall band `event-info`'s seeded route asked for a region 424 box units
+     square, which came back with the thread's ink missing in stretches. The sampled bound is the one
+     the painted stroke actually needs, and it reads the geometry rather than the emitted text, so a
+     coordinate in exponent form cannot be misread as a coordinate of its own. */
+  const reach = samplePath(reveal.d, { width: 1, height: 1 }).flatMap(
+    (point) => [point.x, point.y],
   );
   const region = {
-    min: Math.min(0, ...hull) - MASK_MARGIN - maskWidth / 2,
-    max: Math.max(1, ...hull) + MASK_MARGIN + maskWidth / 2,
+    min: Math.min(0, ...reach) - MASK_MARGIN - maskWidth / 2,
+    max: Math.max(1, ...reach) + MASK_MARGIN + maskWidth / 2,
   };
 
   return {
@@ -952,6 +985,45 @@ function aspectBox(band: Band, aspect: number): SectionBox {
   return { width: band.box.height * aspect, height: band.box.height };
 }
 
+/* The SECOND geometry a connector can be emitted with, where its two ends swap which corner of the
+   box pins them inside this band's own aspect range — and `null` where they cannot.
+
+   One copy, read by the generator AND by `threadMaskRegions`. It used to live inline in the
+   generator alone, so the alternate's curve was emitted while the mask region that has to hold it
+   was measured from the base geometry only. The alternate is composed against a different box, so
+   its curve can reach much further out, and where it did the mask clipped the visible stroke and
+   the section rendered in pieces — with every unit test, the types and the build green, because
+   nothing outside a render can see a mask region that is too small. */
+function alternateGeometry(
+  segment: ThreadSegment,
+  band: Band,
+): { flip: number; below: boolean; segment: ThreadSegment } | null {
+  if (segment.kind !== "connector") return null;
+  const flip = flipAspect(segment.from, segment.to);
+  if (flip === null || flip <= band.min || flip >= band.max) return null;
+  const composed = Math.max(1, band.box.width / band.box.height);
+  const below = composed < flip;
+  const aspect = below
+    ? Math.min(
+        flip * 1.5,
+        band.max === Number.POSITIVE_INFINITY
+          ? flip * 1.5
+          : (flip + band.max) / 2,
+      )
+    : (flip + band.min) / 2;
+  return {
+    flip,
+    below,
+    segment: connectorSegment(
+      segment.index,
+      segment.from,
+      segment.to,
+      segment.waypoints,
+      aspectBox(band, aspect),
+    ),
+  };
+}
+
 /* The thread's segments in drawing order, connectors and motifs alternating. One walk of the route,
    read by the generator and by the component alike — neither re-derives the order. */
 export function threadSegments(id: ThreadId, band: Band): ThreadSegment[] {
@@ -987,6 +1059,16 @@ export function threadSegments(id: ThreadId, band: Band): ThreadSegment[] {
   return segments;
 }
 
+/** The alternate, aspect-switched curve of every connector this band emits one for. */
+export function threadAlternates(id: ThreadId, band: Band): ThreadSegment[] {
+  const found: ThreadSegment[] = [];
+  for (const segment of threadSegments(id, band)) {
+    const alternate = alternateGeometry(segment, band);
+    if (alternate !== null) found.push(alternate.segment);
+  }
+  return found;
+}
+
 /* A `<mask>`'s own region is markup, not CSS, so one value has to hold every band. This is the
    widest any of them reaches, per mounted connector, keyed by that connector's own class. */
 export function threadMaskRegions(
@@ -996,11 +1078,21 @@ export function threadMaskRegions(
   for (const band of THREAD_BANDS) {
     for (const segment of threadSegments(id, band)) {
       if (segment.kind !== "connector") continue;
-      const held = widest.get(segmentClass(segment));
-      widest.set(segmentClass(segment), {
-        min: Math.min(held?.min ?? segment.region.min, segment.region.min),
-        max: Math.max(held?.max ?? segment.region.max, segment.region.max),
-      });
+      /* The alternate geometry is emitted into the same elements, so its curve has to be held too. */
+      const alternate = alternateGeometry(segment, band);
+      const reaches = [
+        segment.region,
+        ...(alternate?.segment.kind === "connector"
+          ? [alternate.segment.region]
+          : []),
+      ];
+      for (const region of reaches) {
+        const held = widest.get(segmentClass(segment));
+        widest.set(segmentClass(segment), {
+          min: Math.min(held?.min ?? region.min, region.min),
+          max: Math.max(held?.max ?? region.max, region.max),
+        });
+      }
     }
   }
   return widest;
@@ -1189,7 +1281,19 @@ function intersect(
 /* A four-value `stroke-dasharray` on `pathLength="1"` encodes one inked arc as
    `0 {tail} {head - tail} 1`; two arcs simply extend the same alternation. An empty list still has
    to paint nothing, which `0 1` does — a lone zero-length dash would paint a dot under a round cap,
-   and the mask is butt-capped precisely so it cannot. */
+   and the mask is butt-capped precisely so it cannot.
+
+   THE TRAILING GAP IS 0 WHERE THE LAST BAND REACHES THE END, and that is not tidiness. A dash asked
+   to cover a whole `pathLength="1"` path does not reach that path's end in Chromium: reproduced in
+   isolation on one connector's own numbers (a 1x1 viewBox stretched to 95.577 x 328.302, the reveal
+   copy butt-capped at `stroke-width: 0.042`), `0 0 1 1` stops about 7% short of the end while
+   `0 0 1 0` and `none` both run to it. Masked by that dash, the visible stroke loses its last dozen
+   pixels — and where that end is a join, the section renders in two pieces with nothing wrong with
+   its geometry. A zero gap closes it because the pattern then repeats with no gap in it, so the
+   paint cannot stop at a length the browser and the author disagree about.
+
+   It applies only where the band ENDS at the copy's end. A band that stops short still needs its
+   trailing gap, or the pattern would repeat and paint past the head. */
 function dashArray(bands: readonly Band01[], along: Reparametrise): string {
   if (bands.length === 0) return "0 1";
   const values: number[] = [0];
@@ -1200,8 +1304,12 @@ function dashArray(bands: readonly Band01[], along: Reparametrise): string {
     values.push(from - cursor, to - from);
     cursor = to;
   }
-  values.push(1);
-  return values.map((value) => round(Math.max(0, value))).join(" ");
+  /* Decided on the ROUNDED numbers, because those are the ones the browser is handed: a band that
+     falls a ten-thousandth short internally is emitted as reaching the end, and then it has to be
+     treated as reaching it. */
+  const emitted = values.map((value) => round(Math.max(0, value)));
+  const reach = emitted.reduce((sum, value) => sum + Number(value), 0);
+  return [...emitted, reach >= 1 ? "0" : "1"].join(" ");
 }
 
 const FULL: Band01 = [0, 1];
@@ -1569,28 +1677,12 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
       /* The one window-dependent thing left in the normalised curve: which of the connector's two
          ends is the near corner of its box. Where that can turn over INSIDE this band, both
          geometries are emitted and the aspect ratio the crossing sits at chooses between them. */
-      const flip = flipAspect(segment.from, segment.to);
-      if (flip !== null && flip > band.min && flip < band.max) {
-        const composed = Math.max(1, band.box.width / band.box.height);
-        const below = composed < flip;
-        const alternate = below
-          ? Math.min(
-              flip * 1.5,
-              band.max === Number.POSITIVE_INFINITY
-                ? flip * 1.5
-                : (flip + band.max) / 2,
-            )
-          : (flip + band.min) / 2;
+      const alternate = alternateGeometry(segment, band);
+      if (alternate !== null) {
         geometry.push(
-          `@media (aspect-ratio ${below ? ">=" : "<"} ${round(flip)}) {\n${curveRules(
+          `@media (aspect-ratio ${alternate.below ? ">=" : "<"} ${round(alternate.flip)}) {\n${curveRules(
             selector,
-            connectorSegment(
-              segment.index,
-              segment.from,
-              segment.to,
-              segment.waypoints,
-              aspectBox(band, alternate),
-            ),
+            alternate.segment,
           )}\n}`,
         );
       }

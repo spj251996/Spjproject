@@ -210,15 +210,16 @@ test("every route's points stay fractions under any offset", () => {
   }
 });
 
-/* Offsets are optional and the table authors exactly THREE, all of them the same stop — `wishes`'
-   bow, once per band — where the offset is a JOIN-GATE value rather than a design one: it widens
-   that connector's box so the reveal mask's oblique cut lands clear of the ink, and without it the
-   section renders in two pieces. `thread-grid.ts`'s routing note carries the mechanism.
+/* Offsets are optional, and every one the table authors is a JOIN-GATE value rather than a design
+   one: it widens a connector's box so the reveal mask can still follow the ink through it, and
+   without it the section renders in two pieces. `thread-grid.ts`'s routing note carries the
+   mechanism and, importantly, says which lever is the wrong one.
 
    Every other stop is unset and moves nothing, which is what holds the rest of the emitted geometry
-   identical to the pre-offset thread. The exception is pinned BY NAME rather than merely tolerated,
-   so a stray offset anywhere else still fails this — and so does the bow's going missing. */
-test("only the bow's stop authors an offset, and an unset offset moves nothing", () => {
+   identical to the pre-offset thread. The exceptions are pinned BY NAME rather than merely
+   tolerated, so a stray offset anywhere else still fails this — and so does one of these going
+   missing. */
+test("only a join-gate stop authors an offset, and an unset offset moves nothing", () => {
   const authored: string[] = [];
   for (const route of THREAD_ROUTES) {
     const points = routePoints(route);
@@ -235,6 +236,7 @@ test("only the bow's stop authors an offset, and an unset offset moves nothing",
     });
   }
   assert.deepEqual(authored, [
+    "event-info/tall:knot:0.02",
     "wishes/tall:bow:0.06",
     "wishes/upright:bow:0.06",
     "wishes/wide:bow:0.06",

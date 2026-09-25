@@ -9,6 +9,7 @@ import {
   pathLength,
   segmentClass,
   THREAD_CLASS,
+  threadAlternates,
   threadCss,
   threadMaskRegions,
   threadMounts,
@@ -16,7 +17,7 @@ import {
   threadSegments,
   threadStubs,
 } from "./thread-css.ts";
-import type { Tangent, ThreadId } from "./thread-geometry.ts";
+import { resolveEnd, type Tangent, type ThreadId } from "./thread-geometry.ts";
 import {
   anchorKey,
   motifAngle,
@@ -409,7 +410,9 @@ test("not-found draws on the clock, once, and ends complete", () => {
     assert.ok(dash, `${name} declares no dash at its end`);
     assert.deepEqual(
       dash[1].trim().split(/\s+/).map(Number),
-      [0, 0, 1, 1],
+      /* `0 0 1 0` — the whole copy inked, with no trailing gap to stop the dash short of the
+         copy's own end. See `dashArray`. */
+      [0, 0, 1, 0],
       `${name} does not end with the thread complete`,
     );
   }
@@ -1261,11 +1264,21 @@ test("every mask reaches past the curve it reveals, at every band", () => {
     for (const id of ALL_IDS) {
       const regions = threadMaskRegions(id);
       for (const band of THREAD_BANDS) {
-        for (const segment of threadSegments(id, band)) {
+        /* The ALTERNATE geometry too: it is emitted into the same elements, behind an
+           `aspect-ratio` query, and is composed against a different box — so its curve can reach
+           much further out than the base one. The region was measured from the base alone, and the
+           alternate's curve was clipped where it did. */
+        for (const segment of [
+          ...threadSegments(id, band),
+          ...threadAlternates(id, band),
+        ]) {
           if (segment.kind !== "connector") continue;
-          const hull = [...segment.d.matchAll(/-?[\d.]+/g)].map((m) =>
-            Number(m[0]),
-          );
+          /* The CURVE, sampled — not the control points that shape it. A cubic does stay inside
+             its hull, but where a connector's box collapses on one axis a control point sits
+             hundreds of box widths out while the curve stays within a few, and the region is a
+             mask buffer the browser has to rasterise. */
+          const drawn = pathBounds(segment.revealD, { width: 1, height: 1 });
+          const hull = [drawn.minX, drawn.minY, drawn.maxX, drawn.maxY];
           const region = regions.get(segmentClass(segment));
           assert.ok(
             region,
@@ -1697,5 +1710,100 @@ test("the thread's markup is built from the mount union, not from one band", () 
       false,
       `section-thread.tsx reads ${banned}, which resolves against one band`,
     );
+  }
+});
+
+/* THE JOIN'S DIRECTION, not just its position. The test above pins each connector END to the point
+   the motif declares; this one pins the DIRECTION the curve leaves and arrives along. Without it a
+   connector can meet its motif exactly and still kink there — which is what shipped, because a
+   Catmull-Rom end duplicates its neighbour and so leaves toward the next waypoint instead of along
+   the drawing's own tangent. Nothing else sees it: the ends are in the right place, the joins gate
+   sees one connected run of ink, and the drawing reads as pasted on rather than threaded through.
+
+   Measured in the band's PIXELS, because that is the space the tangent's angle is stated in and the
+   space a reader sees; the emitted curve lives in the connector's stretched box, so it is carried
+   back through that box's own two spans. */
+test("a connector leaves and arrives along the tangent it is met on", () => {
+  for (const id of ALL_IDS) {
+    for (const band of THREAD_BANDS) {
+      for (const segment of threadSegments(id, band)) {
+        if (segment.kind !== "connector") continue;
+        const points = [
+          ...segment.d.matchAll(/-?\d+(?:\.\d+)?(?:e-?\d+)?/g),
+        ].map((match) => Number(match[0]));
+        /* The box's CSS size is an expression over `%` and `svmin`, so its pixel span is rebuilt
+           here from the two ends — the same inputs the generator used. That is not circular: where
+           those ends LAND is pinned by the test above, and what is measured here is only the
+           direction the curve leaves them in. */
+        const reach = (which: -1 | 1) =>
+          resolveEnd(
+            which === -1 ? segment.from : segment.to,
+            band.box,
+            JOIN_OVERLAP,
+            which,
+          );
+        const ends = [reach(-1), reach(1)];
+        const size = {
+          x: Math.max(1, Math.abs(ends[0].x - ends[1].x) * band.box.width),
+          y: Math.max(1, Math.abs(ends[0].y - ends[1].y) * band.box.height),
+        };
+        const pixels = (at: number) => ({
+          x: points[at] * size.x,
+          y: points[at + 1] * size.y,
+        });
+        const last = points.length;
+        const away = {
+          from: pixels(0),
+          to: pixels(2),
+          angle: segment.from.tangent.angle,
+          at: "leaves",
+        };
+        const into = {
+          from: pixels(last - 4),
+          to: pixels(last - 2),
+          angle: segment.to.tangent.angle,
+          at: "arrives",
+        };
+        for (const { from, to, angle, at } of [away, into]) {
+          const drawn =
+            (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
+          const off = Math.abs(((drawn - angle + 540) % 360) - 180);
+          assert.ok(
+            off < 1,
+            `${id} ${band.id}: connector ${segment.index} ${at} ${off.toFixed(1)}deg off its tangent`,
+          );
+        }
+      }
+    }
+  }
+});
+
+/* A reveal that reaches the copy's end must not be stopped at it by the dash's own arithmetic —
+   see `dashArray`. Reproduced in isolation: `0 0 1 1` on a `pathLength="1"` path stops about 7%
+   short in Chromium, and a mask that stops short takes the visible stroke's last pixels with it,
+   which at a join renders the section in two pieces. Asserted on the BUILT sheet, because the value
+   that matters is the one that ships. */
+test("a complete reveal is emitted with no trailing gap to stop it", () => {
+  for (const id of ALL_IDS) {
+    for (const [, dash] of threadCss(id).matchAll(
+      /stroke-dasharray:\s*([^;]+);/g,
+    )) {
+      const values = dash.trim().split(/\s+/).map(Number);
+      if (values.some((value) => Number.isNaN(value))) continue;
+      /* Where the last INKED run ends, walking the pattern as the browser does: dash, gap, dash,
+         gap. A pattern that paints nothing (`0 1`) never reaches anything. */
+      let at = 0;
+      let inked = 0;
+      values.forEach((value, index) => {
+        at += value;
+        if (index % 2 === 0 && value > 0) inked = at;
+      });
+      if (inked < 1) continue;
+      assert.equal(
+        values[values.length - 1],
+        0,
+        `${id}: "${dash.trim()}" reaches the end and still carries a gap that stops it`,
+      );
+    }
   }
 });

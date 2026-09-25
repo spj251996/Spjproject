@@ -78,19 +78,23 @@ export type SectionRoute = {
    the handoff law and nothing more; the owner authors the real ones on the grid panel in Task 12.
    Grid sizes follow the band's shape — a tall section gets few columns and a wide one gets many.
 
-   A ROUTE CAN BREAK THE THREAD'S RENDER, and it will not look like a routing problem. A connector's
-   reveal mask runs past its ink by `MASK_LEAD` (`thread-css.ts`) so the butt cap's oblique cut lands
-   clear of it, and that cut deepens as the connector's own box collapses toward one axis — a stop
-   directly below its neighbour gives a box that is all height and no width. `MASK_LEAD` is MEASURED
-   against one route's 84 renders rather than derived, so it covers the cut for the placements that
-   were in front of whoever measured it and no others.
+   A ROUTE CAN BREAK THE THREAD'S RENDER, and it will not look like a routing problem. A connector is
+   composed against a box pinned to its own two ends, so two stops that nearly share an axis give a
+   box that is all height and no width — at the tall band `event-info`'s seeded knot gave one 1.79px
+   wide. The reveal mask then has to carry a stroke several times wider than the box it lives in,
+   with a region several box-widths out, and it stops following the ink: the section renders in
+   pieces, and the gate says `wishes renders in two pieces`, never "the box collapsed".
 
-   Concretely: reversing `bow`'s direction of travel, with no placement touched, took the lead needed
-   from 8 to 16, and `npm run check:thread-joins` reported `wishes` rendering in two pieces — never
-   "the mask lead is short". SO ANY PLACEMENT TUNED IN TASK 12 CAN RE-OPEN THIS, AND IT WILL PRESENT
-   AS A BROKEN THREAD. Widen the connector's box before reaching for the constant: measured
-   on that break, `offsetX` closed it from 0.04 upward, while `nudge` alone closed nothing at any
-   angle tried and a larger `scale` made it worse. */
+   WIDEN THE BOX. `offsetX` on either stop is the lever, and a very small one is enough — 0.01 closed
+   the `event-info` break, and 0.04 closed `wishes`'s. `nudge` alone closed nothing at any angle
+   tried, and a larger `scale` made it worse.
+
+   DO NOT REACH FOR `MASK_LEAD`. It is measured rather than derived, and it is tempting because it
+   moves the number — but its response is NOT MONOTONE, so it is not the lever its own name suggests.
+   Swept against the `event-info` break: 8 leaves 5 renders broken, 10 through 14 leave 2, and 20
+   leaves 6. `CONNECTOR_MASK_COVER` was swept with it (4 to 6) and changed nothing at all, so the
+   mask's width is not the limiter either. Tuning either one until a gate goes green hides a geometry
+   problem behind a constant that the next placement will move again. */
 export const THREAD_ROUTES: readonly SectionRoute[] = [
   // tall — 3 x 4, centre column 1
   {
@@ -113,7 +117,13 @@ export const THREAD_ROUTES: readonly SectionRoute[] = [
     stops: [
       { col: 1, row: 0 },
       { col: 1, row: 1, motif: "rings", scale: 0.44 },
-      { col: 1, row: 2, motif: "knot", scale: 0.29 },
+      /* `offsetX` is a GATE value, not a design one — see the routing note above. Without it the
+         knot's exit and the section's bottom terminal sit 1.79px apart across the section's width,
+         so the connector between them composes against a box 1.79px wide while the curve it carries
+         travels 56 degrees across it — the knot's own exit tangent — and the reveal mask cannot
+         follow that. 0.01 already closes it; 0.02 is taken so the box clears the mask's own 4px
+         cover (`CONNECTOR_MASK_COVER`) by more than twice rather than sitting just past it. */
+      { col: 1, row: 2, motif: "knot", scale: 0.29, offsetX: 0.02 },
       { col: 1, row: 3 },
     ],
   },
