@@ -38,9 +38,9 @@ export const contactFit: MeasuredFit = {
         { minContentWidth: 175.71875, contentHeight: 576 },
       ],
       landscape: [
-        { minContentWidth: 120, contentHeight: 436.03125 },
-        { minContentWidth: 124.390625, contentHeight: 416.03125 },
-        { minContentWidth: 175.71875, contentHeight: 372.03125 },
+        { minContentWidth: 120, contentHeight: 453.453125 },
+        { minContentWidth: 124.390625, contentHeight: 433.453125 },
+        { minContentWidth: 175.71875, contentHeight: 389.453125 },
       ],
     },
     desktop: {
@@ -50,9 +50,9 @@ export const contactFit: MeasuredFit = {
         { minContentWidth: 222.578125, contentHeight: 618 },
       ],
       landscape: [
-        { minContentWidth: 120, contentHeight: 478.03125 },
-        { minContentWidth: 149.265625, contentHeight: 456.03125 },
-        { minContentWidth: 222.578125, contentHeight: 400.03125 },
+        { minContentWidth: 120, contentHeight: 495.453125 },
+        { minContentWidth: 149.265625, contentHeight: 473.453125 },
+        { minContentWidth: 222.578125, contentHeight: 417.453125 },
       ],
     },
   },

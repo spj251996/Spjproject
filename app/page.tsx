@@ -25,6 +25,7 @@ import {
   SprigIcon,
   WeddingIcon,
 } from "@/components/icons";
+import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
@@ -459,13 +460,12 @@ function EventSheet({ event }: { event: WeddingEvent }) {
   return (
     <div className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
       <EventSheetHeading event={event} />
-      {/* The class conditions are unchanged from the rule this replaces, and are written out
-          literally rather than from a shared constant: Tailwind's content scanner reads class names
-          as literal source text, so a name assembled through a template literal never resolves. */}
-      <SprigIcon
-        className="my-space-md hidden text-accent-gold md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden"
-        size={23}
-      />
+      {/* The sprig was tried here and reverted (DESIGN.md → Components → `divider`): this rule
+          shows only in the tablet band, which is also Event Info's tightest, so a mark earns
+          nothing here. The conditions are written out literally rather than from a shared
+          constant — Tailwind's content scanner reads class names as literal source text, so a name
+          assembled through a template literal never resolves to a generated rule. */}
+      <Divider className="my-space-lg hidden w-space-2xl md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden" />
       <PlateSegments segments={event.segments} />
     </div>
   );
@@ -611,9 +611,11 @@ export function ContactSection() {
               literally, not from a shared constant: Tailwind's content scanner reads class names as
               literal source text, and a name assembled through a JS template-literal variable at
               this spot never resolves to a generated rule. */}
+          {/* Sized as an ornament rather than a label's companion — DESIGN.md → Contact carries
+              the reasoning and the 48. */}
           <SprigIcon
             className="my-space-md hidden text-accent-gold [@media(width>=64rem)_and_(orientation:landscape)]:block"
-            size={23}
+            size={48}
           />
           {/* The `48rem<=width<64rem` band is bounded rather than open-ended so the tablet-width
               margin step does not also apply in a large portrait window below the landscape switch.
