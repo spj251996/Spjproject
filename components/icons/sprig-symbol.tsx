@@ -1,6 +1,10 @@
-/* The traced sprig, defined once for the whole document. It shipped inline at ten call sites and
-   therefore twenty times in the built HTML — React's flight payload repeats the markup — which cost
-   6,040 bytes gzipped, 4.2% of the page, for one ornament.
+/* The traced sprig, defined once for the whole document. Inline it repeated at every call site and
+   again in React's flight payload, so one ornament weighed several kilobytes of the page.
+
+   The path is potrace's trace of the couple's own drawing (`sprig 1.svg`), with potrace's
+   `translate(0,600) scale(0.1,-0.1)` wrapper baked into the coordinates and the viewBox re-origined
+   on the drawing's ink so `IconBase`'s diagonal sizing reads a box that describes the artwork. A
+   re-trace must repeat both steps or the mark renders flipped and mis-sized.
 
    Mounted in the root layout rather than lazily beside a consumer: a `<use>` resolves against the
    document, so the symbol has to exist wherever any mark renders, and a section is free to appear
