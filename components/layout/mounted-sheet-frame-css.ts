@@ -4,7 +4,6 @@ import {
   BREAKPOINT_REM,
   CAPS,
   type CardRectangle,
-  cardReveal,
   type FitRegime,
   type FrameLayout,
   fitRectangles,
@@ -190,7 +189,7 @@ function windowFits(
 ): Condition {
   const rectangles = fitRectangles(
     regimesFor(windowClass.regimes, orientationName(landscape)),
-    cardReveal(windowClass, hero, layout, landscape),
+    revealFor(windowClass, hero, landscape),
     smallestPadding(windowClass.groundTier),
     pairsSideBySide(layout, windowClass, landscape),
   );
@@ -286,17 +285,24 @@ function groundRules(
 /* The mount's reveal comes from the same number the fit arithmetic used, so the two cannot drift.
    Where the mount does not show it loses its fill and its grain, and keeps `shadow-mount`. The
    grain is the surface's background image (app/styles/surfaces.css), which is why clearing
-   `background-image` removes it; a grain drawn any other way would need a matching change here. */
+   `background-image` removes it; a grain drawn any other way would need a matching change here.
+
+   One rule per orientation, because a class above its tier line holds both and a non-hero card
+   shows its mount in landscape alone. */
 function mountRules(
   windowClass: WindowClass,
   hero: boolean,
   scope: string,
 ): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
-  const fill = mountShows(windowClass, hero)
-    ? ""
-    : " background-color: transparent; background-image: none;";
-  return `@media ${windowClass.media} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero))};${fill} }\n}`;
+  return orientationsOf(windowClass)
+    .map((landscape) => {
+      const fill = mountShows(windowClass, hero, landscape)
+        ? ""
+        : " background-color: transparent; background-image: none;";
+      return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero, landscape))};${fill} }\n}`;
+    })
+    .join("\n");
 }
 
 function sheetSelector(scope: string, layout: FrameLayout): string {
@@ -312,9 +318,8 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
    Side by side, the shared mount is the card and each leaf is only a column holding its sheet.
 
    Stacked, the mount stops being a surface and its gap is the ground below one card plus the
-   ground above the next. The leaf takes the fill and the reveal instead, so every card down the
-   page is one sheet in one mount whether or not it belongs to a pair, and it keeps its own
-   `shadow-mount`. Its fill follows the single sections' rule: none in the phone ground tier. */
+   ground above the next. The leaf rule strips fill and grain but never `box-shadow`, so each
+   stacked card keeps `shadow-mount`: a single section is bare in the same windows. */
 function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
@@ -326,9 +331,7 @@ function pairLayoutRules(windowClass: WindowClass, scope: string): string {
     .map((landscape) => {
       const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
       if (pairsSideBySide("pair", windowClass, landscape)) {
-        /* Side by side keeps the mount even at the phone ground tier, so its reveal is the width
-           tier's own (`cardReveal`) rather than `revealFor`, which would fall to zero there. */
-        const reveal = cardReveal(windowClass, false, "pair", landscape);
+        const reveal = revealFor(windowClass, false, landscape);
         return `${prelude} {
 ${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
 ${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)}; ${strip} box-shadow: none; }
@@ -336,12 +339,9 @@ ${sheet} { justify-content: flex-start; }
 ${crease} { display: block; }
 }`;
       }
-      /* A single section drops its fill below `{breakpoints.md}` (`mountRules`), so the leaf that
-         stands in for its mount drops it by the same test. */
-      const leafFill = mountShows(windowClass, false) ? "" : ` ${strip}`;
       return `${prelude} {
 ${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(cardReveal(windowClass, false, "pair", landscape))};${leafFill} }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; ${strip} }
 }`;
     })
     .join("\n");
@@ -418,7 +418,7 @@ function paddingRules(
       : tier.portrait.blockPressed;
     const sideBySide = pairsSideBySide(layout, windowClass, landscape);
     const regimes = regimesFor(windowClass.regimes, orientationName(landscape));
-    const reveal = cardReveal(windowClass, hero, layout, landscape);
+    const reveal = revealFor(windowClass, hero, landscape);
     const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
     rules.push(chain(base, blockBand, landscape, regimes, sideBySide, reveal));
 
@@ -523,7 +523,7 @@ export function mountedSheetFrameCss(
 ): string {
   /* Validates the fit, so it runs before anything reads the fit's section name — including the
      hero-pair guard below, which needs a valid fit to report one. */
-  const classes = windowClasses(fit, layout);
+  const classes = windowClasses(fit, layout, hero);
   if (layout === "pair" && hero) {
     throw new Error(
       `mounted-sheet-frame-css: section "${fit.section}" asks for a hero pair, but a pair is never the hero — the opening section is a single card.`,
@@ -606,17 +606,23 @@ ${sheet} {
 }`;
 
   const perClass = tallWindowClasses(hero).map((windowClass) => {
-    const fill = windowClass.mountShows
-      ? ""
-      : " background-color: transparent; background-image: none;";
+    const mountRule = (orientation: Orientation) => {
+      const fill = windowClass.mountShows[orientation]
+        ? ""
+        : " background-color: transparent; background-image: none;";
+      return `${mount} { padding: ${spacing(windowClass.reveal[orientation])};${fill} }`;
+    };
     const ground = spacing(windowClass.ground);
     return `@media ${windowClass.media} {
 ${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
-${mount} { padding: ${spacing(windowClass.reveal)};${fill} }
 ${sheet} { padding: ${spacing(windowClass.padding)}; }
 }
 @media ${windowClass.media} and (orientation: portrait) {
 ${scope} { ${GROUND_BLOCK}: ${spacing(windowClass.portrait.block)}; ${GROUND_INLINE}: ${spacing(windowClass.portrait.inline)}; }
+${mountRule("portrait")}
+}
+@media ${windowClass.media} and (orientation: landscape) {
+${mountRule("landscape")}
 }`;
   });
 

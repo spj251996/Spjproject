@@ -492,31 +492,191 @@ test("side-by-side sheets align to the top; stacked and single cards stay centre
   assert.ok(!mountedSheetFrameCss(makeFit(), false).includes("flex-start"));
 });
 
-test("a stacked pair's leaf drops its fill in the phone ground tier and keeps it from md", () => {
+const STRIP = "background-color: transparent; background-image: none;";
+
+test("a stacked pair's leaf carries no mount at any width but keeps its lift", () => {
   const pair = mountedSheetFrameCss(makeFit(), false, "pair");
-  const blocks =
-    pair.match(/@media [^{]*\{\n[^\n]*\n[^\n]*__leaf \{ min-height:[^}]*\}/g) ??
-    [];
-  assert.equal(blocks.length, 11);
-  let bare = 0;
-  let filled = 0;
-  for (const block of blocks) {
-    const leafRule = block.match(/__leaf \{ min-height:[^}]*\}/)?.[0] ?? "";
-    assert.ok(!leafRule.includes("box-shadow"), leafRule);
-    const stripped =
-      leafRule.includes("background-image: none") &&
-      leafRule.includes("background-color: transparent");
-    const belowMd = block.startsWith("@media (width < 48rem)");
-    const portraitFromMd =
-      !belowMd && block.includes("(orientation: portrait)");
-    if (stripped) bare++;
-    else filled++;
-    if (belowMd) assert.ok(stripped, block);
-    /* A short landscape window is in the phone ground tier at any width, where a single section
-       is bare too; only portrait from md is unambiguous. */
-    if (portraitFromMd) assert.ok(!stripped, block);
+  const leafRules =
+    pair.match(/mounted-sheet-frame__leaf \{ min-height:[^}]*\}/g) ?? [];
+  assert.equal(leafRules.length, 11);
+  for (const rule of leafRules) {
+    assert.ok(rule.includes("padding: var(--spacing-0)"), rule);
+    assert.ok(rule.includes(STRIP), rule);
+    assert.ok(!rule.includes("box-shadow"), rule);
   }
-  assert.ok(bare > 0 && filled > 0);
+});
+
+/* Stated here rather than read from the module, so a change to the rule has to change both:
+   DESIGN.md → `mounted-sheet` → The frame. */
+function mountExpected(
+  hero: boolean,
+  widthTier: WidthTier,
+  orientation: Orientation,
+): boolean {
+  return (
+    hero ||
+    (orientation === "landscape" &&
+      (widthTier === "laptop" || widthTier === "desktop"))
+  );
+}
+
+/* Every (width tier, orientation) a fitted single's stylesheet can put a window in, with the one
+   mount rule that window gets. Fails on a class-wide mount rule, which would paint both
+   orientations alike, and on a class and orientation with no mount rule or with two. */
+function fittedMountRules(hero: boolean): {
+  windowClass: ReturnType<typeof windowClasses>[number];
+  orientation: Orientation;
+  rule: string;
+}[] {
+  const fit = makeFit();
+  const css = mountedSheetFrameCss(fit, hero);
+  const blocks = topLevelBlocks(css);
+  const mountRule = (block: string) =>
+    block.match(/mounted-sheet-frame__mount \{ padding:[^}]*\}/)?.[0];
+  const found = [];
+  for (const windowClass of windowClasses(fit, "single", hero)) {
+    assert.equal(
+      blocks.filter(
+        (block) =>
+          block.startsWith(`@media ${windowClass.media} {`) &&
+          mountRule(block) !== undefined,
+      ).length,
+      0,
+      `${windowClass.media}: a mount rule that ignores orientation`,
+    );
+    const orientations: Orientation[] = [];
+    if (windowClass.portraitPossible) orientations.push("portrait");
+    if (windowClass.landscapePossible) orientations.push("landscape");
+    for (const orientation of orientations) {
+      const rules = blocks
+        .filter((block) =>
+          block.startsWith(
+            `@media ${windowClass.media} and (orientation: ${orientation}) {`,
+          ),
+        )
+        .map(mountRule)
+        .filter((rule): rule is string => rule !== undefined);
+      assert.equal(
+        rules.length,
+        1,
+        `${windowClass.media} ${orientation}: expected one mount rule`,
+      );
+      found.push({ windowClass, orientation, rule: rules[0] });
+    }
+  }
+  return found;
+}
+
+function assertBare(rule: string, label: string): void {
+  assert.ok(rule.includes(STRIP), `${label}: fill painted\n${rule}`);
+  assert.ok(
+    rule.includes("padding: var(--spacing-0);"),
+    `${label}: reveal kept\n${rule}`,
+  );
+}
+
+function assertMounted(rule: string, label: string): void {
+  assert.ok(!rule.includes(STRIP), `${label}: fill stripped\n${rule}`);
+  assert.ok(
+    !rule.includes("padding: var(--spacing-0);"),
+    `${label}: no reveal\n${rule}`,
+  );
+}
+
+test("a non-hero single has no mount in any portrait window, at every width tier", () => {
+  const tiers = new Set<WidthTier>();
+  for (const { windowClass, orientation, rule } of fittedMountRules(false)) {
+    if (orientation !== "portrait") continue;
+    tiers.add(windowClass.widthTier);
+    assertBare(rule, `${windowClass.media} portrait`);
+  }
+  assert.deepEqual(
+    [...tiers].sort(),
+    ["desktop", "laptop", "phone", "tablet"],
+    "every width tier has a portrait window to assert against",
+  );
+});
+
+test("a non-hero single shows its mount in landscape at the laptop and desktop tiers alone", () => {
+  const mounted = new Set<string>();
+  for (const { windowClass, orientation, rule } of fittedMountRules(false)) {
+    if (orientation !== "landscape") continue;
+    const label = `${windowClass.media} landscape`;
+    if (mountExpected(false, windowClass.widthTier, orientation)) {
+      assertMounted(rule, label);
+      mounted.add(`${windowClass.widthTier}:${windowClass.groundTier.name}`);
+    } else {
+      assertBare(rule, label);
+    }
+  }
+  /* The laptop and desktop tiers each at their own ground, at the touchscreen's tablet ground, and
+     below their tier lines at the phone ground — a short landscape window mounts too, because the
+     pair stands side by side there. */
+  assert.deepEqual([...mounted].sort(), [
+    "desktop:desktop",
+    "desktop:phone",
+    "desktop:tablet",
+    "laptop:laptop",
+    "laptop:phone",
+    "laptop:tablet",
+  ]);
+});
+
+test("the hero shows its mount in every window and orientation", () => {
+  const rules = fittedMountRules(true);
+  assert.ok(rules.length > 0);
+  for (const { windowClass, orientation, rule } of rules) {
+    assertMounted(rule, `${windowClass.media} ${orientation}`);
+  }
+});
+
+test("the tier line and padding chain read the reveal the mount shows", () => {
+  /* Tablet: halved ground 24, smallest padding 32, content 120 x 100 — the line is
+     100 + 64 + 2 x reveal + 48, so 212 without the mount and 236 with the hero's 12. */
+  const tabletLine = (hero: boolean) =>
+    windowClasses(makeFit(), "single", hero).find(
+      (windowClass) =>
+        windowClass.widthTier === "tablet" &&
+        windowClass.groundTier.name === "tablet",
+    )?.media;
+  assert.ok(
+    tabletLine(false)?.includes("(height >= 212px)"),
+    tabletLine(false),
+  );
+  assert.ok(tabletLine(true)?.includes("(height >= 236px)"), tabletLine(true));
+
+  const chainWidths = (
+    hero: boolean,
+    widthTier: WidthTier,
+    groundTier: string,
+    orientation: Orientation,
+  ): string => {
+    const windowClass = windowClasses(makeFit(), "single", hero).find(
+      (c) => c.widthTier === widthTier && c.groundTier.name === groundTier,
+    );
+    assert.ok(windowClass, `${widthTier}/${groundTier}`);
+    return topLevelBlocks(mountedSheetFrameCss(makeFit(), hero))
+      .filter((block) =>
+        block.startsWith(
+          `@media ${windowClass.media} and (orientation: ${orientation})`,
+        ),
+      )
+      .join("\n");
+  };
+  /* Tablet portrait at the 48 step: 120 + 96 = 216 bare, 240 on the hero's 12px reveal. */
+  const tabletPortrait = chainWidths(false, "tablet", "tablet", "portrait");
+  assert.ok(tabletPortrait.includes("@container (width >= 216px)"));
+  assert.ok(!tabletPortrait.includes("@container (width >= 240px)"));
+  assert.ok(
+    chainWidths(true, "tablet", "tablet", "portrait").includes(
+      "@container (width >= 240px)",
+    ),
+  );
+  /* A short laptop landscape window, at the phone ground's 24 step: 120 + 48 + 2 x 16 = 200 on
+     the mount's 16px reveal, where a bare card would read 168. */
+  const shortLaptop = chainWidths(false, "laptop", "phone", "landscape");
+  assert.ok(shortLaptop.includes("@container (width >= 200px)"), shortLaptop);
+  assert.ok(!shortLaptop.includes("@container (width >= 168px)"));
 });
 
 test("a malformed fit fails validation before the hero-pair guard", () => {
@@ -728,12 +888,10 @@ test("tall mode gives each tier its full ground and one padding step above its f
   const phone = [...byTier.values()].find((c) => c.widthTier === "phone");
   assert.equal(phone?.ground, 16);
   assert.equal(phone?.padding, 48);
-  assert.equal(phone?.mountShows, false);
 
   const tablet = [...byTier.values()].find((c) => c.widthTier === "tablet");
   assert.equal(tablet?.ground, 48);
   assert.equal(tablet?.padding, 96);
-  assert.equal(tablet?.mountShows, true);
 
   const compact = [...byTier.values()].find(
     (c) =>
@@ -760,10 +918,22 @@ test("a touchscreen from the compact tier up takes the tablet ground", () => {
   for (const windowClass of coarse) assert.equal(windowClass.ground, 48);
 });
 
-test("a hero tall card keeps its mount at the phone ground tier", () => {
+test("a tall card's mount follows the fitted rule, per orientation", () => {
+  for (const hero of [false, true]) {
+    for (const windowClass of tallWindowClasses(hero)) {
+      for (const orientation of ["portrait", "landscape"] as const) {
+        assert.equal(
+          windowClass.mountShows[orientation],
+          mountExpected(hero, windowClass.widthTier, orientation),
+          `hero=${hero} ${windowClass.media} ${orientation}`,
+        );
+      }
+    }
+  }
   const phone = tallWindowClasses(true).find((c) => c.widthTier === "phone");
-  assert.equal(phone?.mountShows, true);
-  assert.equal(phone?.reveal, 16);
+  assert.deepEqual(phone?.reveal, { portrait: 16, landscape: 16 });
+  const laptop = tallWindowClasses(false).find((c) => c.widthTier === "laptop");
+  assert.deepEqual(laptop?.reveal, { portrait: 0, landscape: 16 });
 });
 
 test("tall mode states no height threshold and no container query", () => {
@@ -810,21 +980,38 @@ test("each tall window class's own block binds its ground and sheet padding, nev
   }
 });
 
-test("only the phone-tier block strips the mount's fill and reveal", () => {
-  const strip = "background-color: transparent; background-image: none;";
+test("a tall card strips its mount per orientation, exactly where the mount does not show", () => {
   for (const hero of [false, true]) {
     const css = tallFrameCss(hero);
+    const blocks = topLevelBlocks(css);
     for (const windowClass of tallWindowClasses(hero)) {
-      const block = tallBlockFor(css, windowClass.media);
-      const mountLine = block
-        ?.split("\n")
-        .find((line) => line.includes("mounted-sheet-frame__mount"));
-      assert.ok(mountLine, `${windowClass.media}: no mount rule`);
-      assert.equal(
-        mountLine?.includes(strip),
-        !windowClass.mountShows,
-        `hero=${hero} ${windowClass.media}: mountShows ${windowClass.mountShows}`,
+      assert.ok(
+        !tallBlockFor(css, windowClass.media)?.includes(
+          "mounted-sheet-frame__mount { padding",
+        ),
+        `${windowClass.media}: a mount rule that ignores orientation`,
       );
+      for (const orientation of ["portrait", "landscape"] as const) {
+        const mountLines = blocks
+          .filter((block) =>
+            block.startsWith(
+              `@media ${windowClass.media} and (orientation: ${orientation}) {`,
+            ),
+          )
+          .flatMap((block) => block.split("\n"))
+          .filter((line) => line.includes("mounted-sheet-frame__mount { "));
+        assert.equal(
+          mountLines.length,
+          1,
+          `${windowClass.media} ${orientation}`,
+        );
+        const label = `hero=${hero} ${windowClass.media} ${orientation}`;
+        if (mountExpected(hero, windowClass.widthTier, orientation)) {
+          assertMounted(mountLines[0], label);
+        } else {
+          assertBare(mountLines[0], label);
+        }
+      }
     }
   }
 });
@@ -1077,7 +1264,7 @@ test("the padding chain's height threshold is measured from the block band, not 
   const phone = windowClasses(makeFit(), "single")[0];
   const prelude = `@media ${phone.media} and (orientation: portrait)`;
   const chain = topLevelBlocks(css).find(
-    (rule) => rule.startsWith(`${prelude} {`) && rule.includes("padding:"),
+    (rule) => rule.startsWith(`${prelude} {`) && rule.includes("@container"),
   );
   assert.ok(chain, "no portrait padding chain for the phone class");
 
@@ -1139,7 +1326,7 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
   const matFor = (widthTier: WidthTier) => {
     const windowClass = classes.find((c) => c.widthTier === widthTier);
     assert.ok(windowClass, widthTier);
-    return revealFor(windowClass, true);
+    return revealFor(windowClass, true, true);
   };
   assert.deepEqual(
     (["phone", "tablet", "laptop", "desktop"] as const).map(matFor),

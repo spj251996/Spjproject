@@ -139,8 +139,8 @@ const PAIR_TIER_LINE_WIDTH_REM = 80;
 
 /* The reveal ladder, one rung per width tier: `{reveal.base}` below `{breakpoints.md}`,
    `{reveal.md}` from there to `{breakpoints.lg}`, `{reveal.lg}` to `{breakpoints.xl}`, `{reveal.xl}`
-   above it. The phone rung reaches the hero alone — every other section loses its mount's fill and
-   reveal in the phone ground tier (`mountShows`).
+   above it. The phone and tablet rungs reach the hero alone — every other section shows its mount
+   only where a pair can stand side by side (`mountShows`).
 
    The tablet rung is the narrowest deliberately, and it is the one value here that is not a
    preference: the invite's landscape card in a `{breakpoints.md}`-to-`{breakpoints.lg}` window
@@ -197,21 +197,40 @@ export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
-/* The one statement of the phone-drop rule; `mountShows` and `tallWindowClasses` both call it, so a
-   future change to the rule cannot update one and miss the other. */
-function groundTierShowsMount(
-  groundTierName: GroundTierName,
-  hero: boolean,
+/* The one statement of where a pair stands side by side, and so of where a non-hero section shows
+   its mount: a landscape window at the laptop or desktop width tier. The pair, the single sections,
+   the tier lines and tall mode all read it, so a page is never half mounted and half bare. */
+function sideBySideWindow(widthTier: WidthTier, landscape: boolean): boolean {
+  return landscape && (widthTier === "laptop" || widthTier === "desktop");
+}
+
+function sideBySideClass(
+  windowClass: WindowClass,
+  landscape: boolean,
 ): boolean {
-  return hero || groundTierName !== "phone";
+  return (
+    windowClass.landscapePossible &&
+    sideBySideWindow(windowClass.widthTier, landscape)
+  );
 }
 
-export function mountShows(windowClass: WindowClass, hero: boolean): boolean {
-  return groundTierShowsMount(windowClass.groundTier.name, hero);
+export function mountShows(
+  windowClass: WindowClass,
+  hero: boolean,
+  landscape: boolean,
+): boolean {
+  return hero || sideBySideClass(windowClass, landscape);
 }
 
-export function revealFor(windowClass: WindowClass, hero: boolean): number {
-  return mountShows(windowClass, hero) ? REVEAL[windowClass.widthTier] : 0;
+/* A pair is never the hero, so this is a pair's reveal as well as a single card's. */
+export function revealFor(
+  windowClass: WindowClass,
+  hero: boolean,
+  landscape: boolean,
+): number {
+  return mountShows(windowClass, hero, landscape)
+    ? REVEAL[windowClass.widthTier]
+    : 0;
 }
 
 export function pairsSideBySide(
@@ -219,24 +238,7 @@ export function pairsSideBySide(
   windowClass: WindowClass,
   landscape: boolean,
 ): boolean {
-  return (
-    layout === "pair" &&
-    landscape &&
-    windowClass.landscapePossible &&
-    (windowClass.widthTier === "laptop" || windowClass.widthTier === "desktop")
-  );
-}
-
-export function cardReveal(
-  windowClass: WindowClass,
-  hero: boolean,
-  layout: FrameLayout,
-  landscape: boolean,
-): number {
-  if (layout === "single") return revealFor(windowClass, hero);
-  return pairsSideBySide(layout, windowClass, landscape)
-    ? REVEAL[windowClass.widthTier]
-    : 0;
+  return layout === "pair" && sideBySideClass(windowClass, landscape);
 }
 
 /* The smallest card that holds the content at one padding: one rectangle per regime, because a
@@ -272,20 +274,19 @@ function tierLine(
   groundTier: GroundTier,
   narrowestWindow: number,
   layout: FrameLayout,
+  hero: boolean,
 ): number {
   const halved = groundTier.ground * GROUND_HALVING;
   const padding = smallestPadding(groundTier);
-  /* A tier line only decides landscape windows, so it reads the landscape regimes. A single card
-     always shows the mount at the larger tier; a pair sits side by side only at the desktop and
-     desktop width tiers, so its tablet and phone lines use the stacked, unmounted arithmetic. */
-  const sideBySide =
-    layout === "pair" && (widthTier === "laptop" || widthTier === "desktop");
-  const reveal = layout === "pair" && !sideBySide ? 0 : REVEAL[widthTier];
+  /* A tier line only decides landscape windows, so it reads the landscape regimes and the mount a
+     landscape window shows at this width tier. */
+  const sideBySide = sideBySideWindow(widthTier, true);
+  const reveal = hero || sideBySide ? REVEAL[widthTier] : 0;
   const heights = fitRectangles(
     regimesFor(fit.regimes[widthTier], "landscape"),
     reveal,
     padding,
-    sideBySide,
+    layout === "pair" && sideBySide,
   )
     .filter(
       (rectangle) =>
@@ -450,7 +451,11 @@ interface TierLines {
   wideTouchscreen: number;
 }
 
-function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
+function tierLines(
+  fit: MeasuredFit,
+  layout: FrameLayout,
+  hero: boolean,
+): TierLines {
   assertValidFit(fit);
   const md = breakpointPx(BREAKPOINT_REM.md);
   const lg = breakpointPx(BREAKPOINT_REM.lg);
@@ -462,13 +467,14 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
      tier line is worked out the same way a single card's is. */
   const wideNarrowest = breakpointPx(BREAKPOINT_REM.xl);
   const lines = {
-    tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout),
+    tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout, hero),
     laptop: tierLine(
       fit,
       "laptop",
       GROUND_TIERS.laptop,
       compactNarrowest,
       layout,
+      hero,
     ),
     compactTouchscreen: tierLine(
       fit,
@@ -476,6 +482,7 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
       GROUND_TIERS.tablet,
       compactNarrowest,
       layout,
+      hero,
     ),
     desktop: tierLine(
       fit,
@@ -483,6 +490,7 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
       GROUND_TIERS.desktop,
       wideNarrowest,
       layout,
+      hero,
     ),
     wideTouchscreen: tierLine(
       fit,
@@ -490,6 +498,7 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
       GROUND_TIERS.tablet,
       wideNarrowest,
       layout,
+      hero,
     ),
   };
   /* A portrait pair window from `{breakpoints.lg}` to `PAIR_TIER_LINE_WIDTH_REM` is taller than its
@@ -520,8 +529,9 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
 export function windowClasses(
   fit: MeasuredFit,
   layout: FrameLayout = "single",
+  hero = false,
 ): WindowClass[] {
-  const lines = tierLines(fit, layout);
+  const lines = tierLines(fit, layout, hero);
   const md = `${BREAKPOINT_REM.md}rem`;
   const lg = `${BREAKPOINT_REM.lg}rem`;
   const xl = `${BREAKPOINT_REM.xl}rem`;
@@ -659,8 +669,10 @@ export interface TallWindowClass {
   /* Tall mode has no give-way, so the pressed pair is not part of a tall class. */
   portrait: Pick<PortraitGround, "block" | "inline">;
   padding: number;
-  reveal: number;
-  mountShows: boolean;
+  /* Per orientation, because one width tier holds both: a non-hero card's mount shows only in a
+     landscape window at the laptop or desktop tier. */
+  reveal: Readonly<Record<Orientation, number>>;
+  mountShows: Readonly<Record<Orientation, boolean>>;
 }
 
 /* One step above each ground tier's own largest (`paddingSteps[0]`), read off the spacing scale:
@@ -683,15 +695,19 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
     widthTier: WidthTier,
     groundTier: GroundTier,
   ): TallWindowClass => {
-    const shows = groundTierShowsMount(groundTier.name, hero);
+    const showsPortrait = hero || sideBySideWindow(widthTier, false);
+    const showsLandscape = hero || sideBySideWindow(widthTier, true);
     return {
       media,
       widthTier,
       ground: groundTier.ground,
       portrait: groundTier.portrait,
       padding: TALL_PADDING[groundTier.name],
-      reveal: shows ? REVEAL[widthTier] : 0,
-      mountShows: shows,
+      reveal: {
+        portrait: showsPortrait ? REVEAL[widthTier] : 0,
+        landscape: showsLandscape ? REVEAL[widthTier] : 0,
+      },
+      mountShows: { portrait: showsPortrait, landscape: showsLandscape },
     };
   };
 
