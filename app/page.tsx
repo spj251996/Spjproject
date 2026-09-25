@@ -701,7 +701,6 @@ export function CelebrationsSection() {
           className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center"
           style={{
             ["--celebrations-measure" as string]: "36rem",
-            ["--celebrations-row-gap" as string]: "var(--spacing-space-xl)",
             ["--celebrations-intro-gap" as string]: "var(--spacing-space-lg)",
           }}
         >
@@ -723,7 +722,7 @@ export function CelebrationsSection() {
           {/* biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none */}
           <ol className={CELEBRATIONS_LIST_CLASS} role="list">
             {rituals.map((ritual) => (
-              <li className={`${celebrations.row} text-left`} key={ritual.id}>
+              <li className="text-left" key={ritual.id}>
                 {/* The mark sits on the title's own line so a wrapping description cannot orphan
                     it. `items-baseline` rather than `items-center`: the mark reads as punctuation
                     opening the title, and punctuation sits on the text's baseline. */}

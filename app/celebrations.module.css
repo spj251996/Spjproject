@@ -1,20 +1,12 @@
-/* `gap` lives here rather than on a Tailwind utility class so the segment bridge below can consume
-   the exact same value through `--celebrations-row-gap` — a utility class has no custom property
-   of its own to share, and the two must never disagree.
-
-   The intro-to-list gap lives here for a different reason: this rule is a plain, unlayered module
-   stylesheet, so its own `margin: 0` always wins over a `mt-*` Tailwind utility (inside the
-   framework's `utilities` layer) on the same element, regardless of value — setting the gap as a
-   margin utility on this element would silently do nothing. */
+/* This rule is a plain, unlayered module stylesheet, so its own `margin: 0` always wins over a
+   `mt-*` Tailwind utility (inside the framework's `utilities` layer) on the same element,
+   regardless of value — setting the intro-to-list gap as a margin utility on this element would
+   silently do nothing, so it lives here as `margin-block-start` instead. */
 .list {
   list-style: none;
   margin: 0;
   margin-block-start: var(--celebrations-intro-gap);
   padding: 0;
   width: 100%;
-  gap: var(--celebrations-row-gap);
-}
-
-.row {
-  position: relative;
+  gap: var(--spacing-space-xl);
 }

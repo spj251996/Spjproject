@@ -27,9 +27,9 @@ import {
   LunchIcon,
   MapIcon,
   ReceptionIcon,
+  SprigIcon,
   WeddingIcon,
 } from "@/components/icons";
-import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
@@ -578,25 +578,11 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A thin rule within a section: the short rule after an event sheet's heading block."
-          id="layout-divider"
-          name="divider"
-          source="@/components/layout/divider"
-          spec="stroke-divider (1px) · accent-gold"
-        >
-          <div className="flex flex-col gap-space-sm">
-            <p className="type-body text-ink">Grouped content</p>
-            <Divider />
-            <p className="type-body text-ink">Grouped content</p>
-          </div>
-        </Specimen>
-
-        <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider above."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider, the sprig mark set inline between grouped content elsewhere in a section (Event Info, Contact, the Celebrations rows)."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
-          spec="two even hairlines · a four-pointed star in the gap · no taper · height fixed, never derived from width"
+          spec="two even hairlines · the sprig mark centred in the gap · no taper · height fixed, never derived from width"
         >
           <div className="bg-surface-elevated p-space-xl">
             <OrnamentalDivider />
@@ -731,6 +717,32 @@ export function FoundationsSections() {
                   {name} · {marks} · nudge {nudge}
                   {stroke === "" ? "" : ` · ${stroke}`}
                 </span>
+              </span>
+            ))}
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="Punctuation, not a label's companion — sets divider, centres ornamental-divider, opens each ritual row. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          id="iconography-sprig"
+          name="sprig"
+          source="@/components/icons/sprig"
+          spec="nudge 1 · no added stroke · filled around its contour, the one exception to the set's centreline-stroke rule · never below 16px"
+        >
+          <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
+            {[
+              { label: "default", size: undefined },
+              { label: "23px", size: 23 },
+              { label: "32px", size: 32 },
+            ].map(({ label, size }) => (
+              <span
+                className="flex flex-col items-center gap-space-2xs"
+                key={label}
+              >
+                <span className="text-accent-gold">
+                  <SprigIcon size={size} />
+                </span>
+                <span className="type-caption text-ink">{label}</span>
               </span>
             ))}
           </div>
