@@ -11,8 +11,11 @@ import styles from "./ornamental-divider.module.css";
    taller box could not fix it because the width still bound. Sizing the mark directly is also what
    lets a phone stop getting a SMALLER mark than a laptop.
 
-   Bounded bands, never open-ended: Tailwind emits arbitrary variants in string order, so an open
-   `>=48rem` rule is written before `>=64rem` and would beat it wherever both match.
+   The outer two bands are open-ended and safe: they never overlap each other or the bounded middle
+   band, so string order can't make one beat another here. The risk is real only between two
+   open-ended rules that DO overlap — Tailwind emits arbitrary variants in string order, so an open
+   `>=48rem` rule would be written before `>=64rem` and beat it wherever both match; that pattern is
+   what the middle band's explicit bound guards against.
 
    The tablet band keeps the smallest mark on purpose — its landscape card already stands 717px
    against a 720px cap, so it is the one tier with no height to give. */

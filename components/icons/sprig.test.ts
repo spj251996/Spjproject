@@ -21,3 +21,9 @@ test("sprig goes through IconBase rather than its own svg", () => {
   assert.match(source, /<IconBase/);
   assert.doesNotMatch(source, /<svg/);
 });
+
+test("sprig sets no nudge — 1, per Foundations → Iconography", () => {
+  // A future `nudge` silently rescales the mark and every floor derived from its height
+  // (`invite-divider-floors.test.ts`) without changing this file's own four checks.
+  assert.doesNotMatch(source, /nudge=/);
+});

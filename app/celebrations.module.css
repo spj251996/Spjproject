@@ -8,5 +8,6 @@
   margin-block-start: var(--celebrations-intro-gap);
   padding: 0;
   width: 100%;
+  /* The row-to-row rhythm; independent of the retired spine, which only ever bridged this gap. */
   gap: var(--spacing-space-xl);
 }

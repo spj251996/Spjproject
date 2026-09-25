@@ -470,11 +470,9 @@ function EventSheet({ event }: { event: WeddingEvent }) {
   return (
     <div className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
       <EventSheetHeading event={event} />
-      {/* The sprig was tried here and reverted (DESIGN.md → Components → `divider`): this rule
-          shows only in the tablet band, which is also Event Info's tightest, so a mark earns
-          nothing here. The conditions are written out literally rather than from a shared
-          constant — Tailwind's content scanner reads class names as literal source text, so a name
-          assembled through a template literal never resolves to a generated rule. */}
+      {/* Shows only in the tablet band, Event Info's tightest — DESIGN.md → Components →
+          `divider` carries the reasoning and the revert record. Conditions written out literally:
+          see ContactSection's Tailwind-content-scanner note below. */}
       <Divider className="my-space-lg hidden w-space-2xl md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden" />
       <PlateSegments segments={event.segments} />
     </div>
@@ -616,13 +614,13 @@ export function ContactSection() {
             Get in Touch
           </h2>
           {/* The same condition `mounted-pair` goes side by side on, and the plates row below
-              switches on. Absent when the plates stack — a horizontal rule above a vertical stack
-              of plates adds a line where the stacking has already done the separating. Written out
-              literally, not from a shared constant: Tailwind's content scanner reads class names as
-              literal source text, and a name assembled through a JS template-literal variable at
-              this spot never resolves to a generated rule. */}
-          {/* Sized as an ornament rather than a label's companion — DESIGN.md → Contact carries
-              the reasoning and the 48. */}
+              switches on. Absent when the plates stack — the vertical stack already separates the
+              heading from the plates, so a mark between them would announce a division the layout
+              has already made visible. Sized as an ornament rather than a label's companion —
+              DESIGN.md → Contact carries the reasoning and the 48. Written out literally, not from
+              a shared constant: Tailwind's content scanner reads class names as literal source
+              text, and a name assembled through a JS template-literal variable at this spot never
+              resolves to a generated rule. */}
           <SprigIcon
             className="my-space-md hidden text-accent-gold [@media(width>=64rem)_and_(orientation:landscape)]:block"
             size={48}

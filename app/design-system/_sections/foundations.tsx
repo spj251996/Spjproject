@@ -586,7 +586,9 @@ export function FoundationsSections() {
           spec="stroke-divider (1px) in accent-gold · space-lg above and below · never between sections or between event segments"
         >
           <div className="bg-surface-elevated p-space-xl">
-            <Divider />
+            <p className="type-body text-ink">Heading block</p>
+            <Divider className="my-space-lg" />
+            <p className="type-body text-ink">Segments</p>
           </div>
         </Specimen>
 
@@ -744,7 +746,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — sets divider, centres ornamental-divider, opens each ritual row. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, marks Contact, opens each Celebrations ritual row. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

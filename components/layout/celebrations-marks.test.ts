@@ -5,7 +5,9 @@ import test from "node:test";
 const css = readFileSync("app/celebrations.module.css", "utf8");
 
 test("celebrations has no spine", () => {
-  assert.doesNotMatch(css, /::before/);
+  // The retired spine's own selector — narrower than banning every `::before`, which would also
+  // forbid a future, unrelated pseudo-element this file has every right to use.
+  assert.doesNotMatch(css, /\.row:not\(:last-child\)::before/);
   assert.doesNotMatch(css, /--celebrations-spine-x/);
 });
 
@@ -21,6 +23,7 @@ test("the retired custom properties are gone from the page too", () => {
     "--celebrations-mark-size",
     "--celebrations-mark-offset",
     "--celebrations-row-indent",
+    "--celebrations-row-gap",
   ]) {
     assert.doesNotMatch(page, new RegExp(name.replace(/-/g, "\\-")));
   }
