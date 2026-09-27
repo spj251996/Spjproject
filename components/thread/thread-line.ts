@@ -586,8 +586,10 @@ function sectionProgress(
   const span = drawEnd - windowStart;
   // Reachable whenever `drawEnd` and `windowStart` land on the same value -- the whole page fitting
   // within one viewport (both clamp to 0) is one way there, but a section of height 0 as the page's
-  // last one reaches it too (`windowStart` and the uncapped `rawDrawEnd` already coincide, and the
-  // `maxScroll` cap changes nothing). Not a shape any of this project's six real sections take, but
+  // last one reaches it too: it contributes nothing to the page's total height, so `windowStart`
+  // and `maxScroll` reduce to the same expression, and the `maxScroll` cap -- not the uncapped
+  // `rawDrawEnd`, which sits a draw-fraction of a window beyond -- is what pulls `drawEnd` back down
+  // onto `windowStart`. Not a shape any of this project's six real sections take, but
   // a legitimate synthetic input this pure function must not divide by zero on. With no scroll room
   // to reveal it gradually, showing it complete is the same choice this project already makes for
   // reduced motion and no-JS, rather than leaving it stuck at zero with no gesture able to move it.
