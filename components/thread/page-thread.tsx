@@ -13,7 +13,12 @@ import {
   splitSubpaths,
   subpathRange,
 } from "./thread-fallback";
-import { type SectionAnchors, threadLine } from "./thread-line";
+import {
+  drawnLength,
+  type SectionAnchors,
+  type SectionRange,
+  threadLine,
+} from "./thread-line";
 import { MOTIF_PLACEMENTS, THREAD_IDS } from "./thread-paths";
 import type { MeasuredSection, Rect } from "./thread-warp";
 
@@ -34,9 +39,13 @@ import type { MeasuredSection, Rect } from "./thread-warp";
    paint a dash covering a whole `pathLength="1"` path — `stroke-dasharray="0 0 1 1"` stops about 7%
    short, while a raw-pixel dasharray with a trailing gap of zero runs to the end (`lessons.md`,
    2026-09-25). So the dash lives entirely in the SAME px units as `d`: `stroke-dasharray: L` (one
-   on-length, which a single value repeats as `L L`), `stroke-dashoffset: L * (1 - p)`, `p` the page's
-   own scroll fraction, with a small epsilon added to `L` so the trailing edge overshoots the path's
-   own end rather than exactly meeting it.
+   on-length, which a single value repeats as `L L`), `stroke-dashoffset: L - drawn`, `drawn`
+   `thread-line.ts`'s `drawnLength` — each section's OWN scroll window mapped onto that section's OWN
+   stretch of `L`, not one global fraction of the whole path (the owner's review, `session.md`
+   2026-09-27: a single `scrollY / (scrollHeight - innerHeight)` advances every section's thread at
+   once, because total path length has no relationship to where a section's scroll window falls) —
+   with a small epsilon added to `L` so the trailing edge overshoots the path's own end rather than
+   exactly meeting it.
 
    MEASURE, NEVER ASSUME A POSITIONED ANCESTOR EITHER. Every SVG here sits inside its OWN small
    wrapper span, measured at the same instant as its real target (`<main>`, or Wishes' card), and
@@ -253,11 +262,16 @@ function familyAnchors(
   return assigned;
 }
 
-function pageProgress(): number {
-  const denominator =
-    document.documentElement.scrollHeight - window.innerHeight;
-  if (denominator <= 0) return 1;
-  return Math.min(1, Math.max(0, window.scrollY / denominator));
+/* How much of the WHOLE page's dash has drawn at the current scroll position -- `sectionRects` and
+   `ranges` are read once per layout change (never re-measured here) and handed in by the caller;
+   `viewportHeight` is likewise captured at that same layout instant, so a scroll frame touches no
+   DOM beyond `window.scrollY` itself. */
+function pageDrawnLength(
+  sectionRects: readonly MeasuredSection[],
+  ranges: readonly SectionRange[],
+  viewportHeight: number,
+): number {
+  return drawnLength(window.scrollY, viewportHeight, sectionRects, ranges);
 }
 
 /* The trailing edge overshoots the path's own end by this much so a whole-length dash never falls
@@ -327,6 +341,11 @@ export function PageThread() {
   const liveSvgRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const lengthRef = useRef(0);
+  /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
+     as `measured.sections` itself, never re-measured on scroll. */
+  const sectionsRef = useRef<MeasuredSection[]>([]);
+  const rangesRef = useRef<readonly SectionRange[]>([]);
+  const viewportHeightRef = useRef(0);
 
   function measure() {
     const wrapper = wrapperRef.current;
@@ -366,7 +385,11 @@ export function PageThread() {
             ),
           };
 
-    const { d, length } = threadLine(band, measured.sections, anchors);
+    const {
+      d,
+      length,
+      sections: ranges,
+    } = threadLine(band, measured.sections, anchors);
     const range = subpathRange(band, "wishes");
     const subpaths = splitSubpaths(d);
     const trunk = subpaths.slice(0, range.start).join(" ");
@@ -375,12 +398,20 @@ export function PageThread() {
     liveSvg.setAttribute("viewBox", `0 0 ${mainRect.width} ${totalHeight}`);
     path.setAttribute("d", trunk === "" ? d : trunk);
     lengthRef.current = length;
+    sectionsRef.current = measured.sections;
+    rangesRef.current = ranges;
+    viewportHeightRef.current = window.innerHeight;
     fallbackSvg.style.display = "none";
 
     if (reducedMotion()) {
       clearDash(path);
     } else {
-      applyDash(path, length, length * (1 - pageProgress()));
+      const drawn = pageDrawnLength(
+        sectionsRef.current,
+        rangesRef.current,
+        viewportHeightRef.current,
+      );
+      applyDash(path, length, length - drawn);
     }
   }
 
@@ -395,11 +426,12 @@ export function PageThread() {
         rafId = null;
         const path = pathRef.current;
         if (path === null) return;
-        applyDash(
-          path,
-          lengthRef.current,
-          lengthRef.current * (1 - pageProgress()),
+        const drawn = pageDrawnLength(
+          sectionsRef.current,
+          rangesRef.current,
+          viewportHeightRef.current,
         );
+        applyDash(path, lengthRef.current, lengthRef.current - drawn);
       });
     }
 
@@ -453,9 +485,10 @@ export function PageThread() {
    `thread-line.ts` only ever copies an ADJACENT section's own endpoint), so this needs no state
    shared with `PageThread` — only the same pure functions, called twice. The reveal, though, must
    stay in step with the whole page's progress, not restart at wishes' own arc-length 0: `beforeLength`
-   is how much of the page's total the trunk accounts for, and `wishesLength` is read straight off the
-   mounted path with `getTotalLength()` — the browser's own exact arc length, used here (rather than
-   `threadLine`'s sampled estimate) because it is what this path's OWN dash math has to agree with. */
+   is how much of the page's total `pageDrawnLength` accounts for before wishes' own stretch begins,
+   and `wishesLength` is read straight off the mounted path with `getTotalLength()` — the browser's
+   own exact arc length, used here (rather than `threadLine`'s sampled estimate) because it is what
+   this path's OWN dash math has to agree with. */
 
 interface WishesWeaveProps {
   slot: "under" | "over";
@@ -465,18 +498,24 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
-  const totalLengthRef = useRef(0);
   const beforeLengthRef = useRef(0);
+  /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
+     each `WishesWeave` measures independently (see the header comment), so it keeps its own. */
+  const sectionsRef = useRef<MeasuredSection[]>([]);
+  const rangesRef = useRef<readonly SectionRange[]>([]);
+  const viewportHeightRef = useRef(0);
 
   function reveal() {
     const path = pathRef.current;
     if (path === null) return;
     const wishesLength = path.getTotalLength();
+    const pageDrawn = pageDrawnLength(
+      sectionsRef.current,
+      rangesRef.current,
+      viewportHeightRef.current,
+    );
     const revealed = Math.min(
-      Math.max(
-        totalLengthRef.current * pageProgress() - beforeLengthRef.current,
-        0,
-      ),
+      Math.max(pageDrawn - beforeLengthRef.current, 0),
       wishesLength,
     );
     if (reducedMotion()) {
@@ -513,12 +552,14 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
       `${cardBox.left} ${cardBox.top} ${cardBox.width} ${cardBox.height}`,
     );
 
-    const { d, length } = threadLine(band, measured.sections);
+    const { d, length, sections: ranges } = threadLine(band, measured.sections);
     const range = subpathRange(band, "wishes");
     const subpaths = splitSubpaths(d);
     path.setAttribute("d", subpaths.slice(range.start, range.end).join(" "));
 
-    totalLengthRef.current = length;
+    sectionsRef.current = measured.sections;
+    rangesRef.current = ranges;
+    viewportHeightRef.current = window.innerHeight;
     beforeLengthRef.current = length - path.getTotalLength();
     reveal();
   }

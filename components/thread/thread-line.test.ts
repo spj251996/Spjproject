@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { authoredCard } from "./thread-authored-layout.ts";
-import { threadLine } from "./thread-line.ts";
+import { drawnLength, threadLine } from "./thread-line.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths.ts";
 import type { MeasuredSection } from "./thread-warp.ts";
@@ -274,6 +274,32 @@ test("an anchor overrides a placement's warped centre, and the adjoining connect
   );
 });
 
+test("sections are contiguous, non-overlapping, cover [0, length] exactly, in THREAD_IDS order", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const { length, sections: ranges } = threadLine(band, sections);
+
+  assert.equal(ranges.length, THREAD_IDS.length);
+  assert.deepEqual(
+    ranges.map((r) => r.id),
+    THREAD_IDS,
+  );
+
+  assert.equal(ranges[0].start, 0);
+  assert.ok(Math.abs(ranges[ranges.length - 1].end - length) < 0.01);
+
+  let cumulative = 0;
+  for (const range of ranges) {
+    assert.ok(range.end > range.start, `${range.id}: end must exceed start`);
+    assert.ok(
+      Math.abs(range.start - cumulative) < 0.01,
+      `${range.id}: start ${range.start} should equal the cumulative length of every stretch before it (${cumulative})`,
+    );
+    cumulative = range.end;
+  }
+  assert.ok(Math.abs(cumulative - length) < 0.01);
+});
+
 test("length is a positive number roughly on the order of the page's own pixel height", () => {
   const band = "wide";
   const sections = measuredSections(band);
@@ -289,4 +315,143 @@ test("length is a positive number roughly on the order of the page's own pixel h
   // on "roughly the page's own scale" at all.
   assert.ok(length > totalHeight);
   assert.ok(length < totalHeight * 6);
+});
+
+/* ------------------------------------------------------------------------------------------------
+   drawnLength — the piecewise, per-section progress map that replaces one global
+   `scrollY / (scrollHeight - innerHeight)`. Synthetic sections and ranges below, never real
+   THREAD_IDS/measured data, so each behaviour (not-reached, held-past, the 60% completion, the
+   degenerate one-screen-tall section) can be pinned to hand-picked numbers instead of whatever a
+   real layout happens to produce. */
+
+const RANGE_IDS = THREAD_IDS; // borrow real ids only to satisfy the type; positional, not semantic.
+
+test("drawnLength: a section not yet reached contributes zero, even once a later section is done", () => {
+  // top 0-1000, 1000-2000, 2000-2200 (C is shorter than the viewport, the degenerate case).
+  const sectionRects = [
+    { top: 0, height: 1000 },
+    { top: 1000, height: 1000 },
+    { top: 2000, height: 200 },
+  ];
+  const ranges = [
+    { id: RANGE_IDS[0], start: 0, end: 100 },
+    { id: RANGE_IDS[1], start: 100, end: 250 },
+    { id: RANGE_IDS[2], start: 250, end: 300 },
+  ];
+  const viewportHeight = 500;
+
+  // At the very top, the first section's own window has not opened yet either.
+  assert.equal(drawnLength(0, viewportHeight, sectionRects, ranges), 0);
+
+  // A's window is [0, 500], draw-complete by 300. At 500, A is fully drawn and held, but B's window
+  // ([1000, 1500]) and C's ([2000, 2200] — collapsed to the single point 2000) have not opened.
+  assert.equal(drawnLength(500, viewportHeight, sectionRects, ranges), 100);
+});
+
+test("drawnLength: a section fully scrolled past contributes its full range and holds there", () => {
+  const sectionRects = [{ top: 0, height: 1000 }];
+  const ranges = [{ id: RANGE_IDS[0], start: 40, end: 140 }];
+  const viewportHeight = 500;
+
+  // Window is [0, 500], draw-complete at 300. Anywhere from 300 through well past the window's own
+  // end must read the full 100px range -- the thread never un-draws once its section is behind.
+  for (const scrollY of [300, 500, 900, 5000]) {
+    assert.equal(
+      drawnLength(scrollY, viewportHeight, sectionRects, ranges),
+      100,
+      `scrollY ${scrollY}: expected the full 100px range held`,
+    );
+  }
+});
+
+test("drawnLength: completes at 60% of a section's own scroll window, holds for the remaining 40%", () => {
+  const sectionRects = [{ top: 0, height: 1000 }];
+  const ranges = [{ id: RANGE_IDS[0], start: 0, end: 100 }];
+  const viewportHeight = 500; // window [0, 500], draw-complete at 0.6 * 500 = 300.
+
+  assert.equal(drawnLength(0, viewportHeight, sectionRects, ranges), 0);
+  assert.ok(
+    Math.abs(drawnLength(150, viewportHeight, sectionRects, ranges) - 50) <
+      0.01,
+    "halfway to the 60% mark should read half-drawn",
+  );
+  assert.equal(drawnLength(300, viewportHeight, sectionRects, ranges), 100);
+  // Past the 60% mark but still inside the section's own window -- held, not still advancing.
+  assert.equal(drawnLength(400, viewportHeight, sectionRects, ranges), 100);
+  assert.equal(drawnLength(500, viewportHeight, sectionRects, ranges), 100);
+});
+
+test("drawnLength: a section no taller than the viewport draws in one step, never divides by zero", () => {
+  // height 200 <= viewportHeight 500 -- the window collapses to a single point rather than a
+  // negative-length band, which is the exact case a previous round lost monotonicity to.
+  const sectionRects = [{ top: 1000, height: 200 }];
+  const ranges = [{ id: RANGE_IDS[0], start: 0, end: 60 }];
+  const viewportHeight = 500;
+
+  assert.equal(drawnLength(999, viewportHeight, sectionRects, ranges), 0);
+  // Strictly PAST the collapsed point, not AT it -- matching the non-degenerate ramp's own
+  // convention of reading 0 exactly at its `windowStart` (see `sectionProgress`'s comment). A
+  // section whose window starts at the very top of the page (the invite's, at `top: 0`) would
+  // otherwise read fully drawn at `scrollY` 0, before the reader has scrolled at all.
+  assert.equal(drawnLength(1000, viewportHeight, sectionRects, ranges), 0);
+  assert.equal(drawnLength(1000.01, viewportHeight, sectionRects, ranges), 60);
+  assert.equal(drawnLength(2000, viewportHeight, sectionRects, ranges), 60);
+});
+
+test("drawnLength: a degenerate section whose window starts at the very top of the page has not started at scrollY 0", () => {
+  // This is the invite's own real shape: the first section, so `top: 0`, and no taller than the
+  // viewport, so its window collapses to that same point -- the case the render caught.
+  const sectionRects = [{ top: 0, height: 700 }];
+  const ranges = [{ id: RANGE_IDS[0], start: 0, end: 90 }];
+  const viewportHeight = 700;
+
+  assert.equal(drawnLength(0, viewportHeight, sectionRects, ranges), 0);
+  assert.equal(drawnLength(1, viewportHeight, sectionRects, ranges), 90);
+});
+
+test("drawnLength is monotonic in scrollY across the whole page, swept at fine resolution", () => {
+  const sectionRects = [
+    { top: 0, height: 1000 },
+    { top: 1000, height: 1000 },
+    { top: 2000, height: 200 }, // the degenerate, shorter-than-viewport case, mixed in on purpose.
+    { top: 2200, height: 1500 },
+  ];
+  const ranges = [
+    { id: RANGE_IDS[0], start: 0, end: 100 },
+    { id: RANGE_IDS[1], start: 100, end: 250 },
+    { id: RANGE_IDS[2], start: 250, end: 300 },
+    { id: RANGE_IDS[3], start: 300, end: 480 },
+  ];
+  const viewportHeight = 500;
+  const pageEnd = 2200 + 1500;
+  const step = 2; // fine enough to catch a band a few pixels wide collapsing to nothing.
+
+  let previous = -1;
+  for (let scrollY = 0; scrollY <= pageEnd; scrollY += step) {
+    const value = drawnLength(scrollY, viewportHeight, sectionRects, ranges);
+    assert.ok(
+      value >= previous - 1e-9,
+      `drawn length fell from ${previous} to ${value} at scrollY ${scrollY}`,
+    );
+    previous = value;
+  }
+});
+
+test("drawnLength: at scrollY 0 nothing has started; at the page's max scroll every section is full", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const { length, sections: ranges } = threadLine(band, sections);
+
+  // Smaller than every synthetic section's own height (measuredSections scales the authored
+  // 695/1320-unit heights by 0.9), so every window below is the ordinary non-degenerate case.
+  const viewportHeight = 400;
+  const totalHeight = sections.reduce((sum, s) => sum + s.height, 0);
+  const maxScroll = totalHeight - viewportHeight;
+
+  assert.equal(drawnLength(0, viewportHeight, sections, ranges), 0);
+  assert.ok(
+    Math.abs(
+      drawnLength(maxScroll, viewportHeight, sections, ranges) - length,
+    ) < 0.01,
+  );
 });

@@ -40,7 +40,19 @@ import {
   warpSection,
 } from "./thread-warp.ts";
 
-export type ThreadLine = { d: string; length: number };
+export type ThreadLine = {
+  d: string;
+  length: number;
+  /* Each section's contiguous stretch of `length`, in draw order — read off the SAME per-section
+     groups `d` is built from, never re-derived by sampling the finished path. This is what lets
+     `page-thread.tsx` map a section's own scroll progress onto "how much of the whole dash has
+     drawn" without recomputing geometry it has already baked once here. */
+  sections: readonly {
+    id: Exclude<ThreadId, "not-found">;
+    start: number;
+    end: number;
+  }[];
+};
 
 /* One optional anchor per placement, in the SAME order as `MOTIF_PLACEMENTS[band][id]` — `undefined`
    at an index means that placement takes the plain warped position, exactly today's behaviour. Kept
@@ -318,6 +330,107 @@ export function threadLine(
     thisGroup[lastIndex] = withLastPoint(thisGroup[lastIndex], boundary);
   }
 
+  /* Boundaries are read off the SAME groups the `d` above is built from, section by section, in
+     THREAD_IDS order -- never sampled from the finished string, which would be measuring the
+     output rather than the thing that produced it. Summing each section's own sampled length and
+     accumulating is the same arithmetic `pathLength` would do over the concatenated `d` (each
+     curve's chord-sum contributes once either way), so `length` below equals the cumulative total
+     by construction rather than by a second, potentially-drifting measurement. */
+  const sectionLengths = perSection.map((group) => pathLength(group.join(" ")));
+  let cursor = 0;
+  const sectionRanges = THREAD_IDS.map((id, index) => {
+    const start = cursor;
+    cursor += sectionLengths[index];
+    return { id, start, end: cursor };
+  });
+
   const d = perSection.flat().join(" ");
-  return { d, length: pathLength(d) };
+  return { d, length: cursor, sections: sectionRanges };
+}
+
+/* ---------------------------------------------------------------------------------------------
+   THE PIECEWISE PROGRESS MAP — replaces one global `scrollY / (scrollHeight - innerHeight)`
+   (`page-thread.tsx`'s old `pageProgress`), which advanced the draw head at a constant rate through
+   TOTAL PATH LENGTH. Total path length has no relationship to where a section's own scroll window
+   falls, so every section crept forward at once instead of drawing in the order the reader reaches
+   them (the owner's review, `session.md` 2026-09-27). This is a MAPPING fix only: still one path,
+   one dash, one number -- only the function producing that number changes. */
+
+/* Structurally identical to `MeasuredSection`'s `top`/`height` -- kept as its own minimal type
+   rather than importing `MeasuredSection` so this stays a pure function over the two numbers it
+   actually needs, with no dependency on `thread-warp.ts`'s card fields it never reads. */
+export type SectionRect = { top: number; height: number };
+
+export type SectionRange = {
+  id: Exclude<ThreadId, "not-found">;
+  start: number;
+  end: number;
+};
+
+/* Owner decision, `session.md` 2026-09-27: a section's thread draws over roughly the first 60% of
+   that section's own scroll window, then holds drawn for the remaining 40% -- chosen over drawing
+   across the WHOLE window (the last stretch would still be advancing while the reader is already at
+   the bottom of the card) and over a fast arrival gesture confined to the first 25%. */
+const DRAW_FRACTION = 0.6;
+
+/* One section's own scroll window is the distance between its top reaching the viewport's top
+   (`rect.top`) and its bottom reaching the viewport's BOTTOM (`rect.top + rect.height -
+   viewportHeight`) -- not the viewport's top, which would place the window's end past the page's
+   own maximum scroll (`document.documentElement.scrollHeight - window.innerHeight`) for every
+   section but the ones before the last. Ending each window at "my bottom meets the viewport's
+   bottom" is what makes the LAST section's window end land exactly on that same maximum, which is
+   the whole reason "at the page's end every section is full" holds without a separate clamp.
+
+   A section no taller than the viewport (the common case -- most of this page's sections are
+   authored as one `100svh` screen) makes this window zero-width or negative. Rather than dividing
+   by that, it collapses to a single point at `rect.top`: undrawn right up to and including it,
+   fully drawn the instant scroll passes it. STRICTLY past, not at-or-past: the non-degenerate ramp
+   below already reads 0 exactly AT its own `windowStart` (`(scrollY - windowStart) / ... = 0` when
+   `scrollY === windowStart`), and using `>=` here instead of `>` would break that same convention
+   for the one section whose window starts at the very top of the page -- the invite's, at
+   `rect.top === 0` -- reading it as already fully drawn at `scrollY === 0`, before the reader has
+   scrolled at all. Caught on a real render, not in the synthetic tests below: every one of this
+   file's own test fixtures happens to use a viewport shorter than every section, so none of them
+   ever exercises this branch at `windowStart === 0`. A earlier round divided by a band this narrow
+   and lost MONOTONICITY to it -- the thread briefly retracted, which read as flickering rather than
+   as a sizing bug (`lessons.md`, 2026-09-25) -- so this is guarded explicitly, not left to fall out
+   of the algebra. */
+function sectionProgress(
+  scrollY: number,
+  viewportHeight: number,
+  rect: SectionRect,
+): number {
+  const windowStart = rect.top;
+  const windowEnd = rect.top + rect.height - viewportHeight;
+  if (windowEnd <= windowStart) {
+    return scrollY > windowStart ? 1 : 0;
+  }
+  const drawEnd = windowStart + DRAW_FRACTION * (windowEnd - windowStart);
+  const progress = (scrollY - windowStart) / (drawEnd - windowStart);
+  return Math.min(1, Math.max(0, progress));
+}
+
+/* The total drawn length of the whole page's dash at a given scroll position: each section's own
+   range contributes `progress * rangeLength`, and nothing more -- a section whose window has not
+   opened yet (`sectionProgress` 0) contributes zero regardless of how far past it any LATER section
+   already is, and a section fully behind (`sectionProgress` 1) keeps its full range regardless of
+   how far the reader has since continued. Sections are contiguous in both scroll order (each one's
+   `rect.top` is the previous one's `rect.top + rect.height`) and path-length order (`threadLine`'s
+   own `sections`), so summing every section's own contribution IS the whole page's monotonic
+   progress -- there is no separate "which section is current" branch to get wrong. */
+export function drawnLength(
+  scrollY: number,
+  viewportHeight: number,
+  sectionRects: readonly SectionRect[],
+  ranges: readonly SectionRange[],
+): number {
+  let total = 0;
+  for (let i = 0; i < ranges.length; i++) {
+    const rect = sectionRects[i];
+    const range = ranges[i];
+    if (rect === undefined || range === undefined) continue;
+    const progress = sectionProgress(scrollY, viewportHeight, rect);
+    total += progress * (range.end - range.start);
+  }
+  return total;
 }
