@@ -8,9 +8,13 @@
 /* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
    kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
    Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `WishesWeave` copies were
-   auto-placing into tracks of their own, which grew the grid past its four EXPLICIT rows and made
-   `.figureCol`'s `grid-row: 1 / -1` (spec: resolves against the explicit grid only) span two rows
-   instead of four (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
+   auto-placing into two of its four EXPLICIT rows, pushing `names` and `signoff` out into new
+   IMPLICIT ones. `.figureCol`'s `grid-row: 1 / -1` still spanned the same four tracks throughout --
+   `-1` resolves against the explicit grid only, so the span never moved -- but two of those tracks
+   now held a zero-height weave copy instead of a 112px row, which is what collapsed the column
+   384px -> 160px and spilled the illustration ~87px each way. Measured with `getComputedStyle`:
+   `20px 140px 112px 112px` fixed against `20px 140px 0px 0px 112px 112px` broken
+   (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
    never be a grid item, while still being a positioned element -- `coverRect` needs exactly that to
    place its absolutely-positioned SVG children, and both `relative` and `absolute` establish that
    containing block equally. With no offsets set, an absolutely-positioned box sits at its own static
