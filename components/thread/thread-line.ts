@@ -373,41 +373,78 @@ export type SectionRange = {
    the bottom of the card) and over a fast arrival gesture confined to the first 25%. */
 const DRAW_FRACTION = 0.6;
 
-/* One section's own scroll window is the distance between its top reaching the viewport's top
-   (`rect.top`) and its bottom reaching the viewport's BOTTOM (`rect.top + rect.height -
-   viewportHeight`) -- not the viewport's top, which would place the window's end past the page's
-   own maximum scroll (`document.documentElement.scrollHeight - window.innerHeight`) for every
-   section but the ones before the last. Ending each window at "my bottom meets the viewport's
-   bottom" is what makes the LAST section's window end land exactly on that same maximum, which is
-   the whole reason "at the page's end every section is full" holds without a separate clamp.
+/* One section's own scroll window is its PASSAGE THROUGH THE VIEWPORT: from the moment its own top
+   first reaches the viewport's BOTTOM edge (`rect.top - viewportHeight` -- the earliest scroll
+   position at which any part of it is visible at all) to the moment its own bottom reaches the
+   viewport's TOP edge (`rect.top + rect.height` -- the position at which none of it remains
+   visible). This is deliberately NOT "the scroll available inside the section itself" (Task 2's
+   original `rect.top` to `rect.top + rect.height - viewportHeight`) -- that window is `rect.height
+   - viewportHeight` wide, zero or negative for any section no taller than the viewport, and most of
+   this page's sections are authored as exactly one `100svh` screen. A zero-width window is what
+   made such a section draw in one instantaneous step instead of a gradual scroll-tied reveal (the
+   owner's review, `session.md` 2026-09-27) -- the entire reason this function exists. The
+   passage-through window is `height + viewportHeight` wide, which can never be zero or negative for
+   any positive viewport, regardless of the section's own height -- so the old degenerate branch
+   (`windowEnd <= windowStart`) has no equivalent case left to guard and is deleted rather than kept
+   unreachable; the true edge case that remains (a whole page shorter than one viewport) is handled
+   below by the `maxScroll` cap on `drawEnd`, not by a second window-collapse branch.
 
-   A section no taller than the viewport (the common case -- most of this page's sections are
-   authored as one `100svh` screen) makes this window zero-width or negative. Rather than dividing
-   by that, it collapses to a single point at `rect.top`: undrawn right up to and including it,
-   fully drawn the instant scroll passes it. STRICTLY past, not at-or-past: the non-degenerate ramp
-   below already reads 0 exactly AT its own `windowStart` (`(scrollY - windowStart) / ... = 0` when
-   `scrollY === windowStart`), and using `>=` here instead of `>` would break that same convention
-   for the one section whose window starts at the very top of the page -- the invite's, at
-   `rect.top === 0` -- reading it as already fully drawn at `scrollY === 0`, before the reader has
-   scrolled at all. Caught on a real render, not in the synthetic tests below: every one of this
-   file's own test fixtures happens to use a viewport shorter than every section, so none of them
-   ever exercises this branch at `windowStart === 0`. A earlier round divided by a band this narrow
-   and lost MONOTONICITY to it -- the thread briefly retracted, which read as flickering rather than
-   as a sizing bug (`lessons.md`, 2026-09-25) -- so this is guarded explicitly, not left to fall out
-   of the algebra. */
+   `windowStart` is clamped so it is never negative: `rect.top - viewportHeight` is negative for any
+   section whose top sits within one viewport of the page's own start -- always true of the very
+   FIRST section (`rect.top === 0`). `scrollY` itself can never go negative, so an unclamped negative
+   `windowStart` would read as already-partway-drawn at `scrollY` 0, before the reader has scrolled
+   at all -- for the invite specifically this would contradict the owner's explicit "at scrollY 0 the
+   invite's thread has not started" (the opening sequence's own fade already leaves the thread in its
+   static starting state at hand-off; scroll drawing has to build forward from there, not from a head
+   start baked into a window that began before the page existed). Clamping at 0 is the general form
+   of that requirement, not an invite-specific branch: any section whose raw window would open before
+   the page can be scrolled to it now opens at exactly `scrollY` 0 instead.
+
+   `drawEnd` -- the 60%-of-window mark -- is additionally capped at `maxScroll`, the page's own
+   highest reachable scroll position (see `pageMaxScroll` below). The window's far edge (`rect.top +
+   rect.height`) is the position at which the section's bottom would reach the viewport's TOP; for
+   the very LAST section that position is exactly `maxScroll + viewportHeight`, because the page
+   cannot be scrolled far enough to push that section's bottom above the viewport top -- its bottom
+   instead settles at the viewport's own bottom, at `scrollY === maxScroll`. Left uncapped, a last
+   section no more than 1.5x the viewport tall (the common case -- most sections are one `100svh`
+   screen) would need to scroll PAST `maxScroll` to reach its own 60% mark, and the reader can never
+   get there: the thread would stop mid-draw at the true end of the page and never complete. Capping
+   `drawEnd` at `maxScroll` makes the ramp finish exactly when the reader runs out of page to scroll,
+   which is what "every section full at the page's end" requires; for every section but the last
+   (whose own 60% mark already falls well short of the page's end), the cap is a no-op. */
 function sectionProgress(
   scrollY: number,
   viewportHeight: number,
   rect: SectionRect,
+  maxScroll: number,
 ): number {
-  const windowStart = rect.top;
-  const windowEnd = rect.top + rect.height - viewportHeight;
-  if (windowEnd <= windowStart) {
-    return scrollY > windowStart ? 1 : 0;
-  }
-  const drawEnd = windowStart + DRAW_FRACTION * (windowEnd - windowStart);
-  const progress = (scrollY - windowStart) / (drawEnd - windowStart);
+  const windowStart = Math.max(rect.top - viewportHeight, 0);
+  const windowEnd = rect.top + rect.height;
+  const rawDrawEnd = windowStart + DRAW_FRACTION * (windowEnd - windowStart);
+  const drawEnd = Math.min(rawDrawEnd, maxScroll);
+  const span = drawEnd - windowStart;
+  // Only reachable when the whole page fits within one viewport (`maxScroll` and `windowStart` both
+  // clamp to 0) -- not a shape any of this project's six real sections take, but a legitimate
+  // synthetic input this pure function must not divide by zero on. With no scroll room to reveal it
+  // gradually, showing it complete is the same choice this project already makes for reduced motion
+  // and no-JS, rather than leaving it stuck at zero with no gesture able to move it.
+  if (span <= 0) return 1;
+  const progress = (scrollY - windowStart) / span;
   return Math.min(1, Math.max(0, progress));
+}
+
+/* The page's own highest reachable scrollY, read off the sections' own rects rather than trusted
+   from a separately-passed page height -- sections are contiguous, so the largest `top + height`
+   among them IS the page's total content height. Needed only for the `drawEnd` cap above. */
+function pageMaxScroll(
+  sectionRects: readonly SectionRect[],
+  viewportHeight: number,
+): number {
+  let totalHeight = 0;
+  for (const rect of sectionRects) {
+    totalHeight = Math.max(totalHeight, rect.top + rect.height);
+  }
+  return Math.max(totalHeight - viewportHeight, 0);
 }
 
 /* The total drawn length of the whole page's dash at a given scroll position: each section's own
@@ -417,19 +454,25 @@ function sectionProgress(
    how far the reader has since continued. Sections are contiguous in both scroll order (each one's
    `rect.top` is the previous one's `rect.top + rect.height`) and path-length order (`threadLine`'s
    own `sections`), so summing every section's own contribution IS the whole page's monotonic
-   progress -- there is no separate "which section is current" branch to get wrong. */
+   progress -- there is no separate "which section is current" branch to get wrong. The
+   passage-through window above does let a short section's own ramp overlap the next section's own
+   opening by a small margin; the sum stays monotonic regardless (each addend is itself
+   non-decreasing in `scrollY`), and by the time that overlap becomes large enough to matter the
+   earlier section is already visually complete in every case this project's own sections produce
+   (swept in `thread-line.test.ts`), so the two connectors never visibly draw out of order. */
 export function drawnLength(
   scrollY: number,
   viewportHeight: number,
   sectionRects: readonly SectionRect[],
   ranges: readonly SectionRange[],
 ): number {
+  const maxScroll = pageMaxScroll(sectionRects, viewportHeight);
   let total = 0;
   for (let i = 0; i < ranges.length; i++) {
     const rect = sectionRects[i];
     const range = ranges[i];
     if (rect === undefined || range === undefined) continue;
-    const progress = sectionProgress(scrollY, viewportHeight, rect);
+    const progress = sectionProgress(scrollY, viewportHeight, rect, maxScroll);
     total += progress * (range.end - range.start);
   }
   return total;
