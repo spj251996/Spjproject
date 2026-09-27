@@ -4,7 +4,7 @@ import {
   SECTION_PLACEMENT,
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { SectionThread } from "@/components/thread/section-thread";
+import { NotFoundThread } from "@/components/thread/not-found-thread";
 import { ButtonAction } from "@/components/ui/button-action";
 
 /* The screen an unmatched path reaches. It takes the section frame so a wrong turn still reads as
@@ -27,7 +27,7 @@ export default function NotFound() {
     <main className="flex flex-1 flex-col overflow-y-clip">
       <section className="relative" id="not-found">
         <Botanical fit={notFoundFit} pieces={SECTION_PLACEMENT["not-found"]} />
-        <SectionThread id="not-found" />
+        <NotFoundThread />
         <MountedSheet fit={notFoundFit}>
           <div
             className="flex w-full flex-col items-center text-center"

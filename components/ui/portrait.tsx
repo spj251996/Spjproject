@@ -20,6 +20,13 @@ interface PortraitProps {
   relationship: string;
   src: string | null;
   className?: string;
+  /* An opaque marker the composing section may set for its own purposes — never a domain type, so
+     this stays a portable component. Rendered only when given, as `data-portrait`. Not yet read by
+     anything: the thread's own anchoring (`page-thread.tsx`'s `findPortraitCentre`) finds Flemy's
+     and Sebastian's portraits by the `relationship` text already in the DOM, proven correct on a
+     render, and is left on that mechanism rather than rewired onto this attribute in the same task
+     that mounts the thread for the first time. */
+  marker?: string;
 }
 
 /* The negative margins keep the column at the photo's width while the line runs wider. */
@@ -44,10 +51,12 @@ export function Portrait({
   relationship,
   src,
   className,
+  marker,
 }: PortraitProps) {
   return (
     <figure
       className={`flex w-(--portrait-diameter) flex-col items-center ${className ?? ""}`}
+      data-portrait={marker}
     >
       <div className="relative size-(--portrait-diameter) shrink-0 rounded-full ring-(length:--stroke-divider) ring-accent-gold ring-offset-(length:--stroke-rim-offset) ring-offset-surface-elevated">
         <div className="absolute inset-0 overflow-hidden rounded-full">

@@ -1,163 +1,9 @@
-/* Everything about a thread that is the same in every section. The per-section, per-band geometry
-   and the whole scrub are generated instead — `thread-css.ts`. */
-
-/* Zero layout: the thread contributes no height and no width to the section it sits in, takes no
-   pointer events and is `aria-hidden` at the element. The invite has three pixels of headroom
-   against its tablet cap, so anything here that occupied flow would overflow a card. */
-.root {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: var(--z-thread);
-}
-
-/* The ink and the light, two boxes of the same size, stacked by document order alone. The bleed is
-   a `filter` on the ink layer — generated, because its radii are tuned values — so the head and the
-   re-trace have to sit OUTSIDE it, or every frame of the draw re-rasterises a blurred buffer that
-   is meant to be static. Neither takes a z-index: the light is second in the markup, which is all
-   the order it needs, and a stacking context here would change nothing but cost the weave. */
-.inkLayer,
-.lightLayer {
-  position: absolute;
-  inset: 0;
-}
-
-/* Wishes' two woven copies are the one exception to the thread's z-index: they carry none, so
-   document order alone puts one either side of the illustration. A z-index on either would put a
-   stacking context between them and both copies would land on the same side.
-
-   AND THE BOX BACK OUT TO THE SECTION. A woven copy has to sit inside the card's own stacking
-   context — `mounted-sheet-frame__box` is one, by its z-index and its `container-type` both — since
-   the illustration is in there and nothing outside that context can paint behind it. That makes the
-   card the copy's containing block, and a bare `inset: 0` would then compose the whole route against
-   the CARD: measured at 1536x695, that is 960x567 offset 288px in, which moves the handoff from the
-   section before by 106px and leaves the thread 64px short of both terminals. Nothing catches it —
-   the handoff test compares route numbers, not pixels.
-
-   The frame centres the card in the section on both axes, so half the difference on each side
-   restores the section exactly; `100%` below is the card's own size. Inline, the section spans the
-   layout viewport, so that difference is the whole story. Block, the section is `100svh` unless its
-   content outgrows it — a short landscape window — and then the frame's own block ring is the gap;
-   whichever is larger is right. Neither the ring variables nor `100svh` alone will do it: the card
-   is held off both a width cap and a height cap, and the slack from either is invisible from in
-   here (measured at 1920x1080: a 180px block gap against a 96px `--ring-block`).
-
-   Every term is zero when a copy is mounted straight onto a section, so this is inert wherever
-   there is no card.
-
-   ONE RESIDUAL, MEASURED RATHER THAN ASSUMED. `100vw` counts a classic scrollbar, which the section
-   does not, so where the reader's browser draws one the inline span is that much too wide — 15px on
-   a 1536px section, a symmetric 7.5px overhang, 0.98%. Zero on every overlay-scrollbar engine, so
-   zero on every touch device. There is no CSS expression for the layout viewport's width from in
-   here: the frame's ring variables miss the slack off either cap, `--container-content*` does not
-   say which cap bit, and `cqw` resolves against the card. The alternatives are containment on the
-   frame's scope — which would put containment in a thread's ancestor chain, the one thing this
-   layer may never have — or measuring it in script, which the thread's geometry deliberately does
-   not depend on. 0.98% against the 106px this replaces. */
-.weave {
-  z-index: auto;
-  left: calc(-1 * max(0px, (100vw - 100%) / 2));
-  right: calc(-1 * max(0px, (100vw - 100%) / 2));
-  top: calc(-1 * max(var(--ring-block, 0px), (100svh - 100%) / 2));
-  bottom: calc(-1 * max(var(--ring-block, 0px), (100svh - 100%) / 2));
-}
-
-/* One connector, or one stub, in a box the generated sheet pins to its own two ends — so the two
-   corners of this element ARE the two points the curve has to meet, and the aspect of the box in
-   between costs the join nothing. Stretching what is in it is correct: a plain curve has no shape
-   to lose, and every motif is drawn in its own square svg instead.
-
-   `overflow: visible` because a cubic leaves its endpoints' box wherever a control point reaches
-   past a corner, and because a round cap reaches half a stroke past each end. */
-.field {
-  position: absolute;
-  overflow: visible;
-}
-
-.ink,
-.wisp,
-.stub,
-.motifPath,
-.light {
-  fill: none;
-  stroke: var(--color-thread-red);
-  stroke-linecap: round;
-  /* A viewBox unit is ~0.78 screen px at phone and ~2.0 at desktop, so one declared width would
-     otherwise render at two. This is also what forces the reveal onto a mask: it fragments a
-     `pathLength` dash into disjoint runs, with or without a stretch. */
-  vector-effect: non-scaling-stroke;
-}
-
-.ink,
-.motifPath {
-  stroke-width: var(--stroke-thread);
-}
-
-/* A wisp is the thread's cut end, not an ornament — the same curve, thinner and fainter, just past
-   wherever the ink stops. */
-.wisp,
-.stub {
-  stroke-width: var(--stroke-thread-wisp);
-  opacity: 0.7;
-}
-
-/* The re-trace is the drawing head on the clock, gated to the hold band by one scroll-driven
-   animation on this group. With no animation at all — reduced motion, or a browser without
-   `animation-timeline` — it stays where it starts, which is invisible. */
-.retrace {
-  opacity: 0;
-}
-
-/* Mask content: `white` here is full coverage on the alpha channel, not a colour the page shows.
-   Every reveal is a dashed STROKED COPY of the path it reveals — never a filled shape: an open
-   curve filled would flood the mask with the whole region its ends enclose. The width is set per
-   segment, because a motif's square and a connector's stretched box state it in different units. */
-.reveal {
-  fill: none;
-  stroke: white;
-  stroke-width: var(--thread-mask-width);
-  /* A round cap on a zero-length dash paints a dot, measured as two stray specks on a fully
-     undrawn segment. */
-  stroke-linecap: butt;
-}
-
-/* A motif is a SQUARE. `--thread-motif-side` is a PERCENTAGE of the motif's own positioned ancestor
-   (the band wrapper, `.thread__band--*`) — and a `%` on `width` and the SAME `%` on `height` resolve
-   against that ancestor's WIDTH and HEIGHT respectively, which differ (a band wrapper tracks the
-   card horizontally and the section vertically). Setting both from the one percentage therefore drew
-   a rectangle, not a square — measured on a real render as 257x282px where 152x152 was wanted.
-   `aspect-ratio: 1` is what actually holds it square: it computes the height from the resolved WIDTH
-   in real pixels, never from the containing block's own height, so the box stays 1:1 regardless of
-   which axis the wrapper is stretched on. */
-.motif {
-  position: absolute;
-  left: calc(var(--thread-motif-x) * 100%);
-  top: calc(var(--thread-motif-y) * 100%);
-  width: var(--thread-motif-side);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-}
-
-.motifField {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-/* ================================================================================================
-   THE MEASURED PAGE THREAD (`page-thread.tsx`) — a second, additive system living beside the one
-   above. `SectionThread`/`thread-css.ts` are still the ones actually mounted today (Wishes' weave in
-   `app/page.tsx`, and `not-found.tsx`'s own closed thread) and this task could not retire them: both
-   call sites sit outside this task's edit scope (`app/page.tsx`, `app/not-found.tsx`), and deleting
-   `section-thread.tsx` out from under either would break the build. Task 6's cutover replaces both
-   call sites and then removes everything above this line, along with `.reveal`/`.motif`/`.field`/
-   `.inkLayer`/`.lightLayer`/`.retrace`/`.wisp`/`.stub`/`.motifPath`/`.light`/`.motifField` and their
-   generator. Distinct class names throughout on purpose — `page-thread.tsx`'s stroke must NOT carry
-   `vector-effect: non-scaling-stroke` (its `viewBox` always matches its own rendered pixel box
-   exactly, so the effect would be a no-op at best, and `non-scaling-stroke` is on record for
-   fragmenting a dash even with no stretch at all — the retired grid model moved its reveal onto a
-   mask for exactly that reason), so reusing `.ink` here would be silently wrong the moment the two
-   systems ever rendered side by side, which — while both call sites remain unconverted — they do. */
+/* Everything about a thread that is the same on every screen — one page-length measured line
+   (`page-thread.tsx`) and `not-found`'s own closed, timed replay of `invite`'s route
+   (`not-found-thread.tsx`). The retired per-section, CSS-generated grid model (`section-thread.tsx`,
+   `thread-css.ts`) is gone as of the cutover that mounted this — `page-thread.tsx`'s own header
+   comment covers why the live `<path>` here deliberately does NOT carry `vector-effect:
+   non-scaling-stroke`, unlike that retired model's `.ink`. */
 
 /* Zero layout: the small positioning span `page-thread.tsx`'s `coverRect` measures itself against
    takes no space in flow and does not push Wishes' own stack apart when mounted as a sibling of its
@@ -234,4 +80,57 @@
   stroke: var(--color-thread-red);
   stroke-linecap: round;
   stroke-width: var(--stroke-thread);
+}
+
+/* `not-found`'s own closed, timed thread (`not-found-thread.tsx`) -- a plain server-rendered SVG,
+   no JS measurement, since the screen has exactly one fixed card and no scroll. Zero layout, same
+   as `.root`/`.pageRoot` above, on the section's own positioning (`app/not-found.tsx`'s `<section
+   className="relative">`), not `<main>`'s -- there is nothing else on this screen to measure
+   against. */
+.notFoundRoot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-thread);
+}
+
+.notFoundSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.notFoundInk {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  stroke-width: var(--stroke-thread);
+}
+
+/* The draw itself: a one-shot, linear reveal on the clock rather than the scrub -- the values this
+   screen's thread has carried since before this cutover (0.4s delay, 2.4s duration, linear), not
+   new ones. `1.02` is the same small overshoot every whole-path dash in this project carries
+   (`page-thread.tsx`'s `DASH_EPSILON`, `lessons.md` 2026-09-25): Chromium can stop a dash exactly
+   matching a `pathLength="1"` path's own length a few percent short of the true end.
+
+   Reduced motion drops this whole rule rather than overriding it -- with no `stroke-dasharray` at
+   all the path paints solid and complete, which is "the thread is simply complete on arrival"
+   (`app/not-found.tsx`'s own comment) with no second code path to keep in sync. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes notFoundDraw {
+    from {
+      stroke-dashoffset: 1.02;
+    }
+
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .notFoundInk {
+    stroke-dasharray: 1.02;
+    animation: notFoundDraw 2.4s linear 0.4s both;
+  }
 }

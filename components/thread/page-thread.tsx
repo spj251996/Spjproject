@@ -7,9 +7,14 @@ import {
   familyPortraitFractions,
 } from "./thread-authored-layout";
 import { type BandId, THREAD_BANDS } from "./thread-bands";
-import { sectionBox } from "./thread-boxes";
+import {
+  aspectQuery,
+  PAGE_FALLBACKS,
+  splitSubpaths,
+  subpathRange,
+} from "./thread-fallback";
 import { type SectionAnchors, threadLine } from "./thread-line";
-import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths";
+import { MOTIF_PLACEMENTS, THREAD_IDS } from "./thread-paths";
 import type { MeasuredSection, Rect } from "./thread-warp";
 
 /* THE MODEL — read this before touching anything below.
@@ -72,110 +77,21 @@ import type { MeasuredSection, Rect } from "./thread-warp";
    this case — and if even the family card cannot be measured, to the plain warped position, the same
    as every other motif. */
 
-const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 type Point = { x: number; y: number };
-
-/* `threadLine` emits exactly one `M ...` subpath per connector and per motif (asserted in
-   `thread-line.test.ts`), so splitting on an `M` boundary and counting is exact. */
-function splitSubpaths(d: string): string[] {
-  return d.split(/(?=M )/).filter((s) => s.trim().length > 0);
-}
-
-function subpathCount(band: BandId, id: (typeof THREAD_IDS)[number]): number {
-  return THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length;
-}
-
-/* The index range, in the FLATTENED subpath list `threadLine` emits, that belongs to one section —
-   `THREAD_IDS` order is the same connection order `threadLine` composes in. */
-function subpathRange(
-  band: BandId,
-  id: (typeof THREAD_IDS)[number],
-): { start: number; end: number } {
-  const index = THREAD_IDS.indexOf(id);
-  let start = 0;
-  for (let i = 0; i < index; i++) start += subpathCount(band, THREAD_IDS[i]);
-  return { start, end: start + subpathCount(band, id) };
-}
 
 /* ---------------------------------------------------------------------------------------------
    THE STATIC FALLBACK — what a reader with no JS sees, and what every reader sees for the one
-   frame before JS measures. `threadLine` fed an IDENTITY warp (a band's own authored card/section
-   figures as both `from` and `to`) reproduces the authored geometry exactly (proven in
-   `thread-line.test.ts`'s own identity test), stacked into one page-length path in that band's own
-   nominal pixels. Normalised into a 0-1 square per band so all three can share ONE viewBox and the
-   choice between them is a plain CSS `display` toggle — no platform assumption beyond
-   `@media (aspect-ratio ...)`, which this project's generated stylesheet already relied on. */
-
-function authoredMeasuredSections(band: BandId): MeasuredSection[] {
-  let top = 0;
-  return THREAD_IDS.map((id) => {
-    const card = authoredCard(id, band);
-    const box = sectionBox(id, band);
-    const section: MeasuredSection = {
-      top,
-      height: box.height,
-      cardLeft: card.cardLeft,
-      cardWidth: card.cardWidth,
-    };
-    top += box.height;
-    return section;
-  });
-}
-
-/* Rounded to 6 decimals, `thread-warp.ts`'s own convention (`formatNumber`) -- a normalised 0-1
-   coordinate needs nowhere near IEEE 754's ~17 significant digits to stay sub-pixel exact at any
-   real viewport, and emitting the full float noise multiplies each of these three paths' size by
-   roughly 2.5x for nothing. */
-function formatNumber(value: number): string {
-  return String(Math.round(value * 1e6) / 1e6);
-}
-
-function normalise(d: string, width: number, height: number): string {
-  const tokens = d.match(PATH_TOKEN) ?? [];
-  let index = 0;
-  const out: string[] = [];
-  while (index < tokens.length) {
-    const token = tokens[index];
-    if (/^[A-Za-z]$/.test(token)) {
-      out.push(token);
-      index++;
-      continue;
-    }
-    const x = Number(tokens[index++]);
-    const y = Number(tokens[index++]);
-    out.push(formatNumber(x / width), formatNumber(y / height));
-  }
-  return out.join(" ");
-}
-
-function round(value: number): string {
-  const fixed = value.toFixed(5).replace(/\.?0+$/, "");
-  return fixed === "-0" ? "0" : fixed;
-}
-
-/* Bounded ranges, never open-ended, so no aspect can match two bands — the same rule
-   `thread-bands.ts` states and the same one a stale rule in this project once got bitten by
-   (Tailwind orders arbitrary variants by string, so an open `>=64rem` beat an open `>=100rem`). */
-function aspectQuery(min: number, max: number): string {
-  if (min === 0) return `(aspect-ratio < ${round(max)})`;
-  if (max === Number.POSITIVE_INFINITY) {
-    return `(${round(min)} <= aspect-ratio)`;
-  }
-  return `(${round(min)} <= aspect-ratio < ${round(max)})`;
-}
-
-type Fallback = { band: BandId; d: string; media: string };
-
-const FALLBACKS: Fallback[] = THREAD_BANDS.map((band) => {
-  const sections = authoredMeasuredSections(band.id);
-  const { d } = threadLine(band.id, sections);
-  const totalHeight = sections.reduce((sum, s) => sum + s.height, 0);
-  return {
-    band: band.id,
-    d: normalise(d, band.box.width, totalHeight),
-    media: aspectQuery(band.min, band.max),
-  };
-});
+   frame before JS measures. `PAGE_FALLBACKS` (`thread-fallback.ts`) is `threadLine` fed an IDENTITY
+   warp (a band's own authored card/section figures as both `from` and `to`), which reproduces the
+   authored geometry exactly (proven in `thread-line.test.ts`'s own identity test), stacked into one
+   page-length path in that band's own nominal pixels and normalised into a 0-1 square per band so
+   all three can share ONE viewBox and the choice between them is a plain CSS `display` toggle — no
+   platform assumption beyond `@media (aspect-ratio ...)`, which this project's generated
+   stylesheet already relied on. `sectionRouteFallback` (the same module) is the same machinery for
+   ONE section alone — what `not-found-thread.tsx` uses for its own closed, timed replay. Both live
+   outside this "use client" module because a server component cannot call a function a client
+   module exports, even a pure one. */
+const FALLBACKS = PAGE_FALLBACKS;
 
 /* The hide-all rule and every per-band show rule share the SAME specificity (a single attribute
    selector each), so the winner is decided by SOURCE ORDER alone, not by which one a stylesheet
@@ -499,6 +415,7 @@ export function PageThread() {
       <style>{FALLBACK_STYLE}</style>
       <svg
         className={styles.pageRoot}
+        data-thread-svg="true"
         preserveAspectRatio="none"
         ref={fallbackSvgRef}
         role="presentation"
@@ -515,6 +432,7 @@ export function PageThread() {
       </svg>
       <svg
         className={styles.pageRoot}
+        data-thread-svg="true"
         preserveAspectRatio="none"
         ref={liveSvgRef}
         role="presentation"
@@ -633,6 +551,7 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     >
       <svg
         className={styles.pageWeave}
+        data-thread-svg="true"
         preserveAspectRatio="none"
         ref={svgRef}
         role="presentation"

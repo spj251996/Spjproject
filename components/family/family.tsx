@@ -78,6 +78,14 @@ export function Family({ group, eyebrow }: FamilyProps) {
   );
 }
 
+/* Flemy is the bride and Sebastian is the groom by definition of the site, not by editorial copy
+   that could read differently between rosters — `relationship` is content/family.ts's own stable
+   field for exactly this. Everyone else in the tree carries no marker. */
+const PORTRAIT_MARKER: Readonly<Record<string, string>> = {
+  Bride: "flemy",
+  Groom: "sebastian",
+};
+
 function MemberPortrait({
   member,
   overrun,
@@ -88,6 +96,7 @@ function MemberPortrait({
   return (
     <Portrait
       className={`${PORTRAIT_TO_NAME} ${overrun}`}
+      marker={PORTRAIT_MARKER[member.relationship]}
       name={member.name}
       relationship={member.relationship}
       src={member.portrait}
