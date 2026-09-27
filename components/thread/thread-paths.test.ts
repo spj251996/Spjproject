@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { BandId } from "./thread-bands.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import type { MotifId, ThreadId } from "./thread-geometry.ts";
 import { MOTIF_PLACEMENTS, THREAD_PATHS } from "./thread-paths.ts";
@@ -317,6 +318,51 @@ test("the exact tangent at a boundary is continuous to a fraction of a degree", 
         diff <= 0.5,
         `${band.id}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} exact tangent off by ${diff.toFixed(3)} deg`,
       );
+    }
+  }
+});
+
+/* ---- scale is an INPUT to the fit, never an output of it -------------------------------------
+
+   The owner tuned `scale` on a render (`.claude/work/thread-wide-placements.md`'s confirmed
+   routes) and nothing in the fit is entitled to move it. An earlier version of the generator
+   derived a motif's field size from the drawn ends' own separation instead — the drawn ends sit
+   4-30px off the authored attachment points, which is fine for fitting TURN and CENTRE but wrong
+   for recovering a size that was never carried by that separation, and it silently rescaled every
+   motif by a different factor (heart 1.13x, rings 1.57x, bow 0.40x…), which is why
+   `check:thread-joins` then reported the thread in pieces almost everywhere. This is the authored
+   table itself, duplicated from the source doc rather than imported from it, because
+   `thread-wide-placements.md` is prose the generator reads by eye, not a module either file can
+   share. */
+const AUTHORED_SCALE: Record<BandId, Partial<Record<MotifId, number>>> = {
+  tall: { heart: 0.2, rings: 0.25, knot: 0.25, phone: 0.2, portraitLoop: 0.35 },
+  wide: { heart: 0.3, rings: 0.28, knot: 0.2, phone: 0.17, portraitLoop: 0.2 },
+  upright: {
+    heart: 0.2,
+    rings: 0.25,
+    knot: 0.25,
+    phone: 0.2,
+    portraitLoop: 0.25,
+    wishesLoop: 0.2,
+  },
+};
+/* Every cell the table above leaves out — `wishesLoop` and `bow` in every band except
+   `upright`/`wishesLoop` — carries no `scale` in the source and takes this default. */
+const DEFAULT_SCALE = 0.3;
+
+test("every placement's scale is the owner's authored value, never derived from the drawn geometry", () => {
+  for (const band of THREAD_BANDS) {
+    for (const id of SECTION_IDS) {
+      for (const placement of MOTIF_PLACEMENTS[band.id][id]) {
+        const authored =
+          AUTHORED_SCALE[band.id][placement.motif] ?? DEFAULT_SCALE;
+        assert.equal(
+          placement.scale,
+          authored,
+          `${band.id}/${id}/${placement.motif}: scale ${placement.scale} does not match the ` +
+            `authored ${authored}`,
+        );
+      }
     }
   }
 });
