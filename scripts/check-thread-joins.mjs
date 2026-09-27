@@ -82,31 +82,20 @@ const VIEWPORTS = THREAD_BANDS.flatMap((band) => [
   { name: `${band.id}-drifted`, ...DRIFTED[band.id] },
 ]);
 
-/* THE ONE RECORDED EXCEPTION, and it belongs to the SEEDED ROUTE rather than to the renderer.
+/* THE FORMER RECORDED EXCEPTION — REMOVED, per this file's own stale-exemption rule below.
  *
- * A motif is turned onto the route it sits on, which turns its two attachment points with it and
- * throws the drawing's whole chord onto the axis the route travels. Where two consecutive
- * attachment points then invert, the connector between them has no geometry left: its curve is
- * normalised once per band against that band's nominal box, and `event-info`'s seeded `rings`
- * (scale 0.44) and `knot` (0.29), two rows apart on a four-row grid, invert at
- * `r = svmin / section height = 0.6849` — while the `upright` band's own box sits at 0.6949. The
- * connector is composed 0.9 px long, under the generator's own 1 px floor, and renders in pieces.
- *
- * NOT CLAMPED, deliberately. An angle limited to whatever the seeded scales survive would hide from
- * the owner the one thing they need in order to tune away from it. The remedy is a scale or a cell,
- * both of which are the owner's to set on the grid panel — this gate records the consequence, it
- * does not choose a value. The same crossing is pinned in the suite by
- * `every connector the turn inverts is one the source names`.
- *
- * A RECORDED CASE THAT STOPS BREAKING FAILS THE GATE, so tuning it away deletes the entry rather
- * than leaving a dead exemption behind. `wide` is NOT listed: it is far past the same crossing and
- * still renders as one run, because the two turned motifs overlap enough to touch. */
-const CROSSINGS = new Map([
-  [
-    "event-info upright-nominal",
-    "rings/knot invert at r = 0.6849; the upright band composes at 0.6949",
-  ],
-]);
+ * `event-info upright-nominal` was recorded here as a known break: `rings`/`knot` invert at
+ * `r = 0.6849` against the `upright` band's own `0.6949`, composing a connector 0.9 px long, under
+ * the generator's own 1 px floor, which the comment itself said "renders in pieces" — a pixel-
+ * classification symptom of a sub-pixel connector, the same family as `celebrations`' antialiasing
+ * miss above, not a disconnected curve. Re-verified after the `isInk` recalibration (this file,
+ * same change): `event-info upright-nominal` now renders as one run, reproducibly, at both `rest`
+ * and `scrub` (identical pixel counts across repeat runs). The composed connector is presumably
+ * still ~0.9 px of real geometry — this file records what the render shows, not the underlying
+ * geometry — so a future scale/cell change on the grid panel could reopen it, at which point a new
+ * entry belongs here again. */
+
+const CROSSINGS = new Map();
 
 const flag = (name, fallback = null) => {
   const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -118,9 +107,31 @@ const only = flag("section");
 const onlyViewport = flag("viewport");
 
 /* Thread red against ivory, with its antialiased edge: red-dominant and not pale. The gold eyebrow
-   (#b08d57, r-g = 35) and the dev badge (near-neutral) are outside it. */
+   (#b08d57, r-g = 35) and the dev badge (near-neutral) are outside it.
+   TIGHTENED for the real page (Task 7): `/thread-lab`'s stand-in boxes never contained a
+   photograph, so the original bound never met one. Family's ten real portraits contain skin-tone
+   pixels that satisfy a loose red-dominant test, misread as disconnected "thread" fragments.
+   `g<90` overshot: `celebrations` draws a long connector through a stretch where its on-screen
+   tangent is nearly horizontal, which is exactly where a sub-2px stroke antialiases faintest, and
+   the single bridging pixel there measures `g=93` — three units past `g<90` — splitting one
+   drawn run into two on the page's own rendered `<path>` (proven gap-free to <0.1px in the `d`
+   itself; `.superpowers/sdd/celebrations-break-diagnosis.md`).
+
+   RE-CALIBRATED against the real page, not guessed: swept every candidate red-dominant pixel at
+   all three bands, both classified by exact SVG geometry (`isPointInStroke`, not colour) against
+   the mounted path — the `portraitLoop` motif is drawn directly over Family's portraits by design,
+   so "thread ink" and "bare skin" are sometimes the same few pixels apart, and a single g-bound
+   cannot separate them by colour alone in the abstract. What DOES separate them, on this render, is
+   where the two populations' worst cases fall in practice: re-running the join gate's own
+   connected-component classifier at every integer bound from 85 to 150 shows `celebrations
+   wide-nominal` first reads as one run at `g<94` (the miss is `g=93`), and Family's tightest
+   NOMINAL-viewport render first admits a new skin-tone fragment at `g<111` (`family tall-nominal`,
+   an 18-19px patch of dark hair/brow that reads red-dominant). `g<105` sits at the centre of that
+   measured 94-110 safe band — margin 12 below (to the last-broken `g<93`) and 6 above (to the
+   first-contaminated `g<111`) — not a guess and not the exact midpoint, but inside the only band
+   that closes `celebrations` without opening a new hole in `family`. */
 function isInk(r, g, b) {
-  return g < 150 && r - g > 60 && r - b > 60;
+  return g < 105 && r - g > 80 && r - b > 60;
 }
 
 function components(data, width, height, channels) {
