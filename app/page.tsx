@@ -793,11 +793,7 @@ export function WishesSection() {
               nearest positioned ancestor available inside the stacking context the weave needs. */}
           <WishesWeave slot="under" />
           <div className={wishesStyles.figureCol}>
-            <div
-              aria-hidden
-              className={wishesStyles.figure}
-              data-wishes-figure
-            />
+            <div aria-hidden className={wishesStyles.figure} />
           </div>
           <WishesWeave slot="over" />
 

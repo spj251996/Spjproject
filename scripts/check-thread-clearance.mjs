@@ -3,31 +3,42 @@
    stock, any botanical piece — but never type. This re-runnable script proves that at six
    aspect-band windows per section.
 
-   SELECTOR CONVENTION THIS GATE ASSUMES (the thread is not mounted yet — Task 10 mounts it):
-   every SVG element that draws part of the thread — each motif's own square SVG, each
-   connector's own stretched SVG — carries `data-thread-svg` on its OWN <svg> root. This gate
-   queries `section#<id> svg[data-thread-svg] path` for the drawn geometry. Icons already carry
-   `aria-hidden` (see `components/icons/icon-base.tsx`), so `aria-hidden` alone cannot
-   distinguish thread SVGs from decorative ones — `data-thread-svg` is the hook Task 10 (the
-   cutover) must add to `<SectionThread>`'s rendered SVG roots for this gate to find anything.
-   Until then, every section legitimately reports NO_THREAD — that is the correct, honest result
-   of running this gate today, not a bug in it. Steps 2 and 3 below are what prove the gate's
-   *machinery* works, independent of the thread's own existence.
+   SELECTOR CONVENTION: every SVG element that draws part of the thread carries `data-thread-svg`
+   on its OWN <svg> root. Icons already carry `aria-hidden` (see `components/icons/icon-base.tsx`),
+   so `aria-hidden` alone cannot distinguish thread SVGs from decorative ones.
+
+   THE THREAD IS PAGE-LEVEL, NOT PER-SECTION (since Task 6's cutover): `<PageThread>` bakes the
+   whole page into ONE path and mounts its SVG as the LAST CHILD of `<main>` — a SIBLING of every
+   `<section>`, not a descendant of any one of them (`components/thread/page-thread.tsx`'s own
+   header comment states this is deliberate: a section-scoped SVG could only paint in front of
+   Wishes' illustration, never behind it). So `section#<id> svg[data-thread-svg] path` — this gate's
+   original selector — matches nothing for five of six sections; only Wishes ever had a descendant
+   match, because `WishesWeave` mounts its two copies inside `#wishes` itself (either side of the
+   illustration, for that same z-index reason). The fix: search the WHOLE DOCUMENT for
+   `data-thread-svg` paths, then CLIP each one's geometry to the section's own rect before
+   measuring — never re-introduce a per-section SVG to make the old selector work again, which is
+   exactly the mis-sizing this plan's thread rewrite removed (`session.md`, 2026-09-27).
 
    METHOD, per section per aspect-band window:
-     1. Collect every thread <path> in the section (via the convention above). Get each path's
-        total length (`SVGGeometryElement.getTotalLength`) and apportion a 200-point sample
-        budget across every path by arc length (largest-remainder method), so a long connector
-        gets more samples than a short motif rather than each path getting an equal share
-        regardless of size.
-     2. Map every sampled point from the path's own user space into viewport (screen)
-        coordinates via `getPointAtLength(...).matrixTransform(path.getScreenCTM())` — three of
-        the real thread's own SVGs are non-uniformly scaled (`preserveAspectRatio="none"`
-        connectors), so an unmapped point would simply be wrong.
-     3. Collect every GLYPH rect in the section — `Range.getClientRects()` over each visible
+     1. Find every `data-thread-svg` path ANYWHERE in the document, de-duplicated by its `d`
+        attribute — `WishesWeave`'s "under" and "over" copies redraw IDENTICAL geometry either side
+        of the illustration by design, and counting both would spend a section's sample budget
+        twice over the same ink for no gain.
+     2. For each remaining path, run a coarse 400-probe pass over its full length to find which
+        arc-length RANGES land inside this section's own `getBoundingClientRect()` in screen space
+        — a page-length path spends most of its length in other sections, so sampling the full
+        length against one section's text would starve that section of resolution.
+     3. Apportion a 200-point FINE sample budget across those in-section ranges by arc length
+        (largest-remainder method), so a long connector segment gets more samples than a short
+        motif segment rather than each getting an equal share regardless of size.
+     4. Map every sampled point from the path's own user space into viewport (screen) coordinates
+        via `getPointAtLength(...).matrixTransform(path.getScreenCTM())` — several of the real
+        thread's own SVGs are non-uniformly scaled (`preserveAspectRatio="none"` connectors and the
+        whole-page trunk), so an unmapped point would simply be wrong.
+     5. Collect every GLYPH rect in the section — `Range.getClientRects()` over each visible
         text node, never an element's bounding box: a wrapper span is as wide as its column plus
         any overrun allowance, so bounding boxes report collisions that are not there.
-     4. Report the minimum point-to-rect distance across every sampled point and every glyph
+     6. Report the minimum point-to-rect distance across every sampled point and every glyph
         rect. A distance of 0 (a sampled point on or inside a glyph rect) is a crossing —
         the one thing the placement rule forbids outright; being close is wanted, not flagged.
 
@@ -145,6 +156,32 @@ async function waitForFonts(page) {
   }
 }
 
+/* `PageThread` (`page-thread.tsx`) measures the real layout in a `useEffect`, which fires AFTER
+   paint — before it runs, every `data-thread-svg` element still carries its CSS-only default
+   position (`.pageRoot { position: absolute; inset: 0; }` relative to a ZERO-HEIGHT wrapper span
+   sitting in normal flow after the last section), which collapses the whole thread to a small box
+   wherever that wrapper happens to land, not a rect covering `<main>`. A fixed settle after
+   navigation is not long enough for this on a Next dev server (measured: still unset at 300ms,
+   always set by 500ms) and a fixed wait either races it or over-pads every run — so this waits for
+   the one DOM fact `coverRect` actually writes: an inline `left` on some thread SVG, set only once
+   real measurement has happened at least once. Never done as a fixed sleep, per this project's own
+   `browser-testing.md` — wait for the state being verified, not a duration. */
+async function waitForThreadMeasured(page) {
+  try {
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll("svg[data-thread-svg]")).some(
+          (svg) => svg.style.left !== "",
+        ),
+      { timeout: FONT_TIMEOUT_MS },
+    );
+  } catch {
+    console.error(
+      "  warning: the thread never reported itself measured within the timeout — proceeding anyway",
+    );
+  }
+}
+
 /* Runs inside the page. Never reference outer-scope variables here — everything it needs is
    passed as an argument, since `page.evaluate` serializes the function and its args separately. */
 function measureSectionInPage({
@@ -158,10 +195,7 @@ function measureSectionInPage({
       error: `no element matching "${sectionSelector}" found in the DOM`,
     };
   }
-
-  const paths = Array.from(section.querySelectorAll(threadSelector)).filter(
-    (el) => typeof el.getTotalLength === "function",
-  );
+  const sectionRect = section.getBoundingClientRect();
 
   const glyphRects = [];
   const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT, {
@@ -202,35 +236,94 @@ function measureSectionInPage({
     node = walker.nextNode();
   }
 
-  if (paths.length === 0) {
+  /* The thread's SVG is a SIBLING of every section (mounted once, at the end of `<main>`), so the
+     search is document-wide. `WishesWeave`'s two copies redraw IDENTICAL geometry either side of
+     the illustration by design — de-duplicate by `d` so a section never counts the same ink twice. */
+  const seenD = new Set();
+  const candidatePaths = Array.from(
+    document.querySelectorAll(threadSelector),
+  ).filter((el) => {
+    if (typeof el.getTotalLength !== "function") return false;
+    const d = el.getAttribute("d") ?? "";
+    if (d === "" || seenD.has(d)) return false;
+    seenD.add(d);
+    return true;
+  });
+
+  function insideSection(point) {
+    return (
+      point.x >= sectionRect.left &&
+      point.x <= sectionRect.right &&
+      point.y >= sectionRect.top &&
+      point.y <= sectionRect.bottom
+    );
+  }
+
+  /* A coarse pass over each path's full length, in SCREEN space, to find which arc-length ranges
+     land inside this section's rect. A page-length path spends most of its length in other
+     sections; sampling the full fine budget against the whole path would starve the section under
+     test of resolution, so each in-rect range becomes its own "segment" for the fine pass below. */
+  const COARSE_STEPS = 400;
+  const segments = [];
+  for (const path of candidatePaths) {
+    let len = 0;
+    try {
+      len = path.getTotalLength();
+    } catch {
+      len = 0;
+    }
+    const ctm = path.getScreenCTM();
+    if (len <= 0 || !ctm) continue;
+    const step = len / COARSE_STEPS;
+    let runStart = null;
+    for (let i = 0; i <= COARSE_STEPS; i += 1) {
+      const distanceAlong = Math.min(len, i * step);
+      const screenPoint = path
+        .getPointAtLength(distanceAlong)
+        .matrixTransform(ctm);
+      const inside = insideSection(screenPoint);
+      if (inside && runStart === null) {
+        runStart = Math.max(0, distanceAlong - step);
+      } else if (!inside && runStart !== null) {
+        const runEnd = Math.min(len, distanceAlong + step);
+        if (runEnd > runStart)
+          segments.push({ path, start: runStart, end: runEnd });
+        runStart = null;
+      }
+    }
+    if (runStart !== null && len > runStart) {
+      segments.push({ path, start: runStart, end: len });
+    }
+  }
+
+  if (segments.length === 0) {
     return { noThread: true, glyphCount: glyphRects.length };
   }
   if (glyphRects.length === 0) {
-    return { noText: true, pathCount: paths.length };
+    return {
+      noText: true,
+      pathCount: new Set(segments.map((segment) => segment.path)).size,
+    };
   }
 
-  const lengths = paths.map((path) => {
-    try {
-      return path.getTotalLength();
-    } catch {
-      return 0;
-    }
-  });
-  const totalLength = lengths.reduce((sum, len) => sum + len, 0);
+  const segmentLengths = segments.map((segment) => segment.end - segment.start);
+  const totalLength = segmentLengths.reduce((sum, len) => sum + len, 0);
 
-  /* Largest-remainder apportionment: every path with positive length gets at least its two
-     endpoints, and the remaining samples go to whichever paths' fair shares had the largest
+  /* Largest-remainder apportionment: every segment with positive length gets at least its two
+     endpoints, and the remaining samples go to whichever segments' fair shares had the largest
      fractional remainder, until the budget is exactly spent. */
-  let counts = lengths.map(() => 0);
+  let counts = segmentLengths.map(() => 0);
   if (totalLength > 0) {
-    const fair = lengths.map((len) => (len / totalLength) * sampleBudget);
+    const fair = segmentLengths.map(
+      (len) => (len / totalLength) * sampleBudget,
+    );
     counts = fair.map((share, i) =>
-      lengths[i] > 0 ? Math.max(2, Math.floor(share)) : 0,
+      segmentLengths[i] > 0 ? Math.max(2, Math.floor(share)) : 0,
     );
     let used = counts.reduce((sum, count) => sum + count, 0);
     const remainders = fair
       .map((share, i) => ({ i, frac: share - Math.floor(share) }))
-      .filter((entry) => lengths[entry.i] > 0)
+      .filter((entry) => segmentLengths[entry.i] > 0)
       .sort((a, b) => b.frac - a.frac);
     let cursor = 0;
     while (used < sampleBudget && cursor < remainders.length) {
@@ -251,19 +344,20 @@ function measureSectionInPage({
   let offendingPoint = null;
   let sampled = 0;
 
-  paths.forEach((path, i) => {
-    const len = lengths[i];
+  segments.forEach((segment, i) => {
     const n = counts[i];
-    if (n === 0 || len <= 0) {
+    if (n === 0) {
       return;
     }
-    const ctm = path.getScreenCTM();
+    const ctm = segment.path.getScreenCTM();
     if (!ctm) {
       return;
     }
+    const span = segment.end - segment.start;
     for (let k = 0; k < n; k += 1) {
-      const distanceAlong = n === 1 ? 0 : (len * k) / (n - 1);
-      const localPoint = path.getPointAtLength(distanceAlong);
+      const distanceAlong =
+        segment.start + (n === 1 ? 0 : (span * k) / (n - 1));
+      const localPoint = segment.path.getPointAtLength(distanceAlong);
       const screenPoint = localPoint.matrixTransform(ctm);
       sampled += 1;
       for (const rect of glyphRects) {
@@ -280,7 +374,7 @@ function measureSectionInPage({
   return {
     minDistance: Number.isFinite(minDistance) ? minDistance : null,
     sampled,
-    pathCount: paths.length,
+    pathCount: new Set(segments.map((segment) => segment.path)).size,
     glyphCount: glyphRects.length,
     offendingText,
     offendingPoint,
@@ -463,6 +557,7 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
       timeout: NAV_TIMEOUT_MS,
     });
     await waitForFonts(page);
+    await waitForThreadMeasured(page);
     await page.waitForTimeout(SETTLE_MS);
 
     const planted = await page.evaluate(
@@ -534,6 +629,7 @@ async function runSweep(browser, sections) {
         timeout: NAV_TIMEOUT_MS,
       });
       await waitForFonts(page);
+      await waitForThreadMeasured(page);
 
       for (const tier of BANDS) {
         for (const orientation of tier.windows) {
