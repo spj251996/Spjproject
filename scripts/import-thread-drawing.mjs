@@ -435,6 +435,7 @@ export async function fetchGlyphRects(browser, viewport) {
       if (style.visibility === "hidden" || style.display === "none") continue;
       const range = document.createRange();
       range.selectNodeContents(node);
+      const text = node.nodeValue.trim();
       for (const r of range.getClientRects()) {
         if (r.width < 0.5 || r.height < 0.5) continue;
         out.push({
@@ -442,6 +443,7 @@ export async function fetchGlyphRects(browser, viewport) {
           right: r.right + window.scrollX,
           top: r.top + window.scrollY - origin,
           bottom: r.bottom + window.scrollY - origin,
+          text,
         });
       }
     }
@@ -451,10 +453,134 @@ export async function fetchGlyphRects(browser, viewport) {
   return glyphs;
 }
 
+/* The owner's decision (in chat): a drawn thread that comes under a glyph is closed
+ * PROGRAMMATICALLY, not redrawn. Every section holds an 8px floor, except `family`, whose loops
+ * wrap the portraits and necessarily pass close to the labels beside them — 5px there still clears
+ * ink and bleed (the stroke is 1.6px, so its edge is 0.8px inside any centreline figure, and the
+ * bleed reaches about 3.5px further). */
+const FLOOR = 8;
+const FLOOR_FAMILY = 5;
+/* Relax to the floor PLUS the simplification tolerance, then re-simplify: re-simplifying afterwards
+ * cuts corners back TOWARD the glyph, so relaxing to the bare floor lands under it. The first
+ * attempt at this targeted 8px and measured 3.4px. */
+const RELAX_DENSIFY = 4;
+const RELAX_PASSES = 250;
+const RELAX_SIMPLIFY = 1.5;
+
+const floorFor = (sectionName, floor, floorFamily) =>
+  sectionName === "family" ? floorFamily : floor;
+
+/** Points inserted so a SEGMENT cannot pass through a glyph between two clear vertices. */
+function densify(points, step) {
+  const out = [points[0]];
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1];
+    const b = points[i];
+    const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / step));
+    for (let s = 1; s <= n; s += 1) {
+      out.push({
+        x: a.x + ((b.x - a.x) * s) / n,
+        y: a.y + ((b.y - a.y) * s) / n,
+      });
+    }
+  }
+  return out;
+}
+
+const relaxClearance = (x, y, g) =>
+  Math.hypot(
+    Math.max(g.left - x, 0, x - g.right),
+    Math.max(g.top - y, 0, y - g.bottom),
+  );
+
+/* Pushes a drawn connector off type WITHOUT moving where it meets its motifs: the first and last
+ * vertices are the motif attachment points, and moving them re-opens every join, so they are
+ * PINNED and only interior vertices relax. Densify first, then push every interior vertex under
+ * the floor along the outward normal by its shortfall — a vertex INSIDE a glyph rect leaves by its
+ * nearest edge, since it has no outward direction of its own. A bounded pass cap: non-convergence
+ * means a vertex is being pushed off one glyph into another, i.e. no corridor of that width exists
+ * there — REPORT it, do not iterate further and do not lower the floor to force it through. */
+export function relaxOffType(
+  connectors,
+  geometry,
+  glyphs,
+  {
+    floor = FLOOR,
+    floorFamily = FLOOR_FAMILY,
+    densify: step = RELAX_DENSIFY,
+    passes = RELAX_PASSES,
+    simplifyTolerance = RELAX_SIMPLIFY,
+  } = {},
+) {
+  const margin = simplifyTolerance + 0.5;
+  const sections = geometry.sections;
+  const sectionAt = (y) =>
+    sections.findIndex((s) => y >= s.top && y < s.top + s.height);
+
+  let moved = 0;
+  let maxMove = 0;
+  const stuck = [];
+
+  const relaxed = connectors.map(({ connector, points }) => {
+    if (!points) return { connector, points };
+    const run = densify(points, step);
+    for (let pass = 0; pass < passes; pass += 1) {
+      let dirty = false;
+      for (let i = 1; i < run.length - 1; i += 1) {
+        const idx = sectionAt(run[i].y);
+        const sectionName = idx >= 0 ? SECTION_ORDER[idx] : null;
+        const vertexFloor = floorFor(sectionName, floor, floorFamily) + margin;
+        let worst = null;
+        for (const g of glyphs) {
+          const d = relaxClearance(run[i].x, run[i].y, g);
+          if (d >= vertexFloor) continue;
+          if (worst === null || d < worst.d) worst = { d, g };
+        }
+        if (worst === null) continue;
+        const g = worst.g;
+        const cx = Math.min(Math.max(run[i].x, g.left), g.right);
+        const cy = Math.min(Math.max(run[i].y, g.top), g.bottom);
+        let vx = run[i].x - cx;
+        let vy = run[i].y - cy;
+        let len = Math.hypot(vx, vy);
+        if (len < 1e-6) {
+          /* Inside the rect: leave by the nearest edge. */
+          const left = run[i].x - g.left;
+          const right = g.right - run[i].x;
+          const top = run[i].y - g.top;
+          const bottom = g.bottom - run[i].y;
+          const least = Math.min(left, right, top, bottom);
+          vx = least === left ? -1 : least === right ? 1 : 0;
+          vy = least === top ? -1 : least === bottom ? 1 : 0;
+          len = 1;
+        }
+        const push = vertexFloor - worst.d;
+        run[i] = {
+          x: run[i].x + (vx / len) * push,
+          y: run[i].y + (vy / len) * push,
+        };
+        maxMove = Math.max(maxMove, push);
+        dirty = true;
+      }
+      if (!dirty) break;
+      if (pass === passes - 1) stuck.push(connector);
+    }
+    const before = densify(points, step);
+    for (let i = 0; i < run.length; i += 1) {
+      if (Math.hypot(run[i].x - before[i].x, run[i].y - before[i].y) > 0.01)
+        moved += 1;
+    }
+    return { connector, points: simplify(run, simplifyTolerance) };
+  });
+
+  return { connectors: relaxed, moved, maxMove, stuck };
+}
+
 /* The placement law is "may cross anything, may never cross type" — a freehand drawing can break
  * it in a way an authored grid never could. This walks the drawn centreline in small steps and
  * measures the nearest glyph rect to every sample, per section, so a real crossing (distance 0) can
- * be told apart from a close pass. */
+ * be told apart from a close pass. `nearestText` names the closest glyph found, so a report can
+ * name what a warning is about rather than just a bare distance. */
 export function typeClearanceReport(connectors, geometry, glyphs) {
   const sections = geometry.sections;
   const inSection = (y) =>
@@ -463,6 +589,7 @@ export function typeClearanceReport(connectors, geometry, glyphs) {
     min: Infinity,
     crossings: 0,
     samples: 0,
+    nearestText: null,
   }));
 
   for (const { points } of connectors) {
@@ -484,7 +611,10 @@ export function typeClearanceReport(connectors, geometry, glyphs) {
           const dx = Math.max(g.left - x, 0, x - g.right);
           const dy = Math.max(g.top - y, 0, y - g.bottom);
           const d = Math.hypot(dx, dy);
-          if (d < cell.min) cell.min = d;
+          if (d < cell.min) {
+            cell.min = d;
+            cell.nearestText = g.text ?? null;
+          }
           if (d === 0) cell.crossings += 1;
         }
       }
@@ -535,14 +665,6 @@ async function main() {
     `  worst angle ${worstAngle.toFixed(1)}deg   unassigned ${unassigned}`,
   );
 
-  writeFileSync(
-    `${dir}/connectors.json`,
-    `${JSON.stringify(
-      assigned.map((a, k) => ({ connector: k, points: a.stroke })),
-      null,
-      2,
-    )}\n`,
-  );
   writeFileSync(`${dir}/joins.json`, `${JSON.stringify(joins, null, 2)}\n`);
 
   const browser = await chromium.launch({ channel: "chromium" });
@@ -553,21 +675,53 @@ async function main() {
     await browser.close();
   }
 
-  const connectors = assigned.map((a, k) => ({
+  const drawnConnectors = assigned.map((a, k) => ({
     connector: k,
     points: a.stroke,
   }));
-  const worst = typeClearanceReport(connectors, geometry, glyphs);
+  /* The owner has decided (in chat) that a connector under the floor is closed programmatically
+     rather than redrawn — relax BEFORE the clearance check, not after, so the check reports what
+     will actually ship. */
+  const relax = relaxOffType(drawnConnectors, geometry, glyphs);
+  console.log(
+    `\n=== relax ===  ${relax.moved} points moved, largest push ${relax.maxMove.toFixed(1)}px` +
+      (relax.stuck.length > 0
+        ? `   NO CORRIDOR on connector(s) ${[...new Set(relax.stuck)].join(", ")}`
+        : ""),
+  );
 
-  console.log(`\n=== type clearance ===  ${glyphs.length} glyph rects`);
+  writeFileSync(
+    `${dir}/connectors.json`,
+    `${JSON.stringify(relax.connectors, null, 2)}\n`,
+  );
+
+  const worst = typeClearanceReport(relax.connectors, geometry, glyphs);
+
+  console.log(
+    `\n=== type clearance (after relax) ===  ${glyphs.length} glyph rects`,
+  );
   let crossed = false;
   worst.forEach((w, i) => {
-    if (w.crossings > 0) crossed = true;
-    console.log(
-      `  ${SECTION_ORDER[i].padEnd(13)} samples ${String(w.samples).padStart(5)}  nearest type ${
-        w.min === Infinity ? "n/a" : `${w.min.toFixed(1)}px`
-      }${w.crossings > 0 ? `   *** ${w.crossings} SAMPLES ON TYPE ***` : ""}`,
-    );
+    const sectionName = SECTION_ORDER[i];
+    const floor = floorFor(sectionName, FLOOR, FLOOR_FAMILY);
+    const nearest = w.min === Infinity ? "n/a" : `${w.min.toFixed(1)}px`;
+    const label = `  ${sectionName.padEnd(13)} samples ${String(w.samples).padStart(5)}  nearest type ${nearest}`;
+    if (w.crossings > 0) {
+      crossed = true;
+      console.log(
+        `${label}   *** ${w.crossings} SAMPLES ON TYPE (${w.nearestText ?? "unknown"}) ***`,
+      );
+    } else if (w.min < floor) {
+      /* Under the floor but not an actual crossing: this is real (the bow's entry attachment can
+         itself sit closer to a glyph than the floor, and an attachment point is PINNED — relaxing
+         cannot move it). Report it by name; refusing on it, or silently passing it, is both wrong —
+         the remedy is the motif's placement, a design value and the owner's call, not this tool's. */
+      console.log(
+        `${label}   WARNING: under the ${floor}px floor, nearest "${w.nearestText ?? "unknown"}"`,
+      );
+    } else {
+      console.log(label);
+    }
   });
 
   if (crossed) {
@@ -577,7 +731,9 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log("\nOK: clear of type on every section.");
+  console.log(
+    "\nOK: no crossing after relaxing. See any WARNING lines above for what is still under the floor.",
+  );
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

@@ -18,7 +18,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import sharp from "sharp";
-import { assignConnectors, extract } from "./import-thread-drawing.mjs";
+import {
+  assignConnectors,
+  extract,
+  relaxOffType,
+  typeClearanceReport,
+} from "./import-thread-drawing.mjs";
 
 const PAGE = { width: 900, height: 900, crossInset: 64 };
 const ARM = 40;
@@ -184,4 +189,71 @@ test("recovers a hand-drawn thread from a rescaled, re-encoded JPEG", async () =
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("relaxes a drawn connector clear of a glyph it crosses, without moving its pinned ends", () => {
+  /* One real section ("invite", floor 8px) big enough to hold the whole stroke; the other five are
+   * degenerate placeholders — `relaxOffType` and `typeClearanceReport` both index sections by
+   * position against the fixed six-section order, so a synthetic geometry still needs all six. */
+  const geometry = {
+    width: 1000,
+    sections: [
+      { top: 0, height: 1000 },
+      { top: 1000, height: 1 },
+      { top: 1001, height: 1 },
+      { top: 1002, height: 1 },
+      { top: 1003, height: 1 },
+      { top: 1004, height: 1 },
+    ],
+  };
+  const glyphs = [
+    { left: 140, right: 160, top: 110, bottom: 120, text: "Sebastian" },
+  ];
+  /* A straight line at the glyph's own height crosses it dead centre (distance 0, a genuine
+   * crossing) for the 20px of its width; both ends sit far outside it already — comfortably clear
+   * of the 8px floor before relaxing at all — so a correct port must leave them untouched rather
+   * than relaxing them too. */
+  const points = [
+    { x: 50, y: 113 },
+    { x: 150, y: 113 },
+    { x: 250, y: 113 },
+  ];
+  const connectors = [{ connector: 0, points }];
+
+  const before = typeClearanceReport(connectors, geometry, glyphs);
+  assert.equal(
+    before[0].crossings > 0,
+    true,
+    "the planted stroke does cross the glyph before relaxing",
+  );
+
+  const {
+    connectors: relaxed,
+    moved,
+    stuck,
+  } = relaxOffType(connectors, geometry, glyphs);
+  assert.equal(stuck.length, 0, "a wide-open corridor converges");
+  assert.ok(moved > 0, "the crossing vertex actually moved");
+  assert.deepEqual(relaxed[0].points[0], points[0], "the entry end is pinned");
+  assert.deepEqual(
+    relaxed[0].points.at(-1),
+    points.at(-1),
+    "the exit end is pinned",
+  );
+
+  const after = typeClearanceReport(relaxed, geometry, glyphs);
+  assert.equal(
+    after[0].crossings,
+    0,
+    "no sample lands on the glyph after relaxing",
+  );
+  /* The floor is a TARGET the relax step aims for, not a guarantee: the real `tall`/wishes case
+     this ports (see the report) settles at 3.1px against an 8px floor because the bow's own pinned
+     attachment point sits that close to a glyph already. The one guarantee this test enforces is
+     the one the placement law actually states — no longer an outright crossing. Anything still
+     under the floor is the CLI's job to report as a warning, not this function's to hide. */
+  assert.ok(
+    after[0].min > 0,
+    `relaxed clearance ${after[0].min.toFixed(1)}px is genuinely off the glyph, not just at its edge`,
+  );
 });
