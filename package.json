@@ -11,6 +11,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "images": "node scripts/generate-images.mjs",
+    "og:card": "node scripts/build-og-card.mjs",
     "trace:motif": "node scripts/trace-motif.mjs",
     "thread:import": "node scripts/import-thread-drawing.mjs",
     "test": "node --test content/*.test.ts components/**/*.test.ts 'scripts/**/*.test.mjs' 'scripts/**/*.test.ts'",
