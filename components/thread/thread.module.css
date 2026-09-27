@@ -5,12 +5,18 @@
    comment covers why the live `<path>` here deliberately does NOT carry `vector-effect:
    non-scaling-stroke`, unlike that retired model's `.ink`. */
 
-/* Zero layout: the small positioning span `page-thread.tsx`'s `coverRect` measures itself against
-   takes no space in flow and does not push Wishes' own stack apart when mounted as a sibling of its
-   children. Everything painted lives in its absolutely-positioned SVG children, sized and placed by
-   inline style once JS has measured a real target. */
+/* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
+   kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
+   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `WishesWeave` copies were
+   auto-placing into tracks of their own, which grew the grid past its four EXPLICIT rows and made
+   `.figureCol`'s `grid-row: 1 / -1` (spec: resolves against the explicit grid only) span two rows
+   instead of four (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
+   never be a grid item, while still being a positioned element -- `coverRect` needs exactly that to
+   place its absolutely-positioned SVG children, and both `relative` and `absolute` establish that
+   containing block equally. With no offsets set, an absolutely-positioned box sits at its own static
+   position, so nothing already relying on the old `relative` behaviour moves. */
 .pageWrapper {
-  position: relative;
+  position: absolute;
   display: block;
   height: 0;
   pointer-events: none;
