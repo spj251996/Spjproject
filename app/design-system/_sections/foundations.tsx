@@ -593,7 +593,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are Contact and the Celebrations rows, each set inline rather than through this component."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are Contact, the Celebrations rows and the link preview card, each set inline rather than through this component."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -746,7 +746,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, marks Contact, opens each Celebrations ritual row. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, marks Contact, opens each Celebrations ritual row, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"
