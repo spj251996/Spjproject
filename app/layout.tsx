@@ -48,7 +48,7 @@ const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Flemy & Sebastian",
-  description: "Wedding invitation for Flemy and Sebastian.",
+  description: "You’re invited — 9th January 2027, Koothattukulam, Keralam",
   robots: { index: false, follow: false },
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
      export carries them. Left alone rather than suppressed: they are free, they agree with the og:
@@ -58,14 +58,19 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: SITE_URL,
-    title: "Flemy & Sebastian",
-    description: "Wedding invitation for Flemy and Sebastian.",
+    /* Split from the document title deliberately: "…are getting married" is a good preview headline
+       and a clumsy browser-tab label. The card above it already carries the names in the script
+       face, so the title carries the occasion and the description carries the date and the town —
+       together the pair holds names, date and city (PROJECT.md → Link Sharing) with nothing said
+       twice. The card shows the state; this says the town the card omits. */
+    title: "Flemy & Sebastian are getting married",
+    description: "You’re invited — 9th January 2027, Koothattukulam, Keralam",
     images: [
       {
         url: "/og-card.jpg",
         width: 1200,
         height: 630,
-        alt: "Flemy and Sebastian, Saturday 9th January 2027, Koothattukulam",
+        alt: "Flemy and Sebastian, 9th January 2027, Keralam",
       },
     ],
   },
