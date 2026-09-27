@@ -54,8 +54,8 @@ import type { MeasuredSection, Rect } from "./thread-warp";
    rule applied one level up: a page this size cannot assume WHICH ancestor Task 6 mounts it under is
    positioned, any more than the thread's geometry can assume a card's width from a CSS variable. The
    one place this project still needs a real positioned ancestor is the static, no-JS fallback below
-   — CSS alone cannot self-measure, so `<main>` still needs `position: relative` for a no-JS reader
-   to see it placed correctly (Task 6; see this file's closing comment).
+   — CSS alone cannot self-measure, so it relies on `.pageWrapper` covering `<main>` by `inset: 0`
+   rather than by measurement (`thread.module.css`; see this file's closing comment).
 
    MEASURE, NEVER MODEL THE LAYOUT. Every section's `MeasuredSection` comes from two rects read at
    the same instant: the `<section>` itself (`top`/`height`) and its `.mounted-sheet-frame__box`
@@ -459,6 +459,15 @@ export function PageThread() {
             d={fallback.d}
             data-thread-fallback={fallback.band}
             key={fallback.band}
+            /* The fallback's `d` lives in a normalised 0-1 square (`thread-fallback.ts`'s
+               `normalise`), stretched by `.pageRoot`'s real box to cover `<main>` -- a coordinate
+               system nothing like the live path's, which is already in real page pixels 1:1
+               (this file's own header comment on why THAT path omits `vector-effect`). Without it,
+               `--stroke-thread`'s raw px value is read as that many USER-SPACE units in a space
+               where one unit is now ~1500px, which paints not a thread but a solid rectangle --
+               found on the first real no-JS render once `.pageWrapper` had a box to paint in at all
+               (`final-review-fixes.md`). */
+            vectorEffect="non-scaling-stroke"
           />
         ))}
       </svg>
@@ -603,8 +612,13 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   );
 }
 
-/* THE ONE THING TASK 6 MUST ADD BESIDES THE MOUNT ITSELF: `<main>` needs `position: relative` for
-   the STATIC, no-JS fallback's `position: absolute` to anchor against — everything JS-driven above
-   measures its own containing wrapper instead and does not depend on it, but CSS alone has no way to
-   self-measure, so the no-JS reader still needs a real positioned ancestor. `position: relative` adds
-   no z-index, so it opens no new stacking context and cannot touch the botanical blend layer. */
+/* THE ONE THING TASK 6 MUST ADD BESIDES THE MOUNT ITSELF: `<main>` needs `position: relative` so
+   `.pageWrapper`'s own `inset: 0` (`thread.module.css`) resolves against `<main>`'s box rather than
+   walking further up the ancestor chain to whatever the next positioned element happens to be (the
+   initial containing block, absent one) — the CORRECTED reason this rule exists; an earlier version
+   of this comment named `.pageRoot`, the wrapper's own child, which was never the thing depending on
+   `<main>` (`final-review-fixes.md`). Every JS-driven measurement above reads real rects via
+   `getBoundingClientRect()` and does not depend on which element establishes any containing block, so
+   `position: relative` matters only to the no-JS reader, who gets nothing else to size against.
+   `position: relative` adds no z-index, so it opens no new stacking context and cannot touch the
+   botanical blend layer. */

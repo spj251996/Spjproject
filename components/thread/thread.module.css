@@ -15,20 +15,26 @@
    384px -> 160px and spilled the illustration ~87px each way. Measured with `getComputedStyle`:
    `20px 140px 112px 112px` fixed against `20px 140px 0px 0px 112px 112px` broken
    (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
-   never be a grid item, while still being a positioned element -- `coverRect` needs exactly that to
-   place its absolutely-positioned SVG children, and both `relative` and `absolute` establish that
-   containing block equally. With no offsets set, an absolutely-positioned box sits at its own static
-   position, so nothing already relying on the old `relative` behaviour moves. */
+   never be a grid item, whatever size it renders at -- an absolutely positioned box never
+   participates in a flex or grid parent's layout, regardless of `inset`. `inset: 0` here (rather
+   than the `height: 0` this carried through the Wishes fix) is what lets this wrapper actually cover
+   `<main>` for the no-JS fallback below, which cannot self-measure and has no other way to size
+   itself (`page-thread.tsx`'s closing comment). `<main>` (`app/page.tsx`) already carries Tailwind's
+   `relative`, so this wrapper's containing block is `<main>`'s own box, not the viewport or some
+   further ancestor -- confirmed on a real `javaScriptEnabled: false` render
+   (`final-review-fixes.md`). */
 .pageWrapper {
   position: absolute;
   display: block;
-  height: 0;
+  inset: 0;
   pointer-events: none;
 }
 
 /* Positioned by `coverRect` once JS has measured; `inset: 0` is the CSS-only starting point a no-JS
-   reader gets, which is why `<main>` still needs `position: relative` (`page-thread.tsx`'s closing
-   comment) -- everything JS-driven measures its own wrapper instead and does not depend on it. */
+   reader gets. This rule resolves against `.pageWrapper` (its own nearest positioned ancestor), not
+   against `<main>` directly -- `.pageWrapper`'s own `inset: 0` above is what has to reach `<main>`,
+   and does, because `<main>` is already positioned. Everything JS-driven measures its own wrapper
+   instead and does not depend on either. */
 .pageRoot {
   position: absolute;
   inset: 0;
