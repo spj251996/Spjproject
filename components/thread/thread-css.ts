@@ -1,51 +1,38 @@
 /* Extension-qualified, unlike the rest of components/: plain node resolves a relative import only
    with its extension, and this module stays importable outside the app's bundler. */
 import { type Band, THREAD_BANDS } from "./thread-bands.ts";
-import {
-  type ConnectorEnd,
-  type Motif,
-  resolveEnd,
-  type SectionBox,
-  type Tangent,
-  TERMINAL_TANGENT,
-  type ThreadId,
-} from "./thread-geometry.ts";
-import {
-  anchorKey,
-  motifAngle,
-  routePoints,
-  type SectionRoute,
-  THREAD_IDS,
-  THREAD_ROUTES,
-} from "./thread-grid.ts";
+import { sectionBox } from "./thread-boxes.ts";
+import type { SectionBox, ThreadId } from "./thread-geometry.ts";
 import { MOTIFS } from "./thread-motifs.ts";
-import { type Point, splinePath } from "./thread-spline.ts";
+import {
+  type Connector,
+  MOTIF_PLACEMENTS,
+  type Placement,
+  THREAD_IDS,
+  THREAD_PATHS,
+} from "./thread-paths.ts";
 
-/* One section's red thread as a static stylesheet, generated from the section's own authored route.
-   Nothing here reads the page: the output is plain CSS that paints a COMPLETE thread on first
-   render, and the scroll-driven layer subtracts from it (DESIGN.md -> Components -> Shell ->
-   `thread-overlay`: "The complete thread is the base state, and the reveal subtracts from it").
-   Reduced motion, a page without scripting and a browser without scroll-linked animation therefore
-   all land on the same base with nothing to suppress.
+/* One section's red thread as a static stylesheet, generated from the owner's own drawn paths
+   (`thread-paths.ts`). Nothing here reads the page: the output is plain CSS that paints a COMPLETE
+   thread on first render, and the scroll-driven layer subtracts from it (DESIGN.md -> Components ->
+   Shell -> `thread-overlay`: "The complete thread is the base state, and the reveal subtracts from
+   it"). Reduced motion, a page without scripting and a browser without scroll-linked animation
+   therefore all land on the same base with nothing to suppress.
 
-   Geometry is emitted PER ASPECT BAND, not per width tier. A motif is a square while a section is
-   not, so it is the section's aspect that decides where a connector's ends land; each band's box is
-   the nominal pixel box of the device it was chosen for, and at that device the render is 1:1.
+   ONE BOX PER SECTION, CARD-ANCHORED, NOT ONE BOX PER CONNECTOR. Every connector used to get its own
+   SVG box, pinned to its two endpoints and stretched -- the single cause of a box collapsing to
+   1.79px wide, a non-monotone mask-lead constant, an oblique butt-cap cut, and 100:1 anisotropy. A
+   band's whole route now composes inside ONE `<svg viewBox="0 0 bandWidth sectionHeight">`
+   (`thread-boxes.ts`'s measured box), positioned and sized off the CARD rather than the viewport
+   (`/home/ag-95/.claude/plans/thread-authored-paths.md` -> Architecture). Every connector's `d` is
+   already in that same box's own pixels (Task 4), so nothing here re-scales a curve; the browser's
+   own `preserveAspectRatio="none"` stretch is the only distortion, and it is now UNIFORM across the
+   whole section rather than different per connector.
 
-   THE WHOLE THREAD DRAWS ITSELF. Every reveal — motif and connector alike — is a MASK per element:
+   THE WHOLE THREAD DRAWS ITSELF. Every reveal -- motif and connector alike -- is a MASK per element:
    a dashed, BUTT-capped stroked copy of the same `d`, carrying `0 {tail} {head - tail} 1` on
    `pathLength="1"`. The butt cap is load-bearing: a round cap on a zero-length dash paints a dot,
-   measured as stray specks. It is never a dash on the visible stroke, because every visible stroke
-   needs `vector-effect: non-scaling-stroke` — a viewBox unit is ~0.78 screen px at phone and ~2.0
-   at desktop, so one declared width would otherwise render at two — and a non-scaling stroke
-   fragments a `pathLength` dash into disjoint runs, measured, with no stretch at all
-   (`tmp/thread-spike/VERDICT.md` -> Q1).
-
-   A mask stops where its own path stops, while the visible stroke's ROUND CAP reaches half a stroke
-   width further. Every connector runs `JOIN_OVERLAP` past each of its own ends to cover that, rather
-   than a mask reaching past its path — see the constant. A CONNECTOR's mask needs one thing more,
-   because its box is stretched: its copy runs past the ink at both ends, so that the butt cap's
-   oblique cut lands clear of it — see `MASK_LEAD`.
+   measured as stray specks.
 
    Every selector starts from the section's scope class, so two threads on one page never collide.
    The stylesheet is unlayered, so it wins over the utility and component layers. */
@@ -57,6 +44,10 @@ export const THREAD_CLASS = {
      move ABOVE that blurred buffer instead of inside it. */
   inkLayer: "thread__ink-layer",
   lightLayer: "thread__light-layer",
+  /* One band's whole route, card-anchored and swapped in and out of view by the aspect query that
+     owns it -- three of these exist per layer, mutually exclusive, never a shared union. */
+  band: "thread__band",
+  /* The connectors' own field inside a band: one `<svg>`, one combined path, one mask. */
   field: "thread__field",
   connector: "thread__connector",
   inkReveal: "thread__ink-reveal",
@@ -80,30 +71,27 @@ export function threadScopeClass(id: ThreadId): string {
   return `thread--${id}`;
 }
 
-/* A segment's MOUNT KEY: which element in the markup carries it. Keyed by kind and, for a motif, by
-   the drawing itself — because a motif's `d` is markup, not CSS, so two bands placing different
-   motifs cannot share one element. The index alone is not enough: a break that carries a stub but
-   no motif shifts the connector/motif parity, so a connector and a motif can land on the same index
-   in two different bands. */
-function segmentKey(segment: ThreadSegment): string {
-  return segment.kind === "connector"
-    ? `seg-${segment.index}`
-    : `seg-${segment.index}-${segment.place.motif.id}`;
+function bandClass(bandId: Band["id"]): string {
+  return `${THREAD_CLASS.band}--${bandId}`;
 }
 
-export function segmentClass(segment: ThreadSegment): string {
-  return `thread__${segmentKey(segment)}`;
+function motifKey(bandId: Band["id"], index: number): string {
+  return `motif-${bandId}-${index}`;
 }
 
-function stubKey(which: ThreadStub["which"]): string {
-  return `stub-${which}`;
+function motifClass(bandId: Band["id"], index: number): string {
+  return `thread__${motifKey(bandId, index)}`;
 }
 
-function stubClass(which: ThreadStub["which"]): string {
-  return `${THREAD_CLASS.stub}--${which}`;
+function stubKey(bandId: Band["id"], which: "entry" | "exit"): string {
+  return `stub-${bandId}-${which}`;
 }
 
-/* One name per section, declared on the thread's own root — which spans the section edge to edge,
+function stubClass(bandId: Band["id"], which: "entry" | "exit"): string {
+  return `${THREAD_CLASS.stub}--${bandId}-${which}`;
+}
+
+/* One name per section, declared on the thread's own root -- which spans the section edge to edge,
    so its view progress IS the section's. `animation-timeline: view()` on a SEGMENT times it against
    that segment's own box, which differs per segment; with the named timeline all segments report
    the same progress to within 0.0003 (VERDICT.md -> Q1). */
@@ -120,10 +108,12 @@ export const THREAD_HOLD = 0.25;
    wisp a width and an opacity but no extent. Owner: design-write. */
 const WISP_EXTENT = 0.04;
 
-/* INFERRED, not stated: how far past a FREE end its stub reaches, in `svmin` — the same unit a
-   motif's square is sized in, so a stub is the same shape at every window. A free end is one with
-   no neighbouring section to hand the thread to; the stub is the wisp it keeps at rest.
-   Owner: design-write. */
+/* INFERRED, not stated: how far past a FREE end its stub reaches, as a fraction of the band's own
+   nominal `svmin`. A free end is one with no neighbouring section to hand the thread to; the stub is
+   the wisp it keeps at rest. Baked into the `d` in nominal pixels now (card-anchoring stretches the
+   whole section uniformly, the stub with it), where it used to be a live `svmin` CSS length -- a
+   deliberate simplification, not an oversight: the stub is decoration, and it now moves with the
+   same card-anchored geometry as everything else it is attached to. Owner: design-write. */
 const STUB_REACH = 0.08;
 
 /* Every motif's `d` is authored in a 0-100 square, not a 0-1 one (`thread-motifs.ts`, and
@@ -134,130 +124,145 @@ export const MOTIF_SIDE = 100;
 
 /* INFERRED, not stated: the mask stroke's width in the motif's own 0-100 square. The visible stroke
    is pinned at `--stroke-thread` by `vector-effect: non-scaling-stroke` while this one scales with
-   the motif, so the binding case is the SMALLEST motif on the narrowest supported viewport — the bow
-   at `scale: 0.12` on a 320px screen, 38.4px across, where 1.6px is 4.17 of these units.
-
-   MEASURED there against the same bow rendered with no mask at all: 4.5 leaves 96 of 1600 pixels
-   lighter than unmasked, 5 leaves 74, 6 leaves 12, and 7 and above leave 4 — the floor, which is the
-   round cap on the visible stroke that a butt-capped mask cannot reach. 6 is the knee, and 1.44x the
-   stroke rather than 1x because both edges are antialiased and the two partial alphas multiply.
-
-   Its stated upper bound — staying under the closest approach of two of the motif's own passes —
-   CANNOT be met at any width that satisfies the above: `rings` is drawn as a doubled contour 0.62
-   units apart and `portraitLoop` as offset passes 1.02 units apart, both deliberate, both an order
-   of magnitude under the lower bound. Over-width reveals a neighbouring pass early, which shows only
-   mid-scrub; under-width lightens the thread at rest. This takes the bound that has a render behind
-   it. Owner: design-write. */
+   the motif, so the binding case is the SMALLEST motif on the narrowest supported viewport -- the bow
+   at `scale: 0.12` on a 320px screen, 38.4px across, where 1.6px is 4.17 of these units. 6 is the
+   knee measured against that bow (`tmp/thread-spike`), unaffected by this refactor. Owner:
+   design-write. */
 const MASK_WIDTH = 6;
 
-/* The same knee, in CSS pixels, for a CONNECTOR's mask — which lives in a box stretched
-   non-uniformly, so its width cannot be stated in the box's own units the way a motif's can. The
-   generator converts: a stroke of `w` box-units renders `w x boxSide` px along each axis, so
-   covering the visible stroke on BOTH axes needs `w = COVER / min(boxWidth, boxHeight)`.
-
-   6 units on the 38.4px bow is 2.3px, and this takes 4 for the drift a band carries away from its
-   nominal device. Over-width costs a connector nothing, unlike a motif: a connector is one open
-   curve that never passes near itself, so there is no neighbouring pass for a wide mask to reveal
-   early. Owner: design-write. */
-const CONNECTOR_MASK_COVER = 4;
+/* The reveal width for the CONNECTOR field, in the section box's own nominal pixels -- a FIXED
+   generous constant rather than the old per-connector `CONNECTOR_MASK_COVER / min(box)` correction.
+   That correction existed because a connector's own box could compress to a single pixel on one
+   axis; one box per section removes that pathology, and the residual anisotropy left by the card
+   anchor is bounded (~1.4x at the plan's worst measured case, not the 100:1 a collapsed per-connector
+   box produced), so a fixed width comfortably clears the visible stroke on both axes without a
+   per-band correction. Unverified by render at the extreme end of that bound -- see the task report.
+   Owner: design-write. */
+const CONNECTOR_MASK_WIDTH = 10;
 
 /* MEASURED, in px: how far past each of its own ends a connector runs, so that a join reads as one
    continuous stroke.
 
    Every reveal mask is butt-capped and stops at its path's last point, while the visible stroke is
    round-capped and reaches `--stroke-thread` / 2 = 0.8px further. Two masks meeting at a shared
-   point therefore each cut half a cap away and leave a slit of ivory between two flat edges —
+   point therefore each cut half a cap away and leave a slit of ivory between two flat edges --
    rendered, bisected and measured at the Family joins: dropping the MOTIF mask alone closed the
    seam, dropping the connector's did nothing, and `stroke-linecap: square` on the motif mask closed
-   it too. The cap is the whole cause; the mask's width is not (24 units changed nothing).
+   it too. The cap is the whole cause; the mask's width is not.
 
-   The fix is the neighbour's ink, not a wider mask: a connector extended past the join runs along
-   the tangent it meets, which is collinear with the ink it covers, so the overlap is invisible
-   where it lands. Widening the mask instead is what the caps rule out — square or round caps paint
-   a square or a dot on every ZERO-LENGTH dash, which is what the retracted state and every
-   collapsed band are made of.
-
-   2px is 2.5x the 0.8px cap, which covers it at dpr 1 with the antialiased edge on both sides. Its
-   upper bound is the motif's own drawing: the overlap must not reach so far in that it reads as a
-   doubled line where the motif's ink curves away from its own tangent. Owner: design-write. */
+   Applied here as a plain straight-line extension along each end's own sampled tangent, in the
+   section's own nominal pixels -- no box, no stretch, no cotangent correction, because the field's
+   own coordinate system already IS the section's undistorted pixel box; the browser's later,
+   uniform, whole-section stretch is what the old per-connector model could never assume. Owner:
+   design-write. */
 export const JOIN_OVERLAP = 2;
 
-/* How far past the curve a reveal mask reaches, in the connector box's own units. It covers the
-   visible stroke's own half-width, which no unit of the box can state — a box is as small as one
-   pixel where a connector travels along a single axis. One whole box-width is generous at any size
-   and costs nothing: the mask is bounded by the curve, not by this. */
-const MASK_MARGIN = 1;
+/* How far past the section box a connector's reveal mask reaches on every side, in nominal pixels.
+   Generous and fixed rather than sampled: the old sampling existed because a collapsed per-connector
+   box could throw a control point hundreds of box-widths out; a section-wide box never collapses, so
+   a flat margin comfortably covering the join overlap, the stroke and the wisp's own reach costs
+   nothing to declare and needs no measurement. */
+const MASK_REGION_MARGIN = 48;
 
 /* INFERRED, not stated: the arc of the Wishes loop that passes BEHIND the illustration. DESIGN.md
    requires the under-segment to cross the drawn figures rather than the pale surround, which is a
-   routing requirement over a drawing that does not exist yet. Task 12 tunes it against the measured
-   bar (under-segment ink hidden >= 60%). Owner: design-write. */
+   routing requirement over a drawing that does not exist yet. Owner: design-write. */
 const WEAVE_BAND: readonly [number, number] = [0.3, 0.7];
 
-/* ---- the light ------------------------------------------------------------------------------ */
+/* ---- the card-anchored box ------------------------------------------------------------------- */
 
-/* PROVISIONAL, and DESIGN.md says so in those words: the bleed's three radii were carried across
-   from the retired glow and had never been rendered, because `{colors.thread-vermilion}` had no
-   consumer anywhere in the emitted CSS. The alphas and radii below are the doc's own, verbatim
-   (Domain Components -> Thread -> the `bleed:` line).
+/* The tier the frame's own content cap swaps on: `(64rem <= width < 100rem) and (orientation:
+   landscape)`, `mounted-sheet-frame.ts`'s own `BREAKPOINT_REM`. Written out literally rather than
+   imported -- the frame is a signed-off subsystem this task may read but never change, and the same
+   literal already appears throughout `app/page.tsx`'s own Tailwind arbitrary variants. */
+const COMPACT_CAP_QUERY =
+  "(orientation: landscape) and (64rem <= width < 100rem)";
 
-   It is NEVER animated. A filter over ink that is itself being revealed is re-rasterised while the
-   thread draws — the spike priced that blurred layer at +50ms/5s on its own — and an ANIMATED
-   filter would re-rasterise at rest as well, which is the cost the design exists to avoid.
+/* The card's own rendered width, reproduced in CSS from the same rule `mounted-sheet-frame-css.ts`
+   emits (`tmp/thread-draw/card-width-probe.mjs`, Task 1, 48/48 exact against the render):
+   `min(capContent, sectionWidth - 2 * ringSide)`. `--ring-side` is the frame's own resolved
+   `padding-inline`, a real custom property that inherits from the scope div ancestor -- reachable
+   only where the thread mounts INSIDE that subtree. Wishes does today (its `<SectionThread>` sits
+   inside `MountedSheet`'s own content); a section mounted as a bare sibling of the frame cannot reach
+   it by inheritance and falls back to `0px` -- a cap with no ring subtracted, not a correct answer.
+   See the task report: resolving that is the cutover's call, not this one's, and it is the plan's own
+   stated fork (Task 1, Step 3). */
+function cardWidthExpr(): string {
+  return "min(var(--thread-content-cap), calc(100% - 2 * var(--ring-side, 0px)))";
+}
 
-   `color-mix` rather than the relative-colour syntax: the alpha has to come off the token, and a
-   literal hex here would be a design value the sheet computed. Owner: design-write. */
-const BLEED: readonly (readonly [number, number])[] = [
-  [68, 3.5],
-  [44, 12],
-  [30, 33],
-];
+/* `bandWidth / nominalCardWidth`: the constant that turns the card's LIVE width into the band's own
+   rendered width, so that at the band's own nominal viewport the box renders exactly `bandWidth`
+   pixels wide and at every other viewport it stretches by the same ratio the card itself does.
+   MEASURED against the real render at each band's nominal viewport (tall 393x700, upright 820x1180,
+   wide 1536x695) -- see the task report for the probe and its numbers. A pair section (Event Info,
+   Family) can resolve a different `--ring-side` than a single one at the SAME viewport, which is why
+   this is keyed per section as well as per band, not assumed uniform. */
+/* MEASURED against the real page's own `.mounted-sheet-frame__box` at each band's nominal viewport
+   (`tmp/thread-debug/card-probe.mjs`), off Wishes -- the only section a card exists on today. `wide`
+   (960) reproduces Task 1's own probe exactly. `tall` and `upright` are read off the SAME single
+   section for every id, including the pairs (Event Info, Family): Task 1 found a pair CAN resolve a
+   narrower ring than a single at the same viewport (832 vs 768 at 1024x768), so this is a known
+   approximation, not a second measurement -- flagged in the task report, not silently assumed
+   exact. Re-measure per section once more of the page carries a real card (the cutover, Task 8). */
+const NOMINAL_CARD_WIDTH: Record<
+  Band["id"],
+  Record<Exclude<ThreadId, "not-found">, number>
+> = {
+  tall: {
+    invite: 361,
+    "event-info": 361,
+    contact: 361,
+    family: 361,
+    celebrations: 361,
+    wishes: 361,
+  },
+  upright: {
+    invite: 564,
+    "event-info": 564,
+    contact: 564,
+    family: 564,
+    celebrations: 564,
+    wishes: 564,
+  },
+  wide: {
+    invite: 960,
+    "event-info": 960,
+    contact: 960,
+    family: 960,
+    celebrations: 960,
+    wishes: 960,
+  },
+};
 
-/* INFERRED, not stated: how much of a section's thread the drawing head spans, tip and trail
-   together, as a fraction of the thread's own length. DESIGN.md calls it "a short bright dash at
-   the leading edge with further stroked copies of the same path behind it" and gives no figure.
-   Owner: design-write. */
-const HEAD_EXTENT = 0.06;
+function of(id: ThreadId): Exclude<ThreadId, "not-found"> {
+  return id === "not-found" ? "invite" : id;
+}
 
-/* INFERRED, not stated: the head's layers, brightest first, at the "falling opacity and width"
-   DESIGN.md asks for. Three is the fewest that reads as a tip with a trail behind it rather than
-   as one dash; each carries an equal share of `HEAD_EXTENT`.
+function cardRatio(id: ThreadId, band: Band): number {
+  return band.box.width / NOMINAL_CARD_WIDTH[band.id][of(id)];
+}
 
-   The brightest layer is as WIDE as the ink and takes a round cap while its dash has length — the
-   spike measured the laid ink's own round cap showing as a dark pip ahead of a butt-capped light
-   (168 against 252 on the darkest channel, ground 255). A round cap on a ZERO-length dash paints a
-   dot, so the cap is animated with the dash rather than declared. Owner: design-write. */
-export const HEAD_LAYERS: readonly {
-  name: string;
-  alpha: number;
-  width: number;
-}[] = [
-  { name: "tip", alpha: 1, width: 1 },
-  { name: "trail", alpha: 0.5, width: 0.8 },
-  { name: "fade", alpha: 0.22, width: 0.6 },
-];
+function connectorsFor(id: ThreadId, band: Band): readonly Connector[] {
+  return THREAD_PATHS[band.id][of(id)];
+}
 
-const HEAD_STEP = HEAD_EXTENT / HEAD_LAYERS.length;
+function placementsFor(id: ThreadId, band: Band): readonly Placement[] {
+  return MOTIF_PLACEMENTS[band.id][of(id)];
+}
 
-/* INFERRED, not stated: one re-trace pass and the gap between two passes, in seconds. DESIGN.md ->
-   Foundations -> Motion makes the re-trace's cadence "a deliberate exception to the duration and
-   easing scales" and gives no figure, so there is no token to read. Owner: design-write. */
-const RETRACE_PASS = 2.4;
-const RETRACE_GAP = 1.6;
-const RETRACE_CYCLE = RETRACE_PASS + RETRACE_GAP;
-const RETRACE_ACTIVE = RETRACE_PASS / RETRACE_CYCLE;
+/* A section hands the thread on to the one after it, so every boundary between two sections is a
+   terminal -- except the page's own two ends, and both of `not-found`'s, which is a screen with no
+   neighbours at all. `THREAD_IDS.indexOf` returns -1 for `not-found`, so both read as free ends,
+   which is exactly right: `not-found` is closed at both. */
+function hasEntry(id: ThreadId): boolean {
+  return THREAD_IDS.indexOf(id as (typeof THREAD_IDS)[number]) > 0;
+}
 
-/* A pass carries the head its own extent PAST the thread's last point, exactly as the draw does, so
-   the pen runs off the end instead of parking on it. */
-const RETRACE_REACH = 1 + HEAD_EXTENT;
-
-/* UNSET, and provisional until the owner tunes it: how long `not-found`'s draw takes and how long
-   it waits before starting, in seconds. Every other surface takes its pace from the reader's own
-   scroll, so there is no duration anywhere in the system to read this one off, and DESIGN.md gives
-   none. The two values below are placeholders chosen to be obviously watchable, nothing more.
-   Owner: design-write. */
-const TIMED_DRAW_DELAY = 0.4;
-const TIMED_DRAW_DURATION = 2.4;
+function hasExit(id: ThreadId): boolean {
+  const at = THREAD_IDS.indexOf(id as (typeof THREAD_IDS)[number]);
+  return at !== -1 && at < THREAD_IDS.length - 1;
+}
 
 function round(value: number): string {
   const fixed = value.toFixed(5).replace(/\.?0+$/, "");
@@ -266,11 +271,7 @@ function round(value: number): string {
 
 /* ---- the bands ------------------------------------------------------------------------------ */
 
-/* Bounded ranges, not open-ended minimums, and half-open so no aspect can match two bands. The
-   brief's `(min-aspect-ratio: a) and (max-aspect-ratio: b)` spelling is inclusive at BOTH ends, so
-   two adjacent bands would both match exactly at their shared edge — the overlap
-   `thread-grid.test.ts` exists to forbid. The range syntax below is what the frame's own generated
-   sheet already uses for widths, for the same reason. */
+/* Bounded ranges, not open-ended minimums, and half-open so no aspect can match two bands. */
 function aspectQuery(band: Band): string {
   if (band.min === 0) return `(aspect-ratio < ${round(band.max)})`;
   if (band.max === Number.POSITIVE_INFINITY) {
@@ -279,99 +280,15 @@ function aspectQuery(band: Band): string {
   return `(${round(band.min)} <= aspect-ratio < ${round(band.max)})`;
 }
 
-/* `not-found` is a one-to-one copy of the invite's thread — the same route, not a placement of its
-   own. It is closed at both ends, because it has no neighbouring section to hand the thread to. */
-function routeFor(id: ThreadId, band: Band): SectionRoute {
-  const of = id === "not-found" ? "invite" : id;
-  const route = THREAD_ROUTES.find(
-    (candidate) => candidate.id === of && candidate.band === band.id,
-  );
-  if (route === undefined) {
-    throw new Error(`thread-css: no route for "${id}" in band "${band.id}"`);
-  }
-  return route;
-}
-
-/* A section hands the thread on to the one after it, so every boundary between two sections is a
-   terminal. The two ends of the PAGE are free instead, and so are both of `not-found`'s — a screen
-   with no neighbours at all. A free end keeps a wisp at rest; a terminal's wisp is the next
-   section's ink. */
-function hasEntry(id: ThreadId): boolean {
-  return THREAD_IDS.indexOf(id) > 0;
-}
-
-function hasExit(id: ThreadId): boolean {
-  const at = THREAD_IDS.indexOf(id);
-  return at !== -1 && at < THREAD_IDS.length - 1;
-}
-
-/* ---- pinning a connector's box ------------------------------------------------------------- */
-
-/* A position the browser resolves rather than the generator: a percentage of the section box, a
-   multiple of `svmin` — the unit `--thread-motif-side` is written in — and a pixel allowance. The
-   three never collapse into one number at build time, because their ratio is the section's aspect
-   and no nominal box knows it. */
-type CssLength = { pct: number; svmin: number; px: number };
-
-function endLength(
-  end: ConnectorEnd,
-  axis: "x" | "y",
-  sign: 1 | -1,
-  overlap: number,
-): CssLength {
-  const radians = (end.tangent.angle * Math.PI) / 180;
-  return {
-    pct: end.fraction[axis] * 100,
-    svmin: end.svmin[axis] * 100,
-    px: sign * overlap * (axis === "x" ? Math.cos(radians) : Math.sin(radians)),
-  };
-}
-
-function lengthCss(length: CssLength): string {
-  const terms: string[] = [];
-  for (const [value, unit] of [
-    [length.pct, "%"],
-    [length.svmin, "svmin"],
-    [length.px, "px"],
-  ] as const) {
-    if (Math.abs(value) < 1e-9) continue;
-    const sign =
-      terms.length === 0 ? (value < 0 ? "-" : "") : value < 0 ? " - " : " + ";
-    terms.push(`${sign}${round(Math.abs(value))}${unit}`);
-  }
-  if (terms.length === 0) return "0px";
-  const sum = terms.join("");
-  return terms.length === 1 ? sum : `calc(${sum})`;
-}
-
-/* The box an element is given so it spans every point the curve passes through, whichever way round
-   they fall — `min` and `max` are order-free, which is what lets a waypoint sit between the two
-   ends without the generator having to know which end is nearer.
-
-   The 1px floor keeps a box that collapses on one axis — a connector that travels straight down —
-   from becoming a zero-size SVG viewport, which renders nothing at all; it costs at most 1px, and
-   only where every point is already within 1px of the others on that axis. */
-function boxCss(lengths: readonly CssLength[]): {
-  start: string;
-  size: string;
-} {
-  const terms = lengths.map(lengthCss);
-  const start = terms.length === 1 ? terms[0] : `min(${terms.join(", ")})`;
-  const end = terms.length === 1 ? terms[0] : `max(${terms.join(", ")})`;
-  return {
-    start,
-    size: terms.length === 1 ? "1px" : `max(1px, calc(${end} - ${start}))`,
-  };
-}
-
 /* ---- path reading ------------------------------------------------------------------------- */
 
+type Point = { x: number; y: number };
 type Command = { code: string; points: Point[] };
 
 /* Only the commands the thread actually uses. Anything else THROWS rather than being skipped or
    approximated: an arc silently measured as a straight line would put a wrong number into every
    keyframe stop, and a wrong number that looks plausible is the failure this project keeps
-   re-learning. A motif's drawing must stay inside this set or extend it deliberately. */
+   re-learning. */
 function parsePath(d: string): Command[] {
   const tokens = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
   const commands: Command[] = [];
@@ -425,9 +342,9 @@ function cubic(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
 
 const SAMPLES = 48;
 
-/* Every drawn point of a path, in order, in the box it is rendered in. Arc length, the mask region
-   and the reparametrisation below all read the same samples, so none of them can disagree with
-   another. */
+/* Every drawn point of a path, in order, in the box it is rendered in. `box` scales the drawing --
+   `{1,1}` reads it in its own literal units, which is what every connector and every motif is
+   measured in now that neither lives inside a distorted per-element box. */
 function samplePath(d: string, box: SectionBox): Point[] {
   const scale = (p: Point) => ({ x: p.x * box.width, y: p.y * box.height });
   const points: Point[] = [];
@@ -443,6 +360,7 @@ function samplePath(d: string, box: SectionBox): Point[] {
       case "M":
         cursor = absolute[0];
         start = cursor;
+        points.push(scale(cursor));
         break;
       case "L":
         points.push(scale(cursor), scale(absolute[0]));
@@ -500,9 +418,7 @@ export function pathLength(d: string, box: SectionBox): number {
   return lengths[lengths.length - 1] ?? 0;
 }
 
-/* The drawn extent of a path in the box it is rendered in. Test-facing, like `pathLength` above, and
-   reading the same samples so the two cannot disagree: it is what lets a test say "a motif is drawn
-   inside its own field" against the units rather than against a viewBox spelling. */
+/* The drawn extent of a path in the box it is rendered in. Test-facing, like `pathLength` above. */
 export function pathBounds(
   d: string,
   box: SectionBox,
@@ -516,664 +432,78 @@ export function pathBounds(
   };
 }
 
-/* A `pathLength="1"` dash is measured in the path's OWN user space, and a connector's is the unit
-   square its box stretches. So a band the owner reads as "half drawn" is half of the distorted
-   length, not half of the rendered one, and the pen speeds up and slows down with direction.
-
-   This is the correction: a monotone map from a fraction of the RENDERED arc, in the band's nominal
-   pixels, to the fraction of the user-space arc that reaches the same point. A uniformly scaled path
-   — every motif — maps identically and is left alone. */
-type Reparametrise = (fraction: number) => number;
-
-function reparametrise(
-  d: string,
-  box: SectionBox,
-  /* The stretch of `d` the fraction is a fraction OF, in the box's pixels: a mask copy runs past
-     the ink it reveals at both ends, so "half drawn" is half of the ink, not half of the copy. */
-  window: { from: number; reach: number } | null = null,
-): Reparametrise {
-  const drawn = cumulative(samplePath(d, box));
-  const user = cumulative(samplePath(d, { width: 1, height: 1 }));
-  const total = drawn[drawn.length - 1];
-  const userTotal = user[user.length - 1];
-  if (!(total > 0) || !(userTotal > 0)) return (fraction) => fraction;
-  const from = window?.from ?? 0;
-  const reach = window?.reach ?? total;
-  return (fraction) => {
-    /* The ends SNAP to the copy's own ends rather than to the ink's. A fully drawn band has to
-       cover the lead, or the cap lands back on the ink and the lead buys nothing; a fully
-       retracted one has to start behind it, for the same reason at the other end. In between the
-       rate is the ink's own, so the pen still advances evenly along what the reader sees. */
-    if (fraction <= 0) return 0;
-    if (fraction >= 1) return 1;
-    const target = from + fraction * reach;
-    let at = 1;
-    while (at < drawn.length - 1 && drawn[at] < target) at += 1;
-    const span = drawn[at] - drawn[at - 1];
-    const share = span < 1e-12 ? 0 : (target - drawn[at - 1]) / span;
-    return (user[at - 1] + share * (user[at] - user[at - 1])) / userTotal;
-  };
+/* The unit tangent at one end of a path, sampled from its first (or last) two drawn points -- not
+   derived from a declared angle, because a section boundary and a free page-end carry no authored
+   tangent at all (`thread-paths.ts`'s own docstring: "the drawn sheet leaves it loose"). Read at the
+   START this points BACKWARD, continuing before the path's first point -- exactly the direction an
+   entry stub needs; read at the END it points FORWARD, past the last point -- an exit stub's
+   direction. */
+function tangentAt(d: string, atStart: boolean): Point {
+  const points = samplePath(d, { width: 1, height: 1 });
+  const [near, far] = atStart
+    ? [points[0], points[1]]
+    : [points[points.length - 1], points[points.length - 2]];
+  const dx = near.x - far.x;
+  const dy = near.y - far.y;
+  const size = Math.hypot(dx, dy);
+  return size < 1e-9 ? { x: 0, y: 0 } : { x: dx / size, y: dy / size };
 }
 
-/* A connector's box is stretched non-uniformly, and that is what makes its mask a different problem
-   from a motif's. A `stroke-linecap: butt` is square-on to the path in the element's OWN space, and
-   an anisotropic stretch turns it into an OBLIQUE cut across the rendered stroke — so the cap slices
-   a wedge back ALONG the path instead of across it. MEASURED at the tall band's Event Info join,
-   where the box is 84.5 x 272.8: the mask ended 5.5 px short of its own path's end and the thread
-   rendered in two pieces. `stroke-linecap: square` closes it and is ruled out — a square cap paints
-   a square on every zero-length dash, which the retracted state is made of — and
-   `vector-effect: non-scaling-stroke` closes it and is ruled out too: re-measured here, it fragments
-   the `pathLength` dash into 81 disjoint runs, exactly as the spike recorded (VERDICT.md -> Q1).
-
-   So the mask copy RUNS PAST the ink at both ends, and the dash is mapped onto the stretch in the
-   middle. The lead SCALES with `cot(the angle between the rendered cap line and the rendered path)`,
-   computed per end rather than guessed, because that is the quantity the wedge grows with — but the
-   multiplier is MEASURED, not derived. The obvious derivation (half the visible stroke times that
-   cotangent) predicts 1.1 px at the tall band's Event Info join against 5.5 px observed, so it is
-   wrong by about 5x and only its SHAPE is trusted here. 8 px at cot 1 is what closes every one of
-   the join gate's 84 renders; 4 px leaves 26 of them broken in the `upright` band. The cap at 96 px
-   is so a near-tangential end cannot produce an absurd path.
-
-   None of the lead is ever inked. It is covered only when a band reaches the ink's own end, where
-   the mapping snaps to the copy's end — see `reparametrise`. Owner: design-write. */
-const MASK_LEAD = 8;
-const MAX_MASK_LEAD = 96;
-
-function maskCopy(
-  d: string,
-  nominal: SectionBox,
-): { d: string; along: Reparametrise } {
-  const drawn = samplePath(d, nominal);
-  const user = samplePath(d, { width: 1, height: 1 });
-  const total = pathLength(d, nominal);
-  if (drawn.length < 2 || !(total > 0)) {
-    return { d, along: reparametrise(d, nominal) };
-  }
-
-  const lead = (at: "start" | "end") => {
-    const [near, far] =
-      at === "start"
-        ? [
-            { drawn: drawn[0], user: user[0] },
-            { drawn: drawn[1], user: user[1] },
-          ]
-        : [
-            { drawn: drawn[drawn.length - 1], user: user[user.length - 1] },
-            { drawn: drawn[drawn.length - 2], user: user[user.length - 2] },
-          ];
-    const tangent = {
-      x: near.drawn.x - far.drawn.x,
-      y: near.drawn.y - far.drawn.y,
-    };
-    const size = Math.hypot(tangent.x, tangent.y);
-    if (size < 1e-9) return { reach: MASK_MARGIN, step: { x: 0, y: 0 } };
-    const step = { x: tangent.x / size, y: tangent.y / size };
-    /* The cap line: the user-space normal, carried through the same stretch the path is. */
-    const normal = {
-      x: -(near.user.y - far.user.y) * nominal.width,
-      y: (near.user.x - far.user.x) * nominal.height,
-    };
-    const cross = Math.abs(step.x * normal.y - step.y * normal.x);
-    const along = Math.abs(step.x * normal.x + step.y * normal.y);
-    const wedge = cross < 1e-9 ? MAX_MASK_LEAD : along / cross;
-
-    return {
-      reach: Math.min(MAX_MASK_LEAD, MASK_LEAD * (1 + wedge)),
-      step,
-    };
+/* The same curve, extended `JOIN_OVERLAP` px past both ends along each end's own sampled tangent, so
+   the round-capped visible stroke on the far side of a join is fully covered by this butt-capped
+   mask. Plain straight extensions in the section's own undistorted pixels -- no wedge, no lead
+   correction, because there is no per-connector stretch left to correct for. */
+function extendReveal(d: string): string {
+  const points = samplePath(d, { width: 1, height: 1 });
+  const first = points[0];
+  const last = points[points.length - 1];
+  const startDir = tangentAt(d, true);
+  const endDir = tangentAt(d, false);
+  const head = {
+    x: first.x + startDir.x * JOIN_OVERLAP,
+    y: first.y + startDir.y * JOIN_OVERLAP,
   };
-
-  const point = (at: "start" | "end") => {
-    const { reach, step } = lead(at);
-    const from = at === "start" ? user[0] : user[user.length - 1];
-    return {
-      reach,
-      x: from.x + (reach * step.x) / nominal.width,
-      y: from.y + (reach * step.y) / nominal.height,
-    };
+  const tail = {
+    x: last.x + endDir.x * JOIN_OVERLAP,
+    y: last.y + endDir.y * JOIN_OVERLAP,
   };
-  const head = point("start");
-  const tail = point("end");
-
-  /* `M a L b` in place of the original `M b`, and one `L` past the far end: the copy is the same
-     curve with a straight lead at each end, so the dash's own arithmetic is unchanged. */
-  const body = d.replace(/^M\s+[-\d.]+\s+[-\d.]+\s*/, "");
-  const first = user[0];
-  const extended = `M ${round(head.x)} ${round(head.y)} L ${round(first.x)} ${round(first.y)} ${body} L ${round(tail.x)} ${round(tail.y)}`;
-
-  return {
-    d: extended,
-    along: reparametrise(extended, nominal, {
-      from: head.reach,
-      reach: total,
-    }),
-  };
+  const body = d.replace(/^M\s*[-\d.]+[\s,]+[-\d.]+\s*/, "");
+  return `M ${round(head.x)} ${round(head.y)} L ${round(first.x)} ${round(first.y)} ${body} L ${round(tail.x)} ${round(tail.y)}`;
 }
 
-/* ---- the route, resolved -------------------------------------------------------------------- */
-
-/* A motif IS turned onto the route it sits on: `motifAngle` — the spline's own direction of travel
-   through the stop, plus that stop's `nudge` — turns the drawing and both of its attachment points
-   together. Every drawing is authored travelling left to right, so a route running down the page
-   turns its motifs a quarter turn and the thread reads as one continuous line rather than a
-   vertical run interrupted by sideways glyphs.
-
-   BOTH HALVES OR NEITHER. The drawing turns in CSS, on the motif's own element; the two points the
-   connectors attach to are turned here, in the composed geometry. Turning one without the other
-   detaches the thread from its own motif, which is worse than not turning it at all — the join gate
-   (`npm run check:thread-joins`) is what proves it on a render, and
-   `a motif is turned onto its route, drawing and attachment points together` proves it in the
-   model.
-
-   THE TURN CAN PUT A MOTIF'S EXIT BEHIND ITS ENTRY, and that is deliberately not prevented here.
-   Turning throws the drawing's whole chord onto the axis the route travels, so two consecutive
-   attachment points can invert: with the seeded scales, `rings` at 0.44 and `knot` at 0.29 on a
-   four-row grid, they cross at `r = 0.685` — the window's shorter side over the section's height,
-   which no media query can see. Past that the thread runs back up itself. Clamping the angle would
-   hide the very thing the owner has to see to tune around it, so the crossing is made VISIBLE
-   instead: the grid panel carries a live readout of the `r` each connector inverts at, validated
-   against that same 0.685. The scales and the grid are the owner's to tune; the turn follows
-   them. */
-
-export type MotifPlacement = {
-  motif: Motif;
-  x: number;
-  y: number;
-  scale: number;
-  /* How far the route turns this motif, in degrees. Zero is the drawing as authored, and is emitted
-     as NO declaration at all: `rotate: 0deg` is still a transform, which hands the element to the
-     compositor and resamples a drawing nobody turned. */
-  turn: number;
-  /* The stop's own `anchor` selector, carried through so the emitted position can fall back to this
-     placement's cell. Composition itself never reads it: a connector is still built against the
-     cell, because the anchor's own position is not known until the page lays out. */
-  anchor?: string;
-};
-
-/* A motif's position on one axis: the authored cell, or — where the stop anchors — the custom
-   property `thread-anchors.ts` writes, WITH the cell as its fallback. Before that script runs, or
-   if it never runs at all, the cell is what paints; the motif is then slightly off rather than
-   missing. */
-function motifAxis(place: MotifPlacement, axis: "x" | "y"): string {
-  const cell = round(place[axis]);
-  return place.anchor === undefined
-    ? cell
-    : `var(--thread-anchor-${anchorKey(place.anchor)}-${axis}, ${cell})`;
-}
-
-/* One attachment point, turned with the drawing it sits on. The offset is taken off the square's
-   CENTRE, which is what the element rotates about — `.motif` is translated to its cell by -50%/-50%
-   before `rotate` applies, so the turn's origin is the same point on both sides. The square is
-   sized off `svmin` on both axes, so the turn is isotropic here exactly as it is on screen; a
-   connector's stretched box never enters this. */
-function motifEnd(place: MotifPlacement, tangent: Tangent): ConnectorEnd {
-  const radians = (place.turn * Math.PI) / 180;
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
-  const x = tangent.x - 0.5;
-  const y = tangent.y - 0.5;
-  return {
-    fraction: { x: place.x, y: place.y },
-    svmin: {
-      x: (x * cos - y * sin) * place.scale,
-      y: (x * sin + y * cos) * place.scale,
-    },
-    /* The connector is built THROUGH the point this tangent names, so the angle has to turn with
-       the offset or the two meet at a kink. */
-    tangent: { ...tangent, angle: tangent.angle + place.turn },
-  };
-}
-
-function plainEnd(point: Point, angle: number): ConnectorEnd {
-  return {
-    fraction: { x: point.x, y: point.y },
-    svmin: { x: 0, y: 0 },
-    tangent: { x: 0, y: 0, angle },
-  };
-}
-
-/* A point where the thread is interrupted: a terminal on the section's edge, a free end at the top
-   or bottom of the page, or a motif — which the thread enters on one side and leaves on the other,
-   so its two ends differ. Everything between two breaks is one connector, and the route's remaining
-   stops are the waypoints it passes through. */
-type Break = {
-  arrive: ConnectorEnd;
-  depart: ConnectorEnd;
-  motif: MotifPlacement | null;
-  stub: "entry" | "exit" | null;
-};
-
-function breaksAndWaypoints(
-  id: ThreadId,
-  band: Band,
-): { breaks: Break[]; between: Point[][] } {
-  const route = routeFor(id, band);
-  const points = routePoints(route);
-  const last = points.length - 1;
-
-  const breaks: Break[] = [];
-  const between: Point[][] = [];
-  let pending: Point[] = [];
-
-  const push = (made: Break) => {
-    if (breaks.length > 0) between.push(pending);
-    pending = [];
-    breaks.push(made);
-  };
-
-  if (hasEntry(id)) {
-    const end = plainEnd({ x: points[0].x, y: 0 }, TERMINAL_TANGENT.angle);
-    push({ arrive: end, depart: end, motif: null, stub: null });
-  }
-
-  route.stops.forEach((stop, at) => {
-    const free =
-      (at === 0 && !hasEntry(id)) || (at === last && !hasExit(id))
-        ? at === 0 && !hasEntry(id)
-          ? "entry"
-          : "exit"
-        : null;
-
-    if (stop.motif === undefined) {
-      if (free === null) {
-        pending.push(points[at]);
-        return;
-      }
-      const end = plainEnd(points[at], motifAngle(route, at));
-      push({ arrive: end, depart: end, motif: null, stub: free });
-      return;
-    }
-
-    const motif = MOTIFS[stop.motif];
-    const place: MotifPlacement = {
-      motif,
-      x: points[at].x,
-      y: points[at].y,
-      scale: stop.scale ?? 0.3,
-      turn: motifAngle(route, at),
-      anchor: stop.anchor,
-    };
-    push({
-      arrive: motifEnd(place, motif.entry),
-      depart: motifEnd(place, motif.exit),
-      motif: place,
-      stub: free,
-    });
-  });
-
-  if (hasExit(id)) {
-    const end = plainEnd({ x: points[last].x, y: 1 }, TERMINAL_TANGENT.angle);
-    push({ arrive: end, depart: end, motif: null, stub: null });
-  }
-
-  return { breaks, between };
-}
-
-/* ---- segments ----------------------------------------------------------------------------- */
+/* ---- segments, for the scrub's arc budget --------------------------------------------------- */
 
 export type ThreadSegment =
-  | {
-      kind: "connector";
-      index: number;
-      /* The two ends and the stops between them this connector was composed from — an alternate
-         geometry for a window where the ends fall the other way round is re-composed from them. */
-      from: ConnectorEnd;
-      to: ConnectorEnd;
-      waypoints: readonly Point[];
-      /* Normalised into this connector's own box: its two ends are the box's opposite corners, so
-         nothing here carries the section's aspect. The box does, in CSS. */
-      d: string;
-      /* The same curve, run past both ends, for the mask copy to be dashed along. */
-      revealD: string;
-      length: number;
-      /* Rendered arc fraction -> user-space arc fraction, so the dash advances evenly on screen. */
-      along: Reparametrise;
-      /* The mask's stroke width in this box's own units, sized to cover the visible stroke on
-         whichever axis the box compresses hardest. */
-      maskWidth: number;
-      /* How far past its box, in box units, this band's curve and its mask reach. The mask's own
-         region is a markup attribute and cannot vary per band, so the component takes the widest. */
-      region: { min: number; max: number };
-      box: { left: string; top: string; width: string; height: string };
-    }
-  | {
-      kind: "motif";
-      index: number;
-      place: MotifPlacement;
-      length: number;
-    };
+  | { kind: "connector"; index: number; d: string; length: number }
+  | { kind: "motif"; index: number; place: Placement; length: number };
 
-function connectorSegment(
-  index: number,
-  from: ConnectorEnd,
-  to: ConnectorEnd,
-  waypoints: readonly Point[],
-  box: SectionBox,
-): ThreadSegment {
-  /* Both ends run `JOIN_OVERLAP` past themselves along the tangent they are met on, so the ink
-     covers the round cap the neighbour's butt-capped mask cuts away. */
-  const start = resolveEnd(from, box, JOIN_OVERLAP, -1);
-  const finish = resolveEnd(to, box, JOIN_OVERLAP, 1);
-  const through = [start, ...waypoints, finish];
-
-  /* The box is pinned to the connector's two ENDS and to nothing else, so its two corners ARE the
-     two points the curve has to meet and a join costs nothing at any window. A waypoint between
-     them is normalised into that same frame and may fall outside the box, which `.field`'s
-     `overflow: visible` renders. */
-  const horizontal = boxCss([
-    endLength(from, "x", -1, JOIN_OVERLAP),
-    endLength(to, "x", 1, JOIN_OVERLAP),
-  ]);
-  const vertical = boxCss([
-    endLength(from, "y", -1, JOIN_OVERLAP),
-    endLength(to, "y", 1, JOIN_OVERLAP),
-  ]);
-
-  /* The same span, in the band's nominal pixels, with the same 1px floor the CSS above takes — so
-     the two cannot disagree about a collapsed axis. On a collapsed axis one box unit is one nominal
-     pixel, which keeps both ends exactly on the box's own edge and lets a waypoint's excursion
-     still be drawn rather than flattened to the middle. */
-  const span = (axis: "x" | "y") => {
-    const side = axis === "x" ? box.width : box.height;
-    const at = [start[axis] * side, finish[axis] * side];
-    const min = Math.min(...at);
-    return { min, size: Math.max(1, Math.max(...at) - min), side };
-  };
-  const spanX = span("x");
-  const spanY = span("y");
-  /* The band's own pixels, which is where the curve is SHAPED: a bisector and a control arm only
-     mean what they say in a space where a distance is a distance. */
-  const pixels = (point: Point): Point => ({
-    x: point.x * spanX.side,
-    y: point.y * spanY.side,
-  });
-  /* And the box the curve is EMITTED in, whose two corners are the connector's two ends. */
-  const inBox = (point: Point): Point => ({
-    x: (point.x - spanX.min) / spanX.size,
-    y: (point.y - spanY.min) / spanY.size,
-  });
-
-  /* The curve LEAVES `from` and ARRIVES at `to` along the tangent it is met on — a motif's own
-     entry/exit, or a section terminal's vertical one — instead of pointing at the nearest waypoint,
-     which is what a Catmull-Rom end duplicating its neighbour gives. That mismatch is the kink that
-     makes a drawing read as pasted on rather than threaded through, and it became permanent when the
-     panel started PINNING a motif's angle: before that the motif drifted toward the spline's
-     direction and hid it.
-
-     The angle is the one `resolveEnd` runs the join overlap along, so it is stated in the band's
-     pixels — the same space the points are handed over in, and the reason none of this has to know
-     the box's stretch. */
-  const direction = (end: ConnectorEnd): Point => {
-    const radians = (end.tangent.angle * Math.PI) / 180;
-    return { x: Math.cos(radians), y: Math.sin(radians) };
-  };
-
-  const d = splinePath(through.map(pixels), {
-    ends: { start: direction(from), end: direction(to) },
-    project: inBox,
-  });
-  const maskWidth = CONNECTOR_MASK_COVER / Math.min(spanX.size, spanY.size);
-  const nominal = { width: spanX.size, height: spanY.size };
-  const reveal = maskCopy(d, nominal);
-
-  /* The region has to hold the mask's own stroke, so it is measured off the CURVE — sampled — and
-     not off the control points that shape it. A cubic does stay inside the hull of its four points,
-     which is why the hull was used, but that bound is loose exactly where it matters: a connector
-     whose two ends nearly share an axis has a box one pixel wide on it, and a control point then
-     sits HUNDREDS of box widths out while the curve itself stays within a few. The region is
-     `userSpaceOnUse` markup, so that number became the size of the mask buffer the browser is asked
-     to rasterise — and at the tall band `event-info`'s seeded route asked for a region 424 box units
-     square, which came back with the thread's ink missing in stretches. The sampled bound is the one
-     the painted stroke actually needs, and it reads the geometry rather than the emitted text, so a
-     coordinate in exponent form cannot be misread as a coordinate of its own. */
-  const reach = samplePath(reveal.d, { width: 1, height: 1 }).flatMap(
-    (point) => [point.x, point.y],
-  );
-  const region = {
-    min: Math.min(0, ...reach) - MASK_MARGIN - maskWidth / 2,
-    max: Math.max(1, ...reach) + MASK_MARGIN + maskWidth / 2,
-  };
-
-  return {
-    kind: "connector",
-    index,
-    from,
-    to,
-    waypoints,
-    d,
-    revealD: reveal.d,
-    length: pathLength(d, nominal),
-    along: reveal.along,
-    maskWidth,
-    region,
-    box: {
-      left: horizontal.start,
-      top: vertical.start,
-      width: horizontal.size,
-      height: vertical.size,
-    },
-  };
-}
-
-/* A connector's box holds its two ends whichever way round they fall, but the curve inside it is
-   normalised to named corners — so the generator has to know which end is the near one, and that
-   can change with the window.
-
-   An end sits at `fraction x sectionSide + svmin x window`, so the order of two ends turns on
-   `r = svmin / sectionSide`: their separation is `a + b*r`, and where that crosses zero the two
-   swap. Measured, not supposed: under the retired placements Wishes' first connector crossed at
-   r = 0.476, and at 1920x900 — an ordinary maximised window — its end landed 5px from the motif and
-   at 2560x900, 67px.
-
-   Across the WIDTH axis `r` is `min(1, height/width)` of the window itself, which a media query can
-   state as an aspect ratio, so a crossing inside the band's own range is emitted as a second
-   geometry and the browser picks. Down the HEIGHT axis `r` is the window's shorter side over the
-   SECTION's height, which no media query can see — and an end order that turned over down the page
-   would mean a thread running back up it. `no connector's box changes which point pins it` is what
-   holds that, since the generator cannot. */
-function flipAspect(from: ConnectorEnd, to: ConnectorEnd): number | null {
-  const constant = from.fraction.x - to.fraction.x;
-  const perSvmin = from.svmin.x - to.svmin.x;
-  if (Math.abs(perSvmin) < 1e-9) return null;
-  const crossing = -constant / perSvmin;
-  return crossing > 0 && crossing < 1 ? 1 / crossing : null;
-}
-
-/* The box a band's own aspect would have if the window sat at `aspect` — the band's height is kept,
-   so only the quantity under test moves. */
-function aspectBox(band: Band, aspect: number): SectionBox {
-  return { width: band.box.height * aspect, height: band.box.height };
-}
-
-/* The SECOND geometry a connector can be emitted with, where its two ends swap which corner of the
-   box pins them inside this band's own aspect range — and `null` where they cannot.
-
-   One copy, read by the generator AND by `threadMaskRegions`. It used to live inline in the
-   generator alone, so the alternate's curve was emitted while the mask region that has to hold it
-   was measured from the base geometry only. The alternate is composed against a different box, so
-   its curve can reach much further out, and where it did the mask clipped the visible stroke and
-   the section rendered in pieces — with every unit test, the types and the build green, because
-   nothing outside a render can see a mask region that is too small. */
-function alternateGeometry(
-  segment: ThreadSegment,
-  band: Band,
-): { flip: number; below: boolean; segment: ThreadSegment } | null {
-  if (segment.kind !== "connector") return null;
-  const flip = flipAspect(segment.from, segment.to);
-  if (flip === null || flip <= band.min || flip >= band.max) return null;
-  const composed = Math.max(1, band.box.width / band.box.height);
-  const below = composed < flip;
-  const aspect = below
-    ? Math.min(
-        flip * 1.5,
-        band.max === Number.POSITIVE_INFINITY
-          ? flip * 1.5
-          : (flip + band.max) / 2,
-      )
-    : (flip + band.min) / 2;
-  return {
-    flip,
-    below,
-    segment: connectorSegment(
-      segment.index,
-      segment.from,
-      segment.to,
-      segment.waypoints,
-      aspectBox(band, aspect),
-    ),
-  };
-}
-
-/* The thread's segments in drawing order, connectors and motifs alternating. One walk of the route,
-   read by the generator and by the component alike — neither re-derives the order. */
+/* The thread's segments in drawing order: `N` motifs give exactly `N + 1` connectors
+   (`thread-paths.test.ts` pins the count), so the two arrays interleave with no routing model to
+   resolve -- connector, motif, connector, motif, ..., connector. One walk, read by the generator and
+   by nothing else: unlike the retired grid, there is no separate consumer left to disagree with it. */
 export function threadSegments(id: ThreadId, band: Band): ThreadSegment[] {
-  const { breaks, between } = breaksAndWaypoints(id, band);
+  const connectors = connectorsFor(id, band);
+  const motifs = placementsFor(id, band);
   const segments: ThreadSegment[] = [];
-
-  breaks.forEach((made, at) => {
-    if (at > 0) {
-      segments.push(
-        connectorSegment(
-          segments.length,
-          breaks[at - 1].depart,
-          made.arrive,
-          between[at - 1],
-          band.box,
-        ),
-      );
-    }
-    if (made.motif === null) return;
-    const side = made.motif.scale * Math.min(band.box.width, band.box.height);
-    /* A connector's `d` is in its own box and a motif's is in its own 0-100 square, so the two need
-       different boxes to come out in the same pixels — and they have to, because the scrub divides
-       one arc budget between them. */
+  connectors.forEach((connector, at) => {
+    segments.push({
+      kind: "connector",
+      index: segments.length,
+      d: connector.d,
+      length: pathLength(connector.d, { width: 1, height: 1 }),
+    });
+    const place = motifs[at];
+    if (place === undefined) return;
+    const side = place.scale * Math.min(band.box.width, band.box.height);
     const step = side / MOTIF_SIDE;
     segments.push({
       kind: "motif",
       index: segments.length,
-      place: made.motif,
-      length: pathLength(made.motif.motif.d, { width: step, height: step }),
+      place,
+      length: pathLength(MOTIFS[place.motif].d, { width: step, height: step }),
     });
   });
-
   return segments;
-}
-
-/** The alternate, aspect-switched curve of every connector this band emits one for. */
-export function threadAlternates(id: ThreadId, band: Band): ThreadSegment[] {
-  const found: ThreadSegment[] = [];
-  for (const segment of threadSegments(id, band)) {
-    const alternate = alternateGeometry(segment, band);
-    if (alternate !== null) found.push(alternate.segment);
-  }
-  return found;
-}
-
-/* A `<mask>`'s own region is markup, not CSS, so one value has to hold every band. This is the
-   widest any of them reaches, per mounted connector, keyed by that connector's own class. */
-export function threadMaskRegions(
-  id: ThreadId,
-): Map<string, { min: number; max: number }> {
-  const widest = new Map<string, { min: number; max: number }>();
-  for (const band of THREAD_BANDS) {
-    for (const segment of threadSegments(id, band)) {
-      if (segment.kind !== "connector") continue;
-      /* The alternate geometry is emitted into the same elements, so its curve has to be held too. */
-      const alternate = alternateGeometry(segment, band);
-      const reaches = [
-        segment.region,
-        ...(alternate?.segment.kind === "connector"
-          ? [alternate.segment.region]
-          : []),
-      ];
-      for (const region of reaches) {
-        const held = widest.get(segmentClass(segment));
-        widest.set(segmentClass(segment), {
-          min: Math.min(held?.min ?? region.min, region.min),
-          max: Math.max(held?.max ?? region.max, region.max),
-        });
-      }
-    }
-  }
-  return widest;
-}
-
-/* ---- what the markup mounts ------------------------------------------------------------------ */
-
-/* Every element the thread needs across EVERY band, not just the first — the one list the component
-   renders from.
-
-   The geometry is emitted once per aspect band, and a band's route may differ from its neighbour's
-   in stop count and in which motifs it carries, so markup built from one band leaves the other
-   bands' rules addressing elements that were never mounted. The band whose route diverges then
-   renders wrong, and nothing but a render in that band can see it: the sheet is still valid CSS,
-   every element it does mount still matches, and types, lint, tests and the build all pass.
-
-   So the markup is the UNION and the sheet does the selecting: `bandRules` hides whatever its own
-   band does not use. `display: none` rather than a visibility or opacity knob, because an unused
-   element should cost no paint at all — and it is safe here where containment is not, since the
-   thread contributes no layout to begin with. */
-export type ThreadMount = {
-  /* Stable across bands, and the stem of both the element's class and its mask ids.  */
-  key: string;
-  className: string;
-} & (
-  | {
-      kind: "connector";
-      /* The first band that mounts this connector, as the fallback a browser without the CSS `d`
-         property paints — a complete thread rather than nothing. */
-      d: string;
-      revealD: string;
-      region: { min: number; max: number };
-    }
-  | { kind: "motif"; d: string }
-  | { kind: "stub"; which: ThreadStub["which"]; d: string }
-);
-
-export function threadMounts(id: ThreadId): ThreadMount[] {
-  const regions = threadMaskRegions(id);
-  const found = new Map<string, ThreadMount>();
-
-  for (const band of THREAD_BANDS) {
-    for (const segment of threadSegments(id, band)) {
-      const key = segmentKey(segment);
-      if (found.has(key)) continue;
-      const common = { key, className: `thread__${key}` };
-      found.set(
-        key,
-        segment.kind === "connector"
-          ? {
-              ...common,
-              kind: "connector",
-              d: segment.d,
-              revealD: segment.revealD,
-              region: regions.get(common.className) ?? { min: -1, max: 2 },
-            }
-          : { ...common, kind: "motif", d: segment.place.motif.d },
-      );
-    }
-    for (const stub of threadStubs(id, band)) {
-      const key = stubKey(stub.which);
-      if (found.has(key)) continue;
-      found.set(key, {
-        key,
-        className: stubClass(stub.which),
-        kind: "stub",
-        which: stub.which,
-        d: stub.d,
-      });
-    }
-  }
-
-  return [...found.values()];
-}
-
-/** The mount keys one band actually uses — everything else is hidden for the width of that band. */
-function bandKeys(id: ThreadId, band: Band): Set<string> {
-  return new Set([
-    ...threadSegments(id, band).map(segmentKey),
-    ...threadStubs(id, band).map((stub) => stubKey(stub.which)),
-  ]);
 }
 
 /* ---- the scrub law ------------------------------------------------------------------------- */
@@ -1204,10 +534,6 @@ function localise(global: number, span: Span): number {
     : clamp((global - span.start) / (span.end - span.start));
 }
 
-/* The progress values at which the head or the tail crosses one of this segment's own boundaries.
-   Between two of them both are linear in progress, so linear keyframe interpolation is exact rather
-   than approximate — which is what "the draw advances evenly along the thread's rendered length"
-   asks for. */
 function stops(span: Span, extra: readonly number[]): number[] {
   const arcs = [span.start, span.end, ...extra];
   const all = [0, 1, THREAD_HOLD, 1 - THREAD_HOLD];
@@ -1219,30 +545,33 @@ function stops(span: Span, extra: readonly number[]): number[] {
   );
 }
 
-/* `not-found` is the ONE surface whose draw runs on the clock, because it is the one surface with
-   nothing to scroll — a single screen a wrong turn lands on, which never travels through the
-   viewport and so reports no progress to a view timeline at all.
-
-   It is the same law on a different driver, not a second law: the clock runs the scrub's own
-   progress from 0 to `DRAW_REACH` and stops there, and `animation-fill-mode: both` leaves it at the
-   last frame. A screen that never leaves the viewport never retracts, so the retract half of the
-   law is simply never reached. */
 function isTimed(id: ThreadId): boolean {
   return id === "not-found";
 }
 
-/* The progress a timed draw runs TO. The ink is complete at `THREAD_HOLD`; the head is carried its
-   own extent past that so the pen runs off the end instead of parking on it — the same reach the
-   scrub gets from the hold band and a re-trace pass gets from `RETRACE_REACH`. */
-const DRAW_REACH = THREAD_HOLD * (1 + HEAD_EXTENT);
+const HEAD_EXTENT = 0.06;
 
-/* The scrub's own stops, up to the point a timed draw ends. The dash at each is still computed at
-   the scrub progress it belongs to — only where the frame is WRITTEN changes, which is what keeps
-   the two drivers off separate implementations of the law. */
-function drawStops(scrub: readonly number[]): number[] {
-  const within = scrub.filter((stop) => stop <= DRAW_REACH);
-  return [...new Set([...within, DRAW_REACH])].sort((a, b) => a - b);
-}
+export const HEAD_LAYERS: readonly {
+  name: string;
+  alpha: number;
+  width: number;
+}[] = [
+  { name: "tip", alpha: 1, width: 1 },
+  { name: "trail", alpha: 0.5, width: 0.8 },
+  { name: "fade", alpha: 0.22, width: 0.6 },
+];
+
+const HEAD_STEP = HEAD_EXTENT / HEAD_LAYERS.length;
+
+const RETRACE_PASS = 2.4;
+const RETRACE_GAP = 1.6;
+const RETRACE_CYCLE = RETRACE_PASS + RETRACE_GAP;
+const RETRACE_ACTIVE = RETRACE_PASS / RETRACE_CYCLE;
+const RETRACE_REACH = 1 + HEAD_EXTENT;
+
+const TIMED_DRAW_DELAY = 0.4;
+const TIMED_DRAW_DURATION = 2.4;
+const DRAW_REACH = THREAD_HOLD * (1 + HEAD_EXTENT);
 
 type Band01 = readonly [number, number];
 
@@ -1268,10 +597,6 @@ function intersect(
     for (const [b0, b1] of within) {
       const lo = Math.max(a0, b0);
       const hi = Math.min(a1, b1);
-      /* A zero-width band is KEPT, not dropped. It paints nothing either way — the mask is
-         butt-capped so a zero-length dash cannot leave a dot — but it carries the position the
-         band collapsed AT. Dropped, the retract's last frame falls back to the path's start and
-         the thread pulls in from the wrong end. */
       if (hi >= lo) out.push([lo, hi]);
     }
   }
@@ -1279,41 +604,53 @@ function intersect(
 }
 
 /* A four-value `stroke-dasharray` on `pathLength="1"` encodes one inked arc as
-   `0 {tail} {head - tail} 1`; two arcs simply extend the same alternation. An empty list still has
-   to paint nothing, which `0 1` does — a lone zero-length dash would paint a dot under a round cap,
-   and the mask is butt-capped precisely so it cannot.
+   `0 {tail} {head - tail} 1`; more arcs simply extend the same alternation. An empty list still has
+   to paint nothing, which `0 1` does.
 
    THE TRAILING GAP IS 0 WHERE THE LAST BAND REACHES THE END, and that is not tidiness. A dash asked
    to cover a whole `pathLength="1"` path does not reach that path's end in Chromium: reproduced in
    isolation on one connector's own numbers (a 1x1 viewBox stretched to 95.577 x 328.302, the reveal
    copy butt-capped at `stroke-width: 0.042`), `0 0 1 1` stops about 7% short of the end while
    `0 0 1 0` and `none` both run to it. Masked by that dash, the visible stroke loses its last dozen
-   pixels — and where that end is a join, the section renders in two pieces with nothing wrong with
-   its geometry. A zero gap closes it because the pattern then repeats with no gap in it, so the
-   paint cannot stop at a length the browser and the author disagree about.
+   pixels -- and where that end is a join, the section renders in two pieces with nothing wrong with
+   its geometry. A zero gap closes it because the pattern then repeats with no gap in it. */
+/* Two bands that touch or overlap are coalesced into one before walking the pattern. This never
+   mattered for a single segment's own [tail, head] pair, but the connector group merges bands from
+   several connectors that sit end to end in the combined path -- a fully-inked connector followed
+   immediately by another gives two ADJACENT bands with nothing between them, and left unmerged that
+   emits a real dash, a ZERO-length gap, then another dash where one continuous dash was meant:
+   harmless on screen (a zero-length gap never lifts the pen), but not the same pattern the retired
+   single-segment model ever had reason to emit. */
+function mergeBands(bands: readonly Band01[]): Band01[] {
+  const sorted = [...bands].sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [];
+  for (const [start, end] of sorted) {
+    const last = merged[merged.length - 1];
+    if (last !== undefined && start <= last[1] + 1e-9) {
+      last[1] = Math.max(last[1], end);
+    } else {
+      merged.push([start, end]);
+    }
+  }
+  return merged;
+}
 
-   It applies only where the band ENDS at the copy's end. A band that stops short still needs its
-   trailing gap, or the pattern would repeat and paint past the head. */
-function dashArray(bands: readonly Band01[], along: Reparametrise): string {
-  if (bands.length === 0) return "0 1";
+function dashArray(bands: readonly Band01[], scale: number): string {
+  if (bands.length === 0 || scale <= 0) return "0 1";
   const values: number[] = [0];
   let cursor = 0;
-  for (const [start, end] of bands) {
-    const from = along(start);
-    const to = Math.max(from, along(end));
+  for (const [start, end] of mergeBands(bands)) {
+    const from = clamp(start * scale);
+    const to = Math.max(from, clamp(end * scale));
     values.push(from - cursor, to - from);
     cursor = to;
   }
-  /* Decided on the ROUNDED numbers, because those are the ones the browser is handed: a band that
-     falls a ten-thousandth short internally is emitted as reaching the end, and then it has to be
-     treated as reaching it. */
   const emitted = values.map((value) => round(Math.max(0, value)));
   const reach = emitted.reduce((sum, value) => sum + Number(value), 0);
   return [...emitted, reach >= 1 ? "0" : "1"].join(" ");
 }
 
 const FULL: Band01 = [0, 1];
-const IDENTITY: Reparametrise = (fraction) => fraction;
 
 /* ---- emission ------------------------------------------------------------------------------ */
 
@@ -1331,10 +668,6 @@ function keyframes(
   return `@keyframes ${name} {\n${body}\n}`;
 }
 
-/* The declarations a timed draw takes — shared by every layer of it and by the re-trace's gate, so
-   the gate cannot drift out of step with the draw it waits on. It runs ONCE: `animation-fill-mode:
-   both` holds the first frame through the delay and the last one forever after, and the last frame
-   is the complete thread the base state already declares. */
 function timedDrawDecls(name: string): string[] {
   return [
     `animation-name: ${name};`,
@@ -1346,36 +679,18 @@ function timedDrawDecls(name: string): string[] {
 }
 
 type Layer = {
-  /* The suffix that separates this layer's animation and keyframes from the segment's others. */
   suffix: string;
-  /* `view` reads the section's own named scroll timeline; `time` runs on the clock. Only the
-     re-trace is timed, and DESIGN.md -> Foundations -> Motion sanctions exactly that one loop. */
   clock: "view" | "time";
-  /* `[tail, head]` and the wisp bands are both a list of arcs; a layer is the list it paints. */
   bands: (progress: number, span: Span) => Band01[];
-  /* Arc positions, beyond the segment's own two ends, at which this layer's bands cross a boundary
-     — the keyframe stops where linear interpolation would otherwise cut a corner. */
   arcs: (span: Span) => number[];
-  /* The brightest layer alone animates its cap: round while it has length, butt while it has none.
-     See `HEAD_LAYERS`. */
   cap: boolean;
-  /* The weave restricts a layer to part of the motif; every other layer sees the whole of it. */
   within: readonly Band01[];
-  /* A class on the thread's ROOT that this layer's rules are additionally qualified by — the weave
-     variant is chosen per mount, not per segment. */
   root: string;
-  /* The element the mask lives on, relative to the segment. */
   target: string;
 };
 
 const NO_ARCS = () => [];
 
-/* The head's own bands, at layer `index` of the stack: a window of the thread `HEAD_STEP` long,
-   `index` steps behind the leading edge.
-
-   The leading edge is UNCAPPED — `progress / THREAD_HOLD` rather than `headAt`, which stops at 1 —
-   so once the thread is fully drawn the head slides off its end and shrinks to nothing there,
-   instead of parking on the last point for the whole hold band. */
 function headBands(index: number) {
   return (leading: number, span: Span): Band01[] => [
     [
@@ -1406,9 +721,6 @@ function headLayer(name: string, index: number): Layer {
   };
 }
 
-/* The same head, on the clock instead of on the scroll. `cycle` is the fraction of one pass plus
-   one gap: the leading edge crosses the whole thread over the pass and then rests at the far end,
-   where every band is collapsed and paints nothing. */
 function retraceLayer(name: string, index: number): Layer {
   return {
     suffix: `retrace-${name}`,
@@ -1451,9 +763,6 @@ const BASE_LAYERS: readonly Layer[] = [
   ...HEAD_LAYERS.map((layer, index) => retraceLayer(layer.name, index)),
 ];
 
-/* The loop renders twice, as complementary segments of one curve: an under-copy beneath the
-   illustration and an over-copy above it, both on the same scrub, so the stroke passes from one to
-   the other mid-draw. Both are the SAME `d` — the split is in the mask, not in the geometry. */
 function layersFor(weave: boolean): readonly Layer[] {
   if (!weave) return BASE_LAYERS;
   const [under0, under1] = WEAVE_BAND;
@@ -1472,9 +781,6 @@ function layersFor(weave: boolean): readonly Layer[] {
       ] as readonly Band01[],
     },
   ];
-  /* The light is split by the weave exactly as the ink is: a head painted on BOTH copies would
-     show in front of the illustration while the thread it leads runs behind it. The wisp is the
-     one layer left whole — it paints outside the inked arc, so the split does not reach it. */
   return [
     ...BASE_LAYERS,
     ...BASE_LAYERS.filter((layer) => layer.suffix !== "wisp").flatMap((layer) =>
@@ -1488,18 +794,17 @@ function layersFor(weave: boolean): readonly Layer[] {
   ];
 }
 
+/* The weave is a property of WISHES' own section -- the couple illustration sits there, mounted
+   twice (`weave="under"`/`"over"`) either side of it -- not of one fixed motif name. Task 4's own
+   fitting found `wishesLoop` actually attaches inside CELEBRATIONS' box by y-range, and the sole
+   motif Wishes places in every band is `bow`; hardcoding "wishesLoop" here (this file's own
+   pre-Task-4 assumption) would silently stop splitting the loop the illustration sits behind. Every
+   motif Wishes places is treated as the weave motif -- today that is `bow` alone, in all three
+   bands. */
 function isWeave(id: ThreadId, segment: ThreadSegment): boolean {
-  return (
-    id === "wishes" &&
-    segment.kind === "motif" &&
-    segment.place.motif.id === "wishesLoop"
-  );
+  return id === "wishes" && segment.kind === "motif";
 }
 
-/* The stops one CLOCK-timed pass needs: every point at which the head's bands cross one of the
-   segment's own ends, in fractions of the whole cycle, plus the moment the pass ends and the gap
-   begins. Between two of them the leading edge is linear in time, so linear interpolation is exact
-   — the same claim `stops` makes for the scrub. */
 function cycleStops(span: Span): number[] {
   const all = [0, RETRACE_ACTIVE, 1];
   for (const arc of [span.start, span.end]) {
@@ -1513,29 +818,63 @@ function cycleStops(span: Span): number[] {
   );
 }
 
-function emitSegment(
+function capDecl(dash: string): string[] {
+  const draws = dash
+    .split(" ")
+    .filter((_, at) => at % 2 === 0)
+    .some((length) => Number(length) > 0);
+  return [`stroke-linecap: ${draws ? "round" : "butt"};`];
+}
+
+function animationDecls(
+  name: string,
+  layer: Layer,
+  id: ThreadId,
+  onClock: boolean,
+): string[] {
+  if (layer.clock === "time") {
+    return [
+      `animation-name: ${name};`,
+      `animation-duration: ${round(RETRACE_CYCLE)}s;`,
+      "animation-iteration-count: infinite;",
+      "animation-fill-mode: both;",
+      "animation-timing-function: linear;",
+    ];
+  }
+  if (onClock) return timedDrawDecls(name);
+  return [
+    `animation-name: ${name};`,
+    `animation-timeline: ${timelineName(id)};`,
+    "animation-fill-mode: both;",
+    "animation-timing-function: linear;",
+  ];
+}
+
+/* A single MOTIF's own reveal: unchanged mechanism from before this task, since a motif is still
+   its own uniformly-scaled square SVG and its own single element -- that is what holds a motif's
+   aspect at 0.0% spread across viewports, and this refactor leaves it alone. */
+function emitMotifSegment(
   id: ThreadId,
   band: Band,
-  segment: ThreadSegment,
+  segment: ThreadSegment & { kind: "motif" },
+  selector: string,
   span: Span,
   layers: readonly Layer[],
   extraStops: readonly number[],
   animated: Set<string>,
 ): { animations: string[]; keyframes: string[] } {
-  const scope = `.${threadScopeClass(id)}`;
-  const along = segment.kind === "connector" ? segment.along : IDENTITY;
   const animations: string[] = [];
   const emitted: string[] = [];
-
-  /* The re-trace is on the clock everywhere and keeps its own cadence; what a timed SURFACE changes
-     is the driver of every other layer. */
   const timed = isTimed(id);
 
   for (const layer of layers) {
-    const name = `thread-${id}-${segment.index}-${layer.suffix}-${band.id}`;
-    const selector = `${scope}${layer.root} .${segmentClass(segment)} ${layer.target}`;
-    /* A layer this surface drives on the clock rather than on the reader's scroll: every layer of
-       a timed surface except the re-trace, which is already timed. */
+    /* `band.id` is load-bearing here, not decoration: `segment.index` is local to each band's own
+       `threadSegments` walk, so two DIFFERENT bands can hand this the same index -- without the
+       band in the name, the second band's `@keyframes` block would silently redefine the first
+       one's, and the later definition wins (`no two keyframes in a section's sheet share a name`
+       is what this guards). */
+    const name = `thread-${id}-${band.id}-${segment.index}-${layer.suffix}`;
+    const fullSelector = `${selector}${layer.root} ${layer.target}`;
     const onClock = timed && layer.clock === "view";
     const scrub =
       layer.clock === "time"
@@ -1545,169 +884,340 @@ function emitSegment(
     const frames = at.map((stop) => {
       const dash = dashArray(
         intersect(layer.bands(stop, span), layer.within),
-        along,
+        1,
       );
       const decls = [`stroke-dasharray: ${dash};`];
-      /* A round cap reaches half the mask's stroke past the dash, which is what covers the laid
-         ink's own cap ahead of the light — and what paints a dot on a band with no length. Read
-         off the EMITTED dash, not off the band it came from: a band with length in the segment's
-         own space can still round to nothing once `along` has mapped it onto a stretched box, and
-         it is the emitted number that paints. */
-      if (layer.cap) {
-        const draws = dash
-          .split(" ")
-          .filter((_, at) => at % 2 === 0)
-          .some((length) => Number(length) > 0);
-        decls.push(`stroke-linecap: ${draws ? "round" : "butt"};`);
-      }
-      /* The dash belongs to the scrub progress it was computed at; a timed draw only writes it
-         somewhere else, at that progress's share of the draw's own reach. */
+      if (layer.cap) decls.push(...capDecl(dash));
       return { at: onClock ? stop / DRAW_REACH : stop, decl: decls.join(" ") };
     });
     animations.push(
-      rule(
-        selector,
-        layer.clock === "time"
-          ? [
-              `animation-name: ${name};`,
-              `animation-duration: ${round(RETRACE_CYCLE)}s;`,
-              "animation-iteration-count: infinite;",
-              "animation-fill-mode: both;",
-              "animation-timing-function: linear;",
-            ]
-          : onClock
-            ? timedDrawDecls(name)
-            : [
-                `animation-name: ${name};`,
-                `animation-timeline: ${timelineName(id)};`,
-                "animation-fill-mode: both;",
-                "animation-timing-function: linear;",
-              ],
-      ),
+      rule(fullSelector, animationDecls(name, layer, id, onClock)),
     );
+    animated.add(fullSelector);
+    emitted.push(keyframes(name, frames));
+  }
+  return { animations, keyframes: emitted };
+}
+
+function drawStops(scrub: readonly number[]): number[] {
+  const within = scrub.filter((stop) => stop <= DRAW_REACH);
+  return [...new Set([...within, DRAW_REACH])].sort((a, b) => a - b);
+}
+
+/* ---- the connector group: one field per band, one path, one mask per layer ------------------- */
+
+type ConnectorSpan = {
+  segment: ThreadSegment & { kind: "connector" };
+  span: Span;
+  offset: number;
+};
+
+/* Every connector segment of a band, carrying its GLOBAL span (its share of the whole thread's arc,
+   motifs included -- what times it against the scrub) alongside its OFFSET within the connector-only
+   total (what places it inside the combined path's own `pathLength="1"`). The two totals differ by
+   exactly the motifs' own arc length, and that is the whole point: a `moveto` between two connectors
+   contributes zero to the combined path, so the combined dash holds flat while a motif between them
+   animates on its own separate element, and resumes advancing the instant the next connector's own
+   span begins. */
+function connectorSpans(segments: readonly ThreadSegment[]): {
+  spans: ConnectorSpan[];
+  total: number;
+} {
+  const overall = segments.reduce((sum, s) => sum + s.length, 0);
+  const spans: ConnectorSpan[] = [];
+  let travelled = 0;
+  let offset = 0;
+  for (const segment of segments) {
+    if (segment.kind === "connector") {
+      spans.push({
+        segment,
+        offset,
+        span:
+          overall === 0
+            ? { start: 0, end: 0 }
+            : {
+                start: travelled / overall,
+                end: (travelled + segment.length) / overall,
+              },
+      });
+      offset += segment.length;
+    }
+    travelled += segment.length;
+  }
+  return { spans, total: offset };
+}
+
+function emitConnectorGroup(
+  id: ThreadId,
+  band: Band,
+  spans: readonly ConnectorSpan[],
+  total: number,
+  fieldSelector: string,
+  animated: Set<string>,
+): { animations: string[]; keyframes: string[] } {
+  const animations: string[] = [];
+  const emitted: string[] = [];
+  const timed = isTimed(id);
+  const layers = BASE_LAYERS;
+
+  for (const layer of layers) {
+    const name = `thread-${id}-connectors-${layer.suffix}-${band.id}`;
+    const selector = `${fieldSelector} ${layer.target}`;
+    const onClock = timed && layer.clock === "view";
+
+    const stopSet = new Set<number>();
+    for (const { span } of spans) {
+      const scrub =
+        layer.clock === "time"
+          ? cycleStops(span)
+          : stops(span, layer.arcs(span));
+      for (const stop of scrub) stopSet.add(stop);
+    }
+    const scrub = [...stopSet].sort((a, b) => a - b);
+    const at = onClock ? drawStops(scrub) : scrub;
+
+    const frames = at.map((stop) => {
+      const merged: Band01[] = [];
+      for (const { segment, span, offset } of spans) {
+        if (total <= 0) continue;
+        /* A DEGENERATE band (start === end -- this connector's span not reached yet, or already
+           passed) is kept, not dropped: `intersect`'s own `hi >= lo` already decided it belongs,
+           and dropping it removes the only band carrying THIS connector's position in the
+           combined path, which starves `dashArray` down to its zero-bands shortcut ("0 1",
+           read as the gap covering the whole path FROM POSITION 0) instead of the zero-length
+           band it should encode at this connector's own offset. That collapse is exactly what
+           broke monotonicity: the first frame (nothing drawn, offset 0) correctly read position
+           0, but the LAST frame (also nothing drawn, fully retracted, offset 1) fell back to the
+           same shortcut and read as position 0 again -- a start that visibly moved backwards. */
+        for (const [a, b] of intersect(layer.bands(stop, span), layer.within)) {
+          merged.push([
+            (offset + a * segment.length) / total,
+            (offset + b * segment.length) / total,
+          ]);
+        }
+      }
+      const dash = dashArray(merged, 1);
+      const decls = [`stroke-dasharray: ${dash};`];
+      if (layer.cap) decls.push(...capDecl(dash));
+      return { at: onClock ? stop / DRAW_REACH : stop, decl: decls.join(" ") };
+    });
+    animations.push(rule(selector, animationDecls(name, layer, id, onClock)));
     animated.add(selector);
     emitted.push(keyframes(name, frames));
   }
   return { animations, keyframes: emitted };
 }
 
-/* A connector's curve, and the mask width its box's own units need. The visible stroke, the wisp
-   and both reveal copies are the same curve, so all four take the same `d` on one rule — a band
-   cannot move one without the others. */
-function curveRules(selector: string, segment: ThreadSegment): string {
-  if (segment.kind !== "connector") return "";
-  return [
-    rule(
-      [
-        `${selector} .${THREAD_CLASS.connector}`,
-        `${selector} .${THREAD_CLASS.wisp}`,
-        `${selector} .${THREAD_CLASS.light}`,
-      ].join(", "),
-      [`d: path("${segment.d}");`],
-    ),
-    rule(
-      [
-        `${selector} .${THREAD_CLASS.inkReveal}`,
-        `${selector} .${THREAD_CLASS.wispReveal}`,
-        `${selector} .${THREAD_CLASS.headReveal}`,
-        `${selector} .${THREAD_CLASS.retraceReveal}`,
-      ].join(", "),
-      [`d: path("${segment.revealD}");`],
-    ),
-    rule(selector, [`--thread-mask-width: ${round(segment.maskWidth)};`]),
-  ].join("\n");
+/* ---- stubs -------------------------------------------------------------------------------- */
+
+export type ThreadStub = { which: "entry" | "exit"; d: string };
+
+function stubFor(
+  which: "entry" | "exit",
+  connectorD: string,
+  nominalSvmin: number,
+): ThreadStub {
+  const atStart = which === "entry";
+  const points = samplePath(connectorD, { width: 1, height: 1 });
+  const point = atStart ? points[0] : points[points.length - 1];
+  const dir = tangentAt(connectorD, atStart);
+  const reach = STUB_REACH * nominalSvmin;
+  const away = { x: point.x + dir.x * reach, y: point.y + dir.y * reach };
+  return {
+    which,
+    d: `M ${round(point.x)} ${round(point.y)} L ${round(away.x)} ${round(away.y)}`,
+  };
 }
 
-/* Everything a band fixes: where each motif's square sits, how big it is and how far it is turned,
-   the box each connector and each stub is pinned into, the connectors' own path data, and one set of
-   keyframes per segment per layer. All of it is per band, because a motif is a square off
-   `min(width, height)` while its cell is a fraction of the section, so the section's aspect enters
-   the geometry and cannot be removed at build time. */
+/* ---- the sheet ------------------------------------------------------------------------------ */
+
+export type BandMotif = {
+  key: string;
+  className: string;
+  d: string;
+};
+
+/* Everything the component mounts for ONE band: the field (one combined connector `d`/`revealD`),
+   the free-end stubs this band actually has, and every motif this band places. Bands are mutually
+   exclusive by aspect, so unlike the retired grid there is no union to build and no spare element to
+   hide -- each band's own markup is self-contained and simply not displayed outside its own query. */
+export type BandMarkup = {
+  bandId: Band["id"];
+  fieldClassName: string;
+  connectorD: string;
+  revealD: string;
+  region: { min: number; max: number; box: SectionBox };
+  stubs: readonly (ThreadStub & { key: string; className: string })[];
+  motifs: readonly (BandMotif & { motifId: Placement["motif"] })[];
+};
+
+export function bandMarkup(id: ThreadId, band: Band): BandMarkup {
+  const nominalSvmin = Math.min(band.box.width, band.box.height);
+  const connectors = connectorsFor(id, band);
+  const motifs = placementsFor(id, band);
+  const connectorD = connectors.map((c) => c.d).join(" ");
+  const revealD = connectors.map((c) => extendReveal(c.d)).join(" ");
+
+  const stubs: (ThreadStub & { key: string; className: string })[] = [];
+  if (!hasEntry(id)) {
+    const stub = stubFor("entry", connectors[0].d, nominalSvmin);
+    stubs.push({
+      ...stub,
+      key: stubKey(band.id, "entry"),
+      className: stubClass(band.id, "entry"),
+    });
+  }
+  if (!hasExit(id)) {
+    const stub = stubFor(
+      "exit",
+      connectors[connectors.length - 1].d,
+      nominalSvmin,
+    );
+    stubs.push({
+      ...stub,
+      key: stubKey(band.id, "exit"),
+      className: stubClass(band.id, "exit"),
+    });
+  }
+
+  return {
+    bandId: band.id,
+    fieldClassName: THREAD_CLASS.field,
+    connectorD,
+    revealD,
+    region: {
+      min: -MASK_REGION_MARGIN,
+      max: MASK_REGION_MARGIN,
+      box: { width: band.box.width, height: sectionHeight(id, band) },
+    },
+    stubs,
+    motifs: motifs.map((place, at) => ({
+      key: motifKey(band.id, at),
+      className: motifClass(band.id, at),
+      d: MOTIFS[place.motif].d,
+      motifId: place.motif,
+    })),
+  };
+}
+
+/* A section's measured height (`thread-boxes.ts`), not the band's own device height: a paired
+   section stacks in portrait and Celebrations is a list, so both run taller than one screen. */
+function sectionHeight(id: ThreadId, band: Band): number {
+  return sectionBox(id, band.id).height;
+}
+
 function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
   const scope = `.${threadScopeClass(id)}`;
-  const segments = threadSegments(id, band);
-  const total = segments.reduce((sum, segment) => sum + segment.length, 0);
-  const geometry: string[] = [];
+  const markup = bandMarkup(id, band);
+  /* The SAME box the viewBox itself is built from (`markup.region.box`), read once here rather than
+     re-measured -- two calls to `sectionHeight` used to disagree the moment one drifted from the
+     other, which the mutation test below exists to catch: mutating the viewBox's own box left a
+     motif's position fraction computed against the band's flat nominal height instead, and every
+     gate stayed green until a render actually showed it split from its connector. */
+  const box: SectionBox = markup.region.box;
+  const fieldSelector = `${scope} .${bandClass(band.id)} .${THREAD_CLASS.field}`;
 
-  /* The markup is the union of every band's elements, so this band puts away the ones its own route
-     does not use — otherwise they paint their fallback `d` in a box no rule ever pins. Empty while
-     the seeded routes agree, and the first differing route the owner authors is what fills it. */
-  const used = bandKeys(id, band);
-  const spare = threadMounts(id).filter((mount) => !used.has(mount.key));
-  if (spare.length > 0) {
+  const geometry: string[] = [
+    rule(`${scope} .${bandClass(band.id)}`, [
+      "display: block;",
+      `width: calc(${round(cardRatio(id, band))} * ${cardWidthExpr()});`,
+    ]),
+    rule(
+      [
+        `${fieldSelector} .${THREAD_CLASS.connector}`,
+        `${fieldSelector} .${THREAD_CLASS.wisp}`,
+        `${fieldSelector} .${THREAD_CLASS.light}`,
+      ].join(", "),
+      [`d: path("${markup.connectorD}");`],
+    ),
+    rule(
+      [
+        `${fieldSelector} .${THREAD_CLASS.inkReveal}`,
+        `${fieldSelector} .${THREAD_CLASS.wispReveal}`,
+        `${fieldSelector} .${THREAD_CLASS.headReveal}`,
+        `${fieldSelector} .${THREAD_CLASS.retraceReveal}`,
+      ].join(", "),
+      [`d: path("${markup.revealD}");`],
+    ),
+    rule(fieldSelector, [
+      `--thread-mask-width: ${round(CONNECTOR_MASK_WIDTH)};`,
+    ]),
+  ];
+
+  for (const stub of markup.stubs) {
     geometry.push(
-      rule(spare.map((mount) => `${scope} .${mount.className}`).join(", "), [
-        "display: none;",
-      ]),
+      rule(`${fieldSelector} .${stub.className}`, [`d: path("${stub.d}");`]),
     );
   }
 
+  const segments = threadSegments(id, band);
+  const { spans, total } = connectorSpans(segments);
   const animations: string[] = [];
   const frames: string[] = [];
 
-  const boxRule = (
-    selector: string,
-    box: { left: string; top: string; width: string; height: string },
-  ) =>
-    rule(selector, [
-      `left: ${box.left};`,
-      `top: ${box.top};`,
-      `width: ${box.width};`,
-      `height: ${box.height};`,
-    ]);
+  const connectorEmitted = emitConnectorGroup(
+    id,
+    band,
+    spans,
+    total,
+    fieldSelector,
+    animated,
+  );
+  animations.push(...connectorEmitted.animations);
+  frames.push(...connectorEmitted.keyframes);
 
-  let travelled = 0;
+  const overallTotal = segments.reduce((sum, s) => sum + s.length, 0);
+
+  /* Motifs are still individual elements, so they still ride `threadSegments`'s own ordering to
+     find their GLOBAL span -- the same mechanism the connector group above reads its span from. */
+  let cursor = 0;
   for (const segment of segments) {
-    const selector = `${scope} .${segmentClass(segment)}`;
     const span: Span =
-      total === 0
+      overallTotal === 0
         ? { start: 0, end: 0 }
         : {
-            start: travelled / total,
-            end: (travelled + segment.length) / total,
+            start: cursor / overallTotal,
+            end: (cursor + segment.length) / overallTotal,
           };
-    travelled += segment.length;
+    cursor += segment.length;
+    if (segment.kind !== "motif") continue;
 
-    if (segment.kind === "connector") {
-      geometry.push(
-        boxRule(selector, segment.box),
-        curveRules(selector, segment),
-      );
+    const at = segments
+      .filter((s) => s.kind === "motif")
+      .findIndex((s) => s === segment);
+    const motif = markup.motifs[at];
+    const place = segment.place;
+    /* `scale * nominalSvmin / bandWidth`: the motif's own side as a fraction of the BAND WRAPPER's
+       rendered width -- algebraically identical to `scale * nominalSvmin / nominalCardWidth` (the
+       plan's own `scale_card`) TIMES the wrapper's own `bandWidth / nominalCardWidth` ratio, i.e. the
+       side as a fraction of the card, converted once more into a fraction of the wrapper that is
+       already tracking the card. A `%` read directly off `--ring-side`/the content cap here would
+       resolve against the motif's OWN containing block (the band wrapper, already scaled) rather
+       than the section the wrapper itself reads its `100%` against -- computed here as a plain
+       constant instead, which sidesteps that double-scaling rather than correcting for it. */
+    const sidePct =
+      (place.scale * Math.min(band.box.width, band.box.height)) /
+      band.box.width;
+    geometry.push(
+      rule(`${scope} .${bandClass(band.id)} .${motif.className}`, [
+        `--thread-motif-x: ${round(place.x / box.width)};`,
+        `--thread-motif-y: ${round(place.y / box.height)};`,
+        `--thread-motif-side: ${round(sidePct * 100)}%;`,
+        ...(place.mirror ? ["scale: -1 1;"] : []),
+        ...(round(place.turn) === "0"
+          ? []
+          : [`rotate: ${round(place.turn)}deg;`]),
+      ]),
+    );
 
-      /* The one window-dependent thing left in the normalised curve: which of the connector's two
-         ends is the near corner of its box. Where that can turn over INSIDE this band, both
-         geometries are emitted and the aspect ratio the crossing sits at chooses between them. */
-      const alternate = alternateGeometry(segment, band);
-      if (alternate !== null) {
-        geometry.push(
-          `@media (aspect-ratio ${alternate.below ? ">=" : "<"} ${round(alternate.flip)}) {\n${curveRules(
-            selector,
-            alternate.segment,
-          )}\n}`,
-        );
-      }
-    } else {
-      geometry.push(
-        rule(selector, [
-          `--thread-motif-x: ${motifAxis(segment.place, "x")};`,
-          `--thread-motif-y: ${motifAxis(segment.place, "y")};`,
-          `--thread-motif-side: calc(${round(segment.place.scale)} * 100svmin);`,
-          /* Nothing at all when the route does not turn this motif — see `MotifPlacement.turn`. */
-          ...(round(segment.place.turn) === "0"
-            ? []
-            : [`rotate: ${round(segment.place.turn)}deg;`]),
-        ]),
-      );
-    }
-
-    /* A zero-length segment cannot be scrubbed and does not need to be: it draws nothing. */
     if (segment.length === 0) continue;
-
     const weave = isWeave(id, segment);
-    const emitted = emitSegment(
+    const selector = `${scope} .${bandClass(band.id)} .${motif.className}`;
+    const emitted = emitMotifSegment(
       id,
       band,
-      segment,
+      segment as ThreadSegment & { kind: "motif" },
+      selector,
       span,
       layersFor(weave),
       weave ? WEAVE_BAND : [],
@@ -1717,18 +1227,6 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
     frames.push(...emitted.keyframes);
   }
 
-  for (const stub of threadStubs(id, band)) {
-    const selector = `${scope} .${stubClass(stub.which)}`;
-    geometry.push(
-      boxRule(selector, stub.box),
-      rule(`${selector} path`, [`d: path("${stub.d}");`]),
-    );
-  }
-
-  /* A scroll-driven scrub is gated on `view()` so a browser without it lands on the complete base
-     state instead of on a stuck first frame. A TIMED draw needs no such gate — it asks for nothing
-     the animation shorthand has not supported for years — and putting it behind one would hide the
-     one draw that does not depend on scrolling from exactly the browsers that cannot scrub. */
   const draw = [...animations, ...frames].join("\n");
   const scrub =
     animations.length === 0
@@ -1739,131 +1237,57 @@ function bandRules(id: ThreadId, band: Band, animated: Set<string>): string {
   return `${geometry.filter((piece) => piece.length > 0).join("\n")}${scrub}`;
 }
 
-/* ---- the free ends --------------------------------------------------------------------------- */
-
-/* The wisp is the thread's cut end, not an ornament, so a head or a tail mid-scrub carries one
-   exactly as a terminal does — those are handled by the wisp layer above, which paints just outside
-   the inked arc and so collapses to nothing at rest. The two ends that keep a wisp AT REST are the
-   ones with no connector to carry them: the page's own top and bottom, and both of `not-found`'s. A
-   short stub past the free end, along that end's own direction of travel, is their whole geometry. */
-export type ThreadStub = {
-  which: "entry" | "exit";
-  d: string;
-  box: { left: string; top: string; width: string; height: string };
-};
-
-export function threadStubs(id: ThreadId, band: Band): ThreadStub[] {
-  const { breaks } = breaksAndWaypoints(id, band);
-  const stubs: ThreadStub[] = [];
-
-  for (const made of breaks) {
-    if (made.stub === null) continue;
-    const which = made.stub;
-    const direction: 1 | -1 = which === "entry" ? -1 : 1;
-    const end = which === "entry" ? made.arrive : made.depart;
-    const radians = (end.tangent.angle * Math.PI) / 180;
-    /* A stub is the same shape at every band — its reach is a multiple of `svmin`, like the motif's
-       own square, so neither of its ends carries an aspect. It runs `JOIN_OVERLAP` INTO whatever it
-       meets, for the same reason a connector does: the neighbour's butt-capped mask cuts its round
-       cap off there. */
-    const away: ConnectorEnd = {
-      fraction: end.fraction,
-      svmin: {
-        x: end.svmin.x + direction * STUB_REACH * Math.cos(radians),
-        y: end.svmin.y + direction * STUB_REACH * Math.sin(radians),
-      },
-      tangent: end.tangent,
-    };
-    const into: 1 | -1 = direction === 1 ? -1 : 1;
-    const horizontal = boxCss([
-      endLength(away, "x", 1, 0),
-      endLength(end, "x", into, JOIN_OVERLAP),
-    ]);
-    const vertical = boxCss([
-      endLength(away, "y", 1, 0),
-      endLength(end, "y", into, JOIN_OVERLAP),
-    ]);
-    /* `away` is the box's first corner and the free end the opposite one on each axis the stub
-       actually travels along; where it travels on neither, both sit at the middle of a box the 1px
-       floor holds open. */
-    const corner = (at: "away" | "point", axis: "x" | "y") => {
-      const moves = axis === "x" ? Math.cos(radians) : Math.sin(radians);
-      if (Math.abs(moves) < 1e-6) return 0.5;
-      const greater = moves * direction > 0 ? "away" : "point";
-      return at === greater ? 1 : 0;
-    };
-    stubs.push({
-      which,
-      d: `M ${corner("away", "x")} ${corner("away", "y")} L ${corner("point", "x")} ${corner("point", "y")}`,
-      box: {
-        left: horizontal.start,
-        top: vertical.start,
-        width: horizontal.size,
-        height: vertical.size,
-      },
-    });
-  }
-  return stubs;
-}
-
-/* ---- the sheet ------------------------------------------------------------------------------ */
-
 export function threadCss(id: ThreadId): string {
   const scope = `.${threadScopeClass(id)}`;
   const timeline = timelineName(id);
-  /* Every selector the bands put an animation on, collected as they are written rather than
-     re-derived: the reduced-motion block below repeats each one verbatim, so it cancels the
-     animation at EQUAL specificity and later in the sheet. The rule it replaced was two classes
-     against the per-segment rule's three and lost the cascade, so reduced motion left the whole
-     scrub running — invisible on a parked section, and no gate could see it. */
   const animated = new Set<string>();
 
-  /* Across every band, not just the first: a band that places the woven loop at another stop mounts
-     its own element, and the weave splits the COMPLETE thread, so the resting split has to reach
-     that element too. Deduplicated by mount key, because two bands sharing a placement share one. */
-  const woven = new Map<string, ThreadSegment>();
-  for (const band of THREAD_BANDS) {
-    for (const segment of threadSegments(id, band)) {
-      if (isWeave(id, segment)) woven.set(segmentClass(segment), segment);
-    }
-  }
+  const woven = THREAD_BANDS.some((band) =>
+    threadSegments(id, band).some((segment) => isWeave(id, segment)),
+  );
 
   const base: string[] = [
     rule(scope, [
-      /* A timed surface declares no timeline, because nothing on it reads one — a screen a wrong
-         turn lands on does not travel through the viewport. */
       ...(isTimed(id)
         ? []
         : [`view-timeline-name: ${timeline};`, "view-timeline-axis: block;"]),
       `--thread-mask-width: ${round(MASK_WIDTH)};`,
-      ...(woven.size === 0
-        ? []
-        : [
+      "--thread-content-cap: var(--container-content);",
+      ...(woven
+        ? [
             `--thread-weave-under: ${round(WEAVE_BAND[0])} ${round(WEAVE_BAND[1])};`,
             `--thread-weave-over: 0 ${round(WEAVE_BAND[0])}, ${round(WEAVE_BAND[1])} 1;`,
-          ]),
+          ]
+        : []),
     ]),
-    /* The complete thread, declared unconditionally: every reveal fully inked. Everything below
-       only ever narrows it. */
+    `@media ${COMPACT_CAP_QUERY} {\n${rule(scope, [
+      "--thread-content-cap: var(--container-content-compact);",
+    ])}\n}`,
+    rule(`${scope} .${THREAD_CLASS.band}`, [
+      "position: absolute;",
+      "left: 50%;",
+      "top: 0;",
+      "height: 100%;",
+      "transform: translateX(-50%);",
+      "display: none;",
+    ]),
+    rule(`${scope} .${THREAD_CLASS.field}`, [
+      "position: absolute;",
+      "inset: 0;",
+      "width: 100%;",
+      "height: 100%;",
+      "overflow: visible;",
+    ]),
     rule(`${scope} .${THREAD_CLASS.inkReveal}`, [
-      `stroke-dasharray: ${dashArray([FULL], IDENTITY)};`,
+      `stroke-dasharray: ${dashArray([FULL], 1)};`,
     ]),
     rule(`${scope} .${THREAD_CLASS.wispReveal}`, [
-      `stroke-dasharray: ${dashArray([], IDENTITY)};`,
+      `stroke-dasharray: ${dashArray([], 1)};`,
     ]),
-    /* The light is the one thing the base state does NOT carry: a resting thread has no pen on it.
-       Both reveals therefore start asking for nothing, which is where reduced motion, a page
-       without scripting and a browser without `animation-timeline` all land. */
     rule(
       `${scope} .${THREAD_CLASS.headReveal}, ${scope} .${THREAD_CLASS.retraceReveal}`,
-      [`stroke-dasharray: ${dashArray([], IDENTITY)};`],
+      [`stroke-dasharray: ${dashArray([], 1)};`],
     ),
-    /* The bleed, and the reason it sits on a layer of its own rather than on each stroke: a CSS
-       filter's lengths resolve in the filtered element's own coordinate system, and a connector's
-       box is a stretched unit square, so 3.5px on the path would be 3.5 BOX WIDTHS. The layer is a
-       plain absolutely positioned box the size of the section, where a pixel is a pixel — and it
-       holds the ink alone, so the head and the re-trace paint above the blurred buffer rather than
-       inside it. */
     rule(`${scope} .${THREAD_CLASS.inkLayer}`, [
       `filter: ${BLEED.map(
         ([alpha, radius]) =>
@@ -1883,29 +1307,35 @@ export function threadCss(id: ThreadId): string {
     ),
   ];
 
-  /* The weave is a property of the COMPLETE thread, not of the scrub, so the two copies split the
-     loop at rest as well as mid-draw — otherwise a resting page paints both copies whole and the
-     pass behind the illustration never reads. */
-  for (const segment of woven.values()) {
-    const [under0, under1] = WEAVE_BAND;
-    base.push(
-      rule(
-        `${scope}.${THREAD_CLASS.weaveUnder} .${segmentClass(segment)} .${THREAD_CLASS.inkReveal}`,
-        [`stroke-dasharray: ${dashArray([[under0, under1]], IDENTITY)};`],
-      ),
-      rule(
-        `${scope}.${THREAD_CLASS.weaveOver} .${segmentClass(segment)} .${THREAD_CLASS.inkReveal}`,
-        [
-          `stroke-dasharray: ${dashArray(
+  if (woven) {
+    for (const band of THREAD_BANDS) {
+      for (const segment of threadSegments(id, band)) {
+        if (!isWeave(id, segment)) continue;
+        const at = threadSegments(id, band)
+          .filter((s) => s.kind === "motif")
+          .findIndex((s) => s === segment);
+        const className = motifClass(band.id, at);
+        const [under0, under1] = WEAVE_BAND;
+        base.push(
+          rule(
+            `${scope}.${THREAD_CLASS.weaveUnder} .${bandClass(band.id)} .${className} .${THREAD_CLASS.inkReveal}`,
+            [`stroke-dasharray: ${dashArray([[under0, under1]], 1)};`],
+          ),
+          rule(
+            `${scope}.${THREAD_CLASS.weaveOver} .${bandClass(band.id)} .${className} .${THREAD_CLASS.inkReveal}`,
             [
-              [0, under0],
-              [under1, 1],
+              `stroke-dasharray: ${dashArray(
+                [
+                  [0, under0],
+                  [under1, 1],
+                ],
+                1,
+              )};`,
             ],
-            IDENTITY,
-          )};`,
-        ],
-      ),
-    );
+          ),
+        );
+      }
+    }
   }
 
   const bands = THREAD_BANDS.map(
@@ -1913,18 +1343,6 @@ export function threadCss(id: ThreadId): string {
       `@media ${aspectQuery(band)} {\n${bandRules(id, band, animated)}\n}`,
   );
 
-  /* The re-trace runs on the clock, because a RESTING re-trace has to move while the reader does
-     not — so nothing about the scroll can start or stop it. What gates it to the hold band is this
-     one scroll-driven animation on the group the passes live in: coverage, not the dash, so the
-     per-layer alphas underneath it are untouched. Its keyframes step rather than ramp; the gate
-     carries state, and a property carrying state is correct on its first frame.
-
-     One block, outside the bands: the gate is the same at every aspect, and a per-band copy would
-     define one `@keyframes` name three times, where the later definition silently wins.
-
-     On a TIMED surface the gate rides the same clock as the draw, so it opens as the pen runs off
-     the end and never closes again — there is no leaving the viewport to close it, and a screen a
-     guest is reading rather than scrolling past is exactly where a resting re-trace belongs. */
   const gateName = `thread-${id}-retrace-gate`;
   const edge = 0.001;
   const gateFrames: readonly (readonly [number, number])[] = isTimed(id)
@@ -1972,19 +1390,17 @@ export function threadCss(id: ThreadId): string {
         : `\n@supports (animation-timeline: view()) {\n${gateBody}\n}`;
   if (animated.size > 0) animated.add(`${scope} .${THREAD_CLASS.retrace}`);
 
-  /* Reduced motion removes the animation and nothing else, which lands on the complete base above —
-     one code path, not a second rendering of the same thread. Every animated selector is repeated
-     verbatim, so each cancellation matches its own rule's specificity exactly and wins on order;
-     a selector of this block's own choosing would be a specificity bet, and the last one lost it. */
   const cancelled =
-    animated.size > 0
-      ? [...animated]
-      : /* A section whose every segment measures zero is never animated; the block still states
-           the rule, so the contract reads the same whether or not there is a thread to draw. */
-        [`${scope} .${THREAD_CLASS.inkReveal}`];
+    animated.size > 0 ? [...animated] : [`${scope} .${THREAD_CLASS.inkReveal}`];
   const reduced = `@media (prefers-reduced-motion: reduce) {\n${cancelled
     .map((selector) => rule(selector, ["animation: none;"]))
     .join("\n")}\n}`;
 
   return [...base, ...bands, gate, reduced].join("\n");
 }
+
+const BLEED: readonly (readonly [number, number])[] = [
+  [68, 3.5],
+  [44, 12],
+  [30, 33],
+];

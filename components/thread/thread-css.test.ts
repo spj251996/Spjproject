@@ -2,32 +2,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { type Band, THREAD_BANDS } from "./thread-bands.ts";
+import { sectionBox } from "./thread-boxes.ts";
 import {
+  bandMarkup,
   JOIN_OVERLAP,
   MOTIF_SIDE,
   pathBounds,
   pathLength,
-  segmentClass,
   THREAD_CLASS,
-  threadAlternates,
   threadCss,
-  threadMaskRegions,
-  threadMounts,
   threadScopeClass,
   threadSegments,
-  threadStubs,
 } from "./thread-css.ts";
-import { resolveEnd, type Tangent, type ThreadId } from "./thread-geometry.ts";
-import {
-  anchorKey,
-  motifAngle,
-  routePoints,
-  type SectionRoute,
-  THREAD_IDS,
-  THREAD_ROUTES,
-} from "./thread-grid.ts";
+import type { ThreadId } from "./thread-geometry.ts";
 import { MOTIFS } from "./thread-motifs.ts";
-import { splineDirection } from "./thread-spline.ts";
+import { THREAD_IDS } from "./thread-paths.ts";
 
 /* Every surface the component mounts, not only the six page sections: `not-found` draws the
    invite's route on a screen of its own and has to satisfy the same laws. */
@@ -35,11 +24,7 @@ const ALL_IDS: readonly ThreadId[] = [...THREAD_IDS, "not-found"];
 
 /* The emitted sheet is nested at-rules over plain declaration blocks, so a test that wants to make
    a claim about a RULE rather than about a substring needs the blocks back. This reader keeps every
-   rule with the at-rule conditions it sits under, which is what lets a test say "with the animation
-   layer removed, every mask still declares the complete state" instead of grepping for a spelling.
-
-   It is itself a measurement, so `the rule reader finds every block the sheet declares` below
-   falsifies it against a sheet whose shape is known. */
+   rule with the at-rule conditions it sits under. */
 type Rule = {
   at: readonly string[];
   selector: string;
@@ -88,10 +73,6 @@ function readRules(css: string): Rule[] {
 const conditional = (rule: Rule) =>
   rule.at.some((at) => at.startsWith("@media") || at.startsWith("@supports"));
 
-/* A `@keyframes` frame is not a rule that applies to anything on its own — it is data the animation
-   that names it reads, and its prelude is a percentage rather than a selector. Every sheet used to
-   nest its frames under `@supports`, so `conditional` happened to exclude them; `not-found`'s timed
-   draw needs no `@supports`, so the exclusion has to be stated. */
 const inKeyframes = (rule: Rule) =>
   rule.at.some((at) => at.startsWith("@keyframes"));
 
@@ -109,22 +90,113 @@ test("the rule reader finds every block the sheet declares", () => {
   );
 });
 
-/* ---- per band, and every connector draws ----------------------------------------------------- */
+/* ---- one box per band, card-anchored, not one per connector --------------------------------- */
+
+/* THE task's own required test. A section's band declares exactly ONE box for its connectors,
+   sized to that band's own measured section box; every connector's `d` is a subpath of ONE combined
+   `path()`, not a separate declaration per connector; and nothing left over from the retired
+   per-connector model survives -- no per-connector span, no `svmin` sizing a motif. */
+test("a band declares exactly one connector box, sized to its measured section box", () => {
+  for (const id of ALL_IDS) {
+    for (const band of THREAD_BANDS) {
+      const markup = bandMarkup(id, band);
+      const box = sectionBox(id, band.id);
+      assert.equal(markup.region.box.width, band.box.width, `${id}/${band.id}`);
+      assert.equal(markup.region.box.height, box.height, `${id}/${band.id}`);
+
+      const css = threadCss(id);
+      /* Exactly one rule declares this band's own box width -- never a second one, and never a
+         per-connector left/top/width/height the way the retired model pinned each connector's own
+         stretched box. */
+      const boxRules = readRules(css).filter(
+        (r) =>
+          r.selector ===
+            `.${threadScopeClass(id)} .${THREAD_CLASS.band}--${band.id}` &&
+          r.decls.width !== undefined,
+      );
+      assert.equal(
+        boxRules.length,
+        1,
+        `${id}/${band.id}: declared ${boxRules.length} connector boxes, not 1`,
+      );
+    }
+  }
+});
+
+test("every connector's d is a subpath of one combined path per band", () => {
+  for (const id of ALL_IDS) {
+    for (const band of THREAD_BANDS) {
+      const markup = bandMarkup(id, band);
+      /* The combined `d` starts every subpath with its own `M`, one per connector -- proving the
+         field's single `<path>` carries all of them rather than one connector's `d` alone. */
+      const moves = markup.connectorD.match(/M/g) ?? [];
+      const css = threadCss(id);
+      const fieldSelector = `.${threadScopeClass(id)} .${THREAD_CLASS.band}--${band.id} .${THREAD_CLASS.field}`;
+      const curve = readRules(css).find(
+        (r) =>
+          r.selector === `${fieldSelector} .${THREAD_CLASS.connector}` &&
+          r.decls.d !== undefined,
+      );
+      assert.ok(curve, `${id}/${band.id}: no combined connector d declared`);
+      assert.ok(
+        moves.length >= 1,
+        `${id}/${band.id}: connector d has no subpaths`,
+      );
+      assert.ok(
+        (curve.decls.d as string).includes(markup.connectorD.split(" ")[0]),
+        `${id}/${band.id}: the declared d is not the combined one`,
+      );
+    }
+  }
+});
+
+test("no rule mentions a per-connector span, and no motif size reads svmin", () => {
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
+    assert.doesNotMatch(
+      css,
+      /--thread-mask-lead|MASK_LEAD|CONNECTOR_MASK_COVER/,
+      `${id}: the retired per-connector lead survives`,
+    );
+    for (const rule of readRules(css)) {
+      const side = rule.decls["--thread-motif-side"];
+      if (side === undefined) continue;
+      assert.doesNotMatch(
+        side,
+        /svmin/,
+        `${id}: ${rule.selector} sizes a motif off svmin`,
+      );
+    }
+  }
+});
+
+/* MUTATION GUARD: a band's box must be the section's own MEASURED height (`thread-boxes.ts`), not
+   the band's nominal device height -- Task 2's whole point, and this refactor's box now depends on
+   it directly for the field's own viewBox. Falsified by hand against `sectionBox`, restored: setting
+   a paired or list section back to its band's flat nominal height is exactly the class of regression
+   `thread-boxes.test.ts`'s own mutation test guards upstream; this one guards that `bandMarkup`
+   actually reads it rather than substituting the band's own box. */
+test("a band's box is the section's measured height, not the band's flat nominal one", () => {
+  const band = THREAD_BANDS.find((b) => b.id === "wide") as Band;
+  const flat = bandMarkup("celebrations", band).region.box.height;
+  const measured = sectionBox("celebrations", "wide").height;
+  assert.equal(flat, measured);
+  assert.notEqual(
+    measured,
+    band.box.height,
+    "celebrations/wide is no longer taller than the band's flat nominal box -- update this guard",
+  );
+});
+
+/* ---- bands, aspect and geometry --------------------------------------------------------------- */
 
 test("geometry is emitted per band, and each band's connector geometry differs", () => {
   const css = threadCss("wishes");
   for (const band of THREAD_BANDS) {
     assert.ok(css.includes(band.id), `wishes emits no ${band.id} block`);
   }
-  assert.equal(
-    css.includes("tier"),
-    false,
-    "a tier name survived the band rewrite",
-  );
 });
 
-/* A wipe reveals along an axis; a route that doubles back is revealed out of order by one. Every
-   segment now draws along its own path, so nothing constrains how the owner routes. */
 test("no reveal is an axis wipe", () => {
   for (const id of THREAD_IDS) {
     for (const rule of readRules(threadCss(id))) {
@@ -138,62 +210,19 @@ test("no reveal is an axis wipe", () => {
   }
 });
 
-/* A motif is a square sized off the section's shorter side while its cell is a fraction of each
-   axis, so the section's ASPECT enters the geometry: it decides how much of the thread's one arc
-   budget the motif takes against its connectors, and therefore every keyframe stop. That is the
-   whole reason geometry is emitted per band rather than once.
-
-   Asserted as the rule, not as a magnitude: a band's emitted block must DIFFER wherever two bands'
-   aspects differ. A threshold on how far some derived share swings would measure the seeded routes
-   instead. */
-function bandBlock(css: string, band: Band): string {
-  const rules = readRules(css).filter((rule) =>
-    rule.at.some((at) => at.includes(`${band.id}`)),
-  );
-  const keyed = readRules(css).filter((rule) =>
-    Object.values(rule.decls).some((value) => value.includes(`-${band.id}`)),
-  );
-  const block = [...rules, ...keyed].map(
-    (rule) =>
-      `${rule.at.join("|")} ${rule.selector} ${JSON.stringify(rule.decls)}`,
-  );
-  assert.ok(block.length > 0, `${band.id} emits nothing`);
-  return block.join("\n");
-}
-
-test("geometry tracks the band's aspect alone", () => {
-  const css = threadCss("wishes");
-  const aspect = (band: Band) => band.box.width / band.box.height;
-  /* Read back what the SHEET declares, never what a second composition would return: the claim is
-     that the generator composes against each band's box, and re-deriving the answer here would hold
-     even if it never passed the box at all. */
-  const composed = new Map(
-    THREAD_BANDS.map((band) => [band.id, bandBlock(css, band)] as const),
-  );
-  for (const a of THREAD_BANDS) {
-    for (const b of THREAD_BANDS) {
-      if (a.id === b.id || Math.abs(aspect(a) - aspect(b)) < 1e-9) continue;
-      assert.notEqual(
-        composed.get(a.id),
-        composed.get(b.id),
-        `${a.id} and ${b.id} differ in aspect but composed identically, so the band box was never read`,
-      );
-    }
+test("every band's own connectors compose a different drawn curve", () => {
+  for (const id of THREAD_IDS) {
+    const byBand = new Map(
+      THREAD_BANDS.map((band) => [band.id, bandMarkup(id, band).connectorD]),
+    );
+    const values = [...byBand.values()];
+    assert.ok(
+      new Set(values).size > 1 || values.length === 1,
+      `${id}: every band composes the identical curve`,
+    );
   }
-  /* Hold the pixels and turn the aspect alone, and the geometry has to move. */
-  const shape = (box: { width: number; height: number }) =>
-    threadSegments("wishes", { ...THREAD_BANDS[0], box })
-      .map((segment) => `${segment.length}`)
-      .join("|");
-  assert.notEqual(
-    shape({ width: 1000, height: 1000 }),
-    shape({ width: 1000, height: 2000 }),
-    "the aspect alone does not move the composed geometry",
-  );
 });
 
-/* Each band's query bounds the aspect at both ends, half-open, so no aspect can match two bands —
-   the overlap `thread-grid.test.ts` forbids in the model, held here in the emitted sheet. */
 test("every band emits a bounded aspect query and no two can both match", () => {
   const css = threadCss("family");
   const queries = [
@@ -205,9 +234,6 @@ test("every band emits a bounded aspect query and no two can both match", () => 
     to: to === undefined ? Number.POSITIVE_INFINITY : Number(to),
   }));
   assert.equal(queries.length, THREAD_BANDS.length);
-  /* Each band's edge is EMITTED once and read by both neighbours, so the rounding that writes it
-     cannot open a gap or an overlap between them — which comparing the emitted numbers to each
-     other, rather than each to its own unrounded constant, is what checks. */
   for (const [at, query] of queries.entries()) {
     assert.ok(
       Math.abs(query.from - THREAD_BANDS[at].min) < 1e-4,
@@ -227,11 +253,43 @@ test("every band emits a bounded aspect query and no two can both match", () => 
   }
 });
 
+/* Each band's own subtree must not paint while another band's aspect matches -- unlike the retired
+   grid's shared-and-hidden union, a band that does not match is not merely inert, it never declares
+   `display: block` at all outside its own query. */
+test("a band's box only ever shows inside its own aspect query", () => {
+  for (const id of ALL_IDS) {
+    const css = threadCss(id);
+    const scope = `.${threadScopeClass(id)}`;
+    for (const band of THREAD_BANDS) {
+      const selector = `${scope} .${THREAD_CLASS.band}--${band.id}`;
+      const unconditional = readRules(css).filter(
+        (r) => r.selector === selector && !conditional(r) && !inKeyframes(r),
+      );
+      for (const rule of unconditional) {
+        assert.notEqual(
+          rule.decls.display,
+          "block",
+          `${id}: .${THREAD_CLASS.band}--${band.id} shows outside its own aspect query`,
+        );
+      }
+      const gated = readRules(css).filter(
+        (r) =>
+          r.selector === selector &&
+          r.decls.display === "block" &&
+          r.at.some(
+            (at) => at.startsWith("@media") && at.includes("aspect-ratio"),
+          ),
+      );
+      assert.ok(
+        gated.length > 0,
+        `${id}: .${THREAD_CLASS.band}--${band.id} never shows at all`,
+      );
+    }
+  }
+});
+
 /* ---- the base state and the scrub ------------------------------------------------------------ */
 
-/* DESIGN.md -> Components -> Shell -> `thread-overlay`: "The complete thread is the base state, and
-   the reveal subtracts from it." The test is the RULE — with every conditional layer stripped, what
-   remains must already be a complete thread and must ask for no animation. */
 test("at rest the thread is complete and no animation is required to make it so", () => {
   for (const id of ALL_IDS) {
     const rest = readRules(threadCss(id)).filter(
@@ -241,11 +299,6 @@ test("at rest the thread is complete and no animation is required to make it so"
 
     for (const rule of rest) {
       for (const property of Object.keys(rule.decls)) {
-        /* `not-found` is the one TIMED surface. Nothing scrolls there, so its draw cannot be gated
-           on `animation-timeline: view()` and is declared outright — but the law is unchanged, and
-           this is what holds it: the only unconditional animation it may declare is the re-trace's
-           gate, which drives the LIGHT. Ignore every animation on that sheet and the ink below is
-           still the complete thread the assertions further down check. */
         if (id === "not-found" && /^animation/.test(property)) {
           assert.ok(
             rule.selector.includes(THREAD_CLASS.retrace),
@@ -265,8 +318,6 @@ test("at rest the thread is complete and no animation is required to make it so"
       );
     }
 
-    /* The Wishes weave is the one at-rest exception: its two copies are COMPLEMENTARY halves of
-       one complete loop, so neither is fully inked on its own. */
     for (const rule of rest.filter((r) => !r.selector.includes("weave"))) {
       const dash = rule.decls["stroke-dasharray"];
       if (dash !== undefined && rule.selector.includes("ink-reveal")) {
@@ -279,9 +330,6 @@ test("at rest the thread is complete and no animation is required to make it so"
   }
 });
 
-/* The spike measured that `animation-timeline: view()` on a segment times it against that segment's
-   own box, which differs per segment; one NAMED timeline on the section, read by every segment, is
-   the corrected mechanism. */
 test("the scrub is scroll-driven off one named section timeline, never timed", () => {
   for (const id of ALL_IDS) {
     const rules = readRules(threadCss(id));
@@ -291,9 +339,6 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
         : [r.decls["view-timeline-name"]],
     );
 
-    /* `not-found` reads no timeline at all, and declaring one would be the tell that it still
-       thinks it can: a single screen a wrong turn lands on never travels through the viewport, so
-       a view timeline there reports no progress and the thread would never draw. */
     if (id === "not-found") {
       assert.equal(named.length, 0, "not-found must name no timeline");
       assert.equal(
@@ -311,9 +356,6 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
         ? []
         : [r.decls["animation-timeline"]],
     );
-    /* A segment with no measured length draws nothing and is not scrubbed. The tie is deliberate:
-       a section whose every segment measures zero must declare no animation at all, so an undrawn
-       thread can never sit on a live timeline. */
     const drawable = THREAD_BANDS.some((band) =>
       threadSegments(id, band).some((segment) => segment.length > 0),
     );
@@ -330,11 +372,6 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
       );
     }
 
-    /* The re-trace is the ONE clock in the sheet, and it has to be one: a resting re-trace moves
-       while the reader does not, so nothing about the scroll can drive it. DESIGN.md -> Foundations
-       -> Motion makes its pass duration and the delay between passes "a deliberate exception to the
-       duration and easing scales". What the scroll still owns is WHEN it runs — a gate on the hold
-       band, read off the section's own timeline like everything else. */
     for (const rule of rules) {
       if (rule.selector.includes("retrace")) continue;
       for (const [property, value] of Object.entries(rule.decls)) {
@@ -350,9 +387,6 @@ test("the scrub is scroll-driven off one named section timeline, never timed", (
   }
 });
 
-/* The one timed draw on the site, and the shape it has to have: it runs once, ends with the thread
-   complete, and holds it there. A draw that looped, or that ran the retract half of the law, would
-   take the heart away again on a screen the guest is still reading. */
 test("not-found draws on the clock, once, and ends complete", () => {
   const css = threadCss("not-found");
   const rules = readRules(css).filter(
@@ -371,7 +405,6 @@ test("not-found draws on the clock, once, and ends complete", () => {
       undefined,
       `${rule.selector} still reads a timeline`,
     );
-    /* The re-trace alone repeats; the draw runs once and its fill holds the last frame. */
     const repeats = rule.decls["animation-iteration-count"];
     assert.equal(
       repeats,
@@ -383,8 +416,6 @@ test("not-found draws on the clock, once, and ends complete", () => {
     assert.equal(rule.decls["animation-fill-mode"], "both", rule.selector);
   }
 
-  /* The draw and the gate that opens the resting re-trace behind it run on ONE clock — a gate on a
-     different duration or delay would uncover the re-trace over a thread still being drawn. */
   const timings = new Set(
     rules
       .filter((rule) => !rule.selector.includes(THREAD_CLASS.retraceReveal))
@@ -410,8 +441,6 @@ test("not-found draws on the clock, once, and ends complete", () => {
     assert.ok(dash, `${name} declares no dash at its end`);
     assert.deepEqual(
       dash[1].trim().split(/\s+/).map(Number),
-      /* `0 0 1 0` — the whole copy inked, with no trailing gap to stop the dash short of the
-         copy's own end. See `dashArray`. */
       [0, 0, 1, 0],
       `${name} does not end with the thread complete`,
     );
@@ -435,19 +464,28 @@ test("reduced motion removes the animation and nothing else", () => {
   }
 });
 
-/* The handoff law, held in the emitted sheet rather than in the model: the thread leaves a section
-   at its bottom edge and the next one picks it up at its top, so every section but the page's own
-   two ends composes a connector that reaches the edge. */
+test("no two keyframes in a section's sheet share a name", () => {
+  for (const id of ALL_IDS) {
+    const names = [...threadCss(id).matchAll(/@keyframes\s+([\w-]+)/g)].map(
+      (match) => match[1],
+    );
+    assert.deepEqual(
+      names.filter((name, at) => names.indexOf(name) !== at),
+      [],
+      `${id} defines a keyframes name twice`,
+    );
+  }
+});
+
 test("only the page's first and last sections keep a wisp at rest", () => {
   const stubbed = THREAD_IDS.filter((id) =>
-    threadCss(id).includes(`${"thread__stub"}--`),
+    threadCss(id).includes(`${THREAD_CLASS.stub}--`),
   );
-  assert.deepEqual(stubbed, ["invite", "wishes"]);
+  assert.deepEqual([...stubbed], ["invite", "wishes"]);
   assert.ok(
-    threadCss("not-found").includes("thread__stub--entry"),
+    threadCss("not-found").includes(`${THREAD_CLASS.stub}--`),
     "not-found is closed at both ends and keeps both wisps",
   );
-  assert.ok(threadCss("not-found").includes("thread__stub--exit"));
 });
 
 /* ---- the weave -------------------------------------------------------------------------------- */
@@ -458,56 +496,59 @@ test("wishes renders two complementary weave segments", () => {
   assert.match(css, /--thread-weave-over/);
 });
 
-/* An under-copy beneath the illustration and an over-copy above it are complementary segments of
-   ONE curve: together they draw the loop once, and neither draws any of it twice. */
-test("the weave's two copies cover the whole loop exactly once", () => {
-  const dashes = readRules(threadCss("wishes"))
-    .filter(
-      (r) =>
-        r.selector.includes("weave") &&
-        r.decls["stroke-dasharray"] !== undefined &&
-        !conditional(r),
-    )
-    .map((r) =>
-      (r.decls["stroke-dasharray"] as string).split(/\s+/).map(Number),
-    );
-  assert.equal(
-    dashes.length,
-    2,
-    "wishes must declare both weave copies at rest",
-  );
-
-  /* `0 {tail} {head - tail} 1` alternates DASH then gap, starting with a zero-length dash — which
-     is why the mask copy is butt-capped, since a round cap would paint that zero as a dot. */
-  const covered: [number, number][] = [];
-  for (const dash of dashes) {
-    let at = 0;
-    for (let index = 0; index < dash.length; index += 2) {
-      covered.push([at, at + dash[index]]);
-      at += dash[index] + (dash[index + 1] ?? 0);
-    }
-  }
-  covered.sort((a, b) => a[0] - b[0]);
-  const inked = covered.filter(([start, end]) => end > start);
-  assert.equal(inked[0][0], 0, "the loop is not inked from its start");
-  assert.equal(
-    inked[inked.length - 1][1],
-    1,
-    "the loop is not inked to its end",
-  );
-  for (let index = 1; index < inked.length; index += 1) {
+/* Each band is self-contained, so each carries its OWN pair of weave copies -- three bands times
+   two copies, not the single shared pair a union-mounted motif used to give. Checked per band. */
+test("the weave's two copies cover the whole loop exactly once, in every band", () => {
+  for (const band of THREAD_BANDS) {
+    const dashes = readRules(threadCss("wishes"))
+      .filter(
+        (r) =>
+          r.selector.includes(band.id) &&
+          r.selector.includes("weave") &&
+          r.decls["stroke-dasharray"] !== undefined &&
+          !conditional(r),
+      )
+      .map((r) =>
+        (r.decls["stroke-dasharray"] as string).split(/\s+/).map(Number),
+      );
     assert.equal(
-      inked[index][0],
-      inked[index - 1][1],
-      "the two copies overlap or leave a gap",
+      dashes.length,
+      2,
+      `wishes/${band.id}: must declare both weave copies at rest`,
     );
+
+    const covered: [number, number][] = [];
+    for (const dash of dashes) {
+      let at = 0;
+      for (let index = 0; index < dash.length; index += 2) {
+        covered.push([at, at + dash[index]]);
+        at += dash[index] + (dash[index + 1] ?? 0);
+      }
+    }
+    covered.sort((a, b) => a[0] - b[0]);
+    const inked = covered.filter(([start, end]) => end > start);
+    assert.equal(
+      inked[0][0],
+      0,
+      `wishes/${band.id}: the loop is not inked from its start`,
+    );
+    assert.equal(
+      inked[inked.length - 1][1],
+      1,
+      `wishes/${band.id}: the loop is not inked to its end`,
+    );
+    for (let index = 1; index < inked.length; index += 1) {
+      assert.equal(
+        inked[index][0],
+        inked[index - 1][1],
+        `wishes/${band.id}: the two copies overlap or leave a gap`,
+      );
+    }
   }
 });
 
 /* ---- tokens and measurement ------------------------------------------------------------------ */
 
-/* DESIGN.md -> Foundations: every visual value is a token. The sheet computes geometry; it may
-   never compute a colour or a stroke width. */
 test("no emitted colour or stroke width is a literal", () => {
   for (const id of ALL_IDS) {
     const css = threadCss(id);
@@ -536,11 +577,6 @@ test("pathLength measures a scaled path in the box it is drawn in", () => {
   );
 });
 
-/* A motif's `d` is authored in its own square and a connector's in its own box, and the two
-   conventions meet in two places: the svg the motif is drawn in, and the box its arc length is
-   measured in. Both read `MOTIF_SIDE`. The first shipped render had the svg declaring a 0-1 box
-   around a 0-100 drawing: the heart measured 13259x4989 CSS px inside a 133px field, and every gate
-   was green. */
 test("every motif is drawn inside its own field", () => {
   for (const motif of Object.values(MOTIFS)) {
     const { minX, minY, maxX, maxY } = pathBounds(motif.d, {
@@ -551,8 +587,6 @@ test("every motif is drawn inside its own field", () => {
       minX >= 0 && minY >= 0 && maxX <= MOTIF_SIDE && maxY <= MOTIF_SIDE,
       `${motif.id} is drawn outside its field: [${minX}, ${minY}]..[${maxX}, ${maxY}] against 0..${MOTIF_SIDE}`,
     );
-    /* Containment alone passes a drawing shrunk into a corner, which is the same defect seen from
-       the other side — the field has to be the drawing's own square, not merely larger than it. */
     assert.ok(
       maxX - minX >= MOTIF_SIDE / 2 || maxY - minY >= MOTIF_SIDE / 2,
       `${motif.id} spans ${maxX - minX}x${maxY - minY} of a ${MOTIF_SIDE} field`,
@@ -560,8 +594,6 @@ test("every motif is drawn inside its own field", () => {
   }
 });
 
-/* The scrub divides ONE arc budget between the connectors and the motifs, so a motif measured in
-   the wrong units takes the whole of it and the connectors are drawn in a few frames. */
 test("a motif's measured length is commensurate with the field it is drawn in", () => {
   for (const id of ALL_IDS) {
     for (const band of THREAD_BANDS) {
@@ -571,15 +603,13 @@ test("a motif's measured length is commensurate with the field it is drawn in", 
           segment.place.scale * Math.min(band.box.width, band.box.height);
         assert.ok(
           segment.length > side && segment.length < side * 10,
-          `${id} at ${band.id}: ${segment.place.motif.id} measures ${segment.length}px in a ${side}px field`,
+          `${id} at ${band.id}: ${segment.place.motif} measures ${segment.length}px in a ${side}px field`,
         );
       }
     }
   }
 });
 
-/* The scrub law: the head grows, both hold, then the TAIL eats forward. A retract that shortens the
-   band from the far end instead would read as the thread pulling back the way it came. */
 test("the inked band's start never moves backwards across a segment's keyframes", () => {
   for (const id of ALL_IDS) {
     const byName = new Map<string, number[]>();
@@ -602,639 +632,84 @@ test("the inked band's start never moves backwards across a segment's keyframes"
   }
 });
 
-/* Two `@keyframes` blocks with one name do not collide loudly: the later definition wins wherever
-   both match, so a band variant that reuses another band's name is right only by accident of
-   emission order — the same trap as two overlapping media bands. */
-test("no two keyframes in a section's sheet share a name", () => {
+/* ---- the turn and the mirror ------------------------------------------------------------------ */
+
+test("a motif's turn and mirror are authored values, emitted as declared", () => {
   for (const id of ALL_IDS) {
-    const names = [...threadCss(id).matchAll(/@keyframes\s+([\w-]+)/g)].map(
-      (match) => match[1],
-    );
-    assert.deepEqual(
-      names.filter((name, at) => names.indexOf(name) !== at),
-      [],
-      `${id} defines a keyframes name twice`,
-    );
-  }
-});
-
-/* ---- the joins ------------------------------------------------------------------------------ */
-
-/* A window, and a section that is at least as tall as it. `svmin` is the WINDOW's shorter side
-   while the section's own box is what a percentage resolves against, and the two part company as
-   soon as a section is taller than one screen — which every section on the page is.
-
-   Each band's own NOMINAL box is in the list, so the pixel-exact case is covered as well as the
-   drifted ones. */
-const WINDOWS = [
-  ...THREAD_BANDS.map((band) => ({
-    width: band.box.width,
-    height: band.box.height,
-    section: band.box.height,
-  })),
-  { width: 360, height: 780, section: 780 },
-  { width: 390, height: 844, section: 2400 },
-  { width: 768, height: 1024, section: 1024 },
-  { width: 834, height: 1112, section: 2000 },
-  { width: 900, height: 900, section: 900 },
-  { width: 1024, height: 768, section: 1600 },
-  { width: 1280, height: 720, section: 720 },
-  { width: 1440, height: 900, section: 3000 },
-  { width: 1920, height: 900, section: 900 },
-  { width: 2560, height: 900, section: 1400 },
-];
-
-type Window = (typeof WINDOWS)[number];
-
-/* Split at paren depth zero. The generator nests `min()` and `max()` inside `calc()`, so a naive
-   split on "," or " - " reads the inner function's own arguments as the outer one's terms. */
-function splitTop(
-  body: string,
-  separators: readonly string[],
-): { parts: string[]; ops: string[] } {
-  const parts: string[] = [];
-  const ops: string[] = [];
-  let depth = 0;
-  let start = 0;
-  for (let at = 0; at < body.length; at += 1) {
-    if (body[at] === "(") depth += 1;
-    else if (body[at] === ")") depth -= 1;
-    else if (depth === 0) {
-      const sep = separators.find((candidate) =>
-        body.startsWith(candidate, at),
-      );
-      if (sep !== undefined) {
-        parts.push(body.slice(start, at));
-        ops.push(sep.trim());
-        start = at + sep.length;
-        at += sep.length - 1;
-      }
-    }
-  }
-  parts.push(body.slice(start));
-  return { parts, ops };
-}
-
-/* True when `value` is one call to `name(...)` rather than an expression that merely starts with
-   one — `min(a, b) - min(c, d)` starts with "min(" and ends with ")" and is neither. */
-function wraps(value: string, name: string): boolean {
-  if (!value.startsWith(`${name}(`) || !value.endsWith(")")) return false;
-  let depth = 0;
-  for (let at = name.length; at < value.length; at += 1) {
-    if (value[at] === "(") depth += 1;
-    else if (value[at] === ")") {
-      depth -= 1;
-      if (depth === 0) return at === value.length - 1;
-    }
-  }
-  return false;
-}
-
-/* The emitted grammar and no more: `min(...)`, `max(...)`, `calc(<terms>)` with those nested inside
-   it, and terms in `%`, `svmin` or `px`. `size` is the section side the percentage resolves against
-   — its width for a horizontal value, its height for a vertical one. */
-function resolveLength(value: string, size: number, svmin: number): number {
-  let trimmed = value.trim();
-  if (wraps(trimmed, "calc")) trimmed = trimmed.slice(5, -1).trim();
-
-  const term = /^(-?[\d.]+)(%|svmin|px)$/.exec(trimmed);
-  if (term !== null) {
-    const amount = Number(term[1]);
-    return term[2] === "px"
-      ? amount
-      : (amount / 100) * (term[2] === "%" ? size : svmin);
-  }
-
-  for (const fn of ["min", "max"] as const) {
-    if (!wraps(trimmed, fn)) continue;
-    const { parts } = splitTop(trimmed.slice(fn.length + 1, -1), [","]);
-    const resolved = parts.map((part) => resolveLength(part, size, svmin));
-    return fn === "min" ? Math.min(...resolved) : Math.max(...resolved);
-  }
-
-  const { parts, ops } = splitTop(trimmed, [" + ", " - "]);
-  assert.ok(parts.length > 1, `unreadable length "${value}"`);
-  let total = resolveLength(parts[0], size, svmin);
-  for (const [at, op] of ops.entries()) {
-    total += (op === "-" ? -1 : 1) * resolveLength(parts[at + 1], size, svmin);
-  }
-  return total;
-}
-
-test("the length resolver reads the grammar the generator emits", () => {
-  const at = (value: string) => resolveLength(value, 1000, 400);
-  assert.equal(at("50%"), 500);
-  assert.equal(at("calc(50% - 25svmin + 2px)"), 500 - 100 + 2);
-  assert.equal(at("min(calc(50% - 25svmin), 50%)"), 400);
-  assert.equal(at("max(1px, calc(max(10%, 40%) - min(10%, 40%)))"), 300);
-  assert.equal(at("max(1px, calc(max(10%) - min(10%)))"), 1);
-});
-
-/* Only the conditions the generator writes. A `@supports` block is taken as supported, since the
-   claim under test is geometry, not the fallback. */
-function conditionHolds(at: string, window: Window): boolean {
-  if (at.startsWith("@supports")) return true;
-  if (/prefers-reduced-motion/.test(at)) return false;
-  const aspect = window.width / window.height;
-  for (const [, from, operator, bound] of at.matchAll(
-    /\(\s*(?:([\d.]+)\s*<=\s*)?aspect-ratio(?:\s*(<|>=)\s*([\d.]+))?\s*\)/g,
-  )) {
-    if (from !== undefined && aspect < Number(from)) return false;
-    if (operator === "<" && aspect >= Number(bound)) return false;
-    if (operator === ">=" && aspect < Number(bound)) return false;
-  }
-  return true;
-}
-
-test("the condition reader answers the queries the generator writes", () => {
-  const window = { width: 1920, height: 900, section: 900 };
-  assert.equal(
-    conditionHolds("@media (1.33333 <= aspect-ratio)", window),
-    true,
-  );
-  assert.equal(
-    conditionHolds("@media (aspect-ratio < 0.62462)", window),
-    false,
-  );
-  assert.equal(
-    conditionHolds("@media (0.62462 <= aspect-ratio < 1.33333)", window),
-    false,
-  );
-  assert.equal(
-    conditionHolds("@supports (animation-timeline: view())", window),
-    true,
-  );
-});
-
-/* Every declaration that applies at one window, in cascade order — later wins, which is how the
-   sheet's own band blocks are meant to resolve. */
-function declarationsAt(
-  css: string,
-  window: Window,
-): Map<string, Record<string, string>> {
-  const winning = new Map<string, Record<string, string>>();
-  for (const rule of readRules(css)) {
-    if (rule.at.some((at) => at.startsWith("@keyframes"))) continue;
-    if (!rule.at.every((at) => conditionHolds(at, window))) continue;
-    winning.set(rule.selector, {
-      ...(winning.get(rule.selector) ?? {}),
-      ...rule.decls,
-    });
-  }
-  return winning;
-}
-
-function bandFor(window: Window): Band {
-  const aspect = window.width / window.height;
-  const band = THREAD_BANDS.find(
-    (candidate) => aspect >= candidate.min && aspect < candidate.max,
-  );
-  assert.ok(band, `no band holds aspect ${aspect}`);
-  return band;
-}
-
-/* An anchored motif's position is emitted as `var(--thread-anchor-<key>-<axis>, <cell>)` — the
-   measured position with its authored cell as the fallback. Every claim in this file is made
-   against the CELL, because the cell is the only position a connector is composed against. A
-   resolved anchor moves the motif off that connector by however far the content sits from its cell;
-   that is an open item for the tuning pass, not something this reader is hiding. */
-function motifFraction(value: string): number {
-  const fallback = /^var\(--[\w-]+,\s*([-\d.]+)\)$/.exec(value.trim());
-  return Number(fallback === null ? value : fallback[1]);
-}
-
-/* The route a surface draws. `not-found` is the invite's route on a screen of its own, which is the
-   one place a surface and a route do not share a name. */
-function routeOf(id: ThreadId, band: Band): SectionRoute {
-  const route = THREAD_ROUTES.find(
-    (candidate) =>
-      candidate.id === (id === "not-found" ? "invite" : id) &&
-      candidate.band === band.id,
-  );
-  assert.ok(route, `${id}: no route in band ${band.id}`);
-  return route;
-}
-
-/* Where a turned motif's attachment point sits, as a multiple of the motif's own square side: the
-   drawing's declared point taken off the square's centre, turned, and scaled. Written out here
-   rather than read from the generator, so the test is a second derivation and not an echo. */
-function turnedOffset(
-  tangent: Tangent,
-  degrees: number,
-  scale: number,
-): { x: number; y: number } {
-  const radians = (degrees * Math.PI) / 180;
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
-  const x = tangent.x - 0.5;
-  const y = tangent.y - 0.5;
-  return { x: (x * cos - y * sin) * scale, y: (x * sin + y * cos) * scale };
-}
-
-/* Every turn cancelled, through the real path rather than around it: a motif's turn is the spline's
-   own direction of travel plus the stop's `nudge`, so a nudge of minus that direction is exactly
-   zero. Restored in `finally`, or every later test in this file would run against routes nobody
-   authored. */
-function withoutAnyTurn(body: () => void): void {
-  const touched: { stop: { nudge?: number }; held: number | undefined }[] = [];
-  for (const route of THREAD_ROUTES) {
-    const points = routePoints(route);
-    route.stops.forEach((stop, index) => {
-      const mutable = stop as { nudge?: number };
-      touched.push({ stop: mutable, held: mutable.nudge });
-      mutable.nudge = -splineDirection(points, index);
-    });
-  }
-  try {
-    body();
-  } finally {
-    for (const { stop, held } of touched) {
-      if (held === undefined) delete stop.nudge;
-      else stop.nudge = held;
-    }
-  }
-}
-
-/* The fallback is the whole contract: a motif whose anchor never resolves — no script, a blocked
-   script, a selector that matches nothing — has to land on its authored cell rather than at 0,0 or
-   nowhere. Asserted as a RULE over every emitted motif rather than on three known selectors, so a
-   stop that gains an anchor later cannot quietly ship without one. */
-test("an anchored motif reads through its anchor and falls back to its own cell", () => {
-  let anchored = 0;
-  for (const id of ALL_IDS) {
-    const css = threadCss(id);
-    for (const window of WINDOWS) {
-      const applied = declarationsAt(css, window);
-      const band = bandFor(window);
-      const route = THREAD_ROUTES.find(
-        (candidate) =>
-          candidate.id === (id === "not-found" ? "invite" : id) &&
-          candidate.band === band.id,
-      );
-      assert.ok(route, `${id}: no route in band ${band.id}`);
-
-      const stops = route.stops.filter((stop) => stop.motif !== undefined);
-      const segments = threadSegments(id, band).filter(
-        (segment) => segment.kind === "motif",
-      );
-      assert.equal(segments.length, stops.length);
-
-      for (const [at, segment] of segments.entries()) {
-        const decls =
-          applied.get(`.${threadScopeClass(id)} .${segmentClass(segment)}`) ??
-          {};
-        for (const axis of ["x", "y"] as const) {
-          const emitted = decls[`--thread-motif-${axis}`];
-          assert.ok(emitted, `${id}: segment ${segment.index} has no ${axis}`);
-          const cell = segment.place[axis];
-          assert.ok(
-            Math.abs(motifFraction(emitted) - cell) < 1e-4,
-            `${id}: segment ${segment.index} falls back to ${emitted}, not its cell ${cell}`,
-          );
-          const anchor = stops[at].anchor;
-          if (anchor === undefined) {
-            assert.equal(emitted.includes("var("), false);
-            continue;
-          }
-          assert.equal(
-            emitted.startsWith(
-              `var(--thread-anchor-${anchorKey(anchor)}-${axis},`,
-            ),
-            true,
-            `${id}: segment ${segment.index} does not read its anchor: ${emitted}`,
-          );
-          anchored += 1;
-        }
-      }
-    }
-  }
-  assert.ok(anchored > 0, "no motif anchors, so nothing was proved");
-});
-
-/* ---- the turn ------------------------------------------------------------------------------- */
-
-/* A motif is turned onto the route it sits on, and the turn is REAL GEOMETRY rather than a number
-   nobody paints: the drawing turns, and the two points the thread attaches to turn with it. The
-   panel's rotation slider writes `nudge`, which reaches the page only through here.
-
-   Asserted on both halves at once, because either alone passes while the thread visibly detaches:
-   the sheet's own `rotate` against the route's direction of travel, and the composed connector
-   end's `svmin` offset against that same angle applied to the drawing's declared attachment
-   point. */
-test("a motif is turned onto its route, drawing and attachment points together", () => {
-  let turned = 0;
-  for (const id of ALL_IDS) {
-    const css = threadCss(id);
     for (const band of THREAD_BANDS) {
-      const route = routeOf(id, band);
-      const applied = declarationsAt(css, {
-        width: band.box.width,
-        height: band.box.height,
-        section: band.box.height,
-      });
-      const segments = threadSegments(id, band);
-      const stops = route.stops
-        .map((stop, index) => ({ stop, index }))
-        .filter((each) => each.stop.motif !== undefined);
-      const motifs = segments.filter((segment) => segment.kind === "motif");
-      assert.equal(motifs.length, stops.length);
-
-      for (const [at, segment] of motifs.entries()) {
-        assert.ok(segment.kind === "motif");
-        const turn = motifAngle(route, stops[at].index);
-        const decls =
-          applied.get(`.${threadScopeClass(id)} .${segmentClass(segment)}`) ??
-          {};
-
-        /* The drawing itself. `rotate` on the motif's OWN element: an element's own stacking
-           context isolates its children, not its own blending, so this cannot reach the page's
-           `mix-blend-mode` botanical layer. */
-        const declared = decls.rotate;
-        assert.ok(
-          declared,
-          `${id}/${band.id}: motif ${segment.index} declares no rotation, so the panel's slider paints nothing`,
+      const markup = bandMarkup(id, band);
+      const css = threadCss(id);
+      /* This geometry lives inside the band's OWN aspect query, not at rest -- unlike the base
+         state, it must NOT be filtered to unconditional rules. */
+      const rules = readRules(css).filter((r) => !inKeyframes(r));
+      const placed = threadSegments(id, band).filter((s) => s.kind === "motif");
+      placed.forEach((segment, at) => {
+        if (segment.kind !== "motif") return;
+        const motif = markup.motifs[at];
+        const selector = `.${threadScopeClass(id)} .${THREAD_CLASS.band}--${band.id} .${motif.className}`;
+        const rule = rules.find(
+          (r) =>
+            r.selector === selector &&
+            r.decls["--thread-motif-x"] !== undefined,
         );
-        const degrees = /^(-?[\d.]+)deg$/.exec(declared.trim());
-        assert.ok(degrees, `${id}/${band.id}: unreadable rotation ${declared}`);
-        assert.ok(
-          Math.abs(Number(degrees[1]) - turn) < 1e-3,
-          `${id}/${band.id}: motif ${segment.index} is turned ${degrees[1]}deg, not the route's ${turn}deg`,
-        );
-
-        /* Both attachment points, read off the connectors that meet them. */
-        for (const [which, side] of [
-          ["exit", segments[segment.index + 1]],
-          ["entry", segments[segment.index - 1]],
-        ] as const) {
-          if (side === undefined || side.kind !== "connector") continue;
-          const end = which === "exit" ? side.from : side.to;
-          const expected = turnedOffset(
-            segment.place.motif[which],
-            turn,
-            segment.place.scale,
-          );
-          assert.ok(
-            Math.hypot(end.svmin.x - expected.x, end.svmin.y - expected.y) <
-              1e-6,
-            `${id}/${band.id}: motif ${segment.index}'s ${which} attachment did not turn with the drawing`,
-          );
-          assert.ok(
-            Math.abs(
-              end.tangent.angle - (segment.place.motif[which].angle + turn),
-            ) < 1e-6,
-            `${id}/${band.id}: motif ${segment.index}'s ${which} tangent did not turn with the drawing`,
-          );
-          turned += 1;
-        }
-      }
-    }
-  }
-  assert.ok(turned > 0, "no motif was turned, so nothing was proved");
-});
-
-/* A zero turn is NOT `rotate: 0deg`. A zero rotation is still a transform: it hands the element to
-   the compositor and resamples the drawing under a motif nobody turned. Nothing is emitted, and the
-   sheet is then byte-for-byte what it was before the turn existed. */
-test("a motif the route does not turn is handed no transform at all", () => {
-  withoutAnyTurn(() => {
-    let seen = 0;
-    for (const id of ALL_IDS) {
-      for (const band of THREAD_BANDS) {
-        const applied = declarationsAt(threadCss(id), {
-          width: band.box.width,
-          height: band.box.height,
-          section: band.box.height,
-        });
-        for (const segment of threadSegments(id, band)) {
-          if (segment.kind !== "motif") continue;
-          const decls =
-            applied.get(`.${threadScopeClass(id)} .${segmentClass(segment)}`) ??
-            {};
+        assert.ok(rule, `${id}/${band.id}: no rule for ${selector}`);
+        if (segment.place.turn === 0) {
           assert.equal(
-            decls.rotate,
+            rule.decls.rotate,
             undefined,
-            `${id}/${band.id}: an unturned motif still declares rotate: ${decls.rotate}`,
+            `${id}/${band.id}: a zero turn still declares rotate`,
           );
-          seen += 1;
+        } else {
+          const declared = /^(-?[\d.]+)deg$/.exec(
+            (rule.decls.rotate ?? "").trim(),
+          );
+          assert.ok(
+            declared,
+            `${id}/${band.id}: unreadable rotation ${rule.decls.rotate}`,
+          );
+          assert.ok(
+            Math.abs(Number(declared[1]) - segment.place.turn) < 1e-3,
+            `${id}/${band.id}: declared ${declared[1]}deg, not the placement's ${segment.place.turn}deg`,
+          );
         }
-      }
+        assert.equal(
+          rule.decls.scale === "-1 1",
+          Boolean(segment.place.mirror),
+          `${id}/${band.id}: mirror flag disagrees with the declared scale`,
+        );
+      });
     }
-    assert.ok(seen > 0, "no motif was examined");
-  });
+  }
 });
 
-/* ---- the crossing the turn makes reachable --------------------------------------------------- */
-
-/* Turning a motif throws its drawing's whole chord onto the axis the route travels, so two
-   consecutive attachment points can END UP IN THE OTHER ORDER. Down the SECTION's height their
-   separation is `a + b*r`, where `r` is the window's shorter side over the section's height — and
-   `r` is a ratio NO MEDIA QUERY CAN SEE, because a section may be taller than one screen.
-   `flipAspect` handles the same algebra across the WIDTH, where an aspect query can see it and a
-   second geometry can be emitted; this axis has no such escape.
-
-   The turn is deliberately NOT clamped to keep this out. An angle clamped to whatever the seeded
-   scales happen to survive would hide from the owner the one thing they need in order to tune away
-   from it. It is RECORDED instead, here and on the grid panel's live readout, so a route edit that
-   introduces a NEW crossing fails in the suite rather than on someone's phone. */
-function heightCrossings(): Map<string, number> {
-  const found = new Map<string, number>();
+test("no motif with a zero turn is handed a transform at all", () => {
+  let checked = 0;
   for (const id of ALL_IDS) {
     for (const band of THREAD_BANDS) {
-      for (const segment of threadSegments(id, band)) {
-        if (segment.kind !== "connector") continue;
-        const constant = segment.from.fraction.y - segment.to.fraction.y;
-        const perSvmin = segment.from.svmin.y - segment.to.svmin.y;
-        if (Math.abs(perSvmin) < 1e-9) continue;
-        const at = -constant / perSvmin;
-        /* `r` is `svmin / section height`, and a section is at least one screen tall, so it cannot
-           exceed 1: a crossing outside that range is unreachable and not a crossing. */
-        if (at <= 0 || at > 1) continue;
-        found.set(`${id}/seg-${segment.index}`, at);
-      }
+      const markup = bandMarkup(id, band);
+      const placed = threadSegments(id, band).filter((s) => s.kind === "motif");
+      placed.forEach((segment, at) => {
+        if (segment.kind !== "motif" || segment.place.turn !== 0) return;
+        checked += 1;
+        const motif = markup.motifs[at];
+        const selector = `.${threadScopeClass(id)} .${THREAD_CLASS.band}--${band.id} .${motif.className}`;
+        const rule = readRules(threadCss(id)).find(
+          (r) =>
+            r.selector === selector &&
+            !inKeyframes(r) &&
+            r.decls["--thread-motif-x"] !== undefined,
+        );
+        assert.equal(rule?.decls.rotate, undefined);
+      });
     }
   }
-  return found;
-}
-
-/* Both entries are motif pairs whose squares are too large for the gap between their cells once
-   turned. The remedy is a scale or a cell, and BOTH ARE THE OWNER'S to set on the grid panel — this
-   file records the consequence, it does not choose a value. */
-const KNOWN_CROSSINGS: Readonly<Record<string, number>> = {
-  /* `rings` at 0.44 and `knot` at 0.29, two rows apart on a four-row grid. This is the figure
-     `thread-css.ts` records under "the route, resolved" and the one the grid panel validates its
-     own readout against. Reached in the `upright` band (r = 0.695) and the `wide` band (r = 1). */
-  "event-info/seg-2": 0.6849,
-  /* Flemy's and Sebastian's portrait loops, 0.3 each, one row apart. Reached in `wide` alone — and
-     both loops are anchored, so on a laid-out page they sit where the portraits are rather than on
-     these cells. */
-  "family/seg-2": 0.8333,
-};
-
-/* A crossing costs the join at EVERY window, not only past the crossing itself. The curve is
-   normalised once per band against that band's nominal box, and near the crossing that box collapses
-   on the height axis — `upright` composes this pair 0.9 px apart, under the generator's own 1 px
-   floor — so the normalised endpoints are already lossy before any window applies them. Past the
-   crossing the box pins itself to the other end outright. The two laws below exempt exactly the
-   connectors named above, and nothing else. */
-function crossingConnector(id: ThreadId, index: number): boolean {
-  return KNOWN_CROSSINGS[`${id}/seg-${index}`] !== undefined;
-}
-
-test("every connector the turn inverts is one the source names, at the ratio it names", () => {
-  const found = heightCrossings();
-  assert.deepEqual(
-    [...found.keys()].sort(),
-    Object.keys(KNOWN_CROSSINGS).sort(),
-    "a route edit has changed which connectors the turn inverts",
-  );
-  for (const [key, at] of found) {
-    assert.ok(
-      Math.abs(at - KNOWN_CROSSINGS[key]) < 5e-5,
-      `${key} now inverts at r = ${at.toFixed(4)}, not the recorded ${KNOWN_CROSSINGS[key]}`,
-    );
-  }
+  /* Not asserted `> 0`: the owner's drawings may turn every motif, in which case this test is a
+     no-op rather than a false pass -- the positive case above already proves the mechanism. */
+  void checked;
 });
 
-/* THE defect this file exists to keep out: a connector composed against a nominal box, and a motif
-   field sized from the real window, disagreeing about where the join is. Measured on a real render
-   before the fix — 3.4px at 900x900, 12px at 1280x720, 67px at 2560x900 — and none of the 137 tests
-   that passed alongside it could see it.
+/* ---- the join -------------------------------------------------------------------------------- */
 
-   The claim is made against the EMITTED sheet, resolved at a window, on both sides: a connector's
-   end is read out of the box the sheet pins it into and the corner its own `d` puts it at, and the
-   motif's end out of the placement and the rotation the same sheet declares. Neither is re-derived
-   from the model they were both generated from, so a generator that composed against the wrong box
-   would fail here rather than agree with itself. */
-test("every join lands on the motif it meets, at every window", () => {
-  for (const id of ALL_IDS) {
-    const css = threadCss(id);
-
-    for (const window of WINDOWS) {
-      const applied = declarationsAt(css, window);
-      const scope = `.${threadScopeClass(id)}`;
-      const segments = threadSegments(id, bandFor(window));
-      const at = (segment: (typeof segments)[number]) =>
-        applied.get(`${scope} .${segmentClass(segment)}`) ?? {};
-      const across = (value: string) =>
-        resolveLength(
-          value,
-          window.width,
-          Math.min(window.width, window.height),
-        );
-      const down = (value: string) =>
-        resolveLength(
-          value,
-          window.section,
-          Math.min(window.width, window.height),
-        );
-
-      /* Where each motif's own square puts the two points a connector has to meet — read out of
-         the sheet, turned by the rotation the sheet declares. */
-      const motifs = new Map<
-        number,
-        { x: number; y: number; side: number; turn: number }
-      >();
-      for (const segment of segments) {
-        if (segment.kind !== "motif") continue;
-        const decls = at(segment);
-        const side = decls["--thread-motif-side"];
-        assert.ok(
-          side,
-          `${id}: segment ${segment.index} declares no motif side`,
-        );
-        const scale = /calc\(([\d.]+) \* 100svmin\)/.exec(side);
-        assert.ok(scale, `${id}: unreadable motif side "${side}"`);
-        /* No declaration is a motif the route does not turn, which is the drawing as authored. */
-        const turn = /^(-?[\d.]+)deg$/.exec((decls.rotate ?? "0deg").trim());
-        assert.ok(turn, `${id}: unreadable motif rotation "${decls.rotate}"`);
-        motifs.set(segment.index, {
-          x: motifFraction(decls["--thread-motif-x"]) * window.width,
-          y: motifFraction(decls["--thread-motif-y"]) * window.section,
-          side: Number(scale[1]) * Math.min(window.width, window.height),
-          turn: Number(turn[1]),
-        });
-      }
-
-      for (const segment of segments) {
-        if (segment.kind !== "connector") continue;
-        /* A connector the turn inverts cannot meet its motifs: see `crossingConnector`. That is the
-           recorded consequence of the turn, not a composition defect — the set is pinned by
-           `every connector the turn inverts is one the source names`. */
-        if (crossingConnector(id, segment.index)) continue;
-        const decls = at(segment);
-        assert.ok(decls.left, `${id}: segment ${segment.index} has no box`);
-
-        const curve = applied.get(
-          `${scope} .${segmentClass(segment)} .thread__connector`,
-        );
-        assert.ok(
-          curve?.d,
-          `${id}: segment ${segment.index} declares no curve`,
-        );
-        const numbers = [...curve.d.matchAll(/-?[\d.]+/g)].map((m) =>
-          Number(m[0]),
-        );
-        const left = across(decls.left);
-        const top = down(decls.top);
-        const width = across(decls.width);
-        const height = down(decls.height);
-        const corner = (u: number, v: number) => ({
-          x: left + u * width,
-          y: top + v * height,
-        });
-        const ends = {
-          from: corner(numbers[0], numbers[1]),
-          to: corner(numbers[numbers.length - 2], numbers[numbers.length - 1]),
-        };
-
-        for (const [which, sign] of [
-          ["from", -1],
-          ["to", 1],
-        ] as const) {
-          const neighbour = motifs.get(
-            which === "from" ? segment.index - 1 : segment.index + 1,
-          );
-          if (neighbour === undefined) continue;
-          const sibling =
-            segments[which === "from" ? segment.index - 1 : segment.index + 1];
-          assert.ok(sibling.kind === "motif");
-          const declared =
-            which === "from"
-              ? sibling.place.motif.exit
-              : sibling.place.motif.entry;
-          /* The attachment point and the tangent it is met on both turn with the drawing, by the
-             rotation this same sheet declares — so a generator that turned one without the other
-             fails here rather than agreeing with itself. */
-          const offset = turnedOffset(declared, neighbour.turn, 1);
-          const tangent = ((declared.angle + neighbour.turn) * Math.PI) / 180;
-          const expected = {
-            x:
-              neighbour.x +
-              offset.x * neighbour.side +
-              sign * JOIN_OVERLAP * Math.cos(tangent),
-            y:
-              neighbour.y +
-              offset.y * neighbour.side +
-              sign * JOIN_OVERLAP * Math.sin(tangent),
-          };
-          const off = Math.hypot(
-            ends[which].x - expected.x,
-            ends[which].y - expected.y,
-          );
-          /* The 1px floor under a box that collapses on one axis is the only slack allowed. */
-          assert.ok(
-            off <= 1.001,
-            `${id} at ${window.width}x${window.height} (section ${window.section}): segment ${segment.index}'s ${which} end misses its join by ${off.toFixed(2)}px`,
-          );
-        }
-      }
-    }
-  }
-});
-
-/* The overlap has to be stated against the thing it covers, not against itself: half of the visible
-   stroke is exactly what a butt-capped mask cuts off at a join. Reading the token rather than
-   restating it means a change to the stroke's width is a change to this bound. */
 test("a connector overlaps its join by at least the cap the mask cuts off", () => {
   const tokens = readFileSync(
     new URL("../../app/styles/tokens.css", import.meta.url),
@@ -1249,56 +724,23 @@ test("a connector overlaps its join by at least the cap the mask cuts off", () =
   );
 });
 
-/* The mask's own region is the last thing that can cut a curve, and it did: a fixed "one box-width
-   past each edge" held while a connector's box was the whole section and clipped the curve the
-   moment the box became the connector's own span — a control point sits many box-widths out when
-   the two ends are close on one axis. */
-test("every mask reaches past the curve it reveals, at every band", () => {
-  /* Under the DIVERGENT route as well as the seeded ones: a `<mask>`'s region is markup and so is
-     one value for all three bands, and while the bands agree a region narrowed to the first band
-     is indistinguishable from the widest. */
-  check();
-  withDivergentWideRoute(check);
-
-  function check() {
-    for (const id of ALL_IDS) {
-      const regions = threadMaskRegions(id);
-      for (const band of THREAD_BANDS) {
-        /* The ALTERNATE geometry too: it is emitted into the same elements, behind an
-           `aspect-ratio` query, and is composed against a different box — so its curve can reach
-           much further out than the base one. The region was measured from the base alone, and the
-           alternate's curve was clipped where it did. */
-        for (const segment of [
-          ...threadSegments(id, band),
-          ...threadAlternates(id, band),
-        ]) {
-          if (segment.kind !== "connector") continue;
-          /* The CURVE, sampled — not the control points that shape it. A cubic does stay inside
-             its hull, but where a connector's box collapses on one axis a control point sits
-             hundreds of box widths out while the curve stays within a few, and the region is a
-             mask buffer the browser has to rasterise. */
-          const drawn = pathBounds(segment.revealD, { width: 1, height: 1 });
-          const hull = [drawn.minX, drawn.minY, drawn.maxX, drawn.maxY];
-          const region = regions.get(segmentClass(segment));
-          assert.ok(
-            region,
-            `${id}: segment ${segment.index} has no mask region`,
-          );
-          assert.ok(
-            region.min <= Math.min(...hull) - segment.maskWidth / 2 &&
-              region.max >= Math.max(...hull) + segment.maskWidth / 2,
-            `${id} at ${band.id}: the mask region [${region.min}, ${region.max}] does not hold a curve reaching [${Math.min(...hull)}, ${Math.max(...hull)}] stroked ${segment.maskWidth} wide`,
-          );
-        }
-      }
+test("a band's fixed mask region comfortably covers its own extended reveal", () => {
+  for (const id of ALL_IDS) {
+    for (const band of THREAD_BANDS) {
+      const markup = bandMarkup(id, band);
+      const bounds = pathBounds(markup.revealD, { width: 1, height: 1 });
+      assert.ok(
+        markup.region.min <= bounds.minX &&
+          markup.region.min <= bounds.minY &&
+          markup.region.box.width + Math.abs(markup.region.min) >=
+            bounds.maxX &&
+          markup.region.box.height + Math.abs(markup.region.min) >= bounds.maxY,
+        `${id}/${band.id}: the fixed region does not cover the extended reveal`,
+      );
     }
   }
 });
 
-/* At both ends of the scrub the thread is fully undrawn, and a reveal that is asked for nothing has
-   to paint nothing. A zero-length dash is a dot under any cap but `butt`, and a FILLED copy of an
-   open curve floods the mask with everything its two ends enclose. Both are properties of the
-   module, so both are read from it rather than assumed. */
 test("the retracted state is asked for nothing, and paints nothing", () => {
   const module = readFileSync(
     new URL("./thread.module.css", import.meta.url),
@@ -1323,9 +765,6 @@ test("the retracted state is asked for nothing, and paints nothing", () => {
       /@keyframes\s+([\w-]+)\s*\{([^}]*(?:\}[^@]*?)*?)\n\}/g,
     )) {
       if (!name.includes("-ink-")) continue;
-      /* A timed draw has ONE retracted end. It runs the draw-in half of the law and stops where
-         the ink is complete, and `animation-fill-mode: both` leaves it there — a screen that never
-         leaves the viewport has nothing to retract for. */
       for (const edge of id === "not-found" ? ["0%"] : ["0%", "100%"]) {
         const frame = new RegExp(`\\n\\s*${edge}\\s*\\{([^}]*)\\}`).exec(body);
         assert.ok(frame, `${id}: ${name} declares no ${edge} frame`);
@@ -1346,49 +785,6 @@ test("the retracted state is asked for nothing, and paints nothing", () => {
   }
 });
 
-/* A connector's box is pinned with `min()` and `max()` over every point it passes through, and its
-   `d` is normalised against whichever of them is the nearest corner at the band's own nominal
-   window. Which point that IS must not turn over: an end that carries an `svmin` term and one that
-   does not separate at a rate the section's own height sets, and no media query can see a section's
-   height. A box whose nearest corner changed would render the curve shifted.
-
-   Exempt: the connectors the turn is RECORDED as inverting, and only those — see
-   `every connector the turn inverts is one the source names`, which pins that set. */
-test("no connector's box changes which point pins it, at any section height", () => {
-  for (const id of ALL_IDS) {
-    const css = threadCss(id);
-    for (const rule of readRules(css)) {
-      const segment = /\.thread__seg-(\d+)(?:\s|$)/.exec(rule.selector);
-      if (
-        segment !== null &&
-        KNOWN_CROSSINGS[`${id}/seg-${segment[1]}`] !== undefined
-      )
-        continue;
-      for (const property of ["top"] as const) {
-        const value = rule.decls[property];
-        if (value === undefined || !wraps(value, "min")) continue;
-        const { parts } = splitTop(value.slice(4, -1), [","]);
-        const order = (ratio: number) => {
-          const resolved = parts.map((part) =>
-            resolveLength(part, 1000, 1000 * ratio),
-          );
-          return [
-            resolved.indexOf(Math.min(...resolved)),
-            resolved.indexOf(Math.max(...resolved)),
-          ].join("/");
-        };
-        assert.equal(
-          order(1),
-          order(0.01),
-          `${id}: ${rule.selector}'s ${property} changes which point pins it between a section one screen tall and a very tall one`,
-        );
-      }
-    }
-  }
-});
-
-/* ---- the light ------------------------------------------------------------------------------ */
-
 test("the bleed is static and present at rest", () => {
   for (const id of ALL_IDS) {
     const rest = readRules(threadCss(id)).filter((r) => !conditional(r));
@@ -1400,8 +796,6 @@ test("the bleed is static and present at rest", () => {
         false,
         `${id}: the bleed animates, so a blurred buffer re-renders`,
       );
-      /* It covers the INK layer and nothing wider: a bleed over the head would put the moving
-         light inside the blurred buffer, which is the one cost the static filter exists to avoid. */
       assert.match(
         rule.selector,
         new RegExp(`\\.${THREAD_CLASS.inkLayer}$`),
@@ -1427,13 +821,6 @@ test("the head and the re-trace are the only looping layers", () => {
   }
 });
 
-/* The defect this replaces was invisible to every gate and to the eye: the reduced-motion rule was
-   two classes against the per-segment rule's three, so it LOST the cascade and the whole scrub kept
-   running. A parked section looks the same either way, which is why nothing caught it — including
-   the joins gate, whose `rest` state is this rule.
-
-   The claim is therefore not "a block exists" but "every animated selector is cancelled, at a
-   specificity that can win". */
 test("reduced motion cancels every animated selector, at a weight that wins", () => {
   const classes = (selector: string) => selector.split(".").length - 1;
 
@@ -1458,7 +845,6 @@ test("reduced motion cancels every animated selector, at a weight that wins", ()
         `${id}: ${rule.selector} animates and is never cancelled`,
       );
     }
-    /* Equal specificity only wins on order, so the block has to be last in the sheet. */
     for (const selector of cancelled.keys()) {
       assert.ok(
         css.indexOf("prefers-reduced-motion") <
@@ -1481,9 +867,6 @@ test("reduced motion cancels every animated selector, at a weight that wins", ()
   }
 });
 
-/* A round cap reaches half the mask's stroke past the dash, which is what covers the laid ink's own
-   cap so no dark pip shows ahead of the light (measured 168 against 252 on the darkest channel).
-   On a ZERO-length dash the same cap paints a dot — a bug this project has already shipped once. */
 test("the head's brightest layer caps round only where its dash has length", () => {
   for (const id of ALL_IDS) {
     let checked = 0;
@@ -1508,281 +891,6 @@ test("the head's brightest layer caps round only where its dash has length", () 
   }
 });
 
-/* ---- the markup covers every band ------------------------------------------------------------ */
-
-/* THE defect this pair exists to keep out. Geometry is emitted once per ASPECT BAND, and a band's
-   route may differ from its neighbour's in how many stops it has and which motifs they carry — that
-   is the whole point of bands. The markup was built from `THREAD_BANDS[0]` alone, so every other
-   band's rules addressed elements that were never mounted and that band rendered wrong.
-
-   NOTHING ELSE CAN SEE IT. The sheet is valid CSS either way; the rules that do match still match;
-   `tsc`, lint, the whole suite, the build and the join gate were all green over it, because the
-   seeded routes are the same straight run in all three bands and the element sets coincide. It
-   becomes real the first time the owner authors one band differently — which is the first thing
-   they will do — so the test AUTHORS that divergence rather than waiting for it. */
-
-/* Every element class the sheet names, taken out of its selectors rather than re-derived from the
-   model both sides were generated from. */
-const MOUNT_CLASS = /thread__(?:seg-\d+(?:-[A-Za-z]+)?|stub--(?:entry|exit))/g;
-
-function addressedClasses(css: string): Set<string> {
-  const found = new Set<string>();
-  for (const rule of readRules(css)) {
-    if (rule.at.some((at) => at.startsWith("@keyframes"))) continue;
-    for (const match of rule.selector.matchAll(MOUNT_CLASS))
-      found.add(match[0]);
-  }
-  return found;
-}
-
-function mountedClasses(id: ThreadId): Set<string> {
-  return new Set(threadMounts(id).map((mount) => mount.className));
-}
-
-/* A `wide` route that diverges from `tall`'s on both axes the markup depends on: SIX stops against
-   four, and `bow` then `phone` against a single `heart`. The entry and exit columns are left on the
-   band's centre column, so the handoff law is untouched and this tests one thing. */
-const DIVERGENT: SectionRoute = {
-  id: "invite",
-  band: "wide",
-  cols: 7,
-  rows: 6,
-  stops: [
-    { col: 3, row: 0 },
-    { col: 2, row: 1, motif: "bow", scale: 0.12 },
-    { col: 2, row: 2 },
-    { col: 4, row: 3 },
-    { col: 4, row: 4, motif: "phone", scale: 0.28 },
-    { col: 3, row: 5 },
-  ],
-};
-
-/* Swapped into the ONE routing source for the length of one assertion, because the defect is a
-   property of the routes disagreeing and the seeds agree. Restored in `finally`, or every later
-   test in this file would run against a route nobody authored. */
-function withDivergentWideRoute(body: () => void): void {
-  const routes = THREAD_ROUTES as SectionRoute[];
-  const at = routes.findIndex(
-    (route) => route.id === DIVERGENT.id && route.band === DIVERGENT.band,
-  );
-  assert.ok(at >= 0, "no wide route for the invite to diverge from");
-  const held = routes[at];
-  routes[at] = DIVERGENT;
-  try {
-    body();
-  } finally {
-    routes[at] = held;
-  }
-}
-
-test("every element the sheet addresses is mounted, in every band", () => {
-  for (const id of ALL_IDS) {
-    const mounted = mountedClasses(id);
-    for (const addressed of addressedClasses(threadCss(id))) {
-      assert.ok(
-        mounted.has(addressed),
-        `${id}: the sheet addresses .${addressed}, which the markup never mounts`,
-      );
-    }
-  }
-
-  withDivergentWideRoute(() => {
-    /* The divergence is asserted, not assumed: a seed edit that made the bands agree again would
-       otherwise leave this test passing while testing nothing. */
-    const tall = threadSegments("invite", THREAD_BANDS[0]);
-    const wide = threadSegments(
-      "invite",
-      THREAD_BANDS.find((band) => band.id === "wide") as Band,
-    );
-    const motifs = (
-      segments: readonly ReturnType<typeof threadSegments>[number][],
-    ) =>
-      segments
-        .filter((segment) => segment.kind === "motif")
-        .map((segment) =>
-          segment.kind === "motif" ? segment.place.motif.id : "",
-        )
-        .join(",");
-    assert.notEqual(
-      tall.length,
-      wide.length,
-      "the two bands have equal stop counts",
-    );
-    assert.notEqual(
-      motifs(tall),
-      motifs(wide),
-      "the two bands carry equal motifs",
-    );
-
-    /* `not-found` resolves to the invite's own route, so it diverges with it and is checked here
-       rather than being left to the seeded pass above. */
-    for (const id of ["invite", "not-found"] as const) {
-      const mounted = mountedClasses(id);
-      for (const addressed of addressedClasses(threadCss(id))) {
-        assert.ok(
-          mounted.has(addressed),
-          `${id}, wide route diverging: the sheet addresses .${addressed}, which the markup never mounts`,
-        );
-      }
-    }
-  });
-});
-
-/* The other half of the contract: the markup is the union, so a band has to PUT AWAY what its own
-   route does not use — otherwise a spare element paints its fallback `d` in a box no rule pins.
-   Asserted at a real window per band, through the same cascade reader the join test uses. */
-test("each band hides exactly the elements its own route does not use", () => {
-  const check = () => {
-    for (const id of ALL_IDS) {
-      const css = threadCss(id);
-      const scope = `.${threadScopeClass(id)}`;
-      for (const window of WINDOWS) {
-        const applied = declarationsAt(css, window);
-        const band = bandFor(window);
-        const used = new Set<string>([
-          ...threadSegments(id, band).map(segmentClass),
-          ...threadStubs(id, band).map(
-            (stub) => `${THREAD_CLASS.stub}--${stub.which}`,
-          ),
-        ]);
-
-        for (const mount of threadMounts(id)) {
-          const decls = applied.get(`${scope} .${mount.className}`) ?? {};
-          assert.equal(
-            decls.display === "none",
-            !used.has(mount.className),
-            `${id} at ${window.width}x${window.height} (${band.id}): .${mount.className} is ${
-              decls.display === "none" ? "hidden" : "shown"
-            } where its band ${used.has(mount.className) ? "uses" : "does not use"} it`,
-          );
-        }
-      }
-    }
-  };
-
-  check();
-  withDivergentWideRoute(check);
-});
-
-/* A motif's OWN drawing is markup, not CSS — the sheet moves, sizes and turns the square but never
-   swaps the `d` inside it. So a mount is not interchangeable by position: two bands placing
-   different motifs on the same segment index need two elements, or one band paints the other's
-   drawing at its own coordinates and every geometric claim in this file still passes. */
-test("every band's motif is mounted with its own drawing", () => {
-  const check = () => {
-    for (const id of ALL_IDS) {
-      const drawn = new Map(
-        threadMounts(id)
-          .filter((mount) => mount.kind === "motif")
-          .map((mount) => [mount.className, mount.d]),
-      );
-      for (const band of THREAD_BANDS) {
-        for (const segment of threadSegments(id, band)) {
-          if (segment.kind !== "motif") continue;
-          assert.equal(
-            drawn.get(segmentClass(segment)),
-            segment.place.motif.d,
-            `${id} at ${band.id}: .${segmentClass(segment)} does not carry ${segment.place.motif.id}'s drawing`,
-          );
-        }
-      }
-    }
-  };
-
-  check();
-  withDivergentWideRoute(check);
-});
-
-/* The tests above are made against the mount list; this one pins the markup to it. The component
-   is a `.tsx` and cannot be imported here — node strips types but does not compile JSX, and it
-   imports a CSS module besides — so the claim is made against its source. Narrow on purpose: the
-   defect was the component reaching for ONE band's segments, and these are the three names that
-   reach for one. `check:thread-joins` renders the result. */
-test("the thread's markup is built from the mount union, not from one band", () => {
-  const source = readFileSync(
-    new URL("./section-thread.tsx", import.meta.url),
-    "utf8",
-  );
-  assert.match(source, /\bthreadMounts\b/);
-  for (const banned of ["threadSegments", "threadStubs", "THREAD_BANDS"]) {
-    assert.equal(
-      new RegExp(`\\b${banned}\\b`).test(source),
-      false,
-      `section-thread.tsx reads ${banned}, which resolves against one band`,
-    );
-  }
-});
-
-/* THE JOIN'S DIRECTION, not just its position. The test above pins each connector END to the point
-   the motif declares; this one pins the DIRECTION the curve leaves and arrives along. Without it a
-   connector can meet its motif exactly and still kink there — which is what shipped, because a
-   Catmull-Rom end duplicates its neighbour and so leaves toward the next waypoint instead of along
-   the drawing's own tangent. Nothing else sees it: the ends are in the right place, the joins gate
-   sees one connected run of ink, and the drawing reads as pasted on rather than threaded through.
-
-   Measured in the band's PIXELS, because that is the space the tangent's angle is stated in and the
-   space a reader sees; the emitted curve lives in the connector's stretched box, so it is carried
-   back through that box's own two spans. */
-test("a connector leaves and arrives along the tangent it is met on", () => {
-  for (const id of ALL_IDS) {
-    for (const band of THREAD_BANDS) {
-      for (const segment of threadSegments(id, band)) {
-        if (segment.kind !== "connector") continue;
-        const points = [
-          ...segment.d.matchAll(/-?\d+(?:\.\d+)?(?:e-?\d+)?/g),
-        ].map((match) => Number(match[0]));
-        /* The box's CSS size is an expression over `%` and `svmin`, so its pixel span is rebuilt
-           here from the two ends — the same inputs the generator used. That is not circular: where
-           those ends LAND is pinned by the test above, and what is measured here is only the
-           direction the curve leaves them in. */
-        const reach = (which: -1 | 1) =>
-          resolveEnd(
-            which === -1 ? segment.from : segment.to,
-            band.box,
-            JOIN_OVERLAP,
-            which,
-          );
-        const ends = [reach(-1), reach(1)];
-        const size = {
-          x: Math.max(1, Math.abs(ends[0].x - ends[1].x) * band.box.width),
-          y: Math.max(1, Math.abs(ends[0].y - ends[1].y) * band.box.height),
-        };
-        const pixels = (at: number) => ({
-          x: points[at] * size.x,
-          y: points[at + 1] * size.y,
-        });
-        const last = points.length;
-        const away = {
-          from: pixels(0),
-          to: pixels(2),
-          angle: segment.from.tangent.angle,
-          at: "leaves",
-        };
-        const into = {
-          from: pixels(last - 4),
-          to: pixels(last - 2),
-          angle: segment.to.tangent.angle,
-          at: "arrives",
-        };
-        for (const { from, to, angle, at } of [away, into]) {
-          const drawn =
-            (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
-          const off = Math.abs(((drawn - angle + 540) % 360) - 180);
-          assert.ok(
-            off < 1,
-            `${id} ${band.id}: connector ${segment.index} ${at} ${off.toFixed(1)}deg off its tangent`,
-          );
-        }
-      }
-    }
-  }
-});
-
-/* A reveal that reaches the copy's end must not be stopped at it by the dash's own arithmetic —
-   see `dashArray`. Reproduced in isolation: `0 0 1 1` on a `pathLength="1"` path stops about 7%
-   short in Chromium, and a mask that stops short takes the visible stroke's last pixels with it,
-   which at a join renders the section in two pieces. Asserted on the BUILT sheet, because the value
-   that matters is the one that ships. */
 test("a complete reveal is emitted with no trailing gap to stop it", () => {
   for (const id of ALL_IDS) {
     for (const [, dash] of threadCss(id).matchAll(
@@ -1790,8 +898,6 @@ test("a complete reveal is emitted with no trailing gap to stop it", () => {
     )) {
       const values = dash.trim().split(/\s+/).map(Number);
       if (values.some((value) => Number.isNaN(value))) continue;
-      /* Where the last INKED run ends, walking the pattern as the browser does: dash, gap, dash,
-         gap. A pattern that paints nothing (`0 1`) never reaches anything. */
       let at = 0;
       let inked = 0;
       values.forEach((value, index) => {

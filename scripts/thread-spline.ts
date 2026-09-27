@@ -26,12 +26,6 @@ export type SplineOptions = {
   project?: (point: Point) => Point;
 };
 
-/** `points[i]`, clamped to the array's ends. */
-function at(points: readonly Point[], i: number): Point {
-  const clamped = Math.min(Math.max(i, 0), points.length - 1);
-  return points[clamped];
-}
-
 function unitVector(x: number, y: number): Point | null {
   const size = Math.hypot(x, y);
   return size < 1e-9 ? null : { x: x / size, y: y / size };
@@ -115,26 +109,4 @@ export function splinePath(
     segments.push(`C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${to.x} ${to.y}`);
   }
   return segments.join(" ");
-}
-
-/**
- * The direction of travel at `points[index]`, in degrees. Interior points use the central
- * difference `p[i+1] - p[i-1]`; the ends fall back to their one-sided neighbour via `at`'s
- * clamping, which makes the difference one-sided automatically.
- *
- * DELIBERATELY the raw central difference, not `tangentAt`'s bisector. This is what `motifAngle`
- * turns every motif by, and the two are measured in different spaces — this one in section
- * fractions, the curve's own in a connector's stretched box — so agreeing here would not make them
- * agree on screen. Every motif's angle is the owner's tuned value; moving them all is a design
- * change, not a smoothing one.
- */
-export function splineDirection(
-  points: readonly Point[],
-  index: number,
-): number {
-  const before = at(points, index - 1);
-  const after = at(points, index + 1);
-  const dx = after.x - before.x;
-  const dy = after.y - before.y;
-  return (Math.atan2(dy, dx) * 180) / Math.PI;
 }

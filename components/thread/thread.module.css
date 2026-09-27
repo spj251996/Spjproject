@@ -121,17 +121,20 @@
   stroke-linecap: butt;
 }
 
-/* A motif is a SQUARE sized off the shorter of the section's two sides — sizing on width alone is
-   absurd in landscape, and sizing on height alone flips a connector's left/right direction between
-   aspect bands. A section spans the window's width and is at least one window tall, so `svmin` is that
-   shorter side and the size stays a static CSS expression with no container query — which would
-   need size containment, and containment isolates the page's blend. */
+/* A motif is a SQUARE. `--thread-motif-side` is a PERCENTAGE of the motif's own positioned ancestor
+   (the band wrapper, `.thread__band--*`) — and a `%` on `width` and the SAME `%` on `height` resolve
+   against that ancestor's WIDTH and HEIGHT respectively, which differ (a band wrapper tracks the
+   card horizontally and the section vertically). Setting both from the one percentage therefore drew
+   a rectangle, not a square — measured on a real render as 257x282px where 152x152 was wanted.
+   `aspect-ratio: 1` is what actually holds it square: it computes the height from the resolved WIDTH
+   in real pixels, never from the containing block's own height, so the box stays 1:1 regardless of
+   which axis the wrapper is stretched on. */
 .motif {
   position: absolute;
   left: calc(var(--thread-motif-x) * 100%);
   top: calc(var(--thread-motif-y) * 100%);
   width: var(--thread-motif-side);
-  height: var(--thread-motif-side);
+  aspect-ratio: 1;
   translate: -50% -50%;
 }
 
