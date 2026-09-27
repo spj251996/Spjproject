@@ -25,7 +25,7 @@
 
 import { authoredCard } from "./thread-authored-layout.ts";
 import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
-import type { SectionBox } from "./thread-geometry.ts";
+import type { SectionBox, ThreadId } from "./thread-geometry.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 import {
   MOTIF_PLACEMENTS,
@@ -35,11 +35,21 @@ import {
 } from "./thread-paths.ts";
 import {
   type MeasuredSection,
+  type Rect,
   warpPlacement,
   warpSection,
 } from "./thread-warp.ts";
 
 export type ThreadLine = { d: string; length: number };
+
+/* One optional anchor per placement, in the SAME order as `MOTIF_PLACEMENTS[band][id]` — `undefined`
+   at an index means that placement takes the plain warped position, exactly today's behaviour. Kept
+   generic (per section, per placement index) rather than naming `family`/`portraitLoop` here: the
+   owner's anchoring requirement is Family's today, but the mechanism — translate a motif's warped
+   centre onto a real measured element — has nothing Family-specific about it, and Task 4's caller is
+   the one that knows which placement is which (by matching a real DOM rect to the nearest warped
+   placement, since two `portraitLoop`s in one section are otherwise indistinguishable here). */
+export type SectionAnchors = readonly (Rect | undefined)[];
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 
@@ -252,6 +262,7 @@ function pathLength(d: string): number {
 export function threadLine(
   band: BandId,
   sections: MeasuredSection[],
+  anchors?: Partial<Record<Exclude<ThreadId, "not-found">, SectionAnchors>>,
 ): ThreadLine {
   if (sections.length !== THREAD_IDS.length) {
     throw new Error(
@@ -269,9 +280,11 @@ export function threadLine(
     const to = sections[index];
     const connectors = THREAD_PATHS[band][id];
     const placements = MOTIF_PLACEMENTS[band][id];
+    const sectionAnchors = anchors?.[id];
 
-    const bakedMotifs = placements.map((placement) => {
-      const warped = warpPlacement(placement, from, to, bandBox);
+    const bakedMotifs = placements.map((placement, placementIndex) => {
+      const anchor = sectionAnchors?.[placementIndex];
+      const warped = warpPlacement(placement, from, to, bandBox, anchor);
       const bakedD = bakeMotif(MOTIFS[placement.motif].d, warped, bandBox);
       const { first, last } = firstAndLastPoint(bakedD);
       return { d: bakedD, entry: first, exit: last };

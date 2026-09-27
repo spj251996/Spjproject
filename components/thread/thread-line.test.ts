@@ -185,6 +185,95 @@ test("threadLine rejects a sections array that does not match THREAD_IDS", () =>
   assert.throws(() => threadLine("wide", []));
 });
 
+test("an anchor overrides a placement's warped centre, and the adjoining connectors follow it", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const unanchored = threadLine(band, sections);
+
+  // family's two portraitLoop placements are indices 0 and 1 (thread-paths.ts).
+  const anchor = { left: 900, top: 200, width: 40, height: 40 };
+  const anchorCentre = {
+    x: anchor.left + anchor.width / 2,
+    y: anchor.top + anchor.height / 2,
+  };
+  const anchored = threadLine(band, sections, {
+    family: [anchor, undefined],
+  });
+
+  assert.notEqual(anchored.d, unanchored.d);
+
+  const familyIndex = THREAD_IDS.indexOf("family");
+  const subpathsBefore = THREAD_IDS.slice(0, familyIndex).reduce(
+    (sum, id) =>
+      THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length + sum,
+    0,
+  );
+  // family's own connector[0] precedes its first motif's subpath.
+  const motifSubpathIndex = subpathsBefore + 1;
+  const anchoredSubpaths = anchored.d
+    .split(/(?=M )/)
+    .filter((s) => s.trim().length > 0);
+  const unanchoredSubpaths = unanchored.d
+    .split(/(?=M )/)
+    .filter((s) => s.trim().length > 0);
+  const anchoredPoints = parseAllPoints(anchoredSubpaths[motifSubpathIndex]);
+  const unanchoredPoints = parseAllPoints(
+    unanchoredSubpaths[motifSubpathIndex],
+  );
+
+  /* An anchor changes only the placement's CENTRE, never its rotation or scale, so every one of the
+     motif's baked points shifts by the SAME rigid translation -- the delta the first point moved by
+     must equal the delta every other point moved by, to float precision. */
+  const shift = {
+    x: anchoredPoints[0].x - unanchoredPoints[0].x,
+    y: anchoredPoints[0].y - unanchoredPoints[0].y,
+  };
+  for (let i = 1; i < anchoredPoints.length; i++) {
+    assert.ok(
+      Math.abs(anchoredPoints[i].x - unanchoredPoints[i].x - shift.x) < 0.01,
+      `point ${i} x did not shift rigidly`,
+    );
+    assert.ok(
+      Math.abs(anchoredPoints[i].y - unanchoredPoints[i].y - shift.y) < 0.01,
+      `point ${i} y did not shift rigidly`,
+    );
+  }
+
+  // The un-anchored centroid is some point on the motif's own ink, not necessarily its placement
+  // centre, so only the SHIFT is exact -- but the shifted centroid must land close to the anchor,
+  // ruling out a no-op or a wildly wrong translation without over-claiming precision the centroid
+  // (rather than the true placement centre) can give.
+  const unanchoredCentreProxy = {
+    x:
+      unanchoredPoints.reduce((sum, p) => sum + p.x, 0) /
+      unanchoredPoints.length,
+    y:
+      unanchoredPoints.reduce((sum, p) => sum + p.y, 0) /
+      unanchoredPoints.length,
+  };
+  const shiftedCentreProxy = {
+    x: unanchoredCentreProxy.x + shift.x,
+    y: unanchoredCentreProxy.y + shift.y,
+  };
+  assert.ok(
+    Math.hypot(
+      shiftedCentreProxy.x - anchorCentre.x,
+      shiftedCentreProxy.y - anchorCentre.y,
+    ) < 60,
+  );
+
+  // the connector preceding the anchored motif must still meet its (now shifted) entry exactly.
+  const precedingConnector = parseAllPoints(
+    anchoredSubpaths[motifSubpathIndex - 1],
+  );
+  const precedingEnd = precedingConnector[precedingConnector.length - 1];
+  const motifStart = anchoredPoints[0];
+  assert.ok(
+    Math.hypot(precedingEnd.x - motifStart.x, precedingEnd.y - motifStart.y) <
+      0.01,
+  );
+});
+
 test("length is a positive number roughly on the order of the page's own pixel height", () => {
   const band = "wide";
   const sections = measuredSections(band);

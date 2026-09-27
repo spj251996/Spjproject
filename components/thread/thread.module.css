@@ -143,3 +143,65 @@
   height: 100%;
   overflow: visible;
 }
+
+/* ================================================================================================
+   THE MEASURED PAGE THREAD (`page-thread.tsx`) — a second, additive system living beside the one
+   above. `SectionThread`/`thread-css.ts` are still the ones actually mounted today (Wishes' weave in
+   `app/page.tsx`, and `not-found.tsx`'s own closed thread) and this task could not retire them: both
+   call sites sit outside this task's edit scope (`app/page.tsx`, `app/not-found.tsx`), and deleting
+   `section-thread.tsx` out from under either would break the build. Task 6's cutover replaces both
+   call sites and then removes everything above this line, along with `.reveal`/`.motif`/`.field`/
+   `.inkLayer`/`.lightLayer`/`.retrace`/`.wisp`/`.stub`/`.motifPath`/`.light`/`.motifField` and their
+   generator. Distinct class names throughout on purpose — `page-thread.tsx`'s stroke must NOT carry
+   `vector-effect: non-scaling-stroke` (its `viewBox` always matches its own rendered pixel box
+   exactly, so the effect would be a no-op at best, and `non-scaling-stroke` is on record for
+   fragmenting a dash even with no stretch at all — the retired grid model moved its reveal onto a
+   mask for exactly that reason), so reusing `.ink` here would be silently wrong the moment the two
+   systems ever rendered side by side, which — while both call sites remain unconverted — they do. */
+
+/* Zero layout: the small positioning span `page-thread.tsx`'s `coverRect` measures itself against
+   takes no space in flow and does not push Wishes' own stack apart when mounted as a sibling of its
+   children. Everything painted lives in its absolutely-positioned SVG children, sized and placed by
+   inline style once JS has measured a real target. */
+.pageWrapper {
+  position: relative;
+  display: block;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Positioned by `coverRect` once JS has measured; `inset: 0` is the CSS-only starting point a no-JS
+   reader gets, which is why `<main>` still needs `position: relative` (`page-thread.tsx`'s closing
+   comment) -- everything JS-driven measures its own wrapper instead and does not depend on it. */
+.pageRoot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-thread);
+  overflow: visible;
+}
+
+/* The static, authored fallback lives in a normalised 0-1 square (`page-thread.tsx`'s `normalise`)
+   so all three bands can share one `viewBox` and CSS alone decides which one paints -- the
+   hide-all-then-show-one rule pair lives entirely in `page-thread.tsx`'s own generated `<style>`, not
+   here, because both halves must carry the SAME specificity and rely on SOURCE ORDER to pick a
+   winner (the exact mechanism `thread-css.ts` used for its own band toggle above). Splitting them
+   across this CSS-module class and an inline `<style>` would let the module rule's higher
+   specificity always win regardless of `@media` -- the standing lesson this project keeps
+   re-learning about a bare utility losing to a scoped one, the other way round. JS hides the whole
+   fallback layer once it has measured and taken over. */
+
+/* The weave's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why passing
+   "behind" the couple illustration depends on document order, not stacking, and would be defeated
+   by one. `overflow: visible` because a cubic control point or a round cap can reach past the card's
+   own edge; it is a drawn line, not content clipped to a box. */
+.pageWeave {
+  overflow: visible;
+}
+
+.pageInk {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  stroke-width: var(--stroke-thread);
+}
