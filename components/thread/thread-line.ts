@@ -148,13 +148,37 @@ function withLastPoint(d: string, point: Point): string {
   return tokens.join(" ");
 }
 
+/* PORTRAIT LOOP TAIL TRIM — the owner's ask (`session.md` 2026-09-27): "can we trim the entry/exit
+   tails of the motif so that connectors don't do weird turns there?" `portraitLoop`'s own drawn
+   tails run nearly flat (entry angle -0.4deg, exit -29.8deg — `thread-motifs.ts`) before curving into
+   the loop proper, while the connectors either side of it were authored against those FULL,
+   untrimmed endpoints — measured on the real rendered page (Task 3's own baseline), the join turns
+   30-117 degrees at every band, far past what that shallow authored tangent alone would predict.
+   Dropping a fraction of the motif's own arc at each end moves the point the connector meets
+   further round the loop's curve, onto ink closer to the connector's actual angle of approach.
+
+   Scoped to `portraitLoop` ONLY, at composition time — `thread-motifs.ts`'s seven drawings are
+   owner-confirmed and off limits (`heart` is part-traced and part-composed by hand; re-tracing it
+   would silently undo that hand work). ONE number, tunable on a render — the owner chose this over
+   editing the drawing for exactly that reason.
+
+   Trimming runs on the motif's own UNBAKED 0-100 curve, before `bakeMotifPoint`'s rotate-scale-
+   translate — so the existing transform (a single scalar `side`, this function's own docs below) is
+   applied to a shorter curve exactly as it is applied to the full one, and cannot itself introduce a
+   non-uniform squash: dropping arc length changes WHICH points get transformed, never how they do. */
+export const PORTRAIT_LOOP_TRIM_FRACTION = 0.12;
+
 function bakeMotif(
   motifD: string,
   placement: Placement,
   bandBox: SectionBox,
 ): string {
   const side = placement.scale * Math.min(bandBox.width, bandBox.height);
-  const tokens = motifD.match(PATH_TOKEN) ?? [];
+  const d =
+    placement.motif === "portraitLoop"
+      ? trimMotifTails(motifD, PORTRAIT_LOOP_TRIM_FRACTION)
+      : motifD;
+  const tokens = d.match(PATH_TOKEN) ?? [];
   let index = 0;
 
   function nextNumber(): number {
@@ -269,6 +293,143 @@ function pathLength(d: string): number {
     }
   }
   return length;
+}
+
+type CubicSeg = { p0: Point; p1: Point; p2: Point; p3: Point };
+
+function parseCubicChain(d: string): CubicSeg[] {
+  const tokens = d.match(PATH_TOKEN) ?? [];
+  let index = 0;
+
+  function nextPoint(): Point {
+    const x = Number(tokens[index++]);
+    const y = Number(tokens[index++]);
+    return { x, y };
+  }
+
+  let command = "";
+  let current: Point = { x: 0, y: 0 };
+  const segments: CubicSeg[] = [];
+  while (index < tokens.length) {
+    const token = tokens[index];
+    if (/^[A-Za-z]$/.test(token)) {
+      command = token;
+      index++;
+    }
+    if (command === "M") {
+      current = nextPoint();
+    } else if (command === "C") {
+      const p1 = nextPoint();
+      const p2 = nextPoint();
+      const p3 = nextPoint();
+      segments.push({ p0: current, p1, p2, p3 });
+      current = p3;
+    } else {
+      throw new Error(`trimMotifTails: unsupported command "${command}"`);
+    }
+  }
+  return segments;
+}
+
+function reverseSeg(seg: CubicSeg): CubicSeg {
+  return { p0: seg.p3, p1: seg.p2, p2: seg.p1, p3: seg.p0 };
+}
+
+/* de Casteljau split: exact for any `t`, unlike the arc-length SEARCH that locates `t`
+   (`paramAtLength` below) — the split itself introduces no approximation of its own. */
+function splitCubicAt(
+  seg: CubicSeg,
+  t: number,
+): { left: CubicSeg; right: CubicSeg } {
+  const lerp = (a: Point, b: Point): Point => ({
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+  });
+  const p01 = lerp(seg.p0, seg.p1);
+  const p12 = lerp(seg.p1, seg.p2);
+  const p23 = lerp(seg.p2, seg.p3);
+  const p012 = lerp(p01, p12);
+  const p123 = lerp(p12, p23);
+  const p0123 = lerp(p012, p123);
+  return {
+    left: { p0: seg.p0, p1: p01, p2: p012, p3: p0123 },
+    right: { p0: p0123, p1: p123, p2: p23, p3: seg.p3 },
+  };
+}
+
+/* Same sampling resolution and method as `cubicLength`/`pointOnCubic` above (`LENGTH_SAMPLES` equal
+   steps), so this arc-length-to-`t` search shares that function's own accuracy rather than a second,
+   independently-erring approximation of the same curve. */
+function paramAtLength(seg: CubicSeg, targetLength: number): number {
+  let length = 0;
+  let previous = seg.p0;
+  for (let step = 1; step <= LENGTH_SAMPLES; step++) {
+    const t = step / LENGTH_SAMPLES;
+    const point = pointOnCubic(seg.p0, seg.p1, seg.p2, seg.p3, t);
+    const stepLength = Math.hypot(point.x - previous.x, point.y - previous.y);
+    if (length + stepLength >= targetLength) {
+      const remaining = targetLength - length;
+      const fraction = stepLength > 0 ? remaining / stepLength : 0;
+      return (step - 1 + fraction) / LENGTH_SAMPLES;
+    }
+    length += stepLength;
+    previous = point;
+  }
+  return 1;
+}
+
+/* Drops `trimLength` of arc from the START of a cubic chain: splits the one segment the cut falls
+   inside and discards every whole segment before it. A trim fraction sane enough to leave a
+   recognisable motif never reaches the "consumes the whole chain" branch below; it exists only so
+   this pure function cannot throw on a pathological input. */
+function trimChainStart(segments: CubicSeg[], trimLength: number): CubicSeg[] {
+  if (trimLength <= 0) return segments;
+  let remaining = trimLength;
+  let index = 0;
+  while (index < segments.length) {
+    const seg = segments[index];
+    const length = cubicLength(seg.p0, seg.p1, seg.p2, seg.p3);
+    if (length > remaining) break;
+    remaining -= length;
+    index++;
+  }
+  if (index >= segments.length) {
+    const last = segments[segments.length - 1];
+    return [{ p0: last.p3, p1: last.p3, p2: last.p3, p3: last.p3 }];
+  }
+  const { right } = splitCubicAt(
+    segments[index],
+    paramAtLength(segments[index], remaining),
+  );
+  return [right, ...segments.slice(index + 1)];
+}
+
+/* Drops the SAME `fraction` of the chain's own total arc length from both ends. Trimming from the
+   end reuses `trimChainStart` by reversing the chain, trimming, and reversing back — rather than a
+   second, independently-written mirror of the same algorithm that could drift from it. */
+function trimMotifTails(d: string, fraction: number): string {
+  const segments = parseCubicChain(d);
+  const total = segments.reduce(
+    (sum, seg) => sum + cubicLength(seg.p0, seg.p1, seg.p2, seg.p3),
+    0,
+  );
+  const trimLength = fraction * total;
+
+  const trimmedStart = trimChainStart(segments, trimLength);
+  const reversed = trimmedStart.slice().reverse().map(reverseSeg);
+  const trimmedBoth = trimChainStart(reversed, trimLength)
+    .slice()
+    .reverse()
+    .map(reverseSeg);
+
+  const first = trimmedBoth[0].p0;
+  const parts = [`M ${first.x} ${first.y}`];
+  for (const seg of trimmedBoth) {
+    parts.push(
+      `C ${seg.p1.x} ${seg.p1.y} ${seg.p2.x} ${seg.p2.y} ${seg.p3.x} ${seg.p3.y}`,
+    );
+  }
+  return parts.join(" ");
 }
 
 export function threadLine(
@@ -423,11 +584,13 @@ function sectionProgress(
   const rawDrawEnd = windowStart + DRAW_FRACTION * (windowEnd - windowStart);
   const drawEnd = Math.min(rawDrawEnd, maxScroll);
   const span = drawEnd - windowStart;
-  // Only reachable when the whole page fits within one viewport (`maxScroll` and `windowStart` both
-  // clamp to 0) -- not a shape any of this project's six real sections take, but a legitimate
-  // synthetic input this pure function must not divide by zero on. With no scroll room to reveal it
-  // gradually, showing it complete is the same choice this project already makes for reduced motion
-  // and no-JS, rather than leaving it stuck at zero with no gesture able to move it.
+  // Reachable whenever `drawEnd` and `windowStart` land on the same value -- the whole page fitting
+  // within one viewport (both clamp to 0) is one way there, but a section of height 0 as the page's
+  // last one reaches it too (`windowStart` and the uncapped `rawDrawEnd` already coincide, and the
+  // `maxScroll` cap changes nothing). Not a shape any of this project's six real sections take, but
+  // a legitimate synthetic input this pure function must not divide by zero on. With no scroll room
+  // to reveal it gradually, showing it complete is the same choice this project already makes for
+  // reduced motion and no-JS, rather than leaving it stuck at zero with no gesture able to move it.
   if (span <= 0) return 1;
   const progress = (scrollY - windowStart) / span;
   return Math.min(1, Math.max(0, progress));

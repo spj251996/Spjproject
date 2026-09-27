@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { authoredCard } from "./thread-authored-layout.ts";
-import { drawnLength, threadLine } from "./thread-line.ts";
+import { THREAD_BANDS } from "./thread-bands.ts";
+import {
+  drawnLength,
+  PORTRAIT_LOOP_TRIM_FRACTION,
+  threadLine,
+} from "./thread-line.ts";
 import { MOTIFS } from "./thread-motifs.ts";
-import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths.ts";
-import type { MeasuredSection } from "./thread-warp.ts";
+import {
+  MOTIF_PLACEMENTS,
+  type Placement,
+  THREAD_IDS,
+  THREAD_PATHS,
+} from "./thread-paths.ts";
+import { type MeasuredSection, warpPlacement } from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 
@@ -155,6 +165,357 @@ test("a motif's own aspect is preserved to 0.1% after baking onto a warped, non-
   assert.ok(
     relativeError < 0.001,
     `aspect drifted ${(relativeError * 100).toFixed(4)}%: baked ${bakedAspect}, authored ${authoredAspect}`,
+  );
+});
+
+/* ------------------------------------------------------------------------------------------------
+   PORTRAIT LOOP TAIL TRIM (Task 3) — the owner's ask, "trim the entry/exit tails of the motif so
+   connectors don't do weird turns there". Every helper below is an INDEPENDENT re-implementation of
+   `thread-line.ts`'s own arc-length math (same convention as `unrotatedAspect`/`parseAllPoints`
+   above), so these tests cannot pass by sharing a bug with the code they verify. */
+
+type CubicSeg = { p0: Point; p1: Point; p2: Point; p3: Point };
+
+function indepPointOnCubic(
+  p0: Point,
+  p1: Point,
+  p2: Point,
+  p3: Point,
+  t: number,
+): Point {
+  const mt = 1 - t;
+  const a = mt * mt * mt;
+  const b = 3 * mt * mt * t;
+  const c = 3 * mt * t * t;
+  const e = t * t * t;
+  return {
+    x: a * p0.x + b * p1.x + c * p2.x + e * p3.x,
+    y: a * p0.y + b * p1.y + c * p2.y + e * p3.y,
+  };
+}
+
+const INDEP_SAMPLES = 256; // matches thread-line.ts's own LENGTH_SAMPLES.
+
+function indepCubicLength(seg: CubicSeg): number {
+  let length = 0;
+  let previous = seg.p0;
+  for (let step = 1; step <= INDEP_SAMPLES; step++) {
+    const point = indepPointOnCubic(
+      seg.p0,
+      seg.p1,
+      seg.p2,
+      seg.p3,
+      step / INDEP_SAMPLES,
+    );
+    length += Math.hypot(point.x - previous.x, point.y - previous.y);
+    previous = point;
+  }
+  return length;
+}
+
+function indepParseCubicChain(d: string): CubicSeg[] {
+  const tokens = d.match(PATH_TOKEN) ?? [];
+  let index = 0;
+  function nextPoint(): Point {
+    const x = Number(tokens[index++]);
+    const y = Number(tokens[index++]);
+    return { x, y };
+  }
+  let command = "";
+  let current: Point = { x: 0, y: 0 };
+  const segments: CubicSeg[] = [];
+  while (index < tokens.length) {
+    const token = tokens[index];
+    if (/^[A-Za-z]$/.test(token)) {
+      command = token;
+      index++;
+    }
+    if (command === "M") {
+      current = nextPoint();
+    } else {
+      const p1 = nextPoint();
+      const p2 = nextPoint();
+      const p3 = nextPoint();
+      segments.push({ p0: current, p1, p2, p3 });
+      current = p3;
+    }
+  }
+  return segments;
+}
+
+// Walks forward from the chain's own start by `targetLength` of arc, at the same sampling
+// resolution `thread-line.ts` searches with -- returns the point there.
+function indepPointAtArcLength(
+  segments: CubicSeg[],
+  targetLength: number,
+): Point {
+  let remaining = targetLength;
+  for (const seg of segments) {
+    const len = indepCubicLength(seg);
+    if (len > remaining) {
+      let acc = 0;
+      let previous = seg.p0;
+      for (let step = 1; step <= INDEP_SAMPLES; step++) {
+        const t = step / INDEP_SAMPLES;
+        const point = indepPointOnCubic(seg.p0, seg.p1, seg.p2, seg.p3, t);
+        const stepLen = Math.hypot(point.x - previous.x, point.y - previous.y);
+        if (acc + stepLen >= remaining) return point;
+        acc += stepLen;
+        previous = point;
+      }
+      return previous;
+    }
+    remaining -= len;
+  }
+  return segments[segments.length - 1].p3;
+}
+
+function indepReverseSeg(seg: CubicSeg): CubicSeg {
+  return { p0: seg.p3, p1: seg.p2, p2: seg.p1, p3: seg.p0 };
+}
+
+// Exact de Casteljau split, independent of `thread-line.ts`'s own `splitCubicAt`.
+function indepSplitCubicAt(
+  seg: CubicSeg,
+  t: number,
+): { left: CubicSeg; right: CubicSeg } {
+  const lerp = (a: Point, b: Point): Point => ({
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+  });
+  const p01 = lerp(seg.p0, seg.p1);
+  const p12 = lerp(seg.p1, seg.p2);
+  const p23 = lerp(seg.p2, seg.p3);
+  const p012 = lerp(p01, p12);
+  const p123 = lerp(p12, p23);
+  const p0123 = lerp(p012, p123);
+  return {
+    left: { p0: seg.p0, p1: p01, p2: p012, p3: p0123 },
+    right: { p0: p0123, p1: p123, p2: p23, p3: seg.p3 },
+  };
+}
+
+function indepParamAtLength(seg: CubicSeg, targetLength: number): number {
+  let length = 0;
+  let previous = seg.p0;
+  for (let step = 1; step <= INDEP_SAMPLES; step++) {
+    const t = step / INDEP_SAMPLES;
+    const point = indepPointOnCubic(seg.p0, seg.p1, seg.p2, seg.p3, t);
+    const stepLength = Math.hypot(point.x - previous.x, point.y - previous.y);
+    if (length + stepLength >= targetLength) {
+      const remaining = targetLength - length;
+      const fraction = stepLength > 0 ? remaining / stepLength : 0;
+      return (step - 1 + fraction) / INDEP_SAMPLES;
+    }
+    length += stepLength;
+    previous = point;
+  }
+  return 1;
+}
+
+function indepTrimChainStart(
+  segments: CubicSeg[],
+  trimLength: number,
+): CubicSeg[] {
+  let remaining = trimLength;
+  let index = 0;
+  while (index < segments.length) {
+    const length = indepCubicLength(segments[index]);
+    if (length > remaining) break;
+    remaining -= length;
+    index++;
+  }
+  const { right } = indepSplitCubicAt(
+    segments[index],
+    indepParamAtLength(segments[index], remaining),
+  );
+  return [right, ...segments.slice(index + 1)];
+}
+
+// A second, independently-written implementation of `thread-line.ts`'s own `trimMotifTails`, used
+// only to check that implementation's OUTPUT (via `unrotatedAspect` on the actual baked path above)
+// against a from-scratch trim of the same authored data -- not a stand-in for it.
+function indepTrimBothEnds(d: string, fraction: number): string {
+  const segments = indepParseCubicChain(d);
+  const total = segments.reduce((sum, seg) => sum + indepCubicLength(seg), 0);
+  const trimLength = fraction * total;
+
+  const trimmedStart = indepTrimChainStart(segments, trimLength);
+  const reversed = trimmedStart.slice().reverse().map(indepReverseSeg);
+  const trimmedBoth = indepTrimChainStart(reversed, trimLength)
+    .slice()
+    .reverse()
+    .map(indepReverseSeg);
+
+  const first = trimmedBoth[0].p0;
+  const parts = [`M ${first.x} ${first.y}`];
+  for (const seg of trimmedBoth) {
+    parts.push(
+      `C ${seg.p1.x} ${seg.p1.y} ${seg.p2.x} ${seg.p2.y} ${seg.p3.x} ${seg.p3.y}`,
+    );
+  }
+  return parts.join(" ");
+}
+
+// Inverts `bakeMotifPoint`'s transform (thread-line.ts: `pos + side * R(turn) * mirror(local)`) to
+// recover a baked point's own LOCAL, 0-100-square coordinate -- letting these tests compare the
+// actual `threadLine()` output directly against an independent trim of the authored motif data,
+// without duplicating the baking transform itself (only its inverse, which the aspect test above
+// already establishes is safe to lean on: rotation and uniform scale preserve ratios exactly).
+function invertBakePoint(
+  baked: Point,
+  placement: Placement,
+  bandBox: { width: number; height: number },
+): Point {
+  const side = placement.scale * Math.min(bandBox.width, bandBox.height);
+  const vx = (baked.x - placement.x) / side;
+  const vy = (baked.y - placement.y) / side;
+  const radians = (-placement.turn * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const ux = cos * vx - sin * vy;
+  const uy = sin * vx + cos * vy;
+  const lx = placement.mirror ? -ux : ux;
+  return { x: (lx + 0.5) * 100, y: (uy + 0.5) * 100 };
+}
+
+// family's two portraitLoop placements are always indices 0 and 1 (thread-paths.ts): the first
+// motif subpath sits right after family's own connector[0].
+function familyMotifSubpathIndex(band: "tall" | "upright" | "wide"): number {
+  const before = THREAD_IDS.slice(0, THREAD_IDS.indexOf("family")).reduce(
+    (sum, id) =>
+      sum + THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length,
+    0,
+  );
+  return before + 1;
+}
+
+test("family's portraitLoop entry and exit sit further along the motif's own arc after the tail trim", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const { d } = threadLine(band, sections);
+  const subpaths = d.split(/(?=M )/).filter((s) => s.trim().length > 0);
+
+  const motifIndex = familyMotifSubpathIndex(band);
+  const authoredPlacement = MOTIF_PLACEMENTS[band].family[0];
+  const bandBox = THREAD_BANDS.find((candidate) => candidate.id === band)?.box;
+  if (bandBox === undefined) throw new Error("wide band not found");
+  // `bakeMotif` bakes against the WARPED placement (`threadLine`'s own composition), not the
+  // authored one -- `warpPlacement` only moves x/y/scale, never turn/mirror, but x/y/scale are
+  // exactly what `invertBakePoint` needs to recover a local point, so using the authored placement
+  // here would invert the wrong transform entirely.
+  const familyIndex = THREAD_IDS.indexOf("family");
+  const placement = warpPlacement(
+    authoredPlacement,
+    authoredCard("family", band),
+    sections[familyIndex],
+    bandBox,
+  );
+
+  const points = parseAllPoints(subpaths[motifIndex]);
+  const bakedEntryLocal = invertBakePoint(points[0], placement, bandBox);
+  const bakedExitLocal = invertBakePoint(
+    points[points.length - 1],
+    placement,
+    bandBox,
+  );
+
+  const chain = indepParseCubicChain(MOTIFS.portraitLoop.d);
+  const total = chain.reduce((sum, seg) => sum + indepCubicLength(seg), 0);
+  const trimLength = PORTRAIT_LOOP_TRIM_FRACTION * total;
+
+  const expectedEntry = indepPointAtArcLength(chain, trimLength);
+  const reversedChain = chain
+    .slice()
+    .reverse()
+    .map((seg) => ({ p0: seg.p3, p1: seg.p2, p2: seg.p1, p3: seg.p0 }));
+  const expectedExit = indepPointAtArcLength(reversedChain, trimLength);
+
+  assert.ok(
+    Math.hypot(
+      bakedEntryLocal.x - expectedEntry.x,
+      bakedEntryLocal.y - expectedEntry.y,
+    ) < 0.1,
+    `trimmed entry ${JSON.stringify(bakedEntryLocal)} does not match an independent ${(PORTRAIT_LOOP_TRIM_FRACTION * 100).toFixed(1)}% arc-length walk ${JSON.stringify(expectedEntry)}`,
+  );
+  assert.ok(
+    Math.hypot(
+      bakedExitLocal.x - expectedExit.x,
+      bakedExitLocal.y - expectedExit.y,
+    ) < 0.1,
+    `trimmed exit ${JSON.stringify(bakedExitLocal)} does not match an independent ${(PORTRAIT_LOOP_TRIM_FRACTION * 100).toFixed(1)}% arc-length walk from the far end ${JSON.stringify(expectedExit)}`,
+  );
+
+  // Confirms the trim actually moved the join, rather than the two happening to coincide: the
+  // untrimmed entry is the motif's own authored (0, 54.77).
+  const authoredEntry = {
+    x: MOTIFS.portraitLoop.entry.x * 100,
+    y: MOTIFS.portraitLoop.entry.y * 100,
+  };
+  assert.ok(
+    Math.hypot(
+      bakedEntryLocal.x - authoredEntry.x,
+      bakedEntryLocal.y - authoredEntry.y,
+    ) > 1,
+    "entry did not move along the motif's own arc -- the trim is not being applied",
+  );
+});
+
+test("the connectors either side of family's trimmed portraitLoop still meet it to 0.01px", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const { d } = threadLine(band, sections);
+  const subpaths = d.split(/(?=M )/).filter((s) => s.trim().length > 0);
+
+  const motifIndex = familyMotifSubpathIndex(band);
+  const before = parseAllPoints(subpaths[motifIndex - 1]);
+  const motif = parseAllPoints(subpaths[motifIndex]);
+  const after = parseAllPoints(subpaths[motifIndex + 1]);
+
+  const entryGap = Math.hypot(
+    before[before.length - 1].x - motif[0].x,
+    before[before.length - 1].y - motif[0].y,
+  );
+  const exitGap = Math.hypot(
+    motif[motif.length - 1].x - after[0].x,
+    motif[motif.length - 1].y - after[0].y,
+  );
+  assert.ok(entryGap < 0.01, `entry gap ${entryGap}px`);
+  assert.ok(exitGap < 0.01, `exit gap ${exitGap}px`);
+});
+
+test("the tail trim does not squash family's portraitLoop -- its baked aspect matches the trimmed local shape's own aspect to 0.1%", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const { d } = threadLine(band, sections);
+  const subpaths = d.split(/(?=M )/).filter((s) => s.trim().length > 0);
+
+  const motifIndex = familyMotifSubpathIndex(band);
+  const placement = MOTIF_PLACEMENTS[band].family[0];
+  const points = parseAllPoints(subpaths[motifIndex]);
+  const bakedAspect = unrotatedAspect(points, placement.turn);
+
+  // The trimmed shape's own aspect, from an INDEPENDENT de Casteljau split of the authored curve --
+  // not a sampled approximation of it. `unrotatedAspect` (both here and in the untrimmed test above)
+  // measures the CONTROL POLYGON's bbox, not the rendered curve's, since that is what the baked `d`
+  // string's own tokens are; a Bezier's control points need not sit on the curve, so comparing that
+  // against a bbox of sampled CURVE points is not the same claim and drifted 0.15% in an earlier
+  // version of this test -- this compares control polygon to control polygon, like the untrimmed
+  // test already does.
+  const trimmedLocalD = indepTrimBothEnds(
+    MOTIFS.portraitLoop.d,
+    PORTRAIT_LOOP_TRIM_FRACTION,
+  );
+  const localPoints = parseAllPoints(trimmedLocalD);
+  const xs = localPoints.map((p) => p.x);
+  const ys = localPoints.map((p) => p.y);
+  const localAspect =
+    (Math.max(...xs) - Math.min(...xs)) / (Math.max(...ys) - Math.min(...ys));
+
+  const relativeError = Math.abs(bakedAspect - localAspect) / localAspect;
+  assert.ok(
+    relativeError < 0.001,
+    `aspect drifted ${(relativeError * 100).toFixed(4)}%: baked ${bakedAspect}, trimmed local shape ${localAspect}`,
   );
 });
 
