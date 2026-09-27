@@ -84,16 +84,17 @@ const VIEWPORTS = THREAD_BANDS.flatMap((band) => [
 
 /* THE FORMER RECORDED EXCEPTION — REMOVED, per this file's own stale-exemption rule below.
  *
- * `event-info upright-nominal` was recorded here as a known break: `rings`/`knot` invert at
- * `r = 0.6849` against the `upright` band's own `0.6949`, composing a connector 0.9 px long, under
- * the generator's own 1 px floor, which the comment itself said "renders in pieces" — a pixel-
- * classification symptom of a sub-pixel connector, the same family as `celebrations`' antialiasing
- * miss above, not a disconnected curve. Re-verified after the `isInk` recalibration (this file,
- * same change): `event-info upright-nominal` now renders as one run, reproducibly, at both `rest`
- * and `scrub` (identical pixel counts across repeat runs). The composed connector is presumably
- * still ~0.9 px of real geometry — this file records what the render shows, not the underlying
- * geometry — so a future scale/cell change on the grid panel could reopen it, at which point a new
- * entry belongs here again. */
+ * `event-info upright-nominal` was recorded here as a known break, attributed to `rings`/`knot`
+ * inverting at `r = 0.6849` against the `upright` band's own `0.6949` and composing a connector
+ * 0.9 px long, under a generator's 1 px floor. That whole mechanism — seeded scales, a four-row
+ * grid, per-band normalisation against a nominal box — belonged to the retired `thread-css.ts` grid
+ * model, which no longer exists: `event-info`'s connectors are now hand-authored, measured curves in
+ * `thread-paths.ts`, and every one of them at `upright` spans hundreds to low thousands of px (the
+ * shortest measured on the live page's mounted trunk at `upright` 820x1180 is 319.57 px, none under
+ * 2 px — `final-review-fixes.md`). There is no seeded scale left to invert and no floor left to fall
+ * under, so the exception's own cause cannot recur; that is why it is gone, not only that the render
+ * currently shows one run. A geometry change that reintroduces a sub-pixel connector would need a
+ * new mechanism capable of producing one, at which point a new entry belongs here. */
 
 const CROSSINGS = new Map();
 
@@ -129,7 +130,16 @@ const onlyViewport = flag("viewport");
    an 18-19px patch of dark hair/brow that reads red-dominant). `g<105` sits at the centre of that
    measured 94-110 safe band — margin 12 below (to the last-broken `g<93`) and 6 above (to the
    first-contaminated `g<111`) — not a guess and not the exact midpoint, but inside the only band
-   that closes `celebrations` without opening a new hole in `family`. */
+   that closes `celebrations` without opening a new hole in `family`.
+
+   `r - g > 80` HAS ITS OWN SWEEP (F7, `final-review-fixes.md`) — a prior pass tightened it from 60
+   without recording why. Swept on the real page at `family tall-nominal rest`, the exact case the
+   `g` calibration above already names: `r - g > 60` reads Family's skin tones as ink and breaks the
+   thread into 46 pieces; the count falls as the bound tightens (28 at 65, 7 at 70) and the render
+   first reads as one run at `r - g > 75`, holding through 80. `celebrations wide-nominal rest` stays
+   a single run up to `r - g > 90` and first breaks at `r - g > 100`. `80` sits inside the resulting
+   75-99 safe band, 5 above the tight edge and 20 below the other — kept rather than loosened back to
+   60, which does not hold. */
 function isInk(r, g, b) {
   return g < 105 && r - g > 80 && r - b > 60;
 }
