@@ -27,15 +27,18 @@
   overflow: visible;
 }
 
-/* THE OPENING SEQUENCE's fifth and last step (DESIGN.md → Motion → "The opening sequence";
-   `app/invite.css` carries the first four). The thread fades in once ground, mount, stock and type
-   have each started ahead of it, at the SAME stagger — 4 × `{motion.duration.fast}` — so the two
-   files describe one sequence without sharing a keyframe across a module boundary. This rule
-   governs BOTH the no-JS fallback svg and the live one (both carry `.pageRoot`): the fallback paints
-   the thread in its authored position and this is the only thing that ever animates it, so "without
-   JS the same sequence runs from CSS alone" (this file's own header, and `page-thread.tsx`'s) holds
-   with no second code path. It does not reach `WishesWeave`'s `.pageWeave` root, which is Wishes'
-   own local weave, not the page-opening thread.
+/* THE OPENING SEQUENCE's fourth and last step (DESIGN.md → Motion → "The opening sequence";
+   `app/invite.css` carries the mount, stock and type steps ahead of it). The thread fades in once
+   mount, stock and type have each completed in turn — the ground carries no step at all, it is
+   present from the first frame — so the two files describe one discrete-beat sequence without
+   sharing a keyframe across a module boundary. Delay = 4 × fast + 3 × base = 2000ms, the same
+   `n × fast + (n − 1) × base` formula `app/invite.css` states for the steps ahead of it; the fade
+   itself IS the beat before the draw, so nothing further is stacked once it completes (confirmed by
+   render, `task-1-report.md`). This rule governs BOTH the no-JS fallback svg and the live one (both
+   carry `.pageRoot`): the fallback paints the thread in its authored position and this is the only
+   thing that ever animates it, so "without JS the same sequence runs from CSS alone" (this file's
+   own header, and `page-thread.tsx`'s) holds with no second code path. It does not reach
+   `WishesWeave`'s `.pageWeave` root, which is Wishes' own local weave, not the page-opening thread.
 
    Reduced motion drops this whole rule (the media query it lives in) rather than overriding it, so
    there is no specificity contest to lose — `opacity`'s un-animated initial value is already `1`,
@@ -53,7 +56,7 @@
 
   .pageRoot {
     animation: pageThreadFadeIn var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 4) both;
+      calc(var(--duration-fast) * 4 + var(--duration-base) * 3) both;
   }
 }
 

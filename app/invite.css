@@ -1,43 +1,45 @@
 /* THE OPENING SEQUENCE — DESIGN.md → Motion → "The opening sequence", a declared exception to
-   `rules/web-frontend/motion.md` → Prohibited (owner decision, 2026-09-27, in chat). The invite
-   assembles on open: ground with its botanicals, mount, stock, type, then the thread
-   (`components/thread/thread.module.css`'s own step), each layer FADING in, in that order. This
-   REPLACES the rule that stood here before — "transform only, never opacity, because opacity below
-   1 on the first frame delays the largest paint" — kept below as the superseded comment DESIGN.md
-   asks for, not because it still governs.
+   `rules/web-frontend/motion.md` → Prohibited (owner decision, 2026-09-27, in chat). The owner
+   restated the sequence after watching Task 5's continuous stagger live, on two counts: the ground
+   is ALREADY PRESENT and carries no animation at all (not merely a zero delay), and the remaining
+   four steps run as DISCRETE beats — each one completes before the next begins — rather than
+   overlapping. The mount and the stock SETTLE (translate); the type and the thread only FADE.
 
-   Superseded, 2026-09-27: the invite's card settled onto its mount once on first paint — a
-   translate over `{motion.duration.base}` on `{motion.easing.entrance}`, at full opacity
-   throughout. That reasoning was correct and is exactly the cost the owner has now knowingly
-   accepted: the LCP (the couple's names, inside the "type" step below) is deferred by the
-   sequence's length, measured in `task-5-report.md` and recorded in DESIGN.md.
+   THE GROUND CARRIES NO RULE HERE AT ALL — this is why the old Step 1 (the two named botanical
+   pieces `falling-spray`/`corner-spray`) is gone rather than retimed to a zero delay: a layer that
+   is not animated should not appear in an animation rule.
 
-   ONE STAGGER, BOTH TOKENS ALREADY ON THE SCALE. Each step fades over `{motion.duration.base}` on
-   `{motion.easing.entrance}` — the token DESIGN.md's Motion table names for "anything appearing" —
-   and each step starts `{motion.duration.fast}` after the one before it, reusing the discrete
-   state-change token as the cadence rather than inventing a fifth value nothing on the scale
-   states. Four intervals of `{motion.duration.fast}` plus one `{motion.duration.base}` = 1200ms,
-   the sequence's total duration (DESIGN.md → Motion → "The opening sequence" wants this recorded
-   once tuned; `task-5-report.md` carries the measurement this figure is derived from).
+   ONE FORMULA, BOTH TOKENS ALREADY ON THE SCALE. Every step runs for `{motion.duration.base}` on
+   `{motion.easing.entrance}`; step *n* (mount=1, stock=2, type=3, thread=4) is delayed
+   `n × {motion.duration.fast} + (n − 1) × {motion.duration.base}` — the beat sits on top of every
+   step's own duration rather than overlapping it, which is what makes the sequence discrete. Mount
+   200ms, stock 800ms, type 1400ms, thread 2000ms, each a 400ms step; total 2400ms (confirmed by
+   render, `task-1-report.md`). The thread's fade is the LAST beat — its own completion is what the
+   scroll-driven draw hands off from, so no further delay is stacked on top of it.
 
-   OPACITY LIVES ON THE PIECE ITSELF FOR THE GROUND STEP, NEVER ON A WRAPPING ANCESTOR.
+   THE SAME TRANSLATE GESTURE FOR BOTH SETTLING LAYERS. The invite's card already carried an
+   `invite-settle` translate at full opacity from an earlier round (Y −8px → 0); the mount reuses
+   the identical keyframe rather than inventing a second gesture for the same kind of motion.
+   `backwards` holds each settle's start position through its delay; after the animation completes,
+   the element reverts to its un-animated `transform: none`, which already equals the keyframe's own
+   `to` — so no `forwards`/`both` is needed to hold the end state.
+
+   OPACITY LIVES ON THE PIECE ITSELF FOR ANYTHING THAT FADES, NEVER ON A WRAPPING ANCESTOR.
    `botanical.module.css`'s header forbids sub-1 opacity anywhere in a bloom's ANCESTOR chain — it
    would isolate `mix-blend-mode: multiply` from the ivory ground and paint each piece's opaque
-   backing rectangle instead of blending it. Animating a `--piece--*` class directly is not that:
-   the property is on the blended element itself, changing how much of its own blended result
-   shows, not what stands between it and its backdrop (proven by render, `task-5-report.md`; the
-   same distinction this project already measured for `transform` in `lessons.md`, 2026-09-23).
-   Mount, stock and type carry no blend mode, so their fades are ordinary.
+   backing rectangle instead of blending it. That rule no longer touches this file at all: the
+   ground is unanimated, and mount/stock now translate rather than fade, so the type step below is
+   the only opacity animation left here, and it targets `[data-invite-stack]` — a sibling of the
+   ground's own botanical layer, not its ancestor.
 
    SCOPED TO THE INVITE'S OWN FRAME, NOT EVERY SECTION. `mounted-sheet-frame--invite` is the literal
    class both `Botanical` and `MountedSheet` stamp on their own wrapper for this section
-   (`frameScopeClass`), so it reaches exactly the invite's ground, mount and stock and nothing
-   downstream — every other section keeps its scroll-linked reveal (Interaction Rules → Section
-   entry), which this file does not touch.
+   (`frameScopeClass`), so it reaches exactly the invite's mount and stock and nothing downstream —
+   every other section keeps its scroll-linked reveal (Interaction Rules → Section entry), which
+   this file does not touch.
 
-   `backwards` alone would suppress the pre-start flash; `both` also HOLDS the finished opacity
-   after the animation ends, so the layer never depends on some other rule's opacity to stay
-   visible once its keyframe has run its course. */
+   `both` on the type's fade HOLDS the finished opacity after the animation ends, so it never
+   depends on some other rule's opacity to stay visible once its keyframe has run its course. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes opening-fade {
     from {
@@ -48,39 +50,6 @@
     }
   }
 
-  /* Step 1 — the ground, with its botanicals. `falling-spray` and `corner-spray` are the invite's
-     own two pieces (`app/page.tsx`'s `SECTION_PLACEMENT.invite`); named directly rather than via
-     the shared `.bloom`/`botanical-piece` class alone so a future piece added to this section's
-     placement list is not silently swept into an animation nobody asked it to carry. */
-  .mounted-sheet-frame--invite .botanical-piece--falling-spray,
-  .mounted-sheet-frame--invite .botanical-piece--corner-spray {
-    animation: opening-fade var(--duration-base) var(--ease-entrance) both;
-  }
-
-  /* Step 2 — the mount. */
-  .mounted-sheet-frame--invite .mounted-sheet-frame__mount {
-    animation: opening-fade var(--duration-base) var(--ease-entrance)
-      var(--duration-fast) both;
-  }
-
-  /* Step 3 — the paper stock. Combined into the SAME `animation` declaration as the settle
-     translate below (a second, separate rule targeting this element would overwrite rather than
-     add to it — the `animation` shorthand does not merge across rules on one element) —
-     comma-separated, each keyframe running independently. */
-  .invite-settle {
-    animation:
-      invite-settle var(--duration-base) var(--ease-entrance) backwards,
-      opening-fade var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 2) both;
-  }
-
-  /* Step 4 — the type: the eyebrow, the couple's names, the date and place, the passage — one
-     stack, one fade, matching the granularity DESIGN.md states the sequence at. */
-  .mounted-sheet-frame--invite [data-invite-stack] {
-    animation: opening-fade var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 3) both;
-  }
-
   @keyframes invite-settle {
     from {
       transform: translateY(-8px);
@@ -88,5 +57,25 @@
     to {
       transform: translateY(0);
     }
+  }
+
+  /* Step 1 — the mount settles into place. Delay = 1 × fast + 0 × base = 200ms. */
+  .mounted-sheet-frame--invite .mounted-sheet-frame__mount {
+    animation: invite-settle var(--duration-base) var(--ease-entrance)
+      var(--duration-fast) backwards;
+  }
+
+  /* Step 2 — the paper stock settles into place. Delay = 2 × fast + 1 × base = 800ms. */
+  .invite-settle {
+    animation: invite-settle var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 2 + var(--duration-base)) backwards;
+  }
+
+  /* Step 3 — the type: the eyebrow, the couple's names, the date and place, the passage — one
+     stack, one fade, matching the granularity DESIGN.md states the sequence at. Delay = 3 × fast +
+     2 × base = 1400ms. */
+  .mounted-sheet-frame--invite [data-invite-stack] {
+    animation: opening-fade var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 3 + var(--duration-base) * 2) both;
   }
 }
