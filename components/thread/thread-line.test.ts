@@ -1135,3 +1135,232 @@ test("every piece of a real band's thread is blank before the draw reaches it", 
     );
   }
 });
+
+/* ------------------------------------------------------------------------------------------------
+   CARD/ROW GROUPING — the owner's decision `session.md` 2026-09-28: a stacked pair is two windows,
+   not one, and a long ritual list is several. `subdivisions` never comes from real DOM in this file
+   (that measurement lives in `page-thread.tsx`, untestable off a browser) — every test below hands
+   `threadLine` a synthetic, but geometrically plausible, top-to-bottom split of a section's own
+   measured rect, exactly the shape `measureSubdivisions` produces from real leaf/row elements. */
+
+/* Splits `[rect.top, rect.top + rect.height]` into `n` equal, contiguous, top-to-bottom slices --
+   the same shape two `.mounted-sheet-frame__leaf` rects or six `[data-thread-row]` rects take on a
+   real page (never exactly equal in practice, but equal slices are enough to prove the ASSIGNMENT
+   mechanism without needing a real render). */
+function splitRect(
+  rect: { top: number; height: number },
+  n: number,
+): { top: number; height: number }[] {
+  const slice = rect.height / n;
+  return Array.from({ length: n }, (_, i) => ({
+    top: rect.top + i * slice,
+    height: slice,
+  }));
+}
+
+function subdivisionsFor(
+  sections: MeasuredSection[],
+): Partial<
+  Record<(typeof THREAD_IDS)[number], { top: number; height: number }[]>
+> {
+  const byId = new Map(THREAD_IDS.map((id, i) => [id, sections[i]]));
+  const eventInfo = byId.get("event-info");
+  const family = byId.get("family");
+  const celebrations = byId.get("celebrations");
+  return {
+    ...(eventInfo && { "event-info": splitRect(eventInfo, 2) }),
+    ...(family && { family: splitRect(family, 2) }),
+    ...(celebrations && { celebrations: splitRect(celebrations, 6) }),
+  };
+}
+
+test("with no subdivisions given, every group is exactly one section, its rect the section's own -- unchanged from before this file supported splitting", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const withoutArg = threadLine(band, sections);
+  const withEmptyObject = threadLine(band, sections, undefined, {});
+
+  for (const line of [withoutArg, withEmptyObject]) {
+    assert.equal(line.sections.length, THREAD_IDS.length);
+    assert.equal(line.groupRects.length, THREAD_IDS.length);
+    line.sections.forEach((group, i) => {
+      assert.equal(group.id, THREAD_IDS[i]);
+      assert.deepEqual(line.groupRects[i], {
+        top: sections[i].top,
+        height: sections[i].height,
+      });
+    });
+  }
+});
+
+test("event-info and family split into exactly two groups each when given two real card rects; celebrations splits when given real row rects", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const subdivisions = subdivisionsFor(sections);
+  const line = threadLine(band, sections, undefined, subdivisions);
+
+  const countFor = (id: (typeof THREAD_IDS)[number]) =>
+    line.sections.filter((group) => group.id === id).length;
+
+  assert.equal(
+    countFor("event-info"),
+    2,
+    "rings and knot sit in different cards, so event-info's own piece-run must split there",
+  );
+  assert.equal(
+    countFor("family"),
+    2,
+    "the two portraitLoop placements sit in different cards, so family must split there too",
+  );
+  assert.ok(
+    countFor("celebrations") >= 1,
+    "celebrations has only one motif (wishesLoop), so it can split into at most as many groups as it has pieces (3) -- but must produce at least one",
+  );
+  // Every OTHER section keeps exactly one group -- nothing outside the three the owner named splits.
+  for (const id of THREAD_IDS) {
+    if (id === "event-info" || id === "family" || id === "celebrations")
+      continue;
+    assert.equal(countFor(id), 1, `${id} was not asked to split and must not`);
+  }
+});
+
+test("groups are contiguous end to end, covering [0, length] exactly, even when a section splits into several", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const subdivisions = subdivisionsFor(sections);
+  const { sections: groups, length } = threadLine(
+    band,
+    sections,
+    undefined,
+    subdivisions,
+  );
+
+  assert.equal(groups[0].start, 0);
+  for (let i = 1; i < groups.length; i++) {
+    assert.equal(
+      groups[i].start,
+      groups[i - 1].end,
+      `group ${i} does not start where group ${i - 1} ended`,
+    );
+  }
+  assert.equal(groups[groups.length - 1].end, length);
+});
+
+test("each group's rect is one of the rects it was given -- the section's own whole rect when unsplit, or one of the measured card/row rects when split", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const subdivisions = subdivisionsFor(sections);
+  const { sections: groups, groupRects } = threadLine(
+    band,
+    sections,
+    undefined,
+    subdivisions,
+  );
+
+  groups.forEach((group, i) => {
+    const rect = groupRects[i];
+    const candidates =
+      subdivisions[group.id] ??
+      (() => {
+        const index = THREAD_IDS.indexOf(group.id);
+        return [{ top: sections[index].top, height: sections[index].height }];
+      })();
+    assert.ok(
+      candidates.some(
+        (candidate) =>
+          Math.abs(candidate.top - rect.top) < 1e-9 &&
+          Math.abs(candidate.height - rect.height) < 1e-9,
+      ),
+      `${group.id}'s group ${i} carries a rect that was never handed in for it`,
+    );
+  });
+});
+
+test("event-info's two groups are ordered card 1 then card 2 -- the first group's rect sits above the second's", () => {
+  const band = "wide";
+  const sections = measuredSections(band);
+  const subdivisions = subdivisionsFor(sections);
+  const { sections: groups, groupRects } = threadLine(
+    band,
+    sections,
+    undefined,
+    subdivisions,
+  );
+
+  const indices = groups
+    .map((group, i) => ({ group, i }))
+    .filter(({ group }) => group.id === "event-info")
+    .map(({ i }) => i);
+  assert.equal(indices.length, 2);
+  assert.ok(
+    groupRects[indices[0]].top < groupRects[indices[1]].top,
+    "card 1's group must be drawn before card 2's",
+  );
+});
+
+test("AT MOST ONE PIECE IS MID-DRAW at any scroll position with card/row subdivisions active, swept across the whole page at all three bands", () => {
+  for (const band of ["tall", "upright", "wide"] as const) {
+    const sections = measuredSections(band);
+    const subdivisions = subdivisionsFor(sections);
+    const {
+      sections: groups,
+      groupRects,
+      pieces,
+    } = threadLine(band, sections, undefined, subdivisions);
+    const viewportBox = THREAD_BANDS.find((b) => b.id === band)?.box;
+    if (viewportBox === undefined) throw new Error(`unknown band ${band}`);
+    const viewportHeight = viewportBox.height;
+    const totalHeight = sections.reduce((sum, s) => sum + s.height, 0);
+    const maxScroll = Math.max(totalHeight - viewportHeight, 0);
+    const step = 8;
+
+    for (let scrollY = 0; scrollY <= maxScroll; scrollY += step) {
+      const drawn = drawnLength(scrollY, viewportHeight, groupRects, groups);
+      const midDraw = pieces.filter((piece) => {
+        const progress = pieceProgress(drawn, piece);
+        return progress > 1e-9 && progress < 1 - 1e-9;
+      });
+      assert.ok(
+        midDraw.length <= 1,
+        `${band} @ scrollY=${scrollY}, drawn=${drawn}: expected at most one piece mid-draw with subdivisions active, found ${midDraw.length} (${midDraw.map((p) => `${p.id}/${p.kind}`).join(", ")})`,
+      );
+    }
+  }
+});
+
+test("with event-info split into two card groups, card 2's pieces (knot and its trailing connector) never read mid-draw or complete while card 1's own group is still mid-ramp", () => {
+  const band = "tall";
+  const sections = measuredSections(band);
+  const subdivisions = subdivisionsFor(sections);
+  const {
+    sections: groups,
+    groupRects,
+    pieces,
+  } = threadLine(band, sections, undefined, subdivisions);
+  const viewportBox = THREAD_BANDS.find((b) => b.id === band)?.box;
+  if (viewportBox === undefined) throw new Error(`unknown band ${band}`);
+  const viewportHeight = viewportBox.height;
+  const totalHeight = sections.reduce((sum, s) => sum + s.height, 0);
+  const maxScroll = Math.max(totalHeight - viewportHeight, 0);
+
+  const card1Group = groups.find((g) => g.id === "event-info");
+  if (card1Group === undefined) throw new Error("event-info must split");
+  const card2Pieces = pieces.filter(
+    (p) => p.id === "event-info" && p.start >= card1Group.end,
+  );
+  assert.ok(card2Pieces.length > 0, "card 2 must own at least one piece");
+
+  for (let scrollY = 0; scrollY <= maxScroll; scrollY += 8) {
+    const drawn = drawnLength(scrollY, viewportHeight, groupRects, groups);
+    const card1Progress = pieceProgress(drawn, card1Group);
+    if (card1Progress > 1e-9 && card1Progress < 1 - 1e-9) {
+      for (const piece of card2Pieces) {
+        assert.equal(
+          pieceProgress(drawn, piece),
+          0,
+          `card 2's ${piece.kind} must still be fully undrawn while card 1 (event-info) is mid-ramp at scrollY ${scrollY}`,
+        );
+      }
+    }
+  }
+});

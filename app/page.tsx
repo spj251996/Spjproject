@@ -733,7 +733,11 @@ export function CelebrationsSection() {
           {/* biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none */}
           <ol className={CELEBRATIONS_LIST_CLASS} role="list">
             {rituals.map((ritual) => (
-              <li className="text-left" key={ritual.id}>
+              // `data-thread-row` is the one hook the thread's per-row scroll split needs
+              // (`components/thread/page-thread.tsx`'s `measureSubdivisions`) -- nothing else here
+              // identifies a single ritual row, and celebrations carries no `.mounted-sheet-frame__
+              // leaf` (it is one tall card, not a stacked pair) for that mechanism to reuse.
+              <li className="text-left" data-thread-row key={ritual.id}>
                 {/* The mark sits on the title's own line so a wrapping description cannot orphan
                     it. `items-baseline` rather than `items-center`: the mark reads as punctuation
                     opening the title, and punctuation sits on the text's baseline. */}

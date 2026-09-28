@@ -43,11 +43,28 @@ import {
 export type ThreadLine = {
   d: string;
   length: number;
-  /* Each section's contiguous stretch of `length`, in draw order — read off the SAME per-section
-     groups `d` is built from, never re-derived by sampling the finished path. This is what lets
-     `page-thread.tsx` map a section's own scroll progress onto "how much of the whole dash has
-     drawn" without recomputing geometry it has already baked once here. */
+  /* Each GROUP's contiguous stretch of `length`, in draw order — read off the SAME per-section
+     groups `d` is built from, never re-derived by sampling the finished path. A section with no
+     measured subdivision is exactly one group covering its own whole rect (every section, before
+     this file supported subdivision at all, and still every section this page never measures a
+     card/row split for — `invite`/`contact`/`wishes`); a section whose caller hands in two or more
+     real card/row rects (`subdivisions` below) can split into MORE than one entry here, one per
+     card or ritual row its own pieces' geometry actually sits in (`assignRectIndex`'s own header).
+     `id` still names the OWNING SECTION, not a group identity of its own — nothing downstream needs
+     to tell two groups of the same section apart by anything other than array position, and the
+     `id === "wishes"` terminal check (`drawnLength` below) only needs to find wishes' own (always
+     single) group. This is what lets `page-thread.tsx` map a scroll position onto "how much of the
+     whole dash has drawn" per WINDOW rather than per section, without recomputing geometry it has
+     already baked once here. */
   sections: readonly SectionRange[];
+  /* `groupRects[i]` is `sections[i]`'s own scroll window — the measured card/row rect its pieces
+     were assigned against, or the section's own `{top, height}` when no subdivision applied. Kept
+     as its own array, index-aligned with `sections`, rather than folded into `SectionRange` itself:
+     every existing caller of `sectionProgressAt`/`drawnLength` already takes a rects array and a
+     ranges array as two separate parameters (see those functions' own signatures, unchanged by this
+     addition), so a synthetic test can go on constructing hand-picked ranges without also having to
+     invent a rect for each one. */
+  groupRects: readonly SectionRect[];
   /* ONE PIECE PER connector and per motif, in draw order, over the SAME cumulative scale as
      `length`/`sections` — the fix for the finding that supersedes the previous architecture:
      `stroke-dasharray` restarts at every `M` subpath, so a single dash driving a `d` that holds 19
@@ -59,17 +76,44 @@ export type ThreadLine = {
   pieces: readonly ThreadPiece[];
 };
 
+/* One entry per GROUP now, not strictly one per THREAD_ID section — see `ThreadLine.sections`'s own
+   header for why that generalisation is backward compatible with every caller that never asks for a
+   subdivision. */
 export type SectionRange = {
   id: Exclude<ThreadId, "not-found">;
   start: number;
   end: number;
-  /* The length of this section's own LAST piece — always a connector (every section ends with one
-     more connector than it has motifs). Needed only for the 75%/25% crossing rule (`drawnLength`
-     below): the owner's anchor is stated as a fraction of THIS piece, not of the section as a
-     whole, so the section-level progress fraction that reproduces it depends on how much of the
-     section's own total length that one piece is. */
+  /* The length of this GROUP's own LAST piece. For an un-split section this is always a connector
+     (every section ends with one more connector than it has motifs), matching this field's original
+     meaning exactly; for a group formed by a card/row split, the group's own last piece can be
+     whichever piece (connector or motif) happens to fall before the geometry crosses into the next
+     card or row. Needed only for the 75%/25% crossing rule (`drawnLength` below): the owner's anchor
+     is stated as a fraction of THIS piece, not of the group as a whole, so the group-level progress
+     fraction that reproduces it depends on how much of the group's own total length that one piece
+     is. */
   lastPieceLength: number;
 };
+
+/* A group's own scroll window, in the SAME page-absolute pixel space every `MeasuredSection` and
+   `Rect` here already uses. Shares its shape with `MeasuredSection`'s own `top`/`height` fields
+   (see that type's comment in `thread-warp.ts`) but is declared fresh rather than importing it, so
+   this stays the minimal shape the progress-ramp functions below actually read — neither a card's
+   `cardLeft`/`cardWidth` nor an x-axis at all ever enters a vertical scroll calculation. */
+export type SectionRect = { top: number; height: number };
+
+/* One real card/row rect per placement WITHIN a section — `event-info` and `family` hand in their
+   two `.mounted-sheet-frame__leaf` rects, `celebrations` hands in one rect per `[data-thread-row]`
+   ritual row, page-absolute, top-to-bottom in DOM order (which is also draw order: a stacked pair's
+   leaves and a ritual list's rows both render top-to-bottom in the document regardless of whether
+   CSS currently lays them out side by side). A section absent from this map, or present with fewer
+   than two rects, takes no split — the section's own whole rect is used instead, precisely today's
+   behaviour (`threadLine`'s own `windowRects` fallback). Kept generic over EVERY section rather than
+   naming `event-info`/`family`/`celebrations` in the type itself: the measuring caller
+   (`page-thread.tsx`) is the one that knows which sections actually have a stackable pair or a row
+   list this band, and a section this page never subdivides simply never appears here. */
+export type SectionSubdivisions = Partial<
+  Record<Exclude<ThreadId, "not-found">, readonly SectionRect[]>
+>;
 
 export type ThreadPiece = {
   id: Exclude<ThreadId, "not-found">;
@@ -402,6 +446,54 @@ function paramAtLength(seg: CubicSeg, targetLength: number): number {
   return 1;
 }
 
+/* The single point representing "where a piece's own drawn geometry sits", for the card/ritual-row
+   grouping below -- the point at HALF this piece's own arc length, found by walking its cubic chain
+   (reusing `cubicLength`/`paramAtLength`'s own sampling, never a second curve-measuring method) and
+   splitting the one segment the target falls inside. A whole-chain midpoint rather than either
+   endpoint: a connector's own start and end already belong to the motifs either side of it (the
+   join snap earlier in `threadLine` proves as much), so an endpoint would just re-derive the
+   NEIGHBOUR's own group and never let a long connector be judged by where the bulk of ITS OWN ink
+   actually falls. The final segment's own last point covers the pathological empty-chain / zero-
+   length case (never true of a real piece) the same defensive way `trimChainStart` does below. */
+function pointAtChainLength(segments: CubicSeg[], targetLength: number): Point {
+  let remaining = targetLength;
+  for (let index = 0; index < segments.length; index++) {
+    const seg = segments[index];
+    const length = cubicLength(seg.p0, seg.p1, seg.p2, seg.p3);
+    if (length >= remaining || index === segments.length - 1) {
+      const t = paramAtLength(seg, Math.min(remaining, length));
+      return pointOnCubic(seg.p0, seg.p1, seg.p2, seg.p3, t);
+    }
+    remaining -= length;
+  }
+  return { x: 0, y: 0 };
+}
+
+/* Which of a section's own measured card/row rects a y-coordinate falls inside -- `rects` is always
+   top-to-bottom in page-absolute pixels (`SectionSubdivisions`'s own header), so containment is a
+   plain range test. A point that lands in the GAP between two cards, or past the first/last rect's
+   own edge (a connector's own drawn curve routinely overshoots into a card's padding before turning
+   toward the next motif), takes the NEAREST rect by clamped distance rather than defaulting to index
+   0 -- the nearest rect is still the card or row whose window this piece is about to enter or has
+   just left, where index 0 would wrongly pull a late piece's assignment back to the first card. */
+function assignRectIndex(y: number, rects: readonly SectionRect[]): number {
+  for (let index = 0; index < rects.length; index++) {
+    const rect = rects[index];
+    if (y >= rect.top && y < rect.top + rect.height) return index;
+  }
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  rects.forEach((rect, index) => {
+    const distance =
+      y < rect.top ? rect.top - y : Math.max(0, y - (rect.top + rect.height));
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+  return bestIndex;
+}
+
 /* Drops `trimLength` of arc from the START of a cubic chain: splits the one segment the cut falls
    inside and discards every whole segment before it. A trim fraction sane enough to leave a
    recognisable motif never reaches the "consumes the whole chain" branch below; it exists only so
@@ -460,6 +552,7 @@ export function threadLine(
   band: BandId,
   sections: MeasuredSection[],
   anchors?: Partial<Record<Exclude<ThreadId, "not-found">, SectionAnchors>>,
+  subdivisions?: SectionSubdivisions,
 ): ThreadLine {
   if (sections.length !== THREAD_IDS.length) {
     throw new Error(
@@ -515,46 +608,96 @@ export function threadLine(
     thisGroup[lastIndex] = withLastPoint(thisGroup[lastIndex], boundary);
   }
 
-  /* ONE PIECE PER GROUP ENTRY. `perSection[i]` is already `[connector, motif, connector, motif,
-     ..., connector]` (`k` even = connector, `k` odd = the `k/2`-th placement's motif — the same
-     indexing `bakedMotifs`/`connectors.forEach` above builds it with), so labelling by parity needs
-     no second pass over the geometry. Boundaries are read off these SAME groups the `d` above is
-     built from, section by section, in THREAD_IDS order -- never sampled from the finished string,
-     which would be measuring the output rather than the thing that produced it. Summing every
-     piece's own sampled length and accumulating is the same arithmetic `pathLength` would do over
-     the concatenated `d` (each curve's chord-sum contributes once either way, and `M` contributes
-     none), so `length` below equals the cumulative total by construction rather than by a second,
-     potentially-drifting measurement -- and a section's own range is just its first and last
-     piece's own bounds, never independently re-summed. */
+  /* ONE PIECE PER GROUP ENTRY, and (new) one GROUP per contiguous run of a section's own pieces that
+     share a single measured card or ritual row. `perSection[i]` is already `[connector, motif,
+     connector, motif, ..., connector]` (`k` even = connector, `k` odd = the `k/2`-th placement's
+     motif — the same indexing `bakedMotifs`/`connectors.forEach` above builds it with), so labelling
+     by parity needs no second pass over the geometry. Boundaries are read off these SAME groups the
+     `d` above is built from, section by section, in THREAD_IDS order -- never sampled from the
+     finished string, which would be measuring the output rather than the thing that produced it.
+     Summing every piece's own sampled length and accumulating is the same arithmetic `pathLength`
+     would do over the concatenated `d` (each curve's chord-sum contributes once either way, and `M`
+     contributes none), so `length` below equals the cumulative total by construction rather than by
+     a second, potentially-drifting measurement.
+
+     A GROUP is a run of whole pieces, never a fragment of one -- the owner's own words describe
+     pieces being SEQUENCED within a group, by length, exactly as they already are within a section,
+     which is only true if grouping never cuts a piece in two. Each piece is assigned a single window
+     rect by where the point at ITS OWN arc-length midpoint falls (`pointAtChainLength`/
+     `assignRectIndex` above); a group boundary opens wherever that assignment moves to a rect further
+     down the section than the current group's own rect -- clamped with `Math.max` against the
+     current group's own rect index so a piece whose midpoint reads slightly EARLIER than its
+     predecessor's (measurement noise at a card's edge, or a connector whose own midpoint sits before
+     the motif it is leading into) can never re-open an earlier group or split a run into more pieces
+     than there are rects. This is also why the ordering `event-info`'s own table describes falls out
+     for free: `rings` sits inside card 1's own rect, so its leading connector (whose midpoint sits
+     even earlier) reads the same rect and joins it; the connector leaving `rings` toward `knot`
+     crosses into card 2's own rect partway along its length, so ITS midpoint already reads card 2 and
+     the group closes right there, one piece early -- `knot` and its own trailing connector then join
+     that second group by the same rule. */
   const pieces: ThreadPiece[] = [];
+  const groups: SectionRange[] = [];
+  const groupRects: SectionRect[] = [];
   let cursor = 0;
   THREAD_IDS.forEach((id, index) => {
     const group = perSection[index];
     const placements = MOTIF_PLACEMENTS[band][id];
+    const to = sections[index];
+    const sectionRect: SectionRect = { top: to.top, height: to.height };
+    const ownSubdivision = subdivisions?.[id];
+    const windowRects: readonly SectionRect[] =
+      ownSubdivision !== undefined && ownSubdivision.length >= 2
+        ? ownSubdivision
+        : [sectionRect];
+
     let motifIndex = 0;
+    let rectIndex = 0;
+    let groupStart = cursor;
+    let groupLastLength = 0;
+
+    function closeGroup(end: number) {
+      groups.push({
+        id,
+        start: groupStart,
+        end,
+        lastPieceLength: groupLastLength,
+      });
+      groupRects.push(windowRects[rectIndex]);
+    }
+
     group.forEach((pieceD, k) => {
       const length = pathLength(pieceD);
       const kind: ThreadPiece["kind"] =
         k % 2 === 1 ? placements[motifIndex++].motif : "connector";
-      pieces.push({ id, kind, start: cursor, end: cursor + length });
-      cursor += length;
-    });
-  });
+      const pieceStart = cursor;
+      const pieceEnd = cursor + length;
+      pieces.push({ id, kind, start: pieceStart, end: pieceEnd });
 
-  const sectionRanges: SectionRange[] = THREAD_IDS.map((id) => {
-    const ownPieces = pieces.filter((piece) => piece.id === id);
-    const first = ownPieces[0];
-    const last = ownPieces[ownPieces.length - 1];
-    return {
-      id,
-      start: first.start,
-      end: last.end,
-      lastPieceLength: last.end - last.start,
-    };
+      if (windowRects.length > 1) {
+        const midpoint = pointAtChainLength(
+          parseCubicChain(pieceD),
+          length / 2,
+        );
+        const assignedIndex = Math.max(
+          rectIndex,
+          assignRectIndex(midpoint.y, windowRects),
+        );
+        if (assignedIndex !== rectIndex) {
+          closeGroup(pieceStart);
+          rectIndex = assignedIndex;
+          groupStart = pieceStart;
+        }
+      }
+
+      groupLastLength = length;
+      cursor = pieceEnd;
+    });
+
+    closeGroup(cursor);
   });
 
   const d = perSection.flat().join(" ");
-  return { d, length: cursor, sections: sectionRanges, pieces };
+  return { d, length: cursor, sections: groups, groupRects, pieces };
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -564,11 +707,6 @@ export function threadLine(
    falls, so every section crept forward at once instead of drawing in the order the reader reaches
    them (the owner's review, `session.md` 2026-09-27). This is a MAPPING fix only: still one path,
    one dash, one number -- only the function producing that number changes. */
-
-/* Structurally identical to `MeasuredSection`'s `top`/`height` -- kept as its own minimal type
-   rather than importing `MeasuredSection` so this stays a pure function over the two numbers it
-   actually needs, with no dependency on `thread-warp.ts`'s card fields it never reads. */
-export type SectionRect = { top: number; height: number };
 
 export function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));

@@ -19,6 +19,8 @@ import {
   pieceProgress,
   type SectionAnchors,
   type SectionRange,
+  type SectionRect,
+  type SectionSubdivisions,
   type ThreadPiece,
   threadLine,
 } from "./thread-line";
@@ -218,6 +220,55 @@ function measureSections(
   return { sections, sectionEls };
 }
 
+/* THE OWNER'S CARD/ROW SPLIT (`session.md` 2026-09-28): a stacked pair is two cards, not one window,
+   and a long scrolling list of ritual rows is several rows, not one. `event-info` and `family` are
+   both `<MountedPair>` (`components/layout/mounted-pair.tsx`), which always renders exactly two
+   `.mounted-sheet-frame__leaf` elements regardless of whether CSS currently lays them out stacked or
+   side by side -- so querying that class costs nothing extra to gate on layout, and reading each
+   leaf's own top tells `threadLine` which piece belongs with which card without this file ever
+   asking whether the pair happens to be stacked this band. `celebrations` carries no such class (it
+   is a single tall `<MountedSheet>`, not a pair), so its six ritual rows are found by
+   `[data-thread-row]` -- the one attribute this task adds, on `<li>` in `CelebrationsSection`
+   (`app/page.tsx`), because nothing else there identifies a row. Every other section returns no
+   rects at all, which `threadLine` already reads as "no split" (`SectionSubdivisions`'s own header
+   in `thread-line.ts`) -- exactly today's single-window behaviour. */
+function leafRects(sectionEl: Element, mainRect: DOMRect): Rect[] {
+  return Array.from(
+    sectionEl.querySelectorAll(".mounted-sheet-frame__leaf"),
+  ).map((leaf) => rectRelativeTo(leaf.getBoundingClientRect(), mainRect));
+}
+
+function ritualRowRects(sectionEl: Element, mainRect: DOMRect): Rect[] {
+  return Array.from(sectionEl.querySelectorAll("[data-thread-row]")).map(
+    (row) => rectRelativeTo(row.getBoundingClientRect(), mainRect),
+  );
+}
+
+/* Shared by `PageThread` and `WishesWeave` (`useLayoutTriggers`'s own header explains why each
+   measures independently) -- both must derive the SAME subdivisions from the SAME rects, or their
+   two independent `threadLine` calls would chain a different `windowStart` through `celebrations`
+   and hand `wishes` two disagreeing answers for where its own crossing predecessor left off. */
+function measureSubdivisions(
+  sectionEls: readonly Element[],
+  mainRect: DOMRect,
+): SectionSubdivisions {
+  const subdivisions: Partial<
+    Record<Exclude<(typeof THREAD_IDS)[number], "not-found">, Rect[]>
+  > = {};
+  THREAD_IDS.forEach((id, index) => {
+    const el = sectionEls[index];
+    if (el === undefined) return;
+    const rects =
+      id === "event-info" || id === "family"
+        ? leafRects(el, mainRect)
+        : id === "celebrations"
+          ? ritualRowRects(el, mainRect)
+          : [];
+    if (rects.length >= 2) subdivisions[id] = rects;
+  });
+  return subdivisions;
+}
+
 /* Flemy is the bride and Sebastian is the groom by definition of the site, not by editorial copy
    that could read differently between sections — their `relationship` field is the one stable thing
    to match on (`content/family.ts`). The circular photo is the anchored ELEMENT, not the whole
@@ -302,16 +353,19 @@ function familyAnchors(
   return assigned;
 }
 
-/* How much of the WHOLE page's dash has drawn at the current scroll position -- `sectionRects` and
-   `ranges` are read once per layout change (never re-measured here) and handed in by the caller;
-   `viewportHeight` is likewise captured at that same layout instant, so a scroll frame touches no
-   DOM beyond `window.scrollY` itself. */
+/* How much of the WHOLE page's dash has drawn at the current scroll position -- `groupRects` and
+   `ranges` are `threadLine`'s own index-aligned `groupRects`/`sections` output, read once per layout
+   change (never re-measured here) and handed in by the caller; `viewportHeight` is likewise captured
+   at that same layout instant, so a scroll frame touches no DOM beyond `window.scrollY` itself. One
+   entry per GROUP now, not one per THREAD_ID section -- a stacked pair or a ritual-row list
+   contributes more than one entry, each with its OWN card/row rect, which is the whole fix this task
+   makes (`thread-line.ts`'s own header on `ThreadLine.groupRects`). */
 function pageDrawnLength(
-  sectionRects: readonly MeasuredSection[],
+  groupRects: readonly SectionRect[],
   ranges: readonly SectionRange[],
   viewportHeight: number,
 ): number {
-  return drawnLength(window.scrollY, viewportHeight, sectionRects, ranges);
+  return drawnLength(window.scrollY, viewportHeight, groupRects, ranges);
 }
 
 function applyDash(path: SVGPathElement, length: number, progress: number) {
@@ -406,8 +460,11 @@ export function PageThread() {
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
-     as `measured.sections` itself, never re-measured on scroll. */
-  const sectionsRef = useRef<MeasuredSection[]>([]);
+     as `measured.sections` itself, never re-measured on scroll. `groupRectsRef` is `threadLine`'s own
+     per-GROUP window rects (a stacked pair's own two card rects, a ritual list's own row rects, or a
+     section's whole rect where nothing splits it) -- the card/row split this task adds, index-aligned
+     with `rangesRef`, never the whole-section rects `measured.sections` itself carries. */
+  const groupRectsRef = useRef<readonly SectionRect[]>([]);
   const rangesRef = useRef<readonly SectionRange[]>([]);
   const viewportHeightRef = useRef(0);
 
@@ -442,12 +499,14 @@ export function PageThread() {
               mainRect,
             ),
           };
+    const subdivisions = measureSubdivisions(measured.sectionEls, mainRect);
 
     const {
       d,
       sections: ranges,
+      groupRects,
       pieces,
-    } = threadLine(band, measured.sections, anchors);
+    } = threadLine(band, measured.sections, anchors, subdivisions);
     const range = subpathRange(band, "wishes");
     const subpaths = splitSubpaths(d);
     // `wishes` is always last in both `subpaths` and `pieces` (THREAD_IDS order), so the main
@@ -462,7 +521,7 @@ export function PageThread() {
       pathsRef.current[index]?.setAttribute("d", pieceD);
     });
     piecesRef.current = trunkPieces;
-    sectionsRef.current = measured.sections;
+    groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
     fallbackSvg.style.display = "none";
@@ -471,7 +530,7 @@ export function PageThread() {
       clearPieceDashes(pathsRef.current);
     } else {
       const drawn = pageDrawnLength(
-        sectionsRef.current,
+        groupRectsRef.current,
         rangesRef.current,
         viewportHeightRef.current,
       );
@@ -489,7 +548,7 @@ export function PageThread() {
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
         const drawn = pageDrawnLength(
-          sectionsRef.current,
+          groupRectsRef.current,
           rangesRef.current,
           viewportHeightRef.current,
         );
@@ -591,14 +650,19 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
-     each `WishesWeave` measures independently (see the header comment), so it keeps its own. */
-  const sectionsRef = useRef<MeasuredSection[]>([]);
+     each `WishesWeave` measures independently (see the header comment), so it keeps its own.
+     `groupRectsRef` is `threadLine`'s own per-GROUP rects, exactly like `PageThread`'s -- `wishes`
+     itself never splits, but the CHAIN leading up to it (through `celebrations`'s own groups) must
+     be built from the SAME measured subdivisions `PageThread` uses, or the two components would hand
+     `wishes` two different answers for where its own crossing predecessor left off
+     (`measureSubdivisions`'s own header). */
+  const groupRectsRef = useRef<readonly SectionRect[]>([]);
   const rangesRef = useRef<readonly SectionRange[]>([]);
   const viewportHeightRef = useRef(0);
 
   function reveal() {
     const pageDrawn = pageDrawnLength(
-      sectionsRef.current,
+      groupRectsRef.current,
       rangesRef.current,
       viewportHeightRef.current,
     );
@@ -635,7 +699,13 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
       `${cardBox.left} ${cardBox.top} ${cardBox.width} ${cardBox.height}`,
     );
 
-    const { sections: ranges, pieces, d } = threadLine(band, measured.sections);
+    const subdivisions = measureSubdivisions(measured.sectionEls, mainRect);
+    const {
+      sections: ranges,
+      groupRects,
+      pieces,
+      d,
+    } = threadLine(band, measured.sections, undefined, subdivisions);
     const range = subpathRange(band, "wishes");
     const subpaths = splitSubpaths(d);
     const wishesSubpaths = subpaths.slice(range.start, range.end);
@@ -650,7 +720,7 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     // wishes' own local arc length because it was reasoning about ONE combined dash.
     piecesRef.current = wishesPieces;
 
-    sectionsRef.current = measured.sections;
+    groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
     reveal();
