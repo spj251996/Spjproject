@@ -1,6 +1,5 @@
 import type { ComponentType } from "react";
 import celebrations from "@/app/celebrations.module.css";
-import "@/app/contact.css";
 import { contactFit } from "@/app/contact-fit";
 import "@/app/event-info.css";
 import { eventInfoFit } from "@/app/event-info-fit";
@@ -455,7 +454,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
                 href={segment.mapUrl}
                 mark={<MapIcon size={24} />}
               >
-                Map
+                Meet us here
               </ButtonAction>
             )}
           </div>
@@ -517,13 +516,6 @@ function whatsAppHref(phone: string) {
   return `https://wa.me/${phone.replace(/^\+/, "")}`;
 }
 
-/* The number is spaced for reading, never stored that way — see `ContactPerson.phone` for the
-   one canonical form both hrefs derive from. */
-function readableNumber(phone: string) {
-  const match = phone.match(/^(\+\d{2})(\d{5})(\d{5})$/);
-  return match === null ? phone : `${match[1]} ${match[2]} ${match[3]}`;
-}
-
 function ContactPlate({ person }: { person: ContactPerson }) {
   return (
     <div className="flex flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:flex-1">
@@ -541,18 +533,11 @@ function ContactPlate({ person }: { person: ContactPerson }) {
       <p className="-mt-space-3xs type-caption-italic text-ink-muted">
         {person.relationship}
       </p>
-      <p
-        className="type-body text-ink mt-space-2xs [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-xs"
-        data-contact-number
-      >
-        {readableNumber(person.phone)}
-      </p>
       {/* Always one column, never side by side: each action carries a mark as well as a label, so a
           side-by-side pair is wide enough to crowd a narrow plate, and one column keeps both
           targets the same width. */}
       {/* Flush, with the wider gap above: each target is 44px around a 28px mark, so 8px of
-          invisible tap area sits either side of every action, and at equal declared gaps the pair
-          and the number above it measure the same to the eye. */}
+          invisible tap area sits either side of every action. */}
       <div className="mt-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-md flex flex-col items-center gap-0 [@media(width>=64rem)_and_(orientation:landscape)]:gap-space-2xs">
         <ButtonAction
           aria-label={`Call, ${person.name}`}
@@ -597,8 +582,7 @@ function ContactMark() {
   ));
 }
 
-/* The id scopes `app/contact.css`'s selection exception; `data-contact-stack` on the inner div
-   scopes `measure:fit`'s selector — the outer `#contact` section already carries the sheet's own
+/* `data-contact-stack` on the inner div scopes `measure:fit`'s selector — the outer `#contact` section already carries the sheet's own
    padding and mount, so measuring it directly would double-count that padding against the frame's
    own addition of it. */
 export function ContactSection() {

@@ -72,7 +72,7 @@
 
   .pageRoot {
     animation: pageThreadFadeIn var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 4 + var(--duration-base) * 3) both;
+      calc(var(--duration-fast) * 3 + var(--duration-base) * 3) both;
   }
 }
 

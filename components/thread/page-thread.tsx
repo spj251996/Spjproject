@@ -383,9 +383,15 @@ function clearDash(path: SVGPathElement) {
    type 1400-1800, the thread's own fade 2000-2400 (`DESIGN.md` -> Motion -> The opening sequence).
    The draw begins as that fade completes, so this is the sequence's own end, not a value of its own.
    The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
-   multiple rather than a coined number, since a fresh design value is the owner's to set. */
-const OPENING_DRAW_DELAY = 2400;
+   multiple rather than a coined number, since a fresh design value is the owner's to set.
+   The thread's own fade no longer waits a beat after the type: the owner asked for less dead air
+   between the names appearing and the line starting, so the fade begins as the type lands. */
+const OPENING_DRAW_DELAY = 2200;
 const OPENING_DRAW_DURATION = 1200;
+
+/* The fraction of a group's last connector left undrawn as the reader arrives -- the owner's
+   75%/25% crossing rule, so the line visibly travels into the next card as they scroll on. */
+const CROSSING_HOLD_BACK = 0.25;
 
 /* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
    (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
@@ -546,16 +552,6 @@ export function PageThread() {
     }
   }
 
-  /* The scroll-derived length, read from the refs captured at the last layout. Named so the two
-     callers below can take `Math.max` against the opening draw without restating it. */
-  function currentScrollDrawn() {
-    return pageDrawnLength(
-      groupRectsRef.current,
-      rangesRef.current,
-      viewportHeightRef.current,
-    );
-  }
-
   useLayoutTriggers(measure);
 
   /* The owner's opening sequence ends with "thread starts drawing" (`DESIGN.md` -> Motion). Without
@@ -573,7 +569,13 @@ export function PageThread() {
     let startedAt = 0;
 
     const timer = window.setTimeout(() => {
-      const target = rangesRef.current[0]?.end ?? 0;
+      /* The invite stops its own last connector at 75%, exactly as every other group does, so the
+         line is already reaching toward Event Info when the reader starts scrolling. Drawing it to
+         100% here made the thread look stuck for the whole first screen of scroll -- there was
+         nothing left in the invite to draw and the next group had not opened yet. */
+      const invite = rangesRef.current[0];
+      if (invite === undefined) return;
+      const target = invite.end - CROSSING_HOLD_BACK * invite.lastPieceLength;
       if (target <= 0) return;
       const step = (now: number) => {
         if (startedAt === 0) startedAt = now;
@@ -582,7 +584,14 @@ export function PageThread() {
         applyPieceDashes(
           pathsRef.current,
           piecesRef.current,
-          Math.max(openingDrawnRef.current, currentScrollDrawn()),
+          Math.max(
+            openingDrawnRef.current,
+            pageDrawnLength(
+              groupRectsRef.current,
+              rangesRef.current,
+              viewportHeightRef.current,
+            ),
+          ),
         );
         if (t < 1) rafId = window.requestAnimationFrame(step);
       };
@@ -605,7 +614,14 @@ export function PageThread() {
         applyPieceDashes(
           pathsRef.current,
           piecesRef.current,
-          Math.max(openingDrawnRef.current, currentScrollDrawn()),
+          Math.max(
+            openingDrawnRef.current,
+            pageDrawnLength(
+              groupRectsRef.current,
+              rangesRef.current,
+              viewportHeightRef.current,
+            ),
+          ),
         );
       });
     }
