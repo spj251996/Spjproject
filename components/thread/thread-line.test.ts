@@ -5,6 +5,7 @@ import { THREAD_BANDS } from "./thread-bands.ts";
 import {
   drawnLength,
   PORTRAIT_LOOP_TRIM_FRACTION,
+  type SectionRect,
   threadLine,
 } from "./thread-line.ts";
 import { MOTIFS } from "./thread-motifs.ts";
@@ -682,16 +683,15 @@ test("length is a positive number roughly on the order of the page's own pixel h
    drawnLength — the piecewise, per-section progress map that replaces one global
    `scrollY / (scrollHeight - innerHeight)`. Synthetic sections and ranges below, never real
    THREAD_IDS/measured data, so each behaviour (not-reached, held-past, the 60% completion, a
-   section no taller than the viewport, the invite's own clamped start, the page's own end) can be
-   pinned to hand-picked numbers instead of whatever a real layout happens to produce.
+   section no taller than the viewport, the invite's own start, the page's own end) can be pinned to
+   hand-picked numbers instead of whatever a real layout happens to produce.
 
-   A section's window is now its PASSAGE THROUGH THE VIEWPORT (`top - viewportHeight` to
-   `top + height`), never zero-width regardless of the section's own height — see
-   `sectionProgress`'s header comment in `thread-line.ts` for why. That widened window means a
-   short section's own ramp can now overlap the NEXT section's own opening by a small margin; most
-   tests below place their sections far enough apart (or use a single section) to isolate the
-   behaviour under test from that overlap, which is covered in its own right by the monotonicity
-   sweep. */
+   OWNER DECISION, 2026-09-28: NO LEAD-IN. A section's own window is exactly `[top, top + height]` —
+   see `sectionProgress`'s header comment in `thread-line.ts` for why the previous
+   viewport-wide-lead-in window was replaced (it was why two adjacent one-screen sections always
+   drew at once). Sections tile the page contiguously, so these windows now share only their
+   boundary point and never overlap — asserted directly, across all three real bands, in "adjacent
+   sections' windows never overlap..." below, rather than left as an assumption. */
 
 const RANGE_IDS = THREAD_IDS; // borrow real ids only to satisfy the type; positional, not semantic.
 
@@ -739,10 +739,10 @@ test("drawnLength: a section fully scrolled past contributes its full range and 
   }
 });
 
-test("drawnLength: completes at 60% of a section's own passage window when the page has room past it, holds for the remaining 40%", () => {
-  // Positioned away from both edges (top isn't 0, and a large section follows it), so neither the
-  // windowStart clamp nor the maxScroll cap on drawEnd applies here -- this isolates the plain
-  // 60%-of-window ramp, each of the two boundary rules having its own dedicated test.
+test("drawnLength: completes at 60% of a section's own window -- exactly [top, top + height], no lead-in -- and holds for the remaining 40%", () => {
+  // Positioned away from the page's own start (top isn't 0) and followed by a much larger section,
+  // so neither the windowStart clamp nor the maxScroll cap on drawEnd applies here -- this isolates
+  // the plain 60%-of-window ramp on its own.
   const sectionRects = [
     { top: 1000, height: 1000 },
     { top: 2000, height: 5000 },
@@ -752,46 +752,52 @@ test("drawnLength: completes at 60% of a section's own passage window when the p
     { id: RANGE_IDS[1], start: 100, end: 300 },
   ];
   const viewportHeight = 500;
-  // window [500, 2000] (height 1000 + viewport 500), draw-complete at 500 + 0.6*1500 = 1400.
-  // B's own window opens at 1500, so 1450 stays inside the gap before B contributes anything.
+  // window [1000, 2000] (the section's own extent, no viewport-wide lead-in), draw-complete at
+  // 1000 + 0.6*1000 = 1600. B's own window opens at exactly 2000, where A's own ends, so 1900 still
+  // reads A fully drawn and B untouched.
 
-  assert.equal(drawnLength(500, viewportHeight, sectionRects, ranges), 0);
+  // 750 sits inside the OLD lead-in window ([500, 2000]) but before this section's own top -- under
+  // the previous windowStart (`top - viewportHeight` = 500) this read 27.8% drawn; removing the
+  // lead-in is exactly what pulls it back to 0 until scrollY actually reaches the section's own top.
+  assert.equal(drawnLength(750, viewportHeight, sectionRects, ranges), 0);
+  assert.equal(drawnLength(1000, viewportHeight, sectionRects, ranges), 0);
   assert.ok(
-    Math.abs(drawnLength(950, viewportHeight, sectionRects, ranges) - 50) <
+    Math.abs(drawnLength(1300, viewportHeight, sectionRects, ranges) - 50) <
       0.01,
     "halfway to the 60% mark should read half-drawn",
   );
-  assert.equal(drawnLength(1400, viewportHeight, sectionRects, ranges), 100);
-  assert.equal(drawnLength(1450, viewportHeight, sectionRects, ranges), 100);
+  assert.equal(drawnLength(1600, viewportHeight, sectionRects, ranges), 100);
+  assert.equal(drawnLength(1900, viewportHeight, sectionRects, ranges), 100);
 });
 
-test("drawnLength: a section no taller than the viewport now draws gradually, never in one step", () => {
-  // height 200 < viewport 500 -- Task 2's original window (`height - viewportHeight`) was negative
-  // here and collapsed to an instantaneous pop at scrollY === top (1000). The passage-through
-  // window is 200 + 500 = 700 wide, starting at top - viewportHeight (500): as the only (and
-  // therefore last) section, its own 60% mark (920) falls past maxScroll (700), so drawEnd is
-  // capped there -- the ramp still spans a real 200px of scroll (500 to 700), not one
-  // instantaneous step, which is the entire point of this fix.
+test("drawnLength: a LAST section no taller than the viewport has no room for a gradual ramp under the no-lead-in window, and pops complete at exactly maxScroll rather than sticking at 0 or reading complete from page load", () => {
+  // height 200 < viewport 500, and this is the ONLY (so also the LAST) section: its own window
+  // ([1000, 1200], no lead-in) opens at rect.top=1000, past maxScroll (700 = 1200-500) -- the last
+  // reachable scrollY. `windowStart` clamps to `maxScroll` for exactly this reason
+  // (`sectionProgress`'s own header comment in thread-line.ts): without the clamp this would either
+  // compare scrollY against an unreachable windowStart and stay stuck at 0 forever, or -- comparing
+  // a drawEnd already capped to maxScroll against that same unreachable windowStart -- read as
+  // already-complete from scrollY 0. This is a genuine consequence of removing the lead-in for a
+  // section this short at the very end of the page, not a bug to patch here -- see task-1-report.md.
   const sectionRects = [{ top: 1000, height: 200 }];
   const ranges = [{ id: RANGE_IDS[0], start: 0, end: 60 }];
   const viewportHeight = 500; // maxScroll = 1200 - 500 = 700.
 
   assert.equal(drawnLength(499, viewportHeight, sectionRects, ranges), 0);
   assert.equal(drawnLength(500, viewportHeight, sectionRects, ranges), 0);
-  assert.equal(drawnLength(600, viewportHeight, sectionRects, ranges), 30);
+  assert.equal(drawnLength(600, viewportHeight, sectionRects, ranges), 0);
   assert.equal(drawnLength(700, viewportHeight, sectionRects, ranges), 60);
   assert.equal(drawnLength(900, viewportHeight, sectionRects, ranges), 60);
 });
 
 test("drawnLength: the invite's own real shape -- top 0, one screen tall -- has not started at scrollY 0, and draws gradually rather than popping", () => {
-  // windowStart would be 0 - 700 = -700; scrollY can never be negative, so it clamps to 0 --
-  // otherwise the invite would read partway drawn the instant the page loads, contradicting "at
-  // scrollY 0 the invite's thread has not started" (the opening sequence's own fade already
-  // establishes the static starting state at hand-off; scroll drawing has to build from there, not
-  // from a head start baked into a window that started before the page existed). The second section
-  // sits far down the (synthetic) page -- not contiguous with the first -- purely so its own window
-  // opens well past every scroll position this test samples, keeping the invite's own ramp isolated
-  // from it and from the maxScroll cap.
+  // windowStart is exactly rect.top (0), no lead-in to clamp -- "at scrollY 0 the invite's thread
+  // has not started" now holds as a direct consequence of the window's own definition, not a
+  // clamp on a window that would otherwise have opened before the page existed (the opening
+  // sequence's own fade already establishes the static starting state at hand-off; scroll drawing
+  // has to build from there). The second section sits far down the (synthetic) page -- not
+  // contiguous with the first -- purely so its own window opens well past every scroll position
+  // this test samples, keeping the invite's own ramp isolated from it and from the maxScroll cap.
   const sectionRects = [
     { top: 0, height: 700 },
     { top: 100000, height: 5000 },
@@ -882,4 +888,96 @@ test("drawnLength: at scrollY 0 nothing has started; at the page's max scroll ev
       drawnLength(maxScroll, viewportHeight, sections, ranges) - length,
     ) < 0.01,
   );
+});
+
+/* ------------------------------------------------------------------------------------------------
+   NO LEAD-IN: at most one section is ever mid-ramp, and adjacent windows never overlap. This is
+   the property the owner actually asked for (session.md, 2026-09-28) and the reason this task
+   exists -- everything above pins individual numbers; this sweeps the real page shape at every
+   band and checks the property directly, isolating each section's own contribution rather than
+   reading only the summed total `drawnLength` returns. */
+
+/* Zeroing every OTHER section's own range width makes `drawnLength`'s per-section term the only
+   non-zero addend (`total += progress * (range.end - range.start)`), so dividing by the one
+   section's own (arbitrary, fixed) width recovers `sectionProgress`'s own 0-1 value exactly --
+   without needing to export it, and while still driving `pageMaxScroll` off the REAL, unmodified
+   `sectionRects`, so the maxScroll every section is judged against matches what the page itself
+   would compute. */
+const ISOLATION_WIDTH = 100;
+
+function isolatedProgress(
+  sectionRects: readonly SectionRect[],
+  ids: readonly (typeof THREAD_IDS)[number][],
+  index: number,
+  scrollY: number,
+  viewportHeight: number,
+): number {
+  const ranges = ids.map((id, i) => ({
+    id,
+    start: 0,
+    end: i === index ? ISOLATION_WIDTH : 0,
+  }));
+  return (
+    drawnLength(scrollY, viewportHeight, sectionRects, ranges) / ISOLATION_WIDTH
+  );
+}
+
+test("adjacent sections' windows never overlap, and at most one section is mid-ramp at any scroll position -- swept across all three real bands", () => {
+  for (const band of ["tall", "upright", "wide"] as const) {
+    const sections = measuredSections(band);
+    const viewportBox = THREAD_BANDS.find((b) => b.id === band)?.box;
+    if (viewportBox === undefined) throw new Error(`unknown band ${band}`);
+    const viewportHeight = viewportBox.height;
+    const totalHeight = sections.reduce((sum, s) => sum + s.height, 0);
+    const maxScroll = Math.max(totalHeight - viewportHeight, 0);
+    const step = 4;
+
+    for (let scrollY = 0; scrollY <= maxScroll; scrollY += step) {
+      let midRampCount = 0;
+      for (let i = 0; i < sections.length; i++) {
+        const progress = isolatedProgress(
+          sections,
+          THREAD_IDS,
+          i,
+          scrollY,
+          viewportHeight,
+        );
+        if (progress > 1e-6 && progress < 1 - 1e-6) midRampCount++;
+      }
+      assert.ok(
+        midRampCount <= 1,
+        `${band} @ scrollY=${scrollY}: expected at most one section mid-ramp, found ${midRampCount}`,
+      );
+    }
+
+    // Stated directly, not just inferred from the sweep above: the scrollY at which section i's
+    // own progress FIRST reaches 1 must not exceed (beyond one sweep step's resolution) the scrollY
+    // at which section i+1's own progress first becomes non-zero -- section i+1's window has not
+    // opened while section i is still ramping.
+    function firstScrollYAt(index: number, threshold: number): number {
+      for (let scrollY = 0; scrollY <= maxScroll; scrollY += step) {
+        if (
+          isolatedProgress(
+            sections,
+            THREAD_IDS,
+            index,
+            scrollY,
+            viewportHeight,
+          ) >= threshold
+        ) {
+          return scrollY;
+        }
+      }
+      return maxScroll;
+    }
+
+    for (let i = 0; i < sections.length - 1; i++) {
+      const completes = firstScrollYAt(i, 1 - 1e-6);
+      const nextStarts = firstScrollYAt(i + 1, 1e-6);
+      assert.ok(
+        completes <= nextStarts + step,
+        `${band}: section ${i} (${THREAD_IDS[i]}) completes at ${completes}, but section ${i + 1} (${THREAD_IDS[i + 1]}) starts at ${nextStarts} -- windows overlap`,
+      );
+    }
+  }
 });
