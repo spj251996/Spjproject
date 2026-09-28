@@ -42,7 +42,7 @@ const discClassName = [
   /* Scaled here rather than by raising each caller's `size`: `IconBase` derives its box from the
      drawing's own DIAGONAL, so equal `size` values across different marks do not give equal
      rendered boxes, and a uniform scale keeps each mark's aspect while filling more of the disc. */
-  "[&_svg]:[transform:scale(1.9)]",
+  "[&_svg]:[transform:scale(1.65)]",
 ].join(" ");
 
 type ButtonActionProps = {
