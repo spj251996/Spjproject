@@ -25,7 +25,7 @@
 
 import { authoredCard } from "./thread-authored-layout.ts";
 import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
-import type { SectionBox, ThreadId } from "./thread-geometry.ts";
+import type { MotifId, SectionBox, ThreadId } from "./thread-geometry.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 import {
   MOTIF_PLACEMENTS,
@@ -47,11 +47,35 @@ export type ThreadLine = {
      groups `d` is built from, never re-derived by sampling the finished path. This is what lets
      `page-thread.tsx` map a section's own scroll progress onto "how much of the whole dash has
      drawn" without recomputing geometry it has already baked once here. */
-  sections: readonly {
-    id: Exclude<ThreadId, "not-found">;
-    start: number;
-    end: number;
-  }[];
+  sections: readonly SectionRange[];
+  /* ONE PIECE PER connector and per motif, in draw order, over the SAME cumulative scale as
+     `length`/`sections` — the fix for the finding that supersedes the previous architecture:
+     `stroke-dasharray` restarts at every `M` subpath, so a single dash driving a `d` that holds 19
+     subpaths (the main path, `wishes` excluded — its own weave copy carries the other 3) produced
+     19 simultaneous draw heads rather than one (`task-1-report.md`). `page-thread.tsx` and
+     `WishesWeave` give each piece its OWN `<path>` and its OWN dash, computed from its own
+     `[start, end)` here — contiguous and disjoint by construction, which is what makes "exactly one
+     piece mid-draw" true without a second rule to keep in sync (see `pieceProgress` below). */
+  pieces: readonly ThreadPiece[];
+};
+
+export type SectionRange = {
+  id: Exclude<ThreadId, "not-found">;
+  start: number;
+  end: number;
+  /* The length of this section's own LAST piece — always a connector (every section ends with one
+     more connector than it has motifs). Needed only for the 75%/25% crossing rule (`drawnLength`
+     below): the owner's anchor is stated as a fraction of THIS piece, not of the section as a
+     whole, so the section-level progress fraction that reproduces it depends on how much of the
+     section's own total length that one piece is. */
+  lastPieceLength: number;
+};
+
+export type ThreadPiece = {
+  id: Exclude<ThreadId, "not-found">;
+  kind: "connector" | MotifId;
+  start: number;
+  end: number;
 };
 
 /* One optional anchor per placement, in the SAME order as `MOTIF_PLACEMENTS[band][id]` — `undefined`
@@ -491,22 +515,46 @@ export function threadLine(
     thisGroup[lastIndex] = withLastPoint(thisGroup[lastIndex], boundary);
   }
 
-  /* Boundaries are read off the SAME groups the `d` above is built from, section by section, in
-     THREAD_IDS order -- never sampled from the finished string, which would be measuring the
-     output rather than the thing that produced it. Summing each section's own sampled length and
-     accumulating is the same arithmetic `pathLength` would do over the concatenated `d` (each
-     curve's chord-sum contributes once either way), so `length` below equals the cumulative total
-     by construction rather than by a second, potentially-drifting measurement. */
-  const sectionLengths = perSection.map((group) => pathLength(group.join(" ")));
+  /* ONE PIECE PER GROUP ENTRY. `perSection[i]` is already `[connector, motif, connector, motif,
+     ..., connector]` (`k` even = connector, `k` odd = the `k/2`-th placement's motif — the same
+     indexing `bakedMotifs`/`connectors.forEach` above builds it with), so labelling by parity needs
+     no second pass over the geometry. Boundaries are read off these SAME groups the `d` above is
+     built from, section by section, in THREAD_IDS order -- never sampled from the finished string,
+     which would be measuring the output rather than the thing that produced it. Summing every
+     piece's own sampled length and accumulating is the same arithmetic `pathLength` would do over
+     the concatenated `d` (each curve's chord-sum contributes once either way, and `M` contributes
+     none), so `length` below equals the cumulative total by construction rather than by a second,
+     potentially-drifting measurement -- and a section's own range is just its first and last
+     piece's own bounds, never independently re-summed. */
+  const pieces: ThreadPiece[] = [];
   let cursor = 0;
-  const sectionRanges = THREAD_IDS.map((id, index) => {
-    const start = cursor;
-    cursor += sectionLengths[index];
-    return { id, start, end: cursor };
+  THREAD_IDS.forEach((id, index) => {
+    const group = perSection[index];
+    const placements = MOTIF_PLACEMENTS[band][id];
+    let motifIndex = 0;
+    group.forEach((pieceD, k) => {
+      const length = pathLength(pieceD);
+      const kind: ThreadPiece["kind"] =
+        k % 2 === 1 ? placements[motifIndex++].motif : "connector";
+      pieces.push({ id, kind, start: cursor, end: cursor + length });
+      cursor += length;
+    });
+  });
+
+  const sectionRanges: SectionRange[] = THREAD_IDS.map((id) => {
+    const ownPieces = pieces.filter((piece) => piece.id === id);
+    const first = ownPieces[0];
+    const last = ownPieces[ownPieces.length - 1];
+    return {
+      id,
+      start: first.start,
+      end: last.end,
+      lastPieceLength: last.end - last.start,
+    };
   });
 
   const d = perSection.flat().join(" ");
-  return { d, length: cursor, sections: sectionRanges };
+  return { d, length: cursor, sections: sectionRanges, pieces };
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -522,75 +570,150 @@ export function threadLine(
    actually needs, with no dependency on `thread-warp.ts`'s card fields it never reads. */
 export type SectionRect = { top: number; height: number };
 
-export type SectionRange = {
-  id: Exclude<ThreadId, "not-found">;
-  start: number;
-  end: number;
-};
+export function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
 
-/* Owner decision, `session.md` 2026-09-27: a section's thread draws over roughly the first 60% of
-   that section's own scroll window, then holds drawn for the remaining 40% -- chosen over drawing
-   across the WHOLE window (the last stretch would still be advancing while the reader is already at
-   the bottom of the card) and over a fast arrival gesture confined to the first 25%. */
-const DRAW_FRACTION = 0.6;
+/* A clamped linear ramp from `(x0, y0)` to `(x1, y1)` -- shared by every ramp below so a degenerate
+   span (`x1 <= x0`, no scroll room between the two points) has exactly one definition project-wide:
+   step from `y0` to `y1` at `x0`, never divide by a zero or negative span. */
+function lerpProgress(
+  scrollY: number,
+  x0: number,
+  x1: number,
+  y0: number,
+  y1: number,
+): number {
+  if (x1 <= x0) return scrollY >= x0 ? y1 : y0;
+  return y0 + (y1 - y0) * clamp01((scrollY - x0) / (x1 - x0));
+}
 
-/* OWNER DECISION, 2026-09-28, no lead-in: a section's own scroll window is exactly its own extent
-   in scroll-Y space -- `[rect.top, rect.top + rect.height]`, the range of `scrollY` for which the
-   viewport's own TOP edge sits somewhere inside the section. The previous window pulled its start
-   back a whole `viewportHeight` early (`rect.top - viewportHeight`) so a section no taller than the
-   viewport would still get a non-zero ramp; that lead-in is exactly what made two adjacent
-   one-screen sections' windows overlap by a full viewport, so the owner saw two sections always
-   drawing at once (the reported symptom this task exists to fix; measured on the live page at
-   `wide` 1536x695 in `task-1-report.md`: 31% of the whole thread already drawn one screen into the
-   page). Sections tile the page contiguously -- each one's `rect.top` is the previous one's
-   `rect.top + rect.height` -- so these windows now share only their boundary point and never
-   overlap, which is what `thread-line.test.ts`'s own sweep asserts directly rather than trusting as
-   a byproduct of contiguous input.
+/* THE 75%/25% CROSSING RULE, owner decision 2026-09-28, superseding this same file's earlier
+   60%-of-window/40%-hold rule (session.md, 2026-09-27) now that the dash is per-PIECE rather than
+   per-section: "the last connector of every section except wishes is 75% drawn at the moment the
+   section's top reaches the viewport's top... the remaining 25% draws as the reader scrolls on...
+   the next section's first piece waits for that 25%." In the owner's own words this is about ONE
+   piece -- the section's final connector -- not the section as a whole, so the fraction of the
+   SECTION's own total length that has drawn by `scrollY === rect.top` depends on how much of that
+   total the last piece itself is (`SectionRange.lastPieceLength`): every piece before it must
+   already be complete, plus 75% of the last one.
 
-   `drawEnd` -- the 60%-of-window mark -- is still capped at `maxScroll`, the page's own highest
-   reachable scroll position (see `pageMaxScroll` below), for the same reason as before: a section's
-   raw window can ask to draw past the point the page can actually be scrolled to.
+   `CROSSING_HOLD_FRACTION` names the piece-level fraction (0.75) the owner stated; `rampAFraction`
+   below converts it into the section-level fraction `sectionProgress` actually drives. */
+const CROSSING_HOLD_FRACTION = 0.75;
 
-   THE LAST SECTION IS THE ONE CASE THIS LEAVES GENUINELY TIGHT, NOT A BUG TO PATCH HERE. This
-   project's own last section is authored one full band viewport tall in every band (confirmed live
-   at all three bands, `task-1-report.md`), which puts its own `rect.top` at (within rounding)
-   exactly `maxScroll` -- reachable scroll runs out at the same instant this section's own window
-   would open, leaving it essentially no room to ramp before the cap on `drawEnd` catches up to it.
-   `windowStart` is clamped to `maxScroll` so this collapses to a single, well-defined step at
-   exactly `maxScroll` (below) rather than either of the two real failure modes an unclamped compare
-   would produce: comparing `scrollY` against an unreachable `windowStart` that is always greater
-   would leave the section stuck at 0 forever, while comparing a `drawEnd` already capped to
-   `maxScroll` against that same unreachable `windowStart` (without clamping the latter) would make
-   `span` negative and, under the unconditional `if (span <= 0) return 1` this project used before
-   removing the lead-in, read as already-complete from `scrollY` 0. Giving this section more room
-   would mean giving it its own lead-in -- the one thing this task removes -- so it is reported to
-   the owner in `task-1-report.md` rather than patched here. */
-function sectionProgress(
+/* Wishes is the page's own terminal stretch -- there is no "next section" waiting on its last
+   piece, and no `rect.top`-anchored crossing to aim for, so the owner exempts it explicitly ("every
+   section except wishes"). It draws across its own remaining reachable window to completion, the
+   single ramp every section used before this rule existed. */
+function terminalSectionProgress(
+  scrollY: number,
+  windowStart: number,
+  rect: SectionRect,
+  maxScroll: number,
+): { progress: number; windowEnd: number } {
+  const windowEnd = Math.min(rect.top + rect.height, maxScroll);
+  return {
+    progress: lerpProgress(scrollY, windowStart, windowEnd, 0, 1),
+    windowEnd,
+  };
+}
+
+/* THE FIRST SECTION IS THE ONE CASE THE CROSSING RULE CANNOT REACH, A CONSEQUENCE OF THE PAGE
+   HAVING A START AND NOT A BUG TO PATCH HERE (parallel to this file's own earlier documented
+   exception for the LAST section's tight window, before the crossing rule existed). The crossing
+   rule needs scroll room BEFORE a section's own top to ramp gradually through — room this file
+   gives every later section by having its PREDECESSOR finish early, before ITS own bottom, and
+   hold. `invite` has no predecessor: its own top is the page's own scroll origin (0), so
+   `windowStart === rect.top` identically and the derived-rate mechanism `crossingSectionProgress`
+   uses (ramp B's duration comes from ramp A's own measured rate) has no ramp A duration to measure
+   a rate from. Applying the crossing formula there anyway does not gracefully degrade — verified
+   by hand and left here rather than silently "fixed": with `durationA === 0`, `crossingSectionProgress`
+   also collapses `durationB` to 0 (its own guard against dividing by that same zero), so the ENTIRE
+   first section reads complete at `scrollY === 0`, before any scrolling — and because this section's
+   `windowEnd` then feeds `event-info`'s own `windowStart`, the very same collapse propagates down
+   every later section in turn, reading the WHOLE PAGE complete at scroll 0. That is a correctness
+   bug, not a matter of degree, so `invite` instead keeps this file's own PRE-crossing rule: ramp
+   across the first `FIRST_SECTION_DRAW_FRACTION` of its own window (still `[rect.top, rect.top +
+   rect.height]`, no lead-in) and hold for the rest — reported to the owner in `task-1-report.md`
+   as a deliberate, evidence-driven exception to "every section except wishes", not a silent one. */
+const FIRST_SECTION_DRAW_FRACTION = 0.6;
+
+function firstSectionProgress(
   scrollY: number,
   rect: SectionRect,
   maxScroll: number,
-): number {
+): { progress: number; windowEnd: number } {
+  // The first section has no predecessor to inherit a chained `windowStart` from -- its own window
+  // is exactly `[rect.top, rect.top + rect.height]` (the "no lead-in" rule, unchanged from before
+  // the crossing rule existed), never the page's bare scroll origin. On the real page `rect.top` IS
+  // 0 for `invite`, so this coincides with the chain's placeholder start of 0 -- but a synthetic
+  // section placed away from x=0 (this file's own tests do this deliberately, to rule out an
+  // accidental origin dependency) would otherwise ramp from the wrong point entirely.
   const windowStart = Math.min(rect.top, maxScroll);
   const windowEnd = rect.top + rect.height;
-  const rawDrawEnd = windowStart + DRAW_FRACTION * (windowEnd - windowStart);
+  const rawDrawEnd =
+    windowStart + FIRST_SECTION_DRAW_FRACTION * (windowEnd - windowStart);
   const drawEnd = Math.min(rawDrawEnd, maxScroll);
-  const span = drawEnd - windowStart;
-  // `span` collapses to zero or less in exactly two cases: the whole page fits within one viewport
-  // (`maxScroll` itself is 0, so every section's `windowStart` clamps to 0 too), or this section's
-  // own window opens at or past `maxScroll` (the last-section case the header comment above walks
-  // through). Either way there is no scroll room left to reveal it gradually, so it is read off
-  // `windowStart` as a step rather than a ramp -- already complete once `scrollY` has reached the
-  // point the window collapsed to, still 0 before it. This is what keeps the page-fits-in-one-screen
-  // case reading complete at its only reachable `scrollY` (0) exactly as before, while giving the
-  // last-section case a defined pop at `maxScroll` instead of the two failure modes above.
-  if (span <= 0) return scrollY >= windowStart ? 1 : 0;
-  const progress = (scrollY - windowStart) / span;
-  return Math.min(1, Math.max(0, progress));
+  return {
+    progress: lerpProgress(scrollY, windowStart, drawEnd, 0, 1),
+    windowEnd: drawEnd,
+  };
+}
+
+/* ONE CONSTANT DRAW SPEED (thread-length per scroll-pixel) ACROSS BOTH HALVES OF A SECTION'S OWN
+   WINDOW -- the mechanism that makes "scroll divides between a section's pieces BY LENGTH" (the
+   owner's own words) hold for the crossing piece too, as a consequence of one rule rather than a
+   second one to keep in sync with the first: ramp A (`[windowStart, rect.top]`, 0 to
+   `rampAFraction` of the section) fixes the rate, and ramp B's own duration is DERIVED from it --
+   the same rate carries the last piece through its own 75%/100% boundary, so the crossing speed and
+   the approach speed are the same number, never chosen independently.
+
+   `windowStart` is NOT this section's own `rect.top` -- it is wherever the PREVIOUS section's own
+   ramp B finished (or, for the first section, the page's own scroll origin), threaded through
+   `drawnLength`'s loop below. That chaining is what "the next section's first piece waits" reduces
+   to: the next section's ramp A cannot begin, by definition, before this one's ramp B has an
+   `windowEnd` to hand it. */
+function crossingSectionProgress(
+  scrollY: number,
+  windowStart: number,
+  rect: SectionRect,
+  range: SectionRange,
+  maxScroll: number,
+): { progress: number; windowEnd: number } {
+  const totalLength = range.end - range.start;
+  const rampAEnd = Math.min(rect.top, maxScroll);
+  // Guarded for a pathological section whose one "piece" IS the whole thing (never true of this
+  // project's real data -- every section has at least one motif, so at least two connectors --
+  // kept only so this pure function cannot divide by zero on a hand-built test input).
+  const rampAFraction =
+    totalLength > 0
+      ? clamp01(
+          (totalLength - (1 - CROSSING_HOLD_FRACTION) * range.lastPieceLength) /
+            totalLength,
+        )
+      : 1;
+  const rampBFraction = 1 - rampAFraction;
+
+  const durationA = rampAEnd - windowStart;
+  // Ramp B's duration is the SAME rate (durationA / rampAFraction thread-px per scroll-px) applied
+  // to the remaining rampBFraction of the section -- not an independently chosen window.
+  const durationB =
+    durationA > 0 && rampAFraction > 0
+      ? durationA * (rampBFraction / rampAFraction)
+      : 0;
+  const rampBEnd = Math.min(rampAEnd + durationB, maxScroll);
+
+  const progress =
+    scrollY < rampAEnd
+      ? lerpProgress(scrollY, windowStart, rampAEnd, 0, rampAFraction)
+      : lerpProgress(scrollY, rampAEnd, rampBEnd, rampAFraction, 1);
+  return { progress, windowEnd: rampBEnd };
 }
 
 /* The page's own highest reachable scrollY, read off the sections' own rects rather than trusted
    from a separately-passed page height -- sections are contiguous, so the largest `top + height`
-   among them IS the page's total content height. Needed only for the `drawEnd` cap above. */
+   among them IS the page's total content height. */
 function pageMaxScroll(
   sectionRects: readonly SectionRect[],
   viewportHeight: number,
@@ -604,30 +727,95 @@ function pageMaxScroll(
 
 /* The total drawn length of the whole page's dash at a given scroll position: each section's own
    range contributes `progress * rangeLength`, and nothing more -- a section whose window has not
-   opened yet (`sectionProgress` 0) contributes zero regardless of how far past it any LATER section
-   already is, and a section fully behind (`sectionProgress` 1) keeps its full range regardless of
-   how far the reader has since continued. Sections are contiguous in both scroll order (each one's
-   `rect.top` is the previous one's `rect.top + rect.height`) and path-length order (`threadLine`'s
-   own `sections`), so summing every section's own contribution IS the whole page's monotonic
-   progress -- there is no separate "which section is current" branch to get wrong. `sectionProgress`'s
-   own windows now share only their boundary point rather than overlapping (its header comment
-   above), so at most one term in this sum is ever strictly between 0 and its own full range at a
-   time -- asserted directly, not just assumed from non-overlap, in `thread-line.test.ts`'s own
-   sweep. */
+   opened yet contributes zero regardless of how far past it any LATER section already is, and a
+   section fully behind keeps its full range regardless of how far the reader has since continued.
+   `windowStart` threads sequentially through the loop -- each section's own ramp begins exactly
+   where the previous one's ramp B ended (or the page's own scroll origin, for the first section) --
+   which is the mechanism, not an assumption, behind "the next section's first piece waits": its
+   ramp A cannot start before `windowStart` reaches it, and `windowStart` cannot advance until the
+   previous section's crossing piece (or, for `wishes`, its own terminal ramp) has reported its own
+   `windowEnd`. */
+/* Every section's own 0-1 progress at a given scroll position, in THREAD_IDS order -- the piece
+   this file's three ramp shapes (`firstSectionProgress`/`crossingSectionProgress`/
+   `terminalSectionProgress`) share, and what `drawnLength` below sums. Exported (alongside the sum)
+   because "which sections are mid-ramp right now" is itself a testable claim -- "at most one
+   section mid-ramp" (`thread-line.test.ts`) needs to inspect EACH section's own value, not just
+   their combined total, and re-deriving that by hand-zeroing ranges in the test would only
+   reproduce these same ramp shapes a second time, with its own chance to drift from them. */
+export function sectionProgressAt(
+  scrollY: number,
+  viewportHeight: number,
+  sectionRects: readonly SectionRect[],
+  ranges: readonly SectionRange[],
+): number[] {
+  const maxScroll = pageMaxScroll(sectionRects, viewportHeight);
+  const progresses: number[] = [];
+  let windowStart = 0;
+  for (let i = 0; i < ranges.length; i++) {
+    const rect = sectionRects[i];
+    const range = ranges[i];
+    if (rect === undefined || range === undefined) {
+      progresses.push(0);
+      continue;
+    }
+    const clampedStart = Math.min(windowStart, maxScroll);
+
+    const { progress, windowEnd } =
+      range.id === "wishes"
+        ? terminalSectionProgress(scrollY, clampedStart, rect, maxScroll)
+        : i === 0
+          ? firstSectionProgress(scrollY, rect, maxScroll)
+          : crossingSectionProgress(
+              scrollY,
+              clampedStart,
+              rect,
+              range,
+              maxScroll,
+            );
+
+    progresses.push(progress);
+    windowStart = windowEnd;
+  }
+  return progresses;
+}
+
+/* The total drawn length of the whole page's dash at a given scroll position: each section's own
+   range contributes `progress * rangeLength`, and nothing more -- a section whose window has not
+   opened yet contributes zero regardless of how far past it any LATER section already is, and a
+   section fully behind keeps its full range regardless of how far the reader has since continued. */
 export function drawnLength(
   scrollY: number,
   viewportHeight: number,
   sectionRects: readonly SectionRect[],
   ranges: readonly SectionRange[],
 ): number {
-  const maxScroll = pageMaxScroll(sectionRects, viewportHeight);
+  const progresses = sectionProgressAt(
+    scrollY,
+    viewportHeight,
+    sectionRects,
+    ranges,
+  );
   let total = 0;
   for (let i = 0; i < ranges.length; i++) {
-    const rect = sectionRects[i];
     const range = ranges[i];
-    if (rect === undefined || range === undefined) continue;
-    const progress = sectionProgress(scrollY, rect, maxScroll);
-    total += progress * (range.end - range.start);
+    if (range === undefined) continue;
+    total += progresses[i] * (range.end - range.start);
   }
   return total;
+}
+
+/* One piece's own local progress, over the SAME `drawn` scalar `drawnLength` above produces -- the
+   whole fix, in one function. `piece.start`/`piece.end` are contiguous and disjoint by construction
+   (`threadLine`'s own header), so at any given `drawn` at most one piece has `0 < progress < 1`:
+   every piece whose `end <= drawn` reads 1, every piece whose `start >= drawn` reads 0, and the one
+   piece straddling `drawn` (there is at most one, since the ranges partition [0, length]) reads the
+   fraction in between. This is what "exactly one piece mid-draw" reduces to -- not a property of
+   `drawnLength`'s own pacing curve, which pieces it favours moment to moment, but of the ranges
+   being disjoint at all. */
+export function pieceProgress(
+  drawn: number,
+  piece: { readonly start: number; readonly end: number },
+): number {
+  const length = piece.end - piece.start;
+  return length <= 0 ? 1 : clamp01((drawn - piece.start) / length);
 }

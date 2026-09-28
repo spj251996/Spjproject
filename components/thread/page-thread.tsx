@@ -15,8 +15,10 @@ import {
 } from "./thread-fallback";
 import {
   drawnLength,
+  pieceProgress,
   type SectionAnchors,
   type SectionRange,
+  type ThreadPiece,
   threadLine,
 } from "./thread-line";
 import { MOTIF_PLACEMENTS, THREAD_IDS } from "./thread-paths";
@@ -24,28 +26,44 @@ import type { MeasuredSection, Rect } from "./thread-warp";
 
 /* THE MODEL — read this before touching anything below.
 
-   ONE PATH, ONE DASH, MEASURED NOT DERIVED. `thread-line.ts` bakes the whole page's thread — every
-   section's connectors and motifs, invite's free start to wishes' exit — into one `d`, in PAGE-
-   ABSOLUTE pixels (relative to `<main>`'s own top-left). This component's job is to feed it real
-   numbers: the layout the browser has already computed, read with `getBoundingClientRect()`, never
+   ONE PATH PER PIECE, ONE DASH PER PATH, MEASURED NOT DERIVED. `thread-line.ts` bakes the whole
+   page's thread — every section's connectors and motifs, invite's free start to wishes' exit —
+   into one `d`, in PAGE-ABSOLUTE pixels (relative to `<main>`'s own top-left), same as before. What
+   changed (Task 1): `stroke-dasharray` restarts at every `M` subpath, so ONE `<path>` driving that
+   whole `d` with ONE `stroke-dashoffset` put 19 independent draw heads on the page — every
+   connector and motif growing from its own start at once — which is exactly the defect the owner
+   reported at every prior round ("all parts of thread starting to draw at same time in all
+   sections", `task-1-report.md`). The fix is architectural, not a bigger dash: this component now
+   renders one `<path>` PER PIECE (`splitSubpaths(d)`, already one entry per connector/motif, zipped
+   1:1 against `threadLine`'s own `pieces` list), and drives each one from its OWN
+   `pieceProgress(drawn, piece)` — `drawn` is still the single page-level scalar `drawnLength`
+   produces below, unchanged; only what CONSUMES it changed. Piece ranges are contiguous and
+   disjoint by construction, so "exactly one piece mid-draw" follows without a second rule to keep
+   in sync (`thread-line.ts`'s own header on `ThreadPiece`/`pieceProgress`).
+
+   This component's job is to feed `threadLine` real numbers: the layout the browser has already
+   computed, read with `getBoundingClientRect()`, never
    reconstructed from CSS custom properties. That reconstruction is exactly what this replaces — it
    was exact on paper (48/48 cells at 0.000px) and still produced four owner-visible faults, because
    it resolved only where a real frame existed and inherited (`session.md`, 2026-09-27).
 
-   NOT NORMALISED. `threadLine`'s `length` is a raw PIXEL estimate (256-sample chord sum, accurate to
-   ~0.00003% per its own header), and `d` is already emitted in real page pixels — there is no
-   arbitrary unit space to normalise INTO for the live path. Using `pathLength="1"` here would buy
-   nothing and would reintroduce a bug this project has already been bitten by: Chromium does not
-   paint a dash covering a whole `pathLength="1"` path — `stroke-dasharray="0 0 1 1"` stops about 7%
-   short, while a raw-pixel dasharray with a trailing gap of zero runs to the end (`lessons.md`,
-   2026-09-25). So the dash lives entirely in the SAME px units as `d`: `stroke-dasharray: L` (one
-   on-length, which a single value repeats as `L L`), `stroke-dashoffset: L - drawn`, `drawn`
-   `thread-line.ts`'s `drawnLength` — each section's OWN scroll window mapped onto that section's OWN
-   stretch of `L`, not one global fraction of the whole path (the owner's review, `session.md`
-   2026-09-27: a single `scrollY / (scrollHeight - innerHeight)` advances every section's thread at
-   once, because total path length has no relationship to where a section's scroll window falls) —
-   with a small epsilon added to `L` so the trailing edge overshoots the path's own end rather than
-   exactly meeting it.
+   NOT NORMALISED. `threadLine`'s `length` (and every piece's own `end - start`) is a raw PIXEL
+   estimate (256-sample chord sum, accurate to ~0.00003% per its own header), and `d` is already
+   emitted in real page pixels — there is no arbitrary unit space to normalise INTO for the live
+   path. Using `pathLength="1"` here would buy nothing and would reintroduce a bug this project has
+   already been bitten by: Chromium does not paint a dash covering a whole `pathLength="1"` path —
+   `stroke-dasharray="0 0 1 1"` stops about 7% short, while a raw-pixel dasharray with a trailing gap
+   of zero runs to the end (`lessons.md`, 2026-09-25). So EACH PIECE's dash lives entirely in that
+   piece's own px units: `stroke-dasharray: Lk` (one on-length, which a single value repeats as
+   `Lk Lk`), `stroke-dashoffset: Lk - drawnK`, `drawnK` = `pieceProgress(drawn, piece) * Lk` —
+   `drawn` is `thread-line.ts`'s `drawnLength`, one scalar for the whole page, and `pieceProgress`
+   is what turns it into "how much of THIS piece has drawn" without the piece needing to know
+   anything about its neighbours (each section's own scroll window is itself mapped onto that
+   section's OWN stretch of the page total, not one global fraction of the whole path — the owner's
+   review, `session.md` 2026-09-27: a single `scrollY / (scrollHeight - innerHeight)` advances every
+   section's thread at once, because total path length has no relationship to where a section's
+   scroll window falls) — with a small epsilon added to each `Lk` so a piece's trailing edge
+   overshoots its own end rather than exactly meeting it.
 
    MEASURE, NEVER ASSUME A POSITIONED ANCESTOR EITHER. Every SVG here sits inside its OWN small
    wrapper span, measured at the same instant as its real target (`<main>`, or Wishes' card), and
@@ -108,6 +126,27 @@ const FALLBACKS = PAGE_FALLBACKS;
    equal specificity over an earlier one. Splitting these across a CSS-module class and this inline
    `<style>` would let the module rule's higher specificity always win regardless of `@media`; see
    `thread.module.css`'s own comment for why both halves live here instead. */
+/* THE MAIN TRUNK'S OWN PIECE COUNT -- 19, per `task-1-brief.md`'s own reproduction (22 total pieces
+   across the six sections, minus `wishes`' own 3, which `WishesWeave` draws separately below). Fixed
+   at every band: `THREAD_PATHS`/`MOTIF_PLACEMENTS` carry the same connector/motif COUNTS per section
+   in all three bands (only the coordinates differ per band) -- confirmed directly against the data,
+   not assumed, so this can be a plain module constant, letting `PageThread` render a FIXED number of
+   `<path>` elements in JSX rather than growing/shrinking a list from measured state on every band
+   change. Read structurally, off `subpathRange` (already exported for exactly this kind of count),
+   never off a live `threadLine()` call, so it costs nothing at measure time. */
+const MAIN_PIECE_COUNT = Math.max(
+  ...THREAD_BANDS.map((band) => subpathRange(band.id, "wishes").start),
+);
+
+/* `wishes`' own piece count -- 3, per the same reproduction (a connector, its one motif `bow`, and
+   the trailing connector every section ends with) -- band-invariant for the same reason. */
+const WISHES_PIECE_COUNT = Math.max(
+  ...THREAD_BANDS.map((band) => {
+    const range = subpathRange(band.id, "wishes");
+    return range.end - range.start;
+  }),
+);
+
 const FALLBACK_STYLE = [
   "[data-thread-fallback] { display: none; }",
   ...FALLBACKS.map(
@@ -274,8 +313,9 @@ function pageDrawnLength(
   return drawnLength(window.scrollY, viewportHeight, sectionRects, ranges);
 }
 
-/* The trailing edge overshoots the path's own end by this much so a whole-length dash never falls
-   into the "stops short" case `lessons.md` (2026-09-25) records for an exactly-matching one. */
+/* The trailing edge overshoots a piece's own end by this much so a whole-piece dash never falls
+   into the "stops short" case `lessons.md` (2026-09-25) records for an exactly-matching one --
+   applied per piece now, not once over the whole page, since each piece is its OWN `<path>`. */
 const DASH_EPSILON = 4;
 
 function applyDash(path: SVGPathElement, length: number, offset: number) {
@@ -286,6 +326,31 @@ function applyDash(path: SVGPathElement, length: number, offset: number) {
 function clearDash(path: SVGPathElement) {
   path.style.strokeDasharray = "";
   path.style.strokeDashoffset = "";
+}
+
+/* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
+   (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
+   `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
+   the same connection order `pieces` is built in -- proven in `thread-line.test.ts`'s own "exactly
+   one subpath per connector and per motif" test), so this loop never has to match them up by name. */
+function applyPieceDashes(
+  paths: readonly (SVGPathElement | null)[],
+  pieces: readonly ThreadPiece[],
+  drawn: number,
+) {
+  pieces.forEach((piece, index) => {
+    const path = paths[index];
+    if (path === null || path === undefined) return;
+    const length = piece.end - piece.start;
+    const progress = pieceProgress(drawn, piece);
+    applyDash(path, length, length * (1 - progress));
+  });
+}
+
+function clearPieceDashes(paths: readonly (SVGPathElement | null)[]) {
+  for (const path of paths) {
+    if (path !== null) clearDash(path);
+  }
 }
 
 /* Shared by both components below: bind resize/fonts/reduced-motion, run `measure` once and again
@@ -339,8 +404,11 @@ export function PageThread() {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const fallbackSvgRef = useRef<SVGSVGElement>(null);
   const liveSvgRef = useRef<SVGSVGElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const lengthRef = useRef(0);
+  /* One entry per main-trunk piece (`MAIN_PIECE_COUNT`, fixed), index-aligned with `piecesRef`
+     below -- a callback ref per `<path>` populates this on mount/unmount rather than one ref per
+     the old single trunk path. */
+  const pathsRef = useRef<(SVGPathElement | null)[]>([]);
+  const piecesRef = useRef<readonly ThreadPiece[]>([]);
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
      as `measured.sections` itself, never re-measured on scroll. */
   const sectionsRef = useRef<MeasuredSection[]>([]);
@@ -351,13 +419,7 @@ export function PageThread() {
     const wrapper = wrapperRef.current;
     const fallbackSvg = fallbackSvgRef.current;
     const liveSvg = liveSvgRef.current;
-    const path = pathRef.current;
-    if (
-      wrapper === null ||
-      fallbackSvg === null ||
-      liveSvg === null ||
-      path === null
-    ) {
+    if (wrapper === null || fallbackSvg === null || liveSvg === null) {
       return;
     }
     const main = wrapper.closest("main");
@@ -387,31 +449,37 @@ export function PageThread() {
 
     const {
       d,
-      length,
       sections: ranges,
+      pieces,
     } = threadLine(band, measured.sections, anchors);
     const range = subpathRange(band, "wishes");
     const subpaths = splitSubpaths(d);
-    const trunk = subpaths.slice(0, range.start).join(" ");
+    // `wishes` is always last in both `subpaths` and `pieces` (THREAD_IDS order), so the main
+    // trunk is everything before its own range start in both -- the same slice point, applied to
+    // the two index-aligned arrays rather than to a joined string.
+    const trunkSubpaths = subpaths.slice(0, range.start);
+    const trunkPieces = pieces.slice(0, range.start);
     const totalHeight = measured.sections.reduce((sum, s) => sum + s.height, 0);
 
     liveSvg.setAttribute("viewBox", `0 0 ${mainRect.width} ${totalHeight}`);
-    path.setAttribute("d", trunk === "" ? d : trunk);
-    lengthRef.current = length;
+    trunkSubpaths.forEach((pieceD, index) => {
+      pathsRef.current[index]?.setAttribute("d", pieceD);
+    });
+    piecesRef.current = trunkPieces;
     sectionsRef.current = measured.sections;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
     fallbackSvg.style.display = "none";
 
     if (reducedMotion()) {
-      clearDash(path);
+      clearPieceDashes(pathsRef.current);
     } else {
       const drawn = pageDrawnLength(
         sectionsRef.current,
         rangesRef.current,
         viewportHeightRef.current,
       );
-      applyDash(path, length, length - drawn);
+      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
     }
   }
 
@@ -424,14 +492,12 @@ export function PageThread() {
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
-        const path = pathRef.current;
-        if (path === null) return;
         const drawn = pageDrawnLength(
           sectionsRef.current,
           rangesRef.current,
           viewportHeightRef.current,
         );
-        applyDash(path, lengthRef.current, lengthRef.current - drawn);
+        applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
       });
     }
 
@@ -478,7 +544,23 @@ export function PageThread() {
         ref={liveSvgRef}
         role="presentation"
       >
-        <path className={styles.pageInk} d="" ref={pathRef} />
+        {/* ONE `<path>` PER PIECE -- fixed at `MAIN_PIECE_COUNT`, filled and dashed imperatively by
+            `measure()`/`onScroll` above. `key`s are stable indices, not piece identity, exactly
+            like the fallback's own `band` keys above: the SET of pieces this page draws is fixed
+            (structural, band-invariant -- `MAIN_PIECE_COUNT`'s own header), so index and identity
+            never diverge here. */}
+        {Array.from({ length: MAIN_PIECE_COUNT }, (_, index) => (
+          <path
+            className={styles.pageInk}
+            d=""
+            data-thread-piece={index}
+            // biome-ignore lint/suspicious/noArrayIndexKey: MAIN_PIECE_COUNT is a fixed structural constant -- these never reorder or change count.
+            key={index}
+            ref={(el) => {
+              pathsRef.current[index] = el;
+            }}
+          />
+        ))}
       </svg>
     </span>
   );
@@ -506,8 +588,12 @@ interface WishesWeaveProps {
 export function WishesWeave({ slot }: WishesWeaveProps) {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const beforeLengthRef = useRef(0);
+  /* One entry per `wishes` piece (`WISHES_PIECE_COUNT`, fixed) -- same per-piece shape as
+     `PageThread`'s `pathsRef`/`piecesRef` above, for the same reason: `wishes` is not exempt from
+     the one-dash-per-subpath finding just because it draws through its own weave rather than
+     `PageThread`'s trunk. */
+  const pathsRef = useRef<(SVGPathElement | null)[]>([]);
+  const piecesRef = useRef<readonly ThreadPiece[]>([]);
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
      each `WishesWeave` measures independently (see the header comment), so it keeps its own. */
   const sectionsRef = useRef<MeasuredSection[]>([]);
@@ -515,30 +601,22 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const viewportHeightRef = useRef(0);
 
   function reveal() {
-    const path = pathRef.current;
-    if (path === null) return;
-    const wishesLength = path.getTotalLength();
     const pageDrawn = pageDrawnLength(
       sectionsRef.current,
       rangesRef.current,
       viewportHeightRef.current,
     );
-    const revealed = Math.min(
-      Math.max(pageDrawn - beforeLengthRef.current, 0),
-      wishesLength,
-    );
     if (reducedMotion()) {
-      clearDash(path);
+      clearPieceDashes(pathsRef.current);
     } else {
-      applyDash(path, wishesLength, wishesLength - revealed);
+      applyPieceDashes(pathsRef.current, piecesRef.current, pageDrawn);
     }
   }
 
   function measure() {
     const wrapper = wrapperRef.current;
     const svg = svgRef.current;
-    const path = pathRef.current;
-    if (wrapper === null || svg === null || path === null) return;
+    if (wrapper === null || svg === null) return;
     const main = wrapper.closest("main");
     if (main === null) return;
     const band = currentBand();
@@ -561,15 +639,24 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
       `${cardBox.left} ${cardBox.top} ${cardBox.width} ${cardBox.height}`,
     );
 
-    const { d, length, sections: ranges } = threadLine(band, measured.sections);
+    const { sections: ranges, pieces, d } = threadLine(band, measured.sections);
     const range = subpathRange(band, "wishes");
     const subpaths = splitSubpaths(d);
-    path.setAttribute("d", subpaths.slice(range.start, range.end).join(" "));
+    const wishesSubpaths = subpaths.slice(range.start, range.end);
+    const wishesPieces = pieces.slice(range.start, range.end);
+
+    wishesSubpaths.forEach((pieceD, index) => {
+      pathsRef.current[index]?.setAttribute("d", pieceD);
+    });
+    // `wishesPieces`' own `start`/`end` are already on the PAGE's global cumulative scale (the same
+    // one `pageDrawnLength` produces), so `pieceProgress` needs no local re-basing here -- unlike
+    // the retired single-dash `beforeLengthRef`, which had to subtract the page total down to
+    // wishes' own local arc length because it was reasoning about ONE combined dash.
+    piecesRef.current = wishesPieces;
 
     sectionsRef.current = measured.sections;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
-    beforeLengthRef.current = length - path.getTotalLength();
     reveal();
   }
 
@@ -606,7 +693,18 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
         ref={svgRef}
         role="presentation"
       >
-        <path className={styles.pageInk} d="" ref={pathRef} />
+        {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
+          <path
+            className={styles.pageInk}
+            d=""
+            data-thread-piece={index}
+            // biome-ignore lint/suspicious/noArrayIndexKey: WISHES_PIECE_COUNT is a fixed structural constant -- these never reorder or change count.
+            key={index}
+            ref={(el) => {
+              pathsRef.current[index] = el;
+            }}
+          />
+        ))}
       </svg>
     </span>
   );
