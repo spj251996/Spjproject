@@ -35,7 +35,14 @@ const markClassName = [
    small piece of paper laid on the card rather than as a control borrowed from an application. */
 const discClassName = [
   "inline-flex shrink-0 items-center justify-center rounded-full",
-  "size-(--touch-target) bg-surface-elevated shadow-mount",
+  /* The token as a bare colour, not the `bg-surface-elevated` utility: that utility also lays the
+     stock's grain, and a tile sized for a whole sheet reads as noise inside a 44px circle (owner,
+     2026-09-28). The disc wants the surface's colour and its shadow, nothing else. */
+  "size-(--touch-target) bg-(--color-surface-elevated) shadow-mount",
+  /* Scaled here rather than by raising each caller's `size`: `IconBase` derives its box from the
+     drawing's own DIAGONAL, so equal `size` values across different marks do not give equal
+     rendered boxes, and a uniform scale keeps each mark's aspect while filling more of the disc. */
+  "[&_svg]:[transform:scale(1.9)]",
 ].join(" ");
 
 type ButtonActionProps = {
