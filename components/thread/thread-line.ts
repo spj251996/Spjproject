@@ -819,3 +819,20 @@ export function pieceProgress(
   const length = piece.end - piece.start;
   return length <= 0 ? 1 : clamp01((drawn - piece.start) / length);
 }
+
+/* A piece's dash, as the two numbers the renderer sets. The offset scales by the whole PERIOD, not
+   by `length` alone: `dasharray` overshoots the piece's own end by `DASH_EPSILON` so a
+   fully-drawn piece never lands on the "stops short" case `lessons.md` (2026-09-25) records for an
+   exactly-matching dash, and scaling the offset by `length` instead would leave exactly that
+   epsilon painted at progress 0 -- a seed of ink on every one of the nineteen pieces before any of
+   them has begun. Lives here rather than in the component so the arithmetic is testable without a
+   DOM, which is how the seed went unnoticed. */
+export const DASH_EPSILON = 4;
+
+export function dashForPiece(
+  length: number,
+  progress: number,
+): { dasharray: number; dashoffset: number } {
+  const period = length + DASH_EPSILON;
+  return { dasharray: period, dashoffset: period * (1 - clamp01(progress)) };
+}

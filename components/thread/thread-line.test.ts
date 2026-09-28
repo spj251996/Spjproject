@@ -4,6 +4,7 @@ import { authoredCard } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import {
   clamp01,
+  dashForPiece,
   drawnLength,
   PORTRAIT_LOOP_TRIM_FRACTION,
   pieceProgress,
@@ -1095,5 +1096,42 @@ test("AT MOST ONE PIECE IS MID-DRAW at any scroll position, swept across the who
         `${band}: ${piece.id}/${piece.kind} should be fully drawn at the page's own max scroll`,
       );
     }
+  }
+});
+
+test("a piece paints nothing at all until its own progress leaves zero", () => {
+  const { dasharray, dashoffset } = dashForPiece(500, 0);
+  assert.equal(
+    dashoffset,
+    dasharray,
+    "offset must equal the whole dash period at progress 0, or the epsilon paints as a seed",
+  );
+});
+
+test("a piece is fully painted at progress 1, with the overshoot the epsilon exists for", () => {
+  const length = 500;
+  const { dasharray, dashoffset } = dashForPiece(length, 1);
+  assert.equal(dashoffset, 0);
+  assert.ok(dasharray > length, "the dash must overshoot the piece's own end");
+});
+
+test("every piece of a real band's thread is blank before the draw reaches it", () => {
+  const sections = THREAD_IDS.map((_id, i) => ({
+    top: i * 695,
+    height: 695,
+    cardLeft: 288,
+    cardWidth: 960,
+  }));
+  const line = threadLine("wide", sections);
+  for (const piece of line.pieces) {
+    const { dasharray, dashoffset } = dashForPiece(
+      piece.end - piece.start,
+      pieceProgress(0, piece),
+    );
+    assert.equal(
+      dashoffset,
+      dasharray,
+      `piece ${piece.id ?? ""} seeds ink at drawn 0`,
+    );
   }
 });

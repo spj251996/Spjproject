@@ -14,6 +14,7 @@ import {
   subpathRange,
 } from "./thread-fallback";
 import {
+  dashForPiece,
   drawnLength,
   pieceProgress,
   type SectionAnchors,
@@ -313,14 +314,10 @@ function pageDrawnLength(
   return drawnLength(window.scrollY, viewportHeight, sectionRects, ranges);
 }
 
-/* The trailing edge overshoots a piece's own end by this much so a whole-piece dash never falls
-   into the "stops short" case `lessons.md` (2026-09-25) records for an exactly-matching one --
-   applied per piece now, not once over the whole page, since each piece is its OWN `<path>`. */
-const DASH_EPSILON = 4;
-
-function applyDash(path: SVGPathElement, length: number, offset: number) {
-  path.style.strokeDasharray = `${length + DASH_EPSILON}`;
-  path.style.strokeDashoffset = String(offset);
+function applyDash(path: SVGPathElement, length: number, progress: number) {
+  const { dasharray, dashoffset } = dashForPiece(length, progress);
+  path.style.strokeDasharray = String(dasharray);
+  path.style.strokeDashoffset = String(dashoffset);
 }
 
 function clearDash(path: SVGPathElement) {
@@ -342,8 +339,7 @@ function applyPieceDashes(
     const path = paths[index];
     if (path === null || path === undefined) return;
     const length = piece.end - piece.start;
-    const progress = pieceProgress(drawn, piece);
-    applyDash(path, length, length * (1 - progress));
+    applyDash(path, length, pieceProgress(drawn, piece));
   });
 }
 
