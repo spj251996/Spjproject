@@ -379,6 +379,14 @@ function clearDash(path: SVGPathElement) {
   path.style.strokeDashoffset = "";
 }
 
+/* The opening sequence hands off at 2400ms -- ground present, then mount 200-600, stock 800-1200,
+   type 1400-1800, the thread's own fade 2000-2400 (`DESIGN.md` -> Motion -> The opening sequence).
+   The draw begins as that fade completes, so this is the sequence's own end, not a value of its own.
+   The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
+   multiple rather than a coined number, since a fresh design value is the owner's to set. */
+const OPENING_DRAW_DELAY = 2400;
+const OPENING_DRAW_DURATION = 1200;
+
 /* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
    (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
    `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
@@ -538,7 +546,54 @@ export function PageThread() {
     }
   }
 
+  /* The scroll-derived length, read from the refs captured at the last layout. Named so the two
+     callers below can take `Math.max` against the opening draw without restating it. */
+  function currentScrollDrawn() {
+    return pageDrawnLength(
+      groupRectsRef.current,
+      rangesRef.current,
+      viewportHeightRef.current,
+    );
+  }
+
   useLayoutTriggers(measure);
+
+  /* The owner's opening sequence ends with "thread starts drawing" (`DESIGN.md` -> Motion). Without
+     this the last beat is a no-op: the thread's fade ramps opacity over a stroke with nothing drawn,
+     so a reader who never scrolls never sees a thread at all. The invite's own pieces therefore draw
+     on a timer once that fade completes, and scroll takes over by `Math.max` -- never by replacing
+     the timed value, or scrolling back to the top would erase what the opening just drew.
+     Skipped when the page loads already scrolled: the sequence is an ENTRANCE, and re-running it
+     under a reader who is midway down the page hides the thread they are actually looking at. */
+  const openingDrawnRef = useRef(0);
+
+  useEffect(() => {
+    if (reducedMotion() || window.scrollY > 0) return;
+    let rafId: number | null = null;
+    let startedAt = 0;
+
+    const timer = window.setTimeout(() => {
+      const target = rangesRef.current[0]?.end ?? 0;
+      if (target <= 0) return;
+      const step = (now: number) => {
+        if (startedAt === 0) startedAt = now;
+        const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
+        openingDrawnRef.current = target * t;
+        applyPieceDashes(
+          pathsRef.current,
+          piecesRef.current,
+          Math.max(openingDrawnRef.current, currentScrollDrawn()),
+        );
+        if (t < 1) rafId = window.requestAnimationFrame(step);
+      };
+      rafId = window.requestAnimationFrame(step);
+    }, OPENING_DRAW_DELAY);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   useEffect(() => {
     let rafId: number | null = null;
@@ -547,12 +602,11 @@ export function PageThread() {
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
-        const drawn = pageDrawnLength(
-          groupRectsRef.current,
-          rangesRef.current,
-          viewportHeightRef.current,
+        applyPieceDashes(
+          pathsRef.current,
+          piecesRef.current,
+          Math.max(openingDrawnRef.current, currentScrollDrawn()),
         );
-        applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
       });
     }
 
