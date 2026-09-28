@@ -111,12 +111,15 @@
     color: var(--color-accent-gold);
   }
 
+  /* Sentence-case italic, not the small-caps this role carried before (owner, 2026-09-28): an
+     action now reads in the card's own written voice beside a marked disc, rather than as chrome.
+     The tracking goes with the uppercase it was tuned for — italic lowercase needs none. */
   .type-action {
     font-family: var(--font-sans);
     font-size: var(--text-action);
     font-weight: var(--text-action--font-weight);
-    letter-spacing: var(--text-action--letter-spacing);
+    font-style: italic;
+    letter-spacing: normal;
     line-height: var(--text-action--line-height);
-    text-transform: uppercase;
   }
 }

@@ -15,24 +15,27 @@ const targetClassName =
    Hover and press apply to the inner span rather than the target, so neither dims or transforms
    the focus ring the target draws. */
 const markClassName = [
-  "type-action inline-flex items-center justify-center gap-space-2xs text-accent-gold",
+  "type-action inline-flex items-center justify-center gap-space-xs text-accent-gold",
   "px-space-sm py-space-3xs",
-  /* `currentColor` keeps the rules on the label's colour through every state. */
-  "before:content-[''] before:shrink-0 before:w-space-sm before:h-(--stroke-divider) before:bg-current",
-  "after:content-[''] after:shrink-0 after:w-space-sm after:h-(--stroke-divider) after:bg-current",
-  /* Hover thickens the mark optically — a heavier cut would widen the text and shift the rules
+  /* Hover thickens the mark optically — a heavier cut would widen the text and shift the disc
      sideways on every hover, which the mark's no-reflow requirement forbids. */
   "group-hover:[transform:scale(1.06)]",
   "group-hover:[text-shadow:0.35px_0_0_currentColor,-0.35px_0_0_currentColor]",
   "group-hover:[&_svg]:[filter:drop-shadow(0_0_0.4px_currentColor)]",
-  "group-hover:before:h-[calc(var(--stroke-divider)*1.6)]",
-  "group-hover:after:h-[calc(var(--stroke-divider)*1.6)]",
   /* Press is the only feedback a touch device gets, so it is not gated on hover support. */
   "group-active:opacity-80",
   /* Every part of the transition is gated, the duration included: an ungated `transition-duration`
      leaves `transition-property` at its `all` initial value, so the mark still animates under
      reduced motion with nothing in the source saying so. */
   "motion-safe:transition-[transform,text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle",
+].join(" ");
+
+/* The mark sits on its own raised disc (owner, 2026-09-28), replacing the pair of hairline rules
+   that used to flank the label. The disc is the stock's own surface and shadow, so it reads as a
+   small piece of paper laid on the card rather than as a control borrowed from an application. */
+const discClassName = [
+  "inline-flex shrink-0 items-center justify-center rounded-full",
+  "size-(--touch-target) bg-surface-elevated shadow-mount",
 ].join(" ");
 
 type ButtonActionProps = {
@@ -55,7 +58,7 @@ export function ButtonAction({
   const composed = `${targetClassName} ${className ?? ""}`;
   const label = (
     <span className={markClassName}>
-      {mark}
+      {mark !== undefined && <span className={discClassName}>{mark}</span>}
       {children}
     </span>
   );
