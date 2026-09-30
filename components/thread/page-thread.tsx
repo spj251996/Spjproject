@@ -14,6 +14,7 @@ import {
   subpathRange,
 } from "./thread-fallback";
 import {
+  createDrawRatchet,
   dashForPiece,
   drawnLength,
   pieceProgress,
@@ -393,6 +394,21 @@ const OPENING_DRAW_DURATION = 1200;
    75%/25% crossing rule, so the line visibly travels into the next card as they scroll on. */
 const CROSSING_HOLD_BACK = 0.25;
 
+/* Where the opening sequence's own timed draw stops: the invite's whole stretch less the quarter of
+   its crossing connector every group holds back. Drawing it to 100% instead made the thread look
+   stuck for the whole first screen of scroll -- there was nothing left in the invite to draw and the
+   next group had not opened yet. Derived from the CURRENT ranges on each call rather than stored,
+   so a re-measure re-seeds the floor at the new layout's own lengths; returns 0 before the sequence
+   has finished, which is a floor that holds nothing. */
+function openingFloor(
+  ranges: readonly SectionRange[],
+  complete: boolean,
+): number {
+  const invite = ranges[0];
+  if (!complete || invite === undefined) return 0;
+  return invite.end - CROSSING_HOLD_BACK * invite.lastPieceLength;
+}
+
 /* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
    (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
    `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
@@ -481,6 +497,11 @@ export function PageThread() {
   const groupRectsRef = useRef<readonly SectionRect[]>([]);
   const rangesRef = useRef<readonly SectionRange[]>([]);
   const viewportHeightRef = useRef(0);
+  /* The owner's "and then stay drawn" (`createDrawRatchet`'s own header) -- every value that
+     reaches `applyPieceDashes` below goes through this, so scrolling back up can only ever hold the
+     line where it was, never unravel it. `WishesWeave` owns its own; the two maxima are in
+     different path lengths and would mean nothing to each other. */
+  const ratchetRef = useRef(createDrawRatchet());
 
   function measure() {
     const wrapper = wrapperRef.current;
@@ -543,12 +564,27 @@ export function PageThread() {
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
     } else {
+      /* The path this ratchet's maximum was measured against no longer exists, so the maximum goes
+         with it and the `advance` below re-seeds from the fresh measurement. The opening draw's own
+         floor is RE-DERIVED from the new ranges rather than carried across as a stale length --
+         without it, a resize at the very top after the sequence has run would unravel the invite's
+         thread and leave a reader who has not scrolled looking at nothing. */
+      ratchetRef.current.reset();
       const drawn = pageDrawnLength(
         groupRectsRef.current,
         rangesRef.current,
         viewportHeightRef.current,
       );
-      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
+      applyPieceDashes(
+        pathsRef.current,
+        piecesRef.current,
+        ratchetRef.current.advance(
+          Math.max(
+            drawn,
+            openingFloor(rangesRef.current, openingCompleteRef.current),
+          ),
+        ),
+      );
     }
   }
 
@@ -560,8 +596,12 @@ export function PageThread() {
      on a timer once that fade completes, and scroll takes over by `Math.max` -- never by replacing
      the timed value, or scrolling back to the top would erase what the opening just drew.
      Skipped when the page loads already scrolled: the sequence is an ENTRANCE, and re-running it
-     under a reader who is midway down the page hides the thread they are actually looking at. */
-  const openingDrawnRef = useRef(0);
+     under a reader who is midway down the page hides the thread they are actually looking at.
+
+     "Scroll takes over by `Math.max`" is now the ratchet's job rather than a second floor kept
+     here: the timed draw advances the same ratchet every scroll frame advances, so the higher of
+     the two wins by construction and there is one mechanism holding the line instead of two. */
+  const openingCompleteRef = useRef(false);
 
   useEffect(() => {
     if (reducedMotion() || window.scrollY > 0) return;
@@ -573,27 +613,18 @@ export function PageThread() {
          line is already reaching toward Event Info when the reader starts scrolling. Drawing it to
          100% here made the thread look stuck for the whole first screen of scroll -- there was
          nothing left in the invite to draw and the next group had not opened yet. */
-      const invite = rangesRef.current[0];
-      if (invite === undefined) return;
-      const target = invite.end - CROSSING_HOLD_BACK * invite.lastPieceLength;
+      const target = openingFloor(rangesRef.current, true);
       if (target <= 0) return;
       const step = (now: number) => {
         if (startedAt === 0) startedAt = now;
         const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
-        openingDrawnRef.current = target * t;
         applyPieceDashes(
           pathsRef.current,
           piecesRef.current,
-          Math.max(
-            openingDrawnRef.current,
-            pageDrawnLength(
-              groupRectsRef.current,
-              rangesRef.current,
-              viewportHeightRef.current,
-            ),
-          ),
+          ratchetRef.current.advance(target * t),
         );
         if (t < 1) rafId = window.requestAnimationFrame(step);
+        else openingCompleteRef.current = true;
       };
       rafId = window.requestAnimationFrame(step);
     }, OPENING_DRAW_DELAY);
@@ -614,8 +645,7 @@ export function PageThread() {
         applyPieceDashes(
           pathsRef.current,
           piecesRef.current,
-          Math.max(
-            openingDrawnRef.current,
+          ratchetRef.current.advance(
             pageDrawnLength(
               groupRectsRef.current,
               rangesRef.current,
@@ -729,6 +759,10 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const groupRectsRef = useRef<readonly SectionRect[]>([]);
   const rangesRef = useRef<readonly SectionRange[]>([]);
   const viewportHeightRef = useRef(0);
+  /* Wishes' own stretch stays drawn on the way back up exactly as the trunk does, and needs its own
+     ratchet to do it: this component's maximum is a length along the WEAVE's path, which is not the
+     trunk's (`PageThread`'s own `ratchetRef`). */
+  const ratchetRef = useRef(createDrawRatchet());
 
   function reveal() {
     const pageDrawn = pageDrawnLength(
@@ -739,7 +773,11 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
     } else {
-      applyPieceDashes(pathsRef.current, piecesRef.current, pageDrawn);
+      applyPieceDashes(
+        pathsRef.current,
+        piecesRef.current,
+        ratchetRef.current.advance(pageDrawn),
+      );
     }
   }
 
@@ -793,6 +831,9 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
+    /* Same reason as `PageThread`'s own reset: the maximum described the path this re-measure has
+       just replaced. `reveal` re-seeds it from the fresh measurement on the next line. */
+    ratchetRef.current.reset();
     reveal();
   }
 

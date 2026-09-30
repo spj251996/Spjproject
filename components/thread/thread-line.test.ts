@@ -4,6 +4,7 @@ import { authoredCard } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import {
   clamp01,
+  createDrawRatchet,
   dashForPiece,
   drawnLength,
   PORTRAIT_LOOP_TRIM_FRACTION,
@@ -1363,4 +1364,56 @@ test("with event-info split into two card groups, card 2's pieces (knot and its 
       }
     }
   }
+});
+
+/* THE RATCHET (`thread-draw-behaviour.md` Task 2) -- the owner's "and then stay drawn". These
+   assert BEHAVIOUR, not the source's spelling: `drawnLength` is a pure function of `scrollY` with
+   no memory, so without a ratchet at the call site the thread unravels on the way back up and is
+   gone again at scroll 0. */
+test("the ratchet never reduces the drawn length on the way back up", () => {
+  const ratchet = createDrawRatchet();
+  const descent = [0, 120, 400, 900, 1500, 2400];
+  for (const drawn of descent) ratchet.advance(drawn);
+  const peak = descent.at(-1) ?? 0;
+  for (const drawn of [...descent].reverse()) {
+    assert.equal(
+      ratchet.advance(drawn),
+      peak,
+      `scrolling back up to a drawn length of ${drawn} must still report the peak`,
+    );
+  }
+  assert.equal(
+    ratchet.advance(0),
+    peak,
+    "returning to the very top must keep the thread drawn",
+  );
+});
+
+test("the ratchet still advances past its own peak", () => {
+  const ratchet = createDrawRatchet();
+  ratchet.advance(1000);
+  ratchet.advance(200);
+  assert.equal(ratchet.advance(1400), 1400);
+});
+
+/* A resize or a font load re-measures the page, and the path's total length changes with it -- a
+   maximum held over from the old layout can exceed the new total, which would clamp every piece to
+   fully drawn. `reset` drops it; the next `advance` re-seeds from the freshly measured value. */
+test("a re-measure drops the maximum rather than carrying a stale one", () => {
+  const ratchet = createDrawRatchet();
+  ratchet.advance(5000);
+  ratchet.reset();
+  assert.equal(
+    ratchet.advance(300),
+    300,
+    "the stale peak must not survive a re-measure",
+  );
+});
+
+test("two ratchets hold their own maximum", () => {
+  const trunk = createDrawRatchet();
+  const weave = createDrawRatchet();
+  trunk.advance(900);
+  assert.equal(weave.advance(10), 10);
+  assert.equal(trunk.advance(0), 900);
 });

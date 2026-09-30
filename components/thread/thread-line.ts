@@ -974,3 +974,30 @@ export function dashForPiece(
   const period = length + DASH_EPSILON;
   return { dasharray: period, dashoffset: period * (1 - clamp01(progress)) };
 }
+
+/* THE RATCHET — the owner's "and then stay drawn". `drawnLength` above is a pure function of
+   `scrollY` with no memory, and that is deliberate: it is what makes the whole sequencing testable
+   without a browser. So the memory lives here instead, as a small piece of state the CALLER owns
+   and threads its own scroll value through — one ratchet per component, never a module-level
+   singleton, or `PageThread` and `WishesWeave` would share a maximum that means different things in
+   their two different path lengths.
+
+   `reset` exists because a maximum is only meaningful against the layout it was measured in: a
+   resize or a font load re-measures the page and changes the path's total length, and a maximum
+   held over from the old one can exceed the new total, clamping every piece to fully drawn. The
+   caller resets at its own re-measure and lets the next `advance` re-seed from the fresh value. */
+export function createDrawRatchet(): {
+  advance: (drawn: number) => number;
+  reset: () => void;
+} {
+  let peak = 0;
+  return {
+    advance(drawn: number): number {
+      if (drawn > peak) peak = drawn;
+      return peak;
+    },
+    reset(): void {
+      peak = 0;
+    },
+  };
+}
