@@ -69,7 +69,11 @@
     }
   }
 
-  .pageRoot {
+  /* Gated with the sequence's other three steps: `.pageRoot` covers the whole of `<main>`, so this
+     one fade blanks the thread in EVERY section for 2200ms, which is what a reader reloading
+     part-way down the page actually complained about. `app/layout.tsx`'s own header carries why the
+     attribute is set at `DOMContentLoaded` by an inline script, and what the threshold means. */
+  :root:not([data-opening-skipped]) .pageRoot {
     animation: pageThreadFadeIn var(--duration-base) var(--ease-entrance)
       calc(var(--duration-fast) * 3 + var(--duration-base) * 3) both;
   }

@@ -45,6 +45,31 @@ const sans = Libre_Baskerville({
    an http base would emit http image URLs that some clients refuse to load. */
 const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
 
+/* THE OPENING SEQUENCE'S GATE. The sequence is an ENTRANCE to the invite; a reader who reloads
+   part-way down the page is not arriving, and re-running it hides the thread they are actually
+   looking at for the whole 2200ms (`.pageRoot` covers all of `<main>`, so its fade blanks the
+   thread in every section at once, not just the invite's).
+
+   WHY AN INLINE SCRIPT RATHER THAN AN EFFECT, and why it waits for `DOMContentLoaded`: the browser
+   restores a reloaded page's scroll position ASYNCHRONOUSLY, so a check that runs as this script is
+   parsed reads 0 and defeats itself — measured, not assumed: at document-start `scrollY` reads 0,
+   and it reads the true restored 2808 from `readyState === "interactive"` onward, ~111ms in. The
+   sequence's own earliest step is the mount's settle at 200ms (`app/invite.css`), so a gate applied
+   at `DOMContentLoaded` lands before ANY step begins. It is an inline script rather than a React
+   effect so it does not wait on hydration, whose timing is nobody's contract.
+
+   `scrollY > 0` is the threshold, and deliberately the SAME one `page-thread.tsx` already applies to
+   the thread's own timed draw — one definition of "loaded already scrolled", not two that can drift.
+   A more forgiving threshold (skip only once the invite has left the viewport) would be a fresh
+   design value, which is the owner's to set.
+
+   The attribute SUBTRACTS the animation rather than adding an override: every rule it gates stops
+   matching, so each layer sits in its own un-animated base state — which is already the finished
+   state, and is exactly where reduced motion and a no-JS reader land. One code path, three ways in.
+   A reader with JS disabled never sets it and keeps today's CSS-only sequence, which is the only
+   thing that ever animates their static fallback thread. */
+const SKIP_OPENING_WHEN_SCROLLED = `addEventListener("DOMContentLoaded",function(){if(window.scrollY>0){document.documentElement.dataset.openingSkipped="";}});`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Flemy & Sebastian",
@@ -87,6 +112,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           which matters on a site whose whole policy is that it is shared by link and listed
           nowhere. It is cookieless and counts visits rather than identifying visitors. */}
       <body className="min-h-full flex flex-col">
+        <script>{SKIP_OPENING_WHEN_SCROLLED}</script>
         <SprigSymbol />
         {children}
         <Analytics />

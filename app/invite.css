@@ -39,7 +39,14 @@
    this file does not touch.
 
    `both` on the type's fade HOLDS the finished opacity after the animation ends, so it never
-   depends on some other rule's opacity to stay visible once its keyframe has run its course. */
+   depends on some other rule's opacity to stay visible once its keyframe has run its course.
+
+   EVERY STEP IS GATED ON `:root:not([data-opening-skipped])` — a page that loads already scrolled is
+   not an arrival, and the sequence does not run (`app/layout.tsx`'s own header carries the mechanism
+   and the measured timing). The guard SUBTRACTS the rule rather than overriding it, so each layer
+   sits in its own un-animated base state — the same place reduced motion's missing `@media` block
+   leaves it. Any step added here needs the same prefix, and `opening-draw.test.ts` asserts that no
+   rule in this file animates without it. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes opening-fade {
     from {
@@ -60,13 +67,15 @@
   }
 
   /* Step 1 — the mount settles into place. Delay = 1 × fast + 0 × base = 200ms. */
-  .mounted-sheet-frame--invite .mounted-sheet-frame__mount {
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    .mounted-sheet-frame__mount {
     animation: invite-settle var(--duration-base) var(--ease-entrance)
       var(--duration-fast) backwards;
   }
 
   /* Step 2 — the paper stock settles into place. Delay = 2 × fast + 1 × base = 800ms. */
-  .invite-settle {
+  :root:not([data-opening-skipped]) .invite-settle {
     animation: invite-settle var(--duration-base) var(--ease-entrance)
       calc(var(--duration-fast) * 2 + var(--duration-base)) backwards;
   }
@@ -74,7 +83,9 @@
   /* Step 3 — the type: the eyebrow, the couple's names, the date and place, the passage — one
      stack, one fade, matching the granularity DESIGN.md states the sequence at. Delay = 3 × fast +
      2 × base = 1400ms. */
-  .mounted-sheet-frame--invite [data-invite-stack] {
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack] {
     animation: opening-fade var(--duration-base) var(--ease-entrance)
       calc(var(--duration-fast) * 3 + var(--duration-base) * 2) both;
   }
