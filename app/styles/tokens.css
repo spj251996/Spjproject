@@ -38,6 +38,8 @@
   --text-body: 13px;
   --text-body--font-weight: 400;
   --text-body--line-height: 26px;
+  --text-action: 13px;
+  --text-action--line-height: 26px;
   --text-caption: 12px;
   --text-caption--font-weight: 400;
   --text-caption--line-height: 22px;
@@ -219,6 +221,8 @@
     --text-date-primary--line-height: 30px;
     --text-body: 14px;
     --text-body--line-height: 28px;
+    --text-action: 14px;
+    --text-action--line-height: 28px;
     --text-caption: 13px;
     --text-caption--line-height: 24px;
     --text-eyebrow: 11px;
@@ -240,6 +244,8 @@
     --text-date-primary--line-height: 28px;
     --text-body: 13px;
     --text-body--line-height: 26px;
+    --text-action: 13px;
+    --text-action--line-height: 26px;
     --text-caption: 12px;
     --text-caption--line-height: 22px;
     --text-eyebrow: 10px;
@@ -261,6 +267,8 @@
     --text-date-primary--line-height: 32px;
     --text-body: 16px;
     --text-body--line-height: 32px;
+    --text-action: 16px;
+    --text-action--line-height: 32px;
     --text-caption: 14px;
     --text-caption--line-height: 24px;
     --text-eyebrow: 12px;

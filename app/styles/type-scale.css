@@ -117,10 +117,10 @@
      size is `type-body-italic`'s, so an action reads at the weight of the card's own prose. */
   .type-action {
     font-family: var(--font-sans);
-    font-size: var(--text-body);
+    font-size: var(--text-action);
     font-weight: var(--text-action--font-weight);
     font-style: italic;
     letter-spacing: normal;
-    line-height: var(--text-body--line-height);
+    line-height: var(--text-action--line-height);
   }
 }

@@ -17,11 +17,25 @@ function ruleBody(css: string, selector: string) {
   return match[1];
 }
 
-test("type-action is sentence-case italic at the body size", () => {
+/* The role owns its own size rather than borrowing `--text-body`'s (owner, 2026-09-30), so an
+   action can diverge from prose later without a second edit. The two are set to the SAME values
+   today -- the point is that they are separable, not that they differ. */
+test("type-action is sentence-case italic at its own size token", () => {
   const rule = ruleBody(typeScale, "\\.type-action");
   assert.match(rule, /font-style:\s*italic/);
-  assert.match(rule, /font-size:\s*var\(--text-body\)/);
-  assert.match(rule, /line-height:\s*var\(--text-body--line-height\)/);
+  assert.match(rule, /font-size:\s*var\(--text-action\)/);
+  assert.match(rule, /line-height:\s*var\(--text-action--line-height\)/);
+  assert.doesNotMatch(rule, /var\(--text-body/);
+});
+
+/* Pinned because the size token exists to allow divergence, and divergence that happens by
+   accident -- a tier edited on one role and not the other -- is the failure it invites. */
+test("every tier's action size matches the body size it was set from", () => {
+  const sizes = (name: string) =>
+    [...tokens.matchAll(new RegExp(`--text-${name}:\\s*(\\d+)px`, "g"))].map(
+      (m) => m[1],
+    );
+  assert.deepEqual(sizes("action"), sizes("body"));
 });
 
 test("type-action carries no capitals and no tracking tuned for them", () => {
@@ -31,7 +45,6 @@ test("type-action carries no capitals and no tracking tuned for them", () => {
     rule,
     /letter-spacing:\s*var\(--text-action--letter-spacing\)/,
   );
-  assert.doesNotMatch(rule, /var\(--text-action\)/);
 });
 
 // The utility also lays the stock's grain, which reads as noise inside a 44px circle.
@@ -62,14 +75,12 @@ test("Contact prints no phone number and keeps no selection exception", () => {
 });
 
 // Bold is a deliberate departure from type-body-italic's 400, giving an action presence beside its disc.
-test("the action role keeps its bold weight and no superseded size token", () => {
+test("the action role keeps its bold weight and drops the caps-era tracking", () => {
   assert.match(tokens, /--text-action--font-weight:\s*700/);
   assert.match(
     ruleBody(typeScale, "\\.type-action"),
     /font-weight:\s*var\(--text-action--font-weight\)/,
   );
-  assert.doesNotMatch(
-    tokens,
-    /--text-action(--letter-spacing|--line-height)?:/,
-  );
+  /* The tracking was tuned for uppercase and has no meaning for sentence-case italic. */
+  assert.doesNotMatch(tokens, /--text-action--letter-spacing:/);
 });
