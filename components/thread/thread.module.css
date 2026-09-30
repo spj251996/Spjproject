@@ -107,12 +107,12 @@
   overflow: visible;
 }
 
-/* The bleed sits on the INK rather than the svg root. Measured, the root is the worse place: a filter
-   on it took 22.1ms mean frame time / 74 dropped frames over a 5s scrub against 20.39ms / 55 with the
-   same strength on each piece, because an SVG child is not its own compositor layer, so nothing is
-   cached per piece either way -- cost scales with total blur extent times piece count. At the shipped
-   strength the placement hardly matters (16.89ms / 4 dropped against a static control's 16.67ms / 0);
-   it stays here because it is the cheaper of the two, not because it caches. */
+/* The bleed sits on the INK rather than the svg root. With the full-strength filter, one run on the
+   root took 22.1ms mean frame time / 74 dropped frames over a 5s scrub against 20.39ms / 55 (median
+   of three) with it on each piece; the two were never compared at the shipped strength. Filtered
+   pieces cost frames even while only one was drawing, which points to the filter being re-run on
+   every filtered sibling each frame (an SVG child is not its own compositor layer) -- inferred,
+   and piece count was never varied. */
 .pageInk {
   fill: none;
   stroke: var(--color-thread-red);
@@ -121,12 +121,10 @@
   filter: var(--bleed-thread);
 }
 
-/* Deliberate exclusion, not a fix for an observed defect: the no-JS fallback has no reason to carry a
-   bleed. Its paths live in a normalised 0-1 square stretched over `<main>`, and it was expected that a
-   filter's lengths would resolve in that user space and bloom page-sized -- forcing the filter on
-   with JS off measured otherwise (per-700px ink 1378 1489 1743 1264 1897 2176 1426 1009 1562 816
-   against 1385 1483 1733 1263 1892 2184 1419 1014 1563 820 unfiltered, no visible bloom), so
-   Chromium resolves those lengths as absolute CSS px. */
+/* Deliberate exclusion as insurance, not a fix for an observed defect. The no-JS fallback's paths
+   live in a 0-1 viewBox stretched over `<main>`, and in that arrangement the same three shadows
+   measured no visible effect (about 1350 tinted px with the filter against 1370 without), where in
+   a 1:1 pixel space they paint a plain halo (8669 against 1378). Why is not established. */
 .pageInk[data-thread-fallback] {
   filter: none;
 }

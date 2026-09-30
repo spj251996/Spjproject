@@ -139,6 +139,9 @@
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
+  --stroke-thread-wisp: 1.2px;
+  --stroke-rim-offset: 2px;
+
   /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same
      shape `--crease-fill` below uses for a whole gradient). Vermilion is lighter than the thread's
      own red but much darker than the ivory ground, which is what makes this an ink bleed that
@@ -157,8 +160,6 @@
       0 0 8.25px
         color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
     );
-  --stroke-thread-wisp: 1.2px;
-  --stroke-rim-offset: 2px;
 
   /* Every texture is one SVG drawn at three times its tile's CSS size and rasterised once by
      the browser, then tiled — at 1:1 a high-density display upscales the tile into blotches, and a
