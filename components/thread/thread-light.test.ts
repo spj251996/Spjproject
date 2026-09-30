@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { authoredCard } from "./thread-authored-layout.ts";
 import {
@@ -198,6 +198,33 @@ test("a head near the start of the thread is the tip end of the ramp, not a squa
   assert.equal(segments[0].step, 0, "the tip step is still the first");
 });
 
+/* The owner judged the colours BETWEEN the stops on every lab render, so the vermilion middle stop
+   is a settled design value, not an implementation detail. The step count is 14 with or without it
+   (26.6 direct, 27.1 through vermilion), so counting steps cannot defend it: this asserts the ramp's
+   actual colour where vermilion sits on it. */
+test("the ramp passes through vermilion, where vermilion sits on it", () => {
+  const segments = butts(headSegments(drawnAt(0.9), SINGLE, OPTIONS));
+  const steps = segments.length;
+  const vermilionAt =
+    deltaE(OPTIONS.tailColor, OPTIONS.midColor) /
+    (deltaE(OPTIONS.tailColor, OPTIONS.midColor) +
+      deltaE(OPTIONS.midColor, OPTIONS.tipColor));
+  let nearest = segments[0];
+  for (const segment of segments) {
+    const along = 1 - (segment.step + 0.5) / steps;
+    const best = 1 - (nearest.step + 0.5) / steps;
+    if (Math.abs(along - vermilionAt) < Math.abs(best - vermilionAt)) {
+      nearest = segment;
+    }
+  }
+  const [r, g, b] = nearest.stroke.match(/\d+/g)?.map(Number) ?? [];
+  const distance = deltaE([r, g, b], OPTIONS.midColor);
+  assert.ok(
+    distance < 0.5,
+    `the step at the vermilion stop is ${distance.toFixed(2)} from vermilion (${nearest.stroke})`,
+  );
+});
+
 test("the step count follows the colour span as well as the length", () => {
   assert.equal(headStepCount(OPTIONS), 14, "14 at the shipped values");
 
@@ -219,7 +246,7 @@ test("the step count follows the colour span as well as the length", () => {
   assert.ok(headStepCount({ ...OPTIONS, length: 4000 }) <= 48, "capped at 48");
 });
 
-test("each step runs under the one in front of it, so abutting ends leave no hairline", () => {
+test("each step runs under the one in front of it by a hair, as insurance against a seam", () => {
   const segments = butts(headSegments(drawnAt(0.5), SINGLE, OPTIONS));
   for (let i = 1; i < segments.length; i += 1) {
     const overlap = segments[i].end - segments[i - 1].start;
@@ -278,13 +305,13 @@ test("paint order lays the tip over its own tail and later pieces over earlier o
   }
 });
 
-test("a tip at a piece's end is covered by a round-capped overrun, not by a butt step past the path", () => {
+test("a tip at a piece's end is covered by a round-capped cover, since no butt step runs past the path", () => {
   const pieces = [
     { start: 0, end: 300 },
     { start: 300, end: 700 },
   ];
-  /* Piece 0 fully painted, piece 1 not begun: the ink's round cap sits at the end of piece 0 and a
-     butt cannot extend past a path. */
+  /* Piece 0 fully painted, piece 1 not begun: the ink's round cap sits at the end of piece 0, where
+     the clipped butt step stops short of it. */
   const segments = headSegments(300, pieces, OPTIONS);
   const dots = segments.filter((segment) => segment.cap === "round");
   assert.equal(dots.length, 1, "exactly one round-capped cover");
@@ -387,11 +414,36 @@ test("a run that stays inside its piece is not extended", () => {
   assert.ok(Math.abs(points[points.length - 1][0] - 20) < 0.01);
 });
 
-/* The head's colours and widths are read from the built stylesheet at runtime, so there is no copy
-   of a token value in the component to diverge from the token — the way a hand-edited JS constant
-   once did. This pins that it stays so: every token by name, and no literal in its place. */
-test("the component reads the head's values from the stylesheet rather than carrying copies", () => {
-  const component = readFileSync("components/thread/page-thread.tsx", "utf8");
+/* The head's colours and widths are read from the built stylesheet at runtime, so the component
+   carries no copy of a token value to diverge from the token — the way a hand-edited JS constant
+   once did. This pins that against the BUILT artifact, not the source: the built CSS defines every
+   token, and the built script reads them by name and carries no literal in their place. It needs an
+   export (`npm run build`), and says so rather than passing without one. */
+function builtChunks(extension: string): string {
+  const dir = "out/_next/static/chunks";
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(extension))
+    .map((name) => readFileSync(`${dir}/${name}`, "utf8"))
+    .join("\n");
+}
+
+test("the built page reads the head's values from the built stylesheet rather than carrying copies", (t) => {
+  if (!existsSync("out/_next/static/chunks")) {
+    t.skip("no static export: run `npm run build` first");
+    return;
+  }
+  const css = builtChunks(".css");
+  const script = builtChunks(".js");
+  for (const token of [
+    "--stroke-thread-head:3.2px",
+    "--color-thread-core:#ff7900",
+    "--halo-thread-head:drop-shadow(",
+  ]) {
+    assert.ok(
+      css.replace(/\s+/g, "").includes(token),
+      `${token} is not in the built CSS`,
+    );
+  }
   for (const token of [
     "--stroke-thread",
     "--stroke-thread-head",
@@ -399,10 +451,18 @@ test("the component reads the head's values from the stylesheet rather than carr
     "--color-thread-vermilion",
     "--color-thread-core",
   ]) {
-    assert.ok(component.includes(`"${token}"`), `${token} is not read by name`);
+    assert.ok(
+      script.includes(`"${token}"`),
+      `${token} is not read by name in the built script`,
+    );
   }
-  assert.doesNotMatch(component, /#[0-9a-fA-F]{6}\b/, "a raw hex colour");
-  assert.doesNotMatch(component, /\b3\.2\b/, "a copy of the tip width");
+  assert.doesNotMatch(script, /tipWidth:\s*[\d.]/, "a literal tip width");
+  assert.doesNotMatch(script, /baseWidth:\s*[\d.]/, "a literal base width");
+  assert.doesNotMatch(
+    script,
+    /#ff7900|255,\s*121,\s*0\b/i,
+    "a literal core colour",
+  );
 });
 
 /* ---------------------------------------------------------------------------------------------

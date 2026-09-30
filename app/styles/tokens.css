@@ -164,11 +164,12 @@
     );
 
   /* THE DRAWING HEAD'S HALO — the bleed's own shape at 4x, as one value on one group wrapping the
-     whole head. These are exactly the radii `--bleed-thread` was cut down from, and they are right
-     here and wrong there: as three shadows on every piece of a static line they cost 55 dropped
-     frames, and as one filter over the moving head's tight silhouette they cost 10 in the lab and
-     6 as built. The cost follows how much geometry the filter has to process, not its radius
-     (DESIGN.md -> Thread). */
+     whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
+     every piece of a static line they cost 55 dropped frames over a 5s scrub at 393x700; as one
+     filter over the moving head's tight silhouette they cost 6 as built (3 above the bleed alone).
+     What was isolated is that geometry dominated: dashed copies of whole pieces under the same
+     filter cost 54 against 10. Radius matters too (the bleed alone went 55 -> 9 -> 4 at 1.0x / 0.5x
+     / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). */
   --halo-thread-head: drop-shadow(
       0 0 3.5px
         color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)

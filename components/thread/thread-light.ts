@@ -35,10 +35,12 @@ const MAX_STEP_DELTA_E = 2;
 const MAX_STEP_LENGTH = 8;
 const MAX_STEPS = 48;
 
-/* Each step is run this far under the one behind it. Abutting butt ends antialias into a hairline
-   through which the dark ink beneath shows; a pale tip makes that hairline a visible tick. Exported
-   because the component also needs it: where the head crosses into a piece that lives in another
-   `<svg>`, the run on the near side has to carry the same overlap past its own path's end. */
+/* Each step is run this far under the one behind it, as insurance: the lab measured this within-stack
+   overlap as making no difference on the centreline, so it is kept because it costs nothing, not
+   because a seam was seen there. What WAS seen is a hairline (and a dark half-disc of ink cap) at the
+   join between the trunk's `<svg>` and the weave's, at 12x. That is why it is exported: where the
+   head crosses into a piece that lives in another `<svg>`, the run on the near side carries the same
+   overlap past its own path's end. */
 export const HEAD_STEP_OVERLAP = 1;
 
 /* The head's leading edge lies this far beyond the ink's own round cap. The two edges would otherwise
@@ -50,7 +52,7 @@ export const HEAD_TIP_MARGIN = 0.25;
    this length (see `headSegments`). */
 const END_COVER_LENGTH = 1.5;
 
-/* Below this, a piece has drawn nothing worth a head. Chromium also drops a dash this short. */
+/* Below this, a piece has drawn nothing worth a head. */
 const NEGLIGIBLE = 0.01;
 
 /* Paint order is a rank, not the order elements happen to be created in: a tight loop crosses
@@ -286,9 +288,14 @@ interface PieceSpan {
 
    Step 0's run reaches half the ink's width, plus `HEAD_TIP_MARGIN`, past the tip. The ink is
    round-capped, so it shows half its width beyond its own end, and a head ending exactly at the tip
-   would leave a dark pip of ink showing ahead of the light. When the tip is within that reach of a piece's end, a butt step
-   cannot reach past the path, and Chromium drops a dash that ends exactly at a path's end, so a
-   short round-capped run of the tip colour covers the ink's cap instead. */
+   would leave a dark pip of ink showing ahead of the light.
+
+   Each run is clipped to its own piece, so when the tip is within that reach of a piece's end the
+   butt step stops short of the ink's cap, and a short round-capped run of the tip colour covers it
+   instead. Measured on the shipped build with that cover removed: every one of the 30 forced
+   piece-end states checked (25 at wide, 5 at tall) showed a dark pip; with it, none. (The lab's
+   dashed head additionally could not draw a butt past a path's end at all; that mechanism is not
+   tested on the shipped polylines, and only the clipping is claimed here.) */
 export function headSegments(
   drawn: number,
   pieces: readonly PieceSpan[],
@@ -464,8 +471,8 @@ export interface PieceSamples {
 
 /* A position past the path's end continues along the path's own last direction. That is what lets a
    run cross into a piece that lives in another `<svg>`: this side has to overlap the far side, or
-   the far side's round cap of ink shows through as a speck and the two runs' butt ends antialias
-   into a hairline. */
+   this side's own round end cap of ink stands out past the join as a dark half-disc and the two
+   runs' butt ends antialias into a hairline (both seen at 12x). */
 export function polylineBetween(
   { xy, length }: PieceSamples,
   from: number,

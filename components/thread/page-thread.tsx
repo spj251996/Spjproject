@@ -450,11 +450,11 @@ function clearPieceDashes(paths: readonly (SVGPathElement | null)[]) {
    keeping a pool of `<path>`s.
 
    Each step of the head is a polyline through only its own run of the piece, never a dash on a copy
-   of the whole piece. A dashed path's bounding box is the whole piece however short the visible
-   dash is, and the head's halo is a filter over its group — so a dashed head made the filter
-   process hundreds of pixels for a head that has a few (58 dropped frames against 11). A piece's
-   points are computed from its own `d` (`samplePath`), once, the first time the head reaches it,
-   and a frame slices those numbers. */
+   of the whole piece. Measured: at equal radius and one grouped filter, dashed copies of whole pieces
+   cost 54 dropped frames against 10 for the polylines. Inferred, not observed: that a dashed path's
+   bounding box is the whole piece however short the visible dash is, so the head's halo filter
+   processes far more than the head. A piece's points are computed from its own `d` (`samplePath`),
+   once, the first time the head reaches it, and a frame slices those numbers. */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
