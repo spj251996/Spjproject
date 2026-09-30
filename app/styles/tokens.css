@@ -14,6 +14,7 @@
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
+  --color-thread-core: #ff7900;
   --color-shadow-warm: #3a301e;
   --color-paper-light: #ffffff;
 
@@ -139,6 +140,7 @@
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
+  --stroke-thread-head: 3.2px;
   --stroke-thread-wisp: 1.2px;
   --stroke-rim-offset: 2px;
 
@@ -158,6 +160,25 @@
     )
     drop-shadow(
       0 0 8.25px
+        color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
+    );
+
+  /* THE DRAWING HEAD'S HALO — the bleed's own shape at 4x, as one value on one group wrapping the
+     whole head. These are exactly the radii `--bleed-thread` was cut down from, and they are right
+     here and wrong there: as three shadows on every piece of a static line they cost 55 dropped
+     frames, and as one filter over the moving head's tight silhouette they cost 10 in the lab and
+     6 as built. The cost follows how much geometry the filter has to process, not its radius
+     (DESIGN.md -> Thread). */
+  --halo-thread-head: drop-shadow(
+      0 0 3.5px
+        color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)
+    )
+    drop-shadow(
+      0 0 12px
+        color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)
+    )
+    drop-shadow(
+      0 0 33px
         color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
     );
 

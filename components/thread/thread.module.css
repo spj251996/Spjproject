@@ -121,6 +121,20 @@
   filter: var(--bleed-thread);
 }
 
+/* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
+   filter on this ONE group, never on the steps inside it: per path it cost 141 dropped frames over
+   these tight polylines, against 10 for the group in the same comparison (6 as built). The steps' own colour, width and cap are set per
+   element by `page-thread.tsx`; only what is the same for all of them lives here. Hidden with
+   `display: none` while nothing draws, so an empty group is never filtered. */
+.pageHead {
+  filter: var(--halo-thread-head);
+}
+
+.pageHead path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
 /* Deliberate exclusion as insurance, not a fix for an observed defect. The no-JS fallback's paths
    live in a 0-1 viewBox stretched over `<main>`, and in that arrangement the same three shadows
    measured no visible effect (about 1350 tinted px with the filter against 1370 without), where in

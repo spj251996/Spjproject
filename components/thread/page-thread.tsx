@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import styles from "./thread.module.css";
 import {
   authoredCard,
@@ -13,6 +13,17 @@ import {
   splitSubpaths,
   subpathRange,
 } from "./thread-fallback";
+import {
+  HEAD_LENGTH_RATIO,
+  HEAD_STEP_OVERLAP,
+  type HeadOptions,
+  type HeadSegment,
+  headSegments,
+  type PieceSamples,
+  polylineBetween,
+  type Rgb,
+  samplePath,
+} from "./thread-light";
 import {
   createDrawRatchet,
   dashForPiece,
@@ -433,6 +444,145 @@ function clearPieceDashes(paths: readonly (SVGPathElement | null)[]) {
   }
 }
 
+/* ---------------------------------------------------------------------------------------------
+   THE DRAWING HEAD — light laid over the leading end of the ink while a piece draws. The arithmetic
+   is `thread-light.ts`'s and has no DOM; what is here is what needs one: reading the tokens and
+   keeping a pool of `<path>`s.
+
+   Each step of the head is a polyline through only its own run of the piece, never a dash on a copy
+   of the whole piece. A dashed path's bounding box is the whole piece however short the visible
+   dash is, and the head's halo is a filter over its group — so a dashed head made the filter
+   process hundreds of pixels for a head that has a few (58 dropped frames against 11). A piece's
+   points are computed from its own `d` (`samplePath`), once, the first time the head reaches it,
+   and a frame slices those numbers. */
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/* How close to a piece's own end counts as being at it: a run is clipped to the piece's length, so
+   this only absorbs floating-point rounding. */
+const END_TOLERANCE = 0.01;
+
+/* Read from the built stylesheet rather than copied, so a token edit cannot leave the head behind. */
+let resolvedHeadOptions: HeadOptions | undefined;
+
+function headOptions(): HeadOptions {
+  if (resolvedHeadOptions !== undefined) return resolvedHeadOptions;
+  const root = getComputedStyle(document.documentElement);
+  const length = (token: string) =>
+    Number.parseFloat(root.getPropertyValue(token));
+  const colour = (token: string): Rgb => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(${token})`;
+    document.body.append(probe);
+    const [r = 0, g = 0, b = 0] =
+      getComputedStyle(probe)
+        .color.match(/[\d.]+/g)
+        ?.map(Number) ?? [];
+    probe.remove();
+    return [r, g, b];
+  };
+  const baseWidth = length("--stroke-thread");
+  resolvedHeadOptions = {
+    length: HEAD_LENGTH_RATIO * baseWidth,
+    tipWidth: length("--stroke-thread-head"),
+    baseWidth,
+    tailColor: colour("--color-thread-red"),
+    midColor: colour("--color-thread-vermilion"),
+    tipColor: colour("--color-thread-core"),
+  };
+  return resolvedHeadOptions;
+}
+
+/* Writes an attribute only when it changed: the head repaints every frame, and re-setting an
+   identical attribute still costs a call. */
+function setAttribute(element: Element, name: string, value: string) {
+  if (element.getAttribute(name) !== value) element.setAttribute(name, value);
+}
+
+/* One painter per `<svg>` that carries a share of the head. `pathOf` maps a piece's index in the
+   WHOLE chain to that piece's `d` in this `<svg>`, or nothing when the piece lives in another
+   one — so the trunk and the weave call `paint` with the same chain and each draws its own runs,
+   which is what lets the head cross the join between them. */
+function createHeadPainter(
+  group: SVGGElement,
+  pathOf: (piece: number) => string | undefined,
+) {
+  const pool = new Map<string, SVGPathElement>();
+  const samples = new Map<number, PieceSamples>();
+  let shown = new Set<SVGPathElement>();
+
+  /* Elements are kept in rank order as they are created, so paint order is the DOM order. A tight
+     loop crosses itself, and the tip's step has to lie over the tail steps beneath it. */
+  function elementFor(segment: HeadSegment): SVGPathElement {
+    const key = `${segment.piece}:${segment.step}:${segment.cap}`;
+    const existing = pool.get(key);
+    if (existing !== undefined) return existing;
+    const element = document.createElementNS(SVG_NS, "path");
+    element.dataset.rank = String(segment.rank);
+    element.setAttribute("stroke-linecap", segment.cap);
+    const above = Array.from(group.children).find(
+      (child) => Number((child as SVGElement).dataset.rank) > segment.rank,
+    );
+    group.insertBefore(element, above ?? null);
+    pool.set(key, element);
+    return element;
+  }
+
+  function hide() {
+    for (const element of shown) element.style.display = "none";
+    shown = new Set();
+    group.style.display = "none";
+  }
+
+  return {
+    paint(drawn: number, pieces: readonly ThreadPiece[], options: HeadOptions) {
+      const used = new Set<SVGPathElement>();
+      for (const segment of headSegments(drawn, pieces, options)) {
+        const d = pathOf(segment.piece);
+        if (d === undefined) continue;
+        const piece = pieces[segment.piece];
+        const length = piece.end - piece.start;
+        let sampled = samples.get(segment.piece);
+        if (sampled === undefined) {
+          sampled = samplePath(d, length);
+          samples.set(segment.piece, sampled);
+        }
+        const element = elementFor(segment);
+        const continuesElsewhere =
+          segment.piece + 1 < pieces.length &&
+          pathOf(segment.piece + 1) === undefined &&
+          segment.end >= length - END_TOLERANCE;
+        setAttribute(
+          element,
+          "d",
+          polylineBetween(
+            sampled,
+            segment.start,
+            segment.end + (continuesElsewhere ? HEAD_STEP_OVERLAP : 0),
+          ),
+        );
+        setAttribute(element, "stroke", segment.stroke);
+        setAttribute(element, "stroke-width", segment.width.toFixed(3));
+        if (element.style.display !== "") element.style.display = "";
+        used.add(element);
+      }
+      for (const element of shown) {
+        if (!used.has(element)) element.style.display = "none";
+      }
+      shown = used;
+      group.style.display = used.size === 0 ? "none" : "";
+    },
+    /* A re-measure replaces every piece's `d`, so what was sampled describes a path that is gone. */
+    reset() {
+      samples.clear();
+      hide();
+    },
+    hide,
+  };
+}
+
+type HeadPainter = ReturnType<typeof createHeadPainter>;
+
 /* Shared by both components below: bind resize/fonts/reduced-motion, run `measure` once and again
    on every layout change, and hand back a cleanup. Scroll is wired separately by each caller because
    the two draw different things on scroll (the whole page's offset vs. wishes' own local one). */
@@ -489,6 +639,12 @@ export function PageThread() {
      the old single trunk path. */
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
+  /* EVERY piece of the page, weave included: the head is the last stretch of the drawn line, so
+     when the tip is a few pixels into Wishes' first piece the trunk still draws the head's tail in
+     its own last one (`thread-light.ts`'s header). */
+  const chainRef = useRef<readonly ThreadPiece[]>([]);
+  const headGroupRef = useRef<SVGGElement>(null);
+  const headRef = useRef<HeadPainter | null>(null);
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
      as `measured.sections` itself, never re-measured on scroll. `groupRectsRef` is `threadLine`'s own
      per-GROUP window rects (a stacked pair's own two card rects, a ritual list's own row rects, or a
@@ -502,6 +658,25 @@ export function PageThread() {
      line where it was, never unravel it. `WishesWeave` owns its own; the two maxima are in
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
+
+  const head = useCallback((): HeadPainter | null => {
+    const group = headGroupRef.current;
+    if (group === null) return null;
+    headRef.current ??= createHeadPainter(group, (index) =>
+      index < piecesRef.current.length
+        ? (pathsRef.current[index]?.getAttribute("d") ?? undefined)
+        : undefined,
+    );
+    return headRef.current;
+  }, []);
+
+  const draw = useCallback(
+    (drawn: number) => {
+      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
+      head()?.paint(drawn, chainRef.current, headOptions());
+    },
+    [head],
+  );
 
   function measure() {
     const wrapper = wrapperRef.current;
@@ -556,6 +731,8 @@ export function PageThread() {
       pathsRef.current[index]?.setAttribute("d", pieceD);
     });
     piecesRef.current = trunkPieces;
+    chainRef.current = pieces;
+    head()?.reset();
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
@@ -575,9 +752,7 @@ export function PageThread() {
         rangesRef.current,
         viewportHeightRef.current,
       );
-      applyPieceDashes(
-        pathsRef.current,
-        piecesRef.current,
+      draw(
         ratchetRef.current.advance(
           Math.max(
             drawn,
@@ -618,11 +793,7 @@ export function PageThread() {
       const step = (now: number) => {
         if (startedAt === 0) startedAt = now;
         const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
-        applyPieceDashes(
-          pathsRef.current,
-          piecesRef.current,
-          ratchetRef.current.advance(target * t),
-        );
+        draw(ratchetRef.current.advance(target * t));
         if (t < 1) rafId = window.requestAnimationFrame(step);
         else openingCompleteRef.current = true;
       };
@@ -633,7 +804,7 @@ export function PageThread() {
       window.clearTimeout(timer);
       if (rafId !== null) window.cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [draw]);
 
   useEffect(() => {
     let rafId: number | null = null;
@@ -642,9 +813,7 @@ export function PageThread() {
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
-        applyPieceDashes(
-          pathsRef.current,
-          piecesRef.current,
+        draw(
           ratchetRef.current.advance(
             pageDrawnLength(
               groupRectsRef.current,
@@ -661,7 +830,7 @@ export function PageThread() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
     };
-  }, []);
+  }, [draw]);
 
   return (
     <span aria-hidden="true" className={styles.pageWrapper} ref={wrapperRef}>
@@ -716,6 +885,7 @@ export function PageThread() {
             }}
           />
         ))}
+        <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>
   );
@@ -749,6 +919,15 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
      `PageThread`'s trunk. */
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
+  /* The head's chain is the whole page's, and `firstPieceRef` is where this weave's own pieces
+     begin in it -- each copy draws the share of the head that lies in its own pieces, from the same
+     drawn length the trunk uses, so the head crosses the join unbroken. The weave's `viewBox` is
+     the card's rect in `<main>` coordinates and its box is that same rect, so its user space is
+     1:1 with page pixels and the head's widths need no correction. */
+  const chainRef = useRef<readonly ThreadPiece[]>([]);
+  const firstPieceRef = useRef(0);
+  const headGroupRef = useRef<SVGGElement>(null);
+  const headRef = useRef<HeadPainter | null>(null);
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
      each `WishesWeave` measures independently (see the header comment), so it keeps its own.
      `groupRectsRef` is `threadLine`'s own per-GROUP rects, exactly like `PageThread`'s -- `wishes`
@@ -764,6 +943,18 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
      trunk's (`PageThread`'s own `ratchetRef`). */
   const ratchetRef = useRef(createDrawRatchet());
 
+  function head(): HeadPainter | null {
+    const group = headGroupRef.current;
+    if (group === null) return null;
+    headRef.current ??= createHeadPainter(group, (index) =>
+      index >= firstPieceRef.current
+        ? (pathsRef.current[index - firstPieceRef.current]?.getAttribute("d") ??
+          undefined)
+        : undefined,
+    );
+    return headRef.current;
+  }
+
   function reveal() {
     const pageDrawn = pageDrawnLength(
       groupRectsRef.current,
@@ -773,11 +964,9 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
     } else {
-      applyPieceDashes(
-        pathsRef.current,
-        piecesRef.current,
-        ratchetRef.current.advance(pageDrawn),
-      );
+      const drawn = ratchetRef.current.advance(pageDrawn);
+      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
+      head()?.paint(drawn, chainRef.current, headOptions());
     }
   }
 
@@ -827,6 +1016,9 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     // the retired single-dash `beforeLengthRef`, which had to subtract the page total down to
     // wishes' own local arc length because it was reasoning about ONE combined dash.
     piecesRef.current = wishesPieces;
+    chainRef.current = pieces;
+    firstPieceRef.current = range.start;
+    head()?.reset();
 
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
@@ -882,6 +1074,7 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
             }}
           />
         ))}
+        <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>
   );
