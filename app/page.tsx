@@ -536,8 +536,10 @@ function ContactPlate({ person }: { person: ContactPerson }) {
       {/* Always one column, never side by side: each action carries a mark as well as a label, so a
           side-by-side pair is wide enough to crowd a narrow plate, and one column keeps both
           targets the same width. */}
-      {/* Flush, with the wider gap above: each target is 44px around a 28px mark, so 8px of
-          invisible tap area sits either side of every action. */}
+      {/* Flush at phone and tablet, opening to `space-2xs` from 64rem in landscape in step with the
+          gap above it — the whole plate loosens at that window rather than the pair tightening
+          against it. Flush does not read as touching: each 44px disc sits in a 52px target, so two
+          flush actions still show 8px between their discs. */}
       <div className="mt-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-md flex flex-col items-center gap-0 [@media(width>=64rem)_and_(orientation:landscape)]:gap-space-2xs">
         <ButtonAction
           aria-label={`Call, ${person.name}`}
