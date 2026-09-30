@@ -9,6 +9,7 @@ const buttonAction = readFileSync(
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
 const page = readFileSync("app/page.tsx", "utf8");
+const tokens = readFileSync("app/styles/tokens.css", "utf8");
 
 function ruleBody(css: string, selector: string) {
   const match = css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`));
@@ -58,4 +59,17 @@ test("Contact prints no phone number and keeps no selection exception", () => {
   assert.doesNotMatch(page, /readableNumber/);
   assert.doesNotMatch(page, /data-contact-number/);
   assert.doesNotMatch(page, /contact\.css/);
+});
+
+// Bold is a deliberate departure from type-body-italic's 400, giving an action presence beside its disc.
+test("the action role keeps its bold weight and no superseded size token", () => {
+  assert.match(tokens, /--text-action--font-weight:\s*700/);
+  assert.match(
+    ruleBody(typeScale, "\\.type-action"),
+    /font-weight:\s*var\(--text-action--font-weight\)/,
+  );
+  assert.doesNotMatch(
+    tokens,
+    /--text-action(--letter-spacing|--line-height)?:/,
+  );
 });

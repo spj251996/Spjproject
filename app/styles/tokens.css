@@ -45,10 +45,7 @@
   --text-eyebrow--font-weight: 400;
   --text-eyebrow--letter-spacing: 0.2em;
   --text-eyebrow--line-height: 20px;
-  --text-action: 11px;
   --text-action--font-weight: 700;
-  --text-action--letter-spacing: 0.16em;
-  --text-action--line-height: 20px;
 
   /* Disabling the `--spacing` multiplier stops off-scale utilities such as `p-5` compiling. The
      bare zero step reopens only p-0, gap-0, inset-0 and the like. The named steps keep their
@@ -226,8 +223,6 @@
     --text-caption--line-height: 24px;
     --text-eyebrow: 11px;
     --text-eyebrow--line-height: 20px;
-    --text-action: 12px;
-    --text-action--line-height: 20px;
   }
 }
 
@@ -249,8 +244,6 @@
     --text-caption--line-height: 22px;
     --text-eyebrow: 10px;
     --text-eyebrow--line-height: 20px;
-    --text-action: 11px;
-    --text-action--line-height: 20px;
   }
 }
 
@@ -272,7 +265,5 @@
     --text-caption--line-height: 24px;
     --text-eyebrow: 12px;
     --text-eyebrow--line-height: 22px;
-    --text-action: 13px;
-    --text-action--line-height: 24px;
   }
 }
