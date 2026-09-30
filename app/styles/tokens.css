@@ -139,6 +139,24 @@
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
+  /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same
+     shape `--crease-fill` below uses for a whole gradient). Vermilion is lighter than the thread's
+     own red but much darker than the ivory ground, which is what makes this an ink bleed that
+     DARKENS the paper rather than light added to the stroke.
+     The radii are a quarter of the retired glow's 3.5 / 12 / 33px, the strength the owner chose on a
+     render. The full radii cost 55 dropped frames over a 5s scrub and these cost 4 (DESIGN.md →
+     Thread). */
+  --bleed-thread: drop-shadow(
+      0 0 0.875px
+        color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)
+    )
+    drop-shadow(
+      0 0 3px color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)
+    )
+    drop-shadow(
+      0 0 8.25px
+        color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
+    );
   --stroke-thread-wisp: 1.2px;
   --stroke-rim-offset: 2px;
 
