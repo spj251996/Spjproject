@@ -82,13 +82,13 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, a ruled mark's label and the marks only.",
+    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, an action's label and the marks only.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "Eyebrows, dividers, a ruled mark's rules and label, portrait rims, active states.",
+          "Eyebrows, dividers, an action's label and mark, portrait rims, active states.",
       },
     ],
   },
@@ -236,10 +236,10 @@ const TYPE_TOKENS: TypeToken[] = [
     family: "Libre Baskerville",
     weight: 700,
     sample: "Buttons and calls to action.",
-    phone: { size: 11, lh: 20 },
-    tablet: { size: 12, lh: 20 },
-    laptop: { size: 11, lh: 20 },
-    desktop: { size: 13, lh: 24 },
+    phone: { size: 13, lh: 26 },
+    tablet: { size: 14, lh: 28 },
+    laptop: { size: 13, lh: 26 },
+    desktop: { size: 16, lh: 32 },
   },
 ];
 

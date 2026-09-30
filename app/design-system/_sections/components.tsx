@@ -92,37 +92,38 @@ export function ComponentsSections() {
 
       <GallerySection
         id="ui"
-        intro="Portable primitives: the ruled mark, portraits, timeline nodes, the gallery overlay and the image stand-in."
+        intro="Portable primitives: the action, portraits, timeline nodes, the gallery overlay and the image stand-in."
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control, a ruled mark rather than a button: the label between two short gold rules, with no box at all. Used for the map action, a contact's call and WhatsApp actions, and for a completed timeline-node's gallery action."
+          description="The page's one control: a mark on a small raised disc beside a sentence-case italic label, with no box around it. Used for the map action, a contact's call and WhatsApp actions, and for a completed timeline-node's gallery action."
           id="ui-button-action"
           name="button-action"
-          note="The three states cannot be posed — hover it on a pointer device to see the whole mark grow and thicken without the rules shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
+          note="The three states cannot be posed — hover it on a pointer device to see the disc and label grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
           source="@/components/ui/button-action"
           spec={[
-            "rest · no fill, border, radius or depth anywhere",
-            "hover · the whole mark scales 1.06 and thickens optically — label 0.35px either side, mark 0.4px all round, rules 1.6x stroke-divider — so nothing reflows and the rules keep their length",
+            "rest · the mark on a touch-target disc in the bare surface-elevated colour with the mount shadow — never the bg-surface-elevated utility, which would lay the stock's grain; no fill, border or lift on the control itself",
+            "the mark is scaled on the disc, never resized by its size prop — each mark's box derives from its own drawing's diagonal, so equal sizes give unequal boxes",
+            "hover · the disc and label scale 1.06 and thicken optically — label 0.35px either side, mark 0.4px all round — so nothing reflows",
             "press · the whole mark dims",
             "focus · the focus ring on the target, never transitioned",
-            "the target is transparent and at least the touch target each way, so the rules hug the word while the hit area stays full size",
+            "the target is transparent and at least the touch target each way, so the hit area stays full size around the disc and label",
             "a web destination opens in its own tab; a telephone handoff and a link home stay in this one",
           ]}
         >
           <div className="flex flex-wrap gap-space-2xl">
             <Variant
               className="items-start"
-              label="The map action · map mark · named Map, <venue>"
+              label="The map action · map mark · reads Meet us here · named Map, <venue>"
             >
               <ButtonAction
                 aria-label={`Map, ${sampleEvent.venue}`}
                 href={sampleEvent.mapUrl}
                 mark={<MapIcon size={24} />}
               >
-                Map
+                Meet us here
               </ButtonAction>
             </Variant>
             <Variant

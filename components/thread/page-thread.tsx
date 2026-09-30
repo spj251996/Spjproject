@@ -379,8 +379,8 @@ function clearDash(path: SVGPathElement) {
   path.style.strokeDashoffset = "";
 }
 
-/* The opening sequence hands off at 2400ms -- ground present, then mount 200-600, stock 800-1200,
-   type 1400-1800, the thread's own fade 2000-2400 (`DESIGN.md` -> Motion -> The opening sequence).
+/* The opening sequence hands off at 2200ms -- ground present, then mount 200-600, stock 800-1200,
+   type 1400-1800, the thread's own fade 1800-2200 (`DESIGN.md` -> Motion -> The opening sequence).
    The draw begins as that fade completes, so this is the sequence's own end, not a value of its own.
    The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
    multiple rather than a coined number, since a fresh design value is the owner's to set.

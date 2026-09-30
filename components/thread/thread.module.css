@@ -47,10 +47,9 @@
    `app/invite.css` carries the mount, stock and type steps ahead of it). The thread fades in once
    mount, stock and type have each completed in turn — the ground carries no step at all, it is
    present from the first frame — so the two files describe one discrete-beat sequence without
-   sharing a keyframe across a module boundary. Delay = 4 × fast + 3 × base = 2000ms, the same
-   `n × fast + (n − 1) × base` formula `app/invite.css` states for the steps ahead of it; the fade
-   itself IS the beat before the draw, so nothing further is stacked once it completes (confirmed by
-   render, `task-1-report.md`). This rule governs BOTH the no-JS fallback svg and the live one (both
+   sharing a keyframe across a module boundary. Delay = 3 × fast + 3 × base = 1800ms: the fade drops
+   the beat the mount, stock and type steps carry (`n × fast + (n − 1) × base`, `app/invite.css`) and
+   begins as the type lands. It ends at 2200ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. This rule governs BOTH the no-JS fallback svg and the live one (both
    carry `.pageRoot`): the fallback paints the thread in its authored position and this is the only
    thing that ever animates it, so "without JS the same sequence runs from CSS alone" (this file's
    own header, and `page-thread.tsx`'s) holds with no second code path. It does not reach
