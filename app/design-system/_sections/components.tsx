@@ -12,8 +12,6 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import { CallIcon, ChatIcon, MapIcon } from "@/components/icons";
-import { Thread } from "@/components/shell/thread";
-import { ThreadOverlay } from "@/components/shell/thread-overlay";
 import { ButtonAction } from "@/components/ui/button-action";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
 import { ImagePlaceholder } from "@/components/ui/image-placeholder";
@@ -38,8 +36,6 @@ function Variant({ label, className, children }: VariantProps) {
   );
 }
 
-const THREAD_POSES = [0.25, 0.6, 1];
-
 /* The composing section sets the diameter, and the specimen has none of its own, so it borrows
    Family's. These literals copy `components/family/family.tsx` and must follow it. */
 const PORTRAIT_SIZING =
@@ -48,48 +44,6 @@ const PORTRAIT_SIZING =
 export function ComponentsSections() {
   return (
     <>
-      <GallerySection
-        id="shell"
-        intro="The thread: the one continuous overlay that runs the length of the page, and the family section's own drawing of it."
-        mapsTo="Components → Shell"
-        title="Components · Shell"
-      >
-        <Specimen
-          description="The narrative spine, one SVG overlay across the whole page, posed at three points of its reveal."
-          id="shell-thread-overlay"
-          name="thread-overlay"
-          note="Known gap until the Phase 5 rebuild: the interim component is viewport-fixed with stand-in curves, draws no wisp, and glows in one thread-red shadow instead of the vermilion stack."
-          source="@/components/shell/thread-overlay"
-          spec="thread-red · stroke-thread · round caps · z-thread · doc: wisp at 0.7, vermilion glow in three stacked shadows"
-        >
-          <div className="grid gap-space-md md:grid-cols-3">
-            {THREAD_POSES.map((progress) => (
-              <Variant
-                key={progress}
-                label={`${Math.round(progress * 100)}% drawn`}
-              >
-                <ChromeFrame ariaHidden height={260}>
-                  <ThreadOverlay demoProgress={progress} />
-                </ChromeFrame>
-              </Variant>
-            ))}
-          </div>
-        </Specimen>
-
-        <Specimen
-          description="A section-anchored drawing of the thread that curls back on itself: the family wrap, joining the bride side to the groom side."
-          id="shell-thread"
-          name="thread"
-          note="Draws once as it scrolls into view; reload to replay. Drawn in full under reduced motion. Its paths are placeholders and it renders on no page before Phase 5. It draws no wisp, and glows in one thread-red shadow where the doc's thread-overlay describes a vermilion stack. The mobile path shows below lg, the desktop path from lg."
-          source="@/components/shell/thread"
-          spec="thread-red · stroke-thread · round caps · z-thread · section-anchored · duration-slow draw · glow as the draw ends"
-        >
-          <ChromeFrame ariaHidden height={320}>
-            <Thread />
-          </ChromeFrame>
-        </Specimen>
-      </GallerySection>
-
       <GallerySection
         id="ui"
         intro="Portable primitives: the action, portraits, timeline nodes, the gallery overlay and the image stand-in."
