@@ -35,9 +35,19 @@
    against `<main>` directly -- `.pageWrapper`'s own `inset: 0` above is what has to reach `<main>`,
    and does, because `<main>` is already positioned. Everything JS-driven measures its own wrapper
    instead and does not depend on either. */
+/* `width`/`height` are NOT redundant beside `inset: 0`. An `<svg>` carrying a `viewBox` is a
+   replaced element with an intrinsic aspect ratio, so with `height: auto` it resolves its width from
+   `left`/`right` and then takes its HEIGHT FROM THAT RATIO, ignoring `bottom: 0` — the static
+   fallback's `viewBox="0 0 1 1"` made it a 393x393 SQUARE inside a wrapper correctly spanning
+   `<main>` at 393x6576, so the whole page-length thread was squeezed into the first screen (7,050 of
+   its 7,053 ink pixels in the first 700px band, 3 in all the rest). Only the no-JS reader ever saw
+   it: the live svg is given an explicit box by `coverRect`, whose inline style wins here anyway.
+   `.notFoundSvg` below has always carried this pair, which is what the omission reads as. */
 .pageRoot {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: var(--z-thread);
   overflow: visible;
