@@ -99,12 +99,20 @@ const COLOR_GROUPS: SwatchGroup[] = [
       {
         token: "--color-thread-red",
         name: "thread-red",
-        usage: "The thread's ink, tapered ends included.",
+        usage:
+          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp.",
       },
       {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
-        usage: "The thread's glow only. Never a stroke or text.",
+        usage:
+          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp. Never the ink, never text.",
+      },
+      {
+        token: "--color-thread-core",
+        name: "thread-core",
+        usage:
+          "The tip of the drawing head's colour ramp, the hottest the thread gets. Never the ink, never text.",
       },
     ],
   },
@@ -304,7 +312,7 @@ const DURATION_TOKENS: DurationToken[] = [
 const DURATION_USES = [
   "fast · state changes: node activation glow, action feedback",
   "base · section and sheet reveals, the modal",
-  "slow · the invite thread draw-in and the family thread wrap",
+  "slow · the closed thread draw on not-found",
 ];
 
 const EASING_TOKENS: EasingToken[] = [
@@ -314,7 +322,7 @@ const EASING_TOKENS: EasingToken[] = [
 
 const EASING_USES = [
   "entrance · anything appearing",
-  "settle · anything the thread does",
+  "settle · the not-found draw",
 ];
 
 const SHAPE_ITEMS: ShapeItem[] = [
@@ -441,7 +449,7 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, mahogany ink, one gold, and one warm red for the thread."
+        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own three: red ink, vermilion light and the head's orange tip."
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"

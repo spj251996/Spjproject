@@ -629,7 +629,7 @@ function taperOptions(): TaperOptionsResolved {
    outside its region the masked ink is not painted at all, so the region must cover the piece, and
    it must be no larger than that. A region that covered every page the thread could span (100000px
    either way) made the page cost 27.1ms mean frame time and 116 dropped frames over the scrub
-   against 17.0 and 6, although only three short pieces carry a mask. */
+   against 17.0 and 6, although only three pieces carry a mask. */
 const MASK_MARGIN = 4;
 
 function fitMaskRegion(cut: SVGPathElement, { xy }: PieceSamples) {
@@ -651,11 +651,6 @@ function fitMaskRegion(cut: SVGPathElement, { xy }: PieceSamples) {
 function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
   let runs: { element: SVGPathElement; segment: TaperSegment }[] = [];
 
-  function hide() {
-    for (const { element } of runs) element.style.display = "none";
-    group.style.display = "none";
-  }
-
   return {
     /* Replaces the taper for a new `d`: every run is built here, hidden until `paint` shows it. */
     set(
@@ -666,9 +661,11 @@ function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
       runs = [];
       cut.removeAttribute("d");
       group.style.display = "none";
-      if (end === undefined || !(taperLength > 0) || !(strokeWidth > 0)) return;
+      if (end === undefined) return;
       const samples = samplePath(end.d, end.length);
+      /* Fitted even when there is no taper to build, so the mask never keeps its unmeasured region. */
       fitMaskRegion(cut, samples);
+      if (!(taperLength > 0) || !(strokeWidth > 0)) return;
       const span = taperCut(end.endAt, end.length, end.direction, taperLength);
       cut.setAttribute("d", polylineBetween(samples, span.from, span.to));
       for (const segment of taperSegments(
@@ -705,7 +702,6 @@ function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
       if (group.style.display !== groupDisplay)
         group.style.display = groupDisplay;
     },
-    hide,
   };
 }
 

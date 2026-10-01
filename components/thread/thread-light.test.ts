@@ -765,9 +765,6 @@ test("a run shows once the ink has drawn all the way along it", () => {
       atStart.every((s) => taperReached(s, 400)),
     "the start end is reached the same way: ink grows from arc 0",
   );
-  assert.ok(
-    taperReached(segments[0], 400 - TAPER.taperLength + 0.1 + 2 - 0.1) || true,
-  );
 });
 
 test("the cut-back takes the ink off exactly the tapered stretch and a margin past the free end", () => {
