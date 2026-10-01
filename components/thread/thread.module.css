@@ -113,12 +113,37 @@
    pieces cost frames even while only one was drawing, which points to the filter being re-run on
    every filtered sibling each frame (an SVG child is not its own compositor layer) -- inferred,
    and piece count was never varied. */
-.pageInk {
+.pageInk,
+.pageInkBare {
   fill: none;
   stroke: var(--color-thread-red);
   stroke-linecap: round;
   stroke-width: var(--stroke-thread);
+}
+
+/* A piece that carries a taper takes its bleed on a group around the masked path (`ThreadInk`), so
+   the ink is cut before the filter runs. */
+.pageInk,
+.pageBleed {
   filter: var(--bleed-thread);
+}
+
+/* A tapered end (`thread-light.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
+   takes the thread's own colour and its bleed: a taper that did not bleed would read as a different
+   material from the line it ends. The bleed is ONE filter on the group, as the head's halo is, over
+   geometry that never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
+   past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
+   compounds across the stack. Hidden with `display: none` while no run has been reached, so an empty
+   group is never filtered. */
+.pageTaper {
+  filter: var(--bleed-thread);
+}
+
+.pageTaper path {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: butt;
+  stroke-linejoin: round;
 }
 
 /* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE

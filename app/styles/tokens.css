@@ -142,6 +142,9 @@
   --stroke-thread: 1.6px;
   --stroke-thread-head: 3.2px;
   --stroke-thread-wisp: 1.2px;
+  /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
+     ends). */
+  --length-thread-taper: 24px;
   --stroke-rim-offset: 2px;
 
   /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same

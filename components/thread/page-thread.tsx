@@ -20,9 +20,16 @@ import {
   type HeadSegment,
   headSegments,
   type PieceSamples,
+  paintedLength,
   polylineBetween,
   type Rgb,
   samplePath,
+  TAPER_CUT_WIDTH,
+  TAPER_STEPS,
+  type TaperSegment,
+  taperCut,
+  taperReached,
+  taperSegments,
 } from "./thread-light";
 import {
   createDrawRatchet,
@@ -583,6 +590,208 @@ function createHeadPainter(
 
 type HeadPainter = ReturnType<typeof createHeadPainter>;
 
+/* ---------------------------------------------------------------------------------------------
+   THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
+   `thread-light.ts`'s; what is here is the DOM it needs.
+
+   A taper is a stack of narrowing runs laid over a stretch of ink that has been cut away beneath
+   them (a stroke cannot be thinned by drawing a narrower one over it). The cut is a `<mask>` on the
+   piece's own `<path>`, and deliberately not a change to the piece: its `d` and its dash are what
+   the draw-order gate reads, and "the light must not move the line" holds only while they stay
+   exactly as `applyPieceDashes` writes them. The runs and the cut are built once, when the page is
+   measured; a frame only shows the runs the ink has reached. */
+
+interface TaperEnd {
+  /* The `d` of the piece the end sits on, and its length from the model. */
+  readonly d: string;
+  readonly length: number;
+  readonly endAt: number;
+  readonly direction: -1 | 1;
+}
+
+interface TaperOptionsResolved {
+  readonly taperLength: number;
+  readonly strokeWidth: number;
+}
+
+/* Read at each measure rather than cached, so a retuned token takes effect on the next re-measure. */
+function taperOptions(): TaperOptionsResolved {
+  const root = getComputedStyle(document.documentElement);
+  return {
+    taperLength: Number.parseFloat(
+      root.getPropertyValue("--length-thread-taper"),
+    ),
+    strokeWidth: Number.parseFloat(root.getPropertyValue("--stroke-thread")),
+  };
+}
+
+/* The mask's region is the piece's own bounding box and a margin for the cap, not the whole svg:
+   outside its region the masked ink is not painted at all, so the region must cover the piece, and
+   it must be no larger than that. A region that covered every page the thread could span (100000px
+   either way) made the page cost 27.1ms mean frame time and 116 dropped frames over the scrub
+   against 17.0 and 6, although only three short pieces carry a mask. */
+const MASK_MARGIN = 4;
+
+function fitMaskRegion(cut: SVGPathElement, { xy }: PieceSamples) {
+  const mask = cut.parentElement;
+  if (mask === null) return;
+  let [left, top, right, bottom] = [xy[0], xy[1], xy[0], xy[1]];
+  for (let i = 2; i < xy.length; i += 2) {
+    left = Math.min(left, xy[i]);
+    right = Math.max(right, xy[i]);
+    top = Math.min(top, xy[i + 1]);
+    bottom = Math.max(bottom, xy[i + 1]);
+  }
+  mask.setAttribute("x", String(left - MASK_MARGIN));
+  mask.setAttribute("y", String(top - MASK_MARGIN));
+  mask.setAttribute("width", String(right - left + 2 * MASK_MARGIN));
+  mask.setAttribute("height", String(bottom - top + 2 * MASK_MARGIN));
+}
+
+function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
+  let runs: { element: SVGPathElement; segment: TaperSegment }[] = [];
+
+  function hide() {
+    for (const { element } of runs) element.style.display = "none";
+    group.style.display = "none";
+  }
+
+  return {
+    /* Replaces the taper for a new `d`: every run is built here, hidden until `paint` shows it. */
+    set(
+      end: TaperEnd | undefined,
+      { taperLength, strokeWidth }: TaperOptionsResolved,
+    ) {
+      group.replaceChildren();
+      runs = [];
+      cut.removeAttribute("d");
+      group.style.display = "none";
+      if (end === undefined || !(taperLength > 0) || !(strokeWidth > 0)) return;
+      const samples = samplePath(end.d, end.length);
+      fitMaskRegion(cut, samples);
+      const span = taperCut(end.endAt, end.length, end.direction, taperLength);
+      cut.setAttribute("d", polylineBetween(samples, span.from, span.to));
+      for (const segment of taperSegments(
+        end.endAt,
+        end.length,
+        end.direction,
+        {
+          steps: TAPER_STEPS,
+          taperLength,
+          strokeWidth,
+        },
+      )) {
+        const element = document.createElementNS(SVG_NS, "path");
+        element.setAttribute(
+          "d",
+          polylineBetween(samples, segment.start, segment.end),
+        );
+        element.setAttribute("stroke-width", segment.width.toFixed(3));
+        element.style.display = "none";
+        group.append(element);
+        runs.push({ element, segment });
+      }
+    },
+    /* `painted` is how far along the piece the ink has reached. */
+    paint(painted: number) {
+      let shown = 0;
+      for (const { element, segment } of runs) {
+        const visible = taperReached(segment, painted);
+        const display = visible ? "" : "none";
+        if (element.style.display !== display) element.style.display = display;
+        if (visible) shown += 1;
+      }
+      const groupDisplay = shown === 0 ? "none" : "";
+      if (group.style.display !== groupDisplay)
+        group.style.display = groupDisplay;
+    },
+    hide,
+  };
+}
+
+type TaperPainter = ReturnType<typeof createTaperPainter>;
+
+/* One piece's ink. A piece that carries a taper is cut BEFORE its bleed, not after: the filter sits on
+   a group around the masked path, so the halo is the halo of the ink that is left and falls away
+   naturally at the cut. Masking the filter's output instead leaves the halo of the full-width ink
+   standing up to a straight edge, a visible rectangle beside the taper. */
+function ThreadInk({
+  cutId,
+  index,
+  pathRef,
+}: {
+  cutId: string | undefined;
+  index: number;
+  pathRef: React.Ref<SVGPathElement>;
+}) {
+  if (cutId === undefined) {
+    return (
+      <path
+        className={styles.pageInk}
+        d=""
+        data-thread-piece={index}
+        ref={pathRef}
+      />
+    );
+  }
+  return (
+    <g className={styles.pageBleed}>
+      <path
+        className={styles.pageInkBare}
+        d=""
+        data-thread-piece={index}
+        mask={`url(#${cutId})`}
+        ref={pathRef}
+      />
+    </g>
+  );
+}
+
+/* The mask that cuts the ink away under a taper. One per `<svg>`, so its id is fixed per slot: the
+   trunk's, and each of the weave's two copies. `maskUnits` is the user space because the default
+   region is a percentage margin around the piece's bounding box, which is not a margin the cut can
+   rely on. This extent is only the region before the page is measured: `fitMaskRegion` narrows it
+   to the piece, which is what keeps the mask cheap. */
+const MASK_EXTENT = 100000;
+const TRUNK_CUT_ID = "thread-taper-cut-trunk";
+
+function TaperCutMask({
+  id,
+  cutRef,
+}: {
+  id: string;
+  cutRef: React.Ref<SVGPathElement>;
+}) {
+  return (
+    <defs>
+      <mask
+        height={2 * MASK_EXTENT}
+        id={id}
+        maskUnits="userSpaceOnUse"
+        width={2 * MASK_EXTENT}
+        x={-MASK_EXTENT}
+        y={-MASK_EXTENT}
+      >
+        <rect
+          fill="white"
+          height={2 * MASK_EXTENT}
+          width={2 * MASK_EXTENT}
+          x={-MASK_EXTENT}
+          y={-MASK_EXTENT}
+        />
+        <path
+          fill="none"
+          ref={cutRef}
+          stroke="black"
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+          strokeWidth={TAPER_CUT_WIDTH}
+        />
+      </mask>
+    </defs>
+  );
+}
+
 /* Shared by both components below: bind resize/fonts/reduced-motion, run `measure` once and again
    on every layout change, and hand back a cleanup. Scroll is wired separately by each caller because
    the two draw different things on scroll (the whole page's offset vs. wishes' own local one). */
@@ -645,6 +854,9 @@ export function PageThread() {
   const chainRef = useRef<readonly ThreadPiece[]>([]);
   const headGroupRef = useRef<SVGGElement>(null);
   const headRef = useRef<HeadPainter | null>(null);
+  const taperGroupRef = useRef<SVGGElement>(null);
+  const cutRef = useRef<SVGPathElement>(null);
+  const taperRef = useRef<TaperPainter | null>(null);
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
      as `measured.sections` itself, never re-measured on scroll. `groupRectsRef` is `threadLine`'s own
      per-GROUP window rects (a stacked pair's own two card rects, a ritual list's own row rects, or a
@@ -670,12 +882,22 @@ export function PageThread() {
     return headRef.current;
   }, []);
 
+  const taper = useCallback((): TaperPainter | null => {
+    const group = taperGroupRef.current;
+    const cut = cutRef.current;
+    if (group === null || cut === null) return null;
+    taperRef.current ??= createTaperPainter(group, cut);
+    return taperRef.current;
+  }, []);
+
   const draw = useCallback(
     (drawn: number) => {
       applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
       head()?.paint(drawn, chainRef.current, headOptions());
+      const first = piecesRef.current[0];
+      if (first !== undefined) taper()?.paint(paintedLength(drawn, first));
     },
-    [head],
+    [head, taper],
   );
 
   function measure() {
@@ -733,6 +955,18 @@ export function PageThread() {
     piecesRef.current = trunkPieces;
     chainRef.current = pieces;
     head()?.reset();
+    const invitePiece = trunkPieces[0];
+    taper()?.set(
+      invitePiece === undefined
+        ? undefined
+        : {
+            d: trunkSubpaths[0],
+            length: invitePiece.end - invitePiece.start,
+            endAt: 0,
+            direction: -1,
+          },
+      taperOptions(),
+    );
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
@@ -740,6 +974,7 @@ export function PageThread() {
 
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
+      taper()?.paint(Number.POSITIVE_INFINITY);
     } else {
       /* The path this ratchet's maximum was measured against no longer exists, so the maximum goes
          with it and the `advance` below re-seeds from the fresh measurement. The opening draw's own
@@ -873,18 +1108,19 @@ export function PageThread() {
             like the fallback's own `band` keys above: the SET of pieces this page draws is fixed
             (structural, band-invariant -- `MAIN_PIECE_COUNT`'s own header), so index and identity
             never diverge here. */}
+        <TaperCutMask cutRef={cutRef} id={TRUNK_CUT_ID} />
         {Array.from({ length: MAIN_PIECE_COUNT }, (_, index) => (
-          <path
-            className={styles.pageInk}
-            d=""
-            data-thread-piece={index}
+          <ThreadInk
+            cutId={index === 0 ? TRUNK_CUT_ID : undefined}
+            index={index}
             // biome-ignore lint/suspicious/noArrayIndexKey: MAIN_PIECE_COUNT is a fixed structural constant -- these never reorder or change count.
             key={index}
-            ref={(el) => {
+            pathRef={(el) => {
               pathsRef.current[index] = el;
             }}
           />
         ))}
+        <g className={styles.pageTaper} ref={taperGroupRef} />
         <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>
@@ -928,6 +1164,9 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const firstPieceRef = useRef(0);
   const headGroupRef = useRef<SVGGElement>(null);
   const headRef = useRef<HeadPainter | null>(null);
+  const taperGroupRef = useRef<SVGGElement>(null);
+  const cutRef = useRef<SVGPathElement>(null);
+  const taperRef = useRef<TaperPainter | null>(null);
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
      each `WishesWeave` measures independently (see the header comment), so it keeps its own.
      `groupRectsRef` is `threadLine`'s own per-GROUP rects, exactly like `PageThread`'s -- `wishes`
@@ -955,6 +1194,14 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     return headRef.current;
   }
 
+  function taper(): TaperPainter | null {
+    const group = taperGroupRef.current;
+    const cut = cutRef.current;
+    if (group === null || cut === null) return null;
+    taperRef.current ??= createTaperPainter(group, cut);
+    return taperRef.current;
+  }
+
   function reveal() {
     const pageDrawn = pageDrawnLength(
       groupRectsRef.current,
@@ -963,10 +1210,13 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     );
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
+      taper()?.paint(Number.POSITIVE_INFINITY);
     } else {
       const drawn = ratchetRef.current.advance(pageDrawn);
       applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
       head()?.paint(drawn, chainRef.current, headOptions());
+      const last = piecesRef.current[piecesRef.current.length - 1];
+      if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
     }
   }
 
@@ -1019,6 +1269,20 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     chainRef.current = pieces;
     firstPieceRef.current = range.start;
     head()?.reset();
+    const closingPiece = wishesPieces[wishesPieces.length - 1];
+    const closingLength =
+      closingPiece === undefined ? 0 : closingPiece.end - closingPiece.start;
+    taper()?.set(
+      closingPiece === undefined
+        ? undefined
+        : {
+            d: wishesSubpaths[wishesSubpaths.length - 1],
+            length: closingLength,
+            endAt: closingLength,
+            direction: 1,
+          },
+      taperOptions(),
+    );
 
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
@@ -1062,18 +1326,23 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
         ref={svgRef}
         role="presentation"
       >
+        <TaperCutMask cutRef={cutRef} id={`thread-taper-cut-${slot}`} />
         {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
-          <path
-            className={styles.pageInk}
-            d=""
-            data-thread-piece={index}
+          <ThreadInk
+            cutId={
+              index === WISHES_PIECE_COUNT - 1
+                ? `thread-taper-cut-${slot}`
+                : undefined
+            }
+            index={index}
             // biome-ignore lint/suspicious/noArrayIndexKey: WISHES_PIECE_COUNT is a fixed structural constant -- these never reorder or change count.
             key={index}
-            ref={(el) => {
+            pathRef={(el) => {
               pathsRef.current[index] = el;
             }}
           />
         ))}
+        <g className={styles.pageTaper} ref={taperGroupRef} />
         <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>

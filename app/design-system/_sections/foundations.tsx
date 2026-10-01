@@ -99,7 +99,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
       {
         token: "--color-thread-red",
         name: "thread-red",
-        usage: "The thread and its wisp.",
+        usage: "The thread's ink, tapered ends included.",
       },
       {
         token: "--color-thread-vermilion",
