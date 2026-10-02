@@ -1234,8 +1234,9 @@ test("an empty segment has no glow", () => {
 
 test("the glow has enough strokes that no rim steps the composite by more than 0.05", () => {
   /* Three strokes fitted to the same curve pass the falloff test above and were seen to band at 3x:
-     their rims step the share by 0.08 and more. The shipped eight step by at most their innermost
-     alpha, 0.047. This bounds the step directly, and the count with it. */
+     their rims step the share by 0.08 and more. The shipped eight step by at most 0.041 (the 6px
+     and 13px strokes' rims), under 0.05, which is the bound. This bounds the step directly, and the
+     count with it. */
   assert.ok(
     RETRACE_GLOW.length >= 8,
     "fewer strokes than the eight that were seen not to band",

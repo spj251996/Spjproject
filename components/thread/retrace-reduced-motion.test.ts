@@ -9,7 +9,8 @@ import test from "node:test";
    `document.getAnimations()` is no longer evidence either way (it reads 0 whether or not a loop runs).
    What distinguishes the two states is the re-trace's own DOM: how many stretches were built, how many
    glow paths are showing, and whether the thread's pieces are dashed. Run against the static export,
-   as the built-artifact tests are, and skipped, saying so, without one or without a browser. */
+   as the built-artifact tests are, and skipped, saying so, without one; a browser that will not
+   launch fails it. */
 
 const TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -73,14 +74,10 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
     t.skip("no static export: run `npm run build` first");
     return;
   }
-  let browser: import("playwright").Browser;
-  try {
-    const { chromium } = await import("playwright");
-    browser = await chromium.launch({ channel: "chromium" });
-  } catch {
-    t.skip("no Chromium to drive");
-    return;
-  }
+  /* Not wrapped: with an export present, a missing browser or a launch error must fail this test,
+     not skip it, or the only protection reduced motion has would disappear without a sound. */
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
   try {
     const open = async (reducedMotion: "reduce" | "no-preference") => {
