@@ -133,8 +133,10 @@
    material from the line it ends. The bleed is ONE filter on the group, as the head's halo is, over
    geometry that never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
    past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
-   compounds across the stack. Hidden with `display: none` while no run has been reached, so an empty
-   group is never filtered. */
+   compounds across the stack. The painter hides it with `display: none` once it has run and no run has
+   been reached; before that (the shipped markup, and for a reader with no script) the group is simply
+   empty, and an empty group's bounding box is empty, so it is INFERRED, not measured, that its filter
+   costs nothing. */
 .pageTaper {
   filter: var(--bleed-thread);
 }
@@ -150,7 +152,9 @@
    filter on this ONE group, never on the steps inside it: per path it cost 141 dropped frames over
    these tight polylines, against 10 for the group in the same comparison (6 as built). The steps' own colour, width and cap are set per
    element by `page-thread.tsx`; only what is the same for all of them lives here. Hidden with
-   `display: none` while nothing draws, so an empty group is never filtered. */
+   `display: none` once a painter has run and nothing draws; before that (the shipped markup, and for a
+   reader with no script) the group is simply empty, and an empty group's bounding box is empty, so it
+   is INFERRED, not measured, that its filter costs nothing. */
 .pageHead {
   filter: var(--halo-thread-head);
 }

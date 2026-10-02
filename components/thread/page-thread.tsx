@@ -486,8 +486,10 @@ export function tokenLength(token: string): number {
   );
 }
 
-export function tokenColour(token: string): Rgb {
+function tokenColour(token: string): Rgb {
   const probe = document.createElement("span");
+  /* Out of flow: `<body>` is a flex container, and an in-flow box is a flex item even at zero height. */
+  probe.style.position = "absolute";
   probe.style.color = `var(${token})`;
   document.body.append(probe);
   const [r = 0, g = 0, b = 0] =
@@ -498,6 +500,9 @@ export function tokenColour(token: string): Rgb {
   return [r, g, b];
 }
 
+/* Both option builders resolve their tokens once per load and hand back the same object (`stackFor`
+   keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
+   specimens included, not on a hot update. */
 let resolvedHeadOptions: HeadOptions | undefined;
 
 export function headOptions(): HeadOptions {
@@ -638,6 +643,15 @@ function tokenTime(token: string): number | undefined {
   return parseCssTime(
     getComputedStyle(document.documentElement).getPropertyValue(token),
   );
+}
+
+/* Read once: it is asked for on every frame that advances the drawn length, which is every frame of
+   the opening draw and of the first descent. */
+let resolvedRetraceSettle: number | undefined;
+
+function retraceSettle(): number | undefined {
+  resolvedRetraceSettle ??= tokenTime("--retrace-settle");
+  return resolvedRetraceSettle;
 }
 
 interface RetraceFrame {
@@ -795,7 +809,9 @@ function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
       group.style.display = "none";
       if (end === undefined) return;
       const samples = samplePath(end.d, end.length);
-      /* Fitted even when there is no taper to build, so the mask never keeps its unmeasured region. */
+      /* Fitted even when no taper is built below it (an unresolved length or width). The early return
+         above is the one case that keeps the unmeasured region, and it cannot happen: both ends
+         always exist. */
       fitMaskRegion(cut, samples);
       if (!(taperLength > 0) || !(strokeWidth > 0)) return;
       const span = taperCut(end.endAt, end.length, end.direction, taperLength);
@@ -878,34 +894,52 @@ function ThreadInk({
 /* The mask that cuts the ink away under a taper. One per `<svg>`, so its id is fixed per slot: the
    trunk's, and each of the weave's two copies. `maskUnits` is the user space because the default
    region is a percentage margin around the piece's bounding box, which is not a margin the cut can
-   rely on. This extent is only the region before the page is measured: `fitMaskRegion` narrows it
-   to the piece, which is what keeps the mask cheap. */
+   rely on. Without a `region` the mask takes this extent, which is only the region before the page is
+   measured: `fitMaskRegion` narrows it to the piece, which is what keeps the mask cheap. A caller that
+   never measures through the page (the gallery) passes the fitted `region` itself, because a mask
+   this large costs 27.1ms mean frame time and 116 dropped frames on the page. */
 const MASK_EXTENT = 100000;
 const TRUNK_CUT_ID = "thread-taper-cut-trunk";
+
+interface MaskRegion {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+const UNMEASURED_REGION: MaskRegion = {
+  x: -MASK_EXTENT,
+  y: -MASK_EXTENT,
+  width: 2 * MASK_EXTENT,
+  height: 2 * MASK_EXTENT,
+};
 
 export function TaperCutMask({
   id,
   cutRef,
+  region = UNMEASURED_REGION,
 }: {
   id: string;
   cutRef: React.Ref<SVGPathElement>;
+  region?: MaskRegion;
 }) {
   return (
     <defs>
       <mask
-        height={2 * MASK_EXTENT}
+        height={region.height}
         id={id}
         maskUnits="userSpaceOnUse"
-        width={2 * MASK_EXTENT}
-        x={-MASK_EXTENT}
-        y={-MASK_EXTENT}
+        width={region.width}
+        x={region.x}
+        y={region.y}
       >
         <rect
           fill="white"
-          height={2 * MASK_EXTENT}
-          width={2 * MASK_EXTENT}
-          x={-MASK_EXTENT}
-          y={-MASK_EXTENT}
+          height={region.height}
+          width={region.width}
+          x={region.x}
+          y={region.y}
         />
         <path
           fill="none"
@@ -1143,7 +1177,7 @@ export function PageThread() {
         if (settleTimerRef.current !== null) {
           window.clearTimeout(settleTimerRef.current);
         }
-        const settle = tokenTime("--retrace-settle");
+        const settle = retraceSettle();
         settleTimerRef.current =
           settle === undefined ? null : window.setTimeout(rest, settle);
       }

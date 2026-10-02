@@ -175,7 +175,6 @@ export interface HeadOptions {
 
 interface Stack {
   readonly steps: number;
-  readonly stepLength: number;
   readonly strokes: readonly string[];
   readonly widths: readonly number[];
 }
@@ -236,7 +235,7 @@ function stackFor(options: HeadOptions): Stack {
     strokes.push(`rgb(${r},${g},${b})`);
     widths.push(options.baseWidth + (tipWidth - options.baseWidth) * along);
   }
-  const stack = { steps, stepLength: options.length / steps, strokes, widths };
+  const stack = { steps, strokes, widths };
   stacks.set(options, stack);
   return stack;
 }
@@ -244,7 +243,7 @@ function stackFor(options: HeadOptions): Stack {
 /* ---------------------------------------------------------------------------------------------
    THE RUNS */
 
-export interface HeadLayer {
+export interface HeadSegment {
   /* 0 = the step at the tip. */
   readonly step: number;
   /* Arc length along the piece, `0 <= start < end <= the piece's length`. */
@@ -254,9 +253,6 @@ export interface HeadLayer {
   readonly width: number;
   /* The resolved colour for this step. */
   readonly stroke: string;
-}
-
-export interface HeadSegment extends HeadLayer {
   /* Index into the pieces handed in. */
   readonly piece: number;
   /* `round` only for the cover at a piece's end. */
@@ -467,7 +463,12 @@ export function retraceTargets(
    brings the composite inside the band up to the measured share given the strokes outside it. Three
    strokes gave an RMS error of 0.014 in that share and a visibly stepped edge at 3x (the widest
    stroke's rim read as an outline); eight give 0.007 and none shows at 3x. Widest first, as they are
-   painted. */
+   painted.
+
+   THESE EIGHT ALPHAS DEPEND ON THE HALO'S RADII (3.5 / 12 / 33px, `--halo-thread-head`) AND ON ITS
+   THREE ALPHAS: they were fitted to the falloff those values produce. Retune the halo and this stack
+   describes a halo that no longer exists until it is re-fitted and `MEASURED_HALO` re-measured; the
+   test that pins the radii fails for exactly that reason. */
 const FITTED_GLOW = [
   { width: 100, alpha: 0.01 },
   { width: 56, alpha: 0.019 },

@@ -364,6 +364,9 @@ test("the head's owner-chosen values are the ones in the stylesheet", () => {
   assert.equal(pxToken("stroke-thread"), 1.6);
 });
 
+/* Any failure here is also a prompt to re-fit `FITTED_GLOW` (`thread-light.ts`): the re-trace's eight
+   glow alphas were fitted to the falloff of exactly these radii and alphas, so retuning the halo
+   leaves them describing a halo that no longer exists. */
 test("the head's halo is the bleed's own shape at four times the radii", () => {
   const shadows = (name: string) =>
     [
@@ -387,6 +390,8 @@ test("the head's halo is the bleed's own shape at four times the radii", () => {
   assert.deepEqual(
     halo.map((shadow) => shadow.radius),
     [3.5, 12, 33],
+    "the halo's radii changed: FITTED_GLOW's eight alphas were fitted to the falloff of THESE radii " +
+      "and alphas, so re-fit them and re-measure MEASURED_HALO before updating this expectation",
   );
 });
 

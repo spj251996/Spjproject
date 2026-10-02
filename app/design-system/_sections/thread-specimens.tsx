@@ -297,6 +297,12 @@ function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
                 )
               }
               id={maskId}
+              region={{
+                x: m.box.x - MARGIN,
+                y: m.box.y - MARGIN,
+                width: m.box.width + 2 * MARGIN,
+                height: m.box.height + 2 * MARGIN,
+              }}
             />
             <g className={styles.pageBleed}>
               <path
