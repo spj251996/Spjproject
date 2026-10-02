@@ -2,56 +2,89 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-/* Comments are stripped so the assertions read the code alone -- the same approach as
-   `button-action.test.ts`, and necessary here because this file's own comments name the mechanism
-   and would otherwise satisfy the assertions that look for it. */
+/* Comments are stripped defensively, so a future comment that names one of these mechanisms cannot
+   satisfy an assertion looking for it. No comment in the file does so today -- every test below
+   passes identically without the strip. */
 const portrait = readFileSync("components/ui/portrait.tsx", "utf8").replace(
   /\/\*[\s\S]*?\*\//g,
   "",
 );
 
-/* The overlay only takes the hit test if it PAINTS over the image, and at equal z-index that is
-   decided by document order: the image is absolutely positioned, so a later absolutely positioned
-   sibling wins. Order is the mechanism, not a style preference. */
+/* Located by the OPENING TAG rather than the bare attribute: `image-placeholder.tsx` already
+   carries `aria-hidden="true"` in its own source, so inlining that component would otherwise point
+   every assertion below at the wrong element. */
+const OVERLAY_OPEN = '<span aria-hidden="true"';
+
+/* Bounded at the tag's own `>`, not at `/>`: a `<span ...></span>` overlay is behaviourally
+   identical, and an earlier version of this file failed that correct rewrite while reporting a
+   misleading message about the wrong property. */
+function openingTag(from: number, what: string) {
+  assert.notStrictEqual(from, -1, `no ${what} found`);
+  const end = portrait.indexOf(">", from);
+  assert.notStrictEqual(end, -1, `${what} has an unclosed opening tag`);
+  return portrait.slice(from, end + 1);
+}
+
+const overlay = () =>
+  openingTag(portrait.indexOf(OVERLAY_OPEN), "hit-test overlay");
+
+/* `<Image` alone also matches `<ImagePlaceholder`, which sits above the image in this component --
+   an index taken that way is always before the overlay, which made the ordering test below pass
+   wherever the overlay went. */
+const imageStart = () => portrait.search(/<Image\s/);
+
 test("the hit-test overlay paints after the image", () => {
-  /* `<Image` on its own also matches `<ImagePlaceholder`, which sits above both and would make
-     this assertion vacuous -- it would then pass wherever the overlay went. The trailing
-     whitespace is what separates the image from the placeholder. */
-  const image = portrait.search(/<Image\s/);
-  const overlay = portrait.indexOf('aria-hidden="true"');
-  assert.ok(image > -1, "no <Image> found");
-  assert.ok(overlay > -1, "no aria-hidden overlay found");
+  const image = imageStart();
+  const span = portrait.indexOf(OVERLAY_OPEN);
+  assert.ok(image > -1, "no <Image> element found");
+  assert.ok(span > -1, `no ${OVERLAY_OPEN} found`);
   assert.ok(
-    overlay > image,
-    "the overlay must come after the image or the image stays the hit target",
+    span > image,
+    "the overlay must come after the image, or the image stays the hit target",
   );
 });
 
-/* `pointer-events-none` on this element is the single edit that silently restores the browser's
-   "Save image as" menu, with nothing changing on screen. Owner decision, 2026-10-02. */
-test("the hit-test overlay keeps its pointer events", () => {
-  const overlay = portrait.slice(portrait.indexOf('aria-hidden="true"'));
-  const element = overlay.slice(0, overlay.indexOf("/>") + 2);
-  assert.doesNotMatch(element, /pointer-events-none/);
+/* Asserted FILE-WIDE, not on the overlay alone. `DESIGN.md` names `pointer-events: none` as the
+   single edit that restores the browser's save-image menu with nothing changing on screen -- and
+   putting it on the clipping div does that just as effectively as putting it on the overlay, which
+   is the likelier place for someone tidying a layer. Nothing in this component has any reason to
+   suppress pointer events, so the whole file is the correct scope. */
+test("nothing in the portrait suppresses pointer events", () => {
+  assert.doesNotMatch(portrait, /pointer-events/);
+});
+
+test("the hit-test overlay covers the photo and is not a tab stop", () => {
+  const element = overlay();
   assert.match(element, /absolute inset-0/);
+  assert.doesNotMatch(element, /tabIndex/);
 });
 
-/* Drag is a separate affordance from the context menu: the overlay stops the drag starting on the
-   image, and `draggable={false}` is the standards-track belt for it. */
-test("the portrait image is not draggable", () => {
-  assert.match(portrait, /draggable=\{false\}/);
+/* Both halves, and both ON THE IMAGE: `draggable={false}` is the standards-track suppression and
+   `-webkit-user-drag` is Safari's. Scoped to the element because either one sitting on the overlay
+   instead does nothing, and unscoped assertions passed that mutation. The webkit half matters most
+   here -- iOS is the one platform no harness in this project can drive, so nothing else would
+   catch its removal. */
+test("the portrait image suppresses dragging by both mechanisms", () => {
+  const element = openingTag(imageStart(), "<Image> element");
+  assert.match(element, /draggable=\{false\}/);
+  assert.match(element, /-webkit-user-drag:\s*none/);
 });
 
-/* A member with no photo renders no image at all, so the overlay must sit outside that branch --
-   inside it, the overlay either disappears with the image or wraps a null. */
-test("the overlay is not inside the src-null branch", () => {
+/* The overlay must sit OUTSIDE the `src === null` ternary, or a member with no photo loses it.
+   Parentheses are BALANCED rather than matched against a `)}` shape: any `)}`-shaped expression in
+   the image's own props -- `className={clsx(...)}` -- satisfies a shape check while the overlay
+   sits inside the branch. */
+test("the hit-test overlay is outside the src-null branch", () => {
   const ternary = portrait.indexOf("src === null");
-  const overlay = portrait.indexOf('aria-hidden="true"');
-  assert.ok(ternary > -1 && overlay > ternary);
-  const between = portrait.slice(ternary, overlay);
-  assert.match(
-    between,
-    /\)\}/,
-    "the null-check ternary must close before the overlay",
+  const span = portrait.indexOf(OVERLAY_OPEN);
+  assert.ok(ternary > -1, "no src === null branch found");
+  assert.ok(span > ternary, "the overlay must come after the null check");
+  const between = portrait.slice(ternary, span);
+  const opens = (between.match(/\(/g) ?? []).length;
+  const closes = (between.match(/\)/g) ?? []).length;
+  assert.strictEqual(
+    closes,
+    opens,
+    `the ternary must close before the overlay (${opens} opened, ${closes} closed)`,
   );
 });
