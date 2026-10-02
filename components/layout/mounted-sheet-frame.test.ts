@@ -5,12 +5,14 @@ import { fileURLToPath } from "node:url";
 import {
   CAPS,
   type FitRegime,
+  fitPadding,
   fitRectangles,
   type MeasuredFit,
   type Orientation,
   pairsSideBySide,
   regimesFor,
   revealFor,
+  smallestPadding,
   tallWindowClasses,
   type WidthTier,
   windowClasses,
@@ -132,6 +134,45 @@ test("a phone sheet is emitted at 24px unconditionally, and 16px appears nowhere
   for (const sheetRule of css.match(/__sheet \{ padding: [^}]*\}/g) ?? []) {
     assert.doesNotMatch(sheetRule, /--spacing-space-sm/, sheetRule);
   }
+});
+
+/* The ladder's floor used to do two jobs: set what a card SHOWS, and tell the fit arithmetic what it
+   may ASSUME when asking "does this window hold the card?". Raising the floor to 24 silently answered
+   the second question differently — the halving condition then failed both ways at phone heights
+   693-804, so Event Info stopped taking its pressed ground band and gained 176px of page. Owner's
+   decision, 2026-10-02: keep 16 available to the arithmetic as a last resort, while never emitting it. */
+test("the phone tier shows 24 but lets the fit arithmetic assume 16", () => {
+  const classes = windowClasses(makeFit(), "single");
+  const phone = classes.find((c) => c.widthTier === "phone");
+  assert.ok(phone, "no phone window class");
+  assert.equal(smallestPadding(phone.groundTier), 24);
+  assert.equal(fitPadding(phone.groundTier), 16);
+});
+
+/* The contract above is only worth anything if the EMITTED condition actually uses it. The halving
+   rule's numbers are the fit rectangles offset by the pressed bands, so a 16-derived threshold and a
+   24-derived one differ by 2 x (24 - 16) on each axis — which is what this discriminates. */
+test("the phone halving condition is computed at the rescue padding, not the floor", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  const ground = topLevelBlocks(css).find(
+    (rule) =>
+      rule.startsWith(`@media ${phone.media}`) &&
+      rule.includes("--ground-block: var(--spacing-space-xl)"),
+  );
+  assert.ok(ground, "no pressed-ground rule for the phone class");
+  const [rescue] = fitRectangles(TINY, 0, 16);
+  const [floor] = fitRectangles(TINY, 0, 24);
+  /* The phone tier's own pressed block band. */
+  const pressed = 48;
+  assert.ok(
+    ground.includes(`(height >= ${rescue.minCardHeight + 2 * pressed}px)`),
+    `expected the 16-derived threshold\n${ground}`,
+  );
+  assert.ok(
+    !ground.includes(`(height >= ${floor.minCardHeight + 2 * pressed}px)`),
+    `the 24-derived threshold must not appear\n${ground}`,
+  );
 });
 
 test("a wide window keeps the laptop ground tier", () => {

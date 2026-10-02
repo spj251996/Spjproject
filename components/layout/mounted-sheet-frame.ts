@@ -72,6 +72,8 @@ export interface GroundTier {
   portrait: PortraitGround;
   /* Largest first. */
   paddingSteps: readonly number[];
+  /** What the fit arithmetic may assume, where that differs from the ladder's floor (`fitPadding`). */
+  rescuePadding?: number;
 }
 
 export const SIDE_GROUND_MULTIPLE = 2;
@@ -103,6 +105,9 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
        Wishes at 1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at
        exactly 1.00 (couple, 2026-10-02: the cards read as too filled). */
     paddingSteps: [32, 24],
+    /* Never emitted as a card's padding; available to `windowFits` alone, so a short phone keeps
+       its pressed ground band instead of gaining 176px of page. */
+    rescuePadding: 16,
   },
   tablet: {
     name: "tablet",
@@ -202,6 +207,19 @@ export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
+/* What the fit arithmetic may ASSUME, which is not always what a card SHOWS. The two were one number
+   until the phone floor rose to 24 (couple, 2026-10-02), and that silently answered a second
+   question: `windowFits` asks "does this window hold the card?" at the smallest padding, so raising
+   the floor made the halving condition fail BOTH ways at phone heights 693-804 — the card no longer
+   fit even on the halved ground, the press was lost, and Event Info gained 176px of page.
+
+   A tier declaring `rescuePadding` keeps the old number for that question alone: the frame may still
+   reach for 16 when deciding whether a window can hold a card, while never emitting it as a card's
+   padding. Owner's decision, 2026-10-02 — "keep the gated 16 step as last resort". */
+export function fitPadding(groundTier: GroundTier): number {
+  return groundTier.rescuePadding ?? smallestPadding(groundTier);
+}
+
 /* The one statement of where a pair stands side by side, and so of where a non-hero section shows
    its mount: a landscape window at the laptop or desktop width tier. The pair, the single sections,
    the tier lines and tall mode all read it, so a page is never half mounted and half bare. */
@@ -282,7 +300,7 @@ function tierLine(
   hero: boolean,
 ): number {
   const halved = groundTier.ground * GROUND_HALVING;
-  const padding = smallestPadding(groundTier);
+  const padding = fitPadding(groundTier);
   /* A tier line only decides landscape windows, so it reads the landscape regimes and the mount a
      landscape window shows at this width tier. */
   const sideBySide = sideBySideWindow(widthTier, true);

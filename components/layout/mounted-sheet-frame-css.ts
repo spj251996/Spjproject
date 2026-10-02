@@ -6,6 +6,7 @@ import {
   type CardRectangle,
   type FitRegime,
   type FrameLayout,
+  fitPadding,
   fitRectangles,
   formatPx,
   GROUND_HALVING,
@@ -16,7 +17,6 @@ import {
   regimesFor,
   revealFor,
   SIDE_GROUND_MULTIPLE,
-  smallestPadding,
   tallWindowClasses,
   type WindowClass,
   windowClasses,
@@ -190,7 +190,7 @@ function windowFits(
   const rectangles = fitRectangles(
     regimesFor(windowClass.regimes, orientationName(landscape)),
     revealFor(windowClass, hero, landscape),
-    smallestPadding(windowClass.groundTier),
+    fitPadding(windowClass.groundTier),
     pairsSideBySide(layout, windowClass, landscape),
   );
   if (!landscape) {
