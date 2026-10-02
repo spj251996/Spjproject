@@ -389,7 +389,7 @@ function stackRuns(
    THE RE-TRACE — a lit segment that runs a stretch of the thread once it is already drawn, on a
    loop. It is the page's resting motion and its scroll cue (DESIGN.md -> Thread -> The re-trace).
 
-   It follows the owner's reference clip, measured (tmp/thread-light-spike/reference.md): the
+   It follows the owner's reference clip, measured by sampling its frames: the
    segment's length is not constant, since the tip and the tail move at different speeds and it
    grows from nothing and shrinks back to nothing over a loop; its leading edge is hard and its
    trailing end a soft ramp; the gradient is continuous; and the base stroke is unchanged behind and
@@ -433,7 +433,7 @@ export function retraceTargets(
   phase: RetracePhase,
   groupRects: readonly { readonly top: number; readonly height: number }[],
   viewport: { readonly scrollY: number; readonly height: number },
-  tipGroupIndex: number | undefined,
+  tipGroup: number | undefined,
 ): number[] {
   const terminal = groupRects.length - 1;
   const onScreen = (index: number) => {
@@ -445,10 +445,8 @@ export function retraceTargets(
     );
   };
   if (phase === "drawing") {
-    return tipGroupIndex !== undefined &&
-      tipGroupIndex !== terminal &&
-      onScreen(tipGroupIndex)
-      ? [tipGroupIndex]
+    return tipGroup !== undefined && tipGroup !== terminal && onScreen(tipGroup)
+      ? [tipGroup]
       : [];
   }
   return groupRects.flatMap((_, index) =>
@@ -458,37 +456,43 @@ export function retraceTargets(
 
 /* THE GLOW AS STROKES, NOT A FILTER. A halo does not have to be a blur: a few translucent strokes on
    the same path, each wider and fainter than the next, painted under the core, fall off outward in
-   steps and need no offscreen buffer. This round's cost findings have each come down to a buffer
-   (dashed copies' bounding boxes, the taper's mask region, the bleed's three shadows on every piece),
-   and geometry has been free each time.
+   steps. The 4x halo as a filter over three lit stretches at 1536px wide cost 77 dropped frames in
+   the measurement DESIGN.md records; the strokes have no filter, and so no blur buffer to re-render
+   each frame. (A group with `opacity` below 1, which a short segment's group takes, is still an
+   isolated group; that case is inferred and was not isolated in the measurement.)
 
-   Fitted to the 4x filter halo as measured on a straight 3.2px line over the ivory ground
-   (tmp/thread-retrace-verify/halo-profile.mjs): the share of vermilion at 2-60px from the
-   centreline is 0.24 at 2px, 0.13 at 6, 0.06 at 10-12, 0.036 at 20, 0.018 at 30 and 0.006 at 50-60.
-   Each stroke covers one band of that curve, and its alpha is what brings the composite inside the
-   band up to the measured share given the strokes outside it. Three strokes gave an RMS error of
-   0.014 in that share and a visibly stepped edge at 3x (the widest stroke's rim read as an outline);
-   eight give 0.007 and none shows at 3x.
+   Fitted to the 4x filter halo as measured on a straight 3.2px line over the ivory ground: the share
+   of vermilion at 2-60px from the centreline is 0.24 at 2px, 0.13 at 6, 0.06 at 10-12, 0.036 at 20,
+   0.018 at 30 and 0.006 at 50-60. Each stroke covers one band of that curve, and its alpha is what
+   brings the composite inside the band up to the measured share given the strokes outside it. Three
+   strokes gave an RMS error of 0.014 in that share and a visibly stepped edge at 3x (the widest
+   stroke's rim read as an outline); eight give 0.007 and none shows at 3x. Widest first, as they are
+   painted. */
+const FITTED_GLOW = [
+  { width: 100, alpha: 0.01 },
+  { width: 56, alpha: 0.019 },
+  { width: 38, alpha: 0.013 },
+  { width: 26, alpha: 0.018 },
+  { width: 18, alpha: 0.029 },
+  { width: 13, alpha: 0.057 },
+  { width: 9, alpha: 0.045 },
+  { width: 6, alpha: 0.061 },
+] as const;
 
-   SCALED BY `RETRACE_GLOW_SCALE`. A constant-width stroke over the whole segment glows more than the
-   filter does round a segment that tapers to the ink's width and fades at its ends, so the fitted
-   alphas are scaled until the real segment's glow volume is near the filter's. Measured on the real
-   segment (393x700, scroll 0, ten frames, pixels changed against the layer hidden, three runs;
+/* SCALED BY `RETRACE_GLOW_SCALE`. A constant-width stroke over the whole segment covers more area
+   with faint glow than the filter does round a segment that tapers to the ink's width and fades at
+   its ends, although it is fainter than the filter at every distance on a straight line. So the
+   fitted alphas are scaled until the real segment's glow area is near the filter's. Measured on the
+   real segment (393x700, scroll 0, ten frames, pixels changed against the layer hidden, three runs;
    figures are pixels over 12/255, summed delta, pixels over 4/255): the filter 2,217 / 64,412 /
    5,592; scale 1.0 gives 2,770 / 85,598 / 9,306; 0.72 gives 1,979 / 57,440 / 4,613; the shipped
    0.77 gives 2,528 / 70,946 / 6,399. The response steps rather than ramps because an alpha is
-   stored in eight bits. Widest first, as they are painted. */
+   stored in eight bits. */
 export const RETRACE_GLOW_SCALE = 0.77;
-export const RETRACE_GLOW = [
-  { width: 100, alpha: 0.0077 },
-  { width: 56, alpha: 0.0146 },
-  { width: 38, alpha: 0.01 },
-  { width: 26, alpha: 0.0139 },
-  { width: 18, alpha: 0.0223 },
-  { width: 13, alpha: 0.0439 },
-  { width: 9, alpha: 0.0347 },
-  { width: 6, alpha: 0.047 },
-] as const;
+export const RETRACE_GLOW = FITTED_GLOW.map(({ width, alpha }) => ({
+  width,
+  alpha: Number((alpha * RETRACE_GLOW_SCALE).toFixed(4)),
+}));
 
 /* The glow under a lit segment from `tail` to `tip` (the chain's scale): for each piece it covers,
    one polyline per stroke, so a stroke is composited once however many steps the core has (per-step

@@ -100,7 +100,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp.",
+          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp and of the re-trace's.",
       },
       {
         token: "--color-thread-vermilion",
@@ -112,7 +112,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-core",
         name: "thread-core",
         usage:
-          "The tip of the drawing head's colour ramp, the hottest the thread gets. Never the ink, never text.",
+          "The tip of the drawing head's colour ramp and of the re-trace's, the hottest the thread gets. Never the ink, never text.",
       },
     ],
   },

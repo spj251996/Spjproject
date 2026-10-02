@@ -798,8 +798,8 @@ test("the cut is wider than the ink, so it takes the ink's round cap and antiali
 
 /* ---------------------------------------------------------------------------------------------
    THE RE-TRACE — a lit segment that runs the complete line on a loop, and the page's scroll cue.
-   The measured behaviour it follows is the owner's reference clip (tmp/thread-light-spike/
-   reference.md): the segment's length is not constant, its leading edge is hard and its trailing
+   The measured behaviour it follows is the owner's reference clip (measured by sampling its
+   frames): the segment's length is not constant, its leading edge is hard and its trailing
    end soft, and nothing stays behind its tail. */
 
 const RECTS = [
@@ -1145,9 +1145,9 @@ test("the re-trace has no filter of its own, its glow being strokes, and no look
 });
 
 /* ---------------------------------------------------------------------------------------------
-   THE GLOW AS STROKES. The 4x halo, measured on a straight 3.2px line over the ivory ground
-   (tmp/thread-retrace-verify/halo-profile.mjs): the share of vermilion at each distance from the
-   line's centre. The stack of translucent strokes is fitted to it. */
+   THE GLOW AS STROKES. The 4x halo, measured on a straight 3.2px line over the ivory ground: the
+   share of vermilion at each distance from the line's centre. The stack of translucent strokes is
+   fitted to it. */
 
 const MEASURED_HALO: readonly (readonly [number, number])[] = [
   [3, 0.213],
@@ -1230,4 +1230,31 @@ test("a glow stroke carries its alpha in its colour and the vermilion stop's cha
 
 test("an empty segment has no glow", () => {
   assert.deepEqual(retraceGlow(100, 100, CHAIN, RETRACE_OPTIONS.midColor), []);
+});
+
+test("the glow has enough strokes that no rim steps the composite by more than 0.05", () => {
+  /* Three strokes fitted to the same curve pass the falloff test above and were seen to band at 3x:
+     their rims step the share by 0.08 and more. The shipped eight step by at most their innermost
+     alpha, 0.047. This bounds the step directly, and the count with it. */
+  assert.ok(
+    RETRACE_GLOW.length >= 8,
+    "fewer strokes than the eight that were seen not to band",
+  );
+  for (const stroke of RETRACE_GLOW) {
+    const rim = stroke.width / 2;
+    const step = compositeAlphaAt(rim - 0.01) - compositeAlphaAt(rim + 0.01);
+    assert.ok(
+      step <= 0.05,
+      `the ${stroke.width}px stroke's rim steps the share by ${step.toFixed(3)}`,
+    );
+  }
+});
+
+test("the glow's scale constant is what scales the shipped alphas", () => {
+  assert.ok(
+    Math.abs(
+      RETRACE_GLOW[RETRACE_GLOW.length - 1].alpha - 0.061 * RETRACE_GLOW_SCALE,
+    ) < 1e-4,
+  );
+  assert.ok(Math.abs(RETRACE_GLOW[0].alpha - 0.01 * RETRACE_GLOW_SCALE) < 1e-4);
 });

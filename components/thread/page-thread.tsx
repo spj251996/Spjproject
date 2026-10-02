@@ -619,7 +619,8 @@ type HeadPainter = ReturnType<typeof createHeadPainter>;
 
    It is the head's own stack, laid again, so each stretch that is animating gets a `<g>` and the head's
    painter inside it. The painters share the head's samples, so a piece is sampled once whichever
-   layer reaches it first. Each stretch's `<g>` takes the head's halo as its one filter (`thread.module.css`). */
+   layer reaches it first. A second `<g>` per stretch, beneath it, holds the glow as translucent strokes
+   (`thread-light.ts`); there is no filter on either. */
 
 /* The drawing head's own settled values (the owner's ruling, 2026-10-02) with the re-trace's peak
    length: the head's options, read once from the same tokens, not a second copy of any of them. */
