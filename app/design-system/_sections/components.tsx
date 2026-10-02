@@ -82,7 +82,7 @@ export function ComponentsSections() {
             </Variant>
             <Variant
               className="items-start"
-              label="A contact's actions · call and chat marks · named Call/WhatsApp, <name> · always stacked, never side by side"
+              label="A contact's actions · call and chat marks · named Call/WhatsApp, <name> · always stacked, never side by side · one shared width and left edge, so the discs line up"
             >
               <div className="flex flex-col items-center gap-space-2xs">
                 <ButtonAction

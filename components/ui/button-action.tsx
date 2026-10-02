@@ -15,7 +15,7 @@ const targetClassName =
    Hover and press apply to the inner span rather than the target, so neither dims or transforms
    the focus ring the target draws. */
 const markClassName = [
-  "type-action inline-flex items-center justify-center gap-space-xs text-accent-gold",
+  "type-action inline-flex items-center gap-space-xs text-accent-gold",
   "px-space-sm py-space-3xs",
   /* Hover thickens the mark optically — a heavier cut would widen the text and shift the disc
      sideways on every hover, which the mark's no-reflow requirement forbids. */
@@ -29,6 +29,21 @@ const markClassName = [
      reduced motion with nothing in the source saying so. */
   "motion-safe:transition-[transform,text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle",
 ].join(" ");
+
+/* Justification is a lookup rather than a class the caller appends, because two utilities setting
+   the same property resolve by stylesheet order, not by the order they are written — so an appended
+   `justify-start` would win or lose unpredictably. Exactly one is ever emitted.
+
+   `start` exists for a STACK of actions: two centred rows whose labels differ in width put their
+   discs at different x, which reads as a ragged bulleted list (couple, 2026-10-02). Centred is the
+   default, and every other caller takes it. */
+const ALIGN = {
+  center: "justify-center",
+  /* `w-full` as well as the justification: the target itself is `justify-center`, so without it this
+     span is sized to its own content and centred inside a stretched target — the justification then
+     has no room to act and the discs stay apart. Measured: 19.65px apart with `justify-start` alone. */
+  start: "w-full justify-start",
+} as const;
 
 /* The mark sits on its own raised disc (owner, 2026-09-28), replacing the pair of hairline rules
    that used to flank the label. The disc is the stock's own surface and shadow, so it reads as a
@@ -48,6 +63,8 @@ const discClassName = [
 type ButtonActionProps = {
   children: ReactNode;
   className?: string;
+  /** Where the mark and label sit within the target. `start` is for a stack sharing one width. */
+  align?: keyof typeof ALIGN;
   /* Marks are already hidden from assistive technology (icons/icon-base.tsx), so the accessible
      name stays the label. */
   mark?: ReactNode;
@@ -57,6 +74,7 @@ type ButtonActionProps = {
 export function ButtonAction({
   children,
   className,
+  align = "center",
   mark,
   "aria-label": accessibleName,
   href,
@@ -64,7 +82,7 @@ export function ButtonAction({
 }: ButtonActionProps) {
   const composed = `${targetClassName} ${className ?? ""}`;
   const label = (
-    <span className={markClassName}>
+    <span className={`${markClassName} ${ALIGN[align]}`}>
       {mark !== undefined && <span className={discClassName}>{mark}</span>}
       {children}
     </span>
