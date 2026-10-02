@@ -59,8 +59,21 @@ export function Portrait({
           {/* Empty alt: the figcaption below already names the person, so a screen reader
               would otherwise announce the name twice. */}
           {src === null ? null : (
-            <Image alt="" className="object-cover" fill src={src} />
+            <Image
+              alt=""
+              className="object-cover [-webkit-user-drag:none]"
+              draggable={false}
+              fill
+              src={src}
+            />
           )}
+          {/* Takes the hit test so the browser's save-image menu and the native image drag never
+              reach the photo (owner, 2026-10-02: screenshots accepted, direct saving closed).
+              Last child deliberately -- it must paint over the absolutely positioned image -- and
+              it must KEEP its pointer events, since being the hit target is the whole mechanism;
+              suppressing them here would restore the menu with nothing changing on screen.
+              Outside the null check so a member with no photo is covered too. */}
+          <span aria-hidden="true" className="absolute inset-0" />
         </div>
       </div>
       <figcaption className="flex flex-col items-center">
