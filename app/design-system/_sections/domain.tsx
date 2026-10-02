@@ -8,6 +8,16 @@ import {
 import { Family } from "@/components/family/family";
 import type { FamilyGroup } from "@/content/types";
 
+const THREAD_ENTRIES: InlineEntry[] = [
+  {
+    name: "Thread",
+    home: "components/thread/page-thread.tsx",
+    composes:
+      "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s) and --retrace-settle (1500ms), Foundations · Motion",
+    note: "Live at /. A page-length thread measures <main> and cannot render in a specimen frame, so none is shown here; the stroke and length tokens above have no swatch of their own for the same reason. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+  },
+];
+
 const INVITE_ENTRIES: InlineEntry[] = [
   {
     name: "Invite",
@@ -94,6 +104,15 @@ const FAMILY_SHEETS = [BRIDE_SHEET, GROOM_SHEET];
 export function DomainSections() {
   return (
     <>
+      <GallerySection
+        id="thread"
+        intro="The page's one spine: a single red line from the invite to the closing wishes."
+        mapsTo="Domain Components → Thread → thread-overlay"
+        title="Domain · Thread"
+      >
+        <InlineList entries={THREAD_ENTRIES} />
+      </GallerySection>
+
       <GallerySection
         id="invite"
         intro="The opening screen: an airy composition framed to the window."

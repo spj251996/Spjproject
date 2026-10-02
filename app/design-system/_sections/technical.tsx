@@ -23,17 +23,12 @@ const ZONES: SpanZone[] = [
     changes: [
       "Vertical flow; the family split into screen-feel panels",
       "Mobile type step",
-      "Mobile thread path",
     ],
   },
   {
     name: "Tablet",
     width: "48rem – 64rem (768px – 1023px)",
-    changes: [
-      "Mobile system, wider gutters",
-      "Tablet type step",
-      "Mobile thread path",
-    ],
+    changes: ["Mobile system, wider gutters", "Tablet type step"],
   },
   {
     name: "Desktop",
@@ -41,7 +36,6 @@ const ZONES: SpanZone[] = [
     changes: [
       "Parallel splits; timeline nodes alternate sides",
       "Compact type step from lg, desktop type step from xl",
-      "Desktop thread path",
     ],
   },
 ];
@@ -97,6 +91,7 @@ const RESPONSIVE_POINTERS = [
   "Event Info side by side or stacked → Foundations · Layout → mounted-pair",
   "A framed section's ground and padding → Foundations · Layout → mounted-sheet",
   "A pair's 1280px tier-line width is a layout value, not a breakpoint → Foundations · Layout → mounted-sheet",
+  "The thread does not follow this ladder: its geometry is authored per aspect band, three of them, keyed to real devices' viewports → Domain · Thread",
   "Narrowest supported width → Accessibility Rules",
 ];
 
@@ -112,7 +107,11 @@ const Z_LAYERS: LayerItem[] = [
     value: "30",
     role: "Elevated · mounted sections, the mount and its sheet",
   },
-  { token: "--z-thread", value: "40", role: "Thread · the thread overlay" },
+  {
+    token: "--z-thread",
+    value: "40",
+    role: "Thread · the page-length thread and its head, re-trace and tapered ends",
+  },
   { token: "--z-modal", value: "50", role: "Modal · the gallery modal" },
 ];
 
