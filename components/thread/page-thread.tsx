@@ -710,18 +710,23 @@ function createRetracePainter(
   }
 
   return {
-    /* One frame: the segment of each animating stretch, and every other stretch hidden. */
+    /* One frame: the segment of each animating stretch, and every other stretch hidden. A stretch
+       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and each weave copy are
+       handed the same frames and each paints the share that lies in its own pieces, which is how the
+       terminal's stretch reaches the weave and the others reach the trunk. */
     paint(
       frames: ReadonlyMap<number, RetraceFrame>,
       pieces: readonly ThreadPiece[],
       options: HeadOptions,
     ) {
-      for (const [index, { painter, glowPainter }] of stretches) {
-        if (frames.has(index)) continue;
-        painter.hide();
-        glowPainter.hide();
-      }
+      const painted = new Set<number>();
       for (const [index, { tail, tip }] of frames) {
+        const holdsAPiece = pieces.some(
+          (piece, at) =>
+            piece.end > tail && piece.start < tip && pathOf(at) !== undefined,
+        );
+        if (!holdsAPiece) continue;
+        painted.add(index);
         const { element, painter, glowElement, glowPainter } =
           stretchFor(index);
         painter.paintSegments(
@@ -739,6 +744,11 @@ function createRetracePainter(
           glowElement.style.opacity = value;
         }
       }
+      for (const [index, { painter, glowPainter }] of stretches) {
+        if (painted.has(index)) continue;
+        painter.hide();
+        glowPainter.hide();
+      }
     },
     hide() {
       for (const { painter, glowPainter } of stretches.values()) {
@@ -750,6 +760,18 @@ function createRetracePainter(
 }
 
 type RetracePainter = ReturnType<typeof createRetracePainter>;
+
+/* The re-trace is one loop for the whole page, driven by `PageThread`, but Wishes' stretch is drawn in
+   `WishesWeave`'s own `<svg>`s, whose pieces `PageThread`'s painter cannot reach. A weave copy that
+   paints the re-trace registers its painter here and the loop hands every registered painter the same
+   frames: one clock, one budget and one thing to stop.
+
+   ONLY THE COPY OVER THE ILLUSTRATION PAINTS IT. The two copies are the same geometry drawn twice, and
+   the copy over the illustration covers the one under it wholly, so a second painter would add
+   nothing to the core's opaque runs and would paint the glow's translucent strokes a second time over
+   themselves: measured on a glow-only render, the bow's joins read 106 of 255 against 61-63 for every
+   other join on the page, 1.7x, which is the glow's alpha composited twice. */
+const weaveRetraces = new Set<RetracePainter>();
 
 /* ---------------------------------------------------------------------------------------------
    THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
@@ -1124,7 +1146,7 @@ export function PageThread() {
     return retraceRef.current;
   }, [pathOf]);
 
-  /* Ends the loop: no frame stays scheduled and nothing stays painted. A
+  /* Ends the loop: no frame stays scheduled and nothing stays painted, in this `<svg>` or in the weave's. A
      loop that is not live has painted nothing, so there is nothing to hide when none is. */
   const stopRetrace = useCallback(() => {
     if (retraceFrameRef.current !== null) {
@@ -1135,6 +1157,7 @@ export function PageThread() {
     retraceStartRef.current = null;
     retraceSuspendedAtRef.current = null;
     retrace()?.hide();
+    for (const weave of weaveRetraces) weave.hide();
   }, [retrace]);
 
   /* Brings the loop in line with the state: starts it, stops it, or lets a running one pick up new
@@ -1203,6 +1226,9 @@ export function PageThread() {
         });
       }
       painter.paint(frames, chainRef.current, options);
+      for (const weave of weaveRetraces) {
+        weave.paint(frames, chainRef.current, options);
+      }
       retraceFrameRef.current = window.requestAnimationFrame(frame);
     };
     retraceFrameRef.current = window.requestAnimationFrame(frame);
@@ -1575,6 +1601,11 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const taperGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
   const taperRef = useRef<TaperPainter | null>(null);
+  const retraceGroupRef = useRef<SVGGElement>(null);
+  const retraceGlowRef = useRef<SVGGElement>(null);
+  const retraceRef = useRef<RetracePainter | null>(null);
+  /* The head's and the re-trace's painters share what they sample, as the trunk's do. */
+  const samplesRef = useRef(new Map<number, PieceSamples>());
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
      each `WishesWeave` measures independently (see the header comment), so it keeps its own.
      `groupRectsRef` is `threadLine`'s own per-GROUP rects, exactly like `PageThread`'s -- `wishes`
@@ -1590,16 +1621,32 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
      trunk's (`PageThread`'s own `ratchetRef`). */
   const ratchetRef = useRef(createDrawRatchet());
 
+  /* The `d` of a chain piece that lives in THIS `<svg>`, or nothing for the trunk's. */
+  function pathOf(index: number): string | undefined {
+    return index >= firstPieceRef.current
+      ? (pathsRef.current[index - firstPieceRef.current]?.getAttribute("d") ??
+          undefined)
+      : undefined;
+  }
+
   function head(): HeadPainter | null {
     const group = headGroupRef.current;
     if (group === null) return null;
-    headRef.current ??= createHeadPainter(group, (index) =>
-      index >= firstPieceRef.current
-        ? (pathsRef.current[index - firstPieceRef.current]?.getAttribute("d") ??
-          undefined)
-        : undefined,
-    );
+    headRef.current ??= createHeadPainter(group, pathOf, samplesRef.current);
     return headRef.current;
+  }
+
+  function retrace(): RetracePainter | null {
+    const group = retraceGroupRef.current;
+    const glow = retraceGlowRef.current;
+    if (group === null || glow === null) return null;
+    retraceRef.current ??= createRetracePainter(
+      group,
+      glow,
+      pathOf,
+      samplesRef.current,
+    );
+    return retraceRef.current;
   }
 
   function taper(): TaperPainter | null {
@@ -1677,6 +1724,7 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     chainRef.current = pieces;
     firstPieceRef.current = range.start;
     head()?.reset();
+    retrace()?.hide();
     const closingPiece = wishesPieces[wishesPieces.length - 1];
     const closingLength =
       closingPiece === undefined ? 0 : closingPiece.end - closingPiece.start;
@@ -1702,6 +1750,20 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   }
 
   useLayoutTriggers(measure);
+
+  /* Joins the page's one re-trace loop (`weaveRetraces`'s header): `PageThread` drives it, and the copy
+     over the illustration paints Wishes' stretch of it into its own `<svg>`. The copy under it has no
+     re-trace groups, so it has no painter to register. */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `retrace` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
+  useEffect(() => {
+    const painter = retrace();
+    if (painter === null) return;
+    weaveRetraces.add(painter);
+    return () => {
+      weaveRetraces.delete(painter);
+      painter.hide();
+    };
+  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `reveal` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
   useEffect(() => {
@@ -1751,6 +1813,12 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
           />
         ))}
         <g className={styles.pageTaper} ref={taperGroupRef} />
+        {slot === "over" && (
+          <>
+            <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
+            <g className={styles.pageRetrace} ref={retraceGroupRef} />
+          </>
+        )}
         <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>

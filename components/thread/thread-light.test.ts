@@ -866,8 +866,7 @@ test("a group that only touches the viewport's edge is not on screen", () => {
   );
 });
 
-test("the last group holds the terminal, which has nothing further to cue, and never loops", () => {
-  const bottom = { scrollY: 1400, height: 700 };
+test("the last group holds the terminal and loops like any other, in either phase", () => {
   assert.deepEqual(
     retraceTargets(
       "complete",
@@ -875,8 +874,8 @@ test("the last group holds the terminal, which has nothing further to cue, and n
       { scrollY: 2100, height: 700 },
       undefined,
     ),
-    [],
-    "at the final terminal nothing loops",
+    [3],
+    "at the final terminal the last group loops",
   );
   assert.deepEqual(
     retraceTargets(
@@ -885,15 +884,25 @@ test("the last group holds the terminal, which has nothing further to cue, and n
       { scrollY: 1750, height: 700 },
       undefined,
     ),
-    [2],
-    "the group before it still does",
+    [2, 3],
+    "and the group before it still does",
   );
   assert.deepEqual(
     retraceTargets("drawing", RECTS, { scrollY: 2100, height: 700 }, 3),
-    [],
-    "nor does a tip that is still drawing it",
+    [3],
+    "as does a tip that is still drawing it",
   );
-  assert.deepEqual(retraceTargets("complete", RECTS, bottom, undefined), [2]);
+});
+
+test("once complete, some group loops at every scroll position, to the page's last pixel", () => {
+  const pageHeight = 2800;
+  for (let scrollY = 0; scrollY <= pageHeight - 700; scrollY += 5) {
+    assert.ok(
+      retraceTargets("complete", RECTS, { scrollY, height: 700 }, undefined)
+        .length > 0,
+      `nothing loops at ${scrollY}`,
+    );
+  }
 });
 
 const PEAK = RETRACE_LENGTH_RATIO * BASE_WIDTH;

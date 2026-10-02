@@ -424,14 +424,14 @@ export function retracePhase(drawn: number, totalLength: number): RetracePhase {
    whip past as a glitch or leave the reader watching nothing between passes. A stretch is a group
    the draw already measures (`groupRects`), so this is an activation rule over existing geometry.
 
-   The last group holds the thread's terminal, which has nothing further to cue, so it never loops. */
+   The last group holds the thread's terminal and loops like any other: the tapered end says there is
+   nothing after it, and a loop there is what says the page is alive to its last screen. */
 export function retraceTargets(
   phase: RetracePhase,
   groupRects: readonly { readonly top: number; readonly height: number }[],
   viewport: { readonly scrollY: number; readonly height: number },
   tipGroup: number | undefined,
 ): number[] {
-  const terminal = groupRects.length - 1;
   const onScreen = (index: number) => {
     const rect = groupRects[index];
     return (
@@ -441,13 +441,9 @@ export function retraceTargets(
     );
   };
   if (phase === "drawing") {
-    return tipGroup !== undefined && tipGroup !== terminal && onScreen(tipGroup)
-      ? [tipGroup]
-      : [];
+    return tipGroup !== undefined && onScreen(tipGroup) ? [tipGroup] : [];
   }
-  return groupRects.flatMap((_, index) =>
-    index !== terminal && onScreen(index) ? [index] : [],
-  );
+  return groupRects.flatMap((_, index) => (onScreen(index) ? [index] : []));
 }
 
 /* THE GLOW AS STROKES, NOT A FILTER. A halo does not have to be a blur: a few translucent strokes on

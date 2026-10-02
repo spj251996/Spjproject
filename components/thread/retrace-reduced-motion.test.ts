@@ -276,6 +276,57 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
   }
 });
 
+test("Wishes' closing stretch loops, painted once by the copy over the illustration and not twice", async (t) => {
+  if (!existsSync("out/index.html")) {
+    t.skip("no static export: run `npm run build` first");
+    return;
+  }
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await (
+      await browser.newContext({ viewport: { width: 393, height: 700 } })
+    ).newPage();
+    await page.addInitScript(WRAP_RAF);
+    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.addStyleTag({
+      content:
+        ":root{--retrace-duration:1000ms;--retrace-loops:6;--retrace-settle:300ms}",
+    });
+    await page.waitForTimeout(3600);
+    await page.evaluate(
+      "window.scrollTo(0, document.documentElement.scrollHeight)",
+    );
+    /* The loop is seen lit by polling across it: a segment is empty at each loop's edges, so one
+       reading can miss it. The copy under the illustration is the same line drawn again, and a second
+       painter would composite the glow's translucent strokes twice over themselves, so it carries no
+       re-trace at all. */
+    const seen = { under: 0, over: 0 };
+    for (let i = 0; i < 120 && !seen.over; i++) {
+      const lit = (await page.evaluate(`(() => {
+        const lit = (slot) => Array.from(document.querySelectorAll('[data-thread-weave="' + slot + '"] [data-thread-retrace-group] path, [data-thread-weave="' + slot + '"] [data-thread-retrace-glow] path')).filter((p) => p.style.display !== "none" && p.getAttribute("d")).length;
+        return { under: lit("under"), over: lit("over") };
+      })()`)) as { under: number; over: number };
+      seen.under += lit.under;
+      seen.over += lit.over;
+      await page.waitForTimeout(50);
+    }
+    assert.ok(seen.over > 0, "the copy over the illustration is lit");
+    assert.equal(seen.under, 0, "the copy under it paints nothing");
+    assert.equal(
+      await page.evaluate(
+        "document.querySelectorAll('[data-thread-weave=\"under\"] [data-thread-retrace-group]').length",
+      ),
+      0,
+      "and holds no re-trace groups",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("on a finished thread a scroll clears the loop at once, and it lights again once the page is still", async (t) => {
   if (!existsSync("out/index.html")) {
     t.skip("no static export: run `npm run build` first");
