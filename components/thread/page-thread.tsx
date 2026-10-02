@@ -21,8 +21,17 @@ import {
   headSegments,
   type PieceSamples,
   paintedLength,
+  parseCssTime,
   polylineBetween,
+  RETRACE_LENGTH_RATIO,
+  type RetracePhase,
   type Rgb,
+  retraceFade,
+  retraceGlow,
+  retracePhase,
+  retraceSegments,
+  retraceSpan,
+  retraceTargets,
   samplePath,
   TAPER_CUT_WIDTH,
   TAPER_STEPS,
@@ -30,6 +39,7 @@ import {
   taperCut,
   taperReached,
   taperSegments,
+  tipGroupIndex,
 } from "./thread-light";
 import {
   createDrawRatchet,
@@ -470,32 +480,36 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const END_TOLERANCE = 0.01;
 
 /* Read from the built stylesheet rather than copied, so a token edit cannot leave the head behind. */
+function tokenLength(token: string): number {
+  return Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(token),
+  );
+}
+
+function tokenColour(token: string): Rgb {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  document.body.append(probe);
+  const [r = 0, g = 0, b = 0] =
+    getComputedStyle(probe)
+      .color.match(/[\d.]+/g)
+      ?.map(Number) ?? [];
+  probe.remove();
+  return [r, g, b];
+}
+
 let resolvedHeadOptions: HeadOptions | undefined;
 
 function headOptions(): HeadOptions {
   if (resolvedHeadOptions !== undefined) return resolvedHeadOptions;
-  const root = getComputedStyle(document.documentElement);
-  const length = (token: string) =>
-    Number.parseFloat(root.getPropertyValue(token));
-  const colour = (token: string): Rgb => {
-    const probe = document.createElement("span");
-    probe.style.color = `var(${token})`;
-    document.body.append(probe);
-    const [r = 0, g = 0, b = 0] =
-      getComputedStyle(probe)
-        .color.match(/[\d.]+/g)
-        ?.map(Number) ?? [];
-    probe.remove();
-    return [r, g, b];
-  };
-  const baseWidth = length("--stroke-thread");
+  const baseWidth = tokenLength("--stroke-thread");
   resolvedHeadOptions = {
     length: HEAD_LENGTH_RATIO * baseWidth,
-    tipWidth: length("--stroke-thread-head"),
+    tipWidth: tokenLength("--stroke-thread-head"),
     baseWidth,
-    tailColor: colour("--color-thread-red"),
-    midColor: colour("--color-thread-vermilion"),
-    tipColor: colour("--color-thread-core"),
+    tailColor: tokenColour("--color-thread-red"),
+    midColor: tokenColour("--color-thread-vermilion"),
+    tipColor: tokenColour("--color-thread-core"),
   };
   return resolvedHeadOptions;
 }
@@ -513,9 +527,9 @@ function setAttribute(element: Element, name: string, value: string) {
 function createHeadPainter(
   group: SVGGElement,
   pathOf: (piece: number) => string | undefined,
+  samples: Map<number, PieceSamples> = new Map(),
 ) {
   const pool = new Map<string, SVGPathElement>();
-  const samples = new Map<number, PieceSamples>();
   let shown = new Set<SVGPathElement>();
 
   /* Elements are kept in rank order as they are created, so paint order is the DOM order. A tight
@@ -541,44 +555,52 @@ function createHeadPainter(
     group.style.display = "none";
   }
 
+  function paintSegments(
+    segments: readonly HeadSegment[],
+    pieces: readonly ThreadPiece[],
+  ) {
+    const used = new Set<SVGPathElement>();
+    for (const segment of segments) {
+      const d = pathOf(segment.piece);
+      if (d === undefined) continue;
+      const piece = pieces[segment.piece];
+      const length = piece.end - piece.start;
+      let sampled = samples.get(segment.piece);
+      if (sampled === undefined) {
+        sampled = samplePath(d, length);
+        samples.set(segment.piece, sampled);
+      }
+      const element = elementFor(segment);
+      const continuesElsewhere =
+        segment.piece + 1 < pieces.length &&
+        pathOf(segment.piece + 1) === undefined &&
+        segment.end >= length - END_TOLERANCE;
+      setAttribute(
+        element,
+        "d",
+        polylineBetween(
+          sampled,
+          segment.start,
+          segment.end + (continuesElsewhere ? HEAD_STEP_OVERLAP : 0),
+        ),
+      );
+      setAttribute(element, "stroke", segment.stroke);
+      setAttribute(element, "stroke-width", segment.width.toFixed(3));
+      if (element.style.display !== "") element.style.display = "";
+      used.add(element);
+    }
+    for (const element of shown) {
+      if (!used.has(element)) element.style.display = "none";
+    }
+    shown = used;
+    group.style.display = used.size === 0 ? "none" : "";
+  }
+
   return {
     paint(drawn: number, pieces: readonly ThreadPiece[], options: HeadOptions) {
-      const used = new Set<SVGPathElement>();
-      for (const segment of headSegments(drawn, pieces, options)) {
-        const d = pathOf(segment.piece);
-        if (d === undefined) continue;
-        const piece = pieces[segment.piece];
-        const length = piece.end - piece.start;
-        let sampled = samples.get(segment.piece);
-        if (sampled === undefined) {
-          sampled = samplePath(d, length);
-          samples.set(segment.piece, sampled);
-        }
-        const element = elementFor(segment);
-        const continuesElsewhere =
-          segment.piece + 1 < pieces.length &&
-          pathOf(segment.piece + 1) === undefined &&
-          segment.end >= length - END_TOLERANCE;
-        setAttribute(
-          element,
-          "d",
-          polylineBetween(
-            sampled,
-            segment.start,
-            segment.end + (continuesElsewhere ? HEAD_STEP_OVERLAP : 0),
-          ),
-        );
-        setAttribute(element, "stroke", segment.stroke);
-        setAttribute(element, "stroke-width", segment.width.toFixed(3));
-        if (element.style.display !== "") element.style.display = "";
-        used.add(element);
-      }
-      for (const element of shown) {
-        if (!used.has(element)) element.style.display = "none";
-      }
-      shown = used;
-      group.style.display = used.size === 0 ? "none" : "";
+      paintSegments(headSegments(drawn, pieces, options), pieces);
     },
+    paintSegments,
     /* A re-measure replaces every piece's `d`, so what was sampled describes a path that is gone. */
     reset() {
       samples.clear();
@@ -589,6 +611,115 @@ function createHeadPainter(
 }
 
 type HeadPainter = ReturnType<typeof createHeadPainter>;
+
+/* ---------------------------------------------------------------------------------------------
+   THE RE-TRACE — a lit segment that runs a stretch of the thread once it is already drawn
+   (`thread-light.ts`; DESIGN.md -> Thread -> The re-trace). The arithmetic is `thread-light.ts`'s;
+   what is here is what needs a DOM: the painters, the loop that drives them, and the tokens.
+
+   It is the head's own stack, laid again, so each stretch that is animating gets a `<g>` and the head's
+   painter inside it. The painters share the head's samples, so a piece is sampled once whichever
+   layer reaches it first. Each stretch's `<g>` takes the head's halo as its one filter (`thread.module.css`). */
+
+/* The drawing head's own settled values (the owner's ruling, 2026-10-02) with the re-trace's peak
+   length: the head's options, read once from the same tokens, not a second copy of any of them. */
+let resolvedRetraceOptions: HeadOptions | undefined;
+
+function retraceOptions(): HeadOptions {
+  resolvedRetraceOptions ??= {
+    ...headOptions(),
+    length: RETRACE_LENGTH_RATIO * tokenLength("--stroke-thread"),
+  };
+  return resolvedRetraceOptions;
+}
+
+function tokenTime(token: string): number | undefined {
+  return parseCssTime(
+    getComputedStyle(document.documentElement).getPropertyValue(token),
+  );
+}
+
+interface RetraceFrame {
+  readonly tail: number;
+  readonly tip: number;
+}
+
+function createRetracePainter(
+  container: SVGGElement,
+  glowContainer: SVGGElement,
+  pathOf: (piece: number) => string | undefined,
+  samples: Map<number, PieceSamples>,
+) {
+  const stretches = new Map<
+    number,
+    {
+      element: SVGGElement;
+      painter: HeadPainter;
+      glowElement: SVGGElement;
+      glowPainter: HeadPainter;
+    }
+  >();
+
+  function stretchFor(index: number) {
+    const existing = stretches.get(index);
+    if (existing !== undefined) return existing;
+    const element = document.createElementNS(SVG_NS, "g");
+    element.dataset.threadRetraceGroup = String(index);
+    container.append(element);
+    const glowElement = document.createElementNS(SVG_NS, "g");
+    glowElement.dataset.threadRetraceGlow = String(index);
+    glowContainer.append(glowElement);
+    const made = {
+      element,
+      painter: createHeadPainter(element, pathOf, samples),
+      glowElement,
+      glowPainter: createHeadPainter(glowElement, pathOf, samples),
+    };
+    stretches.set(index, made);
+    return made;
+  }
+
+  return {
+    /* One frame: the segment of each animating stretch, and every other stretch hidden. */
+    paint(
+      frames: ReadonlyMap<number, RetraceFrame>,
+      pieces: readonly ThreadPiece[],
+      options: HeadOptions,
+    ) {
+      for (const [index, { painter, glowPainter }] of stretches) {
+        if (frames.has(index)) continue;
+        painter.hide();
+        glowPainter.hide();
+      }
+      for (const [index, { tail, tip }] of frames) {
+        const { element, painter, glowElement, glowPainter } =
+          stretchFor(index);
+        painter.paintSegments(
+          retraceSegments(tail, tip, pieces, options),
+          pieces,
+        );
+        glowPainter.paintSegments(
+          retraceGlow(tail, tip, pieces, options.midColor),
+          pieces,
+        );
+        const opacity = retraceFade(tip - tail, options.length);
+        const value = opacity >= 1 ? "" : opacity.toFixed(3);
+        if (element.style.opacity !== value) element.style.opacity = value;
+        if (glowElement.style.opacity !== value) {
+          glowElement.style.opacity = value;
+        }
+      }
+    },
+    hide() {
+      for (const { painter, glowPainter } of stretches.values()) {
+        painter.hide();
+        glowPainter.hide();
+      }
+    },
+  };
+}
+
+type RetracePainter = ReturnType<typeof createRetracePainter>;
 
 /* ---------------------------------------------------------------------------------------------
    THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
@@ -832,6 +963,30 @@ function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/* Which stretches should be looping now, and in which phase. A thread still being drawn loops only
+   while its tip is still, which is what `moving` records. */
+function retraceNow(
+  ranges: readonly SectionRange[],
+  groupRects: readonly SectionRect[],
+  drawn: number,
+  moving: boolean,
+  viewport: { scrollY: number; height: number },
+): { phase: RetracePhase; targets: number[] } {
+  const last = ranges[ranges.length - 1];
+  if (last === undefined) return { phase: "drawing", targets: [] };
+  const phase = retracePhase(drawn, last.end);
+  if (phase === "drawing" && moving) return { phase, targets: [] };
+  return {
+    phase,
+    targets: retraceTargets(
+      phase,
+      groupRects,
+      viewport,
+      tipGroupIndex(ranges, drawn),
+    ),
+  };
+}
+
 /* ---------------------------------------------------------------------------------------------
    THE COMPONENT */
 
@@ -853,6 +1008,22 @@ export function PageThread() {
   const taperGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
   const taperRef = useRef<TaperPainter | null>(null);
+  const retraceGroupRef = useRef<SVGGElement>(null);
+  const retraceGlowRef = useRef<SVGGElement>(null);
+  const retraceRef = useRef<RetracePainter | null>(null);
+  /* One sampling of each piece, whichever of the head and the re-trace reaches it first. */
+  const samplesRef = useRef(new Map<number, PieceSamples>());
+  /* The re-trace's state. `drawnRef` is the ratchet's held value as the last frame saw it; `moving`
+     is true from any advance of it until `--retrace-settle` has passed without another. */
+  const drawnRef = useRef(0);
+  const movingRef = useRef(false);
+  const settleTimerRef = useRef<number | null>(null);
+  const retraceFrameRef = useRef<number | null>(null);
+  const retraceStartRef = useRef(0);
+  const retraceNowRef = useRef<ReturnType<typeof retraceNow>>({
+    phase: "drawing",
+    targets: [],
+  });
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
      as `measured.sections` itself, never re-measured on scroll. `groupRectsRef` is `threadLine`'s own
      per-GROUP window rects (a stacked pair's own two card rects, a ritual list's own row rects, or a
@@ -867,16 +1038,118 @@ export function PageThread() {
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
 
-  const head = useCallback((): HeadPainter | null => {
-    const group = headGroupRef.current;
-    if (group === null) return null;
-    headRef.current ??= createHeadPainter(group, (index) =>
+  /* The `d` of a chain piece that lives in this `<svg>`, or nothing for the weave's. */
+  const pathOf = useCallback(
+    (index: number) =>
       index < piecesRef.current.length
         ? (pathsRef.current[index]?.getAttribute("d") ?? undefined)
         : undefined,
-    );
+    [],
+  );
+
+  const head = useCallback((): HeadPainter | null => {
+    const group = headGroupRef.current;
+    if (group === null) return null;
+    headRef.current ??= createHeadPainter(group, pathOf, samplesRef.current);
     return headRef.current;
-  }, []);
+  }, [pathOf]);
+
+  const retrace = useCallback((): RetracePainter | null => {
+    const group = retraceGroupRef.current;
+    const glow = retraceGlowRef.current;
+    if (group === null || glow === null) return null;
+    retraceRef.current ??= createRetracePainter(
+      group,
+      glow,
+      pathOf,
+      samplesRef.current,
+    );
+    return retraceRef.current;
+  }, [pathOf]);
+
+  /* Nothing is painted while no frame is running, so there is nothing to hide when none is. */
+  const stopRetrace = useCallback(() => {
+    if (retraceFrameRef.current === null) return;
+    window.cancelAnimationFrame(retraceFrameRef.current);
+    retraceFrameRef.current = null;
+    retrace()?.hide();
+  }, [retrace]);
+
+  /* Brings the loop in line with the state: starts it, stops it, or lets a running one pick up new
+     targets on its next frame. Called at every event that can change which stretches should animate —
+     an advance of the drawn length, a scroll frame, the end of the settle interval, a re-measure. */
+  const syncRetrace = useCallback(() => {
+    const painter = retrace();
+    const state = reducedMotion()
+      ? { phase: "drawing" as const, targets: [] }
+      : retraceNow(
+          rangesRef.current,
+          groupRectsRef.current,
+          drawnRef.current,
+          movingRef.current,
+          { scrollY: window.scrollY, height: viewportHeightRef.current },
+        );
+    retraceNowRef.current = state;
+    if (painter === null || state.targets.length === 0) {
+      stopRetrace();
+      return;
+    }
+    if (retraceFrameRef.current !== null) return;
+    const duration = tokenTime("--retrace-duration");
+    if (duration === undefined) return;
+    retraceStartRef.current = performance.now();
+    const frame = (now: number) => {
+      const { phase, targets } = retraceNowRef.current;
+      const options = retraceOptions();
+      const loop = (Math.max(0, now - retraceStartRef.current) / duration) % 1;
+      const frames = new Map<number, RetraceFrame>();
+      for (const index of targets) {
+        const range = rangesRef.current[index];
+        const end =
+          phase === "drawing"
+            ? Math.min(range.end, drawnRef.current)
+            : range.end;
+        if (end - range.start <= 0) continue;
+        const span = retraceSpan(loop, end - range.start, options.length);
+        frames.set(index, {
+          tail: range.start + span.tail,
+          tip: range.start + span.tip,
+        });
+      }
+      painter.paint(frames, chainRef.current, options);
+      retraceFrameRef.current = window.requestAnimationFrame(frame);
+    };
+    retraceFrameRef.current = window.requestAnimationFrame(frame);
+  }, [retrace, stopRetrace]);
+
+  const rest = useCallback(() => {
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+    movingRef.current = false;
+    syncRetrace();
+  }, [syncRetrace]);
+
+  /* Every advance of the drawn length starts the thread's stillness over. A drawn length that has not
+     advanced (scrolling back up over a drawn thread, or any scroll once it is complete) is not
+     movement and leaves the interval alone. */
+  const advanced = useCallback(
+    (drawn: number) => {
+      if (drawn > drawnRef.current) {
+        drawnRef.current = drawn;
+        movingRef.current = true;
+        if (settleTimerRef.current !== null) {
+          window.clearTimeout(settleTimerRef.current);
+        }
+        const settle = tokenTime("--retrace-settle");
+        settleTimerRef.current =
+          settle === undefined ? null : window.setTimeout(rest, settle);
+      }
+      syncRetrace();
+    },
+    [rest, syncRetrace],
+  );
 
   const taper = useCallback((): TaperPainter | null => {
     const group = taperGroupRef.current;
@@ -894,6 +1167,17 @@ export function PageThread() {
       if (first !== undefined) taper()?.paint(paintedLength(drawn, first));
     },
     [head, taper],
+  );
+
+  /* The one place a drawn length is taken from the scroll or the opening draw and put on the page:
+     through the ratchet, drawn, and told to the re-trace. */
+  const commit = useCallback(
+    (value: number) => {
+      const drawn = ratchetRef.current.advance(value);
+      draw(drawn);
+      advanced(drawn);
+    },
+    [draw, advanced],
   );
 
   function measure() {
@@ -950,6 +1234,7 @@ export function PageThread() {
     });
     piecesRef.current = trunkPieces;
     chainRef.current = pieces;
+    stopRetrace();
     head()?.reset();
     const invitePiece = trunkPieces[0];
     taper()?.set(
@@ -976,22 +1261,23 @@ export function PageThread() {
          with it and the `advance` below re-seeds from the fresh measurement. The opening draw's own
          floor is RE-DERIVED from the new ranges rather than carried across as a stale length --
          without it, a resize at the very top after the sequence has run would unravel the invite's
-         thread and leave a reader who has not scrolled looking at nothing. */
+         thread and leave a reader who has not scrolled looking at nothing. The re-seed is not
+         movement, so it does not start the re-trace's settle interval over. */
       ratchetRef.current.reset();
-      const drawn = pageDrawnLength(
-        groupRectsRef.current,
-        rangesRef.current,
-        viewportHeightRef.current,
-      );
-      draw(
-        ratchetRef.current.advance(
-          Math.max(
-            drawn,
-            openingFloor(rangesRef.current, openingCompleteRef.current),
+      const drawn = ratchetRef.current.advance(
+        Math.max(
+          pageDrawnLength(
+            groupRectsRef.current,
+            rangesRef.current,
+            viewportHeightRef.current,
           ),
+          openingFloor(rangesRef.current, openingCompleteRef.current),
         ),
       );
+      drawnRef.current = drawn;
+      draw(drawn);
     }
+    syncRetrace();
   }
 
   useLayoutTriggers(measure);
@@ -1024,9 +1310,14 @@ export function PageThread() {
       const step = (now: number) => {
         if (startedAt === 0) startedAt = now;
         const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
-        draw(ratchetRef.current.advance(target * t));
+        commit(target * t);
         if (t < 1) rafId = window.requestAnimationFrame(step);
-        else openingCompleteRef.current = true;
+        else {
+          openingCompleteRef.current = true;
+          /* The opening draw ends in a stop, not a scroll, so the cue's loop begins now rather than
+             after the settle interval a reader's own scroll waits out. */
+          rest();
+        }
       };
       rafId = window.requestAnimationFrame(step);
     }, OPENING_DRAW_DELAY);
@@ -1035,7 +1326,7 @@ export function PageThread() {
       window.clearTimeout(timer);
       if (rafId !== null) window.cancelAnimationFrame(rafId);
     };
-  }, [draw]);
+  }, [commit, rest]);
 
   useEffect(() => {
     let rafId: number | null = null;
@@ -1044,13 +1335,11 @@ export function PageThread() {
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
-        draw(
-          ratchetRef.current.advance(
-            pageDrawnLength(
-              groupRectsRef.current,
-              rangesRef.current,
-              viewportHeightRef.current,
-            ),
+        commit(
+          pageDrawnLength(
+            groupRectsRef.current,
+            rangesRef.current,
+            viewportHeightRef.current,
           ),
         );
       });
@@ -1061,7 +1350,17 @@ export function PageThread() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [draw]);
+  }, [commit]);
+
+  useEffect(
+    () => () => {
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+      stopRetrace();
+    },
+    [stopRetrace],
+  );
 
   return (
     <span aria-hidden="true" className={styles.pageWrapper} ref={wrapperRef}>
@@ -1117,6 +1416,8 @@ export function PageThread() {
           />
         ))}
         <g className={styles.pageTaper} ref={taperGroupRef} />
+        <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
+        <g className={styles.pageRetrace} ref={retraceGroupRef} />
         <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>

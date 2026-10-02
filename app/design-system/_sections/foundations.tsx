@@ -106,7 +106,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
         usage:
-          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp. Never the ink, never text.",
+          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp, and the re-trace's ramp and glow strokes. Never the ink, never text.",
       },
       {
         token: "--color-thread-core",
@@ -323,6 +323,11 @@ const EASING_TOKENS: EasingToken[] = [
 const EASING_USES = [
   "entrance · anything appearing",
   "settle · the not-found draw",
+];
+
+const LOOP_CADENCE_USES = [
+  "--retrace-duration · 3.2s · one loop of the thread's re-trace, the page's one sanctioned loop · set against the thread, not a step on the duration scale · the owner's pick",
+  "--retrace-settle · 1500ms · how long the drawn thread must be still before its cue loops · a delay of the same kind, the owner's pick",
 ];
 
 const SHAPE_ITEMS: ShapeItem[] = [
@@ -624,7 +629,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction; these tokens govern discrete transitions only."
+        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace is the one exception, and takes its own cadence."
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
@@ -637,6 +642,10 @@ export function FoundationsSections() {
         <SpecimenGroup title="Easing">
           <EasingCurves items={EASING_TOKENS} />
           <RuleList rules={EASING_USES} />
+        </SpecimenGroup>
+
+        <SpecimenGroup title="Loop cadence — the one exception to both scales">
+          <RuleList rules={LOOP_CADENCE_USES} />
         </SpecimenGroup>
       </GallerySection>
 

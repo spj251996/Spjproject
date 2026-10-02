@@ -160,6 +160,29 @@
   stroke-linejoin: round;
 }
 
+/* The re-trace (`thread-light.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
+   drawn line, one `<g>` per stretch that is animating, laid by script beneath the head. It takes NO
+   FILTER, and that is the point: the head's 4x halo as a filter over these segments cost 77 dropped
+   frames at three stretches at `wide` and the bleed's quarter-radius one still cost a buffer per
+   stretch, so its glow is `.pageRetraceGlow` below instead, a stack of translucent strokes (geometry,
+   which has been free every time a cost finding came down to a buffer). Colour, width and opacity
+   are set per element by `page-thread.tsx`. There is no CSS animation and so no media query: the loop
+   is script, and script does not start under reduced motion (the same gate the draw already has),
+   which leaves the group empty rather than overridden. */
+.pageRetrace path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+/* The re-trace's glow, under its core (DESIGN.md -> The re-trace -> The glow is strokes, not a
+   filter): eight translucent vermilion strokes on the segment's own path, fitted to the 4x halo's
+   measured falloff. One `<g>` per stretch, set by script, below `.pageRetrace` in paint order so the
+   core lies over it. */
+.pageRetraceGlow path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
 /* Deliberate exclusion as insurance, not a fix for an observed defect. The no-JS fallback's paths
    live in a 0-1 viewBox stretched over `<main>`, and in that arrangement the same three shadows
    measured no visible effect (about 1350 tinted px with the filter against 1370 without), where in

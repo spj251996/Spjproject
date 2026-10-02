@@ -310,17 +310,38 @@ export function headSegments(
     (piece, index) => painted[index] >= piece.end - piece.start - NEGLIGIBLE,
   );
   if (tipPiece === -1 || finished) return [];
+  return stackRuns(
+    pieces[tipPiece].start + painted[tipPiece],
+    options.length,
+    pieces,
+    tipPiece,
+    options,
+  );
+}
 
+/* The runs of one lit segment whose tip is at `tip`, in the chain's own scale, and which spans
+   `span` back from it, laid as the head lays them: the stack's colours stretched over however long
+   the segment is. The drawing head always spans its full length; the re-trace's segment grows and
+   shrinks, so the step length follows `span` rather than the stack's own. `tipPiece` is the piece
+   the tip lies in. */
+function stackRuns(
+  tip: number,
+  span: number,
+  pieces: readonly PieceSpan[],
+  tipPiece: number,
+  options: HeadOptions,
+): HeadSegment[] {
   const stack = stackFor(options);
+  const stepLength = span / stack.steps;
   const cover = options.baseWidth / 2;
-  const tip = pieces[tipPiece].start + painted[tipPiece];
+  const tipPainted = tip - pieces[tipPiece].start;
   const tipAtPieceEnd =
-    pieces[tipPiece].end - pieces[tipPiece].start - painted[tipPiece] < cover;
+    pieces[tipPiece].end - pieces[tipPiece].start - tipPainted < cover;
 
   const segments: HeadSegment[] = [];
   for (let step = 0; step < stack.steps; step += 1) {
-    const end = tip - step * stack.stepLength;
-    const start = Math.max(0, tip - (step + 1) * stack.stepLength);
+    const end = tip - step * stepLength;
+    const start = Math.max(0, tip - (step + 1) * stepLength);
     if (end - start <= NEGLIGIBLE) break;
     const reach =
       step === 0
@@ -353,8 +374,8 @@ export function headSegments(
     segments.push({
       step: 0,
       piece: tipPiece,
-      start: Math.max(0, painted[tipPiece] - END_COVER_LENGTH),
-      end: painted[tipPiece],
+      start: Math.max(0, tipPainted - END_COVER_LENGTH),
+      end: tipPainted,
       width: Math.max(options.baseWidth, options.tipWidth),
       stroke: stack.strokes[0],
       cap: "round",
@@ -362,6 +383,208 @@ export function headSegments(
     });
   }
   return segments;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   THE RE-TRACE — a lit segment that runs a stretch of the thread once it is already drawn, on a
+   loop. It is the page's resting motion and its scroll cue (DESIGN.md -> Thread -> The re-trace).
+
+   It follows the owner's reference clip, measured (tmp/thread-light-spike/reference.md): the
+   segment's length is not constant, since the tip and the tail move at different speeds and it
+   grows from nothing and shrinks back to nothing over a loop; its leading edge is hard and its
+   trailing end a soft ramp; the gradient is continuous; and the base stroke is unchanged behind and
+   ahead of it. So it is laid with the head's own stack, a tail-to-tip ramp stretched over whatever
+   length the segment has. The clip's lack of any glow is NOT carried over: on a red thread the clip's
+   own grey-to-red contrast is not available, and the head's settled halo and ramp are what read. */
+
+/* Peak length as a multiple of the stroke, as the head's is: the reference's segment grows to about
+   89 times the stroke width (~180px on a 2px line) and the clip's absolute scale cannot be recovered,
+   so the ratio is what transfers. */
+export const RETRACE_LENGTH_RATIO = 89;
+
+/* Of one loop, the share the tip spends reaching the end of the stretch; the tail then runs out the
+   remainder. The reference's tip reaches the end of its curve a little over half way through its 2.0s
+   loop and the tail finishes as the next begins. */
+const RETRACE_TIP_ARRIVES = 0.55;
+
+/* A segment shorter than this share of its peak is faint, so it appears and vanishes rather than
+   popping: the reference's colour falls away as its length does, peak colour 126 -> 14 as the length
+   falls 150 -> 21px. */
+const RETRACE_FADE_SHARE = 0.5;
+
+export type RetracePhase = "drawing" | "complete";
+
+/* `"complete"` once the thread has been drawn to its end, which the ratchet makes permanent. */
+export function retracePhase(drawn: number, totalLength: number): RetracePhase {
+  return drawn >= totalLength - NEGLIGIBLE ? "complete" : "drawing";
+}
+
+/* The group indices that should carry a running loop; empty when nothing should animate.
+
+   While `"drawing"` it is at most the group holding the tip, if that group is on screen: an unfinished
+   line with a live tip says there is more below, which is the page's scroll cue. Once `"complete"` it
+   is every group on screen, one loop per stretch. The whole page is not one stretch because at 9.4
+   screens a single travelling segment would be in view for about a tenth of each loop, and either
+   whip past as a glitch or leave the reader watching nothing between passes. A stretch is a group
+   the draw already measures (`groupRects`), so this is an activation rule over existing geometry.
+
+   The last group holds the thread's terminal, which has nothing further to cue, so it never loops. */
+export function retraceTargets(
+  phase: RetracePhase,
+  groupRects: readonly { readonly top: number; readonly height: number }[],
+  viewport: { readonly scrollY: number; readonly height: number },
+  tipGroupIndex: number | undefined,
+): number[] {
+  const terminal = groupRects.length - 1;
+  const onScreen = (index: number) => {
+    const rect = groupRects[index];
+    return (
+      rect !== undefined &&
+      rect.top < viewport.scrollY + viewport.height &&
+      rect.top + rect.height > viewport.scrollY
+    );
+  };
+  if (phase === "drawing") {
+    return tipGroupIndex !== undefined &&
+      tipGroupIndex !== terminal &&
+      onScreen(tipGroupIndex)
+      ? [tipGroupIndex]
+      : [];
+  }
+  return groupRects.flatMap((_, index) =>
+    index !== terminal && onScreen(index) ? [index] : [],
+  );
+}
+
+/* THE GLOW AS STROKES, NOT A FILTER. A halo does not have to be a blur: a few translucent strokes on
+   the same path, each wider and fainter than the next, painted under the core, fall off outward in
+   steps and need no offscreen buffer. This round's cost findings have each come down to a buffer
+   (dashed copies' bounding boxes, the taper's mask region, the bleed's three shadows on every piece),
+   and geometry has been free each time.
+
+   Fitted to the 4x filter halo as measured on a straight 3.2px line over the ivory ground
+   (tmp/thread-retrace-verify/halo-profile.mjs): the share of vermilion at 2-60px from the
+   centreline is 0.24 at 2px, 0.13 at 6, 0.06 at 10-12, 0.036 at 20, 0.018 at 30 and 0.006 at 50-60.
+   Each stroke covers one band of that curve, and its alpha is what brings the composite inside the
+   band up to the measured share given the strokes outside it. Three strokes gave an RMS error of
+   0.014 in that share and a visibly stepped edge at 3x (the widest stroke's rim read as an outline);
+   eight give 0.007 and none shows at 3x.
+
+   SCALED BY `RETRACE_GLOW_SCALE`. A constant-width stroke over the whole segment glows more than the
+   filter does round a segment that tapers to the ink's width and fades at its ends, so the fitted
+   alphas are scaled until the real segment's glow volume is near the filter's. Measured on the real
+   segment (393x700, scroll 0, ten frames, pixels changed against the layer hidden, three runs;
+   figures are pixels over 12/255, summed delta, pixels over 4/255): the filter 2,217 / 64,412 /
+   5,592; scale 1.0 gives 2,770 / 85,598 / 9,306; 0.72 gives 1,979 / 57,440 / 4,613; the shipped
+   0.77 gives 2,528 / 70,946 / 6,399. The response steps rather than ramps because an alpha is
+   stored in eight bits. Widest first, as they are painted. */
+export const RETRACE_GLOW_SCALE = 0.77;
+export const RETRACE_GLOW = [
+  { width: 100, alpha: 0.0077 },
+  { width: 56, alpha: 0.0146 },
+  { width: 38, alpha: 0.01 },
+  { width: 26, alpha: 0.0139 },
+  { width: 18, alpha: 0.0223 },
+  { width: 13, alpha: 0.0439 },
+  { width: 9, alpha: 0.0347 },
+  { width: 6, alpha: 0.047 },
+] as const;
+
+/* The glow under a lit segment from `tail` to `tip` (the chain's scale): for each piece it covers,
+   one polyline per stroke, so a stroke is composited once however many steps the core has (per-step
+   glow would composite twice where steps overlap and band). Round caps carry it past both ends, as
+   the filter's blur does. `colour` is the vermilion stop. */
+export function retraceGlow(
+  tail: number,
+  tip: number,
+  pieces: readonly PieceSpan[],
+  colour: Rgb,
+): HeadSegment[] {
+  const [r, g, b] = colour;
+  const segments: HeadSegment[] = [];
+  pieces.forEach((piece, index) => {
+    if (piece.end <= tail || piece.start >= tip) return;
+    const from = Math.max(tail, piece.start) - piece.start;
+    const to = Math.min(tip, piece.end) - piece.start;
+    if (to - from <= NEGLIGIBLE) return;
+    RETRACE_GLOW.forEach((stroke, level) => {
+      segments.push({
+        step: level,
+        piece: index,
+        start: from,
+        end: to,
+        width: stroke.width,
+        stroke: `rgba(${r},${g},${b},${stroke.alpha})`,
+        cap: "round",
+        rank: index * PIECE_RANK + level,
+      });
+    });
+  });
+  return segments;
+}
+
+/* The group holding the tip: the last one the drawn length has entered, or none before any has. */
+export function tipGroupIndex(
+  ranges: readonly { readonly start: number }[],
+  drawn: number,
+): number | undefined {
+  const index = ranges.findLastIndex((range) => range.start < drawn);
+  return index === -1 ? undefined : index;
+}
+
+/* A CSS time token, `2s` or `800ms`, in milliseconds; undefined when it is not one, so a missing or
+   malformed token stops the loop rather than running it at a value nobody chose. */
+export function parseCssTime(value: string): number | undefined {
+  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  if (match === null) return undefined;
+  const time = Number(match[1]) * (match[2] === "s" ? 1000 : 1);
+  return time > 0 && Number.isFinite(time) ? time : undefined;
+}
+
+/* Where the segment's tip and tail are, as arc lengths into a stretch of `extent`, at `loop` (0 to 1)
+   through a loop. Both start at the stretch's start and both end at its end, so the loop is empty at
+   each edge. The tip runs out to the end in the first `RETRACE_TIP_ARRIVES` of the loop and the tail
+   follows: it trails the tip by the peak length while that is shorter than the stretch, then runs
+   the rest of the way in the remainder. Neither end ever moves backwards. */
+export function retraceSpan(
+  loop: number,
+  extent: number,
+  peakLength: number,
+): { tail: number; tip: number } {
+  const u = Math.max(0, Math.min(1, loop));
+  if (u < RETRACE_TIP_ARRIVES) {
+    const tip = extent * (u / RETRACE_TIP_ARRIVES);
+    return { tail: Math.max(0, tip - peakLength), tip };
+  }
+  const tailWhenTipArrives = Math.max(0, extent - peakLength);
+  const left = (u - RETRACE_TIP_ARRIVES) / (1 - RETRACE_TIP_ARRIVES);
+  return {
+    tail: tailWhenTipArrives + (extent - tailWhenTipArrives) * left,
+    tip: extent,
+  };
+}
+
+/* The segment's opacity: full once it is half its peak length, falling to nothing as it shrinks. */
+export function retraceFade(length: number, peakLength: number): number {
+  return Math.max(0, Math.min(1, length / (RETRACE_FADE_SHARE * peakLength)));
+}
+
+/* The runs of a segment from `tail` to `tip`, in the chain's own scale, over every piece of the
+   chain. `options.length` is the peak the stack is built for; the segment spans however much of it
+   `tip - tail` is. */
+export function retraceSegments(
+  tail: number,
+  tip: number,
+  pieces: readonly PieceSpan[],
+  options: HeadOptions,
+): HeadSegment[] {
+  if (tip - tail <= NEGLIGIBLE) return [];
+  let tipPiece = -1;
+  pieces.forEach((piece, index) => {
+    if (piece.start < tip) tipPiece = index;
+  });
+  if (tipPiece === -1) return [];
+  return stackRuns(tip, tip - tail, pieces, tipPiece, options);
 }
 
 /* ---------------------------------------------------------------------------------------------

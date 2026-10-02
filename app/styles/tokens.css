@@ -145,6 +145,12 @@
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
      ends). */
   --length-thread-taper: 24px;
+  /* THE RE-TRACE'S CADENCE (DESIGN.md -> Thread -> The re-trace): how long one loop of the lit segment
+     takes, and how long the thread must have been still before its cue loops. Both are exceptions to
+     the motion scale, set against the thread. Read by name from script, not by a CSS animation,
+     because the segment's length and gradient change every frame. The owner's picks (2026-10-02). */
+  --retrace-duration: 3.2s;
+  --retrace-settle: 1500ms;
   --stroke-rim-offset: 2px;
 
   /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same
