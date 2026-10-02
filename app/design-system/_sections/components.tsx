@@ -84,8 +84,9 @@ export function ComponentsSections() {
               className="items-start"
               label="A contact's actions · call and chat marks · named Call/WhatsApp, <name> · always stacked, never side by side · one shared width and left edge, so the discs line up"
             >
-              <div className="flex flex-col items-center gap-space-2xs">
+              <div className="mx-auto flex w-fit flex-col items-stretch gap-space-2xs">
                 <ButtonAction
+                  align="start"
                   aria-label="Call, Name"
                   href="tel:+10000000000"
                   mark={<CallIcon size={24} />}
@@ -93,6 +94,7 @@ export function ComponentsSections() {
                   Call
                 </ButtonAction>
                 <ButtonAction
+                  align="start"
                   aria-label="WhatsApp, Name"
                   href="https://wa.me/10000000000"
                   mark={<ChatIcon size={24} />}

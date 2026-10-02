@@ -112,6 +112,28 @@ test("the phone tier's padding ladder has no step below 24", () => {
   assert.deepEqual(phone?.groundTier.paddingSteps, [32, 24]);
 });
 
+/* The test above asserts the ladder the emitter CONSUMES; this one asserts what it EMITS. Without
+   it, a mutation inside `paddingRules` — `ascending.slice(1)` losing its slice, or the base rule
+   dropping out — ships a phone card with no padding at all while the array stays `[32, 24]` and the
+   whole suite stays green. */
+test("a phone sheet is emitted at 24px unconditionally, and 16px appears nowhere", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  const chain = topLevelBlocks(css).find(
+    (rule) =>
+      rule.startsWith(`@media ${phone.media} and (orientation: portrait) {`) &&
+      rule.includes("@container"),
+  );
+  assert.ok(chain, "no portrait padding chain for the phone class");
+  /* The unconditional rule is the one before any nested `@media`. */
+  const base = chain.slice(0, chain.indexOf("@media (height"));
+  assert.match(base, /__sheet \{ padding: var\(--spacing-space-md\); \}/);
+  /* The retired step must not reappear anywhere a sheet is padded. */
+  for (const sheetRule of css.match(/__sheet \{ padding: [^}]*\}/g) ?? []) {
+    assert.doesNotMatch(sheetRule, /--spacing-space-sm/, sheetRule);
+  }
+});
+
 test("a wide window keeps the laptop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
   const wide = classes.find((c) => c.widthTier === "desktop");
@@ -689,7 +711,10 @@ test("the tier line and padding chain read the reveal the mount shows", () => {
      floor and is emitted unconditionally, so it carries no container rule to read. */
   const shortLaptop = chainWidths(false, "laptop", "phone", "landscape");
   assert.ok(shortLaptop.includes("@container (width >= 216px)"), shortLaptop);
-  assert.ok(!shortLaptop.includes("@container (width >= 168px)"));
+  /* 184 is this step's own bare-card counterfactual — the width an emitter that ignored the mount's
+     reveal would write. 168 was the RETIRED 24 step's, so asserting it absent became vacuous when
+     that step became the floor. */
+  assert.ok(!shortLaptop.includes("@container (width >= 184px)"));
 });
 
 test("a malformed fit fails validation before the hero-pair guard", () => {

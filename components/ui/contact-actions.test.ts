@@ -26,10 +26,39 @@ test("ButtonAction can align its content to the start", () => {
      reach the element. */
   assert.match(button, /align\??:/);
   assert.match(button, /center:\s*"justify-center"/);
-  assert.match(button, /start:\s*"[^"]*justify-start/);
+  /* `w-full` is pinned, not loosely matched. The target is `justify-center`, so without it the span
+     is content-sized and centred inside a stretched target and the discs stay 19.65px apart — i.e.
+     dropping `w-full` reinstates the whole defect while leaving `justify-start` in place. */
+  assert.match(button, /start:\s*"w-full\s+justify-start"/);
+  /* The span must actually CONSUME the lookup. Without this, deleting `${ALIGN[align]}` from the
+     className ships no justification at all and every other assertion here still passes. */
+  assert.match(button, /\$\{markClassName\}\s+\$\{ALIGN\[align\]\}/);
   /* `markClassName` must no longer carry its own justification, or the lookup is fighting it. */
   const mark = button.slice(button.indexOf("const markClassName"));
   assert.doesNotMatch(mark.slice(0, mark.indexOf("].join")), /justify-/);
+});
+
+/* The gallery is the visual companion to DESIGN.md, so a specimen that renders the defect under a
+   caption claiming it is fixed is worse than no specimen. It must carry the same construction as
+   `ContactPlate`, not merely describe it. */
+test("the gallery's contact-actions specimen matches the real pair", () => {
+  /* Read RAW, not stripped: this file carries a `/*` inside a string attribute, and a naive
+     comment-stripper pairs that with the next `*​/` and swallows the specimen whole. Safe to read
+     raw because the search is bounded to the specimen's own slice below. */
+  const gallery = readFileSync(
+    "app/design-system/_sections/components.tsx",
+    "utf8",
+  );
+  const from = gallery.indexOf("A contact's actions");
+  assert.notStrictEqual(from, -1, "no contact-actions specimen in the gallery");
+  const specimen = gallery.slice(from, gallery.indexOf("</Variant>", from));
+  assert.match(specimen, /items-stretch/);
+  assert.match(specimen, /w-fit/);
+  assert.equal(
+    (specimen.match(/align="start"/g) ?? []).length,
+    2,
+    "both specimen actions must align to the start, as ContactPlate's do",
+  );
 });
 
 /* The default must stay centred, or the map action and the gallery modal's close button move. */
