@@ -5,6 +5,12 @@ import {
   InlineList,
   Specimen,
 } from "@/app/design-system/_kit";
+import {
+  ThreadHeadSpecimen,
+  ThreadInkSpecimen,
+  ThreadRetraceSpecimen,
+  ThreadTaperSpecimen,
+} from "@/app/design-system/_sections/thread-specimens";
 import { Family } from "@/components/family/family";
 import type { FamilyGroup } from "@/content/types";
 
@@ -14,7 +20,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     home: "components/thread/page-thread.tsx",
     composes:
       "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s) and --retrace-settle (1500ms), Foundations · Motion",
-    note: "Live at /. A page-length thread measures <main> and cannot render in a specimen frame, so none is shown here; the stroke and length tokens above have no swatch of their own for the same reason. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+    note: "Live at /. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
 ];
 
@@ -111,6 +117,67 @@ export function DomainSections() {
         title="Domain · Thread"
       >
         <InlineList entries={THREAD_ENTRIES} />
+
+        <Specimen
+          description="The ink: one line in thread-red at the ink's width, with the bleed round it."
+          id="thread-ink"
+          name="ink and bleed"
+          note="Both panels are one mid-page connector in the wide band's own geometry, at its own size. The bleed is present in every state the page has; the left panel switches it off only to show what it adds."
+          source="components/thread/thread.module.css · .pageInk"
+          spec={[
+            "ink · --color-thread-red at --stroke-thread (1.6px), round caps",
+            "bleed · --bleed-thread, three drop-shadows of thread-vermilion at 68% / 44% / 30% and 0.875px / 3px / 8.25px, offset on neither axis, on each piece's ink",
+          ]}
+        >
+          <ThreadInkSpecimen />
+        </Specimen>
+
+        <Specimen
+          description="The drawing head: while a piece draws, its leading end carries light that fades from the ink's red at its tail to a hot orange at its tip, wider at the tip, with a halo round it."
+          id="thread-head"
+          name="drawing head"
+          note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
+          source="components/thread/thread-light.ts · headSegments"
+          spec={[
+            "length · 60× the ink, 96px",
+            "colour · thread-red at the tail, thread-vermilion in the middle, thread-core at the tip, interpolated in OKLCH",
+            "width · --stroke-thread-head (3.2px) at the tip, tapering to --stroke-thread at the tail",
+            "steps · max(ceil(length / 8), ceil(rampSpan / 2)), capped at 48 — 14 at the shipped values",
+            "halo · --halo-thread-head, thread-vermilion at 4× the bleed's shape: 68% / 44% / 30% at 3.5px / 12px / 33px",
+          ]}
+        >
+          <ThreadHeadSpecimen />
+        </Specimen>
+
+        <Specimen
+          description="The tapered ends: the thread's two static free ends, the invite's top terminal and Wishes' closing end, narrow to a point instead of stopping at a round cap."
+          id="thread-taper"
+          name="tapered ends"
+          note="Each end is shown at its own size and magnified 4×; the magnified view is a crop, not a different drawing. The live drawing end does not taper, so nothing here appears under the head."
+          source="components/thread/thread-light.ts · taperSegments"
+          spec={[
+            "length · --length-thread-taper (24px)",
+            "mechanism · 16 butt-capped runs, each a little narrower than the one inside it, from --stroke-thread down to a 0.2px floor, with the ink cut away beneath them",
+            "colour · thread-red, with the bleed on one filter over the group of runs",
+          ]}
+        >
+          <ThreadTaperSpecimen />
+        </Specimen>
+
+        <Specimen
+          description="The re-trace: a lit segment runs along the thread once it is already drawn, on a loop. It is the page's resting motion and its scroll cue."
+          id="thread-retrace"
+          name="re-trace"
+          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on three stretches at once and a filter that wide does not survive that."
+          source="components/thread/thread-light.ts · retraceSegments, retraceGlow"
+          spec={[
+            "core · the head's own stack and values, at a peak of 89× the ink (142px), growing from nothing and shrinking back to nothing over a loop",
+            "glow · eight thread-vermilion strokes under the core, 100 / 56 / 38 / 26 / 18 / 13 / 9 and 6px wide, widest and faintest first, scaled by 0.77",
+            "cadence · --retrace-duration (3.2s) per loop, --retrace-settle (1500ms) of stillness before the cue loops",
+          ]}
+        >
+          <ThreadRetraceSpecimen />
+        </Specimen>
       </GallerySection>
 
       <GallerySection
