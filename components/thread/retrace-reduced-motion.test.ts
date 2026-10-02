@@ -259,6 +259,25 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
     const stillQuiet = await read();
     assert.equal(stillQuiet.lit + stillQuiet.pending, 0, "and it stays quiet");
 
+    /* Things that are not movement reach the same sync: a tab coming back and a re-measure on resize.
+       A spent budget has to survive them, or any of them would start another budget. */
+    await page.evaluate("window.__setHidden(true)");
+    await page.evaluate("window.__setHidden(false)");
+    await page.evaluate("window.dispatchEvent(new Event('resize'))");
+    /* Sampled across the whole window rather than read at its end: a loop wrongly restarted would
+       spend its own short budget and be quiet again by then. The resize is debounced by 150ms. */
+    let loudest = 0;
+    for (let i = 0; i < 30; i++) {
+      const sample = await read();
+      loudest = Math.max(loudest, sample.lit + sample.pending);
+      await page.waitForTimeout(30);
+    }
+    assert.equal(
+      loudest,
+      0,
+      "a tab flip and a resize do not bring a spent loop back",
+    );
+
     await page.evaluate("window.scrollBy(0, 40)");
     await waitFor(
       "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",

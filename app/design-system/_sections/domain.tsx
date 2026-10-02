@@ -168,7 +168,7 @@ export function DomainSections() {
           description="The re-trace: a lit segment runs along the thread once it is already drawn, on a loop. It is the page's resting motion and its scroll cue."
           id="thread-retrace"
           name="re-trace"
-          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on three stretches at once and a filter that wide does not survive that."
+          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on three or four stretches at once and a filter that wide does not survive that."
           source="components/thread/thread-light.ts · retraceSegments, retraceGlow"
           spec={[
             "core · the head's own stack and values, at a peak of 89× the ink (142px), growing from nothing and shrinking back to nothing over a loop",

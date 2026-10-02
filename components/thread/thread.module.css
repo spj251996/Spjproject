@@ -148,6 +148,17 @@
   stroke-linejoin: round;
 }
 
+/* The weave is drawn twice, one copy over the illustration and one under it, on identical geometry
+   (`page-thread.tsx`, `weaveRetraces`). Every layer that is translucent takes its filter in ONE copy
+   only, the one over, or its alpha composites twice over itself: measured on the bleed, the head's halo
+   and the taper's bleed, the weave read about 1.9x the trunk's at the points sampled (DESIGN.md ->
+   Thread -> The bleed). The under copy's ink, which is opaque, is unaffected. */
+.pageWeaveUnder .pageInk,
+.pageWeaveUnder .pageBleed,
+.pageWeaveUnder .pageTaper {
+  filter: none;
+}
+
 /* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
    filter on this ONE group, never on the steps inside it: per path it cost 141 dropped frames over
    these tight polylines, against 10 for the group in the same comparison (6 as built). The steps' own colour, width and cap are set per

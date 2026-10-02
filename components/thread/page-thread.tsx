@@ -770,7 +770,12 @@ type RetracePainter = ReturnType<typeof createRetracePainter>;
    the copy over the illustration covers the one under it wholly, so a second painter would add
    nothing to the core's opaque runs and would paint the glow's translucent strokes a second time over
    themselves: measured on a glow-only render, the bow's joins read 106 of 255 against 61-63 for every
-   other join on the page, 1.7x, which is the glow's alpha composited twice. */
+   other join on the page, 1.7x, which is the glow's alpha composited twice.
+
+   THE SAME HOLDS FOR EVERY OTHER TRANSLUCENT LAYER, so the copy under the illustration paints none of
+   them either: it carries no head, and `.pageWeaveUnder` takes the bleed off its ink and its taper.
+   Both copies' ink is the same opaque colour and is left in both: the copy under is what a reader
+   would see if the one over were removed, and it still has to carry the taper's cut. */
 const weaveRetraces = new Set<RetracePainter>();
 
 /* ---------------------------------------------------------------------------------------------
@@ -1790,7 +1795,11 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
       ref={wrapperRef}
     >
       <svg
-        className={styles.pageWeave}
+        className={
+          slot === "under"
+            ? `${styles.pageWeave} ${styles.pageWeaveUnder}`
+            : styles.pageWeave
+        }
         data-thread-svg="true"
         preserveAspectRatio="none"
         ref={svgRef}
@@ -1819,7 +1828,9 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
             <g className={styles.pageRetrace} ref={retraceGroupRef} />
           </>
         )}
-        <g className={styles.pageHead} ref={headGroupRef} />
+        {slot === "over" && (
+          <g className={styles.pageHead} ref={headGroupRef} />
+        )}
       </svg>
     </span>
   );
