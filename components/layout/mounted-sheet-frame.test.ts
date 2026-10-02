@@ -100,6 +100,18 @@ test("a compact window takes the compact ground tier and its smallest padding", 
   assert.deepEqual(compact?.groundTier.paddingSteps, [64, 48, 32, 24]);
 });
 
+/* Every step above the floor is gated on the window's HEIGHT, and the smallest of those conditions
+   needs about 804px — taller than the phones this site meets. So on a phone the floor is the only
+   step ever reached, and what it is set to IS what a short phone's card looks like. 16 was what the
+   couple saw as "too filled" (2026-10-02); 32 measures the invite at 1.05 viewports at 375x667 and
+   breaks its one-screen requirement. */
+test("the phone tier's padding ladder has no step below 24", () => {
+  const classes = windowClasses(makeFit(), "single");
+  const phone = classes.find((c) => c.widthTier === "phone");
+  assert.equal(phone?.groundTier.ground, 16);
+  assert.deepEqual(phone?.groundTier.paddingSteps, [32, 24]);
+});
+
 test("a wide window keeps the laptop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
   const wide = classes.find((c) => c.widthTier === "desktop");
@@ -426,8 +438,9 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
      - Compact ground (>= 80rem, above the line), steps 64/48/32/24: 592 at 32, 656 at 48, 720 at 64.
      - Tablet ground (touchscreen, >= 80rem, above the line), steps 64/48/32: 656, 720 — the same
        numbers, since the two ground tiers share the 48 and 64 steps at this reveal.
-     - Phone ground (64-80rem narrow band, and >= 80rem below a line), steps 32/24/16: 560 at 24,
-       592 at 32.
+     - Phone ground (64-80rem narrow band, and >= 80rem below a line), steps 32/24: 592 at 32. Its
+       24 is the ladder's FLOOR and is emitted unconditionally, so it carries no container rule —
+       which is why 560 is asserted absent below rather than present.
      Stacked portrait carries no reveal, so 200 + 2p: 328 at the compact tier's largest step (64);
      248 and 264 in the narrow classes' portrait chains at 24 and 32. None of the stacked numbers is
      pair-only, because a single card reads 200 + 2p + 32 and its 48 step lands on 328 as well — so
@@ -445,9 +458,9 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
   assert.ok(pair.includes("@container (width >= 656px)"));
   assert.ok(pair.includes("@container (width >= 720px)"));
   assert.ok(pair.includes("@container (width >= 328px)"));
-  assert.ok(pair.includes("@container (width >= 560px)"));
+  /* 560 was the phone ground's 24 step; 24 is now the floor, so no rule states it. */
+  assert.ok(!pair.includes("@container (width >= 560px)"));
   assert.ok(!single.includes("@container (width >= 592px)"));
-  assert.ok(!single.includes("@container (width >= 560px)"));
 
   /* The narrow classes' own landscape chain is side by side at phone steps. */
   const narrowLandscape = topLevelBlocks(pair).filter(
@@ -458,7 +471,6 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
   );
   assert.ok(narrowLandscape.length >= 2, String(narrowLandscape.length));
   for (const block of narrowLandscape) {
-    assert.ok(block.includes("@container (width >= 560px)"), block);
     assert.ok(block.includes("@container (width >= 592px)"), block);
   }
 });
@@ -672,10 +684,11 @@ test("the tier line and padding chain read the reveal the mount shows", () => {
       "@container (width >= 240px)",
     ),
   );
-  /* A short laptop landscape window, at the phone ground's 24 step: 120 + 48 + 2 x 16 = 200 on
-     the mount's 16px reveal, where a bare card would read 168. */
+  /* A short laptop landscape window, at the phone ground's 32 step: 120 + 64 + 2 x 16 = 216 on
+     the mount's 16px reveal, where a bare card would read 184. The 24 step is the phone ladder's
+     floor and is emitted unconditionally, so it carries no container rule to read. */
   const shortLaptop = chainWidths(false, "laptop", "phone", "landscape");
-  assert.ok(shortLaptop.includes("@container (width >= 200px)"), shortLaptop);
+  assert.ok(shortLaptop.includes("@container (width >= 216px)"), shortLaptop);
   assert.ok(!shortLaptop.includes("@container (width >= 168px)"));
 });
 
@@ -1270,8 +1283,9 @@ test("the padding chain's height threshold is measured from the block band, not 
 
   /* The chain asks whether the card clears a rectangle, and a portrait card is the window less its
      BLOCK band — 96px, not the 16px landscape ground. A non-hero phone card shows no mount, so its
-     reveal is 0 and the chain climbs 16 → 24 → 32. */
-  for (const padding of [24, 32]) {
+     reveal is 0 and the chain climbs 24 → 32: 24 is the floor and is emitted unconditionally, so
+     only 32 carries a height threshold. */
+  for (const padding of [32]) {
     const [rectangle] = fitRectangles(TINY, 0, padding);
     assert.ok(
       chain?.includes(

@@ -97,7 +97,12 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
     name: "phone",
     ground: 16,
     portrait: { block: 96, blockPressed: 48, inline: 24, inlinePressed: 16 },
-    paddingSteps: [32, 24, 16],
+    /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`), and
+       the smallest of those conditions needs ~804px — taller than the phones this site meets — so on
+       a phone the floor is the only step ever reached. 32 as the floor measures the invite and
+       Wishes at 1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at
+       exactly 1.00 (couple, 2026-10-02: the cards read as too filled). */
+    paddingSteps: [32, 24],
   },
   tablet: {
     name: "tablet",
