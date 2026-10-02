@@ -141,7 +141,6 @@
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
   --stroke-thread-head: 3.2px;
-  --stroke-thread-wisp: 1.2px;
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
      ends). */
   --length-thread-taper: 24px;
