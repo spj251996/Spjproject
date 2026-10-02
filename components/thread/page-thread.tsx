@@ -21,6 +21,7 @@ import {
   headSegments,
   type PieceSamples,
   paintedLength,
+  parseCssCount,
   parseCssTime,
   polylineBetween,
   RETRACE_LENGTH_RATIO,
@@ -28,6 +29,7 @@ import {
   type Rgb,
   retraceFade,
   retraceGlow,
+  retraceLoopAt,
   retracePhase,
   retraceSegments,
   retraceSpan,
@@ -654,6 +656,19 @@ function retraceSettle(): number | undefined {
   return resolvedRetraceSettle;
 }
 
+/* The budget of whole loops, read once like the settle: a malformed token stays undefined and the loop
+   never starts. */
+let resolvedRetraceLoops: number | undefined;
+
+function retraceLoops(): number | undefined {
+  resolvedRetraceLoops ??= parseCssCount(
+    getComputedStyle(document.documentElement).getPropertyValue(
+      "--retrace-loops",
+    ),
+  );
+  return resolvedRetraceLoops;
+}
+
 interface RetraceFrame {
   readonly tail: number;
   readonly tip: number;
@@ -998,8 +1013,9 @@ function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/* Which stretches should be looping now, and in which phase. A thread still being drawn loops only
-   while its tip is still, which is what `moving` records. */
+/* Which stretches should be looping now, and in which phase. The thread loops only while the page is
+   still, which is what `moving` records: any scroll frame or advance of the drawn length starts it,
+   and a settle interval without another ends it. */
 function retraceNow(
   ranges: readonly SectionRange[],
   groupRects: readonly SectionRect[],
@@ -1010,7 +1026,7 @@ function retraceNow(
   const last = ranges[ranges.length - 1];
   if (last === undefined) return { phase: "drawing", targets: [] };
   const phase = retracePhase(drawn, last.end);
-  if (phase === "drawing" && moving) return { phase, targets: [] };
+  if (moving) return { phase, targets: [] };
   return {
     phase,
     targets: retraceTargets(
@@ -1049,12 +1065,18 @@ export function PageThread() {
   /* One sampling of each piece, whichever of the head and the re-trace reaches it first. */
   const samplesRef = useRef(new Map<number, PieceSamples>());
   /* The re-trace's state. `drawnRef` is the ratchet's held value as the last frame saw it; `moving`
-     is true from any advance of it until `--retrace-settle` has passed without another. */
+     is true from any scroll frame or advance of it until `--retrace-settle` has passed without
+     another. The loop's lifecycle is these four: `retraceStartRef` is the clock's zero and non-null
+     for exactly as long as a loop is live, running or suspended; `retraceFrameRef` is the pending
+     frame and null while suspended; `retraceSuspendedAtRef` is when a hidden tab stopped it; and
+     `retraceSpentRef` is the budget being used up, which only a settle after movement clears. */
   const drawnRef = useRef(0);
   const movingRef = useRef(false);
   const settleTimerRef = useRef<number | null>(null);
   const retraceFrameRef = useRef<number | null>(null);
-  const retraceStartRef = useRef(0);
+  const retraceStartRef = useRef<number | null>(null);
+  const retraceSuspendedAtRef = useRef<number | null>(null);
+  const retraceSpentRef = useRef(false);
   const retraceNowRef = useRef<ReturnType<typeof retraceNow>>({
     phase: "drawing",
     targets: [],
@@ -1102,17 +1124,29 @@ export function PageThread() {
     return retraceRef.current;
   }, [pathOf]);
 
-  /* Nothing is painted while no frame is running, so there is nothing to hide when none is. */
+  /* Ends the loop: no frame stays scheduled and nothing stays painted. A
+     loop that is not live has painted nothing, so there is nothing to hide when none is. */
   const stopRetrace = useCallback(() => {
-    if (retraceFrameRef.current === null) return;
-    window.cancelAnimationFrame(retraceFrameRef.current);
-    retraceFrameRef.current = null;
+    if (retraceFrameRef.current !== null) {
+      window.cancelAnimationFrame(retraceFrameRef.current);
+      retraceFrameRef.current = null;
+    }
+    if (retraceStartRef.current === null) return;
+    retraceStartRef.current = null;
+    retraceSuspendedAtRef.current = null;
     retrace()?.hide();
   }, [retrace]);
 
   /* Brings the loop in line with the state: starts it, stops it, or lets a running one pick up new
      targets on its next frame. Called at every event that can change which stretches should animate —
-     an advance of the drawn length, a scroll frame, the end of the settle interval, a re-measure. */
+     an advance of the drawn length, a scroll frame, the end of the settle interval, a re-measure, a
+     tab coming back to the foreground.
+
+     The loop is bounded, and all of the bounds are this one lifecycle: movement clears the loop, the
+     settle interval after it starts one, it runs `--retrace-loops` whole loops and stops, and the next
+     movement is what starts it again. A hidden tab suspends it WITHOUT spending any of the budget
+     (`onVisibility` below shifts the clock's zero by the time spent hidden), and a loop that is
+     suspended starts no frame. */
   const syncRetrace = useCallback(() => {
     const painter = retrace();
     const state = reducedMotion()
@@ -1125,18 +1159,35 @@ export function PageThread() {
           { scrollY: window.scrollY, height: viewportHeightRef.current },
         );
     retraceNowRef.current = state;
-    if (painter === null || state.targets.length === 0) {
+    if (
+      painter === null ||
+      state.targets.length === 0 ||
+      retraceSpentRef.current
+    ) {
       stopRetrace();
       return;
     }
-    if (retraceFrameRef.current !== null) return;
+    if (
+      retraceFrameRef.current !== null ||
+      document.visibilityState === "hidden"
+    ) {
+      return;
+    }
     const duration = tokenTime("--retrace-duration");
-    if (duration === undefined) return;
-    retraceStartRef.current = performance.now();
+    const loops = retraceLoops();
+    if (duration === undefined || loops === undefined) return;
+    retraceStartRef.current ??= performance.now();
     const frame = (now: number) => {
+      const start = retraceStartRef.current;
+      if (start === null) return;
+      const { loop, spent } = retraceLoopAt(now - start, duration, loops);
+      if (spent) {
+        retraceSpentRef.current = true;
+        stopRetrace();
+        return;
+      }
       const { phase, targets } = retraceNowRef.current;
       const options = retraceOptions();
-      const loop = (Math.max(0, now - retraceStartRef.current) / duration) % 1;
       const frames = new Map<number, RetraceFrame>();
       for (const index of targets) {
         const range = rangesRef.current[index];
@@ -1163,24 +1214,24 @@ export function PageThread() {
       settleTimerRef.current = null;
     }
     movingRef.current = false;
+    retraceSpentRef.current = false;
     syncRetrace();
   }, [syncRetrace]);
 
-  /* Every advance of the drawn length starts the thread's stillness over. A drawn length that has not
-     advanced (scrolling back up over a drawn thread, or any scroll once it is complete) is not
-     movement and leaves the interval alone. */
+  /* Every scroll frame, and every frame of the opening draw, starts the page's stillness over: the loop
+     is cleared now and the settle interval has to pass again before it begins. Scrolling back up over a
+     drawn thread counts, which an advance of the drawn length alone would not: the owner's ruling is
+     that the loop re-arms on any scroll. */
   const advanced = useCallback(
     (drawn: number) => {
-      if (drawn > drawnRef.current) {
-        drawnRef.current = drawn;
-        movingRef.current = true;
-        if (settleTimerRef.current !== null) {
-          window.clearTimeout(settleTimerRef.current);
-        }
-        const settle = retraceSettle();
-        settleTimerRef.current =
-          settle === undefined ? null : window.setTimeout(rest, settle);
+      if (drawn > drawnRef.current) drawnRef.current = drawn;
+      movingRef.current = true;
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
       }
+      const settle = retraceSettle();
+      settleTimerRef.current =
+        settle === undefined ? null : window.setTimeout(rest, settle);
       syncRetrace();
     },
     [rest, syncRetrace],
@@ -1386,6 +1437,31 @@ export function PageThread() {
       window.removeEventListener("scroll", onScroll);
     };
   }, [commit]);
+
+  /* A hidden tab is throttled by rAF but not stopped, and a throttled chain still holds the main
+     thread, so it is cancelled outright. The clock's zero moves forward by exactly the time spent
+     hidden on the way back, so the loop resumes where it was and the budget has spent nothing: what the
+     page does must not depend on the reader switching tabs. */
+  useEffect(() => {
+    function onVisibility() {
+      const now = performance.now();
+      if (document.visibilityState === "hidden") {
+        if (retraceFrameRef.current === null) return;
+        window.cancelAnimationFrame(retraceFrameRef.current);
+        retraceFrameRef.current = null;
+        retraceSuspendedAtRef.current = now;
+        return;
+      }
+      const suspendedAt = retraceSuspendedAtRef.current;
+      if (suspendedAt !== null && retraceStartRef.current !== null) {
+        retraceStartRef.current += now - suspendedAt;
+      }
+      retraceSuspendedAtRef.current = null;
+      syncRetrace();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [syncRetrace]);
 
   useEffect(
     () => () => {

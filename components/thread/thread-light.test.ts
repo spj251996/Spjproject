@@ -10,6 +10,7 @@ import {
   type HeadSegment,
   headSegments,
   headStepCount,
+  parseCssCount,
   parseCssTime,
   polylineBetween,
   RETRACE_GLOW,
@@ -18,6 +19,7 @@ import {
   type Rgb,
   retraceFade,
   retraceGlow,
+  retraceLoopAt,
   retracePhase,
   retraceSegments,
   retraceSpan,
@@ -1087,16 +1089,25 @@ test("a segment whose tip is on a piece's end is covered by the round cap there,
   );
 });
 
-test("the built page reads the re-trace's loop cadence and settle interval from the stylesheet", (t) => {
+test("the built page reads the re-trace's loop cadence, settle interval and loop budget from the stylesheet", (t) => {
   assert.match(tokenValue("retrace-duration"), /^[\d.]+m?s$/);
   assert.match(tokenValue("retrace-settle"), /^[\d.]+m?s$/);
+  assert.equal(
+    parseCssCount(tokenValue("retrace-loops")),
+    3,
+    "--retrace-loops is the assistant's design value, 3, until the owner retunes it",
+  );
   if (!existsSync("out/_next/static/chunks")) {
     t.skip("no static export: run `npm run build` first");
     return;
   }
   const css = builtChunks(".css");
   const script = builtChunks(".js");
-  for (const token of ["--retrace-duration", "--retrace-settle"]) {
+  for (const token of [
+    "--retrace-duration",
+    "--retrace-settle",
+    "--retrace-loops",
+  ]) {
     assert.ok(css.includes(token), `${token} is not in the built CSS`);
     assert.ok(
       script.includes(`"${token}"`),
@@ -1124,6 +1135,51 @@ test("a CSS time is read in milliseconds, and anything else is refused rather th
   assert.equal(parseCssTime("0.5s"), 500);
   for (const bad of ["", "fast", "2", "-1s", "0s", "2 s", "NaNs"]) {
     assert.equal(parseCssTime(bad), undefined, `"${bad}"`);
+  }
+});
+
+test("a CSS count is a whole number of loops, and anything else is refused rather than defaulted", () => {
+  assert.equal(parseCssCount("3"), 3);
+  assert.equal(parseCssCount(" 12 "), 12);
+  for (const bad of ["", "0", "-1", "2.5", "3s", "many", "1e2"]) {
+    assert.equal(parseCssCount(bad), undefined, `"${bad}"`);
+  }
+});
+
+test("the budget is counted in whole loops: the loop is empty at its edges, and only the Nth loop's end spends it", () => {
+  const duration = 3200;
+  for (const loops of [1, 3, 7]) {
+    const within = retraceLoopAt(duration * loops - 1, duration, loops);
+    assert.equal(within.spent, false, `${loops} loops: not spent a ms early`);
+    assert.ok(within.loop > 0.99, "and it is at the end of the last loop");
+    assert.equal(
+      retraceLoopAt(duration * loops, duration, loops).spent,
+      true,
+      `${loops} loops: spent at the end of the last`,
+    );
+    assert.equal(
+      retraceLoopAt(duration * (loops + 5), duration, loops).spent,
+      true,
+    );
+  }
+  assert.equal(retraceLoopAt(0, duration, 3).loop, 0);
+  assert.equal(retraceLoopAt(duration * 1.5, duration, 3).loop, 0.5);
+  assert.equal(
+    retraceLoopAt(duration * 2.25, duration, 3).loop,
+    0.25,
+    "the loop wraps and the budget does not",
+  );
+  assert.equal(
+    retraceLoopAt(-50, duration, 3).loop,
+    0,
+    "a clock before zero is zero",
+  );
+});
+
+test("the budget is a count: a slower loop does not keep the page busy for longer in loops", () => {
+  for (const duration of [2000, 3200, 8000]) {
+    assert.equal(retraceLoopAt(duration * 3 - 1, duration, 3).spent, false);
+    assert.equal(retraceLoopAt(duration * 3, duration, 3).spent, true);
   }
 });
 

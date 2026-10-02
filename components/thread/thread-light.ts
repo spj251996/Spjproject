@@ -546,6 +546,33 @@ export function parseCssTime(value: string): number | undefined {
   return time > 0 && Number.isFinite(time) ? time : undefined;
 }
 
+/* A CSS count, `3`, as a whole number of loops; undefined when it is not one, for the same reason
+   `parseCssTime` has: a missing or malformed token stops the loop rather than running it at a budget
+   nobody chose. Zero is not a count, since a loop that may run no times is no loop. */
+export function parseCssCount(value: string): number | undefined {
+  const match = value.trim().match(/^\d+$/);
+  if (match === null) return undefined;
+  const count = Number(match[0]);
+  return count > 0 ? count : undefined;
+}
+
+/* Where `elapsed` ms of running time falls in a loop of `duration` ms, as 0 to 1 through the loop, and
+   whether the budget of `loops` WHOLE loops is spent. It counts loops and not time: the pace is the
+   owner's to change, and a slower loop must not silently keep the page busy for longer. `elapsed` is
+   running time, so a caller that suspends the loop (a hidden tab) simply stops advancing it and
+   spends nothing. Every loop is empty at both its edges, so stopping at the end of the last one is
+   not a visible cut. */
+export function retraceLoopAt(
+  elapsed: number,
+  duration: number,
+  loops: number,
+): { loop: number; spent: boolean } {
+  const through = Math.max(0, elapsed) / duration;
+  return through >= loops
+    ? { loop: 0, spent: true }
+    : { loop: through % 1, spent: false };
+}
+
 /* Where the segment's tip and tail are, as arc lengths into a stretch of `extent`, at `loop` (0 to 1)
    through a loop. Both start at the stretch's start and both end at its end, so the loop is empty at
    each edge. The tip runs out to the end in the first `RETRACE_TIP_ARRIVES` of the loop and the tail

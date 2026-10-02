@@ -19,7 +19,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     name: "Thread",
     home: "components/thread/page-thread.tsx",
     composes:
-      "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s) and --retrace-settle (1500ms), Foundations · Motion",
+      "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s), --retrace-settle (1500ms) and --retrace-loops (3), Foundations · Motion",
     note: "Live at /. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
 ];
@@ -30,7 +30,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     home: "app/page.tsx",
     composes:
       "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at space-lg (32px) instead · passage in caption · citation in caption-italic",
-    note: "Live at /. The thread that leaves the screen still going is the page's scroll cue: its resting tip sits at the lower edge, and loops once the opening draw has ended (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here.",
+    note: "Live at /. The thread that leaves the screen still going is the page's scroll cue: its resting tip sits at the lower edge, and loops three times once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here.",
   },
 ];
 
@@ -173,7 +173,7 @@ export function DomainSections() {
           spec={[
             "core · the head's own stack and values, at a peak of 89× the ink (142px), growing from nothing and shrinking back to nothing over a loop",
             "glow · eight thread-vermilion strokes under the core, 100 / 56 / 38 / 26 / 18 / 13 / 9 and 6px wide, widest and faintest first, scaled by 0.77",
-            "cadence · --retrace-duration (3.2s) per loop, --retrace-settle (1500ms) of stillness before the cue loops",
+            "cadence · --retrace-duration (3.2s) per loop, --retrace-settle (1500ms) of stillness before it loops, then --retrace-loops (3) whole loops and quiet until the next scroll",
           ]}
         >
           <ThreadRetraceSpecimen />

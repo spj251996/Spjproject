@@ -150,6 +150,10 @@
      because the segment's length and gradient change every frame. The owner's picks (2026-10-02). */
   --retrace-duration: 3.2s;
   --retrace-settle: 1500ms;
+  /* How many whole loops it runs once the page has been still for the settle interval before it stops
+     until the next scroll. A count and not a time, so the pace can change without changing how long
+     the page stays busy. NOT the owner's pick: the assistant's, 2026-10-02, for the owner to retune. */
+  --retrace-loops: 3;
   --stroke-rim-offset: 2px;
 
   /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same

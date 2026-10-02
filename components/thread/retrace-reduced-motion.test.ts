@@ -160,3 +160,167 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
     server.close();
   }
 });
+
+/* The bounded loop's lifecycle, which only a real page can show: what is scheduled and what is painted.
+   The loop's tokens are overridden with a shorter pace so a whole budget fits inside a test: they are
+   read by name from the stylesheet, which is what is being relied on. `requestAnimationFrame` is
+   wrapped to keep a count of callbacks still scheduled, because "nothing is running" has to mean no
+   chain is left behind painting nothing, not only that nothing is visible; and the page's visibility
+   is driven by overriding what `document.visibilityState` reads, since a headless page is always
+   visible. The only other rAF user is the opening draw, which has ended by the time a stretch is lit. */
+
+const FAST_TOKENS =
+  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms}";
+
+const WRAP_RAF = `(() => {
+  const pending = new Set();
+  const raf = window.requestAnimationFrame.bind(window);
+  const caf = window.cancelAnimationFrame.bind(window);
+  window.requestAnimationFrame = (cb) => {
+    const id = raf((t) => { pending.delete(id); cb(t); });
+    pending.add(id);
+    return id;
+  };
+  window.cancelAnimationFrame = (id) => { pending.delete(id); caf(id); };
+  window.__pending = () => pending.size;
+  let hidden = false;
+  Object.defineProperty(document, "visibilityState", { get: () => (hidden ? "hidden" : "visible"), configurable: true });
+  window.__setHidden = (value) => { hidden = value; document.dispatchEvent(new Event("visibilitychange")); };
+})()`;
+
+interface Lifecycle {
+  pending: number;
+  lit: number;
+}
+
+const LIFECYCLE = `(() => {
+  const lit = (root) => Array.from(root.querySelectorAll("[data-thread-retrace-group] path, [data-thread-retrace-glow] path"))
+    .filter((p) => p.style.display !== "none" && p.getAttribute("d")).length;
+  return {
+    pending: window.__pending(),
+    lit: lit(document),
+  };
+})()`;
+
+test("the re-trace stops when its budget of loops is spent, suspends in a hidden tab without spending any, and a scroll starts it again", async (t) => {
+  if (!existsSync("out/index.html")) {
+    t.skip("no static export: run `npm run build` first");
+    return;
+  }
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 393, height: 700 },
+    });
+    const page = await context.newPage();
+    await page.addInitScript(WRAP_RAF);
+    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.addStyleTag({ content: FAST_TOKENS });
+    const read = async () => (await page.evaluate(LIFECYCLE)) as Lifecycle;
+    const waitFor = (condition: string, timeout = 15000) =>
+      page.waitForFunction(condition, null, { timeout, polling: 25 });
+
+    await waitFor(
+      "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",
+    );
+    const running = await read();
+    assert.ok(running.lit > 0, "the loop is lit");
+    assert.ok(running.pending >= 1, "and a frame is scheduled");
+
+    await page.evaluate("window.__setHidden(true)");
+    await page.waitForTimeout(300);
+    assert.equal((await read()).pending, 0, "a hidden tab schedules no frame");
+    /* Far longer than the whole budget (two 600ms loops): were hidden time counted against it, the
+       loop would be spent on return and would never light again. */
+    await page.waitForTimeout(2500);
+    assert.equal(
+      (await read()).pending,
+      0,
+      "and stays unscheduled while hidden",
+    );
+    await page.evaluate("window.__setHidden(false)");
+    await waitFor(
+      "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",
+      1500,
+    );
+    assert.ok(
+      (await read()).pending >= 1,
+      "a visible tab resumes the remainder",
+    );
+
+    /* The remainder is at most two loops, 1.2s; it has ended well inside four. */
+    await waitFor("window.__pending() === 0", 4000);
+    const spent = await read();
+    assert.equal(spent.lit, 0, "a spent budget leaves nothing painted");
+    assert.equal(spent.pending, 0, "and no frame scheduled");
+    await page.waitForTimeout(1500);
+    const stillQuiet = await read();
+    assert.equal(stillQuiet.lit + stillQuiet.pending, 0, "and it stays quiet");
+
+    await page.evaluate("window.scrollBy(0, 40)");
+    await waitFor(
+      "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",
+      4000,
+    );
+    assert.ok(
+      (await read()).pending >= 1,
+      "a scroll starts it again once the page has been still",
+    );
+    await waitFor("window.__pending() === 0", 4000);
+    assert.equal((await read()).lit, 0, "and it spends its budget again");
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test("on a finished thread a scroll clears the loop at once, and it lights again once the page is still", async (t) => {
+  if (!existsSync("out/index.html")) {
+    t.skip("no static export: run `npm run build` first");
+    return;
+  }
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await (
+      await browser.newContext({ viewport: { width: 393, height: 700 } })
+    ).newPage();
+    await page.addInitScript(WRAP_RAF);
+    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.addStyleTag({
+      content:
+        ":root{--retrace-duration:1000ms;--retrace-loops:8;--retrace-settle:600ms}",
+    });
+    await page.waitForTimeout(3600);
+    /* Complete the thread, then rest mid-page, where only phase 2 can light a stretch. */
+    await page.evaluate(
+      "window.scrollTo(0, document.documentElement.scrollHeight)",
+    );
+    await page.waitForTimeout(800);
+    await page.evaluate("window.scrollTo(0, 2000)");
+    const lit = `[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))`;
+    await page.waitForFunction(lit, null, { timeout: 4000, polling: 25 });
+    await page.evaluate("window.scrollBy(0, 10)");
+    /* Two frames: the scroll handler is rAF-throttled, so a reading in the same task is the old state. */
+    await page.evaluate(
+      "new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))",
+    );
+    assert.equal(
+      await page.evaluate(`!(${lit})`),
+      true,
+      "a scroll on a finished thread clears the loop",
+    );
+    assert.equal(
+      ((await page.evaluate(LIFECYCLE)) as Lifecycle).pending,
+      0,
+      "and leaves no frame scheduled",
+    );
+    await page.waitForFunction(lit, null, { timeout: 4000, polling: 25 });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
