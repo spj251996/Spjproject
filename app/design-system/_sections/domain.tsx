@@ -153,7 +153,7 @@ export function DomainSections() {
           description="The tapered ends: the thread's two static free ends, the invite's top terminal and Wishes' closing end, narrow to a point instead of stopping at a round cap."
           id="thread-taper"
           name="tapered ends"
-          note="Each end is shown at its own size and magnified 4×; the magnified view is a crop, not a different drawing. The live drawing end does not taper, so nothing here appears under the head."
+          note="Each end is shown at its own size and magnified 4×; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
           source="components/thread/thread-light.ts · taperSegments"
           spec={[
             "length · --length-thread-taper (24px)",

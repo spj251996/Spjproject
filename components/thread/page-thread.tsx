@@ -480,13 +480,13 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const END_TOLERANCE = 0.01;
 
 /* Read from the built stylesheet rather than copied, so a token edit cannot leave the head behind. */
-function tokenLength(token: string): number {
+export function tokenLength(token: string): number {
   return Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue(token),
   );
 }
 
-function tokenColour(token: string): Rgb {
+export function tokenColour(token: string): Rgb {
   const probe = document.createElement("span");
   probe.style.color = `var(${token})`;
   document.body.append(probe);
@@ -500,7 +500,7 @@ function tokenColour(token: string): Rgb {
 
 let resolvedHeadOptions: HeadOptions | undefined;
 
-function headOptions(): HeadOptions {
+export function headOptions(): HeadOptions {
   if (resolvedHeadOptions !== undefined) return resolvedHeadOptions;
   const baseWidth = tokenLength("--stroke-thread");
   resolvedHeadOptions = {
@@ -626,7 +626,7 @@ type HeadPainter = ReturnType<typeof createHeadPainter>;
    length: the head's options, read once from the same tokens, not a second copy of any of them. */
 let resolvedRetraceOptions: HeadOptions | undefined;
 
-function retraceOptions(): HeadOptions {
+export function retraceOptions(): HeadOptions {
   resolvedRetraceOptions ??= {
     ...headOptions(),
     length: RETRACE_LENGTH_RATIO * tokenLength("--stroke-thread"),
@@ -883,7 +883,7 @@ function ThreadInk({
 const MASK_EXTENT = 100000;
 const TRUNK_CUT_ID = "thread-taper-cut-trunk";
 
-function TaperCutMask({
+export function TaperCutMask({
   id,
   cutRef,
 }: {

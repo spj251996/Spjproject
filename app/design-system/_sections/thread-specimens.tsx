@@ -7,23 +7,25 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  headOptions,
+  retraceOptions,
+  TaperCutMask,
+  tokenLength,
+} from "@/components/thread/page-thread";
 import styles from "@/components/thread/thread.module.css";
 import {
-  HEAD_LENGTH_RATIO,
   type HeadOptions,
   type HeadSegment,
   headSegments,
   type PieceSamples,
   type PieceSpan,
   polylineBetween,
-  RETRACE_LENGTH_RATIO,
-  type Rgb,
   retraceFade,
   retraceGlow,
   retraceSegments,
   retraceSpan,
   samplePath,
-  TAPER_CUT_WIDTH,
   TAPER_STEPS,
   taperCut,
   taperSegments,
@@ -65,25 +67,6 @@ interface Measured {
   readonly strokeWidth: number;
 }
 
-/* Read from the built stylesheet, as the page reads them, so a retuned token retunes the specimen. */
-function tokenLength(token: string): number {
-  return Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue(token),
-  );
-}
-
-function tokenColour(token: string): Rgb {
-  const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
-  document.body.append(probe);
-  const [r = 0, g = 0, b = 0] =
-    getComputedStyle(probe)
-      .color.match(/[\d.]+/g)
-      ?.map(Number) ?? [];
-  probe.remove();
-  return [r, g, b];
-}
-
 function useMeasured(d: string) {
   const ref = useRef<SVGPathElement>(null);
   const [measured, setMeasured] = useState<Measured>();
@@ -92,21 +75,13 @@ function useMeasured(d: string) {
     if (path === null) return;
     const length = path.getTotalLength();
     const strokeWidth = tokenLength("--stroke-thread");
-    const head: HeadOptions = {
-      length: HEAD_LENGTH_RATIO * strokeWidth,
-      tipWidth: tokenLength("--stroke-thread-head"),
-      baseWidth: strokeWidth,
-      tailColor: tokenColour("--color-thread-red"),
-      midColor: tokenColour("--color-thread-vermilion"),
-      tipColor: tokenColour("--color-thread-core"),
-    };
     setMeasured({
       length,
       samples: samplePath(d, length),
       pieces: [{ start: 0, end: length }],
       box: path.getBBox(),
-      head,
-      retrace: { ...head, length: RETRACE_LENGTH_RATIO * strokeWidth },
+      head: headOptions(),
+      retrace: retraceOptions(),
       taperLength: tokenLength("--length-thread-taper"),
       strokeWidth,
     });
@@ -314,32 +289,15 @@ function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
         });
         return (
           <>
-            <defs>
-              <mask
-                height={m.box.height + 2 * MARGIN}
-                id={maskId}
-                maskUnits="userSpaceOnUse"
-                width={m.box.width + 2 * MARGIN}
-                x={m.box.x - MARGIN}
-                y={m.box.y - MARGIN}
-              >
-                <rect
-                  fill="white"
-                  height={m.box.height + 2 * MARGIN}
-                  width={m.box.width + 2 * MARGIN}
-                  x={m.box.x - MARGIN}
-                  y={m.box.y - MARGIN}
-                />
-                <path
-                  d={polylineBetween(m.samples, cut.from, cut.to)}
-                  fill="none"
-                  stroke="black"
-                  strokeLinecap="butt"
-                  strokeLinejoin="round"
-                  strokeWidth={TAPER_CUT_WIDTH}
-                />
-              </mask>
-            </defs>
+            <TaperCutMask
+              cutRef={(cutPath) =>
+                cutPath?.setAttribute(
+                  "d",
+                  polylineBetween(m.samples, cut.from, cut.to),
+                )
+              }
+              id={maskId}
+            />
             <g className={styles.pageBleed}>
               <path
                 className={styles.pageInkBare}
