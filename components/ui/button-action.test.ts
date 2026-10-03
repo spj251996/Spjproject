@@ -85,19 +85,38 @@ test("the action role keeps its bold weight and drops the caps-era tracking", ()
   assert.doesNotMatch(tokens, /--text-action--letter-spacing:/);
 });
 
-/* A protocol-relative URL starts with `/` too, so the root-relative test would treat an EXTERNAL
-   destination as same-tab and drop `rel="noopener noreferrer"` with it. Nothing passes one today;
-   the test exists so the next caller who does is not the one who finds out. Asserted on the source
-   because this project has no DOM in tests -- the predicate is a local constant, not an export. */
-test("a protocol-relative href is not treated as same-tab", () => {
-  const from = buttonAction.indexOf("const sameTab");
+/* EVALUATED, not pattern-matched. Pinning a spelling of the predicate passes the mis-refactor as
+   well as the correct one: `href.startsWith("tel:") || !href.startsWith("//")` satisfies any regex
+   asking for the `//` exclusion, and makes every external `https://` link same-tab with no
+   `rel="noopener noreferrer"` -- the exact defect this guard exists to prevent. The predicate is a
+   self-contained expression over one variable, so the honest test is to run it.
+
+   A protocol-relative URL is the case that motivated this: it starts with `/` like a root-relative
+   path but is an EXTERNAL destination, so treating it as same-tab drops the new tab's protection. */
+test("sameTab opens external destinations in a new tab and this site in place", () => {
+  const from = buttonAction.indexOf("const sameTab =");
   assert.notStrictEqual(from, -1, "no sameTab predicate found");
-  const predicate = buttonAction.slice(
-    from,
-    buttonAction.indexOf(";", from) + 1,
-  );
-  /* The bare `startsWith("/")` is the defect: the root-relative test must be qualified, not merely
-     present, so the `//` exclusion is required to appear alongside it. */
-  assert.match(predicate, /!\s*href\.startsWith\("\/\/"\)/);
-  assert.match(predicate, /href\.startsWith\("tel:"\)/);
+  const expression = buttonAction
+    .slice(from + "const sameTab =".length, buttonAction.indexOf(";", from))
+    .trim();
+  const sameTab = new Function("href", `return ${expression};`) as (
+    href: string,
+  ) => boolean;
+
+  for (const href of ["tel:+919354187793", "/", "/design-system"]) {
+    assert.equal(sameTab(href), true, `${href} should replace the page`);
+  }
+  for (const href of [
+    "//evil.example",
+    "//wa.me/919354187793",
+    "https://wa.me/919354187793",
+    "https://maps.google.com/",
+    "http://example.com/",
+  ]) {
+    assert.equal(
+      sameTab(href),
+      false,
+      `${href} is external and must open in its own tab with noopener`,
+    );
+  }
 });

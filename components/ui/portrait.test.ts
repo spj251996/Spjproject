@@ -111,9 +111,15 @@ test("the hit-test overlay's parent is the positioned clipping div", () => {
      overlay out to the `figure` still leaves the clipping div as the nearest PRECEDING `<div`,
      because `figcaption` holds only spans. Walk the div depth from the clipping tag instead and
      require the overlay inside its span. */
+  /* A self-closing `<div ... />` opens and closes in one tag, so it must not increment the depth --
+     counting it as an opener leaves the depth permanently above 0 and the test fails on CORRECT
+     code. This component has none today, but `app/page.tsx` and `mounted-pair.tsx` both do, so the
+     construct is normal here. Matched by taking each `<div`'s whole tag and asking how it ends. */
   let depth = 0;
   let closesAt = -1;
-  for (const match of portrait.slice(clip).matchAll(/<div\b|<\/div>/g)) {
+  for (const match of portrait.slice(clip).matchAll(/<div\b[^>]*>|<\/div>/g)) {
+    const selfClosing = match[0].endsWith("/>");
+    if (selfClosing) continue;
     depth += match[0] === "</div>" ? -1 : 1;
     if (depth === 0) {
       closesAt = clip + (match.index ?? 0);

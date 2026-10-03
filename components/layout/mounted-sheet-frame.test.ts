@@ -525,10 +525,14 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
   assert.ok(!pair.includes("@container (width >= 560px)"));
   assert.ok(!single.includes("@container (width >= 592px)"));
   /* The leak guard rested on the 592 rule alone after 24 became the floor. All three side-by-side
-     widths are pair-only — a single card's chain is 200 + 2p, which reaches 328 but never a
-     side-by-side number — so a single card carrying any of them means a pair-only width has leaked
-     into the single-card stylesheet. Each is asserted separately: one assertion over a joined string
-     reports the first failure and hides the rest. */
+     widths are pair-only: a single card reads `200 + 2p + 32` (the derivation above), which reaches
+     328 at its 48 step but never a side-by-side number, so a single card carrying any of them means
+     a pair-only width has leaked into the single-card stylesheet.
+     These two are DOCUMENTATION of the pair-only set rather than independent guards — assertions run
+     in order and any leak this mechanism can produce trips the 592 rule above first, so 656 and 720
+     fire only if a leak ever reaches the larger padding steps without the smaller one. Kept because
+     stating all three in one place is what the review asked for; do not read them as three
+     independent checks. */
   assert.ok(!single.includes("@container (width >= 656px)"));
   assert.ok(!single.includes("@container (width >= 720px)"));
 

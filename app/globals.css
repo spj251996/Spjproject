@@ -8,56 +8,33 @@ body {
   color: var(--color-ink);
 }
 
-/* Selection is scoped to chrome, not suppressed document-wide. An invitation is reference material:
-   a guest copying a venue address into Maps or a date into a calendar is reading it as intended, and
-   the design system requires content to stay selectable. Set on `html` so content inherits it. */
-html {
-  user-select: text;
-  -webkit-user-select: text;
-}
+/* NOTHING ON THE SITE IS SELECTABLE. Set on `html` so it inherits everywhere without any element
+   opting in, and so a component added later cannot become selectable by omission. iOS Safari needs
+   the prefixed property, and the long-press menu needs the callout suppression as well.
 
-/* Chrome keeps the suppression, and the callout travels WITH it rather than staying on the document.
-   `svg` is every decorative drawing, the thread included; `[aria-hidden="true"]` covers anything
-   already hidden from assistive technology -- which is how the family portraits' transparent
-   hit-test layer keeps the iOS long-press sheet closed, since that layer is itself an aria-hidden
-   span; `img` is defence for image elements not behind such a layer yet (the ritual gallery's tiles,
-   Phase 8); `.type-action` is the action labels, where a selection is only ever a tap that missed.
-   iOS Safari needs the prefixed `user-select`. */
-svg,
-[aria-hidden="true"],
-img,
-.type-action {
+   A round on 2026-10-03 briefly scoped this to chrome and let content select; the owner restated the
+   rule and it was reverted. Do not re-scope it without them saying so. */
+html {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
 
-/* The Call action is the one exemption (owner, 2026-10-03: "only for phone buttons"). Its href is a
-   `tel:` number a guest may legitimately want to copy, and the platform's own long-press sheet is
-   the only way to offer that without printing the number on the page -- which Contact deliberately
-   does not do. Selection stays suppressed; only the callout comes back, because the sheet is the
-   affordance and a text selection on a button is not.
+/* The Call action is the ONE exemption, and it is to the long-press callout alone -- never to
+   selection (owner, 2026-10-03: "only for phone buttons"). Contact prints no number, so the
+   platform's own `tel:` sheet is the only way a guest can copy it. That sheet comes from the LINK
+   rather than from a text selection, so it works while nothing on the page is selectable.
 
-   The descendant `*` is load-bearing, not defensive breadth: the mark is an `aria-hidden` `<svg>` on
-   a 44px disc, so the rule above hits it DIRECTLY and a direct declaration beats an inherited one.
-   Exempting only the anchor and the label would leave `callout: none` over the disc -- the obvious
-   thing to press -- and the sheet would appear or not depending on where the thumb landed. */
+   WhatsApp is deliberately NOT exempt: its href is a `wa.me` web URL, so its sheet would offer
+   "Copy Link" and put the number inside a copied URL. It needs no rule of its own -- the `html`
+   suppression above already covers it.
+
+   The descendant `*` is not defensive breadth. `-webkit-touch-callout` inherits, so the anchor alone
+   would be enough today; naming the descendants keeps the exemption true if any rule ever sets the
+   property on an inner element, which is how the label and the 44px disc came to disagree once. */
 a[href^="tel:"],
 a[href^="tel:"] * {
   -webkit-touch-callout: default;
-}
-
-/* WhatsApp offers no sheet, stated as its own rule rather than left to layout. Its href is a `wa.me`
-   web URL, so a sheet there would offer "Copy Link" and put the number inside a copied URL -- the
-   outcome the owner's "only for phone buttons" scoping removes.
-
-   It needs saying explicitly because the suppression above matches the label and the mark but NOT
-   the `<a>`, and `html` no longer sets the callout: without this rule WhatsApp is protected only
-   while its children happen to cover the whole anchor box, which a later `align="center"` or a
-   dropped `items-stretch` would undo silently. */
-a[href^="https://wa.me"],
-a[href^="https://wa.me"] * {
-  -webkit-touch-callout: none;
 }
 
 /* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
