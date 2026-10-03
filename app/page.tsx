@@ -542,14 +542,14 @@ function ContactPlate({ person }: { person: ContactPerson }) {
           gap above it — the whole plate loosens at that window rather than the pair tightening
           against it. Flush does not read as touching: each 44px disc sits in a 52px target, so two
           flush actions still show 8px between their discs. */}
-      {/* `w-fit` with `items-stretch` gives both actions the wider label's width, and `align="start"`
+      {/* `w-fit` with `items-stretch` gives both actions the wider label's width, and `align="stretchStart"`
           puts both discs on that shared left edge. Centring each row independently instead left the
           two discs ~20px apart, because "WhatsApp" is wider than "Call" — which is what made the
           pair read as a ragged bulleted list (couple, 2026-10-02). Width only: Contact already
           passes one screen at 375x667, so the pair cannot afford height. */}
       <div className="mt-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-md mx-auto flex w-fit flex-col items-stretch gap-0 [@media(width>=64rem)_and_(orientation:landscape)]:gap-space-2xs">
         <ButtonAction
-          align="start"
+          align="stretchStart"
           aria-label={`Call, ${person.name}`}
           href={callHref(person.phone)}
           mark={<CallIcon size={20} />}
@@ -557,7 +557,7 @@ function ContactPlate({ person }: { person: ContactPerson }) {
           Call
         </ButtonAction>
         <ButtonAction
-          align="start"
+          align="stretchStart"
           aria-label={`WhatsApp, ${person.name}`}
           href={whatsAppHref(person.phone)}
           mark={<ChatIcon size={20} />}

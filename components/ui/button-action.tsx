@@ -41,8 +41,10 @@ const ALIGN = {
   center: "justify-center",
   /* `w-full` as well as the justification: the target itself is `justify-center`, so without it this
      span is sized to its own content and centred inside a stretched target — the justification then
-     has no room to act and the discs stay apart. Measured: 19.65px apart with `justify-start` alone. */
-  start: "w-full justify-start",
+     has no room to act and the discs stay apart. Measured: 19.65px apart with `justify-start` alone.
+     Hence the name: this member only does anything inside a stretched parent (`items-stretch`), and a
+     caller who passes it without one gets the ragged pair back with nothing warning them. */
+  stretchStart: "w-full justify-start",
 } as const;
 
 /* The mark sits on its own raised disc (owner, 2026-09-28), replacing the pair of hairline rules
@@ -63,7 +65,7 @@ const discClassName = [
 type ButtonActionProps = {
   children: ReactNode;
   className?: string;
-  /** Where the mark and label sit within the target. `start` is for a stack sharing one width. */
+  /** Where the mark and label sit within the target. `stretchStart` requires a stretched parent. */
   align?: keyof typeof ALIGN;
   /* Marks are already hidden from assistive technology (icons/icon-base.tsx), so the accessible
      name stays the label. */

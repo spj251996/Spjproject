@@ -29,7 +29,7 @@ test("ButtonAction can align its content to the start", () => {
   /* `w-full` is pinned, not loosely matched. The target is `justify-center`, so without it the span
      is content-sized and centred inside a stretched target and the discs stay 19.65px apart — i.e.
      dropping `w-full` reinstates the whole defect while leaving `justify-start` in place. */
-  assert.match(button, /start:\s*"w-full\s+justify-start"/);
+  assert.match(button, /stretchStart:\s*"w-full\s+justify-start"/);
   /* The span must actually CONSUME the lookup. Without this, deleting `${ALIGN[align]}` from the
      className ships no justification at all and every other assertion here still passes. */
   assert.match(button, /\$\{markClassName\}\s+\$\{ALIGN\[align\]\}/);
@@ -55,7 +55,7 @@ test("the gallery's contact-actions specimen matches the real pair", () => {
   assert.match(specimen, /items-stretch/);
   assert.match(specimen, /w-fit/);
   assert.equal(
-    (specimen.match(/align="start"/g) ?? []).length,
+    (specimen.match(/align="stretchStart"/g) ?? []).length,
     2,
     "both specimen actions must align to the start, as ContactPlate's do",
   );
@@ -75,7 +75,7 @@ test("both contact actions align to the start", () => {
     2,
     `expected exactly two actions in a contact plate, found ${actions.length}`,
   );
-  for (const action of actions) assert.match(action, /align="start"/);
+  for (const action of actions) assert.match(action, /align="stretchStart"/);
 });
 
 /* The class list cannot be bounded by the next `>`: an arbitrary variant contains one

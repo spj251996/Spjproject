@@ -86,7 +86,7 @@ export function ComponentsSections() {
             >
               <div className="mx-auto flex w-fit flex-col items-stretch gap-space-2xs">
                 <ButtonAction
-                  align="start"
+                  align="stretchStart"
                   aria-label="Call, Name"
                   href="tel:+10000000000"
                   mark={<CallIcon size={24} />}
@@ -94,7 +94,7 @@ export function ComponentsSections() {
                   Call
                 </ButtonAction>
                 <ButtonAction
-                  align="start"
+                  align="stretchStart"
                   aria-label="WhatsApp, Name"
                   href="https://wa.me/10000000000"
                   mark={<ChatIcon size={24} />}
