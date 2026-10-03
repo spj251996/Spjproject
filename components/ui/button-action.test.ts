@@ -84,3 +84,20 @@ test("the action role keeps its bold weight and drops the caps-era tracking", ()
   /* The tracking was tuned for uppercase and has no meaning for sentence-case italic. */
   assert.doesNotMatch(tokens, /--text-action--letter-spacing:/);
 });
+
+/* A protocol-relative URL starts with `/` too, so the root-relative test would treat an EXTERNAL
+   destination as same-tab and drop `rel="noopener noreferrer"` with it. Nothing passes one today;
+   the test exists so the next caller who does is not the one who finds out. Asserted on the source
+   because this project has no DOM in tests -- the predicate is a local constant, not an export. */
+test("a protocol-relative href is not treated as same-tab", () => {
+  const from = buttonAction.indexOf("const sameTab");
+  assert.notStrictEqual(from, -1, "no sameTab predicate found");
+  const predicate = buttonAction.slice(
+    from,
+    buttonAction.indexOf(";", from) + 1,
+  );
+  /* The bare `startsWith("/")` is the defect: the root-relative test must be qualified, not merely
+     present, so the `//` exclusion is required to appear alongside it. */
+  assert.match(predicate, /!\s*href\.startsWith\("\/\/"\)/);
+  assert.match(predicate, /href\.startsWith\("tel:"\)/);
+});
