@@ -524,6 +524,13 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
   /* 560 was the phone ground's 24 step; 24 is now the floor, so no rule states it. */
   assert.ok(!pair.includes("@container (width >= 560px)"));
   assert.ok(!single.includes("@container (width >= 592px)"));
+  /* The leak guard rested on the 592 rule alone after 24 became the floor. All three side-by-side
+     widths are pair-only — a single card's chain is 200 + 2p, which reaches 328 but never a
+     side-by-side number — so a single card carrying any of them means a pair-only width has leaked
+     into the single-card stylesheet. Each is asserted separately: one assertion over a joined string
+     reports the first failure and hides the rest. */
+  assert.ok(!single.includes("@container (width >= 656px)"));
+  assert.ok(!single.includes("@container (width >= 720px)"));
 
   /* The narrow classes' own landscape chain is side by side at phone steps. */
   const narrowLandscape = topLevelBlocks(pair).filter(
