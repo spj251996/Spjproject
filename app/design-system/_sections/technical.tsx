@@ -11,7 +11,7 @@ import {
 
 const TRY_IT = [
   "Focus and hover · tab to or hover the map action under Components · UI",
-  "Text selection · try selecting any text on this page — nothing selects",
+  "Text selection · select a name or a date — content selects; a drawing, an icon or an action label does not",
   "Scroll, section entry, modal and loading act on the page itself; no specimen",
   "Tap targets → Accessibility Rules",
 ];

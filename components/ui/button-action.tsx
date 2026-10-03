@@ -34,9 +34,9 @@ const markClassName = [
    the same property resolve by stylesheet order, not by the order they are written — so an appended
    `justify-start` would win or lose unpredictably. Exactly one is ever emitted.
 
-   `start` exists for a STACK of actions: two centred rows whose labels differ in width put their
-   discs at different x, which reads as a ragged bulleted list (couple, 2026-10-02). Centred is the
-   default, and every other caller takes it. */
+   `stretchStart` exists for a STACK of actions: two centred rows whose labels differ in width put
+   their discs at different x, which reads as a ragged bulleted list (couple, 2026-10-02). Centred is
+   the default, and every other caller takes it. */
 const ALIGN = {
   center: "justify-center",
   /* `w-full` as well as the justification: the target itself is `justify-center`, so without it this

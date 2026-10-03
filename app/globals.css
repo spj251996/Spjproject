@@ -38,12 +38,26 @@ img,
    does not do. Selection stays suppressed; only the callout comes back, because the sheet is the
    affordance and a text selection on a button is not.
 
-   `tel:` ALONE, deliberately: WhatsApp's href is a `wa.me` web URL, so its sheet would offer
-   "Copy Link" and put the number inside a copied URL. `a[href^="tel:"]` reaches the two Call
-   actions and nothing else -- `callHref` is the app's only `tel:` producer. */
+   The descendant `*` is load-bearing, not defensive breadth: the mark is an `aria-hidden` `<svg>` on
+   a 44px disc, so the rule above hits it DIRECTLY and a direct declaration beats an inherited one.
+   Exempting only the anchor and the label would leave `callout: none` over the disc -- the obvious
+   thing to press -- and the sheet would appear or not depending on where the thumb landed. */
 a[href^="tel:"],
-a[href^="tel:"] .type-action {
+a[href^="tel:"] * {
   -webkit-touch-callout: default;
+}
+
+/* WhatsApp offers no sheet, stated as its own rule rather than left to layout. Its href is a `wa.me`
+   web URL, so a sheet there would offer "Copy Link" and put the number inside a copied URL -- the
+   outcome the owner's "only for phone buttons" scoping removes.
+
+   It needs saying explicitly because the suppression above matches the label and the mark but NOT
+   the `<a>`, and `html` no longer sets the callout: without this rule WhatsApp is protected only
+   while its children happen to cover the whole anchor box, which a later `align="center"` or a
+   dropped `items-stretch` would undo silently. */
+a[href^="https://wa.me"],
+a[href^="https://wa.me"] * {
+  -webkit-touch-callout: none;
 }
 
 /* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
