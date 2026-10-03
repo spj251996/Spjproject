@@ -95,17 +95,14 @@ const RESPONSIVE_POINTERS = [
   "Narrowest supported width → Accessibility Rules",
 ];
 
+/* Three layers, not five: the ivory ground and the mounted sheets sit in document order with no
+   z-index of their own, so their tokens were defined and never read, and were retired 2026-10-03
+   (DESIGN.md → Technical Conventions → Z-Index Scale). */
 const Z_LAYERS: LayerItem[] = [
-  { token: "--z-base", value: "0", role: "Base · the fixed ivory ground" },
   {
     token: "--z-content",
     value: "20",
     role: "Content · all text and main components",
-  },
-  {
-    token: "--z-elevated",
-    value: "30",
-    role: "Elevated · mounted sections, the mount and its sheet",
   },
   {
     token: "--z-thread",

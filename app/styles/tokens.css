@@ -250,9 +250,7 @@
 
   /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
      off-scale `z-999` still compiles; only review enforces this scale. */
-  --z-base: 0;
   --z-content: 20;
-  --z-elevated: 30;
   --z-thread: 40;
   --z-modal: 50;
 }

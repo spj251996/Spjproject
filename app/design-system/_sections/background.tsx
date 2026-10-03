@@ -3,7 +3,7 @@ import { SECTION_PLACEMENT } from "@/components/background/botanical";
 
 const PAPER_BASE_POINTERS = [
   "No component: this page's own background is the paper base.",
-  "surface-base on z-base · grained paint → Foundations · Paper Grain",
+  "surface-base, painted in document order with no z-index of its own · grained paint → Foundations · Paper Grain",
 ];
 
 const BOTANICAL_POINTERS = [
