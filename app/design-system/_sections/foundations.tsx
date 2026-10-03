@@ -328,7 +328,7 @@ const EASING_USES = [
 const LOOP_CADENCE_USES = [
   "--retrace-duration · 3.2s · one loop of the thread's re-trace, the page's one sanctioned loop · set against the thread, not a step on the duration scale · the owner's pick",
   "--retrace-settle · 1500ms · how long the page must be still before the re-trace loops · a delay of the same kind, the owner's pick",
-  "--retrace-loops · 3 · how many whole loops it then runs before it stops until the next scroll · a count, so a slower pace never keeps the page busy longer · the assistant's design value, not the owner's pick",
+  "--retrace-loops · 5 · how many whole loops it then runs before it stops until the next scroll · a count, so a slower pace never keeps the page busy longer · the owner's pick",
 ];
 
 const SHAPE_ITEMS: ShapeItem[] = [

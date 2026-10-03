@@ -1103,8 +1103,8 @@ test("the built page reads the re-trace's loop cadence, settle interval and loop
   assert.match(tokenValue("retrace-settle"), /^[\d.]+m?s$/);
   assert.equal(
     parseCssCount(tokenValue("retrace-loops")),
-    3,
-    "--retrace-loops is the assistant's design value, 3, until the owner retunes it",
+    5,
+    "--retrace-loops is the owner's pick, 5 (2026-10-02)",
   );
   if (!existsSync("out/_next/static/chunks")) {
     t.skip("no static export: run `npm run build` first");
