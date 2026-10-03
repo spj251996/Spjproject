@@ -781,18 +781,17 @@ export function WishesSection() {
             </p>
           </div>
 
-          {/* The weave, and the one reason the thread is mounted inside a card rather than on the
-              section: the card's `mounted-sheet-frame__box` is a stacking context at
-              `{z.content}`, so a section-level thread at `{z.thread}` can only paint entirely in
-              front of the illustration. These two copies are siblings of `.figureCol` and carry no
-              z-index of their own, so document order alone puts one either side of it. Their
-              containing block is that same `__box` — the card, not the section — which is the
-              nearest positioned ancestor available inside the stacking context the weave needs. */}
-          <WishesWeave slot="under" />
+          {/* Wishes' own stretch of the thread, and the one reason it is mounted inside a card rather
+              than drawn by the page's trunk: the card's `mounted-sheet-frame__box` is a stacking
+              context at `{z.content}` and the thread's trunk is at `{z.thread}`, so a trunk-level
+              stretch would paint over Wishes' type, where this one, carrying no z-index of its own,
+              paints behind it. Its containing block is that same `__box`, the nearest positioned
+              ancestor inside the stacking context. It sits after the illustration, so it paints in
+              front of it. */}
           <div className={wishesStyles.figureCol}>
             <div aria-hidden className={wishesStyles.figure} />
           </div>
-          <WishesWeave slot="over" />
+          <WishesWeave />
 
           <p className="type-heading-script mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
             {wishesNames ? (

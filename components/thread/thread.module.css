@@ -7,7 +7,7 @@
 
 /* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
    kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
-   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `WishesWeave` copies were
+   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `WishesWeave` copies it then had were
    auto-placing into two of its four EXPLICIT rows, pushing `names` and `signoff` out into new
    IMPLICIT ones. `.figureCol`'s `grid-row: 1 / -1` still spanned the same four tracks throughout --
    `-1` resolves against the explicit grid only, so the span never moved -- but two of those tracks
@@ -99,9 +99,9 @@
    re-learning about a bare utility losing to a scoped one, the other way round. JS hides the whole
    fallback layer once it has measured and taken over. */
 
-/* The weave's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why passing
-   "behind" the couple illustration depends on document order, not stacking, and would be defeated
-   by one. `overflow: visible` because a cubic control point or a round cap can reach past the card's
+/* The weave's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why it must
+   take its place from the card's stacking context, behind the type, and a z-index would lift it out
+   of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
    own edge; it is a drawn line, not content clipped to a box. */
 .pageWeave {
   overflow: visible;
@@ -146,17 +146,6 @@
   stroke: var(--color-thread-red);
   stroke-linecap: butt;
   stroke-linejoin: round;
-}
-
-/* The weave is drawn twice, one copy over the illustration and one under it, on identical geometry
-   (`page-thread.tsx`, `weaveRetraces`). Every layer that is translucent takes its filter in ONE copy
-   only, the one over, or its alpha composites twice over itself: measured on the bleed, the head's halo
-   and the taper's bleed, the weave read about 1.9x the trunk's at the points sampled (DESIGN.md ->
-   Thread -> The bleed). The under copy's ink, which is opaque, is unaffected. */
-.pageWeaveUnder .pageInk,
-.pageWeaveUnder .pageBleed,
-.pageWeaveUnder .pageTaper {
-  filter: none;
 }
 
 /* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE

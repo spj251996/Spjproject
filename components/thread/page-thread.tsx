@@ -116,14 +116,13 @@ import type { MeasuredSection, Rect } from "./thread-warp";
    `.mounted-sheet-frame__box` spanning both leaves (`mounted-pair.tsx`), so the same selector serves
    singles and pairs alike.
 
-   THE WEAVE IS THE ONE SPECIAL CASE. Wishes' own stretch is excluded from this component's drawn
-   `<path>` — this SVG paints at `{z.thread}` (40) above every card's `{z.content}` (20), so it can
-   only ever paint IN FRONT of the couple illustration, never behind it — and is instead drawn by
-   `WishesWeave`, twice, at the two places in the DOM either side of the illustration. Both copies are
-   IDENTICAL geometry and IDENTICAL dash state; the illusion of "passing behind" costs nothing beyond
-   that, because natural paint order does the rest: the illustration (opaque) covers the "under" copy
-   wherever they overlap, and the "over" copy — the same ink, redrawn — shows through everywhere
-   including on top of it.
+   WISHES IS THE ONE SPECIAL CASE. Its own stretch is excluded from this component's drawn `<path>`
+   — this SVG paints at `{z.thread}` (40) above every card's `{z.content}` (20), so it would paint
+   over Wishes' type — and is instead drawn by `WishesWeave`, once, inside Wishes' card. The card is
+   a stacking context at `{z.content}` and the weave carries no z-index, so inside it the stretch
+   paints behind the type and in front of the couple illustration. It does not pass behind the
+   illustration: a weave was built (two copies either side of it) and never worked, and was deleted
+   (DESIGN.md → Thread → Wishes).
 
    ANCHORING. `family`'s two `portraitLoop` placements must translate onto Flemy's and Sebastian's
    REAL rendered portraits (owner requirement, `session.md` 2026-09-27) — found by relationship label
@@ -711,7 +710,7 @@ function createRetracePainter(
 
   return {
     /* One frame: the segment of each animating stretch, and every other stretch hidden. A stretch
-       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and each weave copy are
+       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and the weave are
        handed the same frames and each paints the share that lies in its own pieces, which is how the
        terminal's stretch reaches the weave and the others reach the trunk. */
     paint(
@@ -762,20 +761,9 @@ function createRetracePainter(
 type RetracePainter = ReturnType<typeof createRetracePainter>;
 
 /* The re-trace is one loop for the whole page, driven by `PageThread`, but Wishes' stretch is drawn in
-   `WishesWeave`'s own `<svg>`s, whose pieces `PageThread`'s painter cannot reach. A weave copy that
-   paints the re-trace registers its painter here and the loop hands every registered painter the same
-   frames: one clock, one budget and one thing to stop.
-
-   ONLY THE COPY OVER THE ILLUSTRATION PAINTS IT. The two copies are the same geometry drawn twice, and
-   the copy over the illustration covers the one under it wholly, so a second painter would add
-   nothing to the core's opaque runs and would paint the glow's translucent strokes a second time over
-   themselves: measured on a glow-only render, the bow's joins read 106 of 255 against 61-63 for every
-   other join on the page, 1.7x, which is the glow's alpha composited twice.
-
-   THE SAME HOLDS FOR EVERY OTHER TRANSLUCENT LAYER, so the copy under the illustration paints none of
-   them either: it carries no head, and `.pageWeaveUnder` takes the bleed off its ink and its taper.
-   Both copies' ink is the same opaque colour and is left in both: the copy under is what a reader
-   would see if the one over were removed, and it still has to carry the taper's cut. */
+   `WishesWeave`'s own `<svg>`, whose pieces `PageThread`'s painter cannot reach. The weave registers its
+   painter here and the loop hands every registered painter the same frames: one clock, one budget and
+   one thing to stop. */
 const weaveRetraces = new Set<RetracePainter>();
 
 /* ---------------------------------------------------------------------------------------------
@@ -933,8 +921,8 @@ function ThreadInk({
   );
 }
 
-/* The mask that cuts the ink away under a taper. One per `<svg>`, so its id is fixed per slot: the
-   trunk's, and each of the weave's two copies. `maskUnits` is the user space because the default
+/* The mask that cuts the ink away under a taper. One per `<svg>`, so its id is fixed: the trunk's,
+   and the weave's. `maskUnits` is the user space because the default
    region is a percentage margin around the piece's bounding box, which is not a margin the cut can
    rely on. Without a `region` the mask takes this extent, which is only the region before the page is
    measured: `fitMaskRegion` narrows it to the piece, which is what keeps the mask cheap. A caller that
@@ -942,6 +930,7 @@ function ThreadInk({
    this large costs 27.1ms mean frame time and 116 dropped frames on the page. */
 const MASK_EXTENT = 100000;
 const TRUNK_CUT_ID = "thread-taper-cut-trunk";
+const WEAVE_CUT_ID = "thread-taper-cut-weave";
 
 interface MaskRegion {
   readonly x: number;
@@ -1567,25 +1556,19 @@ export function PageThread() {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   THE WEAVE — Wishes' own stretch, drawn twice, in the two places in the DOM either side of the
-   couple illustration. `slot="under"` replaces the retired `<SectionThread id="wishes"
-   weave="under" />`, `slot="over"` replaces `weave="over"` — same two call sites, same document
-   positions either side of `wishesStyles.figureCol`, which Task 6's cutover carries across along
-   with removing `SectionThread` itself. Both copies measure independently: wishes' own subpath never
-   depends on family's anchors (celebrations sits between them, and the boundary-snap in
-   `thread-line.ts` only ever copies an ADJACENT section's own endpoint), so this needs no state
-   shared with `PageThread` — only the same pure functions, called twice. The reveal, though, must
-   stay in step with the whole page's progress, not restart at wishes' own arc-length 0: `beforeLength`
-   is how much of the page's total `pageDrawnLength` accounts for before wishes' own stretch begins,
-   and `wishesLength` is read straight off the mounted path with `getTotalLength()` — the browser's
-   own exact arc length, used here (rather than `threadLine`'s sampled estimate) because it is what
-   this path's OWN dash math has to agree with. */
+   THE WEAVE — Wishes' own stretch, drawn once, in the one place in the DOM after the couple
+   illustration (`app/page.tsx`). The name outlived the design: it was drawn twice, a copy either
+   side of the illustration, to pass behind it, and the two copies were identical so the one over
+   covered the one under everywhere. It was deleted on 2026-10-02 and the name stays because gates
+   and docs use it. It measures independently of `PageThread` -- wishes' own subpath never depends on
+   family's anchors (celebrations sits between them, and the boundary-snap in `thread-line.ts` only
+   ever copies an ADJACENT section's own endpoint), so this needs no state shared with `PageThread`,
+   only the same pure functions. The reveal, though, must stay in step with the whole page's
+   progress, not restart at wishes' own arc-length 0: `chainRef` is the whole page's pieces,
+   `firstPieceRef` is where wishes' own begin in it, and their `start`/`end` are on the page's own
+   cumulative scale. */
 
-interface WishesWeaveProps {
-  slot: "under" | "over";
-}
-
-export function WishesWeave({ slot }: WishesWeaveProps) {
+export function WishesWeave() {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   /* One entry per `wishes` piece (`WISHES_PIECE_COUNT`, fixed) -- same per-piece shape as
@@ -1595,7 +1578,7 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
   /* The head's chain is the whole page's, and `firstPieceRef` is where this weave's own pieces
-     begin in it -- each copy draws the share of the head that lies in its own pieces, from the same
+     begin in it -- the weave draws the share of the head that lies in its own pieces, from the same
      drawn length the trunk uses, so the head crosses the join unbroken. The weave's `viewBox` is
      the card's rect in `<main>` coordinates and its box is that same rect, so its user space is
      1:1 with page pixels and the head's widths need no correction. */
@@ -1612,7 +1595,7 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
   /* The head's and the re-trace's painters share what they sample, as the trunk's do. */
   const samplesRef = useRef(new Map<number, PieceSamples>());
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
-     each `WishesWeave` measures independently (see the header comment), so it keeps its own.
+     `WishesWeave` measures independently (see the header comment), so it keeps its own.
      `groupRectsRef` is `threadLine`'s own per-GROUP rects, exactly like `PageThread`'s -- `wishes`
      itself never splits, but the CHAIN leading up to it (through `celebrations`'s own groups) must
      be built from the SAME measured subdivisions `PageThread` uses, or the two components would hand
@@ -1756,9 +1739,8 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
 
   useLayoutTriggers(measure);
 
-  /* Joins the page's one re-trace loop (`weaveRetraces`'s header): `PageThread` drives it, and the copy
-     over the illustration paints Wishes' stretch of it into its own `<svg>`. The copy under it has no
-     re-trace groups, so it has no painter to register. */
+  /* Joins the page's one re-trace loop (`weaveRetraces`'s header): `PageThread` drives it, and this
+     paints Wishes' stretch of it into its own `<svg>`. */
   // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `retrace` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
   useEffect(() => {
     const painter = retrace();
@@ -1791,28 +1773,20 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
     <span
       aria-hidden="true"
       className={styles.pageWrapper}
-      data-thread-weave={slot}
+      data-thread-weave
       ref={wrapperRef}
     >
       <svg
-        className={
-          slot === "under"
-            ? `${styles.pageWeave} ${styles.pageWeaveUnder}`
-            : styles.pageWeave
-        }
+        className={styles.pageWeave}
         data-thread-svg="true"
         preserveAspectRatio="none"
         ref={svgRef}
         role="presentation"
       >
-        <TaperCutMask cutRef={cutRef} id={`thread-taper-cut-${slot}`} />
+        <TaperCutMask cutRef={cutRef} id={WEAVE_CUT_ID} />
         {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
           <ThreadInk
-            cutId={
-              index === WISHES_PIECE_COUNT - 1
-                ? `thread-taper-cut-${slot}`
-                : undefined
-            }
+            cutId={index === WISHES_PIECE_COUNT - 1 ? WEAVE_CUT_ID : undefined}
             index={index}
             // biome-ignore lint/suspicious/noArrayIndexKey: WISHES_PIECE_COUNT is a fixed structural constant -- these never reorder or change count.
             key={index}
@@ -1822,15 +1796,9 @@ export function WishesWeave({ slot }: WishesWeaveProps) {
           />
         ))}
         <g className={styles.pageTaper} ref={taperGroupRef} />
-        {slot === "over" && (
-          <>
-            <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
-            <g className={styles.pageRetrace} ref={retraceGroupRef} />
-          </>
-        )}
-        {slot === "over" && (
-          <g className={styles.pageHead} ref={headGroupRef} />
-        )}
+        <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
+        <g className={styles.pageRetrace} ref={retraceGroupRef} />
+        <g className={styles.pageHead} ref={headGroupRef} />
       </svg>
     </span>
   );

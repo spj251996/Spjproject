@@ -295,7 +295,7 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
   }
 });
 
-test("Wishes' closing stretch loops, painted once by the copy over the illustration and not twice", async (t) => {
+test("Wishes' closing stretch loops, painted by the one weave and nowhere else", async (t) => {
   if (!existsSync("out/index.html")) {
     t.skip("no static export: run `npm run build` first");
     return;
@@ -318,27 +318,28 @@ test("Wishes' closing stretch loops, painted once by the copy over the illustrat
       "window.scrollTo(0, document.documentElement.scrollHeight)",
     );
     /* The loop is seen lit by polling across it: a segment is empty at each loop's edges, so one
-       reading can miss it. The copy under the illustration is the same line drawn again, and a second
-       painter would composite the glow's translucent strokes twice over themselves, so it carries no
-       re-trace at all. */
-    const seen = { under: 0, over: 0 };
-    for (let i = 0; i < 120 && !seen.over; i++) {
-      const lit = (await page.evaluate(`(() => {
-        const lit = (slot) => Array.from(document.querySelectorAll('[data-thread-weave="' + slot + '"] [data-thread-retrace-group] path, [data-thread-weave="' + slot + '"] [data-thread-retrace-glow] path')).filter((p) => p.style.display !== "none" && p.getAttribute("d")).length;
-        return { under: lit("under"), over: lit("over") };
-      })()`)) as { under: number; over: number };
-      seen.under += lit.under;
-      seen.over += lit.over;
+       reading can miss it. */
+    let lit = 0;
+    for (let i = 0; i < 120 && !lit; i++) {
+      lit = (await page.evaluate(
+        "Array.from(document.querySelectorAll('[data-thread-weave] [data-thread-retrace-group] path, [data-thread-weave] [data-thread-retrace-glow] path')).filter((p) => p.style.display !== 'none' && p.getAttribute('d')).length",
+      )) as number;
       await page.waitForTimeout(50);
     }
-    assert.ok(seen.over > 0, "the copy over the illustration is lit");
-    assert.equal(seen.under, 0, "the copy under it paints nothing");
+    assert.ok(lit > 0, "the weave's stretch is lit");
     assert.equal(
       await page.evaluate(
-        "document.querySelectorAll('[data-thread-weave=\"under\"] [data-thread-retrace-group]').length",
+        "document.querySelectorAll('[data-thread-weave]').length",
       ),
-      0,
-      "and holds no re-trace groups",
+      1,
+      "Wishes carries one weave, not a copy either side of the illustration",
+    );
+    assert.equal(
+      await page.evaluate(
+        "document.querySelectorAll('[data-thread-weave] [data-thread-retrace-group]').length",
+      ),
+      1,
+      "and it holds one re-trace group",
     );
   } finally {
     await browser.close();

@@ -13,18 +13,15 @@
    header comment states this is deliberate: a section-scoped SVG could only paint in front of
    Wishes' illustration, never behind it). So `section#<id> svg[data-thread-svg] path` — this gate's
    original selector — matches nothing for five of six sections; only Wishes ever had a descendant
-   match, because `WishesWeave` mounts its two copies inside `#wishes` itself (either side of the
-   illustration, for that same z-index reason). The fix: search the WHOLE DOCUMENT for
+   match, because `WishesWeave` mounts inside `#wishes` itself (in the card, so the stretch paints behind
+   the type, for that same z-index reason). The fix: search the WHOLE DOCUMENT for
    `data-thread-svg` paths, then CLIP each one's geometry to the section's own rect before
    measuring — never re-introduce a per-section SVG to make the old selector work again, which is
    exactly the mis-sizing this plan's thread rewrite removed (`session.md`, 2026-09-27).
 
    METHOD, per section per aspect-band window:
-     1. Find every `data-thread-svg` path ANYWHERE in the document, de-duplicated by its `d`
-        attribute — `WishesWeave`'s "under" and "over" copies redraw IDENTICAL geometry either side
-        of the illustration by design, and counting both would spend a section's sample budget
-        twice over the same ink for no gain.
-     2. For each remaining path, run a coarse 400-probe pass over its full length to find which
+     1. Find every `data-thread-svg` path ANYWHERE in the document that carries a `d`.
+     2. For each path, run a coarse 400-probe pass over its full length to find which
         arc-length RANGES land inside this section's own `getBoundingClientRect()` in screen space
         — a page-length path spends most of its length in other sections, so sampling the full
         length against one section's text would starve that section of resolution.
@@ -237,18 +234,14 @@ function measureSectionInPage({
   }
 
   /* The thread's SVG is a SIBLING of every section (mounted once, at the end of `<main>`), so the
-     search is document-wide. `WishesWeave`'s two copies redraw IDENTICAL geometry either side of
-     the illustration by design — de-duplicate by `d` so a section never counts the same ink twice. */
-  const seenD = new Set();
+     search is document-wide. */
   const candidatePaths = Array.from(
     document.querySelectorAll(threadSelector),
-  ).filter((el) => {
-    if (typeof el.getTotalLength !== "function") return false;
-    const d = el.getAttribute("d") ?? "";
-    if (d === "" || seenD.has(d)) return false;
-    seenD.add(d);
-    return true;
-  });
+  ).filter(
+    (el) =>
+      typeof el.getTotalLength === "function" &&
+      (el.getAttribute("d") ?? "") !== "",
+  );
 
   function insideSection(point) {
     return (

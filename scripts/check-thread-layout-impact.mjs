@@ -3,7 +3,7 @@
  * span both `PageThread` and `WishesWeave` mount as their root takes no space in flow and does not
  * push its host's own layout apart. That was true and verified for a flex-column host and silently
  * false for a CSS-Grid one: an in-flow box is still a grid item at `height: 0`, so `WishesWeave`'s
- * two copies were auto-placing into Wishes' `>=64rem` landscape grid, growing it past its four
+ * two copies (it drew two then; it draws one now) were auto-placing into Wishes' `>=64rem` landscape grid, growing it past its four
  * EXPLICIT rows and starving `.figureCol`'s `grid-row: 1 / -1` (which spans the explicit grid only,
  * per spec) down to two of them. `.figureCol` measured 160px against the stack's own 384px, and the
  * couple illustration overflowed ~87px above and below it — on the real page, at 1536x695, where
@@ -26,9 +26,8 @@
  * SELECTORS, and why neither touches a restricted file: `.wishes-stack` is already a plain (non-
  * module) class on the stack div in `app/page.tsx`, so no source file needs editing to reach it.
  * `.figureCol` is a CSS-module class with no stable literal name — it is found instead as the
- * element immediately after `[data-thread-weave="under"]`, the two call sites' own fixed DOM
- * relationship (`page-thread.tsx`'s own header comment: "same two call sites, same document
- * positions either side of `wishesStyles.figureCol`").
+ * element immediately BEFORE `[data-thread-weave]`, the call site's own fixed DOM relationship
+ * (`app/page.tsx`: `WishesWeave` is the next sibling of `wishesStyles.figureCol`).
  *
  * ENGINE PIN (mandatory): `chromium.launch({ channel: "chromium" })` — the default launch reaches
  * for Chromium's old `headless_shell`, whose rendering differs from every real browser.
@@ -98,22 +97,15 @@ try {
 
   const result = await page.evaluate(() => {
     const stack = document.querySelector(".wishes-stack");
-    const under = document.querySelector('[data-thread-weave="under"]');
-    const over = document.querySelector('[data-thread-weave="over"]');
-    const figureCol = under?.nextElementSibling ?? null;
-    if (
-      stack === null ||
-      under === null ||
-      over === null ||
-      figureCol === null
-    ) {
+    const weave = document.querySelector("[data-thread-weave]");
+    const figureCol = weave?.previousElementSibling ?? null;
+    if (stack === null || weave === null || figureCol === null) {
       return { error: "one or more Wishes elements did not render" };
     }
     return {
       stackHeight: stack.getBoundingClientRect().height,
       figureColHeight: figureCol.getBoundingClientRect().height,
-      underPathD: under.querySelector("path")?.getAttribute("d") ?? "",
-      overPathD: over.querySelector("path")?.getAttribute("d") ?? "",
+      weavePathD: weave.querySelector("path")?.getAttribute("d") ?? "",
     };
   });
 
@@ -121,10 +113,10 @@ try {
     console.log(`  BREAK: ${result.error}`);
     exitCode = 1;
   } else {
-    const { stackHeight, figureColHeight, underPathD, overPathD } = result;
+    const { stackHeight, figureColHeight, weavePathD } = result;
     const delta = Math.abs(stackHeight - figureColHeight);
     const geometryOk = delta <= TOLERANCE;
-    const weaveOk = underPathD.length > 0 && overPathD.length > 0;
+    const weaveOk = weavePathD.length > 0;
 
     console.log(
       `  stack height ${stackHeight.toFixed(2)}px, figureCol height ${figureColHeight.toFixed(2)}px, delta ${delta.toFixed(2)}px`,
@@ -136,8 +128,8 @@ try {
     );
     console.log(
       weaveOk
-        ? "  ok    both weave copies render a non-empty path"
-        : "  BREAK a weave copy rendered no path",
+        ? "  ok    the weave renders a non-empty path"
+        : "  BREAK the weave rendered no path",
     );
 
     exitCode = geometryOk && weaveOk ? 0 : 1;
