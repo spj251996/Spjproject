@@ -53,7 +53,6 @@ export interface FamilyGroup {
 }
 
 export interface InviteContent {
-  eyebrow: string;
   coupleNames: string;
   /** The passage set off from the rest of the invite by the ornamental divider. */
   passage: string;

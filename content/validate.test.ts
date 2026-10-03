@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type {
   ContactPerson,
@@ -69,7 +70,6 @@ const pair = (over: Partial<FamilyGroup> = {}) => [
 ];
 
 const invite: InviteContent = {
-  eyebrow: "We are getting married",
   coupleNames: "A & B",
   passage: "Text.",
   passageAttribution: "Book 1:1",
@@ -278,12 +278,28 @@ test("accepts null in every nullable field", () => {
 
 test("rejects empty invite copy, naming the field", () => {
   assert.throws(
-    () => validateInvite({ ...invite, eyebrow: "" }),
-    /invite\.eyebrow must not be empty/,
-  );
-  assert.throws(
     () => validateInvite({ ...invite, coupleNames: "   " }),
     /invite\.coupleNames must not be empty/,
+  );
+  assert.throws(
+    () => validateInvite({ ...invite, passage: "" }),
+    /invite\.passage must not be empty/,
+  );
+});
+
+/* The eyebrow is chrome at the composition site, like Family's and Wishes' (owner, 2026-10-03), so
+   it is not content and not validated. Asserted on the SOURCE because a removed optional field is
+   invisible to a runtime check: `validateInvite` accepts an object carrying an extra key either way,
+   so no call to it can tell whether the field is still part of the model. */
+test("the invite content model carries no eyebrow", () => {
+  const types = readFileSync("content/types.ts", "utf8");
+  const from = types.indexOf("interface InviteContent");
+  assert.notStrictEqual(from, -1, "no InviteContent interface found");
+  assert.doesNotMatch(types.slice(from, types.indexOf("}", from)), /eyebrow/);
+  assert.doesNotMatch(readFileSync("content/invite.ts", "utf8"), /eyebrow/);
+  assert.doesNotMatch(
+    readFileSync("content/validate.ts", "utf8"),
+    /invite\.eyebrow/,
   );
 });
 

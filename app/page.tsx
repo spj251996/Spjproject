@@ -180,8 +180,10 @@ export function InviteSection() {
           <div aria-hidden className="grow" />
 
           <div className="flex flex-col items-center">
-            {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-            <p className="type-eyebrow">{invite.eyebrow}</p>
+            {/* A colour utility here would override the colour `.type-eyebrow` owns. The copy is a
+                literal, not a content field: it names the occasion rather than carrying any of the
+                couple's data, exactly like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
+            <p className="type-eyebrow">We are getting married</p>
 
             <h1 className="type-display-name text-ink mt-space-lg">
               {names ? (

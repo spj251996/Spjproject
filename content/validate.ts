@@ -221,7 +221,6 @@ export function validateContacts(contacts: ContactPerson[]): ContactPerson[] {
 }
 
 export function validateInvite(invite: InviteContent): InviteContent {
-  required(invite.eyebrow, "invite.eyebrow");
   required(invite.coupleNames, "invite.coupleNames");
   required(invite.passage, "invite.passage");
   required(invite.passageAttribution, "invite.passageAttribution");
