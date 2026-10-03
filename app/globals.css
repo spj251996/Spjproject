@@ -8,12 +8,42 @@ body {
   color: var(--color-ink);
 }
 
-/* Set on `html` so it inherits everywhere. iOS Safari needs the prefixed property, and the
-   long-press menu needs the callout suppression as well. */
+/* Selection is scoped to chrome, not suppressed document-wide. An invitation is reference material:
+   a guest copying a venue address into Maps or a date into a calendar is reading it as intended, and
+   the design system requires content to stay selectable. Set on `html` so content inherits it. */
 html {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Chrome keeps the suppression, and the callout travels WITH it rather than staying on the document.
+   `svg` is every decorative drawing, the thread included; `[aria-hidden="true"]` covers anything
+   already hidden from assistive technology -- which is how the family portraits' transparent
+   hit-test layer keeps the iOS long-press sheet closed, since that layer is itself an aria-hidden
+   span; `img` is defence for image elements not behind such a layer yet (the ritual gallery's tiles,
+   Phase 8); `.type-action` is the action labels, where a selection is only ever a tap that missed.
+   iOS Safari needs the prefixed `user-select`. */
+svg,
+[aria-hidden="true"],
+img,
+.type-action {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* The Call action is the one exemption (owner, 2026-10-03: "only for phone buttons"). Its href is a
+   `tel:` number a guest may legitimately want to copy, and the platform's own long-press sheet is
+   the only way to offer that without printing the number on the page -- which Contact deliberately
+   does not do. Selection stays suppressed; only the callout comes back, because the sheet is the
+   affordance and a text selection on a button is not.
+
+   `tel:` ALONE, deliberately: WhatsApp's href is a `wa.me` web URL, so its sheet would offer
+   "Copy Link" and put the number inside a copied URL. `a[href^="tel:"]` reaches the two Call
+   actions and nothing else -- `callHref` is the app's only `tel:` producer. */
+a[href^="tel:"],
+a[href^="tel:"] .type-action {
+  -webkit-touch-callout: default;
 }
 
 /* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
