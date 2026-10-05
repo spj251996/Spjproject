@@ -27,6 +27,9 @@ interface MountedSheetProps {
   fit?: MeasuredFit;
   tall?: boolean;
   className?: string;
+  /** Select the hero card's unpainted option: no mount fill, no stock fill, no shadow, no corners.
+      Geometry is unchanged. Absent selects the painted option, which every other caller takes. */
+  unbacked?: boolean;
 }
 
 const MOUNT_SHADOW = "shadow-mount";
@@ -49,13 +52,36 @@ const CARD_CORNERS = "rounded-card";
 
 const SHEET = "bg-surface-elevated shadow-stock";
 
+/* The hero card has two options, painted and unpainted, and the invitation currently takes the
+   unpainted one (owner, 2026-10-05 — DESIGN.md → Foundations → Layout → `mounted-sheet` → The hero
+   card's two options, which also carries the one-word restoration).
+
+   Only the PAINT differs: the frame's geometry is identical either way, because the invite's height
+   contract and the thread's measured card box (`page-thread.tsx`'s `measureSections`) both ride on
+   the box staying exactly where it was measured. The generated stylesheet needs no matching change —
+   `mountRules` only ever strips a fill where the mount does not show, so with the utility absent that
+   rule is a no-op.
+
+   Hoisted into constants so a framed branch never names a paint utility inline, where `unbacked`
+   could not gate it. `MOUNT_REVEAL` keeps its own `bg-surface-mount`: that is the unfitted path's
+   reveal ladder, not the fitted card's paint. */
+const MOUNT_PAINT = `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`;
+const SHEET_PAINT = `${SHEET} ${CARD_CORNERS}`;
+
 export function MountedSheet({
   children,
   hero = false,
   fit,
   tall = false,
   className,
+  unbacked = false,
 }: MountedSheetProps) {
+  if (unbacked && tall) {
+    throw new Error(
+      "mounted-sheet: `unbacked` selects the unpainted option for a card that fits its tier's height cap; a tall section has never wanted one, so passing both is a mistake rather than a configuration.",
+    );
+  }
+
   if (tall) {
     if (fit !== undefined) {
       throw new Error(
@@ -70,10 +96,10 @@ export function MountedSheet({
         <div className={tallScopeClass(hero)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`}
+              className={`${FRAME_CLASS.mount} ${unbacked ? "" : MOUNT_PAINT}`}
             >
               <div
-                className={`${FRAME_CLASS.sheet} ${SHEET} ${CARD_CORNERS} ${className ?? ""}`}
+                className={`${FRAME_CLASS.sheet} ${unbacked ? "" : SHEET_PAINT} ${className ?? ""}`}
               >
                 {children}
               </div>
@@ -93,10 +119,10 @@ export function MountedSheet({
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`}
+              className={`${FRAME_CLASS.mount} ${unbacked ? "" : MOUNT_PAINT}`}
             >
               <div
-                className={`${FRAME_CLASS.sheet} ${SHEET} ${CARD_CORNERS} ${className ?? ""}`}
+                className={`${FRAME_CLASS.sheet} ${unbacked ? "" : SHEET_PAINT} ${className ?? ""}`}
               >
                 {children}
               </div>
@@ -109,10 +135,10 @@ export function MountedSheet({
 
   return (
     <div
-      className={`${MOUNT_SHADOW} ${CARD_CORNERS} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
+      className={`${unbacked ? "" : MOUNT_PAINT} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
       <div
-        className={`${SHEET} ${SHEET_PADDING} ${CARD_CORNERS} ${className ?? ""}`}
+        className={`${unbacked ? "" : SHEET_PAINT} ${SHEET_PADDING} ${className ?? ""}`}
       >
         {children}
       </div>
