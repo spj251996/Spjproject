@@ -170,7 +170,11 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
    visible. The only other rAF user is the opening draw, which has ended by the time a stretch is lit. */
 
 const FAST_TOKENS =
-  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms}";
+  /* `--retrace-speed:0` pins the FIXED-DURATION path deliberately: with a speed set, a loop lasts as
+   long as the stretch needs and the injected `--retrace-duration` no longer governs, so these cases
+   could not state a budget in milliseconds at all. The speed model's own arithmetic is covered
+   without a browser in `thread-light.test.ts`. */
+  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0}";
 
 const WRAP_RAF = `(() => {
   const pending = new Set();
@@ -311,7 +315,7 @@ test("Wishes' closing stretch loops, painted by the one weave and nowhere else",
     await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
     await page.addStyleTag({
       content:
-        ":root{--retrace-duration:1000ms;--retrace-loops:6;--retrace-settle:300ms}",
+        ":root{--retrace-duration:1000ms;--retrace-loops:6;--retrace-settle:300ms;--retrace-speed:0}",
     });
     await page.waitForTimeout(3600);
     await page.evaluate(
@@ -363,7 +367,7 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
     await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
     await page.addStyleTag({
       content:
-        ":root{--retrace-duration:1000ms;--retrace-loops:8;--retrace-settle:600ms}",
+        ":root{--retrace-duration:1000ms;--retrace-loops:8;--retrace-settle:600ms;--retrace-speed:0}",
     });
     await page.waitForTimeout(3600);
     /* Complete the thread, then rest mid-page, where only phase 2 can light a stretch. */

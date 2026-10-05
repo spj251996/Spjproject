@@ -150,10 +150,29 @@
      because the segment's length and gradient change every frame. The owner's picks (2026-10-02). */
   --retrace-duration: 3.2s;
   --retrace-settle: 1500ms;
-  /* How many whole loops it runs once the page has been still for the settle interval before it stops
-     until the next scroll. A count and not a time, so the pace can change without changing how long
-     the page stays busy. The owner's pick (2026-10-02): "at least 5 times before stopping". */
-  --retrace-loops: 5;
+  /* How many whole loops the LONGEST stretch on the page runs once the page has been still for the
+     settle interval, before everything stops until the next scroll. A count and not a time, so the
+     pace can change without changing how long the page stays busy.
+
+     THE OWNER'S PICK, 2026-10-05: "max looping duration as 4 loops on biggest thread section", so
+     this is the budget for the longest stretch and every shorter one fits WHOLE loops into the same
+     window (`page-thread.tsx` -> `periodFor`). It supersedes their 2026-10-02 "at least 5 times
+     before stopping" only for that single longest stretch: every other stretch now runs MORE than
+     five, 7 to 41 of them at `wide` and 6 to 11 at `tall`, because its loop is shorter. */
+  --retrace-loops: 4;
+  /* THE RE-TRACE'S SPEED, in px of thread per second. A loop of fixed duration makes the light's
+     speed depend on how long the stretch is -- every stretch finishes in the same 3.2s, so a long one
+     travels several times faster than a short one. The owner judged that on a render, 2026-10-05:
+     "lets decouple speed and length, its not calm retrace but jarring effect". With a speed set, each
+     stretch's loop lasts as long as its own length needs and every lit stretch moves at one rate.
+     The budget stays a COUNT of whole loops, so the longest stretch on the page now bounds how long
+     it can stay busy. 0 keeps the fixed-duration behaviour exactly.
+
+     845 IS THE INVITE'S OWN SPEED TODAY, which is the one the owner picked by eye: its stretch is
+     1487px at `wide` and a 3.2s loop covers it in 1.76s, so 845px/s is what they have been watching
+     all along -- now every stretch moves at it instead of only that one. (At `tall` the invite is
+     1154px, so the same loop reads 656px/s there; 845 is the `wide` figure they judged.) */
+  --retrace-speed: 845;
   /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. Measured 2026-10-05: `wishes.top` EQUALS the page's own
      maximum scroll at every band (4100 at `wide`, 6780 at `tall`), because wishes occupies exactly the
      final viewport — so its card is never scrolled THROUGH and the draw chain handed it only what the

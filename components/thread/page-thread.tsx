@@ -30,6 +30,8 @@ import {
   retraceFade,
   retraceGlow,
   retraceLoopAt,
+  retraceNominalMs,
+  retracePeriodMs,
   retracePhase,
   retraceSegments,
   retraceSpan,
@@ -1318,11 +1320,47 @@ export function PageThread() {
     const duration = tokenTime("--retrace-duration");
     const loops = retraceLoops();
     if (duration === undefined || loops === undefined) return;
+    /* A LOOP OF FIXED DURATION MAKES THE LIGHT'S SPEED DEPEND ON THE STRETCH'S LENGTH, because every
+       stretch has to finish in the same 3.2s whatever distance it covers. The owner's judgement on a
+       render, 2026-10-05: that spread is "not calm retrace but jarring effect". With a speed set, a
+       stretch's loop lasts as long as its own length needs, so every lit stretch moves at the same
+       rate and the page reads as one steady light rather than several at different paces.
+       0 keeps the fixed-duration behaviour exactly. */
+    const speed = tokenLength("--retrace-speed");
+    const byLength = Number.isFinite(speed) && speed > 0;
+    /* The token is the TIP's own speed in px/s, so a loop lasts as long as the tip needs to cross the
+       stretch, plus the share of the loop the tail then takes to follow it in. */
+    const loopMs = (extent: number) =>
+      byLength ? retraceNominalMs(extent, speed) : duration;
+    /* THE BUDGET IS THE LONGEST STRETCH'S OWN LOOPS, and every other stretch is fitted to it so that
+       none is cut off mid-loop (the owner, 2026-10-05: "max looping duration as 4 loops on biggest
+       thread section ... find looping duration that ensures complete loops for all").
+
+       A constant speed alone cannot give that: each stretch's period is proportional to its length,
+       and arbitrary lengths share no common multiple, so a shared stop would always catch most of
+       them part-way round. So each stretch takes the WHOLE number of loops nearest its own speed --
+       `budget / nominal period`, rounded -- and then runs at `budget / that count`. Every stretch
+       ends exactly on a loop boundary and they all stop together, at the cost of a few per cent of
+       speed: measured against the shipped layout, at most 9.6% at `wide` and 7.9% at `tall`, against
+       the 10.3x spread this replaces. The longest stretch is exact by construction. */
+    const longestExtent = rangesRef.current.reduce(
+      (most, r) => Math.max(most, r.end - r.start),
+      0,
+    );
+    const budgetMs = byLength
+      ? loops * loopMs(longestExtent)
+      : loops * duration;
+    const periodFor = (extent: number) =>
+      retracePeriodMs(budgetMs, loopMs(extent));
     retraceStartRef.current ??= performance.now();
     const frame = (now: number) => {
       const start = retraceStartRef.current;
       if (start === null) return;
-      const { loop, spent } = retraceLoopAt(now - start, duration, loops);
+      const { loop, spent } = retraceLoopAt(
+        now - start,
+        budgetMs / loops,
+        loops,
+      );
       if (spent) {
         retraceSpentRef.current = true;
         stopRetrace();
@@ -1337,8 +1375,17 @@ export function PageThread() {
           phase === "drawing"
             ? Math.min(range.end, drawnRef.current)
             : range.end;
-        if (end - range.start <= 0) continue;
-        const span = retraceSpan(loop, end - range.start, options.length);
+        const extent = end - range.start;
+        if (extent <= 0) continue;
+        /* Each stretch reads its own clock when a speed is set: same rate, its own loop length.
+           It is NOT given its own BUDGET: a short stretch would spend five quick loops and go dark
+           while a long one beside it was still on its first, trading one incoherence for another.
+           Every lit stretch keeps looping until the page's single budget -- five loops of the LONGEST
+           stretch -- runs out, so they all quiet together. */
+        const own = byLength
+          ? { loop: ((now - start) / periodFor(extent)) % 1 }
+          : { loop };
+        const span = retraceSpan(own.loop, extent, options.length);
         frames.set(index, {
           tail: range.start + span.tail,
           tip: range.start + span.tip,

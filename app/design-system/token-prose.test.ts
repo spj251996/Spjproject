@@ -61,7 +61,7 @@ test("every token value the gallery quotes in prose matches tokens.css", () => {
       value !== undefined,
       `${file} quotes ${token}, which tokens.css does not declare`,
     );
-    /* `--retrace-loops (5)` against a declared `5`, and `(3.2s)` against `3.2s`: the prose carries
+    /* `--retrace-loops (4)` against a declared `4`, and `(3.2s)` against `3.2s`: the prose carries
        the bare value, so compare on the value alone rather than parsing units per token. */
     assert.equal(
       quoted,

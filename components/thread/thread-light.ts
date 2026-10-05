@@ -401,7 +401,7 @@ export const RETRACE_LENGTH_RATIO = 89;
 /* Of one loop, the share the tip spends reaching the end of the stretch; the tail then runs out the
    remainder. The reference's tip reaches the end of its curve a little over half way through its 2.0s
    loop and the tail finishes as the next begins. */
-const RETRACE_TIP_ARRIVES = 0.55;
+export const RETRACE_TIP_ARRIVES = 0.55;
 
 /* A segment shorter than this share of its peak is faint, so it appears and vanishes rather than
    popping: the reference's colour falls away as its length does, peak colour 126 -> 14 as the length
@@ -567,6 +567,35 @@ export function retraceLoopAt(
   return through >= loops
     ? { loop: 0, spent: true }
     : { loop: through % 1, spent: false };
+}
+
+/* THE RE-TRACE'S SPEED MODEL (owner, 2026-10-05: "lets decouple speed and length, its not calm
+   retrace but jarring effect", and "max looping duration as N loops on biggest thread section ...
+   find looping duration that ensures complete loops for all").
+
+   A loop of fixed duration makes the light's SPEED depend on the stretch's length, because every
+   stretch has to finish in the same time whatever distance it covers. Measured on the shipped layout
+   that is a 10.3x spread at `wide` -- 231px/s on celebrations' short row against 2371px/s on
+   event-info, both on screen together.
+
+   Fixing the speed instead gives each stretch a period proportional to its own length, which alone
+   would cut most stretches off part-way round a loop when the shared budget expires: arbitrary
+   lengths share no common multiple. So the budget is the LONGEST stretch's own loops, and every
+   other stretch takes the WHOLE number of loops nearest its natural period and runs at exactly
+   `budget / that count`. Each one ends on a loop boundary, they all stop together, and the speed
+   error is a few per cent -- at most 9.6% at `wide` and 7.9% at `tall` on the shipped layout,
+   against the 10.3x it replaces. The longest stretch is exact by construction.
+
+   Lives here, not in the component, for the same reason the rest of the arithmetic does: it is
+   testable without a DOM, which is how the epsilon seed and the vacuous checks were caught. */
+export function retraceNominalMs(extent: number, speed: number): number {
+  return (extent / (RETRACE_TIP_ARRIVES * speed)) * 1000;
+}
+
+/* The period a stretch actually runs at, so that a whole number of its loops fills `budgetMs`. */
+export function retracePeriodMs(budgetMs: number, nominalMs: number): number {
+  if (!(budgetMs > 0) || !(nominalMs > 0)) return budgetMs;
+  return budgetMs / Math.max(1, Math.round(budgetMs / nominalMs));
 }
 
 /* Where the segment's tip and tail are, as arc lengths into a stretch of `extent`, at `loop` (0 to 1)

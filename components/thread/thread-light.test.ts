@@ -20,6 +20,8 @@ import {
   retraceFade,
   retraceGlow,
   retraceLoopAt,
+  retraceNominalMs,
+  retracePeriodMs,
   retracePhase,
   retraceSegments,
   retraceSpan,
@@ -1103,8 +1105,8 @@ test("the built page reads the re-trace's loop cadence, settle interval and loop
   assert.match(tokenValue("retrace-settle"), /^[\d.]+m?s$/);
   assert.equal(
     parseCssCount(tokenValue("retrace-loops")),
-    5,
-    "--retrace-loops is the owner's pick, 5 (2026-10-02)",
+    4,
+    "--retrace-loops is the owner's pick, 4 on the LONGEST stretch (2026-10-05), superseding the 5 of 2026-10-02 for that stretch alone -- every shorter one now runs more than five",
   );
   if (!existsSync("out/_next/static/chunks")) {
     t.skip("no static export: run `npm run build` first");
@@ -1328,4 +1330,51 @@ test("the glow's scale constant is what scales the shipped alphas", () => {
     ) < 1e-4,
   );
   assert.ok(Math.abs(RETRACE_GLOW[0].alpha - 0.01 * RETRACE_GLOW_SCALE) < 1e-4);
+});
+
+/* The owner's two rules for the re-trace's pace (2026-10-05): one speed for every stretch, and a
+   budget that never cuts a stretch off part-way round a loop. */
+test("every stretch fits whole loops into the shared budget, at one speed", () => {
+  /* The shipped `wide` layout's own stretch lengths, longest first in the budget's eyes. */
+  const extents = [1487, 4173, 1873, 3772, 588, 406, 1690, 2362];
+  const speed = 845;
+  const loops = 4;
+  const longest = Math.max(...extents);
+  const budget = loops * retraceNominalMs(longest, speed);
+
+  for (const extent of extents) {
+    const period = retracePeriodMs(budget, retraceNominalMs(extent, speed));
+    const count = budget / period;
+    assert.ok(
+      Math.abs(count - Math.round(count)) < 1e-9,
+      `a ${extent}px stretch runs ${count} loops in the budget, not a whole number`,
+    );
+    assert.ok(
+      count >= 1,
+      `a ${extent}px stretch must run at least one whole loop`,
+    );
+    /* Speed is what the rounding trades away, and it has to stay small or the decoupling is
+       pointless -- the spread it replaces is 10.3x. */
+    const actual = extent / (period / 1000);
+    const wanted = extent / (retraceNominalMs(extent, speed) / 1000);
+    assert.ok(
+      Math.abs(actual / wanted - 1) <= 0.1,
+      `a ${extent}px stretch runs ${((actual / wanted - 1) * 100).toFixed(1)}% off the set speed`,
+    );
+  }
+
+  /* The longest stretch is the budget's own unit, so it is exact rather than rounded. */
+  const longestPeriod = retracePeriodMs(
+    budget,
+    retraceNominalMs(longest, speed),
+  );
+  assert.equal(Math.round(budget / longestPeriod), loops);
+});
+
+test("a stretch shorter than one loop of the budget still runs a whole loop", () => {
+  const budget = 4 * retraceNominalMs(4173, 845);
+  /* `Math.round` would take a huge count here; the floor of one keeps the period meaningful. */
+  const period = retracePeriodMs(budget, retraceNominalMs(1, 845));
+  assert.ok(period > 0 && Number.isFinite(period));
+  assert.ok(budget / period >= 1);
 });
