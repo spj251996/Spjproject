@@ -39,9 +39,19 @@ const MOUNT_SHADOW = "shadow-mount";
    `{reveal.xl}`. Only the hero reaches the first — an ordinary section has no mount below
    `{breakpoints.md}` to reveal one on. */
 const MOUNT_REVEAL = {
-  hero: "bg-surface-mount p-space-sm md:p-space-xs lg:p-space-sm xl:p-space-md",
-  section:
-    "bg-transparent p-0 md:bg-surface-mount md:p-space-xs lg:p-space-sm xl:p-space-md",
+  hero: "p-space-sm md:p-space-xs lg:p-space-sm xl:p-space-md",
+  section: "p-0 md:p-space-xs lg:p-space-sm xl:p-space-md",
+} as const;
+
+/* The ladder's FILL, split out from its padding so the two can be gated separately. They were one
+   string until 2026-10-05, which meant an unpainted card still painted: `unbacked` gated the paint
+   constants while the reveal went on supplying `bg-surface-mount` underneath, and the unfitted branch
+   rendered an unpainted hero as a solid tan block. The padding above is geometry and is never gated;
+   this is paint and always is. The section's `bg-transparent` below `{breakpoints.md}` is what keeps
+   a non-hero card bare where it shows no mount. */
+const MOUNT_REVEAL_FILL = {
+  hero: "bg-surface-mount",
+  section: "bg-transparent md:bg-surface-mount",
 } as const;
 
 const SHEET_PADDING = "p-space-lg md:p-space-2xl lg:p-space-3xl";
@@ -67,6 +77,15 @@ const SHEET = "bg-surface-elevated shadow-stock";
    reveal ladder, not the fitted card's paint. */
 const MOUNT_PAINT = `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`;
 const SHEET_PAINT = `${SHEET} ${CARD_CORNERS}`;
+
+/* The unfitted branch takes its fill from the reveal ladder rather than from `MOUNT_PAINT`, because
+   a non-hero specimen is deliberately bare below `{breakpoints.md}` and only the ladder knows that.
+   Using `MOUNT_PAINT` here would fold an unconditional `bg-surface-mount` into a branch that never
+   had one, painting mount grain under a card the ladder means to leave transparent. */
+const UNFITTED_MOUNT_PAINT = {
+  hero: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.hero}`,
+  section: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.section}`,
+} as const;
 
 export function MountedSheet({
   children,
@@ -135,7 +154,7 @@ export function MountedSheet({
 
   return (
     <div
-      className={`${unbacked ? "" : MOUNT_PAINT} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
+      className={`${unbacked ? "" : UNFITTED_MOUNT_PAINT[hero ? "hero" : "section"]} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
       <div
         className={`${unbacked ? "" : SHEET_PAINT} ${SHEET_PADDING} ${className ?? ""}`}

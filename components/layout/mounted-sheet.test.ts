@@ -82,20 +82,58 @@ test("the two paint constants between them carry every paint the option drops", 
    so a line-local check would forbid the one arrangement the component needs. What must hold is that
    every `unbacked` ternary chooses between a paint constant and nothing at all -- never a reveal,
    never a padding, and never with the arms the wrong way round. */
+/* Each `${unbacked ? … : …}` is read by walking braces to its own close, not by a regex that stops
+   at the first `:` or demands a bare identifier. The earlier version required the painted arm to
+   match `[A-Za-z_$][\w$]*`, so any arm that was a string or a template literal produced NO MATCH and
+   was silently skipped -- it passed both mutations it existed to catch: moving `SHEET_PADDING` into
+   the painted arm, and swapping the arms. A guard that skips what it cannot parse is worse than
+   none, because the skip reads as a pass. Braces are the delimiter the syntax uses, so braces are
+   what bounds the slice. */
+function unbackedInterpolations(src: string): string[] {
+  const found: string[] = [];
+  for (
+    let at = src.indexOf("${unbacked");
+    at !== -1;
+    at = src.indexOf("${unbacked", at + 1)
+  ) {
+    let depth = 0;
+    for (let i = at + 1; i < src.length; i++) {
+      if (src[i] === "{") depth++;
+      else if (src[i] === "}") {
+        depth--;
+        if (depth === 0) {
+          found.push(src.slice(at + 2, i));
+          break;
+        }
+      }
+    }
+  }
+  return found;
+}
+
+const PAINT_CONSTANTS = ["MOUNT_PAINT", "SHEET_PAINT", "UNFITTED_MOUNT_PAINT"];
+
 test("the unbacked prop selects paint and nothing else", () => {
-  const ternaries = [
-    ...source.matchAll(/unbacked\s*\?\s*([^:]+?)\s*:\s*([A-Za-z_$][\w$]*)/g),
-  ];
-  assert.ok(ternaries.length > 0, "no `unbacked` ternary found");
-  for (const [whole, whenUnbacked, whenPainted] of ternaries) {
+  const interpolations = unbackedInterpolations(source);
+  assert.ok(interpolations.length > 0, "no `unbacked` interpolation found");
+  for (const expression of interpolations) {
+    const split = expression.indexOf("?");
+    const colon = expression.indexOf(":", split);
+    assert.ok(colon !== -1, `not a ternary: ${expression}`);
     assert.strictEqual(
-      whenUnbacked.trim(),
+      expression.slice(split + 1, colon).trim(),
       '""',
-      `the unbacked arm must paint nothing at all: ${whole}`,
+      `the unbacked arm must paint nothing at all, and must be the FIRST arm: ${expression}`,
     );
+    const painted = expression.slice(colon + 1).trim();
     assert.ok(
-      whenPainted === "MOUNT_PAINT" || whenPainted === "SHEET_PAINT",
-      `the painted arm must be a paint constant, never geometry: ${whole}`,
+      PAINT_CONSTANTS.some((name) => painted.startsWith(name)),
+      `the painted arm must be a paint constant, never geometry: ${expression}`,
+    );
+    assert.doesNotMatch(
+      painted,
+      /MOUNT_REVEAL\b|SHEET_PADDING|\bp-|\bpx-|\bpy-|\bflex|\bmin-h|justify-|items-|\bw-full/,
+      `the painted arm reaches geometry, so \`unbacked\` would gate it: ${expression}`,
     );
   }
 });
@@ -113,7 +151,47 @@ test("a card paints its backing unless asked not to", () => {
 
 /* One combination nothing needs, guarded in this file's existing throw idiom rather than left to
    compose into a silent no-op: `tall` has never wanted an unpainted card, so passing both is a
-   mistake and should say so. */
+   mistake and should say so.
+
+   Asserted as a THROW on both flags, in either order, rather than as the spelling `unbacked && tall`
+   -- which this file's own comments preach against, and which would fail the correct rewrite
+   `tall && unbacked` while passing a downgrade of the throw to a `console.warn`. */
 test("a tall card refuses the unbacked prop", () => {
-  assert.match(source, /unbacked && tall/);
+  const guard = source.match(
+    /if\s*\(([^)]*\bunbacked\b[^)]*\btall\b[^)]*|[^)]*\btall\b[^)]*\bunbacked\b[^)]*)\)\s*\{\s*throw new Error\(/,
+  );
+  assert.ok(
+    guard,
+    "no `throw` guarding the unbacked + tall combination — a warn or a silent no-op is not enough",
+  );
+});
+
+/* THE REVEAL LADDER CARRIES NO FILL. `MOUNT_REVEAL` once set the mount's colour and its padding in
+   one string, so `unbacked` could gate `MOUNT_PAINT` and the reveal would go on painting underneath
+   -- the unfitted branch then rendered an unpainted hero as a solid tan block, which is the opposite
+   of what the option means, and it is the branch the gallery's specimen uses. Fill belongs to the
+   gated paint constants; the ladder keeps only the padding that is geometry and must never be gated. */
+test("the reveal ladder carries padding only, so unbacked can drop every fill", () => {
+  const ladder = source.match(/const MOUNT_REVEAL = \{[\s\S]*?\} as const;/);
+  assert.ok(ladder, "no `MOUNT_REVEAL` declaration found");
+  assert.doesNotMatch(
+    ladder[0],
+    /bg-/,
+    "the reveal ladder must carry no background utility, or an unbacked card still paints one",
+  );
+});
+
+/* Every branch, not just the framed ones: the unfitted branch is what the gallery renders, and it is
+   where the leak above actually showed. A mount className that names a fill outside a gated constant
+   cannot be turned off. */
+test("no branch names a fill outside a gated paint constant", () => {
+  for (const line of source
+    .split("\n")
+    .filter((l) => l.includes("className"))) {
+    assert.doesNotMatch(
+      line,
+      /bg-surface-(mount|elevated)/,
+      `a branch names a fill inline, so \`unbacked\` cannot gate it: ${line.trim()}`,
+    );
+  }
 });
