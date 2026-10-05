@@ -44,6 +44,7 @@ import {
   tipGroupIndex,
 } from "./thread-light";
 import {
+  CHAIN_TERMINAL_WINDOW,
   createDrawRatchet,
   dashForPiece,
   drawnLength,
@@ -52,6 +53,7 @@ import {
   type SectionRange,
   type SectionRect,
   type SectionSubdivisions,
+  type TerminalWindow,
   type ThreadPiece,
   threadLine,
 } from "./thread-line";
@@ -394,8 +396,15 @@ function pageDrawnLength(
   groupRects: readonly SectionRect[],
   ranges: readonly SectionRange[],
   viewportHeight: number,
+  terminal: TerminalWindow,
 ): number {
-  return drawnLength(window.scrollY, viewportHeight, groupRects, ranges);
+  return drawnLength(
+    window.scrollY,
+    viewportHeight,
+    groupRects,
+    ranges,
+    terminal,
+  );
 }
 
 function applyDash(path: SVGPathElement, length: number, progress: number) {
@@ -418,6 +427,98 @@ function clearDash(path: SVGPathElement) {
    between the names appearing and the line starting, so the fade begins as the type lands. */
 const OPENING_DRAW_DELAY = 2200;
 const OPENING_DRAW_DURATION = 1200;
+
+/* THE DRAW'S CATCH-UP — the owner's finding, 2026-10-05, in their own words: "i want the thread on
+   section to draw a bit more slowly so that when page is scrolled fast to end it doesnt appear like
+   thread just popped".
+
+   The drawn length is a PURE FUNCTION OF `scrollY` (`drawnLength`), which is what makes the whole
+   sequence testable without a browser — and also why a fling to the bottom paints the finished thread
+   on the very next frame: there is no time in the mapping at all, so a large scroll delta is a large
+   draw delta. Re-mapping the stretch onto more scroll (`TerminalWindow`) does not help this; it only
+   changes WHICH scroll position means which length.
+
+   So the scroll path keeps its pure target and gains a follower: `shown` eases toward `target` on an
+   exponential with time constant `--thread-catchup`, rather than being set to it. A fling still ends
+   at the right length, but the thread visibly travels there. Monotonic like the ratchet it follows —
+   `target` never decreases — so scrolling back up still never un-draws.
+
+   `tau` is passed in rather than read here: this ticks every frame while catching up, and
+   `getComputedStyle` would force a style recalc on each one. The caller reads it at measure time.
+   A `tau` of 0 paints immediately and starts no loop, which is the pre-2026-10-05 behaviour exactly.
+
+   The OPENING draw does not go through this — it is already time-driven on its own rAF, and easing it
+   a second time would simply make it slower than the sequence it is timed against. It calls `seen` so
+   the follower knows what is already on the page and never replays it. */
+/* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
+   exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
+   0.4s time constant the weave still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
+   drawing head — which retires only when every piece is COMPLETE — stayed lit over the closing taper
+   long after the thread looked finished. That is the very symptom the owner reported this round, so
+   the fix must converge exactly rather than asymptotically.
+
+   `--thread-catchup` is therefore how long the thread takes to ARRIVE, which is also what the owner
+   is setting when they dial it. Re-targeting mid-flight eases from wherever it has got to, so a
+   continuous scroll trails smoothly rather than restarting with a jerk. */
+function easeOutQuad(t: number): number {
+  return 1 - (1 - t) * (1 - t);
+}
+
+function createCatchUp(paint: (drawn: number) => void) {
+  let from = 0;
+  let target = 0;
+  let shown = 0;
+  let startedAt = 0;
+  let duration = 0;
+  let raf: number | null = null;
+
+  function stop() {
+    if (raf !== null) window.cancelAnimationFrame(raf);
+    raf = null;
+  }
+
+  function tick(now: number) {
+    raf = null;
+    const t = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+    shown = from + (target - from) * easeOutQuad(t);
+    if (t >= 1) shown = target;
+    paint(shown);
+    if (t < 1) raf = window.requestAnimationFrame(tick);
+  }
+
+  return {
+    /* Monotonic, like the ratchet it follows: scrolling back up never un-draws. */
+    to(next: number, seconds: number) {
+      if (next <= shown) return;
+      if (!(seconds > 0)) {
+        shown = next;
+        target = next;
+        paint(shown);
+        stop();
+        return;
+      }
+      from = shown;
+      target = next;
+      startedAt = performance.now();
+      duration = seconds * 1000;
+      if (raf === null) raf = window.requestAnimationFrame(tick);
+    },
+    /* The opening draw paints directly; this keeps the follower from replaying what is already up. */
+    seen(value: number) {
+      if (value <= shown) return;
+      stop();
+      shown = value;
+      from = value;
+      target = value;
+    },
+    reset() {
+      stop();
+      shown = 0;
+      from = 0;
+      target = 0;
+    },
+  };
+}
 
 /* The fraction of a group's last connector left undrawn as the reader arrives -- the owner's
    75%/25% crossing rule, so the line visibly travels into the next card as they scroll on. */
@@ -485,6 +586,24 @@ export function tokenLength(token: string): number {
   return Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue(token),
   );
+}
+
+/* The closing stretch's scroll budget, resolved against the CURRENT viewport. Both tokens are
+   fractions of the viewport's height rather than px, so one value holds at every band (`tokens.css`
+   carries the reasoning and the measurements). Read at measure time, never per scroll frame:
+   `pageDrawnLength` is deliberately free of DOM reads so a scroll frame touches nothing but
+   `window.scrollY`, and `getComputedStyle` here would force a style recalc on every one. A tuning
+   surface therefore lands on the next re-measure, which a `resize` event is enough to trigger. */
+function readTerminalWindow(viewportHeight: number): TerminalWindow {
+  const span = tokenLength("--thread-terminal-span");
+  const finish = tokenLength("--thread-terminal-finish");
+  if (!Number.isFinite(span) || !Number.isFinite(finish)) {
+    return CHAIN_TERMINAL_WINDOW;
+  }
+  return {
+    span: Math.max(0, span) * viewportHeight,
+    finish: Math.max(0, finish) * viewportHeight,
+  };
 }
 
 function tokenColour(token: string): Rgb {
@@ -1105,6 +1224,8 @@ export function PageThread() {
   const groupRectsRef = useRef<readonly SectionRect[]>([]);
   const rangesRef = useRef<readonly SectionRange[]>([]);
   const viewportHeightRef = useRef(0);
+  const terminalWindowRef = useRef<TerminalWindow>(CHAIN_TERMINAL_WINDOW);
+  const catchUpSecondsRef = useRef(0);
   /* The owner's "and then stay drawn" (`createDrawRatchet`'s own header) -- every value that
      reaches `applyPieceDashes` below goes through this, so scrolling back up can only ever hold the
      line where it was, never unravel it. `WishesWeave` owns its own; the two maxima are in
@@ -1277,13 +1398,39 @@ export function PageThread() {
 
   /* The one place a drawn length is taken from the scroll or the opening draw and put on the page:
      through the ratchet, drawn, and told to the re-trace. */
+  /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
+     what is on the page so a later scroll never replays it. */
   const commit = useCallback(
     (value: number) => {
       const drawn = ratchetRef.current.advance(value);
+      catchUpRef.current?.seen(drawn);
       draw(drawn);
       advanced(drawn);
     },
     [draw, advanced],
+  );
+
+  const paintRef = useRef<(drawn: number) => void>(() => {});
+  paintRef.current = (drawn: number) => {
+    draw(drawn);
+    advanced(drawn);
+  };
+  const catchUpRef = useRef<ReturnType<typeof createCatchUp> | null>(null);
+  catchUpRef.current ??= createCatchUp((drawn) => paintRef.current(drawn));
+
+  /* A reader's own scroll goes through the follower instead.
+
+     `advanced` is called here as well as from the follower's own frames, and unconditionally: the
+     owner's ruling is that the loop re-arms on ANY scroll, including scrolling back up over a thread
+     that is already finished, where the drawn length does not move and the follower has nothing to
+     paint. Routing the re-arm through the follower alone silently dropped exactly that case. */
+  const commitScrolled = useCallback(
+    (value: number) => {
+      const drawn = ratchetRef.current.advance(value);
+      catchUpRef.current?.to(drawn, catchUpSecondsRef.current);
+      advanced(drawn);
+    },
+    [advanced],
   );
 
   function measure() {
@@ -1357,6 +1504,8 @@ export function PageThread() {
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
+    terminalWindowRef.current = readTerminalWindow(viewportHeightRef.current);
+    catchUpSecondsRef.current = (tokenTime("--thread-catchup") ?? 0) / 1000;
     fallbackSvg.style.display = "none";
 
     if (reducedMotion()) {
@@ -1376,6 +1525,7 @@ export function PageThread() {
             groupRectsRef.current,
             rangesRef.current,
             viewportHeightRef.current,
+            terminalWindowRef.current,
           ),
           openingFloor(rangesRef.current, openingCompleteRef.current),
         ),
@@ -1441,11 +1591,12 @@ export function PageThread() {
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
-        commit(
+        commitScrolled(
           pageDrawnLength(
             groupRectsRef.current,
             rangesRef.current,
             viewportHeightRef.current,
+            terminalWindowRef.current,
           ),
         );
       });
@@ -1456,7 +1607,7 @@ export function PageThread() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [commit]);
+  }, [commitScrolled]);
 
   /* A hidden tab is throttled by rAF but not stopped, and a throttled chain still holds the main
      thread, so it is cancelled outright. The clock's zero moves forward by exactly the time spent
@@ -1604,6 +1755,8 @@ export function WishesWeave() {
   const groupRectsRef = useRef<readonly SectionRect[]>([]);
   const rangesRef = useRef<readonly SectionRange[]>([]);
   const viewportHeightRef = useRef(0);
+  const terminalWindowRef = useRef<TerminalWindow>(CHAIN_TERMINAL_WINDOW);
+  const catchUpSecondsRef = useRef(0);
   /* Wishes' own stretch stays drawn on the way back up exactly as the trunk does, and needs its own
      ratchet to do it: this component's maximum is a length along the WEAVE's path, which is not the
      trunk's (`PageThread`'s own `ratchetRef`). */
@@ -1645,22 +1798,56 @@ export function WishesWeave() {
     return taperRef.current;
   }
 
+  function paintWeave(drawn: number) {
+    applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
+    head()?.paint(drawn, chainRef.current, headOptions());
+    const last = piecesRef.current[piecesRef.current.length - 1];
+    if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
+  }
+
+  const weaveCatchUpRef = useRef<ReturnType<typeof createCatchUp> | null>(null);
+  const weavePaintRef = useRef<(drawn: number) => void>(() => {});
+  weavePaintRef.current = paintWeave;
+  weaveCatchUpRef.current ??= createCatchUp((drawn) =>
+    weavePaintRef.current(drawn),
+  );
+
+  /* A re-measure paints where the page already is, with no travel: the follower is for a reader's
+     scroll, and easing a resize would animate a layout change the reader did not ask for. */
   function reveal() {
     const pageDrawn = pageDrawnLength(
       groupRectsRef.current,
       rangesRef.current,
       viewportHeightRef.current,
+      terminalWindowRef.current,
     );
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
       taper()?.paint(Number.POSITIVE_INFINITY);
-    } else {
-      const drawn = ratchetRef.current.advance(pageDrawn);
-      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
-      head()?.paint(drawn, chainRef.current, headOptions());
-      const last = piecesRef.current[piecesRef.current.length - 1];
-      if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
+      return;
     }
+    const drawn = ratchetRef.current.advance(pageDrawn);
+    weaveCatchUpRef.current?.seen(drawn);
+    paintWeave(drawn);
+  }
+
+  function revealScrolled() {
+    if (reducedMotion()) {
+      clearPieceDashes(pathsRef.current);
+      taper()?.paint(Number.POSITIVE_INFINITY);
+      return;
+    }
+    weaveCatchUpRef.current?.to(
+      ratchetRef.current.advance(
+        pageDrawnLength(
+          groupRectsRef.current,
+          rangesRef.current,
+          viewportHeightRef.current,
+          terminalWindowRef.current,
+        ),
+      ),
+      catchUpSecondsRef.current,
+    );
   }
 
   function measure() {
@@ -1731,6 +1918,8 @@ export function WishesWeave() {
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
     viewportHeightRef.current = window.innerHeight;
+    terminalWindowRef.current = readTerminalWindow(viewportHeightRef.current);
+    catchUpSecondsRef.current = (tokenTime("--thread-catchup") ?? 0) / 1000;
     /* Same reason as `PageThread`'s own reset: the maximum described the path this re-measure has
        just replaced. `reveal` re-seeds it from the fresh measurement on the next line. */
     ratchetRef.current.reset();
@@ -1759,7 +1948,7 @@ export function WishesWeave() {
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
-        reveal();
+        revealScrolled();
       });
     }
     window.addEventListener("scroll", onScroll, { passive: true });

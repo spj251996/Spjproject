@@ -154,6 +154,53 @@
      until the next scroll. A count and not a time, so the pace can change without changing how long
      the page stays busy. The owner's pick (2026-10-02): "at least 5 times before stopping". */
   --retrace-loops: 5;
+  /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. Measured 2026-10-05: `wishes.top` EQUALS the page's own
+     maximum scroll at every band (4100 at `wide`, 6780 at `tall`), because wishes occupies exactly the
+     final viewport — so its card is never scrolled THROUGH and the draw chain handed it only what the
+     previous section left over (100px of 4100 at `wide`, 524px of 6780 at `tall`). That is why it drew
+     too fast to read as a draw, and why the drawing head stayed lit over the closing taper at any
+     resting position short of the exact last pixel.
+
+     BOTH ARE FRACTIONS OF THE VIEWPORT'S HEIGHT, not px, so one value holds at every band — the scroll
+     available between wishes' card entering the viewport and the page's end is exactly one viewport
+     height, which is also this span's natural ceiling. `span` is how much of that the stretch draws
+     across; `finish` is how far before the page's end it completes, so the head retires while the
+     reader is still at the bottom and the taper is visible at rest.
+
+     The scroll they claim comes out of the earlier sections' shared budget — the page's total is
+     fixed — so raising `span` paces the closing stretch by compressing everything above it.
+     0 restores the pre-2026-10-05 behaviour. Read by name from script, never by a CSS rule.
+
+     THE OWNER'S PICKS, SET ON A RENDER 2026-10-05. `span` 0.2 roughly doubles the closing stretch's
+     window (68px to 139px at `wide`). `finish` 0.08 is the one that actually retires the drawing
+     head: it buys ~56px at `wide` and ~68px at `tall` of tolerance for coming to rest SHORT of the
+     page's last pixel, which is what a reader normally does and what left the head sitting on the
+     taper in the owner's own screenshot. Measured at both bands — stopping within that distance
+     leaves the stretch 100% drawn, the head retired and all 16 taper runs visible; outside it the
+     head is correctly still drawing, because there genuinely is thread left. */
+  /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL. The owner, 2026-10-05: "i want the thread
+     on section to draw a bit more slowly so that when page is scrolled fast to end it doesnt appear
+     like thread just popped."
+
+     The drawn length is a pure function of scroll position, so a fling to the bottom paints the
+     finished thread on the very next frame — there is no time in the mapping at all. This is the time
+     constant of the follower that eases toward that target instead of snapping to it (`page-thread.tsx`
+     -> `createCatchUp`), so a fast scroll still shows the line travelling. It is a FOLLOWER, not a
+     delay: the thread always ends at the length the scroll position means.
+
+     An exception to the motion scale, like the re-trace's own two values, because it is a response
+     rate rather than a transition. 0 paints immediately and starts no loop, which is the
+     pre-2026-10-05 behaviour exactly.
+
+     THE OWNER'S PICK, SET ON A RENDER 2026-10-05: 0.4s. It is a DURATION, not a time constant — the
+     follower is a fixed-duration ease precisely because an exponential never arrives, and the first
+     attempt at one left the weave 99.69% drawn 2.5s after the scroll stopped, with the head still
+     lit over the taper (`page-thread.tsx` -> `createCatchUp` carries that measurement). Measured at
+     0.4s: a fling to the page bottom takes the trunk 10% -> 100% over ~400ms instead of in a single
+     frame, and the weave follows once the trunk is done, so the page draws in reading order. */
+  --thread-catchup: 0.4s;
+  --thread-terminal-span: 0.2;
+  --thread-terminal-finish: 0.08;
   --stroke-rim-offset: 2px;
 
   /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same

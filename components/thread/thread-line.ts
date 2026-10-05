@@ -747,15 +747,38 @@ const CROSSING_HOLD_FRACTION = 0.75;
 function terminalSectionProgress(
   scrollY: number,
   windowStart: number,
-  rect: SectionRect,
-  maxScroll: number,
+  windowEnd: number,
 ): { progress: number; windowEnd: number } {
-  const windowEnd = Math.min(rect.top + rect.height, maxScroll);
   return {
     progress: lerpProgress(scrollY, windowStart, windowEnd, 0, 1),
     windowEnd,
   };
 }
+
+/* THE TERMINAL STRETCH'S OWN SCROLL BUDGET — the owner's finding, 2026-10-05, on a real render.
+   Measured at every band: `wishes.top` EQUALS the page's own `maxScroll` (4100 at `wide`, 6780 at
+   `tall`), because wishes occupies exactly the final viewport. Its card is therefore never scrolled
+   THROUGH — the page runs out of scroll precisely where wishes begins — so the chain handed it
+   whatever the previous section left over, which measured 100px of 4100 at `wide` (2.4%) and 524px
+   of 6780 at `tall` (7.7%). Three owner-visible symptoms followed from that one fact: the stretch
+   drew too fast to read as a draw, it reached 100% only at the page's LAST PIXEL, and so the drawing
+   head stayed lit over the closing taper at any resting position short of the exact bottom.
+
+   `span` buys the stretch a real window and `finish` lands it before the page bottom, so the head
+   retires while the reader is still there. Both are read from tokens rather than coined here: the
+   owner sets them on a render (see DESIGN.md -> Thread). The scroll they take comes out of the
+   earlier sections' shared budget — the page's total is fixed — which is why `sectionProgressAt`
+   bounds those sections by the terminal window's own start rather than by `maxScroll`. That bound is
+   what keeps "at most one section mid-ramp" true; without it the terminal ramp would overlap
+   whichever section is still running. A `span` of 0 keeps the pre-2026-10-05 behaviour exactly. */
+export type TerminalWindow = {
+  /* Scroll distance, in px, the terminal stretch draws across. 0 defers to the chain's leftover. */
+  readonly span: number;
+  /* How far before the page's maximum scroll the stretch finishes, in px. */
+  readonly finish: number;
+};
+
+export const CHAIN_TERMINAL_WINDOW: TerminalWindow = { span: 0, finish: 0 };
 
 /* THE FIRST SECTION IS THE ONE CASE THE CROSSING RULE CANNOT REACH, A CONSEQUENCE OF THE PAGE
    HAVING A START AND NOT A BUG TO PATCH HERE (parallel to this file's own earlier documented
@@ -885,8 +908,18 @@ export function sectionProgressAt(
   viewportHeight: number,
   sectionRects: readonly SectionRect[],
   ranges: readonly SectionRange[],
+  terminal: TerminalWindow = CHAIN_TERMINAL_WINDOW,
 ): number[] {
-  const maxScroll = pageMaxScroll(sectionRects, viewportHeight);
+  const pageEnd = pageMaxScroll(sectionRects, viewportHeight);
+
+  /* Resolved BEFORE the loop because the earlier sections' own ceiling depends on it: the terminal
+     stretch's scroll has to come out of the same fixed page budget, so claiming it late would let
+     two ramps overlap. `span` 0 leaves both at the page's own end, which is the chain's behaviour. */
+  const terminalEnd = Math.max(0, pageEnd - Math.max(0, terminal.finish));
+  const terminalStart =
+    terminal.span > 0 ? Math.max(0, terminalEnd - terminal.span) : undefined;
+  const earlierEnd = terminalStart ?? pageEnd;
+
   const progresses: number[] = [];
   let windowStart = 0;
   for (let i = 0; i < ranges.length; i++) {
@@ -896,20 +929,32 @@ export function sectionProgressAt(
       progresses.push(0);
       continue;
     }
-    const clampedStart = Math.min(windowStart, maxScroll);
 
+    if (range.id === "wishes") {
+      const start = terminalStart ?? Math.min(windowStart, pageEnd);
+      const { progress, windowEnd } = terminalSectionProgress(
+        scrollY,
+        start,
+        terminalStart === undefined
+          ? Math.min(rect.top + rect.height, pageEnd)
+          : terminalEnd,
+      );
+      progresses.push(progress);
+      windowStart = windowEnd;
+      continue;
+    }
+
+    const clampedStart = Math.min(windowStart, earlierEnd);
     const { progress, windowEnd } =
-      range.id === "wishes"
-        ? terminalSectionProgress(scrollY, clampedStart, rect, maxScroll)
-        : i === 0
-          ? firstSectionProgress(scrollY, rect, maxScroll)
-          : crossingSectionProgress(
-              scrollY,
-              clampedStart,
-              rect,
-              range,
-              maxScroll,
-            );
+      i === 0
+        ? firstSectionProgress(scrollY, rect, earlierEnd)
+        : crossingSectionProgress(
+            scrollY,
+            clampedStart,
+            rect,
+            range,
+            earlierEnd,
+          );
 
     progresses.push(progress);
     windowStart = windowEnd;
@@ -926,12 +971,14 @@ export function drawnLength(
   viewportHeight: number,
   sectionRects: readonly SectionRect[],
   ranges: readonly SectionRange[],
+  terminal: TerminalWindow = CHAIN_TERMINAL_WINDOW,
 ): number {
   const progresses = sectionProgressAt(
     scrollY,
     viewportHeight,
     sectionRects,
     ranges,
+    terminal,
   );
   let total = 0;
   for (let i = 0; i < ranges.length; i++) {
