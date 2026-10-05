@@ -106,6 +106,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${script.variable} ${serif.variable} ${sans.variable} h-full antialiased`}
+      /* `SKIP_OPENING_WHEN_SCROLLED` above sets `data-opening-skipped` on this element before React
+         hydrates, so the server's markup and the client's differ by that one attribute and React's
+         development build reports a mismatch on every scrolled reload. Production is silent — React
+         compares attributes only in development — and the attribute survives either way ("this won't
+         be patched up"), which is why the skip has always worked. Suppression is scoped one level
+         deep, so it covers this element's own attributes and nothing inside it; the cost is that a
+         future genuine mismatch ON `<html>` would also go quiet.
+         Do NOT "fix" this by reading `window.scrollY` synchronously instead: scroll restoration has
+         not happened at head-parse time, so it reads 0 and the whole skip silently stops working. */
+      suppressHydrationWarning
     >
       {/* Vercel Web Analytics is first-party on Vercel: the script and its beacon are same-origin
           under `/_vercel/*`, so no CSP allowance is needed and no third party receives guest data —
