@@ -29,8 +29,8 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/page.tsx",
     composes:
-      "mounted-sheet with the hero setting · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at space-lg (32px) instead · passage in caption · citation in caption-italic",
-    note: "Live at /. The thread that leaves the screen still going is the page's scroll cue: its resting tip sits at the lower edge, and loops three times once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here.",
+      "mounted-sheet with the hero setting, taking its unpainted option — the type sits on the page's ground with no mount, stock, shadow or cut corner · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at space-lg (32px) instead · passage in caption · citation in caption-italic",
+    note: "Live at /. The thread that leaves the screen still going is the page's scroll cue: its resting tip sits at the lower edge, and loops five times once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening sequence is three beats under the unpainted option — ground, then the invite's own botanical pieces, then the type, then the thread — ending at 1600ms.",
   },
 ];
 

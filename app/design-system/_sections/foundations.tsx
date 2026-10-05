@@ -537,24 +537,36 @@ export function FoundationsSections() {
         />
 
         <Specimen
-          description="The card every section is built on: a backing mount with an inner sheet laid onto it."
+          description="The card every section is built on: a backing mount with an inner sheet laid onto it — or, for the hero, no backing at all."
           id="layout-mounted-sheet"
           name="mounted-sheet"
-          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere."
+          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. The hero also chooses whether to PAINT what it keeps: the two specimens below are the painted and unpainted options, and the invitation currently takes the unpainted one. Their geometry is identical — same reveal, same padding, same box — so only the paint differs."
           source="@/components/layout/mounted-sheet"
           spec={[
             "mount · surface-mount · shadow-mount · carries no text, ever",
             "stock · surface-elevated · shadow-stock",
             "corners · radius-card on both layers",
+            "unbacked · the hero's unpainted option · no fill, no shadow, no corners, geometry unchanged",
             "reveal · 16px below md · 12px md to lg · 16px lg to xl · 24px from xl — the tablet rung is the narrowest deliberately, the invite's landscape card at that width having no height left to give",
           ]}
         >
           <div className="flex flex-col gap-space-lg">
             <MountedSheet hero>
               <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Hero</p>
+                <p className="type-eyebrow">Hero · painted</p>
                 <p className="type-body text-ink">
                   Paper stock with the hero setting.
+                </p>
+              </div>
+            </MountedSheet>
+            {/* The unpainted option, which the invitation takes. It keeps the hero's reveal and
+                padding and paints none of it, so on the ground it reads as type with no card —
+                which is why this specimen looks like bare text rather than a box. */}
+            <MountedSheet hero unbacked>
+              <div className="flex flex-col gap-space-2xs">
+                <p className="type-eyebrow">Hero · unpainted</p>
+                <p className="type-body text-ink">
+                  The same card, painting no backing. The invitation takes this.
                 </p>
               </div>
             </MountedSheet>
