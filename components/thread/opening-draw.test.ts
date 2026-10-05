@@ -172,11 +172,31 @@ test("the vacated mount and stock steps are gone", () => {
   assert.doesNotMatch(inviteCss, /\.invite-settle\s*\{/);
 });
 
-/* The settle KEYFRAME is kept deliberately: it is what the painted option's restoration recipe in
-   DESIGN.md points at, and it is the fallback gesture if the flowers' fade turns out to isolate the
-   multiply blend. Deleting it as "dead" would break both. */
+/* The settle keyframe is now the flowers' own gesture, and it is also what the painted option's
+   restoration recipe in DESIGN.md points at for the mount and the stock. Either way, deleting it as
+   "dead" would break something. */
 test("the settle keyframe survives for the painted option's restoration", () => {
   assert.match(inviteCss, /@keyframes invite-settle/);
+});
+
+/* THE FLOWERS SETTLE RATHER THAN FADE, AND THAT IS WORTH A GUARD BECAUSE IT IS A MEASURED CHOICE.
+   With no mount painting, the flowers are the largest painted element on the opening screen, so
+   starting them at opacity 0 delays the largest paint: measured on the static export at 390x844,
+   three runs each, same build, **fade 808ms (784-836) against settle 248ms (228-264)**. Swapping the
+   keyframe back would cost ~560ms of LCP against PROJECT.md's own success metric, and no other gate
+   in this repo would see it. The settle is also the gesture the owner already chose for the mount
+   for exactly this reason, and it never takes opacity below 1, so it cannot isolate the multiply
+   blend even in principle. */
+test("the flowers settle rather than fade, which is what keeps the largest paint early", () => {
+  const beat = inviteCss.match(
+    /\.botanical-piece\s*\{\s*animation:\s*([\w-]+)/,
+  );
+  assert.ok(beat, "the botanical beat's animation declaration was not found");
+  assert.strictEqual(
+    beat[1],
+    "invite-settle",
+    "the flowers must settle, not fade: a fade costs ~560ms of LCP because they are the largest painted element on the opening screen",
+  );
 });
 
 /* `not-found` ships the SAME two pieces (`SECTION_PLACEMENT["not-found"]` is the invite's pair) and

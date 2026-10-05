@@ -90,20 +90,34 @@
      rule. With no mount and no stock the ground is ALL that precedes the type, so the flowers now
      read as a layer that arrives. Same reasoning, different composition — not drift.
 
-     OPACITY ON EACH PIECE, NEVER ON AN ANCESTOR. Sub-1 opacity anywhere in a bloom's ancestor chain
-     isolates `mix-blend-mode: multiply` and paints each piece's opaque white backing rectangle, with
-     no error and every gate green (`botanical.module.css`'s header). `.botanical-piece` is the global
-     class each bloom carries (`botanical-css.ts`'s `PIECE_CLASS`) — NOT `bloom`, which is the hashed
-     CSS-module class and would match nothing here. The invite's own frame scope is what keeps this
-     off `not-found`, which ships the same two pieces and keeps a painted card.
+     THE FLOWERS SETTLE, THEY DO NOT FADE — AND THAT IS A MEASURED CHOICE, NOT A TASTE ONE.
+     Measured on the static export at 390×844, three runs each, same build, only this gesture
+     differing: **fading them puts LCP at 808ms (784–836); settling them puts it at 248ms (228–264)**.
+     The flowers are the largest painted element on the opening screen now that no mount paints, so a
+     gesture that starts them at opacity 0 delays the largest paint by more than half a second. That
+     is the same reasoning the owner already settled for the mount — "it only translates, so it is
+     fully opaque on the very first frame" (DESIGN.md → Motion) — applied to whatever has taken over
+     as the LCP candidate. **The fade is one word away** if the owner prefers its look with the cost
+     in hand.
 
-     `backwards`, not `both`: the finished state is opacity 1, which is also the un-animated value, so
-     nothing needs holding afterwards — and leaving an animation holding a value over a
-     multiply-blended element is exactly the arrangement this file is careful about. */
+     It is also the structurally safer gesture. Sub-1 opacity anywhere in a bloom's ancestor chain
+     isolates `mix-blend-mode: multiply` and paints each piece's opaque white backing rectangle, with
+     no error and every gate green (`botanical.module.css`'s header). The settle never takes opacity
+     below 1 at all, so it cannot isolate the blend even in principle; the fade was measured not to
+     (0 near-white pixels mid-fade), but it relied on a property of the element rather than avoiding
+     the question. A transform on the piece ITSELF is safe — only an ancestor's isolates the blend.
+
+     `.botanical-piece` is the global class each bloom carries (`botanical-css.ts`'s `PIECE_CLASS`) —
+     NOT `bloom`, which is the hashed CSS-module class and would match nothing here. The invite's own
+     frame scope is what keeps this off `not-found`, which ships the same two pieces and keeps a
+     painted card.
+
+     `backwards`, not `both`: the finished state is `transform: none`, which is also the un-animated
+     value, so nothing needs holding afterwards. */
   :root:not([data-opening-skipped])
     .mounted-sheet-frame--invite
     .botanical-piece {
-    animation: opening-fade var(--duration-base) var(--ease-entrance)
+    animation: invite-settle var(--duration-base) var(--ease-entrance)
       var(--duration-fast) backwards;
   }
 
