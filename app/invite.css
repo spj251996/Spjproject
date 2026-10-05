@@ -28,20 +28,20 @@
    (1200ms), ending at 1600ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. Its own completion
    is what the scroll-driven draw hands off from.
 
-   `@keyframes invite-settle` IS KEPT THOUGH NOTHING USES IT TODAY, and that is deliberate on two
-   counts. It is the gesture the painted option's mount and stock both restore to (DESIGN.md records
-   the delays), and it is the named fallback if the flowers' fade turns out to isolate the multiply
-   blend — a transform on the element ITSELF does not isolate it, where an ancestor's does. A test
-   pins its survival so a later pass does not delete it as dead.
+   `@keyframes invite-settle` CARRIES TWO JOBS. It is the flowers' own gesture below, and it is what
+   the painted option's mount and stock both restore to (DESIGN.md records their delays). A test pins
+   its survival so a later pass does not delete it as dead on either count.
 
-   OPACITY LIVES ON THE PIECE ITSELF FOR ANYTHING THAT FADES, NEVER ON A WRAPPING ANCESTOR.
-   `botanical.module.css`'s header forbids sub-1 opacity anywhere in a bloom's ANCESTOR chain — it
-   would isolate `mix-blend-mode: multiply` from the ivory ground and paint each piece's opaque
-   backing rectangle instead of blending it. **The flowers' beat below is the first rule in this
-   project to fade a bloom at all**, so it sets the opacity on `.botanical-piece` — the piece itself,
-   the one place the blend survives — and never on `.layer` or `.clip`, which are its ancestors. The
-   type step targets `[data-invite-stack]`, a sibling of the botanical layer rather than its
-   ancestor, so it never reached the blooms in the first place.
+   ANY GESTURE ON A BLOOM GOES ON THE PIECE ITSELF, NEVER ON A WRAPPING ANCESTOR.
+   `botanical.module.css`'s header forbids sub-1 opacity and blend-isolating properties anywhere in a
+   bloom's ANCESTOR chain — they would isolate `mix-blend-mode: multiply` from the ivory ground and
+   paint each piece's opaque backing rectangle instead of blending it. **The flowers' beat below is
+   the first rule in this project to animate a bloom at all**, so it targets `.botanical-piece` — the
+   piece itself, where a transform is safe — and never `.layer` or `.clip`, which are its ancestors.
+   It settles rather than fades, so it never takes opacity below 1 and cannot isolate the blend even
+   in principle; the step's own comment carries the measurement behind that choice. The type step
+   targets `[data-invite-stack]`, a sibling of the botanical layer rather than its ancestor, so it
+   never reached the blooms in the first place.
 
    SCOPED TO THE INVITE'S OWN FRAME, NOT EVERY SECTION. `mounted-sheet-frame--invite` is the literal
    class both `Botanical` and `MountedSheet` stamp on their own wrapper for this section

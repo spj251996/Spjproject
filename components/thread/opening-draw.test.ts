@@ -48,7 +48,12 @@ test("the timed draw begins as the thread's fade completes", () => {
    evidence whatever it asserts, so it now parses the shipped expressions instead. */
 /* The base multiplier is optional because `n = 2` writes `+ var(--duration-base)` with no `* 1`,
    which is how the shipped stylesheet spells it. An absent multiplier is one, not zero. */
-function delayMs(css: string, anchor: string, what: string) {
+function delayMs(rawCss: string, anchor: string, what: string) {
+  /* Comments stripped before anchoring. `app/invite.css`'s header names `[data-invite-stack]` in
+     prose, ~85 lines above the rule, so a lazy search from the first occurrence starts inside a
+     comment and only reaches the right `calc()` because nothing between them happens to be one.
+     Any `calc(…)` written into a comment in between would silently redirect this assertion. */
+  const css = rawCss.replace(/\/\*[\s\S]*?\*\//g, "");
   const match = css.match(
     new RegExp(
       `${anchor}[\\s\\S]*?calc\\(var\\(--duration-fast\\) \\* (\\d+) \\+ var\\(--duration-base\\)(?: \\* (\\d+))?\\)`,
@@ -225,18 +230,27 @@ test("the beat targets the class the pieces actually carry", () => {
 /* Opacity on the PIECE, never on an ancestor: sub-1 opacity anywhere in a bloom's ancestor chain
    isolates `mix-blend-mode: multiply` and paints the piece's opaque white backing rectangle, with no
    error and every gate green (`botanical.module.css`'s header). `.layer` and `.clip` are that chain. */
-test("the botanical beat animates the pieces themselves, not the layer or the clip box", () => {
-  /* Comments stripped for this assertion ONLY: the step's own comment explains why `.layer` and
-     `.clip` must not be targeted, and naming them there is what makes the rule legible. Searching
-     the raw file found that explanation and read it as a violation -- the throwaway-parser failure
-     this project keeps re-learning. `inviteCss` stays un-stripped for every other test here, because
-     `animatedSelectors` walks comment boundaries deliberately. */
-  const rules = inviteCss.replace(/\/\*[\s\S]*?\*\//g, "");
-  assert.doesNotMatch(
-    rules,
-    /\.layer|\.clip/,
-    "the fade must sit on the piece; on an ancestor it isolates the multiply blend",
-  );
+/* A gesture on a bloom must sit on the PIECE. On any ancestor it isolates `mix-blend-mode: multiply`
+   and the piece paints its opaque backing rectangle instead of blending (`botanical.module.css`).
+
+   The ancestor that actually matters is `.mounted-sheet-frame--invite` ITSELF: `Botanical` stamps
+   that class on its own wrapper (`frameScopeClass`), so a rule animating the bare scope class would
+   isolate every bloom under it. An earlier version of this test forbade `.layer` and `.clip`, which
+   are HASHED CSS-module classes a global stylesheet could never name — it guarded an impossible
+   mutation while the reachable one passed untouched. Each animated selector must therefore reach
+   something BEYOND the scope class. */
+test("every beat animates a descendant, never the scope class a bloom hangs from", () => {
+  const SCOPE = ".mounted-sheet-frame--invite";
+  for (const selector of animatedSelectors(inviteCss)) {
+    const flat = selector.replace(/\s+/g, " ").trim();
+    if (!flat.includes(SCOPE)) continue;
+    const after = flat.slice(flat.indexOf(SCOPE) + SCOPE.length).trim();
+    assert.notStrictEqual(
+      after,
+      "",
+      `this beat animates the scope class itself, which is a bloom's ancestor and isolates the multiply blend: ${flat}`,
+    );
+  }
 });
 
 /* Asserted as the EXPRESSION rather than a literal 800ms: the formula is the rule the owner set, and
