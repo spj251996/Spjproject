@@ -6,12 +6,15 @@
    Deliberately not a `prebuild` step: the deploy must not depend on this script succeeding, and a
    generation failure must fail loudly here rather than silently drop an image from a build.
 
-   Usage: npm run images */
+   Prunes as it finishes: `public/` is copied wholesale into `out/`, so a delivery this script no
+   longer writes would keep shipping. Only the directories in `PRUNED_DIRS` are swept.
+
+   Usage: npm run images  ·  npm run images -- --dry-run (lists orphans, deletes nothing) */
 
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readdir } from "node:fs/promises";
+import { copyFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import sharp from "sharp";
 import { TUNING } from "../components/background/botanical-tuning.ts";
 /* Extension-qualified and a plain `.ts`: node's type stripping runs it directly, so the tuned
@@ -236,7 +239,78 @@ const RECIPES = [
   ...botanicalRecipes(),
 ];
 
-async function run() {
+/* Only directories the generator FULLY owns. `public/` root is deliberately absent even though the
+   OG card is a pass-through with `outDir: "public"`: the root also holds `robots.txt`, the
+   hand-maintained crawler policy the whole unlisted-site decision rests on, so pruning it would
+   delete a file no recipe can ever claim. A test asserts this list never contains the root. */
+export const PRUNED_DIRS = [
+  "public/botanical",
+  "public/couple",
+  "public/family",
+];
+
+/* Every path a run of this script is expected to leave behind, as `public/...` strings. Read from
+   `RECIPES` rather than from the filesystem, so it describes what the generator WRITES and not what
+   happens to be there -- which is the whole point of comparing the two. */
+export async function expectedOutputs() {
+  const expected = new Set();
+  for (const entry of RECIPES) {
+    if (entry.recipe === "pass-through") {
+      const names = (await readdir(join(ROOT, entry.sourceDir))).filter(
+        (name) => !name.startsWith("."),
+      );
+      for (const name of names) expected.add(`${entry.outDir}/${name}`);
+      continue;
+    }
+    expected.add(entry.out);
+  }
+  return expected;
+}
+
+/* Pure: the caller supplies the directory's entries, so this is testable without a filesystem and
+   without running a generation. Dotfiles are skipped for the same reason the pass-through copy skips
+   them -- they are not deliveries, so no recipe can ever expect one. */
+export function orphansIn(dir, names, expected) {
+  return names
+    .filter((name) => !name.startsWith("."))
+    .filter((name) => !expected.has(`${dir}/${name}`));
+}
+
+/* `public/` is copied wholesale into `out/`, so a delivery the generator no longer writes still
+   ships. Pruning runs AFTER every recipe, never before: a failed generation must not take the
+   current deliveries with it. */
+async function prune({ dryRun }) {
+  const expected = await expectedOutputs();
+  let removed = 0;
+  for (const dir of PRUNED_DIRS) {
+    const absolute = join(ROOT, dir);
+    if (!existsSync(absolute)) continue;
+    for (const name of orphansIn(dir, await readdir(absolute), expected)) {
+      if (dryRun) {
+        console.log(`would remove  ${dir}/${name}`);
+      } else {
+        await unlink(join(absolute, name));
+        console.log(`removed  ${dir}/${name}`);
+      }
+      removed += 1;
+    }
+  }
+  console.log(
+    removed === 0
+      ? "pruned  nothing orphaned"
+      : `pruned  ${removed} orphaned file(s)${dryRun ? " (dry run, nothing deleted)" : ""}`,
+  );
+}
+
+async function run({ dryRun }) {
+  /* A dry run reports orphans and generates nothing. The expected set is read from `RECIPES`, never
+     from the filesystem, so it needs no generation to be computed -- and rewriting 150 deliveries to
+     answer "what would you delete?" would be a surprising thing for the flag's name to mean,
+     especially while someone is rendering against the dev server. */
+  if (dryRun) {
+    await prune({ dryRun });
+    return;
+  }
   for (const entry of RECIPES) {
     if (entry.recipe === "pass-through") {
       const dir = join(ROOT, entry.sourceDir);
@@ -259,6 +333,10 @@ async function run() {
       `wrote   ${entry.out}  ${(info.size / 1024).toFixed(0)} KB  ${info.width}x${info.height}`,
     );
   }
+  await prune({ dryRun });
 }
 
-await run();
+/* Guarded so the module can be imported by its test without generating anything. */
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  await run({ dryRun: process.argv.includes("--dry-run") });
+}
