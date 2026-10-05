@@ -36,13 +36,43 @@ test("the timed draw begins as the thread's fade completes", () => {
   );
 });
 
+/* The type is the sequence's SECOND beat under the hero card's unpainted option, which the
+   invitation takes: the mount and stock settles are gone, because they animated layers that option
+   does not paint, and the flowers took the first beat in their place (owner, 2026-10-05 — DESIGN.md
+   → Motion → The opening sequence). The painted option's four-beat ladder, with the type third, is
+   documented there as the alternative. */
+/* Reads BOTH delays out of the stylesheets that ship them. The earlier version computed each side
+   from the tokens and compared the results -- `3 x fast + 2 x base + base` against
+   `3 x fast + 3 x base` -- so it asserted 1800 === 1800 and would have passed whatever the CSS said.
+   It was vacuous before this change and vacuous after it; a check that runs and passes reads as
+   evidence whatever it asserts, so it now parses the shipped expressions instead. */
+/* The base multiplier is optional because `n = 2` writes `+ var(--duration-base)` with no `* 1`,
+   which is how the shipped stylesheet spells it. An absent multiplier is one, not zero. */
+function delayMs(css: string, anchor: string, what: string) {
+  const match = css.match(
+    new RegExp(
+      `${anchor}[\\s\\S]*?calc\\(var\\(--duration-fast\\) \\* (\\d+) \\+ var\\(--duration-base\\)(?: \\* (\\d+))?\\)`,
+    ),
+  );
+  assert.ok(match, `${what} delay expression not found`);
+  return (
+    Number(match[1]) * tokenMs("duration-fast") +
+    Number(match[2] ?? 1) * tokenMs("duration-base")
+  );
+}
+
 test("the fade begins as the type lands, not a beat after it", () => {
-  const typeEnd =
-    3 * tokenMs("duration-fast") +
-    2 * tokenMs("duration-base") +
-    tokenMs("duration-base");
-  const fadeStart = 3 * tokenMs("duration-fast") + 3 * tokenMs("duration-base");
-  assert.equal(fadeStart, typeEnd);
+  const typeDelay = delayMs(inviteCss, "\\[data-invite-stack\\]", "the type's");
+  const fadeStart = delayMs(
+    moduleCss,
+    "animation:\\s*pageThreadFadeIn",
+    "the thread fade's",
+  );
+  assert.equal(
+    fadeStart,
+    typeDelay + tokenMs("duration-base"),
+    "the thread's fade must begin exactly as the type's own fade completes",
+  );
 });
 
 test("the opening draw runs 1200ms and holds back a quarter of the last connector", () => {
@@ -80,12 +110,16 @@ function animatedSelectors(css: string): string[] {
   return selectors;
 }
 
+/* TWO steps live in this file, not three: the flowers and the type. The thread's own fade is the
+   third and lives in `thread.module.css`, asserted separately below. Under the painted option this
+   file carried three — the mount's settle, the stock's settle and the type — and dropping two while
+   gaining one is what makes the number move. */
 test("no step of the invite's sequence animates without the gate", () => {
   const selectors = animatedSelectors(inviteCss);
   assert.equal(
     selectors.length,
-    3,
-    `expected the sequence's three steps, found ${selectors.length}`,
+    2,
+    `expected the sequence's two in-file steps, found ${selectors.length}`,
   );
   for (const selector of selectors) {
     assert.ok(
@@ -124,4 +158,80 @@ test("the gate and the thread's timed draw share one threshold", () => {
   assert.ok(script);
   assert.match(script[1], /scrollY\s*>\s*0/);
   assert.match(source, /window\.scrollY\s*>\s*0/);
+});
+
+/* ---------------------------------------------------------------------------------------------
+   The hero card's unpainted option, 2026-10-05. The invitation paints no mount and no stock, so the
+   two settle beats animated nothing and the invite's own botanical pieces took the first beat in
+   their place. DESIGN.md → Foundations → Layout → mounted-sheet → The hero card's two options holds
+   both sequences and the one-word restoration.
+   --------------------------------------------------------------------------------------------- */
+
+test("the vacated mount and stock steps are gone", () => {
+  assert.doesNotMatch(inviteCss, /mounted-sheet-frame__mount/);
+  assert.doesNotMatch(inviteCss, /\.invite-settle\s*\{/);
+});
+
+/* The settle KEYFRAME is kept deliberately: it is what the painted option's restoration recipe in
+   DESIGN.md points at, and it is the fallback gesture if the flowers' fade turns out to isolate the
+   multiply blend. Deleting it as "dead" would break both. */
+test("the settle keyframe survives for the painted option's restoration", () => {
+  assert.match(inviteCss, /@keyframes invite-settle/);
+});
+
+/* `not-found` ships the SAME two pieces (`SECTION_PLACEMENT["not-found"]` is the invite's pair) and
+   keeps a painted card, so the invite's own frame scope class is the only thing keeping this beat
+   off the 404 screen. */
+test("the botanical beat is scoped to the invite and never reaches not-found", () => {
+  assert.match(
+    inviteCss,
+    /mounted-sheet-frame--invite[\s\S]{0,200}\.botanical-piece/,
+    "the pieces must be animated inside the invite's own frame scope",
+  );
+  assert.doesNotMatch(inviteCss, /mounted-sheet-frame--not-found/);
+});
+
+/* The class is `botanical-piece` (`botanical-css.ts`'s PIECE_CLASS), not `bloom` -- `bloom` is the
+   hashed CSS-module class, and a rule written from it would match nothing while every gate stayed
+   green, which is the failure mode this project records for deleted Tailwind tokens. */
+test("the beat targets the class the pieces actually carry", () => {
+  assert.doesNotMatch(
+    inviteCss,
+    /\.bloom/,
+    "`bloom` is the hashed module class; the global one is `botanical-piece`",
+  );
+});
+
+/* Opacity on the PIECE, never on an ancestor: sub-1 opacity anywhere in a bloom's ancestor chain
+   isolates `mix-blend-mode: multiply` and paints the piece's opaque white backing rectangle, with no
+   error and every gate green (`botanical.module.css`'s header). `.layer` and `.clip` are that chain. */
+test("the botanical beat animates the pieces themselves, not the layer or the clip box", () => {
+  /* Comments stripped for this assertion ONLY: the step's own comment explains why `.layer` and
+     `.clip` must not be targeted, and naming them there is what makes the rule legible. Searching
+     the raw file found that explanation and read it as a violation -- the throwaway-parser failure
+     this project keeps re-learning. `inviteCss` stays un-stripped for every other test here, because
+     `animatedSelectors` walks comment boundaries deliberately. */
+  const rules = inviteCss.replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(
+    rules,
+    /\.layer|\.clip/,
+    "the fade must sit on the piece; on an ancestor it isolates the multiply blend",
+  );
+});
+
+/* Asserted as the EXPRESSION rather than a literal 800ms: the formula is the rule the owner set, and
+   a literal would pass a retime that broke the formula while still landing on the same number. */
+test("the type is the sequence's second beat", () => {
+  assert.match(
+    inviteCss,
+    /\[data-invite-stack\][\s\S]{0,240}calc\(var\(--duration-fast\) \* 2 \+ var\(--duration-base\)\)/,
+  );
+});
+
+/* The flowers are the first beat: `n = 1` is `1 x fast + 0 x base`, which is the bare token. */
+test("the flowers are the sequence's first beat", () => {
+  assert.match(
+    inviteCss,
+    /\.botanical-piece\s*\{[\s\S]{0,160}var\(--duration-fast\) backwards/,
+  );
 });

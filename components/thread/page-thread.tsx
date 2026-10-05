@@ -418,14 +418,18 @@ function clearDash(path: SVGPathElement) {
   path.style.strokeDashoffset = "";
 }
 
-/* The opening sequence hands off at 2200ms -- ground present, then mount 200-600, stock 800-1200,
-   type 1400-1800, the thread's own fade 1800-2200 (`DESIGN.md` -> Motion -> The opening sequence).
-   The draw begins as that fade completes, so this is the sequence's own end, not a value of its own.
-   The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
-   multiple rather than a coined number, since a fresh design value is the owner's to set.
+/* The opening sequence hands off at 1600ms -- ground present, then the invite's two botanical pieces
+   200-600, type 800-1200, the thread's own fade 1200-1600 (`DESIGN.md` -> Motion -> The opening
+   sequence). The draw begins as that fade completes, so this is the sequence's own end, not a value
+   of its own. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a
+   token multiple rather than a coined number, since a fresh design value is the owner's to set.
    The thread's own fade no longer waits a beat after the type: the owner asked for less dead air
-   between the names appearing and the line starting, so the fade begins as the type lands. */
-const OPENING_DRAW_DELAY = 2200;
+   between the names appearing and the line starting, so the fade begins as the type lands.
+   **1600, not 2200, since 2026-10-05**: the invitation took the hero card's unpainted option, so the
+   mount and stock settles that opened the sequence animate nothing and were replaced by one beat on
+   the flowers. Two beats became one, and every later step moved up by 600ms. DESIGN.md carries the
+   painted option's values for restoring it. */
+const OPENING_DRAW_DELAY = 1600;
 const OPENING_DRAW_DURATION = 1200;
 
 /* THE DRAW'S CATCH-UP — the owner's finding, 2026-10-05, in their own words: "i want the thread on
@@ -1697,10 +1701,10 @@ export function PageThread() {
             }}
           />
         ))}
-        <g className={styles.pageTaper} ref={taperGroupRef} />
+        <g className={styles.pageTaper} data-thread-taper ref={taperGroupRef} />
         <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
         <g className={styles.pageRetrace} ref={retraceGroupRef} />
-        <g className={styles.pageHead} ref={headGroupRef} />
+        <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
       </svg>
     </span>
   );
@@ -1984,10 +1988,10 @@ export function WishesWeave() {
             }}
           />
         ))}
-        <g className={styles.pageTaper} ref={taperGroupRef} />
+        <g className={styles.pageTaper} data-thread-taper ref={taperGroupRef} />
         <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
         <g className={styles.pageRetrace} ref={retraceGroupRef} />
-        <g className={styles.pageHead} ref={headGroupRef} />
+        <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
       </svg>
     </span>
   );

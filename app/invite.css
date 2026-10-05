@@ -2,35 +2,46 @@
    `rules/web-frontend/motion.md` → Prohibited (owner decision, 2026-09-27, in chat). The owner
    restated the sequence after watching Task 5's continuous stagger live, on two counts: the ground
    is ALREADY PRESENT and carries no animation at all (not merely a zero delay), and the remaining
-   four steps run as DISCRETE beats — each one completes before the next begins — rather than
-   overlapping. The mount and the stock SETTLE (translate); the type and the thread only FADE.
+   steps run as DISCRETE beats — each one completes before the next begins — rather than overlapping.
 
-   THE GROUND CARRIES NO RULE HERE AT ALL — this is why the old Step 1 (the two named botanical
-   pieces `falling-spray`/`corner-spray`) is gone rather than retimed to a zero delay: a layer that
-   is not animated should not appear in an animation rule.
+   THE SEQUENCE IS KEYED TO THE HERO CARD'S OPTION, and the invitation takes the UNPAINTED one
+   (owner, 2026-10-05 — DESIGN.md → Foundations → Layout → `mounted-sheet` → The hero card's two
+   options). This file carries the unpainted option's THREE beats, two of them here:
+
+     ground (no rule at all) → flowers 200ms → type 800ms → thread 1200ms, ending 1600ms.
+
+   The painted option's four — ground, mount settles, stock settles, type, thread, ending 2400ms —
+   are documented in DESIGN.md with every value needed to restore them, and `@keyframes
+   invite-settle` below is kept for that purpose rather than deleted as dead.
+
+   THE GROUND STILL CARRIES NO RULE. What changed on 2026-10-05 is that the blooms are no longer part
+   of "already present": with no mount and no stock, the ground is all that precedes the type, so the
+   two named botanical pieces (`falling-spray`/`corner-spray`) took the vacated first beat. That
+   REVERSES their removal on 2026-09-27 — deliberately, and by the same reasoning applied to a
+   different composition, not as drift.
 
    ONE FORMULA, BOTH TOKENS ALREADY ON THE SCALE. Every step runs for `{motion.duration.base}` on
-   `{motion.easing.entrance}`; step *n* (mount=1, stock=2, type=3, thread=4) is delayed
+   `{motion.easing.entrance}`; step *n* (flowers=1, type=2) is delayed
    `n × {motion.duration.fast} + (n − 1) × {motion.duration.base}` — the beat sits on top of every
-   step's own duration rather than overlapping it, which is what makes the sequence discrete. Mount
-   200ms, stock 800ms, type 1400ms, thread 2000ms, each a 400ms step; total 2400ms (confirmed by
-   render, `task-1-report.md`). The thread's fade is the LAST beat — its own completion is what the
-   scroll-driven draw hands off from, so no further delay is stacked on top of it.
+   step's own duration rather than overlapping it, which is what makes the sequence discrete. The
+   thread's fade is the one step OFF that ladder: it drops the beat and begins as the type lands
+   (1200ms), ending at 1600ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. Its own completion
+   is what the scroll-driven draw hands off from.
 
-   THE SAME TRANSLATE GESTURE FOR BOTH SETTLING LAYERS. The invite's card already carried an
-   `invite-settle` translate at full opacity from an earlier round (Y −8px → 0); the mount reuses
-   the identical keyframe rather than inventing a second gesture for the same kind of motion.
-   `backwards` holds each settle's start position through its delay; after the animation completes,
-   the element reverts to its un-animated `transform: none`, which already equals the keyframe's own
-   `to` — so no `forwards`/`both` is needed to hold the end state.
+   `@keyframes invite-settle` IS KEPT THOUGH NOTHING USES IT TODAY, and that is deliberate on two
+   counts. It is the gesture the painted option's mount and stock both restore to (DESIGN.md records
+   the delays), and it is the named fallback if the flowers' fade turns out to isolate the multiply
+   blend — a transform on the element ITSELF does not isolate it, where an ancestor's does. A test
+   pins its survival so a later pass does not delete it as dead.
 
    OPACITY LIVES ON THE PIECE ITSELF FOR ANYTHING THAT FADES, NEVER ON A WRAPPING ANCESTOR.
    `botanical.module.css`'s header forbids sub-1 opacity anywhere in a bloom's ANCESTOR chain — it
    would isolate `mix-blend-mode: multiply` from the ivory ground and paint each piece's opaque
-   backing rectangle instead of blending it. That rule no longer touches this file at all: the
-   ground is unanimated, and mount/stock now translate rather than fade, so the type step below is
-   the only opacity animation left here, and it targets `[data-invite-stack]` — a sibling of the
-   ground's own botanical layer, not its ancestor.
+   backing rectangle instead of blending it. **The flowers' beat below is the first rule in this
+   project to fade a bloom at all**, so it sets the opacity on `.botanical-piece` — the piece itself,
+   the one place the blend survives — and never on `.layer` or `.clip`, which are its ancestors. The
+   type step targets `[data-invite-stack]`, a sibling of the botanical layer rather than its
+   ancestor, so it never reached the blooms in the first place.
 
    SCOPED TO THE INVITE'S OWN FRAME, NOT EVERY SECTION. `mounted-sheet-frame--invite` is the literal
    class both `Botanical` and `MountedSheet` stamp on their own wrapper for this section
@@ -66,27 +77,43 @@
     }
   }
 
-  /* Step 1 — the mount settles into place. Delay = 1 × fast + 0 × base = 200ms. */
+  /* Step 1 — the invite's own two botanical pieces arrive. Delay = 1 × fast + 0 × base = 200ms.
+
+     This beat belongs to the hero card's UNPAINTED option, which the invitation takes (DESIGN.md →
+     Foundations → Layout → `mounted-sheet` → The hero card's two options). The painted option's four
+     beats — mount settles, stock settles, then type, then thread — stay documented there with the
+     values to restore, and `@keyframes invite-settle` above is KEPT for exactly that.
+
+     It REVERSES the 2026-09-27 removal of a botanical step, by the owner's decision of 2026-10-05.
+     That removal was right for the painted option: the ground, blooms included, was already present
+     behind an arriving card, and a layer that is not animated should not appear in an animation
+     rule. With no mount and no stock the ground is ALL that precedes the type, so the flowers now
+     read as a layer that arrives. Same reasoning, different composition — not drift.
+
+     OPACITY ON EACH PIECE, NEVER ON AN ANCESTOR. Sub-1 opacity anywhere in a bloom's ancestor chain
+     isolates `mix-blend-mode: multiply` and paints each piece's opaque white backing rectangle, with
+     no error and every gate green (`botanical.module.css`'s header). `.botanical-piece` is the global
+     class each bloom carries (`botanical-css.ts`'s `PIECE_CLASS`) — NOT `bloom`, which is the hashed
+     CSS-module class and would match nothing here. The invite's own frame scope is what keeps this
+     off `not-found`, which ships the same two pieces and keeps a painted card.
+
+     `backwards`, not `both`: the finished state is opacity 1, which is also the un-animated value, so
+     nothing needs holding afterwards — and leaving an animation holding a value over a
+     multiply-blended element is exactly the arrangement this file is careful about. */
   :root:not([data-opening-skipped])
     .mounted-sheet-frame--invite
-    .mounted-sheet-frame__mount {
-    animation: invite-settle var(--duration-base) var(--ease-entrance)
+    .botanical-piece {
+    animation: opening-fade var(--duration-base) var(--ease-entrance)
       var(--duration-fast) backwards;
   }
 
-  /* Step 2 — the paper stock settles into place. Delay = 2 × fast + 1 × base = 800ms. */
-  :root:not([data-opening-skipped]) .invite-settle {
-    animation: invite-settle var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 2 + var(--duration-base)) backwards;
-  }
-
-  /* Step 3 — the type: the eyebrow, the couple's names, the date and place, the passage — one
-     stack, one fade, matching the granularity DESIGN.md states the sequence at. Delay = 3 × fast +
-     2 × base = 1400ms. */
+  /* Step 2 — the type: the eyebrow, the couple's names, the date and place, the passage — one
+     stack, one fade, matching the granularity DESIGN.md states the sequence at. Delay = 2 × fast +
+     1 × base = 800ms. */
   :root:not([data-opening-skipped])
     .mounted-sheet-frame--invite
     [data-invite-stack] {
     animation: opening-fade var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 3 + var(--duration-base) * 2) both;
+      calc(var(--duration-fast) * 2 + var(--duration-base)) both;
   }
 }
