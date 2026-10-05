@@ -154,7 +154,17 @@ function InvitePassage() {
 /* Measured by `inviteFit`: any content or type change re-runs `npm run measure:fit`. The section
    carries no horizontal padding, margin or width cap, because `mounted-sheet` decides the ground
    against the window's own width. The stack uses per-child margins rather than `gap-*` because only
-   the names-to-date gap varies. */
+   the names-to-date gap varies.
+
+   Takes the hero card's UNPAINTED option (owner, 2026-10-05): the type sits on the page's ground,
+   with no mount, stock, shadow or cut corner at any width. The frame is KEPT rather than removed,
+   because it carries the height contract that makes this section exactly one screen, and because the
+   thread measures `.mounted-sheet-frame__box` for its per-card draw window and falls back to the
+   whole section without it — which would re-place the invite's stretch across the full window width
+   and move the page's height. Dropping the paint costs neither.
+
+   The painted option returns by deleting the one prop; the sequence it needs back is recorded in
+   `DESIGN.md` → Foundations → Layout → `mounted-sheet` → The hero card's two options. */
 export function InviteSection() {
   const wedding = eventById("wedding");
   const weddingDate = formatEventDate(wedding.date);
@@ -163,7 +173,7 @@ export function InviteSection() {
   return (
     <section className="relative">
       <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
-      <MountedSheet className="invite-settle" fit={inviteFit} hero>
+      <MountedSheet className="invite-settle" fit={inviteFit} hero unbacked>
         {/* The stack fills the card so the passage can settle against its bottom edge. Growth
             shares rather than `1fr` grid rows: a share with no free space collapses to 0 in
             `measure:fit`'s detached clone, so the measured height stays the content's own, while
