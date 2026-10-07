@@ -4,6 +4,13 @@ import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
 
+/* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
+   there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
+   -> Variant Routes). The `.html` is explicit because `serveExport` below serves literal paths and a
+   static export emits a dynamic route as `out/thread/<variant>.html`; `/thread/current` would resolve
+   to the sibling RSC-payload DIRECTORY, and `/thread/current/` to a 404. */
+const LAB_ROUTE = "/thread/current.html";
+
 /* THE DRAWING HEAD MUST BE GONE ONCE THERE IS NOTHING LEFT TO DRAW — the owner's rule, reported
    twice (2026-10-03 and again 2026-10-05 with a screenshot of the head sitting on Wishes' closing
    taper), and until now guarded by nothing.
@@ -105,7 +112,9 @@ test("the drawing head is lit while drawing and gone once the whole thread is dr
         deviceScaleFactor: 1,
       });
       const page = await context.newPage();
-      await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+      await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+        waitUntil: "load",
+      });
       /* The opening sequence hands off at 2200ms and its own draw runs 1200ms beyond that. */
       await page.waitForTimeout(3600);
 

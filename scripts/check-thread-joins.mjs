@@ -102,7 +102,10 @@ const flag = (name, fallback = null) => {
   const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));
   return found === undefined ? fallback : found.slice(name.length + 3);
 };
-const route = flag("route", "/thread-lab");
+/* The thread is not on the published page -- `/` carries none since the lab split, so the default is
+ * the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). It was `/thread-lab`, a scratch
+ * route that has since been deleted. */
+const route = flag("route", "/thread/current");
 const falsify = process.argv.includes("--falsify");
 const only = flag("section");
 const onlyViewport = flag("viewport");

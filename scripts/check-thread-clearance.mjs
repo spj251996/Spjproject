@@ -69,6 +69,12 @@ import { chromium } from "playwright";
 import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
+/* The thread is not on the published page -- `/` carries none since the lab split, so this gate points
+ * at the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). Against the DEV server the
+ * extensionless path routes correctly; a gate reading the static export needs `.html`, because an
+ * export emits a dynamic route as `out/thread/<variant>.html`. */
+const LAB_ROUTE = "/thread/current";
+
 const NAV_TIMEOUT_MS = 15_000;
 const FONT_TIMEOUT_MS = 5_000;
 const SETTLE_MS = 200;
@@ -490,7 +496,7 @@ async function runValidate(browser) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   let exitCode = 1;
   try {
-    await page.goto(`${ORIGIN}/`, {
+    await page.goto(`${ORIGIN}${LAB_ROUTE}`, {
       waitUntil: "domcontentloaded",
       timeout: NAV_TIMEOUT_MS,
     });
@@ -545,7 +551,7 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
   const page = await browser.newPage({ viewport: { width, height } });
   let exitCode = 1;
   try {
-    await page.goto(`${ORIGIN}/`, {
+    await page.goto(`${ORIGIN}${LAB_ROUTE}`, {
       waitUntil: "domcontentloaded",
       timeout: NAV_TIMEOUT_MS,
     });
@@ -617,7 +623,7 @@ async function runSweep(browser, sections) {
       viewport: { width: initialWidth, height: initialHeight },
     });
     try {
-      await page.goto(`${ORIGIN}/`, {
+      await page.goto(`${ORIGIN}${LAB_ROUTE}`, {
         waitUntil: "domcontentloaded",
         timeout: NAV_TIMEOUT_MS,
       });

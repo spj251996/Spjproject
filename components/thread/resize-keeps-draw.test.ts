@@ -4,6 +4,13 @@ import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
 
+/* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
+   there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
+   -> Variant Routes). The `.html` is explicit because `serveExport` below serves literal paths and a
+   static export emits a dynamic route as `out/thread/<variant>.html`; `/thread/current` would resolve
+   to the sibling RSC-payload DIRECTORY, and `/thread/current/` to a 404. */
+const LAB_ROUTE = "/thread/current.html";
+
 /* THE THREAD MUST NOT UN-DRAW ITSELF WHEN THE VIEWPORT'S HEIGHT CHANGES — the owner reported three
    phone symptoms that were one bug: glitches, the re-trace running where no thread was drawn, and
    the thread DISAPPEARING when they scrolled back up. All three came from `window.resize` running
@@ -161,7 +168,9 @@ test("a height-only resize does not un-draw the thread", async (t) => {
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
-    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
     /* The opening sequence ends at `OPENING_DRAW_DELAY` and its own draw runs beyond it. */
     await page.waitForTimeout(3600);
 
@@ -256,7 +265,9 @@ test("a height-only resize at the top does not erase what the opening draw drew"
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
-    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
     await page.waitForTimeout(3600); // the opening sequence plus its draw
 
     const before = (await page.evaluate(READ)) as Reading;
@@ -311,7 +322,9 @@ test("a resize that reflows the page re-measures rather than taking the cheap pa
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
-    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
     await page.waitForTimeout(3600);
 
     const before = (await page.evaluate(BOXES)) as {

@@ -44,6 +44,12 @@ import { chromium } from "playwright";
 import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
+/* The thread is not on the published page -- `/` carries none since the lab split, so this gate points
+ * at the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). Against the DEV server the
+ * extensionless path routes correctly; a gate reading the static export needs `.html`, because an
+ * export emits a dynamic route as `out/thread/<variant>.html`. */
+const LAB_ROUTE = "/thread/current";
+
 const NAV = 20000;
 const SETTLE = 350;
 const TOLERANCE = 1;
@@ -77,7 +83,7 @@ try {
     deviceScaleFactor: 1,
   });
   page.setDefaultTimeout(NAV);
-  await page.goto(`${ORIGIN}/`, { waitUntil: "load", timeout: NAV });
+  await page.goto(`${ORIGIN}${LAB_ROUTE}`, { waitUntil: "load", timeout: NAV });
   await page
     .evaluate(() => document.fonts.ready)
     .catch(() =>

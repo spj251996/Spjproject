@@ -4,6 +4,13 @@ import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
 
+/* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
+   there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
+   -> Variant Routes). The `.html` is explicit because `serveExport` below serves literal paths and a
+   static export emits a dynamic route as `out/thread/<variant>.html`; `/thread/current` would resolve
+   to the sibling RSC-payload DIRECTORY, and `/thread/current/` to a 404. */
+const LAB_ROUTE = "/thread/current.html";
+
 /* Reduced motion collapses the re-trace to nothing, and only a real page can show it: the whole
    collapse hangs on one `reducedMotion()` check in `syncRetrace`, and the loop is script, so
    `document.getAnimations()` is no longer evidence either way (it reads 0 whether or not a loop runs).
@@ -86,7 +93,9 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
         reducedMotion,
       });
       const page = await context.newPage();
-      await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+      await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+        waitUntil: "load",
+      });
       return page;
     };
     const [reduced, moving] = await Promise.all([
@@ -220,7 +229,9 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
     });
     const page = await context.newPage();
     await page.addInitScript(WRAP_RAF);
-    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
     await page.addStyleTag({ content: FAST_TOKENS });
     const read = async () => (await page.evaluate(LIFECYCLE)) as Lifecycle;
     const waitFor = (condition: string, timeout = 15000) =>
@@ -312,7 +323,9 @@ test("Wishes' closing stretch loops, painted by the one card thread and nowhere 
       await browser.newContext({ viewport: { width: 393, height: 700 } })
     ).newPage();
     await page.addInitScript(WRAP_RAF);
-    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
     await page.addStyleTag({
       content:
         ":root{--retrace-duration:1000ms;--retrace-loops:6;--retrace-settle:300ms;--retrace-speed:0}",
@@ -364,7 +377,9 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
       await browser.newContext({ viewport: { width: 393, height: 700 } })
     ).newPage();
     await page.addInitScript(WRAP_RAF);
-    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
     await page.addStyleTag({
       content:
         ":root{--retrace-duration:1000ms;--retrace-loops:8;--retrace-settle:600ms;--retrace-speed:0}",
