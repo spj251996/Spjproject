@@ -18,8 +18,8 @@
      node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
        --section=invite --out=app/invite-fit.ts
 
-   `--out` sits beside `app/page.tsx`, which supplies the section's fit, e.g. `app/invite-fit.ts`
-   for the invite.
+   `--out` stays in `app/`, beside the other fits and next to the section CSS that reads them, e.g.
+   `app/invite-fit.ts` for the invite -- the section components themselves live in `app/_sections/`.
 
    Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
    landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending
