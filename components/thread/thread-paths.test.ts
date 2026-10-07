@@ -222,17 +222,15 @@ const REACH = 10;
    without losing the separation that matters: forcing `TERMINAL_TANGENT` measured 13-80 degrees
    off at this SAME reach on at least one boundary in every band, comfortably outside this floor.
 
-   HEADROOM, MEASURED 2026-10-07 — READ THIS BEFORE EDITING EITHER CONSTANT. The even-spacing fit
-   (`boundSpans` in `scripts/thread-spline.ts`) left the worst join at **8.8 degrees at `tall`
-   contact/family and 8.3 at `upright` contact/family**, against 7.4 and 6.2 before it. Every other
-   join improved. So this bound now has about **1 degree of room**, not nine.
-   That is the fit working rather than a defect: a curve bounded to even spans hugs the drawn
-   polyline instead of bowing past it, so a corner the owner drew near that boundary now turns inside
-   this test's 10px reach rather than being smoothed over. The bound was deliberately NEITHER
-   tightened nor loosened.
-   **Consequence: a later change that fires this gate at contact/family is not necessarily that
-   change's regression** — check the figure above first, and if the redraw moves these joins,
-   re-record rather than widening the bound. */
+   HEADROOM, MEASURED 2026-10-07. On the authored routes as they stand the worst join is **7.4
+   degrees at `tall` contact/family and 6.2 at `upright`**, so this bound has a little under 3
+   degrees of room.
+   Worth knowing if span bounding is ever tried again (`boundSpans`, off by default — the owner
+   rejected its look): turning it on at 40 moved those two to **8.8 and 8.3** while improving every
+   other join, because a curve bounded to even spans hugs the drawn polyline instead of bowing past
+   it, so a corner drawn near that boundary turns inside this test's 10px reach. That is the fit
+   working, not a defect — but it leaves about 1 degree of room, so re-record these figures rather
+   than widening the bound. */
 const TOLERANCE = 10;
 
 function headingAt(

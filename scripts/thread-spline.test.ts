@@ -53,10 +53,11 @@ const size = (x: number, y: number) => Math.hypot(x, y);
    The four tests below index a particular SPAN of the emitted path and assert the fitter's own
    shaping rules on it -- the bisector direction, the arm taken from its own span, the half arm at an
    end, and a hairpin turning rather than cusping. Their fixtures are deliberately unequal and 100-235
-   px long, so the default `MAX_SPAN` subdivides them and `span(d, 1)` stops being the span the test
-   means. They therefore pass `maxSpan: Infinity`: the rules they assert are about arm sizing and
-   direction, which span bounding does not touch, and not one assertion's expected value changes. The
-   bound's own effect is asserted by the `boundSpans` tests at the end of this file. */
+   px long, so ANY finite `maxSpan` subdivides them and `span(d, 1)` stops being the span the test
+   means. They therefore say `maxSpan: Infinity` explicitly rather than relying on the default, which
+   is Infinity today but was 40 for part of one round: the rules they assert are about arm sizing and
+   direction, which span bounding does not touch. Not one assertion's expected value has ever
+   changed. The bound's own effect is asserted by the `boundSpans` tests at the end of this file. */
 const UNBOUNDED = { maxSpan: Number.POSITIVE_INFINITY } as const;
 
 const corner = [
@@ -353,32 +354,18 @@ test("boundSpans handles degenerate lists", () => {
   assert.deepEqual(boundSpans(coincident, 40), coincident);
 });
 
-test("splinePath applies the span bound by default", () => {
-  const long = [
-    { x: 0, y: 0 },
-    { x: 400, y: 0 },
-    { x: 400, y: 8 },
-  ];
-  const bounded = splinePath(long);
-  const unbounded = splinePath(long, { maxSpan: Number.POSITIVE_INFINITY });
-  assert.notEqual(
-    bounded,
-    unbounded,
-    "the default must bound spans, or the coming redraw inherits nothing",
-  );
-});
-
 test("an end direction still reaches the last point when the bound is on", () => {
   /* The four `UNBOUNDED` tests above index `span(d, 1)`, which is only the LAST span when nothing is
-     subdivided — so with the default bound on, nothing asserted that `ends.end` still lands on the
-     final point. Subdivision never moves the first or last point, so it must; this reads the final
-     cubic of a bounded path to prove it rather than reasoning about `directionAt`'s `last`. */
+     subdivided — so nothing else asserts that `ends.end` still lands on the final point once spans
+     are bounded. Subdivision never moves the first or last point, so it must; this reads the final
+     cubic of a bounded path to prove it rather than reasoning about `directionAt`'s `last`.
+     `maxSpan` is passed explicitly because the default is off. */
   const long = [
     { x: 0, y: 0 },
     { x: 400, y: 0 },
     { x: 400, y: 120 },
   ];
-  const d = splinePath(long, { ends: { end: { x: 1, y: 0 } } });
+  const d = splinePath(long, { maxSpan: 40, ends: { end: { x: 1, y: 0 } } });
   const n = numbers(d);
   const endX = n[n.length - 2];
   const endY = n[n.length - 1];
@@ -394,10 +381,30 @@ test("an end direction still reaches the last point when the bound is on", () =>
   assert.equal(Math.round(degrees(endX - c2x, endY - c2y)), 0);
 });
 
-test("MAX_SPAN is the owner's picked value", () => {
-  /* The owner picked 40 on 2026-10-07 from three rendered candidates. A fitting step has silently
-     overwritten an eye-tuned constant in this project before, so the authored value is asserted
-     rather than trusted — and it is asserted here rather than left to the generator, which is
-     gitignored and would not survive the coming redraw. */
-  assert.equal(MAX_SPAN, 40);
+test("the span bound is OFF by default, as the owner decided", () => {
+  /* It shipped on at 40 and the owner rejected the result on sight ("it looks worse than before",
+     2026-10-07), so the default is `Infinity` and every authored route fits exactly as it did
+     before. This is pinned because a default that silently returns to a finite value would reshape
+     every route in the next regeneration with nothing to catch it — which is how the rejected
+     geometry reached `thread-paths.ts` in the first place. */
+  assert.equal(MAX_SPAN, Number.POSITIVE_INFINITY);
+});
+
+test("splinePath leaves a point list alone unless maxSpan is asked for", () => {
+  /* The behavioural half of the pin above: the default must be a true no-op on the long spans the
+     authored routes are full of, not merely a large number. */
+  const long = [
+    { x: 0, y: 0 },
+    { x: 400, y: 0 },
+    { x: 400, y: 120 },
+  ];
+  assert.equal(
+    splinePath(long),
+    splinePath(long, { maxSpan: Number.POSITIVE_INFINITY }),
+  );
+  assert.notEqual(
+    splinePath(long),
+    splinePath(long, { maxSpan: 40 }),
+    "passing maxSpan explicitly must still bound, or the mechanism is dead rather than off",
+  );
 });

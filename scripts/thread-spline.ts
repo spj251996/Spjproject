@@ -2,20 +2,28 @@ export type Point = { x: number; y: number };
 
 const CONTROL_DIVISOR = 6;
 
-/* The widest span the fitter may see. `splinePath` sizes both of a span's control arms from that
-   span's own length, so a point sitting between an 8px span and a 161px one gets a 2.7px arm on one
-   side and a 53.7px arm on the other -- a curvature discontinuity, which is what the owner reported
-   as the thread looking like chicken scratch rather than a flowing line. The authored routes carry a
-   20x span spread because Ramer-Douglas-Peucker drops points on smooth runs and piles them at
-   corners, so the spread is a property of the EXTRACTION, not of the drawing.
-   THE VALUE IS THE OWNER'S, picked 2026-10-07 from three candidates (24, 40, 64) built and rendered
-   against the live page, with the measured worst span ratio per band beside each: at 40 it is
-   4.8 / 5.4 / 3.1 at `wide` / `tall` / `upright`, against today's 43.2 / 20.1 / 23.0, for roughly
-   double the point count -- where 24 reaches 2.9 / 3.2 / 1.9 for triple, and 64 leaves `tall` at an
-   8.5x arm jump. Their final judgement of the line's CHARACTER is on a phone, from the Vercel
-   preview, because that is the only surface this can be seen on. Do not change it without another
-   render and another decision of theirs. */
-export const MAX_SPAN = 40;
+/* The widest span the fitter may see, and it is OFF by default.
+
+   WHY IT EXISTS. `splinePath` sizes both of a span's control arms from that span's own length, so a
+   point sitting between an 8px span and a 161px one gets a 2.7px arm on one side and a 53.7px arm on
+   the other -- a curvature discontinuity. The authored routes carry a 20x span spread because
+   Ramer-Douglas-Peucker drops points on smooth runs and piles them at corners, so the spread is a
+   property of the EXTRACTION, not of the owner's drawing. Bounding the spans evens the arms out:
+   measured worst ratio per band at 40, 4.8 / 5.4 / 3.1 at `wide` / `tall` / `upright` against the
+   unbounded 43.2 / 20.1 / 23.0, for roughly double the point count.
+
+   WHY IT IS OFF. It shipped on at 40 and the OWNER REJECTED THE RESULT ON SIGHT, 2026-10-07: "it
+   looks worse than before". So evening the span ratio is NOT what the chicken-scratch complaint
+   wanted, and the measurement that motivated it -- a real 20x arm jump -- did not predict how the
+   line reads. **The ratio was never the whole story, and a later attempt should not start by
+   re-deriving it.** The default is `Infinity`, so every authored route is fitted exactly as it was
+   before this was written, and `thread-paths.ts` is byte-identical to its pre-change state.
+
+   It is kept rather than deleted because the mechanism is sound and tested and the owner's original
+   complaint is still open -- a later round can pass `maxSpan` explicitly to try a value without
+   rebuilding any of this. If that round also comes back worse, delete `boundSpans` and its tests
+   outright; it will have been answered. */
+export const MAX_SPAN = Number.POSITIVE_INFINITY;
 
 /* A direction the curve must leave its first point along, or arrive at its last point along, as a
    vector in the SAME SPACE as the points — not an angle, because a connector's box is stretched and
