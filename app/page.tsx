@@ -331,12 +331,13 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
         {headingFor(event.id)}
       </h2>
       <div className="flex flex-col items-center gap-space-3xs mt-space-sm">
-        {/* The weights invert the invite's: there the date is bold over a lighter place, here the
-            address carries the weight and the date steps back. */}
-        <p className="type-date-primary font-medium text-ink">
+        {/* The date carries the weight and the address steps back, the way the invite sets the same
+            two lines (owner, 2026-10-07). `date-primary` and `heading-lg` share a size at every
+            tier, so weight is the only thing telling these two apart. */}
+        <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
-        <address className="type-heading-lg text-ink not-italic">
+        <address className="type-heading-lg font-medium text-ink not-italic">
           <AddressLine address={sharedAddress(event)} />
         </address>
       </div>
