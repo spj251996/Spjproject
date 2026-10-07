@@ -368,8 +368,10 @@ test("splinePath applies the span bound by default", () => {
   );
 });
 
-test("the default threshold is the one the fitter documents", () => {
-  /* `MAX_SPAN` is owner-tuned on a render, and a fitting step has silently overwritten an eye-tuned
-     constant in this project before, so the authored value is asserted rather than trusted. */
+test("MAX_SPAN is the owner's picked value", () => {
+  /* The owner picked 40 on 2026-10-07 from three rendered candidates. A fitting step has silently
+     overwritten an eye-tuned constant in this project before, so the authored value is asserted
+     rather than trusted — and it is asserted here rather than left to the generator, which is
+     gitignored and would not survive the coming redraw. */
   assert.equal(MAX_SPAN, 40);
 });

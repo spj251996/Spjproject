@@ -366,3 +366,29 @@ test("every placement's scale is the owner's authored value, never derived from 
     }
   }
 });
+
+/* `wide`'s authored source is GONE — `tmp/thread-draw/wide/` is empty and `tmp/` is gitignored, so
+   nothing recovers it. This file is the ONLY surviving record of those routes, and the generator
+   writes all three bands in one pass, so a plain run would emit nothing for `wide` and
+   `output: "export"` would ship a desktop page with no thread at all. Any regeneration must MERGE,
+   carrying a band with no source through unchanged.
+
+   This pins the shape rather than the content, which is what makes it survive the coming full redraw:
+   the routes will change, but no band may ever go empty. */
+test("every band has a route for every section", () => {
+  for (const band of THREAD_BANDS) {
+    for (const id of SECTION_ORDER) {
+      const routes = THREAD_PATHS[band.id]?.[id];
+      assert.ok(
+        Array.isArray(routes) && routes.length > 0,
+        `${band.id}/${id} has no route — a wholesale regeneration may have dropped a band`,
+      );
+      for (const route of routes) {
+        assert.ok(
+          typeof route.d === "string" && route.d.startsWith("M "),
+          `${band.id}/${id} has a malformed d`,
+        );
+      }
+    }
+  }
+});

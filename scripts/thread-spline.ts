@@ -8,7 +8,13 @@ const CONTROL_DIVISOR = 6;
    as the thread looking like chicken scratch rather than a flowing line. The authored routes carry a
    20x span spread because Ramer-Douglas-Peucker drops points on smooth runs and piles them at
    corners, so the spread is a property of the EXTRACTION, not of the drawing.
-   Owner-tuned on a render. Do not change it without another render. */
+   THE VALUE IS THE OWNER'S, picked 2026-10-07 from three candidates (24, 40, 64) built and rendered
+   against the live page, with the measured worst span ratio per band beside each: at 40 it is
+   4.8 / 5.4 / 3.1 at `wide` / `tall` / `upright`, against today's 43.2 / 20.1 / 23.0, for roughly
+   double the point count -- where 24 reaches 2.9 / 3.2 / 1.9 for triple, and 64 leaves `tall` at an
+   8.5x arm jump. Their final judgement of the line's CHARACTER is on a phone, from the Vercel
+   preview, because that is the only surface this can be seen on. Do not change it without another
+   render and another decision of theirs. */
 export const MAX_SPAN = 40;
 
 /* A direction the curve must leave its first point along, or arrive at its last point along, as a
