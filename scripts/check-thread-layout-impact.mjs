@@ -24,10 +24,11 @@
  * rect is unchanged by its presence — not just that it compiles or that types check.
  *
  * SELECTORS, and why neither touches a restricted file: `.wishes-stack` is already a plain (non-
- * module) class on the stack div in `app/page.tsx`, so no source file needs editing to reach it.
+ * module) class on the stack div in `app/_sections/wishes.tsx`, so no source file needs editing to
+ * reach it.
  * `.figureCol` is a CSS-module class with no stable literal name — it is found instead as the
  * element immediately BEFORE `[data-thread-weave]`, the call site's own fixed DOM relationship
- * (`app/page.tsx`: `WishesWeave` is the next sibling of `wishesStyles.figureCol`).
+ * (`app/_sections/wishes.tsx`: `WishesWeave` is the next sibling of `wishesStyles.figureCol`).
  *
  * ENGINE PIN (mandatory): `chromium.launch({ channel: "chromium" })` — the default launch reaches
  * for Chromium's old `headless_shell`, whose rendering differs from every real browser.

@@ -9,14 +9,18 @@ import test from "node:test";
    The owner inverted them on 2026-10-07 so the sheet reads as the invite does; this pins which line
    carries the weight. */
 
-const source = readFileSync("app/page.tsx", "utf8");
+const source = readFileSync("app/_sections/event-info.tsx", "utf8");
 
 /* Bounded by the next top-level `function`, which is how the sibling page-source tests slice this
    file. The length assertion is the guard: a slice that silently ran away or came back empty would
    let every assertion below pass against the wrong text. */
 function eventSheetHeading(): string {
   const start = source.indexOf("function EventSheetHeading");
-  assert.notStrictEqual(start, -1, "no EventSheetHeading in app/page.tsx");
+  assert.notStrictEqual(
+    start,
+    -1,
+    "no EventSheetHeading in app/_sections/event-info.tsx",
+  );
   const rest = source.slice(start + 1);
   const end = rest.indexOf("\nfunction ");
   const body = end === -1 ? rest : rest.slice(0, end);

@@ -19,7 +19,8 @@ export { ANCHORS, TIERS, TUNING } from "./botanical-tuning";
    `mix-blend-mode: multiply` against the ivory ground, no `z-index` anywhere in this layer: the
    card's own frame (`mounted-sheet-frame__box`) carries the only explicit `z-index` in a framed
    section, so it always paints above a layer that has none — the section itself carries no
-   z-index either (removed from `app/page.tsx`), which is what frees the blend from an isolating
+   z-index either (removed from the section's own composition site), which is what frees the blend
+   from an isolating
    stacking context in the first place.
 
    Size and placement are per width tier and read from the viewport, not from the frame's ring
@@ -27,7 +28,7 @@ export { ANCHORS, TIERS, TUNING } from "./botanical-tuning";
    layer's own stylesheet. The wrapper still carries the section's frame-scope class, because the
    frame's own rule is what gives this layer the section's box to position against. */
 
-/* Which pieces each section carries. This is the ONE place the assignment lives: `app/page.tsx`
+/* Which pieces each section carries. This is the ONE place the assignment lives: `app/_sections/`
    renders from it and the dev tuning panel reads it to group its controls. A second copy has twice
    drifted out of step with a swap and sent nudges along an axis the piece was no longer anchored
    on, which moves it nowhere and reads as a dead slider. Where each piece sits is per tier and

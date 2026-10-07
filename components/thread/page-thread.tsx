@@ -263,7 +263,7 @@ function measureSections(
    asking whether the pair happens to be stacked this band. `celebrations` carries no such class (it
    is a single tall `<MountedSheet>`, not a pair), so its six ritual rows are found by
    `[data-thread-row]` -- the one attribute this task adds, on `<li>` in `CelebrationsSection`
-   (`app/page.tsx`), because nothing else there identifies a row. Every other section returns no
+   (`app/_sections/celebrations.tsx`), because nothing else there identifies a row. Every other section returns no
    rects at all, which `threadLine` already reads as "no split" (`SectionSubdivisions`'s own header
    in `thread-line.ts`) -- exactly today's single-window behaviour. */
 function leafRects(sectionEl: Element, mainRect: DOMRect): Rect[] {
@@ -1863,7 +1863,7 @@ export function PageThread() {
 
 /* ---------------------------------------------------------------------------------------------
    THE WEAVE — Wishes' own stretch, drawn once, in the one place in the DOM after the couple
-   illustration (`app/page.tsx`). The name outlived the design: it was drawn twice, a copy either
+   illustration (`app/_sections/wishes.tsx`). The name outlived the design: it was drawn twice, a copy either
    side of the illustration, to pass behind it, and the two copies were identical so the one over
    covered the one under everywhere. It was deleted on 2026-10-02 and the name stays because gates
    and docs use it. It measures independently of `PageThread` -- wishes' own subpath never depends on

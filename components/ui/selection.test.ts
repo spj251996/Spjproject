@@ -4,7 +4,7 @@ import test from "node:test";
 
 /* `app/` is outside this project's test glob (`content/*.test.ts`, `components/**`, `scripts/**`),
    so a test for a global stylesheet lives here and reads it by path -- the same thing
-   `contact-actions.test.ts` does for `app/page.tsx`.
+   `contact-actions.test.ts` does for `app/_sections/contact.tsx`.
 
    Comments are stripped ONCE, up front, and every helper below works on the stripped text. Each rule
    in that file is preceded by a comment explaining it, and those comments quote the selectors and

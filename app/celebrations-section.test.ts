@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-const source = readFileSync("app/page.tsx", "utf8");
+const source = readFileSync("app/_sections/celebrations.tsx", "utf8");
 
 /* The composition site is a server component, so these are source assertions rather than render
    ones. Each pins a rule with a recorded failure behind it, not merely a line of markup. */

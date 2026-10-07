@@ -17,7 +17,7 @@ test("celebrations has no dot mark", () => {
 });
 
 test("the retired custom properties are gone from the page too", () => {
-  const page = readFileSync("app/page.tsx", "utf8");
+  const page = readFileSync("app/_sections/celebrations.tsx", "utf8");
   for (const name of [
     "--celebrations-spine-x",
     "--celebrations-mark-size",

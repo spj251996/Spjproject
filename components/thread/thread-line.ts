@@ -6,7 +6,7 @@
    React, so it needs no render to test.
 
    CONNECTION ORDER is read from the data, not assumed: `thread-paths.ts`'s `THREAD_IDS` is the
-   section order down the page — confirmed against `app/page.tsx`, whose `<InviteSection />
+   section order down the page — confirmed against `app/_sections/index.tsx`, whose `<InviteSection />
    <EventInfoSection /> <ContactSection /> <FamilySection /> <CelebrationsSection />
    <WishesSection />` renders in exactly that order. Within a section, N motifs give N+1 connectors
    (`thread-paths.ts`'s own per-section arrays are already sized this way): connector 0 runs from the

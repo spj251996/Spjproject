@@ -5,7 +5,7 @@ import test from "node:test";
 /* Comments are stripped so the assertions read the code alone — this file's own comments name the
    classes under test. */
 const strip = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, "");
-const page = strip(readFileSync("app/page.tsx", "utf8"));
+const page = strip(readFileSync("app/_sections/contact.tsx", "utf8"));
 const button = strip(readFileSync("components/ui/button-action.tsx", "utf8"));
 
 function contactPlate() {

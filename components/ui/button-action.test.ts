@@ -8,7 +8,11 @@ const buttonAction = readFileSync(
   "components/ui/button-action.tsx",
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
-const page = readFileSync("app/page.tsx", "utf8");
+/* Actions appear in four sections, so the one read became a concatenation when the sections moved
+   out of `app/page.tsx` -- reading one file would have narrowed the coverage silently. */
+const page = ["event-info", "contact", "family", "celebrations"]
+  .map((name) => readFileSync(`app/_sections/${name}.tsx`, "utf8"))
+  .join("\n");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 
 function ruleBody(css: string, selector: string) {

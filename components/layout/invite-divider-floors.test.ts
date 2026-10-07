@@ -14,7 +14,7 @@ const dividerSource = readFileSync(
   "components/layout/ornamental-divider.tsx",
   "utf8",
 );
-const pageSource = readFileSync("app/page.tsx", "utf8");
+const pageSource = readFileSync("app/_sections/invite.tsx", "utf8");
 const sprigSource = readFileSync("components/icons/sprig.tsx", "utf8");
 
 function markHeight(size: number): number {
