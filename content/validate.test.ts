@@ -120,6 +120,16 @@ test("rejects an empty image entry", () => {
   );
 });
 
+test("rejects an empty rituals array", () => {
+  /* An emptied content file used to build green and ship a section with no entries. The guard is
+     on the COLLECTION, not on a member, so no per-ritual check can catch it. */
+  assert.throws(() => validateRituals([]), /rituals.*at least one/);
+});
+
+test("rejects an empty events array", () => {
+  assert.throws(() => validateEvents([]), /events.*at least one/);
+});
+
 test("validateRituals rejects a Malayalam title stored in visual order", () => {
   // The PDF stored two of the five this way: the pre-base vowel sign `െ` BEFORE its
   // consonant instead of after. It looks plausible in a diff and renders wrong.

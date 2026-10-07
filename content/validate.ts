@@ -134,7 +134,16 @@ function malayalamLogicalOrder(value: string, path: string): void {
 /* No `required()` on `title`, `tagline` or `description` (owner, 2026-10-07): tsc already
    guarantees they exist and are strings, one component renders them, and a typo surfaces on the
    page immediately. What is checked here is what types cannot see. */
+/* A COLLECTION-level guard, which no per-member check can stand in for: an emptied content file
+   satisfies every per-member rule trivially, builds green, and ships the section with no entries.
+   `familyGroups` and `contacts` already get this for free from their bride/groom pair checks. */
+function notEmpty(items: unknown[], path: string): void {
+  if (items.length === 0)
+    throw new ContentValidationError(path, "must hold at least one entry");
+}
+
 export function validateRituals(rituals: Ritual[]): Ritual[] {
+  notEmpty(rituals, "rituals");
   const seen = new Set<string>();
   rituals.forEach((ritual, index) => {
     const at = `rituals[${index}]`;
@@ -157,6 +166,7 @@ function validateSegment(segment: EventSegment, at: string): void {
 }
 
 export function validateEvents(events: WeddingEvent[]): WeddingEvent[] {
+  notEmpty(events, "events");
   const seen = new Set<string>();
   events.forEach((event, index) => {
     const at = `events[${index}]`;
