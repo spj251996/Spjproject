@@ -1,7 +1,7 @@
 /* Sample strings run at real copy length, so wrapping and card height are exercised. The portable
    components take flat scalars; object-shaped samples live in `./domain-samples`. */
 
-import type { EventSegment, RitualStatus } from "@/content/types";
+import type { EventSegment } from "@/content/types";
 
 /* Generated stand-in photographs. A data-URI SVG is a separate document and cannot read a CSS
    custom property, so nothing here can resolve from the token layer.
@@ -54,10 +54,12 @@ export const samplePortrait = {
   src: null,
 };
 
+/* `status` is the SAMPLE's own shape, not the content model's — `Ritual` carries no status field
+   any more. Retired with `timeline-node` itself. */
 interface TimelineNodeSample {
   title: string;
   description: string;
-  status: RitualStatus;
+  status: "upcoming" | "completed";
   previewImages: string[];
   side: "left" | "right";
 }

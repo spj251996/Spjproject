@@ -1,10 +1,14 @@
-export type RitualStatus = "upcoming" | "completed";
-
 export interface Ritual {
   id: string;
   title: string;
+  /** The ritual's name in Malayalam, shown beside the English title at every band. */
+  malayalam: string;
+  /** One line, set in italic beneath the title. */
+  tagline: string;
   description: string;
-  status: RitualStatus;
+  /** A ritual shows its photographs when this is non-empty, and by nothing else. There is
+      deliberately no `status`: it existed, was read nowhere, and would have become a second
+      source of truth able to contradict this one. */
   images: string[];
 }
 

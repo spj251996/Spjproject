@@ -106,13 +106,40 @@ function claimId(id: string, path: string, seen: Set<string>): void {
   seen.add(id);
 }
 
+/* Malayalam pre-base vowel signs. In LOGICAL order each follows its base consonant; in VISUAL
+   order — how a PDF text layer often stores it — it precedes one. Two of the five ritual titles
+   arrived from the couple's PDF that way and would have shipped shaped wrongly.
+
+   THE RULE IS "PRECEDED BY", NOT "FOLLOWED BY", and that distinction is the whole check: in
+   correct logical order a pre-base sign is naturally FOLLOWED by the next syllable's consonant,
+   so a "followed by" rule flags every correct string too. Verified against all five shipped
+   titles (clean) and both PDF originals (flagged). */
+const MALAYALAM_PRE_BASE = /[െേൈ]/;
+const MALAYALAM_CONSONANT = /[ക-ഹ]/;
+
+function malayalamLogicalOrder(value: string, path: string): void {
+  for (let index = 0; index < value.length; index += 1) {
+    if (!MALAYALAM_PRE_BASE.test(value[index])) {
+      continue;
+    }
+    if (index === 0 || !MALAYALAM_CONSONANT.test(value[index - 1])) {
+      throw new ContentValidationError(
+        path,
+        `is in visual order at index ${index} — the vowel sign "${value[index]}" must follow its base consonant, not precede it`,
+      );
+    }
+  }
+}
+
+/* No `required()` on `title`, `tagline` or `description` (owner, 2026-10-07): tsc already
+   guarantees they exist and are strings, one component renders them, and a typo surfaces on the
+   page immediately. What is checked here is what types cannot see. */
 export function validateRituals(rituals: Ritual[]): Ritual[] {
   const seen = new Set<string>();
   rituals.forEach((ritual, index) => {
     const at = `rituals[${index}]`;
     claimId(ritual.id, `${at}.id`, seen);
-    required(ritual.title, `${at}.title`);
-    required(ritual.description, `${at}.description`);
+    malayalamLogicalOrder(ritual.malayalam, `${at}.malayalam`);
     ritual.images.forEach((image, i) => {
       required(image, `${at}.images[${i}]`);
       assetPath(image, `${at}.images[${i}]`);

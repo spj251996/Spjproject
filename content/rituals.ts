@@ -1,53 +1,63 @@
 import type { Ritual } from "./types.ts";
 import { validateRituals } from "./validate.ts";
 
+/* The five celebrations, in order, from the couple's own `Kerala Christian Wedding Traditions`
+   document; every description is the owner's approved rewrite of its prose, ritual by ritual.
+
+   Two cautions that cost a correction each and must not be undone:
+   - **The pendant keeps the couple's own naming** — Minnukettu is the ritual, the sacred Thali the
+     pendant. Their source never uses "Minnu" alone, so neither does this.
+   - **The groom does not tie the Minnu.** The passive in the last description is deliberate; a
+     draft that named the groom as the agent was simply wrong. If the copy should ever name who
+     ties it, that comes from the couple — do not infer it.
+
+   The Malayalam is in logical codepoint order. Two of these arrived from the PDF in VISUAL order
+   (the `െ` sign before its consonant) and are reordered here; `validateRituals` now refuses that
+   form outright. */
 export const rituals: Ritual[] = validateRituals([
   {
-    id: "madhuramveppu",
-    title: "Madhuramveppu",
+    id: "wedding-eve",
+    title: "Wedding Eve",
+    malayalam: "മധുരംവെപ്പ്",
+    tagline: "Where the celebrations begin with sweetness.",
     description:
-      "A sweet-offering ceremony where rice cooked in milk and jaggery is shared as a blessing, symbolising a life filled with sweetness and grace.",
-    status: "upcoming",
+      "On the eve of the wedding, family and loved ones gather to bless the couple with sweets, prayers and good wishes. A cherished Kerala Christian tradition, Madhuramveppu marks the passage from one chapter to the next — honouring the life each has shared with their family before stepping into a new one.",
     images: [],
   },
   {
-    id: "nischayam",
-    title: "Nischayam — The Betrothal",
+    id: "betrothal",
+    title: "Betrothal",
+    malayalam: "മനസ്സമ്മതം",
+    tagline: "Where a promise is made.",
     description:
-      "A formal church blessing where the couple exchange rings before the priest, publicly declaring their intent to marry as a sacred covenant.",
-    status: "upcoming",
+      "In the presence of their families, witnesses and the Church, the couple formally give their consent to marry. The betrothal marks the beginning of their journey towards the sacrament of marriage — a promise made with faith, intention and the blessing of all who stand with them.",
     images: [],
   },
   {
-    id: "rite-of-marriage",
-    title: "The Rite of Marriage",
+    id: "wedding",
+    title: "Wedding",
+    malayalam: "വിവാഹം",
+    tagline: "Where two lives become one.",
     description:
-      "The couple declare their intent, exchange solemn vows, and the priest blesses the rings — a binding covenant before God and all who witness.",
-    status: "upcoming",
+      "Before God and their loved ones, the bride and groom enter into the sacrament of marriage. Through prayer, Scripture and their solemn consent, they promise to walk together in love and faith, sharing in the joys and challenges of the life ahead.",
     images: [],
   },
   {
-    id: "minnu-manthrakodi",
-    title: "Minnu & Manthrakodi",
+    id: "exchange-of-rings",
+    title: "Exchange of Rings",
+    malayalam: "മോതിരമാറ്റം",
+    tagline: "A promise held in a circle.",
     description:
-      "The groom ties the Minnu — a sacred gold pendant — around the bride's neck, then drapes the silk Manthrakodi kasavu saree over her shoulders.",
-    status: "upcoming",
+      "Each ring is an unbroken circle — enduring love, faithfulness and companionship, given to one another. With God and those they hold dear as witnesses, the rings they exchange become a promise to go on together, through all that life brings.",
     images: [],
   },
   {
-    id: "nuptial-qurbana",
-    title: "Nuptial Qurbana & Blessing",
+    id: "tying-the-knot",
+    title: "Tying the knot",
+    malayalam: "മിന്നുകെട്ട്",
+    tagline: "A promise tied close to the heart.",
     description:
-      "The couple receive the Nuptial Blessing and participate in the Holy Eucharist together for the first time as husband and wife.",
-    status: "upcoming",
-    images: [],
-  },
-  {
-    id: "signing-recessional",
-    title: "Signing & Recessional",
-    description:
-      "The couple sign the register and walk out as husband and wife while the choir fills the church with song and joy.",
-    status: "upcoming",
+      "Minnukettu is the tying of the sacred Thali — a small leaf-shaped gold pendant bearing the cross. As it is tied around the bride's neck, it becomes a lasting symbol of the covenant and the bond they now share. The Manthrakodi — a silk kasavu saree, gifted and blessed by the groom's family — is then draped over her shoulders, welcoming her into a new chapter surrounded by family and grace.",
     images: [],
   },
 ]);

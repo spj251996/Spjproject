@@ -28,8 +28,9 @@ const group = (over: Partial<FamilyGroup> = {}): FamilyGroup => ({
 const ritual = (over: Partial<Ritual> = {}): Ritual => ({
   id: "r",
   title: "A Ritual",
+  malayalam: "വിവാഹം",
+  tagline: "What it is about.",
   description: "What happens.",
-  status: "upcoming",
   images: [],
   ...over,
 });

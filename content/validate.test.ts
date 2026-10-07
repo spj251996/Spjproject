@@ -22,8 +22,9 @@ import {
 const ritual = (over: Partial<Ritual> = {}): Ritual => ({
   id: "a",
   title: "A Ritual",
+  malayalam: "വിവാഹം",
+  tagline: "What it is about.",
   description: "What happens.",
-  status: "upcoming",
   images: [],
   ...over,
 });
@@ -91,13 +92,6 @@ test("accepts well-formed content", () => {
   assert.deepEqual(validateWishes(wishes), wishes);
 });
 
-test("rejects an empty required string, naming the path", () => {
-  assert.throws(
-    () => validateRituals([ritual({ title: "" })]),
-    /rituals\[0\]\.title/,
-  );
-});
-
 test("rejects an empty invite passage, naming the path", () => {
   assert.throws(
     () => validateInvite({ ...invite, passage: "" }),
@@ -124,6 +118,28 @@ test("rejects an empty image entry", () => {
     () => validateRituals([ritual({ images: [""] })]),
     /rituals\[0\]\.images\[0\]/,
   );
+});
+
+test("validateRituals rejects a Malayalam title stored in visual order", () => {
+  // The PDF stored two of the five this way: the pre-base vowel sign `െ` BEFORE its
+  // consonant instead of after. It looks plausible in a diff and renders wrong.
+  assert.throws(
+    () => validateRituals([ritual({ malayalam: "മധുരംെവപ്പ്" })]),
+    /visual order/,
+  );
+});
+
+test("validateRituals accepts every shipped Malayalam title", () => {
+  // All five, in logical order. If this fails the rule is over-strict.
+  for (const malayalam of [
+    "മധുരംവെപ്പ്",
+    "മനസ്സമ്മതം",
+    "വിവാഹം",
+    "മോതിരമാറ്റം",
+    "മിന്നുകെട്ട്",
+  ]) {
+    assert.doesNotThrow(() => validateRituals([ritual({ malayalam })]));
+  }
 });
 
 test("rejects an empty event state, naming the path", () => {
