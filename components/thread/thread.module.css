@@ -7,7 +7,7 @@
 
 /* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
    kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
-   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `WishesWeave` copies it then had were
+   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `CardThread` copies it then had were
    auto-placing into two of its four EXPLICIT rows, pushing `names` and `signoff` out into new
    IMPLICIT ones. `.figureCol`'s `grid-row: 1 / -1` still spanned the same four tracks throughout --
    `-1` resolves against the explicit grid only, so the span never moved -- but two of those tracks
@@ -70,7 +70,7 @@
    carry `.pageRoot`): the fallback paints the thread in its authored position and this is the only
    thing that ever animates it, so "without JS the same sequence runs from CSS alone" (this file's
    own header, and `page-thread.tsx`'s) holds with no second code path. It does not reach
-   `WishesWeave`'s `.pageWeave` root, which is Wishes' own local weave, not the page-opening thread.
+   `CardThread`'s `.cardRoot` root, which is Wishes' own in-card stretch, not the page-opening thread.
 
    Reduced motion drops this whole rule (the media query it lives in) rather than overriding it, so
    there is no specificity contest to lose — `opacity`'s un-animated initial value is already `1`,
@@ -106,11 +106,11 @@
    re-learning about a bare utility losing to a scoped one, the other way round. JS hides the whole
    fallback layer once it has measured and taken over. */
 
-/* The weave's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why it must
+/* The card thread's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why it must
    take its place from the card's stacking context, behind the type, and a z-index would lift it out
    of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
    own edge; it is a drawn line, not content clipped to a box. */
-.pageWeave {
+.cardRoot {
   overflow: visible;
 }
 

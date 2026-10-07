@@ -122,11 +122,12 @@ import type { MeasuredSection, Rect } from "./thread-warp";
 
    WISHES IS THE ONE SPECIAL CASE. Its own stretch is excluded from this component's drawn `<path>`
    — this SVG paints at `{z.thread}` (40) above every card's `{z.content}` (20), so it would paint
-   over Wishes' type — and is instead drawn by `WishesWeave`, once, inside Wishes' card. The card is
-   a stacking context at `{z.content}` and the weave carries no z-index, so inside it the stretch
-   paints behind the type and in front of the couple illustration. It does not pass behind the
-   illustration: a weave was built (two copies either side of it) and never worked, and was deleted
-   (DESIGN.md → Thread → Wishes).
+   over Wishes' type — and is instead drawn by `CardThread`, once, inside Wishes' card. The card is
+   a stacking context at `{z.content}` and the card thread carries no z-index, so inside it the
+   stretch paints behind the type that FOLLOWS it in document order and in front of the couple
+   illustration. It does not pass behind the illustration: a weave was built (two complementary
+   copies either side of it), the copies ended up identical so the upper covered the lower wholly,
+   and the remaining copy was deleted in `f80c750` (DESIGN.md → Thread → Wishes).
 
    ANCHORING. `family`'s two `portraitLoop` placements must translate onto Flemy's and Sebastian's
    REAL rendered portraits (owner requirement, `session.md` 2026-09-27) — found by relationship label
@@ -164,7 +165,7 @@ const FALLBACKS = PAGE_FALLBACKS;
    `<style>` would let the module rule's higher specificity always win regardless of `@media`; see
    `thread.module.css`'s own comment for why both halves live here instead. */
 /* THE MAIN TRUNK'S OWN PIECE COUNT -- 19, per `task-1-brief.md`'s own reproduction (22 total pieces
-   across the six sections, minus `wishes`' own 3, which `WishesWeave` draws separately below). Fixed
+   across the six sections, minus `wishes`' own 3, which `CardThread` draws separately below). Fixed
    at every band: `THREAD_PATHS`/`MOTIF_PLACEMENTS` carry the same connector/motif COUNTS per section
    in all three bands (only the coordinates differ per band) -- confirmed directly against the data,
    not assumed, so this can be a plain module constant, letting `PageThread` render a FIXED number of
@@ -278,7 +279,7 @@ function ritualRowRects(sectionEl: Element, mainRect: DOMRect): Rect[] {
   );
 }
 
-/* Shared by `PageThread` and `WishesWeave` (`useLayoutTriggers`'s own header explains why each
+/* Shared by `PageThread` and `CardThread` (`useLayoutTriggers`'s own header explains why each
    measures independently) -- both must derive the SAME subdivisions from the SAME rects, or their
    two independent `threadLine` calls would chain a different `windowStart` through `celebrations`
    and hand `wishes` two disagreeing answers for where its own crossing predecessor left off. */
@@ -458,7 +459,7 @@ const OPENING_DRAW_DURATION = 1200;
    the follower knows what is already on the page and never replays it. */
 /* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
    exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
-   0.4s time constant the weave still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
+   0.4s time constant the card thread still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
    drawing head — which retires only when every piece is COMPLETE — stayed lit over the closing taper
    long after the thread looked finished. That is the very symptom the owner reported this round, so
    the fix must converge exactly rather than asymptotically.
@@ -659,7 +660,7 @@ function setAttribute(element: Element, name: string, value: string) {
 
 /* One painter per `<svg>` that carries a share of the head. `pathOf` maps a piece's index in the
    WHOLE chain to that piece's `d` in this `<svg>`, or nothing when the piece lives in another
-   one — so the trunk and the weave call `paint` with the same chain and each draws its own runs,
+   one — so the trunk and the card thread call `paint` with the same chain and each draws its own runs,
    which is what lets the head cross the join between them. */
 function createHeadPainter(
   group: SVGGElement,
@@ -841,9 +842,9 @@ function createRetracePainter(
 
   return {
     /* One frame: the segment of each animating stretch, and every other stretch hidden. A stretch
-       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and the weave are
+       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and the card thread are
        handed the same frames and each paints the share that lies in its own pieces, which is how the
-       terminal's stretch reaches the weave and the others reach the trunk. */
+       terminal's stretch reaches the card thread and the others reach the trunk. */
     paint(
       frames: ReadonlyMap<number, RetraceFrame>,
       pieces: readonly ThreadPiece[],
@@ -892,10 +893,10 @@ function createRetracePainter(
 type RetracePainter = ReturnType<typeof createRetracePainter>;
 
 /* The re-trace is one loop for the whole page, driven by `PageThread`, but Wishes' stretch is drawn in
-   `WishesWeave`'s own `<svg>`, whose pieces `PageThread`'s painter cannot reach. The weave registers its
+   `CardThread`'s own `<svg>`, whose pieces `PageThread`'s painter cannot reach. The card thread registers its
    painter here and the loop hands every registered painter the same frames: one clock, one budget and
    one thing to stop. */
-const weaveRetraces = new Set<RetracePainter>();
+const cardRetraces = new Set<RetracePainter>();
 
 /* ---------------------------------------------------------------------------------------------
    THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
@@ -1053,7 +1054,7 @@ function ThreadInk({
 }
 
 /* The mask that cuts the ink away under a taper. One per `<svg>`, so its id is fixed: the trunk's,
-   and the weave's. `maskUnits` is the user space because the default
+   and the card thread's. `maskUnits` is the user space because the default
    region is a percentage margin around the piece's bounding box, which is not a margin the cut can
    rely on. Without a `region` the mask takes this extent, which is only the region before the page is
    measured: `fitMaskRegion` narrows it to the piece, which is what keeps the mask cheap. A caller that
@@ -1061,7 +1062,7 @@ function ThreadInk({
    this large costs 27.1ms mean frame time and 116 dropped frames on the page. */
 const MASK_EXTENT = 100000;
 const TRUNK_CUT_ID = "thread-taper-cut-trunk";
-const WEAVE_CUT_ID = "thread-taper-cut-weave";
+const CARD_CUT_ID = "thread-taper-cut-card";
 
 interface MaskRegion {
   readonly x: number;
@@ -1254,7 +1255,7 @@ export function PageThread() {
      the old single trunk path. */
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
-  /* EVERY piece of the page, weave included: the head is the last stretch of the drawn line, so
+  /* EVERY piece of the page, the card thread's included: the head is the last stretch of the drawn line, so
      when the tip is a few pixels into Wishes' first piece the trunk still draws the head's tail in
      its own last one (`thread-light.ts`'s header). */
   const chainRef = useRef<readonly ThreadPiece[]>([]);
@@ -1297,11 +1298,11 @@ export function PageThread() {
   const catchUpSecondsRef = useRef(0);
   /* The owner's "and then stay drawn" (`createDrawRatchet`'s own header) -- every value that
      reaches `applyPieceDashes` below goes through this, so scrolling back up can only ever hold the
-     line where it was, never unravel it. `WishesWeave` owns its own; the two maxima are in
+     line where it was, never unravel it. `CardThread` owns its own; the two maxima are in
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
 
-  /* The `d` of a chain piece that lives in this `<svg>`, or nothing for the weave's. */
+  /* The `d` of a chain piece that lives in this `<svg>`, or nothing for the card thread's. */
   const pathOf = useCallback(
     (index: number) =>
       index < piecesRef.current.length
@@ -1330,7 +1331,7 @@ export function PageThread() {
     return retraceRef.current;
   }, [pathOf]);
 
-  /* Ends the loop: no frame stays scheduled and nothing stays painted, in this `<svg>` or in the weave's. A
+  /* Ends the loop: no frame stays scheduled and nothing stays painted, in this `<svg>` or in the card thread's. A
      loop that is not live has painted nothing, so there is nothing to hide when none is. */
   const stopRetrace = useCallback(() => {
     if (retraceFrameRef.current !== null) {
@@ -1341,7 +1342,7 @@ export function PageThread() {
     retraceStartRef.current = null;
     retraceSuspendedAtRef.current = null;
     retrace()?.hide();
-    for (const weave of weaveRetraces) weave.hide();
+    for (const card of cardRetraces) card.hide();
   }, [retrace]);
 
   /* Brings the loop in line with the state: starts it, stops it, or lets a running one pick up new
@@ -1455,8 +1456,8 @@ export function PageThread() {
         });
       }
       painter.paint(frames, chainRef.current, options);
-      for (const weave of weaveRetraces) {
-        weave.paint(frames, chainRef.current, options);
+      for (const card of cardRetraces) {
+        card.paint(frames, chainRef.current, options);
       }
       retraceFrameRef.current = window.requestAnimationFrame(frame);
     };
@@ -1862,11 +1863,14 @@ export function PageThread() {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   THE WEAVE — Wishes' own stretch, drawn once, in the one place in the DOM after the couple
-   illustration (`app/_sections/wishes.tsx`). The name outlived the design: it was drawn twice, a copy either
-   side of the illustration, to pass behind it, and the two copies were identical so the one over
-   covered the one under everywhere. It was deleted on 2026-10-02 and the name stays because gates
-   and docs use it. It measures independently of `PageThread` -- wishes' own subpath never depends on
+   THE CARD THREAD — a stretch of the thread drawn INSIDE a card's own stacking context, so it paints
+   behind that card's type rather than over it. `PageThread`'s trunk paints at `{z.thread}` (40), above
+   every card's `{z.content}` (20), so any stretch that must pass behind type has to be drawn in the
+   card. Wishes is the first and so far only place that need arose; the piece range below is this
+   component's one Wishes-bound part, and Phase 6b's redraw is the trigger to generalise it.
+
+   It mounts once, after the couple illustration (`app/_sections/wishes.tsx`). It measures
+   independently of `PageThread` -- wishes' own subpath never depends on
    family's anchors (celebrations sits between them, and the boundary-snap in `thread-line.ts` only
    ever copies an ADJACENT section's own endpoint), so this needs no state shared with `PageThread`,
    only the same pure functions. The reveal, though, must stay in step with the whole page's
@@ -1874,18 +1878,18 @@ export function PageThread() {
    `firstPieceRef` is where wishes' own begin in it, and their `start`/`end` are on the page's own
    cumulative scale. */
 
-export function WishesWeave() {
+export function CardThread() {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   /* One entry per `wishes` piece (`WISHES_PIECE_COUNT`, fixed) -- same per-piece shape as
      `PageThread`'s `pathsRef`/`piecesRef` above, for the same reason: `wishes` is not exempt from
-     the one-dash-per-subpath finding just because it draws through its own weave rather than
+     the one-dash-per-subpath finding just because it draws through its own card root rather than
      `PageThread`'s trunk. */
   const pathsRef = useRef<(SVGPathElement | null)[]>([]);
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
-  /* The head's chain is the whole page's, and `firstPieceRef` is where this weave's own pieces
-     begin in it -- the weave draws the share of the head that lies in its own pieces, from the same
-     drawn length the trunk uses, so the head crosses the join unbroken. The weave's `viewBox` is
+  /* The head's chain is the whole page's, and `firstPieceRef` is where this component's own pieces
+     begin in it -- it draws the share of the head that lies in its own pieces, from the same drawn
+     length the trunk uses, so the head crosses the join unbroken. Its `viewBox` is
      the card's rect in `<main>` coordinates and its box is that same rect, so its user space is
      1:1 with page pixels and the head's widths need no correction. */
   const chainRef = useRef<readonly ThreadPiece[]>([]);
@@ -1901,7 +1905,7 @@ export function WishesWeave() {
   /* The head's and the re-trace's painters share what they sample, as the trunk's do. */
   const samplesRef = useRef(new Map<number, PieceSamples>());
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
-     `WishesWeave` measures independently (see the header comment), so it keeps its own.
+     `CardThread` measures independently (see the header comment), so it keeps its own.
      `groupRectsRef` is `threadLine`'s own per-GROUP rects, exactly like `PageThread`'s -- `wishes`
      itself never splits, but the CHAIN leading up to it (through `celebrations`'s own groups) must
      be built from the SAME measured subdivisions `PageThread` uses, or the two components would hand
@@ -1953,18 +1957,18 @@ export function WishesWeave() {
     return taperRef.current;
   }
 
-  function paintWeave(drawn: number) {
+  function paintCard(drawn: number) {
     applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
     head()?.paint(drawn, chainRef.current, headOptions());
     const last = piecesRef.current[piecesRef.current.length - 1];
     if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
   }
 
-  const weaveCatchUpRef = useRef<ReturnType<typeof createCatchUp> | null>(null);
-  const weavePaintRef = useRef<(drawn: number) => void>(() => {});
-  weavePaintRef.current = paintWeave;
-  weaveCatchUpRef.current ??= createCatchUp((drawn) =>
-    weavePaintRef.current(drawn),
+  const cardCatchUpRef = useRef<ReturnType<typeof createCatchUp> | null>(null);
+  const cardPaintRef = useRef<(drawn: number) => void>(() => {});
+  cardPaintRef.current = paintCard;
+  cardCatchUpRef.current ??= createCatchUp((drawn) =>
+    cardPaintRef.current(drawn),
   );
 
   /* A re-measure paints where the page already is, with no travel: the follower is for a reader's
@@ -1982,8 +1986,8 @@ export function WishesWeave() {
       return;
     }
     const drawn = ratchetRef.current.advance(pageDrawn);
-    weaveCatchUpRef.current?.seen(drawn);
-    paintWeave(drawn);
+    cardCatchUpRef.current?.seen(drawn);
+    paintCard(drawn);
   }
 
   function revealScrolled() {
@@ -1992,7 +1996,7 @@ export function WishesWeave() {
       taper()?.paint(Number.POSITIVE_INFINITY);
       return;
     }
-    weaveCatchUpRef.current?.to(
+    cardCatchUpRef.current?.to(
       ratchetRef.current.advance(
         pageDrawnLength(
           groupRectsRef.current,
@@ -2008,7 +2012,7 @@ export function WishesWeave() {
   function measureLayout() {
     /* Read BEFORE `rangesRef.current` is overwritten below -- the ratchet's peak is a length on the
        OLD path. These are the PAGE's ranges, the same quantity `PageThread` measures: this
-       component's RATCHET holds a length along the weave's own stretch, but its `ranges` are the
+       component's RATCHET holds a length along this card's own stretch, but its `ranges` are the
        whole chain's (see `piecesRef`'s note below -- wishes' pieces are already on the page's global
        cumulative scale). The rebase is commensurable because both totals are read the same way. */
     const previousRanges = rangesRef.current;
@@ -2083,7 +2087,7 @@ export function WishesWeave() {
     catchUpSecondsRef.current = (tokenTime("--thread-catchup") ?? 0) / 1000;
     /* Same reason as `PageThread`'s own rebase: the maximum described the path this re-measure has
        just replaced, so it is scaled between the two totals rather than discarded -- discarding it
-       let a phone's URL-bar resize un-draw the weave on the way back up. `reveal` paints from it on
+       let a phone's URL-bar resize un-draw the card thread on the way back up. `reveal` paints from it on
        the next line. */
     ratchetRef.current.rebase(totalLength(previousRanges), totalLength(ranges));
     reveal();
@@ -2093,7 +2097,7 @@ export function WishesWeave() {
      else, so this re-reads the two window values and re-paints. `reveal` is already the no-travel
      painter ("a re-measure paints where the page already is" -- its own header), which is exactly
      what a URL bar moving needs; `revealScrolled` would ease it. No head reset, no re-trace stop, no
-     rebase. The weave takes no `openingFloor`: the opening sequence draws the INVITE's pieces, which
+     rebase. The card thread takes no `openingFloor`: the opening sequence draws the INVITE's pieces, which
      live in `PageThread`'s `<svg>`, not this one. */
   function refreshWindow() {
     if (reducedMotion()) return;
@@ -2104,15 +2108,15 @@ export function WishesWeave() {
 
   useLayoutTriggers(measureLayout, refreshWindow);
 
-  /* Joins the page's one re-trace loop (`weaveRetraces`'s header): `PageThread` drives it, and this
+  /* Joins the page's one re-trace loop (`cardRetraces`'s header): `PageThread` drives it, and this
      paints Wishes' stretch of it into its own `<svg>`. */
   // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `retrace` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
   useEffect(() => {
     const painter = retrace();
     if (painter === null) return;
-    weaveRetraces.add(painter);
+    cardRetraces.add(painter);
     return () => {
-      weaveRetraces.delete(painter);
+      cardRetraces.delete(painter);
       painter.hide();
     };
   }, []);
@@ -2138,20 +2142,20 @@ export function WishesWeave() {
     <span
       aria-hidden="true"
       className={styles.pageWrapper}
-      data-thread-weave
+      data-thread-card
       ref={wrapperRef}
     >
       <svg
-        className={styles.pageWeave}
+        className={styles.cardRoot}
         data-thread-svg="true"
         preserveAspectRatio="none"
         ref={svgRef}
         role="presentation"
       >
-        <TaperCutMask cutRef={cutRef} id={WEAVE_CUT_ID} />
+        <TaperCutMask cutRef={cutRef} id={CARD_CUT_ID} />
         {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
           <ThreadInk
-            cutId={index === WISHES_PIECE_COUNT - 1 ? WEAVE_CUT_ID : undefined}
+            cutId={index === WISHES_PIECE_COUNT - 1 ? CARD_CUT_ID : undefined}
             index={index}
             // biome-ignore lint/suspicious/noArrayIndexKey: WISHES_PIECE_COUNT is a fixed structural constant -- these never reorder or change count.
             key={index}

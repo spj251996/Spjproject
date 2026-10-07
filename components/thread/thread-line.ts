@@ -68,9 +68,9 @@ export type ThreadLine = {
   /* ONE PIECE PER connector and per motif, in draw order, over the SAME cumulative scale as
      `length`/`sections` — the fix for the finding that supersedes the previous architecture:
      `stroke-dasharray` restarts at every `M` subpath, so a single dash driving a `d` that holds 19
-     subpaths (the main path, `wishes` excluded — its own weave copy carries the other 3) produced
+     subpaths (the main path, `wishes` excluded — its own card thread carries the other 3) produced
      19 simultaneous draw heads rather than one (`task-1-report.md`). `page-thread.tsx` and
-     `WishesWeave` give each piece its OWN `<path>` and its OWN dash, computed from its own
+     `CardThread` give each piece its OWN `<path>` and its OWN dash, computed from its own
      `[start, end)` here — contiguous and disjoint by construction, which is what makes "exactly one
      piece mid-draw" true without a second rule to keep in sync (see `pieceProgress` below). */
   pieces: readonly ThreadPiece[];
@@ -1026,7 +1026,7 @@ export function dashForPiece(
    `scrollY` with no memory, and that is deliberate: it is what makes the whole sequencing testable
    without a browser. So the memory lives here instead, as a small piece of state the CALLER owns
    and threads its own scroll value through — one ratchet per component, never a module-level
-   singleton, or `PageThread` and `WishesWeave` would share a maximum that means different things in
+   singleton, or `PageThread` and `CardThread` would share a maximum that means different things in
    their two different path lengths.
 
    `rebase` exists because a maximum is only meaningful against the layout it was measured in: a

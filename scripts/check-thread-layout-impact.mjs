@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* THE ZERO-LAYOUT-IMPACT GATE. `thread.module.css`'s `.pageWrapper` documents a contract — the
- * span both `PageThread` and `WishesWeave` mount as their root takes no space in flow and does not
+ * span both `PageThread` and `CardThread` mount as their root takes no space in flow and does not
  * push its host's own layout apart. That was true and verified for a flex-column host and silently
- * false for a CSS-Grid one: an in-flow box is still a grid item at `height: 0`, so `WishesWeave`'s
+ * false for a CSS-Grid one: an in-flow box is still a grid item at `height: 0`, so `CardThread`'s
  * two copies (it drew two then; it draws one now) were auto-placing into Wishes' `>=64rem` landscape grid, growing it past its four
  * EXPLICIT rows and starving `.figureCol`'s `grid-row: 1 / -1` (which spans the explicit grid only,
  * per spec) down to two of them. `.figureCol` measured 160px against the stack's own 384px, and the
@@ -27,8 +27,8 @@
  * module) class on the stack div in `app/_sections/wishes.tsx`, so no source file needs editing to
  * reach it.
  * `.figureCol` is a CSS-module class with no stable literal name — it is found instead as the
- * element immediately BEFORE `[data-thread-weave]`, the call site's own fixed DOM relationship
- * (`app/_sections/wishes.tsx`: `WishesWeave` is the next sibling of `wishesStyles.figureCol`).
+ * element immediately BEFORE `[data-thread-card]`, the call site's own fixed DOM relationship
+ * (`app/_sections/wishes.tsx`: `CardThread` is the next sibling of `wishesStyles.figureCol`).
  *
  * ENGINE PIN (mandatory): `chromium.launch({ channel: "chromium" })` — the default launch reaches
  * for Chromium's old `headless_shell`, whose rendering differs from every real browser.
@@ -85,11 +85,11 @@ try {
     );
 
   if (falsify) {
-    /* Reproduce the exact defect this gate exists to catch: put the weave's wrapper back in flow,
+    /* Reproduce the exact defect this gate exists to catch: put the card thread's wrapper back in flow,
      * which is what `relative` did before the fix. A gate that cannot see this cannot see the
      * regression it is here for, and a run that passes under `--falsify` is the gate failing. */
     await page.addStyleTag({
-      content: "[data-thread-weave] { position: relative !important; }",
+      content: "[data-thread-card] { position: relative !important; }",
     });
   }
 
@@ -98,15 +98,15 @@ try {
 
   const result = await page.evaluate(() => {
     const stack = document.querySelector(".wishes-stack");
-    const weave = document.querySelector("[data-thread-weave]");
-    const figureCol = weave?.previousElementSibling ?? null;
-    if (stack === null || weave === null || figureCol === null) {
+    const cardThread = document.querySelector("[data-thread-card]");
+    const figureCol = cardThread?.previousElementSibling ?? null;
+    if (stack === null || cardThread === null || figureCol === null) {
       return { error: "one or more Wishes elements did not render" };
     }
     return {
       stackHeight: stack.getBoundingClientRect().height,
       figureColHeight: figureCol.getBoundingClientRect().height,
-      weavePathD: weave.querySelector("path")?.getAttribute("d") ?? "",
+      cardPathD: cardThread.querySelector("path")?.getAttribute("d") ?? "",
     };
   });
 
@@ -114,10 +114,10 @@ try {
     console.log(`  BREAK: ${result.error}`);
     exitCode = 1;
   } else {
-    const { stackHeight, figureColHeight, weavePathD } = result;
+    const { stackHeight, figureColHeight, cardPathD } = result;
     const delta = Math.abs(stackHeight - figureColHeight);
     const geometryOk = delta <= TOLERANCE;
-    const weaveOk = weavePathD.length > 0;
+    const cardOk = cardPathD.length > 0;
 
     console.log(
       `  stack height ${stackHeight.toFixed(2)}px, figureCol height ${figureColHeight.toFixed(2)}px, delta ${delta.toFixed(2)}px`,
@@ -128,12 +128,12 @@ try {
         : "  BREAK figureCol does not span the stack's full height -- .pageWrapper is back in flow inside Wishes' grid",
     );
     console.log(
-      weaveOk
-        ? "  ok    the weave renders a non-empty path"
-        : "  BREAK the weave rendered no path",
+      cardOk
+        ? "  ok    the card thread renders a non-empty path"
+        : "  BREAK the card thread rendered no path",
     );
 
-    exitCode = geometryOk && weaveOk ? 0 : 1;
+    exitCode = geometryOk && cardOk ? 0 : 1;
   }
 } finally {
   await browser.close();

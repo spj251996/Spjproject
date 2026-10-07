@@ -13,7 +13,7 @@
    header comment states this is deliberate: a section-scoped SVG could only paint in front of
    Wishes' illustration, never behind it). So `section#<id> svg[data-thread-svg] path` — this gate's
    original selector — matches nothing for five of six sections; only Wishes ever had a descendant
-   match, because `WishesWeave` mounts inside `#wishes` itself (in the card, so the stretch paints behind
+   match, because `CardThread` mounts inside `#wishes` itself (in the card, so the stretch paints behind
    the type, for that same z-index reason). The fix: search the WHOLE DOCUMENT for
    `data-thread-svg` paths, then CLIP each one's geometry to the section's own rect before
    measuring — never re-introduce a per-section SVG to make the old selector work again, which is

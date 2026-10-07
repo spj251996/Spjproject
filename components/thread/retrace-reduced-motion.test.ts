@@ -299,7 +299,7 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
   }
 });
 
-test("Wishes' closing stretch loops, painted by the one weave and nowhere else", async (t) => {
+test("Wishes' closing stretch loops, painted by the one card thread and nowhere else", async (t) => {
   if (!existsSync("out/index.html")) {
     t.skip("no static export: run `npm run build` first");
     return;
@@ -326,21 +326,21 @@ test("Wishes' closing stretch loops, painted by the one weave and nowhere else",
     let lit = 0;
     for (let i = 0; i < 120 && !lit; i++) {
       lit = (await page.evaluate(
-        "Array.from(document.querySelectorAll('[data-thread-weave] [data-thread-retrace-group] path, [data-thread-weave] [data-thread-retrace-glow] path')).filter((p) => p.style.display !== 'none' && p.getAttribute('d')).length",
+        "Array.from(document.querySelectorAll('[data-thread-card] [data-thread-retrace-group] path, [data-thread-card] [data-thread-retrace-glow] path')).filter((p) => p.style.display !== 'none' && p.getAttribute('d')).length",
       )) as number;
       await page.waitForTimeout(50);
     }
-    assert.ok(lit > 0, "the weave's stretch is lit");
+    assert.ok(lit > 0, "the card thread's stretch is lit");
     assert.equal(
       await page.evaluate(
-        "document.querySelectorAll('[data-thread-weave]').length",
+        "document.querySelectorAll('[data-thread-card]').length",
       ),
       1,
-      "Wishes carries one weave, not a copy either side of the illustration",
+      "Wishes carries one card thread, not a copy either side of the illustration",
     );
     assert.equal(
       await page.evaluate(
-        "document.querySelectorAll('[data-thread-weave] [data-thread-retrace-group]').length",
+        "document.querySelectorAll('[data-thread-card] [data-thread-retrace-group]').length",
       ),
       1,
       "and it holds one re-trace group",

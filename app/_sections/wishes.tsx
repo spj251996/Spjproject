@@ -6,7 +6,7 @@ import {
   SECTION_PLACEMENT,
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { WishesWeave } from "@/components/thread/page-thread";
+import { CardThread } from "@/components/thread/page-thread";
 import { wishes } from "@/content";
 
 /* The page's close. The illustration's size and bleed
@@ -50,7 +50,7 @@ export function WishesSection() {
           <div className={wishesStyles.figureCol}>
             <div aria-hidden className={wishesStyles.figure} />
           </div>
-          <WishesWeave />
+          <CardThread />
 
           <p className="type-heading-script mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
             {wishesNames ? (
