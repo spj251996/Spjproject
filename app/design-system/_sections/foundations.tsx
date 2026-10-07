@@ -310,7 +310,7 @@ const DURATION_TOKENS: DurationToken[] = [
 ];
 
 const DURATION_USES = [
-  "fast · state changes: node activation glow, action feedback",
+  "fast · the action press and hover, and the opening sequence beat",
   "base · section and sheet reveals, the modal",
   "slow · no consumer — its only one, the closed thread draw on not-found, was retired",
 ];
