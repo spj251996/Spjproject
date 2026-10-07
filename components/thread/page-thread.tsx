@@ -151,10 +151,10 @@ type Point = { x: number; y: number };
    page-length path in that band's own nominal pixels and normalised into a 0-1 square per band so
    all three can share ONE viewBox and the choice between them is a plain CSS `display` toggle — no
    platform assumption beyond `@media (aspect-ratio ...)`, which this project's generated
-   stylesheet already relied on. `sectionRouteFallback` (the same module) is the same machinery for
-   ONE section alone — what `not-found-thread.tsx` uses for its own closed, timed replay. Both live
-   outside this "use client" module because a server component cannot call a function a client
-   module exports, even a pure one. */
+   stylesheet already relied on. It lives outside this "use client" module because a server
+   component cannot call a function a client module exports, even a pure one. (A sibling,
+   `sectionRouteFallback`, did the same for ONE section, for `not-found`'s own closed replay; both
+   were retired on 2026-10-07 with that screen's thread.) */
 const FALLBACKS = PAGE_FALLBACKS;
 
 /* The hide-all rule and every per-band show rule share the SAME specificity (a single attribute

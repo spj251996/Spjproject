@@ -42,7 +42,8 @@
    `<main>` at 393x6576, so the whole page-length thread was squeezed into the first screen (7,050 of
    its 7,053 ink pixels in the first 700px band, 3 in all the rest). Only the no-JS reader ever saw
    it: the live svg is given an explicit box by `coverRect`, whose inline style wins here anyway.
-   `.notFoundSvg` below has always carried this pair, which is what the omission reads as. */
+   (`not-found` carried a second SVG that had always declared the pair; it was retired with that
+   screen's thread on 2026-10-07, so this rule is the only place the lesson now lives.) */
 .pageRoot {
   position: absolute;
   inset: 0;
@@ -199,57 +200,4 @@
    a 1:1 pixel space they paint a plain halo (8669 against 1378). Why is not established. */
 .pageInk[data-thread-fallback] {
   filter: none;
-}
-
-/* `not-found`'s own closed, timed thread (`not-found-thread.tsx`) -- a plain server-rendered SVG,
-   no JS measurement, since the screen has exactly one fixed card and no scroll. Zero layout, same
-   as `.root`/`.pageRoot` above, on the section's own positioning (`app/not-found.tsx`'s `<section
-   className="relative">`), not `<main>`'s -- there is nothing else on this screen to measure
-   against. */
-.notFoundRoot {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: var(--z-thread);
-}
-
-.notFoundSvg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.notFoundInk {
-  fill: none;
-  stroke: var(--color-thread-red);
-  stroke-linecap: round;
-  stroke-width: var(--stroke-thread);
-}
-
-/* The draw itself: a one-shot, linear reveal on the clock rather than the scrub -- the values this
-   screen's thread has carried since before this cutover (0.4s delay, 2.4s duration, linear), not
-   new ones. `1.02` is the same small overshoot every whole-path dash in this project carries
-   (`page-thread.tsx`'s `DASH_EPSILON`, `lessons.md` 2026-09-25): Chromium can stop a dash exactly
-   matching a `pathLength="1"` path's own length a few percent short of the true end.
-
-   Reduced motion drops this whole rule rather than overriding it -- with no `stroke-dasharray` at
-   all the path paints solid and complete, which is "the thread is simply complete on arrival"
-   (`app/not-found.tsx`'s own comment) with no second code path to keep in sync. */
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes notFoundDraw {
-    from {
-      stroke-dashoffset: 1.02;
-    }
-
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-
-  .notFoundInk {
-    stroke-dasharray: 1.02;
-    animation: notFoundDraw 2.4s linear 0.4s both;
-  }
 }

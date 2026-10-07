@@ -5,10 +5,14 @@ import { test } from "node:test";
 
 /* A `viewBox="0 0 1 1"` stretched over a real box re-scales the stroke with it, so a `px` stroke
    width is read as that many USER-SPACE units -- about 1500x too wide at this page's size, which
-   paints a solid rectangle rather than a line. Two `<svg>` elements in this directory live in that
-   coordinate system: `page-thread.tsx`'s no-JS fallback, and `not-found-thread.tsx`'s whole thread.
-   The first was fixed on its first real render; the second shipped without the attribute and
-   painted the 404 screen 99.7% red for every reader who reached it.
+   paints a solid rectangle rather than a line. ONE `<svg>` in this directory lives in that
+   coordinate system: `page-thread.tsx`'s no-JS fallback, fixed on its first real render.
+
+   It had a second member until 2026-10-07 -- `not-found-thread.tsx`'s whole thread, which shipped
+   WITHOUT the attribute and painted the 404 screen 99.7% red for a month. That screen's thread was
+   retired rather than repaired (DESIGN.md -> Not found), so this gate is down to one member. Keep
+   it: the surviving member is the one a reader with no JS sees, and it is still the arrangement
+   that failed.
 
    The rule is asserted GENERALLY rather than on those two files, so a path written into this
    coordinate system later is covered the day it is written rather than the day someone renders it.
@@ -21,7 +25,7 @@ import { test } from "node:test";
    markup is reformatted or a slice stops matching -- a regex that matches nothing reads exactly
    like a regex whose every match passed (`lessons.md`, 2026-10-05). */
 
-const EXPECTED_STRETCHED_PATHS = 2;
+const EXPECTED_STRETCHED_PATHS = 1;
 
 function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, "");

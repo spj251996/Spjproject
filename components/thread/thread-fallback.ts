@@ -1,10 +1,13 @@
-/* Pure, server-safe geometry shared by `page-thread.tsx` (the whole page's no-JS fallback) and
-   `not-found-thread.tsx` (a standalone, single-section replay of one route). Split out of
-   `page-thread.tsx` specifically because that file is `"use client"` — every export of a client
-   module is a client boundary, so a server component (`NotFoundThread`) cannot call a function
-   defined there even when the function itself touches no DOM. Nothing in this file does: it is the
-   same identity-warp arithmetic `thread-line.test.ts` already proves reproduces the authored
-   geometry exactly, applied to whichever section(s) the caller asks for. */
+/* Pure, server-safe geometry for `page-thread.tsx`'s whole-page no-JS fallback. Split out of
+   `page-thread.tsx` because that file is `"use client"` — every export of a client module is a
+   client boundary, so a server component cannot call a function defined there even when the
+   function itself touches no DOM. Nothing in this file does: it is the same identity-warp
+   arithmetic `thread-line.test.ts` already proves reproduces the authored geometry exactly.
+
+   It also carried `sectionRouteFallback` — one section's route, renormalised against its own
+   authored card — which `not-found-thread.tsx` used for a closed replay of `invite`'s route. Both
+   were retired on 2026-10-07 along with that screen's thread (DESIGN.md -> Not found). The split
+   still earns its place: the fallback below is itself server-rendered. */
 
 import { authoredCard } from "./thread-authored-layout";
 import { type BandId, THREAD_BANDS } from "./thread-bands";
@@ -112,27 +115,3 @@ export const PAGE_FALLBACKS: Fallback[] = THREAD_BANDS.map((band) => {
     media: aspectQuery(band.min, band.max),
   };
 });
-
-/* One section's own authored route, isolated from the rest of the page and renormalised against
-   its OWN authored card rather than the whole page's stacked height — what `not-found-thread.tsx`
-   needs for a standalone, single-section replay of `invite`'s route (`authoredCard`/`sectionBox`
-   already resolve `not-found` -> `invite`, so passing "invite" here is what that mapping means in
-   practice). Reuses the exact identity-warp `threadLine` call `PAGE_FALLBACKS` makes above, sliced
-   to one section's subpath range — not a second warp, so it can never disagree with the page's own
-   fallback about what `invite`'s authored geometry is. */
-export function sectionRouteFallback(
-  id: (typeof THREAD_IDS)[number],
-): Fallback[] {
-  return THREAD_BANDS.map((band) => {
-    const sections = authoredMeasuredSections(band.id);
-    const { d } = threadLine(band.id, sections);
-    const range = subpathRange(band.id, id);
-    const ownD = splitSubpaths(d).slice(range.start, range.end).join(" ");
-    const card = authoredCard(id, band.id);
-    return {
-      band: band.id,
-      d: normalise(ownD, card.cardWidth, card.sectionHeight),
-      media: aspectQuery(band.min, band.max),
-    };
-  });
-}
