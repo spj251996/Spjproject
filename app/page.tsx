@@ -790,8 +790,13 @@ export function CelebrationsSection() {
                       </h3>
                       {/* Beside the English title at every band (owner), never stacked under it.
                           `leading-tight` because Malayalam's own ascenders and the pre-base signs
-                          otherwise grow the shared line box past the title's line height. */}
-                      <span className="type-heading-lg font-(family-name:--font-malayalam) text-accent-gold leading-tight">
+                          otherwise grow the shared line box past the title's line height.
+                          `type-caption`, NOT the `type-heading-lg` of the title beside it: Malayalam
+                          carries more apparent height than Latin at the same point size, so at
+                          heading-lg it out-weighed the English it accompanies -- and it is what
+                          makes the title row fit the phone band (owner, 2026-10-07; the width
+                          arithmetic is in DESIGN.md -> Timeline). */}
+                      <span className="type-caption font-(family-name:--font-malayalam) text-accent-gold leading-tight">
                         {ritual.malayalam}
                       </span>
                     </div>

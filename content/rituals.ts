@@ -61,7 +61,7 @@ export const rituals: Ritual[] = validateRituals([
   },
   {
     id: "exchange-of-rings",
-    title: "Exchange of Rings",
+    title: "Ring Exchange",
     malayalam: "മോതിരമാറ്റം",
     tagline: "A promise held in a circle.",
     description:
