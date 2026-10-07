@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { splinePath } from "./thread-spline.ts";
+import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
 
 test("the path starts at the first point and is all cubics", () => {
   const d = splinePath([
@@ -48,6 +48,17 @@ function span(d: string, index: number) {
 const degrees = (x: number, y: number) => (Math.atan2(y, x) * 180) / Math.PI;
 const size = (x: number, y: number) => Math.hypot(x, y);
 
+/* ---- the shaping rules, probed WITHOUT the span bound -------------------------------------------
+
+   The four tests below index a particular SPAN of the emitted path and assert the fitter's own
+   shaping rules on it -- the bisector direction, the arm taken from its own span, the half arm at an
+   end, and a hairpin turning rather than cusping. Their fixtures are deliberately unequal and 100-235
+   px long, so the default `MAX_SPAN` subdivides them and `span(d, 1)` stops being the span the test
+   means. They therefore pass `maxSpan: Infinity`: the rules they assert are about arm sizing and
+   direction, which span bounding does not touch, and not one assertion's expected value changes. The
+   bound's own effect is asserted by the `boundSpans` tests at the end of this file. */
+const UNBOUNDED = { maxSpan: Number.POSITIVE_INFINITY } as const;
+
 const corner = [
   { x: 0, y: 0 },
   { x: 100, y: 0 },
@@ -76,13 +87,16 @@ test("an end given a direction leaves along it, not toward its neighbour", () =>
 });
 
 test("an end given a direction ARRIVES along it too", () => {
-  const last = span(splinePath(corner, { ends: { end: { x: 1, y: 0 } } }), 1);
+  const last = span(
+    splinePath(corner, { ...UNBOUNDED, ends: { end: { x: 1, y: 0 } } }),
+    1,
+  );
   /* Arriving along +x means the final control point sits BEHIND the finish on that axis. */
   assert.equal(
     Math.round(degrees(last.end.x - last.c2.x, last.end.y - last.c2.y)),
     0,
   );
-  const plain = span(splinePath(corner), 1);
+  const plain = span(splinePath(corner, UNBOUNDED), 1);
   assert.equal(
     Math.round(degrees(plain.end.x - plain.c2.x, plain.end.y - plain.c2.y)),
     90,
@@ -134,8 +148,8 @@ test("a control arm is one third of the span it belongs to, not of its neighbour
   /* Both arms below sit on the SAME interior point, one per side. The 10-long leg must not starve
      the 110-long one: a connector runs `JOIN_OVERLAP` past each of its ends and its spans are wildly
      unequal, and feeding every arm from the shorter adjacent span put a cusp at the corner. */
-  const short = span(splinePath(unequal), 0);
-  const long = span(splinePath(unequal), 1);
+  const short = span(splinePath(unequal, UNBOUNDED), 0);
+  const long = span(splinePath(unequal, UNBOUNDED), 1);
   const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
   assert.equal(
     round6(size(short.end.x - short.c2.x, short.end.y - short.c2.y)),
@@ -158,8 +172,8 @@ test("a control arm is one third of the span it belongs to, not of its neighbour
    nothing else. Giving an end the interior arm doubles how far the curve bulges sideways while it
    swings onto a motif's tangent, and that bulge is what the reveal mask stops being able to follow. */
 test("a first or last point keeps the half arm the duplicated neighbour gave", () => {
-  const first = span(splinePath(unequal), 0);
-  const last = span(splinePath(unequal), 1);
+  const first = span(splinePath(unequal, UNBOUNDED), 0);
+  const last = span(splinePath(unequal, UNBOUNDED), 1);
   const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
   assert.equal(
     round6(size(first.c1.x - first.start.x, first.c1.y - first.start.y)),
@@ -180,7 +194,7 @@ test("a hairpin turns through its corner instead of cusping at it", () => {
     { x: leg, y: 0 },
     { x: leg + leg * Math.cos(radians), y: leg * Math.sin(radians) },
   ];
-  const { start, c1 } = span(splinePath(hairpin), 1);
+  const { start, c1 } = span(splinePath(hairpin, UNBOUNDED), 1);
   const arm = size(c1.x - start.x, c1.y - start.y);
 
   /* The length-weighted sum nearly cancels across a 166-degree reversal: `|p2 - p0| / 6`. */
@@ -237,4 +251,125 @@ test("project moves the emitted curve without reshaping it", () => {
     assert.ok(Math.abs(a[i] / 2 - b[i]) < 1e-9, `x at ${i}`);
     assert.ok(Math.abs(a[i + 1] / 4 - b[i + 1]) < 1e-9, `y at ${i}`);
   }
+});
+
+/* ---- bounding the span-length ratio the fitter sees ---------------------------------------------
+
+   The owner reported the thread reading as chicken scratch rather than a flowing line. `splinePath`
+   sizes both of a span's control arms from THAT SPAN'S OWN length, which is correct and must not
+   change; what is wrong is the input. The authored routes carry a 20x span spread, because
+   Ramer-Douglas-Peucker drops points on smooth runs and piles them at corners — so the spread is a
+   property of the EXTRACTION, not of the owner's drawing. Adjacent arms differing 20x is a curvature
+   discontinuity: a tight wiggle and then a long glide. */
+
+const spansOf = (points: readonly { x: number; y: number }[]) =>
+  points
+    .slice(1)
+    .map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
+
+test("boundSpans leaves an already-even point list alone", () => {
+  /* A no-op on even spacing, or every authored route shifts for nothing. */
+  const even = [
+    { x: 0, y: 0 },
+    { x: 10, y: 0 },
+    { x: 20, y: 0 },
+    { x: 30, y: 0 },
+  ];
+  assert.deepEqual(boundSpans(even, 10), even);
+});
+
+test("boundSpans keeps every authored vertex at its exact coordinates", () => {
+  const drawn = [
+    { x: 0, y: 0 },
+    { x: 8, y: 0 },
+    { x: 8, y: 169 },
+  ];
+  const out = boundSpans(drawn, 40);
+  for (const vertex of drawn) {
+    assert.ok(
+      out.some((p) => p.x === vertex.x && p.y === vertex.y),
+      `authored vertex ${JSON.stringify(vertex)} was moved or dropped`,
+    );
+  }
+  assert.deepEqual(out[0], drawn[0]);
+  assert.deepEqual(out[out.length - 1], drawn[drawn.length - 1]);
+});
+
+test("boundSpans caps the longest span at the threshold", () => {
+  const out = boundSpans(
+    [
+      { x: 0, y: 0 },
+      { x: 161, y: 0 },
+    ],
+    40,
+  );
+  const widest = Math.max(...spansOf(out));
+  assert.ok(widest <= 40 + 1e-9, `widest span is ${widest}`);
+});
+
+test("boundSpans cuts tall's connector 0 span ratio from 20x to under 6x", () => {
+  // The measured authored route, read from tmp/thread-draw/tall/connectors.json.
+  const connector0 = [
+    { x: 12, y: 189 },
+    { x: 32, y: 159 },
+    { x: 40, y: 159 },
+    { x: 48, y: 173 },
+    { x: 48, y: 213 },
+    { x: 19, y: 371 },
+    { x: 22, y: 403 },
+    { x: 45, y: 430 },
+  ];
+  const beforeSpans = spansOf(connector0);
+  const beforeRatio = Math.max(...beforeSpans) / Math.min(...beforeSpans);
+  assert.ok(
+    beforeRatio > 19,
+    `fixture ratio is ${beforeRatio.toFixed(1)}, expected >19`,
+  );
+  const afterSpans = spansOf(boundSpans(connector0, 40));
+  const afterRatio = Math.max(...afterSpans) / Math.min(...afterSpans);
+  assert.ok(afterRatio < 6, `ratio after bounding is ${afterRatio.toFixed(1)}`);
+});
+
+test("boundSpans handles a span exactly at the threshold without splitting it", () => {
+  /* Off-by-one at the boundary: `ceil(40/40)` is 1, so a span AT the threshold is left whole. */
+  const out = boundSpans(
+    [
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+    ],
+    40,
+  );
+  assert.equal(out.length, 2);
+});
+
+test("boundSpans handles degenerate lists", () => {
+  /* Fewer than two points, and a zero-length span — every connector's degenerate cases. */
+  assert.deepEqual(boundSpans([], 40), []);
+  assert.deepEqual(boundSpans([{ x: 1, y: 2 }], 40), [{ x: 1, y: 2 }]);
+  const coincident = [
+    { x: 5, y: 5 },
+    { x: 5, y: 5 },
+  ];
+  assert.deepEqual(boundSpans(coincident, 40), coincident);
+});
+
+test("splinePath applies the span bound by default", () => {
+  const long = [
+    { x: 0, y: 0 },
+    { x: 400, y: 0 },
+    { x: 400, y: 8 },
+  ];
+  const bounded = splinePath(long);
+  const unbounded = splinePath(long, { maxSpan: Number.POSITIVE_INFINITY });
+  assert.notEqual(
+    bounded,
+    unbounded,
+    "the default must bound spans, or the coming redraw inherits nothing",
+  );
+});
+
+test("the default threshold is the one the fitter documents", () => {
+  /* `MAX_SPAN` is owner-tuned on a render, and a fitting step has silently overwritten an eye-tuned
+     constant in this project before, so the authored value is asserted rather than trusted. */
+  assert.equal(MAX_SPAN, 40);
 });

@@ -2,6 +2,15 @@ export type Point = { x: number; y: number };
 
 const CONTROL_DIVISOR = 6;
 
+/* The widest span the fitter may see. `splinePath` sizes both of a span's control arms from that
+   span's own length, so a point sitting between an 8px span and a 161px one gets a 2.7px arm on one
+   side and a 53.7px arm on the other -- a curvature discontinuity, which is what the owner reported
+   as the thread looking like chicken scratch rather than a flowing line. The authored routes carry a
+   20x span spread because Ramer-Douglas-Peucker drops points on smooth runs and piles them at
+   corners, so the spread is a property of the EXTRACTION, not of the drawing.
+   Owner-tuned on a render. Do not change it without another render. */
+export const MAX_SPAN = 40;
+
 /* A direction the curve must leave its first point along, or arrive at its last point along, as a
    vector in the SAME SPACE as the points — not an angle, because a connector's box is stretched and
    an angle would have to say which of the two spaces it was measured in. The caller converts: a
@@ -24,6 +33,12 @@ export type SplineOptions = {
      spaces are related per-axis and affinely, so projecting the control points is exact — the drawn
      curve is the same one, written in the other space. */
   project?: (point: Point) => Point;
+
+  /* The widest span the fitter may see, defaulting to `MAX_SPAN`. Applied inside `splinePath` rather
+     than by the generator on purpose: the generator (`tmp/thread-draw/build-thread-paths.mjs`) is
+     gitignored, so a rule applied there would not survive to the coming full redraw — and the redraw
+     is exactly what this rule has to govern. Pass `Infinity` to opt out. */
+  maxSpan?: number;
 };
 
 function unitVector(x: number, y: number): Point | null {
@@ -62,6 +77,37 @@ function directionAt(
   return unitVector(into.x + outOf.x, into.y + outOf.y) ?? into;
 }
 
+/* Subdivides any span longer than `maxSpan`, inserting evenly spaced points along it. ADDITIVE ONLY:
+   every authored vertex and both endpoints survive at their exact coordinates. That is the reason this
+   is not a uniform resample -- a resample moves points off the drawn polyline, rounding corners the
+   owner drew, and swallows the ~2px spans a connector carries past each of its ends, which is how the
+   route meets its motif.
+
+   It changes only the span RATIO the fitter sees. `splinePath`'s own shaping rules are untouched: the
+   bisector direction and the arm-from-its-own-span length both still hold, and both are measured
+   rules whose comments record the cusp the alternatives produced. */
+export function boundSpans(points: readonly Point[], maxSpan: number): Point[] {
+  if (points.length < 2 || !(maxSpan > 0)) return [...points];
+  const out: Point[] = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const from = points[i - 1];
+    const to = points[i];
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    /* `ceil` of the ratio is the fewest equal pieces no wider than `maxSpan`; a span at exactly the
+       threshold gives 1 and is left whole. */
+    const pieces = length > maxSpan ? Math.ceil(length / maxSpan) : 1;
+    for (let step = 1; step < pieces; step++) {
+      const at = step / pieces;
+      out.push({
+        x: from.x + (to.x - from.x) * at,
+        y: from.y + (to.y - from.y) * at,
+      });
+    }
+    out.push(to);
+  }
+  return out;
+}
+
 /**
  * Catmull-Rom, converted to one cubic Bézier per span — with the two halves of a tangent separated.
  *
@@ -87,18 +133,25 @@ function directionAt(
  */
 export function splinePath(
   points: readonly Point[],
-  { ends = {}, project = (point) => point }: SplineOptions = {},
+  {
+    ends = {},
+    project = (point) => point,
+    maxSpan = MAX_SPAN,
+  }: SplineOptions = {},
 ): string {
-  if (points.length === 0) return "";
-  const first = project(points[0]);
+  /* Every rule below reads `spaced`, not `points`. Subdivision never moves the first or last point,
+     so `ends.start`/`ends.end` still land on exactly the points they were measured for. */
+  const spaced = boundSpans(points, maxSpan);
+  if (spaced.length === 0) return "";
+  const first = project(spaced[0]);
   const segments = [`M ${first.x} ${first.y}`];
-  const spanCount = points.length - 1;
+  const spanCount = spaced.length - 1;
   for (let i = 0; i < spanCount; i++) {
-    const p1 = points[i];
-    const p2 = points[i + 1];
+    const p1 = spaced[i];
+    const p2 = spaced[i + 1];
     const length = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const t1 = directionAt(points, i, ends) ?? { x: 0, y: 0 };
-    const t2 = directionAt(points, i + 1, ends) ?? { x: 0, y: 0 };
+    const t1 = directionAt(spaced, i, ends) ?? { x: 0, y: 0 };
+    const t2 = directionAt(spaced, i + 1, ends) ?? { x: 0, y: 0 };
     const reach = (at: number) =>
       (length * (at === 0 || at === spanCount ? 1 : 2)) / CONTROL_DIVISOR;
     const near = reach(i);
