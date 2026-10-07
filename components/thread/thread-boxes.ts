@@ -29,8 +29,13 @@ const TALL_HEIGHTS: SectionHeights = {
      placeholder these figures were taken from.
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
-     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
-  celebrations: 2308,
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
+     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
+     them carries. So removing them means subtracting two increments, not re-deriving the height. */
+  celebrations: 2668,
   wishes: 700,
 };
 
@@ -44,8 +49,13 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
      placeholder these figures were taken from.
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
-     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
-  celebrations: 2308,
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
+     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
+     them carries. So removing them means subtracting two increments, not re-deriving the height. */
+  celebrations: 2676,
   wishes: 1180,
 };
 
@@ -59,8 +69,13 @@ const WIDE_HEIGHTS: SectionHeights = {
      placeholder these figures were taken from.
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
-     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
-  celebrations: 1520,
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
+     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
+     them carries. So removing them means subtracting two increments, not re-deriving the height. */
+  celebrations: 1948,
   wishes: 695,
 };
 

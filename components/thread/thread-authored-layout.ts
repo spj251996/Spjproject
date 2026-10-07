@@ -40,8 +40,13 @@ const TALL_CARDS: Sections = {
      placeholder these figures were taken from.
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
-     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
-  celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 2308 },
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
+     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
+     them carries. So removing them means subtracting two increments, not re-deriving the height. */
+  celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 2668 },
   wishes: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
 };
 
@@ -55,8 +60,13 @@ const UPRIGHT_CARDS: Sections = {
      placeholder these figures were taken from.
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
-     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
-  celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 2308 },
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
+     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
+     them carries. So removing them means subtracting two increments, not re-deriving the height. */
+  celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 2676 },
   wishes: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
 };
 
@@ -70,8 +80,13 @@ const WIDE_CARDS: Sections = {
      placeholder these figures were taken from.
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
-     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
-  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1520 },
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
+     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
+     them carries. So removing them means subtracting two increments, not re-deriving the height. */
+  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1948 },
   wishes: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
 };
 
