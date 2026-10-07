@@ -29,8 +29,10 @@ const serif = Playfair_Display({
 
 /* The italic cut is loaded, not synthesised: the closing sign-off's lead line and the invite's
    citation are set in italic, and a browser-obliqued normal face reads as a slanted regular at that
-   size. Libre Baskerville ships 400, 700 and 400 italic — there is no 500, which is why
-   `{typography.eyebrow}` is set at 400. */
+   size. Libre Baskerville ships 400, 700 and 400 italic and nothing between, so a role set in it
+   has two weights and no middle: CSS resolves an unavailable 500 down to 400 and a 600 up to 700
+   rather than synthesising either. That is why the eyebrow's step to 700 (owner, 2026-10-07) was
+   the whole step, and why a later "soften it slightly" has nothing here to land on. */
 const sans = Libre_Baskerville({
   variable: "--font-sans",
   subsets: ["latin"],
