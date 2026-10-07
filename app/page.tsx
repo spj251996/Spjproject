@@ -780,7 +780,14 @@ export function CelebrationsSection() {
                         the Malayalam before the English (owner). `items-baseline` rather than
                         `items-center`: the leaf reads as punctuation opening the title, and
                         punctuation sits on the text's baseline. */}
-                    <div className="flex items-baseline gap-space-2xs">
+                    {/* `flex-wrap` rather than a media query, and it is self-adjusting: a flex
+                        item moves to the next line on its MAX-CONTENT hypothetical size, so the
+                        Malayalam drops below the title exactly when the three cannot share a line,
+                        and the English then has the full width and stops wrapping itself. At 320px
+                        that is what happens; from 360px up all three still fit on one line and
+                        nothing moves (owner, 2026-10-07). No width is hardcoded, so a longer title
+                        or a wider Malayalam is handled the day it arrives. */}
+                    <div className="flex flex-wrap items-baseline gap-space-2xs">
                       <SprigIcon
                         className="shrink-0 text-accent-gold"
                         size={32}
