@@ -47,7 +47,7 @@ test("type-action carries no capitals and no tracking tuned for them", () => {
   );
 });
 
-// The utility also lays the stock's grain, which reads as noise inside a 44px circle.
+// The utility also lays the stock's grain, which reads as noise inside a circle this small.
 test("the disc takes the surface colour bare, never the grained utility", () => {
   assert.match(buttonAction, /bg-\(--color-surface-elevated\)/);
   assert.doesNotMatch(buttonAction, /(^|[\s"'`])bg-surface-elevated/);
@@ -55,6 +55,43 @@ test("the disc takes the surface colour bare, never the grained utility", () => 
 
 test("the mark is scaled on the disc rather than sized by class", () => {
   assert.match(buttonAction, /\[&_svg\]:\[transform:scale\(/);
+});
+
+/* The disc was `--touch-target` until 2026-10-07, so its size WAS the 44px accessibility floor.
+   Shrinking it to 32 only works because the target carries the floor itself; if that ever moves
+   back onto the disc, the disc's size silently becomes the hit area again and no render check
+   would report it as a failure — it would just be a smaller tap target. */
+test("the disc has its own size token and is no longer the touch target", () => {
+  assert.match(tokens, /--action-disc:\s*32px/);
+  assert.match(buttonAction, /size-\(--action-disc\)/);
+  assert.doesNotMatch(
+    buttonAction,
+    /size-\(--touch-target\)/,
+    "the disc must not be sized by the touch target again",
+  );
+});
+
+test("the target keeps the touch-target floor on both axes", () => {
+  assert.match(buttonAction, /min-h-\(--touch-target\)/);
+  assert.match(buttonAction, /min-w-\(--touch-target\)/);
+  assert.match(tokens, /--touch-target:\s*44px/);
+});
+
+/* An owner-tuned constant with nothing pinning it is how a fitting step silently overwrites a
+   value someone chose by eye. 1.2 is 1.65 x 32/44: the scale the 44px disc carried, held in
+   proportion as the disc came down, so the mark keeps its share of the circle. The ratio is
+   asserted rather than the bare number, so moving the disc without moving the scale fails here
+   instead of rendering a crowded or a lost mark. */
+test("the mark's scale is in proportion to the disc", () => {
+  const scale = /\[&_svg\]:\[transform:scale\(([\d.]+)\)\]/.exec(buttonAction);
+  assert.ok(scale, "no mark scale found on the disc");
+  const disc = /--action-disc:\s*(\d+)px/.exec(tokens);
+  assert.ok(disc, "no --action-disc in tokens.css");
+  const expected = (1.65 * Number(disc[1])) / 44;
+  assert.ok(
+    Math.abs(Number(scale[1]) - expected) < 0.005,
+    `the mark is scaled ${scale[1]} on a ${disc[1]}px disc; in proportion it should be ${expected.toFixed(3)}`,
+  );
 });
 
 test("the flanking hairline rules are gone", () => {

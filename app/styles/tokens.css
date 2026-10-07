@@ -134,6 +134,12 @@
 
   --touch-target: 44px;
 
+  /* The action disc's diameter. It was `--touch-target` until 2026-10-07, so the disc WAS the 44px
+     minimum and shrinking it would have shrunk the hit area with it. They are independent now: this
+     is a visual size, `--touch-target` is the floor `button-action`'s own target keeps whatever the
+     disc does. The mark's scale inside the disc is proportional to this — see button-action.tsx. */
+  --action-disc: 32px;
+
   /* A height, so it stays out of `--container-*`, whose utilities are widths.
      components/layout/mounted-sheet-frame*.ts derives its thresholds from the same number, because
      a media query cannot read this variable — change both together. */
