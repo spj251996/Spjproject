@@ -79,3 +79,29 @@ test("the gallery quotes the owner's re-trace loop count", () => {
     "the re-trace loops five times, not three — the owner's pick, 2026-10-03",
   );
 });
+
+/* The gallery told readers the thread was "Live at /." for as long as it was. This pins the CLAIM,
+   not a spelling: a thread entry asserting the thread is on the published page is the drift. */
+test("the gallery does not claim the thread is live on the published page", () => {
+  const source = readFileSync("app/design-system/_sections/domain.tsx", "utf8");
+  /* Bounded by the THREAD_ENTRIES array itself, not by the next entry name: the gallery's section
+     entries legitimately say "Live at /." -- the sections ARE on the published page -- so a slice
+     wide enough to reach them would fail on correct prose. */
+  const start = source.indexOf("const THREAD_ENTRIES");
+  const end = source.indexOf("const INVITE_ENTRIES");
+  /* A slice that silently returned nothing would make this pass while checking no prose at all. */
+  assert.ok(
+    start !== -1 && end !== -1 && start < end,
+    "the thread entries moved -- re-anchor this test rather than deleting it",
+  );
+  const threadEntries = source.slice(start, end);
+  assert.match(
+    threadEntries,
+    /note: "/,
+    "the slice carries no note prose -- re-anchor it",
+  );
+  assert.ok(
+    !threadEntries.includes("Live at /."),
+    'a thread entry still claims "Live at /." -- the thread is on the lab route, not the published page',
+  );
+});

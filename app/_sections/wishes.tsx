@@ -13,7 +13,7 @@ import { wishes } from "@/content";
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
    illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
    the thread. */
-export function WishesSection() {
+export function WishesSection({ thread = false }: { thread?: boolean }) {
   const wishesNames = splitCoupleNames(wishes.coupleNames);
 
   return (
@@ -50,7 +50,7 @@ export function WishesSection() {
           <div className={wishesStyles.figureCol}>
             <div aria-hidden className={wishesStyles.figure} />
           </div>
-          <CardThread />
+          {thread ? <CardThread /> : null}
 
           <p className="type-heading-script mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
             {wishesNames ? (

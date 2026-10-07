@@ -20,7 +20,7 @@ export function Sections({ thread = false }: { thread?: boolean }) {
       <ContactSection />
       <FamilySection />
       <CelebrationsSection />
-      <WishesSection />
+      <WishesSection thread={thread} />
       {thread ? <PageThread /> : null}
     </>
   );

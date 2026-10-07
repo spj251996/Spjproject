@@ -20,7 +20,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     home: "components/thread/page-thread.tsx",
     composes:
       "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s), --retrace-settle (1500ms), --retrace-loops (4) and --retrace-speed (845), Foundations · Motion",
-    note: "Live at /. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+    note: "Live at /thread/current, not on the published page -- the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
 ];
 
@@ -30,7 +30,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     home: "app/_sections/invite.tsx",
     composes:
       "mounted-sheet with the hero setting, taking its unpainted option — the type sits on the page's ground with no mount, stock, shadow or cut corner · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at space-lg (32px) instead · passage in caption · citation in caption-italic",
-    note: "Live at /. The thread that leaves the screen still going is the page's scroll cue: its resting tip sits at the lower edge, and loops five times once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening sequence is three beats under the unpainted option — ground, then the invite's own botanical pieces, then the type, then the thread — ending at 1600ms.",
+    note: "Live at /. The thread is NOT: the published invitation carries none, so this section currently has no scroll cue (Technical Conventions → Variant Routes). At /thread/current the thread is that cue — its resting tip sits at the lower edge, and loops five times once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening sequence is three beats under the unpainted option — ground, then the invite's own botanical pieces, then the type — ending at 1600ms. The thread's own beat is a fourth step in thread.module.css and runs on the lab route alone.",
   },
 ];
 
