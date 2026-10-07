@@ -436,9 +436,14 @@ function mapLabel(segment: EventSegment): string {
 }
 
 /* Centred in the space left below the heading block instead, the list closes to a few pixels of the
-   place line as soon as the venue takes a second line. */
+   place line as soon as the venue takes a second line.
+
+   The phone band's gaps are half the rest's (owner, 2026-10-07): `space-sm` above the first mark
+   and `space-2xs` between rows, against `space-lg` and `space-sm` from `md` up. What they give up
+   is handed straight back as the card's own block padding in `EventSheet` — see the note there for
+   why it has to be a trade. */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-space-lg grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-sm text-left md:mt-0 [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
+  "mx-auto mt-space-sm grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-2xs text-left md:mt-0 md:gap-y-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
@@ -448,7 +453,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
     <ol className={PLATE_LIST_CLASS} role="list">
       {segments.map((segment) => (
         <li
-          className="col-span-full grid grid-cols-subgrid items-start gap-y-space-sm"
+          className="col-span-full grid grid-cols-subgrid items-start gap-y-space-2xs md:gap-y-space-sm"
           key={segment.id}
         >
           <div className="flex shrink-0 justify-center text-accent-gold [@media(width>=64rem)_and_(orientation:landscape)]:pt-space-xs">
@@ -479,10 +484,21 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
 }
 
 /* `measure:fit` finds each sheet by an `h2` that is a direct child of this root `div`. Measured by
-   `eventInfoFit`: any content or type change re-runs `npm run measure:fit`. */
+   `eventInfoFit`: any content or type change re-runs `npm run measure:fit`.
+
+   THE PHONE PADDING IS A COUNTERWEIGHT, NOT A STYLE, and removing it does not simply tighten the
+   card. The tighter plate gaps above and the smaller `--action-disc` take 56px out of a phone card;
+   this hands the same 56px back, so the card's MEASURED HEIGHT does not move and `eventInfoFit`
+   stays as it is.
+   It has to balance because the band decides where a reduction goes. A sheet is at least
+   `100svh - 2 * ground-block` tall: above roughly 844px of viewport the content sits inside that
+   and slack would absorb a reduction as white, but below roughly 667px the content already
+   overruns it, so the sheet follows the content and the saving comes off the PAGE while the white
+   stays pinned at its padding floor. Both sides of that crossover are phones, so only a trade
+   gives white on both. `md:py-0` because nothing above the phone band gives anything up. */
 function EventSheet({ event }: { event: WeddingEvent }) {
   return (
-    <div className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
+    <div className="flex w-full flex-col items-center py-space-md text-center md:py-0 [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
       <EventSheetHeading event={event} />
       {/* Shows only in the tablet band, Event Info's tightest — DESIGN.md → Components →
           `divider` carries the reasoning and the revert record. Conditions written out literally:
