@@ -56,12 +56,12 @@ export function ComponentsSections() {
           note="The three states cannot be posed — hover it on a pointer device to see the disc and label grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
           source="@/components/ui/button-action"
           spec={[
-            "rest · the mark on a touch-target disc in the bare surface-elevated colour with the mount shadow — never the bg-surface-elevated utility, which would lay the stock's grain; no fill, border or lift on the control itself",
-            "the mark is scaled on the disc, never resized by its size prop — each mark's box derives from its own drawing's diagonal, so equal sizes give unequal boxes",
+            "rest · the mark on an --action-disc (32px) disc in the bare surface-elevated colour with the mount shadow — never the bg-surface-elevated utility, which would lay the stock's grain; no fill, border or lift on the control itself",
+            "the mark is scaled on the disc, never resized by its size prop — each mark's box derives from its own drawing's diagonal, so equal sizes give unequal boxes; the scale moves with the disc in proportion, so the mark keeps its share of the circle",
             "hover · the disc and label scale 1.06 and thicken optically — label 0.35px either side, mark 0.4px all round — so nothing reflows",
             "press · the whole mark dims",
             "focus · the focus ring on the target, never transitioned",
-            "the target is transparent and at least the touch target each way, so the hit area stays full size around the disc and label",
+            "the target is transparent and at least --touch-target (44px) each way — the disc stopped being the touch target in 2026-10, so the hit area stays full size whatever the disc does",
             "a web destination opens in its own tab; a telephone handoff and a link home stay in this one",
           ]}
         >

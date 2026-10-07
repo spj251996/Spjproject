@@ -70,3 +70,42 @@ test("every token value the gallery quotes in prose matches tokens.css", () => {
     );
   }
 });
+
+/* THE SAME DRIFT IN A SECOND SHAPE, WHICH THE PAIR RULE ABOVE CANNOT SEE. The typography specimen
+   table carries each role's weight as a bare number in a structured row — `weight: 700` — not as a
+   `--token (value)` pair, so it is a hand-maintained copy of `--text-<role>--font-weight` with
+   nothing watching it. Found drifted on 2026-10-07: the eyebrow moved to 700 in `tokens.css` while
+   the table still said 400, and every gate in the project stayed green.
+
+   Rows whose role declares no weight token are skipped rather than failed — `body-italic` and
+   `caption-italic` deliberately inherit from their upright siblings — so the matched count is
+   asserted too, or a renamed token would skip every row and pass on nothing. */
+test("every type weight the gallery's specimen table states matches tokens.css", () => {
+  const declared = declaredTokens();
+  const source = readFileSync(join(SECTIONS, "foundations.tsx"), "utf8");
+  const rows = [
+    ...source.matchAll(
+      /token:\s*"type-([a-z0-9-]+)",\s*\n\s*family:[^\n]*\n\s*weight:\s*(\d+)/g,
+    ),
+  ];
+  assert.ok(
+    rows.length >= 10,
+    `found ${rows.length} typography rows — the finder is probably broken, not the table`,
+  );
+
+  let checked = 0;
+  for (const [, role, stated] of rows) {
+    const value = declared.get(`--text-${role}--font-weight`);
+    if (value === undefined) continue;
+    checked += 1;
+    assert.equal(
+      stated,
+      value,
+      `the gallery states type-${role} at weight ${stated} but tokens.css declares ${value}`,
+    );
+  }
+  assert.ok(
+    checked >= 8,
+    `only ${checked} of ${rows.length} rows resolved to a weight token — the token naming probably changed`,
+  );
+});

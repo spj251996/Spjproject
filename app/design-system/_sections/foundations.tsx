@@ -232,7 +232,7 @@ const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-eyebrow",
     family: "Libre Baskerville",
-    weight: 400,
+    weight: 700,
     sample: "Small labels above headings and sheet fields.",
     phone: { size: 10, lh: 20 },
     tablet: { size: 11, lh: 20 },
