@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* The join gate (Phase 6): a section's thread must render as ONE connected run of ink.
+/* The join gate (Phase 6b): a section's thread must render as ONE connected run of ink.
  *
  * WHY A RENDER AND NOT A TEST. Two defects shipped past 137 unit tests, a clean `tsc`, clean lint
  * and a green build, and the owner found both by looking at the page:

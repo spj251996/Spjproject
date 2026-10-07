@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* The centreline tracer (Phase 6): an outline SVG in, one continuous open `d` out.
+/* The centreline tracer (Phase 6b): an outline SVG in, one continuous open `d` out.
  *
  * WHY THIS EXISTS. The owner's motif references are Pinterest rasters run through an online
  * tracer (picsvg.com), and every such tracer emits an OUTLINE — `fill="#000000" stroke="none"`,

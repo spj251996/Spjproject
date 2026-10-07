@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* The type-clearance gate (Phase 6, Task 8): the thread may cross the ring, the mount, any
+/* The type-clearance gate (Phase 6b): the thread may cross the ring, the mount, any
    stock, any botanical piece — but never type. This re-runnable script proves that at six
    aspect-band windows per section.
 
