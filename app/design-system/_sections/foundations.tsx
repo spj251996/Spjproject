@@ -201,7 +201,7 @@ const TYPE_TOKENS: TypeToken[] = [
     family: "Libre Baskerville",
     weight: 400,
     sample:
-      "The closing sign-off's lead line, and the timeline's promise line.",
+      "The closing sign-off's lead line, the timeline's promise line, and a ritual's tagline.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
     laptop: { size: 13, lh: 26 },
@@ -337,14 +337,13 @@ const SHAPE_ITEMS: ShapeItem[] = [
     radius: "var(--radius-card)",
     value: "3px",
     usage:
-      "Every rectangular surface: mount and paper stock, gallery-modal's tiles and close control, timeline-node's previews, image-placeholder.",
+      "Every rectangular surface: mount and paper stock, gallery-modal's tiles and close control, photo-row's frames, image-placeholder.",
   },
   {
     token: "circle",
     radius: "9999px",
     value: "—",
-    usage:
-      "portrait's crop; timeline-node's node dot; the Timeline placeholder's ritual mark.",
+    usage: "portrait's crop; button-action's disc; the Timeline's ritual mark.",
   },
 ];
 

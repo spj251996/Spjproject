@@ -25,7 +25,7 @@ export const samplePortraitImage = svgImage(
   `<rect width="256" height="256" fill="${PHOTO_MID}"/><circle cx="128" cy="96" r="46" fill="${PHOTO_BACK}"/><path d="M32 256a96 96 0 0 1 192 0Z" fill="${PHOTO_FORE}"/>`,
 );
 
-const sampleRitualImages = [
+export const sampleRitualImages = [
   svgImage(
     320,
     400,
@@ -54,34 +54,11 @@ export const samplePortrait = {
   src: null,
 };
 
-/* `status` is the SAMPLE's own shape, not the content model's — `Ritual` carries no status field
-   any more. Retired with `timeline-node` itself. */
-interface TimelineNodeSample {
-  title: string;
-  description: string;
-  status: "upcoming" | "completed";
-  previewImages: string[];
-  side: "left" | "right";
-}
-
-export const sampleTimelineNodes: TimelineNodeSample[] = [
-  {
-    title: "Placeholder Completed Ritual",
-    description:
-      "A completed node at rest, described at the length the real entries will run to.",
-    status: "completed",
-    previewImages: sampleRitualImages,
-    side: "left",
-  },
-  {
-    title: "Placeholder Upcoming Ritual",
-    description:
-      "An upcoming node, with the same copy weight and never a preview strip or gallery action.",
-    status: "upcoming",
-    previewImages: [],
-    side: "right",
-  },
-];
+/* Five frames from a three-image set, so the strip shows its `+N` cue — with only three there is
+   nothing left to count and the cue, which no other specimen can show, never appears. */
+export const samplePhotoSets = {
+  ritual: [...sampleRitualImages, ...sampleRitualImages.slice(0, 2)],
+};
 
 export const sampleGalleryPanel = {
   title: "Placeholder Ritual Gallery",

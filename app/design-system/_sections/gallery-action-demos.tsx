@@ -1,27 +1,14 @@
 "use client";
 
-import type { ComponentProps } from "react";
 import { ButtonAction } from "@/components/ui/button-action";
-import { TimelineNode } from "@/components/ui/timeline-node";
 
-/* A function prop cannot cross from the server page, so the gallery forms are posed from this
-   client leaf. The handler does nothing: the gallery does not open a modal. */
+/* A function prop cannot cross from the server page, so the gallery's bare `onClick` form is
+   posed from this client leaf. The handler does nothing: this specimen opens no modal.
+
+   `photo-row` needs no wrapper of its own — `photo-strip` is already a client component and owns
+   its state, so the server page renders it directly. */
 function noop() {}
 
 export function GalleryButtonActionDemo() {
   return <ButtonAction onClick={noop}>View photos</ButtonAction>;
-}
-
-type TimelineNodeDemoProps = Omit<
-  ComponentProps<typeof TimelineNode>,
-  "onOpenGallery"
->;
-
-export function TimelineNodeDemo(props: TimelineNodeDemoProps) {
-  return (
-    <TimelineNode
-      {...props}
-      onOpenGallery={props.status === "completed" ? noop : undefined}
-    />
-  );
 }
