@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import {
   Corinthia,
   Libre_Baskerville,
+  Noto_Serif_Malayalam,
   Playfair_Display,
 } from "next/font/google";
 import { SprigSymbol } from "@/components/icons";
@@ -37,6 +38,20 @@ const sans = Libre_Baskerville({
   style: ["normal", "italic"],
   display: "swap",
   fallback: ["Georgia", "serif"],
+});
+
+/* The three Latin faces carry no Malayalam glyphs, so the ritual titles' second script needs a
+   family of its own.
+
+   Weight 400 only — 20KB, Malayalam subset. The design uses one weight, and loading 400+600
+   would be 42KB for nothing. Subsetting to the ~19 codepoints the five titles use would reach
+   3-6KB and was REJECTED: it breaks silently the day a title changes or a sixth ritual lands,
+   and a missing glyph renders as a box on a title nobody re-checked. */
+const malayalam = Noto_Serif_Malayalam({
+  variable: "--font-malayalam",
+  subsets: ["malayalam"],
+  weight: "400",
+  display: "swap",
 });
 
 /* The invitation is shared by link only. robots.txt stops the crawl; this states the same intent
@@ -105,7 +120,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${script.variable} ${serif.variable} ${sans.variable} h-full antialiased`}
+      className={`${script.variable} ${serif.variable} ${sans.variable} ${malayalam.variable} h-full antialiased`}
       /* `SKIP_OPENING_WHEN_SCROLLED` above sets `data-opening-skipped` on this element before React
          hydrates, so the server's markup and the client's differ by that one attribute and React's
          development build reports a mismatch on every scrolled reload. Production is silent — React

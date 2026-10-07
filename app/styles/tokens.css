@@ -4,6 +4,9 @@
   --font-script: "Corinthia", cursive;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Libre Baskerville", Georgia, serif;
+  /* Ritual titles in Malayalam, and nothing else. No Latin fallback is listed: a Latin face has no
+     Malayalam glyphs, so a fallback could only ever render boxes. */
+  --font-malayalam: "Noto Serif Malayalam", serif;
 
   --color-surface-base: #fff9eb;
   --color-surface-mount: #f1e2c5;

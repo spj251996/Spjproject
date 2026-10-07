@@ -30,6 +30,7 @@ import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 import { PageThread, WishesWeave } from "@/components/thread/page-thread";
 import { ButtonAction } from "@/components/ui/button-action";
+import { PhotoStrip } from "@/components/ui/photo-strip";
 import {
   type ContactPerson,
   contacts,
@@ -709,30 +710,41 @@ const CELEBRATIONS_PROMISE =
 const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
 export function CelebrationsSection() {
+  /* Every ritual's set, keyed by id, handed WHOLE to each strip: `photoFit` must be solved across
+     all of them or the section's height stops being a constant (`components/ui/photo-fit.ts`). */
+  const photoSets = Object.fromEntries(
+    rituals.map((ritual) => [ritual.id, ritual.images]),
+  );
+
   return (
     <section className="relative" id="celebrations">
       <Botanical pieces={SECTION_PLACEMENT.celebrations} />
       <MountedSheet tall>
         <div
-          className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center"
+          className="flex w-full flex-col items-center"
           style={{
             ["--celebrations-measure" as string]: "36rem",
             ["--celebrations-intro-gap" as string]: "var(--spacing-space-lg)",
           }}
         >
-          {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-          <p className="type-eyebrow">Our traditions</p>
-          <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
-            The Celebrations
-          </h2>
+          {/* The head keeps the 36rem reading measure and centres in it. The ritual list below
+              does NOT: each block's own width is its paragraph's measure, which is the whole
+              reason the block width was chosen (owner, 2026-10-07). */}
+          <div className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center">
+            {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
+            <p className="type-eyebrow">Our traditions</p>
+            <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
+              The Celebrations
+            </h2>
 
-          <div className="mt-space-2xs flex flex-col gap-space-sm">
-            <p className="type-body text-ink text-pretty">
-              {CELEBRATIONS_INTRO}
-            </p>
-            <p className="type-body-italic text-ink text-pretty">
-              {CELEBRATIONS_PROMISE}
-            </p>
+            <div className="mt-space-2xs flex flex-col gap-space-sm">
+              <p className="type-body text-ink text-pretty">
+                {CELEBRATIONS_INTRO}
+              </p>
+              <p className="type-body-italic text-ink text-pretty">
+                {CELEBRATIONS_PROMISE}
+              </p>
+            </div>
           </div>
 
           {/* biome-ignore lint/a11y/noRedundantRoles: WebKit and VoiceOver need it once list-style is none */}
@@ -742,17 +754,52 @@ export function CelebrationsSection() {
               // (`components/thread/page-thread.tsx`'s `measureSubdivisions`) -- nothing else here
               // identifies a single ritual row, and celebrations carries no `.mounted-sheet-frame__
               // leaf` (it is one tall card, not a stacked pair) for that mechanism to reuse.
-              <li className="text-left" data-thread-row key={ritual.id}>
-                {/* The mark sits on the title's own line so a wrapping description cannot orphan
-                    it. `items-baseline` rather than `items-center`: the mark reads as punctuation
-                    opening the title, and punctuation sits on the text's baseline. */}
-                <div className="flex items-baseline gap-space-2xs">
-                  <SprigIcon className="shrink-0 text-accent-gold" size={32} />
-                  <h3 className="type-heading-lg text-ink">{ritual.title}</h3>
+              <li className={celebrations.row} data-thread-row key={ritual.id}>
+                <div className={celebrations.block}>
+                  <div className={celebrations.text}>
+                    {/* The leaf sits on the title's own line so a wrapping description cannot
+                        orphan it, and it is ALWAYS the row's first child -- a mirrored row is
+                        pushed and aligned by its parent, never reversed, which would render
+                        the Malayalam before the English (owner). `items-baseline` rather than
+                        `items-center`: the leaf reads as punctuation opening the title, and
+                        punctuation sits on the text's baseline. */}
+                    <div className="flex items-baseline gap-space-2xs">
+                      <SprigIcon
+                        className="shrink-0 text-accent-gold"
+                        size={32}
+                      />
+                      <h3 className="type-heading-lg text-ink">
+                        {ritual.title}
+                      </h3>
+                      {/* Beside the English title at every band (owner), never stacked under it.
+                          `leading-tight` because Malayalam's own ascenders and the pre-base signs
+                          otherwise grow the shared line box past the title's line height. */}
+                      <span className="type-heading-lg font-(family-name:--font-malayalam) text-accent-gold leading-tight">
+                        {ritual.malayalam}
+                      </span>
+                    </div>
+                    <p className="type-body-italic text-ink-muted mt-space-2xs">
+                      {ritual.tagline}
+                    </p>
+                    {/* No `max-w-text`: the block's own width IS the measure here (owner) -- the
+                        36rem cap held every block width above about 65% at an identical 600px
+                        paragraph, which made the width decision appear to do nothing. */}
+                    <p className="type-body text-ink mt-space-2xs text-pretty">
+                      {ritual.description}
+                    </p>
+                    {/* The only trigger. A ritual with no photographs renders no strip, no
+                        gallery action and no client boundary at all, which is what ships today. */}
+                    {ritual.images.length > 0 && (
+                      <div className="mt-space-sm w-full">
+                        <PhotoStrip
+                          id={ritual.id}
+                          sets={photoSets}
+                          title={ritual.title}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="type-body text-ink mt-space-2xs text-pretty">
-                  {ritual.description}
-                </p>
               </li>
             ))}
           </ol>
