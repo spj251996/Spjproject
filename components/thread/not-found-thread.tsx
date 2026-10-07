@@ -42,7 +42,26 @@ export function NotFoundThread() {
           role="presentation"
           viewBox="0 0 1 1"
         >
-          <path className={styles.notFoundInk} d={fallback.d} pathLength={1} />
+          <path
+            className={styles.notFoundInk}
+            d={fallback.d}
+            pathLength={1}
+            /* The route's `d` is normalised into a 0-1 square (`thread-fallback.ts`), and this
+               `viewBox` stretches that square over the whole section. Without this, the stroke's
+               `1.6px` is read as 1.6 USER-SPACE units -- 1.6x the section's own width and height --
+               and the screen paints a solid red rectangle rather than a thread. `page-thread.tsx`'s
+               no-JS fallback carries the same attribute for the same reason and records the same
+               failure; this path is the other half of that pair and shipped without it.
+
+               It also makes `pathLength` INERT, and the dash with it: the whole stroke pipeline
+               then resolves in SCREEN space, so `thread.module.css`'s `stroke-dasharray: 1.02`
+               becomes a 1.02-PIXEL dash rather than the path's whole length, and the timed draw
+               advances by about one pixel. Measured, not inferred -- a `5000` dash renders
+               identically to no dash at all. The draw is therefore still broken here, separately
+               from the width, and is tracked in `tasks.md`; it needs the screen length, which only
+               a measured client can supply. Do not "fix" it by deleting this attribute. */
+            vectorEffect="non-scaling-stroke"
+          />
         </svg>
       ))}
     </div>
