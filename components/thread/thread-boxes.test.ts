@@ -16,7 +16,10 @@ const SECTIONS: readonly ThreadId[] = [
 test("celebrations is measured taller than the band's own nominal box, at wide", () => {
   const box = sectionBox("celebrations", "wide");
   assert.equal(box.width, 1536);
-  assert.equal(box.height, 1320);
+  /* Re-measured 2026-10-07 when the five-ritual section replaced the placeholder (1320 was the
+     placeholder's). It is still the point of this test that it exceeds the band's 695. */
+  assert.equal(box.height, 1520);
+  assert.ok(box.height > 695);
 });
 
 test("invite keeps the wide band's own nominal height", () => {
@@ -54,7 +57,7 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("family", "tall"), { width: 393, height: 1400 });
   assert.deepEqual(sectionBox("celebrations", "tall"), {
     width: 393,
-    height: 1668,
+    height: 2308,
   });
   assert.deepEqual(sectionBox("wishes", "tall"), { width: 393, height: 700 });
 
@@ -76,7 +79,7 @@ test("the measured heights match the render exactly", () => {
   });
   assert.deepEqual(sectionBox("celebrations", "upright"), {
     width: 820,
-    height: 1732,
+    height: 2308,
   });
   assert.deepEqual(sectionBox("wishes", "upright"), {
     width: 820,
@@ -92,7 +95,7 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("family", "wide"), { width: 1536, height: 695 });
   assert.deepEqual(sectionBox("celebrations", "wide"), {
     width: 1536,
-    height: 1320,
+    height: 1520,
   });
   assert.deepEqual(sectionBox("wishes", "wide"), { width: 1536, height: 695 });
 });

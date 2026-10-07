@@ -6,6 +6,12 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
    band's nominal width and reading `scrollHeight` off the section's own box, the same way Task 1's
    spike did — never derive a section's height from the band's box alone.
 
+   READ THE SECTION'S OWN `getBoundingClientRect().height`, NOT `scrollHeight`. Re-measured
+   2026-10-07: at each band's nominal box the rect reproduces the recorded `contact` and `wishes`
+   figures (700 / 1180 / 695) exactly, while `scrollHeight` reads 909 / 1415 / 695 for `contact` —
+   so these constants were taken from the rect, whatever this comment used to say. Validate any
+   re-measure against those two sections before trusting a new number for a third.
+
    A band-wide box was wrong because a section's height is not the band's: the paired sections
    (Event Info, Family) stack in portrait, so they run roughly 2x a single card's height, and
    Celebrations is a list whose height will grow again when the photo gallery lands in Ship 2.
@@ -18,7 +24,13 @@ const TALL_HEIGHTS: SectionHeights = {
   "event-info": 1400,
   contact: 700,
   family: 1400,
-  celebrations: 1668,
+  /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
+     `document.fonts.ready` and every image complete. The real five-ritual section replaced the
+     placeholder these figures were taken from.
+     THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
+     makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
+  celebrations: 2308,
   wishes: 700,
 };
 
@@ -27,7 +39,13 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
   "event-info": 2360,
   contact: 1180,
   family: 2360,
-  celebrations: 1732,
+  /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
+     `document.fonts.ready` and every image complete. The real five-ritual section replaced the
+     placeholder these figures were taken from.
+     THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
+     makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
+  celebrations: 2308,
   wishes: 1180,
 };
 
@@ -36,7 +54,13 @@ const WIDE_HEIGHTS: SectionHeights = {
   "event-info": 695,
   contact: 695,
   family: 695,
-  celebrations: 1320,
+  /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
+     `document.fonts.ready` and every image complete. The real five-ritual section replaced the
+     placeholder these figures were taken from.
+     THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
+     makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
+  celebrations: 1520,
   wishes: 695,
 };
 

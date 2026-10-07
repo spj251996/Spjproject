@@ -13,7 +13,13 @@ import type { ThreadId } from "./thread-geometry.ts";
    `cardLeft` is the card's left edge in viewport pixels at the band's own nominal width; it is
    what a section's thread was authored offset from, not a general-purpose value at any other
    width. `sectionHeight` reproduces `thread-boxes.ts`'s `sectionBox`, measured the same way, and
-   the two were cross-checked exactly rather than assumed to agree. */
+   the two were cross-checked exactly rather than assumed to agree.
+
+   THE BAND'S NOMINAL BOX IS `thread-bands.ts`'s — 393x700, 820x1180, 1536x695 — and not the wider
+   viewports the thread's clearance gate sweeps. Measured at 360 / 834 / 1920 instead, Celebrations'
+   `cardWidth` and `cardLeft` both appear to have moved; at the nominal boxes they reproduce
+   345/24, 564/128 and 960/288 to the pixel. A card figure that looks changed is the wrong viewport
+   before it is a regression. */
 export type AuthoredCard = {
   cardWidth: number;
   cardLeft: number;
@@ -29,7 +35,13 @@ const TALL_CARDS: Sections = {
   family: { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },
   // Celebrations takes `mounted-sheet`'s `tall` mode (no measured fit), so its padding chain is
   // its own and its card is narrower than every fitted section's at this band.
-  celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 1668 },
+  /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
+     `document.fonts.ready` and every image complete. The real five-ritual section replaced the
+     placeholder these figures were taken from.
+     THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
+     makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
+  celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 2308 },
   wishes: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
 };
 
@@ -38,7 +50,13 @@ const UPRIGHT_CARDS: Sections = {
   "event-info": { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
   contact: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
   family: { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
-  celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 1732 },
+  /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
+     `document.fonts.ready` and every image complete. The real five-ritual section replaced the
+     placeholder these figures were taken from.
+     THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
+     makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
+  celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 2308 },
   wishes: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
 };
 
@@ -47,7 +65,13 @@ const WIDE_CARDS: Sections = {
   "event-info": { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   contact: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   family: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
-  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1320 },
+  /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
+     `document.fonts.ready` and every image complete. The real five-ritual section replaced the
+     placeholder these figures were taken from.
+     THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
+     makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
+     built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here. */
+  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1520 },
   wishes: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
 };
 
