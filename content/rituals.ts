@@ -11,6 +11,18 @@ import { validateRituals } from "./validate.ts";
      draft that named the groom as the agent was simply wrong. If the copy should ever name who
      ties it, that comes from the couple — do not infer it.
 
+   THE PHOTOGRAPHS ON THE FIRST TWO RITUALS ARE TEMPORARY AND ARE DROPPED BEFORE MAIN (owner,
+   2026-10-07). They ship on this branch only, so the preview row reaches the couple's review
+   exercised rather than unseen — at launch no ritual has photographs, which is the condition under
+   which this project's history says a component passes every gate and is wrong. Removing them is
+   two steps, not one: empty both `images` arrays AND delete `public/rituals/`, then re-measure
+   Celebrations' height back down (the thread's constants carry the WITH-photographs figures while
+   these are here). `tasks.md` holds the gate.
+
+   STRIP ORDER IS THIS ARRAY'S ORDER. `photo-row` renders `photos.slice(0, shown)` in place and
+   nothing sorts, so the first path is the leftmost frame and the remainder is counted in the `+N`
+   cue on the last visible one. To choose which frame leads, reorder here.
+
    The Malayalam is in logical codepoint order. Two of these arrived from the PDF in VISUAL order
    (the `െ` sign before its consonant) and are reordered here; `validateRituals` now refuses that
    form outright. */
@@ -22,7 +34,12 @@ export const rituals: Ritual[] = validateRituals([
     tagline: "Where the celebrations begin with sweetness.",
     description:
       "On the eve of the wedding, family and loved ones gather to bless the couple with sweets, prayers and good wishes. A cherished Kerala Christian tradition, Madhuramveppu marks the passage from one chapter to the next — honouring the life each has shared with their family before stepping into a new one.",
-    images: [],
+    images: [
+      "/rituals/og-1.jpg",
+      "/rituals/shoot-1.jpg",
+      "/rituals/shoot-2.jpg",
+      "/rituals/shoot-3.jpg",
+    ],
   },
   {
     id: "betrothal",
@@ -31,7 +48,7 @@ export const rituals: Ritual[] = validateRituals([
     tagline: "Where a promise is made.",
     description:
       "In the presence of their families, witnesses and the Church, the couple formally give their consent to marry. The betrothal marks the beginning of their journey towards the sacrament of marriage — a promise made with faith, intention and the blessing of all who stand with them.",
-    images: [],
+    images: ["/rituals/og-2.jpg", "/rituals/shoot-4.jpg"],
   },
   {
     id: "wedding",
