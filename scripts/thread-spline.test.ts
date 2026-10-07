@@ -368,6 +368,32 @@ test("splinePath applies the span bound by default", () => {
   );
 });
 
+test("an end direction still reaches the last point when the bound is on", () => {
+  /* The four `UNBOUNDED` tests above index `span(d, 1)`, which is only the LAST span when nothing is
+     subdivided — so with the default bound on, nothing asserted that `ends.end` still lands on the
+     final point. Subdivision never moves the first or last point, so it must; this reads the final
+     cubic of a bounded path to prove it rather than reasoning about `directionAt`'s `last`. */
+  const long = [
+    { x: 0, y: 0 },
+    { x: 400, y: 0 },
+    { x: 400, y: 120 },
+  ];
+  const d = splinePath(long, { ends: { end: { x: 1, y: 0 } } });
+  const n = numbers(d);
+  const endX = n[n.length - 2];
+  const endY = n[n.length - 1];
+  const c2x = n[n.length - 4];
+  const c2y = n[n.length - 3];
+  assert.equal(
+    endX,
+    400,
+    "the bounded path must still finish on the authored last point",
+  );
+  assert.equal(endY, 120);
+  /* Arriving along +x puts the final control point behind the finish on that axis. */
+  assert.equal(Math.round(degrees(endX - c2x, endY - c2y)), 0);
+});
+
 test("MAX_SPAN is the owner's picked value", () => {
   /* The owner picked 40 on 2026-10-07 from three rendered candidates. A fitting step has silently
      overwritten an eye-tuned constant in this project before, so the authored value is asserted

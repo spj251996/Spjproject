@@ -1126,12 +1126,25 @@ export function TaperCutMask({
    which the owner saw as glitches and as the thread un-drawing itself on the way back up. A
    height-only change moves the draw WINDOW and nothing else, so it takes the cheap path.
 
-   BOTH listeners need the guard, measured 2026-10-07 rather than assumed: a 393x852 -> 393x912
-   viewport change fires `window.resize` once AND the `ResizeObserver` on `main` once, because
-   `main`'s own height reflows with the viewport (8632 -> 9052px) while its WIDTH does not. Width is
-   read from `documentElement.clientWidth`, never `window.innerWidth` (which reports the layout
-   viewport under mobile emulation and includes the scrollbar), and the observer compares `main`'s
-   own width, because `main` can change width without the viewport doing so. */
+   THE TEST IS WHETHER THE LAYOUT MOVED, NOT WHETHER THE WIDTH DID, and getting that wrong is a
+   visible defect rather than a missed optimisation. The thread's `<svg>` takes its height and its
+   viewBox from `main`'s MEASURED box, and the cheap path re-measures nothing — so a height change
+   that genuinely reflows the page must not take it, or the svg keeps the old box over new content
+   and the whole line draws at the wrong scale, with nothing re-measuring until a width change or a
+   font load. Measured on the built export: a 393x852 -> 393x912 viewport change reflows `main`
+   **8632 -> 9052px**, because the sections are sized in `100svh` and `svh` follows the WINDOW. A
+   width-only guard let that through and left the svg at `viewBox="0 0 393 8640"` over 9052px of
+   content — the tail some 412px above the page's end.
+   So the cheap path is taken only when `main`'s own box is unchanged in BOTH axes. That is exactly
+   the phone case it exists for: a toolbar hiding changes `window.innerHeight` while `svh` — defined
+   as the SMALL viewport height — deliberately does not move, so the sections do not reflow. When a
+   phone does reflow, this falls back to the debounced re-measure, which no longer discards the
+   ratchet, so the owner's "and then stay drawn" survives either path.
+
+   BOTH listeners need the guard, measured 2026-10-07 rather than assumed: that same viewport change
+   fires `window.resize` once AND the `ResizeObserver` on `main` once. Width is read from
+   `documentElement.clientWidth`, never `window.innerWidth` (which reports the layout viewport under
+   mobile emulation and includes the scrollbar). */
 function useLayoutTriggers(
   measureLayout: () => void,
   refreshWindow: () => void,
@@ -1143,8 +1156,18 @@ function useLayoutTriggers(
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const main = document.querySelector("main");
 
-    let lastWidth = document.documentElement.clientWidth;
-    let lastMainWidth = main?.getBoundingClientRect().width ?? 0;
+    /* The layout the thread was measured against, as one value, so both listeners ask one question.
+       Sub-pixel jitter would route a phone to the slow path for nothing, so each axis is rounded. */
+    function layoutSignature(): string {
+      const box = main?.getBoundingClientRect();
+      return [
+        document.documentElement.clientWidth,
+        Math.round(box?.width ?? 0),
+        Math.round(box?.height ?? 0),
+      ].join("|");
+    }
+
+    let lastLayout = layoutSignature();
 
     function remeasureSoon() {
       if (resizeTimer !== null) clearTimeout(resizeTimer);
@@ -1153,23 +1176,16 @@ function useLayoutTriggers(
 
     /* The cheap path is NOT debounced: it is a read plus an arithmetic recompute, and delaying it by
        150ms is what a reader would see as the thread lagging their URL bar. */
-    function onViewportChange() {
-      const width = document.documentElement.clientWidth;
-      if (width === lastWidth) {
+    function onLayoutEvent() {
+      const layout = layoutSignature();
+      if (layout === lastLayout) {
         refreshWindow();
         return;
       }
-      lastWidth = width;
-      remeasureSoon();
-    }
-
-    function onMainResize() {
-      const width = main?.getBoundingClientRect().width ?? 0;
-      if (width === lastMainWidth) {
-        refreshWindow();
-        return;
-      }
-      lastMainWidth = width;
+      /* Recorded only when the slow path actually re-measures, so an event arriving inside the
+         debounce window cannot mark the new layout as already measured and then paint the cheap path
+         against the old one. */
+      lastLayout = layout;
       remeasureSoon();
     }
 
@@ -1180,18 +1196,18 @@ function useLayoutTriggers(
 
     let resizeObserver: ResizeObserver | null = null;
     if (main !== null) {
-      resizeObserver = new ResizeObserver(onMainResize);
+      resizeObserver = new ResizeObserver(onLayoutEvent);
       resizeObserver.observe(main);
     }
 
-    window.addEventListener("resize", onViewportChange);
+    window.addEventListener("resize", onLayoutEvent);
     reduceMotion.addEventListener("change", measureLayout);
 
     return () => {
       cancelled = true;
       if (resizeTimer !== null) clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
-      window.removeEventListener("resize", onViewportChange);
+      window.removeEventListener("resize", onLayoutEvent);
       reduceMotion.removeEventListener("change", measureLayout);
     };
   }, []);
@@ -1991,7 +2007,10 @@ export function WishesWeave() {
 
   function measureLayout() {
     /* Read BEFORE `rangesRef.current` is overwritten below -- the ratchet's peak is a length on the
-       OLD path. These are the WEAVE's own ranges, never the trunk's (see `ratchetRef`'s header). */
+       OLD path. These are the PAGE's ranges, the same quantity `PageThread` measures: this
+       component's RATCHET holds a length along the weave's own stretch, but its `ranges` are the
+       whole chain's (see `piecesRef`'s note below -- wishes' pieces are already on the page's global
+       cumulative scale). The rebase is commensurable because both totals are read the same way. */
     const previousRanges = rangesRef.current;
     const wrapper = wrapperRef.current;
     const svg = svgRef.current;

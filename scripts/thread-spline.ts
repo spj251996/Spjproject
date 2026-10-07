@@ -122,6 +122,15 @@ export function boundSpans(points: readonly Point[], maxSpan: number): Point[] {
  * what plain Catmull-Rom gives on a straight, equally spaced run (`|p[i+1] - p[i-1]| / 6` with both
  * legs equal), which is the behaviour every other value in the thread was tuned against.
  *
+ * THE EMITTED CUBIC COUNT IS `boundSpans(points, maxSpan).length - 1`, NOT `points.length - 1`, and
+ * anything that indexes the emitted segments must be derived from the former. This is not academic:
+ * the generator slices one fitted crossing curve into two `<path>`s at a section boundary by cubic
+ * index, took that index from the authored point count, and so cut at the wrong cubic the day span
+ * bounding landed -- leaving part of each section's half on the other section's path, which
+ * `thread-paths.test.ts`'s boundary test caught as a 19.5 degree heading mismatch. `boundSpans` is
+ * exported for exactly this, and the warning lives here because the generator is gitignored and will
+ * be re-derived for the coming redraw.
+ *
  * A FIRST OR LAST point keeps HALF that, which is what duplicating the neighbour already gave it
  * (`|p2 - p1| / 6`) — so the tension at a connector's two ends is exactly the tension that shipped,
  * and only the direction is replaced. Measured, not preferred: giving an end the interior's arm

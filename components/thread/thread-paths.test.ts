@@ -220,7 +220,19 @@ const REACH = 10;
    (confirmed separately, by reading each side's own control-point tangent directly: under this
    fix the worst of the 15 is 0.09 degrees). Widened here to absorb the arm-length noise above
    without losing the separation that matters: forcing `TERMINAL_TANGENT` measured 13-80 degrees
-   off at this SAME reach on at least one boundary in every band, comfortably outside this floor. */
+   off at this SAME reach on at least one boundary in every band, comfortably outside this floor.
+
+   HEADROOM, MEASURED 2026-10-07 — READ THIS BEFORE EDITING EITHER CONSTANT. The even-spacing fit
+   (`boundSpans` in `scripts/thread-spline.ts`) left the worst join at **8.8 degrees at `tall`
+   contact/family and 8.3 at `upright` contact/family**, against 7.4 and 6.2 before it. Every other
+   join improved. So this bound now has about **1 degree of room**, not nine.
+   That is the fit working rather than a defect: a curve bounded to even spans hugs the drawn
+   polyline instead of bowing past it, so a corner the owner drew near that boundary now turns inside
+   this test's 10px reach rather than being smoothed over. The bound was deliberately NEITHER
+   tightened nor loosened.
+   **Consequence: a later change that fires this gate at contact/family is not necessarily that
+   change's regression** — check the figure above first, and if the redraw moves these joins,
+   re-record rather than widening the bound. */
 const TOLERANCE = 10;
 
 function headingAt(
@@ -367,13 +379,19 @@ test("every placement's scale is the owner's authored value, never derived from 
   }
 });
 
-/* `wide`'s authored source is GONE — `tmp/thread-draw/wide/` is empty and `tmp/` is gitignored, so
-   nothing recovers it. This file is the ONLY surviving record of those routes, and the generator
-   writes all three bands in one pass, so a plain run would emit nothing for `wide` and
-   `output: "export"` would ship a desktop page with no thread at all. Any regeneration must MERGE,
-   carrying a band with no source through unchanged.
+/* No band may ever go empty. The generator writes all three in one pass, so a band whose authored
+   source went missing would be emitted as nothing and `output: "export"` would ship that band's page
+   with no thread at all — `wide` being the desktop one.
 
-   This pins the shape rather than the content, which is what makes it survive the coming full redraw:
+   CORRECTED 2026-10-07: an earlier version of this comment said `wide`'s source was GONE and that any
+   regeneration must merge. All of that was false. The generator reads `wide` from
+   `tmp/thread-draw/figma/` (`build-thread-paths.mjs`'s `DIRS`), not from `tmp/thread-draw/wide/` —
+   which does not exist — and that directory holds `geometry.json`, `attachments.json` and
+   `connectors.json` intact. Proven by neutralising `MAX_SPAN` and reproducing this file
+   byte-identically for all three bands. So there is no merge mechanism and this file is not an
+   irreplaceable artifact; do not go looking for either.
+
+   This pins the SHAPE rather than the content, which is what makes it survive the coming full redraw:
    the routes will change, but no band may ever go empty. */
 test("every band has a route for every section", () => {
   for (const band of THREAD_BANDS) {

@@ -80,6 +80,29 @@ function serveExport(): Promise<{ server: Server; port: number }> {
    compares the same quantity before and after a resize. The head is read as its displayed GROUP, not
    per path — hiding the group is how the head retires, and counting paths reads a hidden group as
    lit. */
+/* `main`'s own height against every live thread root's viewBox height. The thread's `<svg>` is sized
+   and viewBoxed from `main`'s measured box, so these must track each other or the line is drawn at
+   the wrong scale over the content it traces. */
+const BOXES = `(() => {
+  const main = document.querySelector("main");
+  const roots = Array.from(document.querySelectorAll("[data-thread-svg]"))
+    .filter((s) => s.style.display !== "none");
+  return {
+    mainHeight: Math.round(main.getBoundingClientRect().height),
+    roots: roots.map((s) => s.getAttribute("viewBox")),
+  };
+})()`;
+
+/* `total` is the THREAD's own total arc length (the sum of every piece's dash period), which is the
+   quantity the ratchet's peak is expressed in and the one `rebase` scales between. The page's
+   `scrollHeight` is NOT interchangeable with it — an earlier version of this test divided by that and
+   read 128% drawn. The proportion matters because an ABSOLUTE comparison carries free slack: the
+   thread lengthens when the page does, so the rebase makes the absolute figure larger either way and
+   a mutation losing a few percent of the peak would slip through.
+
+   NOTE FOR ANYONE EDITING THE STRING BELOW: it is a template literal, so a BACKTICK inside it — even
+   inside a comment — closes it, and the error points at the next line rather than at the backtick.
+   Explanations belong out here. */
 const READ = `(() => {
   const visible = (el) => {
     for (let node = el; node !== null; node = node.parentElement) {
@@ -89,6 +112,7 @@ const READ = `(() => {
   };
   const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]")).filter(visible);
   let drawn = 0;
+  let total = 0;
   let measured = 0;
   for (const p of pieces) {
     const period = Number.parseFloat(p.style.strokeDasharray);
@@ -96,11 +120,12 @@ const READ = `(() => {
     if (!Number.isFinite(period) || !Number.isFinite(offset)) continue;
     measured += 1;
     drawn += Math.max(0, period - offset);
+    total += period;
   }
   const headShown = Array.from(document.querySelectorAll("[data-thread-head]"))
     .filter(visible)
     .reduce((total, g) => total + Array.from(g.querySelectorAll("path")).filter(visible).length, 0);
-  return { drawn, measured, pieces: pieces.length, headShown };
+  return { drawn, total, measured, pieces: pieces.length, headShown };
 })()`;
 
 type Reading = {
@@ -108,6 +133,7 @@ type Reading = {
   measured: number;
   pieces: number;
   headShown: number;
+  total: number;
 };
 
 /* A URL-bar expand is a height-only change; 852 -> 912 is the same shape. The width is held
@@ -182,10 +208,16 @@ test("a height-only resize does not un-draw the thread", async (t) => {
     await page.waitForTimeout(SETTLE);
 
     const after = (await page.evaluate(READ)) as Reading;
-    /* The 1px slack absorbs the rebase's float rounding, nothing more. */
+    /* Asserted as a PROPORTION of the thread's own arc length, not as an absolute dash sum: the
+       thread lengthens with the page, so the rebase makes the absolute figure larger either way and
+       an absolute assertion would carry several percent of free slack. The 0.5% tolerance absorbs the
+       rebase's float rounding. */
+    const beforeShare = before.drawn / before.total;
+    const afterShare = after.drawn / after.total;
     assert.ok(
-      after.drawn >= before.drawn - 1,
-      `the thread un-drew: ${before.drawn.toFixed(1)} -> ${after.drawn.toFixed(1)} after a height-only resize`,
+      afterShare >= beforeShare - 0.005,
+      `the thread un-drew: ${(beforeShare * 100).toFixed(1)}% of the thread drawn -> ${(afterShare * 100).toFixed(1)}% after a height-only resize ` +
+        `(${before.drawn.toFixed(1)} of ${before.total} -> ${after.drawn.toFixed(1)} of ${after.total})`,
     );
     await context.close();
   } finally {
@@ -195,9 +227,12 @@ test("a height-only resize does not un-draw the thread", async (t) => {
 });
 
 /* A reader who has not scrolled at all is the case most likely to be missed: the cheap path takes the
-   same `Math.max(..., openingFloor(...))` the scroll path does, so a URL bar moving during or after
-   the opening sequence cannot leave them looking at no thread. Unreachable from a unit test —
+   same `Math.max(..., openingFloor(...))` that `measureLayout` does, so a URL bar moving during or
+   after the opening sequence cannot leave them looking at no thread. Unreachable from a unit test —
    `openingFloor` is local to `page-thread.tsx` — so it is asserted here.
+   (An earlier version of this said the SCROLL path takes that floor. It does not: `commitScrolled`
+   passes `pageDrawnLength` alone and relies on the ratchet's peak to hold the opening draw. The two
+   measure paths are the only ones that re-derive the floor.)
 
    HONEST LIMIT, measured 2026-10-07: this test is NOT independently mutation-proven. Dropping
    `openingFloor` from `refreshWindow` and rebuilding leaves it PASSING, because the ratchet now
@@ -238,6 +273,85 @@ test("a height-only resize at the top does not erase what the opening draw drew"
     assert.ok(
       after.drawn >= before.drawn - 1,
       `the opening draw was erased: ${before.drawn.toFixed(1)} -> ${after.drawn.toFixed(1)} at scroll 0`,
+    );
+    await context.close();
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* THE SPLIT MUST BE GATED ON WHETHER THE LAYOUT MOVED, NOT ON WHETHER THE WIDTH DID — and this test
+   exists because the first version of the fix got that wrong, in a way that only showed on the page.
+
+   A viewport-height change is the cheap path's whole reason for existing, because that is what a
+   mobile URL bar is. But a height change is NOT always layout-neutral: the sections are sized in
+   `100svh`, which is stable when a phone's toolbar hides and is NOT stable when the window itself
+   changes height — a desktop F11, a window drag, an auto-hiding taskbar, or any harness calling
+   `setViewportSize`. Measured on the built export at 393x852 -> 393x912: `main` reflows
+   **8632 -> 9052px**, 420px taller.
+
+   The thread's `<svg>` takes its height and its viewBox from `main`'s measured box, and the cheap
+   path deliberately re-measures nothing — so gating it on width alone left the svg at
+   `viewBox="0 0 393 8640"` over 9052px of content, drawing the whole thread at ~95% scale with its
+   tail some 412px above the page's end, and NOTHING re-measures until a width change or a font load.
+   A dash-length assertion cannot see that: the drawn LENGTH is correct, it is the box that is wrong.
+   So this asserts the box. */
+test("a resize that reflows the page re-measures rather than taking the cheap path", async (t) => {
+  if (!existsSync("out/index.html")) {
+    t.skip("no static export: run `npm run build` first");
+    return;
+  }
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: PHONE,
+      deviceScaleFactor: 1,
+    });
+    const page = await context.newPage();
+    await page.goto(`http://localhost:${port}/`, { waitUntil: "load" });
+    await page.waitForTimeout(3600);
+
+    const before = (await page.evaluate(BOXES)) as {
+      mainHeight: number;
+      roots: string[];
+    };
+    assert.ok(before.roots.length > 0, "no live thread root was found");
+
+    await page.setViewportSize(TALLER);
+    /* Past the 150ms layout debounce with room to spare — this path is deliberately the SLOW one. */
+    await page.waitForTimeout(600);
+    await page.waitForTimeout(SETTLE);
+
+    const after = (await page.evaluate(BOXES)) as {
+      mainHeight: number;
+      roots: string[];
+    };
+    /* If the page did NOT reflow there is nothing to assert, and saying so beats passing vacuously:
+       on a real handset `100svh` holds and this is the state the cheap path is for. */
+    assert.notEqual(
+      after.mainHeight,
+      before.mainHeight,
+      `main did not reflow (${before.mainHeight}px), so this test asserted nothing — a harness viewport change is expected to move 100svh`,
+    );
+
+    const pageRoot = after.roots.find((v) => v?.startsWith("0 0 "));
+    assert.ok(
+      pageRoot,
+      `no page-spanning viewBox among ${JSON.stringify(after.roots)}`,
+    );
+    const boxedHeight = Number.parseFloat(pageRoot.split(" ")[3]);
+    assert.ok(
+      Math.abs(boxedHeight - after.mainHeight) <= 16,
+      `the thread's viewBox is stale: ${boxedHeight.toFixed(0)} against main's ${after.mainHeight} after the page reflowed by ${after.mainHeight - before.mainHeight}px`,
+    );
+    /* Every other live root must have moved too — the weave's box is card-relative, so a stale one
+       is the same defect one level down. */
+    assert.ok(
+      after.roots.some((v, i) => v !== before.roots[i]),
+      "no live thread root's viewBox changed at all, so none was re-measured",
     );
     await context.close();
   } finally {
