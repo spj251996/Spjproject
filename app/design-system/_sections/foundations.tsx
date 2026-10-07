@@ -312,7 +312,7 @@ const DURATION_TOKENS: DurationToken[] = [
 const DURATION_USES = [
   "fast · state changes: node activation glow, action feedback",
   "base · section and sheet reveals, the modal",
-  "slow · the closed thread draw on not-found",
+  "slow · no consumer — its only one, the closed thread draw on not-found, was retired",
 ];
 
 const EASING_TOKENS: EasingToken[] = [
@@ -322,7 +322,7 @@ const EASING_TOKENS: EasingToken[] = [
 
 const EASING_USES = [
   "entrance · anything appearing",
-  "settle · the not-found draw",
+  "settle · the action button's press and hover transition",
 ];
 
 const LOOP_CADENCE_USES = [
