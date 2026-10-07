@@ -545,6 +545,12 @@ function openingFloor(
   return invite.end - CROSSING_HOLD_BACK * invite.lastPieceLength;
 }
 
+/* The thread's total drawn length is the last range's end -- the same quantity a ratchet's peak is
+   expressed in, which is what makes the two commensurable across a re-measure. */
+function totalLength(ranges: readonly SectionRange[]): number {
+  return ranges[ranges.length - 1]?.end ?? 0;
+}
+
 /* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
    (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
    `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
@@ -1110,42 +1116,83 @@ export function TaperCutMask({
   );
 }
 
-/* Shared by both components below: bind resize/fonts/reduced-motion, run `measure` once and again
-   on every layout change, and hand back a cleanup. Scroll is wired separately by each caller because
-   the two draw different things on scroll (the whole page's offset vs. wishes' own local one). */
-function useLayoutTriggers(measure: () => void) {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- callers close over refs by their stable `.current`, not by closure value, so the first render's copy of `measure` stays correct forever.
+/* Shared by both components below: bind resize/fonts/reduced-motion and hand back a cleanup. Scroll
+   is wired separately by each caller because the two draw different things on scroll (the whole
+   page's offset vs. wishes' own local one).
+
+   WHY TWO CALLBACKS. A mobile URL bar collapses when the reader scrolls down and expands when they
+   scroll back up, and each is a HEIGHT-ONLY resize fired DURING the scroll. Running the full
+   re-measure there reset the head, stopped the re-trace and discarded the draw ratchet mid-gesture,
+   which the owner saw as glitches and as the thread un-drawing itself on the way back up. A
+   height-only change moves the draw WINDOW and nothing else, so it takes the cheap path.
+
+   BOTH listeners need the guard, measured 2026-10-07 rather than assumed: a 393x852 -> 393x912
+   viewport change fires `window.resize` once AND the `ResizeObserver` on `main` once, because
+   `main`'s own height reflows with the viewport (8632 -> 9052px) while its WIDTH does not. Width is
+   read from `documentElement.clientWidth`, never `window.innerWidth` (which reports the layout
+   viewport under mobile emulation and includes the scrollbar), and the observer compares `main`'s
+   own width, because `main` can change width without the viewport doing so. */
+function useLayoutTriggers(
+  measureLayout: () => void,
+  refreshWindow: () => void,
+) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- callers close over refs by their stable `.current`, not by closure value, so the first render's copies stay correct forever.
   useEffect(() => {
     let cancelled = false;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const main = document.querySelector("main");
 
-    function onResize() {
+    let lastWidth = document.documentElement.clientWidth;
+    let lastMainWidth = main?.getBoundingClientRect().width ?? 0;
+
+    function remeasureSoon() {
       if (resizeTimer !== null) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(measure, 150);
+      resizeTimer = setTimeout(measureLayout, 150);
     }
 
-    measure();
+    /* The cheap path is NOT debounced: it is a read plus an arithmetic recompute, and delaying it by
+       150ms is what a reader would see as the thread lagging their URL bar. */
+    function onViewportChange() {
+      const width = document.documentElement.clientWidth;
+      if (width === lastWidth) {
+        refreshWindow();
+        return;
+      }
+      lastWidth = width;
+      remeasureSoon();
+    }
+
+    function onMainResize() {
+      const width = main?.getBoundingClientRect().width ?? 0;
+      if (width === lastMainWidth) {
+        refreshWindow();
+        return;
+      }
+      lastMainWidth = width;
+      remeasureSoon();
+    }
+
+    measureLayout();
     document.fonts.ready.then(() => {
-      if (!cancelled) measure();
+      if (!cancelled) measureLayout();
     });
 
     let resizeObserver: ResizeObserver | null = null;
-    const main = document.querySelector("main");
     if (main !== null) {
-      resizeObserver = new ResizeObserver(onResize);
+      resizeObserver = new ResizeObserver(onMainResize);
       resizeObserver.observe(main);
     }
 
-    window.addEventListener("resize", onResize);
-    reduceMotion.addEventListener("change", measure);
+    window.addEventListener("resize", onViewportChange);
+    reduceMotion.addEventListener("change", measureLayout);
 
     return () => {
       cancelled = true;
       if (resizeTimer !== null) clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
-      window.removeEventListener("resize", onResize);
-      reduceMotion.removeEventListener("change", measure);
+      window.removeEventListener("resize", onViewportChange);
+      reduceMotion.removeEventListener("change", measureLayout);
     };
   }, []);
 }
@@ -1484,7 +1531,10 @@ export function PageThread() {
     [advanced],
   );
 
-  function measure() {
+  function measureLayout() {
+    /* Read BEFORE `rangesRef.current` is overwritten below: the ratchet's peak is a length on the
+       OLD path, and rebasing it needs both totals. */
+    const previousRanges = rangesRef.current;
     const wrapper = wrapperRef.current;
     const fallbackSvg = fallbackSvgRef.current;
     const liveSvg = liveSvgRef.current;
@@ -1563,13 +1613,17 @@ export function PageThread() {
       clearPieceDashes(pathsRef.current);
       taper()?.paint(Number.POSITIVE_INFINITY);
     } else {
-      /* The path this ratchet's maximum was measured against no longer exists, so the maximum goes
-         with it and the `advance` below re-seeds from the fresh measurement. The opening draw's own
-         floor is RE-DERIVED from the new ranges rather than carried across as a stale length --
-         without it, a resize at the very top after the sequence has run would unravel the invite's
-         thread and leave a reader who has not scrolled looking at nothing. The re-seed is not
-         movement, so it does not start the re-trace's settle interval over. */
-      ratchetRef.current.reset();
+      /* The path this ratchet's maximum was measured against no longer exists. The maximum is
+         REBASED rather than discarded: it is the only thing holding the owner's "and then stay
+         drawn", and zeroing it let a phone's URL-bar resize un-draw the thread mid-scroll. The
+         opening draw's own floor is still RE-DERIVED from the new ranges rather than carried across
+         as a stale length -- without it, a resize at the very top after the sequence has run would
+         unravel the invite's thread and leave a reader who has not scrolled looking at nothing. The
+         rebase is not movement, so it does not start the re-trace's settle interval over. */
+      ratchetRef.current.rebase(
+        totalLength(previousRanges),
+        totalLength(ranges),
+      );
       const drawn = ratchetRef.current.advance(
         Math.max(
           pageDrawnLength(
@@ -1587,7 +1641,41 @@ export function PageThread() {
     syncRetrace();
   }
 
-  useLayoutTriggers(measure);
+  /* The cheap half of the old `measure`. A viewport-height change moves where the draw window starts
+     and ends and changes nothing else about the page's geometry, so this re-reads the two window
+     values and re-paints the drawn length. It deliberately does NOT reset the head, stop the
+     re-trace, re-measure sections or rebase the ratchet -- doing those mid-scroll is what the owner
+     saw as glitches.
+
+     It paints the way `measureLayout` does rather than through `commitScrolled`, for two separate
+     reasons: there is no TRAVEL (easing a layout change the reader did not ask for would animate the
+     thread sideways under them), and it must not ARM the re-trace. `advanced` is what arms it, and
+     both `commit` and `commitScrolled` call it unconditionally -- so a URL bar moving would start
+     the re-trace's settle interval, which is the owner's third reported symptom ("the re-trace
+     running where no thread is drawn"). `syncRetrace` still runs, so the loop's target segments
+     follow the new window without the page being treated as moving. */
+  function refreshWindow() {
+    if (reducedMotion()) return;
+    viewportHeightRef.current = window.innerHeight;
+    terminalWindowRef.current = readTerminalWindow(viewportHeightRef.current);
+    const drawn = ratchetRef.current.advance(
+      Math.max(
+        pageDrawnLength(
+          groupRectsRef.current,
+          rangesRef.current,
+          viewportHeightRef.current,
+          terminalWindowRef.current,
+        ),
+        openingFloor(rangesRef.current, openingCompleteRef.current),
+      ),
+    );
+    catchUpRef.current?.seen(drawn);
+    drawnRef.current = drawn;
+    draw(drawn);
+    syncRetrace();
+  }
+
+  useLayoutTriggers(measureLayout, refreshWindow);
 
   /* The owner's opening sequence ends with "thread starts drawing" (`DESIGN.md` -> Motion). Without
      this the last beat is a no-op: the thread's fade ramps opacity over a stroke with nothing drawn,
@@ -1901,7 +1989,10 @@ export function WishesWeave() {
     );
   }
 
-  function measure() {
+  function measureLayout() {
+    /* Read BEFORE `rangesRef.current` is overwritten below -- the ratchet's peak is a length on the
+       OLD path. These are the WEAVE's own ranges, never the trunk's (see `ratchetRef`'s header). */
+    const previousRanges = rangesRef.current;
     const wrapper = wrapperRef.current;
     const svg = svgRef.current;
     if (wrapper === null || svg === null) return;
@@ -1971,13 +2062,28 @@ export function WishesWeave() {
     viewportHeightRef.current = window.innerHeight;
     terminalWindowRef.current = readTerminalWindow(viewportHeightRef.current);
     catchUpSecondsRef.current = (tokenTime("--thread-catchup") ?? 0) / 1000;
-    /* Same reason as `PageThread`'s own reset: the maximum described the path this re-measure has
-       just replaced. `reveal` re-seeds it from the fresh measurement on the next line. */
-    ratchetRef.current.reset();
+    /* Same reason as `PageThread`'s own rebase: the maximum described the path this re-measure has
+       just replaced, so it is scaled between the two totals rather than discarded -- discarding it
+       let a phone's URL-bar resize un-draw the weave on the way back up. `reveal` paints from it on
+       the next line. */
+    ratchetRef.current.rebase(totalLength(previousRanges), totalLength(ranges));
     reveal();
   }
 
-  useLayoutTriggers(measure);
+  /* The cheap half, as in `PageThread`: a viewport-height change moves the draw window and nothing
+     else, so this re-reads the two window values and re-paints. `reveal` is already the no-travel
+     painter ("a re-measure paints where the page already is" -- its own header), which is exactly
+     what a URL bar moving needs; `revealScrolled` would ease it. No head reset, no re-trace stop, no
+     rebase. The weave takes no `openingFloor`: the opening sequence draws the INVITE's pieces, which
+     live in `PageThread`'s `<svg>`, not this one. */
+  function refreshWindow() {
+    if (reducedMotion()) return;
+    viewportHeightRef.current = window.innerHeight;
+    terminalWindowRef.current = readTerminalWindow(viewportHeightRef.current);
+    reveal();
+  }
+
+  useLayoutTriggers(measureLayout, refreshWindow);
 
   /* Joins the page's one re-trace loop (`weaveRetraces`'s header): `PageThread` drives it, and this
      paints Wishes' stretch of it into its own `<svg>`. */

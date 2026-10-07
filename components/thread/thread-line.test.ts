@@ -1398,16 +1398,51 @@ test("the ratchet still advances past its own peak", () => {
 
 /* A resize or a font load re-measures the page, and the path's total length changes with it -- a
    maximum held over from the old layout can exceed the new total, which would clamp every piece to
-   fully drawn. `reset` drops it; the next `advance` re-seeds from the freshly measured value. */
-test("a re-measure drops the maximum rather than carrying a stale one", () => {
+   fully drawn. `rebase` scales it between the two totals instead of discarding it: discarding it is
+   a visible defect on a phone, where a URL bar fires `resize` DURING a scroll, so zeroing the peak
+   let the thread un-draw itself every time a reader changed direction. */
+test("rebase keeps the reader's proportion of the thread when the page grows", () => {
   const ratchet = createDrawRatchet();
-  ratchet.advance(5000);
-  ratchet.reset();
-  assert.equal(
-    ratchet.advance(300),
-    300,
-    "the stale peak must not survive a re-measure",
-  );
+  assert.equal(ratchet.advance(500), 500);
+  ratchet.rebase(1000, 2000);
+  // Half the thread was drawn; half of the longer thread is 1000.
+  assert.equal(ratchet.advance(0), 1000);
+});
+
+test("rebase never leaves a peak longer than the new total", () => {
+  // A resize that makes the page SHORTER than current progress -- the exact failure the old
+  // `reset` existed to prevent, which a rebase must not reintroduce.
+  const ratchet = createDrawRatchet();
+  ratchet.advance(900);
+  ratchet.rebase(1000, 400);
+  const peak = ratchet.advance(0);
+  assert.ok(peak <= 400, `peak ${peak} exceeds the new total 400`);
+  assert.equal(peak, 360); // 0.9 of 400
+});
+
+test("rebase before any measurement cannot divide by zero", () => {
+  // oldTotal 0. An Infinity from a measured-value divisor has killed a renderer in this project
+  // once, so the zero case is asserted rather than reasoned about.
+  const ratchet = createDrawRatchet();
+  ratchet.advance(300);
+  ratchet.rebase(0, 1200);
+  const peak = ratchet.advance(0);
+  assert.ok(Number.isFinite(peak), `peak is ${peak}`);
+  assert.equal(peak, 0);
+});
+
+test("rebase to a zero total yields zero, not NaN", () => {
+  const ratchet = createDrawRatchet();
+  ratchet.advance(300);
+  ratchet.rebase(1000, 0);
+  assert.equal(ratchet.advance(0), 0);
+});
+
+test("advance is still monotonic across a rebase", () => {
+  const ratchet = createDrawRatchet();
+  ratchet.advance(800);
+  ratchet.rebase(1000, 1000); // identical layout: a no-op
+  assert.equal(ratchet.advance(10), 800);
 });
 
 test("two ratchets hold their own maximum", () => {

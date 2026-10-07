@@ -1029,13 +1029,16 @@ export function dashForPiece(
    singleton, or `PageThread` and `WishesWeave` would share a maximum that means different things in
    their two different path lengths.
 
-   `reset` exists because a maximum is only meaningful against the layout it was measured in: a
+   `rebase` exists because a maximum is only meaningful against the layout it was measured in: a
    resize or a font load re-measures the page and changes the path's total length, and a maximum
-   held over from the old one can exceed the new total, clamping every piece to fully drawn. The
-   caller resets at its own re-measure and lets the next `advance` re-seed from the fresh value. */
+   held over from the old one can exceed the new total, clamping every piece to fully drawn. It
+   scales the peak by the two totals instead of discarding it, because discarding it is a visible
+   defect on a phone -- a mobile URL bar fires `resize` DURING a scroll, so zeroing the peak let the
+   thread un-draw itself every time a reader scrolled back up. A proportion survives a layout change;
+   an absolute length does not. */
 export function createDrawRatchet(): {
   advance: (drawn: number) => number;
-  reset: () => void;
+  rebase: (oldTotal: number, newTotal: number) => void;
 } {
   let peak = 0;
   return {
@@ -1043,8 +1046,10 @@ export function createDrawRatchet(): {
       if (drawn > peak) peak = drawn;
       return peak;
     },
-    reset(): void {
-      peak = 0;
+    rebase(oldTotal: number, newTotal: number): void {
+      /* No old total means nothing has been measured yet, so there is no proportion to carry and
+         any ratio would be Infinity. */
+      peak = oldTotal > 0 ? (peak / oldTotal) * newTotal : 0;
     },
   };
 }
