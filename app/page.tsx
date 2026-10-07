@@ -710,9 +710,9 @@ export function FamilySection() {
   );
 }
 
-/* The placeholder timeline card. The section is tall (`mounted-sheet`'s tall mode), so it takes no
-   measured fit — it grows to its content and the page scrolls past it. Phase 6 replaces the whole
-   interior with the real timeline; only the frame and the header are meant to survive. */
+/* The timeline card. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured
+   fit — it grows to its content and the page scrolls past it, which is why it is the one section
+   that breaks the one-viewport rhythm. */
 /* Two lines, not one paragraph, because the second does different work: it is what tells a guest
    photographs arrive here after the wedding, so it is set apart and set in italic. The card would
    otherwise read as finished rather than as still to come. */
