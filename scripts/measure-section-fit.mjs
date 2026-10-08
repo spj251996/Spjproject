@@ -7,15 +7,19 @@
    orientation is measured as it renders. Web fonts are confirmed loaded, every stack the selector
    matches is cloned into its own detached flex-column host, and each host's width is swept from 120
    to 1300px; the height at a width is the tallest stack's. Height is a step function of width, so
-   every width where it changes is a regime boundary, bisected to 1/1024px. The sweep runs inside the
-   page in one `page.evaluate` call per tier and orientation, with no per-pixel round trip.
+   every width where it changes is a regime boundary, bisected to 1/1024px. **One integer pixel can
+   hold several boundaries** — two lines can unwrap within the same pixel — so each pixel that
+   changes is bisected repeatedly until the height reached matches the height at the next whole
+   pixel, and every boundary found on the way is emitted. Bisecting such a pixel only once records
+   an intermediate height, drops the real one, and still passes validation. The sweep runs inside
+   the page in one `page.evaluate` call per tier and orientation, with no per-pixel round trip.
 
    Usage:
      node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
        --section=invite --out=app/invite-fit.ts
 
-   `--out` sits beside `app/page.tsx`, which supplies the section's fit, e.g. `app/invite-fit.ts`
-   for the invite.
+   `--out` stays in `app/`, beside the other fits and next to the section CSS that reads them, e.g.
+   `app/invite-fit.ts` for the invite -- the section components themselves live in `app/_sections/`.
 
    Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
    landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending
@@ -34,16 +38,21 @@ const CLI_TIMEOUT_MS = 120_000;
 const MIN_WIDTH = 120;
 const MAX_WIDTH = 1300;
 
+/* How many regime boundaries one integer pixel is allowed to hold. Twelve is far above anything
+   measured — the densest collision found is two — and a sweep that reaches it stops and says so
+   rather than recording an unresolved ladder. */
+const MAX_BOUNDARIES_PER_PIXEL = 12;
+
 /* One width safely inside each width tier, away from the 768/1024/1600 breakpoints. Each is swept at
    both orientations' heights below — irrelevant to the clone, which is measured off-screen in a
    detached host, but the window itself must actually be portrait or landscape for the section's
    own on-screen layout (and so `document.fonts.ready`, loaded before the clone is taken) to
    resolve as a guest would see it. */
 const TIERS = [
-  { key: "mobile", width: 400 },
+  { key: "phone", width: 400 },
   { key: "tablet", width: 900 },
-  { key: "desktop", width: 1280 },
-  { key: "wide", width: 1700 },
+  { key: "laptop", width: 1280 },
+  { key: "desktop", width: 1700 },
 ];
 
 /* Heights that set the orientation without pretending to be a real device; the sweep only needs
@@ -180,6 +189,7 @@ function sweepScript(cssSelector, mutateContent) {
   const MIN_WIDTH = ${MIN_WIDTH};
   const MAX_WIDTH = ${MAX_WIDTH};
   const STEP_EPSILON = 0.05;
+  const MAX_BOUNDARIES_PER_PIXEL = ${MAX_BOUNDARIES_PER_PIXEL};
 
   const heights = [];
   for (let w = MIN_WIDTH; w <= MAX_WIDTH; w += 1) {
@@ -189,20 +199,63 @@ function sweepScript(cssSelector, mutateContent) {
   const regimes = [{ minContentWidth: MIN_WIDTH, contentHeight: heights[0] }];
   for (let i = 1; i < heights.length; i += 1) {
     if (Math.abs(heights[i] - heights[i - 1]) > STEP_EPSILON) {
+      /* An integer step can hide MORE THAN ONE boundary: two lines can unwrap within the same
+         pixel, and bisecting once then stops at the first, recording its intermediate height and
+         losing the real one. */
+      const top = MIN_WIDTH + i;
       let lo = MIN_WIDTH + i - 1;
-      let hi = MIN_WIDTH + i;
-      const loHeight = heights[i - 1];
-      while (hi - lo > 1 / 1024) {
-        const mid = (lo + hi) / 2;
-        const h = heightAt(mid);
-        if (Math.abs(h - loHeight) <= STEP_EPSILON) {
-          lo = mid;
-        } else {
-          hi = mid;
+      let loHeight = heights[i - 1];
+      let pass = 0;
+      while (Math.abs(loHeight - heights[i]) > STEP_EPSILON) {
+        /* MAX_BOUNDARIES_PER_PIXEL is a ceiling on how many boundaries one pixel may hold, NOT a
+           consequence of the bisection advancing — that exits at hi - lo <= 1/1024, so a pass can
+           move lo by barely over 1/2048 and the interval alone would allow far more passes than
+           this. The ceiling only stops a pathological pixel spinning, and reaching it is reported
+           rather than swallowed: breaking out here would leave an intermediate height recorded and
+           validation would still pass, which is exactly the silent truncation this loop exists to
+           remove. */
+        if (pass >= MAX_BOUNDARIES_PER_PIXEL) {
+          return {
+            error:
+              "more than " + MAX_BOUNDARIES_PER_PIXEL + " regime boundaries inside the pixel at " +
+              top + "px: the ladder cannot be resolved there without dropping one. Raise " +
+              "MAX_BOUNDARIES_PER_PIXEL.",
+          };
         }
+        pass += 1;
+        const from = lo;
+        let hi = top;
+        while (hi - lo > 1 / 1024) {
+          const mid = (lo + hi) / 2;
+          const h = heightAt(mid);
+          if (Math.abs(h - loHeight) <= STEP_EPSILON) {
+            lo = mid;
+          } else {
+            hi = mid;
+          }
+        }
+        const boundary = Math.round(hi * 1024) / 1024;
+        const height = heightAt(hi);
+        const previous = regimes[regimes.length - 1];
+        if (boundary > previous.minContentWidth) {
+          regimes.push({ minContentWidth: boundary, contentHeight: height });
+        } else {
+          /* Two boundaries closer together than the recorded precision: the later height is the
+             one that holds from here on, so it replaces rather than adds. */
+          previous.contentHeight = height;
+        }
+        if (!(hi > from)) {
+          /* The interval stopped shrinking with the ladder still unresolved — two boundaries closer
+             together than the sweep can separate. Reported for the same reason as the ceiling. */
+          return {
+            error:
+              "regime boundaries at " + top + "px are closer together than the sweep can " +
+              "separate, so the ladder there cannot be resolved.",
+          };
+        }
+        lo = hi;
+        loHeight = height;
       }
-      const boundary = Math.round(hi * 1024) / 1024;
-      regimes.push({ minContentWidth: boundary, contentHeight: heightAt(hi) });
     }
   }
 
@@ -282,17 +335,17 @@ import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
 export const ${exportName}: MeasuredFit = {
   section: ${JSON.stringify(section)},
   regimes: {
-    mobile: {
-${formatOrientation(fit.mobile)}
+    phone: {
+${formatOrientation(fit.phone)}
     },
     tablet: {
 ${formatOrientation(fit.tablet)}
     },
+    laptop: {
+${formatOrientation(fit.laptop)}
+    },
     desktop: {
 ${formatOrientation(fit.desktop)}
-    },
-    wide: {
-${formatOrientation(fit.wide)}
     },
   },
 };
@@ -308,8 +361,8 @@ try {
   for (const tier of TIERS) {
     fit[tier.key] = {};
     for (const orientation of ORIENTATIONS) {
-      /* Falsified on mobile only: enough to prove the bisection catches a real content change. */
-      const mutateContent = falsify && tier.key === "mobile";
+      /* Falsified on phone only: enough to prove the bisection catches a real content change. */
+      const mutateContent = falsify && tier.key === "phone";
       fit[tier.key][orientation.key] = await measureTierOrientation(
         tier,
         orientation,

@@ -1,5 +1,5 @@
-/* Each card is styled with its level's real classes. Text colour is inherited, never set here: a
-   dark level sets its own ink, and a pinned `text-ink` would hide the green stock's label. */
+/* Each card is styled with its level's real classes; text colour is never pinned here, so it is
+   always whatever the level's own surface implies rather than a value this grid overrides. */
 
 export interface DepthLevel {
   name: string;

@@ -18,7 +18,7 @@ export interface SwatchGroup {
 
 function ColorCard({ token, name, usage }: SwatchToken) {
   return (
-    <div className="flex flex-col gap-space-sm bg-surface-elevated p-space-sm shadow-sheet">
+    <div className="flex flex-col gap-space-sm bg-surface-elevated p-space-sm shadow-stock">
       {/* 80px swatch band: gallery layout constant. */}
       <span
         aria-hidden="true"

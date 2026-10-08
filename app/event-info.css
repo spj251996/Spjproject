@@ -1,0 +1,18 @@
+/* The desktop band's side-padding override — the bounded exception in `DESIGN.md` →
+   Foundations → Layout → `mounted-sheet` → The frame → Padding and paint. The frame's desktop step
+   gives each sheet 96px a side, which leaves this section's column too narrow for the wedding venue
+   to hold one line. Only the side padding moves, and only here: the block padding and the give-way
+   chain stay the frame's, so the chain can always reach every step it emits, and less side padding
+   only ever frees room.
+
+   A plain stylesheet rather than a CSS module, because the element it styles is the frame's and
+   carries the frame's own class names — a module would have to reach them through `:global`, which
+   the linter reads as an unknown pseudo-class. The section's id scopes it instead, the same handle
+   `measure:fit` selects the section by, and it also carries the rule over the frame's five classes:
+   the frame's stylesheet is unlayered and rendered after this one, and the step it sets is the
+   `padding` shorthand, so only greater specificity wins. */
+@media (width >= 100rem) and (orientation: landscape) {
+  #event-info .mounted-sheet-frame__sheet {
+    padding-inline: var(--spacing-space-2xl);
+  }
+}

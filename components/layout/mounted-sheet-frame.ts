@@ -4,16 +4,28 @@
    Plain data and arithmetic, with no React and no DOM, so plain node can import it as well as the
    app's bundler. */
 
-/* `desktop` keeps its name from before the tier split, so every existing fit and caller stays
-   valid: it is now the compact laptop tier ({breakpoints.lg}-{breakpoints.xl}, 1024-1599). `wide`
-   is the new tier ({breakpoints.xl} and up, 1600+) carrying today's laptop values. */
-export type WidthTier = "mobile" | "tablet" | "desktop" | "wide";
+/* The four width bands, named the same here, in `GroundTierName`, in the generated fits and in
+   `DESIGN.md`: phone below `{breakpoints.md}`, tablet to `{breakpoints.lg}`, laptop to
+   `{breakpoints.xl}` (1024-1599), desktop from `{breakpoints.xl}` (1600+). The `--*-compact` CSS
+   tokens still carry the tier's former name; they are token identifiers, not tier names. */
+export type WidthTier = "phone" | "tablet" | "laptop" | "desktop";
 
 export type Orientation = "portrait" | "landscape";
 
 export type FrameLayout = "single" | "pair";
 
-type GroundTierName = "phone" | "tablet" | "compact" | "laptop";
+/* Three mutually exclusive paints, so one enum rather than a boolean beside one: a boolean next to an
+   enum is one constant answering two questions, which this codebase has shipped as a defect twice --
+   the frame's padding floor, and `MOUNT_REVEAL` carrying a fill and a padding in one string.
+
+   `"mount"` is today's painted card and the default every framed section takes. `"none"` is the hero's
+   unpainted option, which the invitation takes. `"stock"` is the thread lab's mountless stock, where
+   the mount element carries the stock surface and both shadows (DESIGN.md -> Foundations -> Layout ->
+   `mounted-sheet`). The GEOMETRY is identical in all three, which is what makes this an option rather
+   than a fork and what licenses one set of fit files across every route. */
+export type FramePaint = "mount" | "stock" | "none";
+
+type GroundTierName = "phone" | "tablet" | "laptop" | "desktop";
 
 /* From this content width upward, the section's content stands this tall. Content width is the
    width inside the sheet's padding. Height is a step function of width, because each line of the
@@ -48,21 +60,88 @@ export function regimesFor(
   return regimes[orientation];
 }
 
+/* A portrait window's two bands: `block` frames the card top and bottom, `inline` is the page
+   margin beside it, and one number cannot be both.
+
+   `blockPressed` / `inlinePressed` are fields, never halved at emit time. `groundRules` builds its
+   give-way body as a template-literal argument, so `spacing()` runs even where the condition is
+   false — and the tablet's 172 / 2 is 86, off the spacing scale, which would throw at build time for
+   every section on a code path that never renders. A tier whose half IS on the scale may still
+   derive its own pair (`squareGround`); what may not happen is the emitter doing it. */
+export interface PortraitGround {
+  block: number;
+  blockPressed: number;
+  inline: number;
+  inlinePressed: number;
+}
+
 export interface GroundTier {
   name: GroundTierName;
+  /* The landscape ground, on both axes. Its side ground is doubled and floored by the height-cap
+     centring gap, which is a window-height term no declared band could express. */
   ground: number;
+  portrait: PortraitGround;
   /* Largest first. */
   paddingSteps: readonly number[];
+  /** What the fit arithmetic may assume, where that differs from the ladder's floor (`fitPadding`). */
+  rescuePadding?: number;
+}
+
+export const SIDE_GROUND_MULTIPLE = 2;
+/* Declared above `GROUND_TIERS` because `squareGround` reads it while that table initialises. */
+export const GROUND_HALVING = 0.5;
+
+/* A tier whose portrait band is its landscape ground on both axes, given way by the same halving
+   landscape uses. */
+function squareGround(ground: number): PortraitGround {
+  return {
+    block: ground,
+    blockPressed: ground * GROUND_HALVING,
+    inline: ground,
+    inlinePressed: ground * GROUND_HALVING,
+  };
 }
 
 /* `{spacing.*}` steps held as numbers, like the reveal ladder and the caps below, because a media
    query cannot read a custom property. A spacing token change must change them here and in the
    pixel-keyed spacing map in mounted-sheet-frame-css.ts. */
 const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
-  phone: { name: "phone", ground: 16, paddingSteps: [32, 24, 16] },
-  tablet: { name: "tablet", ground: 48, paddingSteps: [64, 48, 32] },
-  compact: { name: "compact", ground: 64, paddingSteps: [64, 48, 32, 24] },
-  laptop: { name: "laptop", ground: 96, paddingSteps: [96, 64, 48, 32] },
+  phone: {
+    name: "phone",
+    ground: 16,
+    portrait: { block: 96, blockPressed: 48, inline: 24, inlinePressed: 16 },
+    /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`), and
+       the smallest of those conditions needs ~804px — taller than the phones this site meets — so on
+       a phone the floor is the only step ever reached. 32 as the floor measures the invite and
+       Wishes at 1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at
+       exactly 1.00 (couple, 2026-10-02: the cards read as too filled). */
+    paddingSteps: [32, 24],
+    /* Never emitted as a card's padding; available to `windowFits` alone, so a short phone keeps
+       its pressed ground band instead of gaining 176px of page. */
+    rescuePadding: 16,
+  },
+  tablet: {
+    name: "tablet",
+    ground: 48,
+    portrait: { block: 172, blockPressed: 96, inline: 128, inlinePressed: 64 },
+    paddingSteps: [64, 48, 32],
+  },
+  /* Compact and laptop take a square band DERIVED from their landscape ground, never a literal:
+     DESIGN.md gives their band as "Its `Ground, landscape`" and says it follows that ground wherever
+     it moves, which a copied number would silently stop doing. Halving is safe on these two alone —
+     both halves are on the spacing scale, where the tablet's 172 / 2 = 86 is not. */
+  laptop: {
+    name: "laptop",
+    ground: 64,
+    portrait: squareGround(64),
+    paddingSteps: [64, 48, 32, 24],
+  },
+  desktop: {
+    name: "desktop",
+    ground: 96,
+    portrait: squareGround(96),
+    paddingSteps: [96, 64, 48, 32],
+  },
 };
 
 /* `{breakpoints.md}`, `{breakpoints.lg}` and `{breakpoints.xl}`. The media queries use rem, as the
@@ -79,29 +158,34 @@ function breakpointPx(rem: number): number {
 /* A layout value, not a breakpoint: DESIGN.md → Foundations → Layout → `mounted-sheet`. */
 const PAIR_TIER_LINE_WIDTH_REM = 80;
 
-/* The reveal ladder: `{reveal.md}` below `{breakpoints.xl}`, `{reveal.lg}` from it. */
+/* The reveal ladder, one rung per width tier: `{reveal.base}` below `{breakpoints.md}`,
+   `{reveal.md}` from there to `{breakpoints.lg}`, `{reveal.lg}` to `{breakpoints.xl}`, `{reveal.xl}`
+   above it. The phone and tablet rungs reach the hero alone — every other section shows its mount
+   only where a pair can stand side by side (`mountShows`).
+
+   The tablet rung is the narrowest deliberately, and it is the one value here that is not a
+   preference: the invite's landscape card in a `{breakpoints.md}`-to-`{breakpoints.lg}` window
+   stands 717px against a 720px cap, and the reveal is taken out of the card, so 14 or more leaves
+   that tier no line and `tierLine` refuses at build time. */
 const REVEAL: Readonly<Record<WidthTier, number>> = {
-  mobile: 12,
+  phone: 16,
   tablet: 12,
-  desktop: 12,
-  wide: 16,
+  laptop: 16,
+  desktop: 24,
 };
 
-/* `--container-content` / `--card-height-cap` (mobile, tablet and wide) and their `-compact`
-   siblings (desktop, the compact laptop tier). The stylesheet reads the tokens themselves; every
+/* `--container-content` / `--card-height-cap` (phone, tablet and desktop) and their `-compact`
+   siblings (the laptop tier — the token keeps the tier's former name). The stylesheet reads the tokens themselves; every
    threshold derived from a cap needs it as a number, because a media query cannot read a custom
    property. Change the tokens and this together. */
 export const CAPS: Readonly<
   Record<WidthTier, { width: number; height: number }>
 > = {
-  mobile: { width: 1200, height: 720 },
+  phone: { width: 1200, height: 720 },
   tablet: { width: 1200, height: 720 },
-  desktop: { width: 960, height: 576 },
-  wide: { width: 1200, height: 720 },
+  laptop: { width: 960, height: 576 },
+  desktop: { width: 1200, height: 720 },
 };
-
-export const SIDE_GROUND_MULTIPLE = 2;
-export const GROUND_HALVING = 0.5;
 
 /* `(hover: none)` is not added: it could only drop devices whose primary input is still coarse. */
 const TOUCHSCREEN_QUERY = "(pointer: coarse)";
@@ -134,27 +218,53 @@ export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
-/* The one statement of the phone-drop rule; `mountShows` and `tallWindowClasses` both call it, so a
-   future change to the rule cannot update one and miss the other. */
-function groundTierShowsMount(
-  groundTierName: GroundTierName,
-  hero: boolean,
+/* What the fit arithmetic may ASSUME, which is not always what a card SHOWS. The two were one number
+   until the phone floor rose to 24 (couple, 2026-10-02), and that silently answered a second
+   question: `windowFits` asks "does this window hold the card?" at the smallest padding, so raising
+   the floor made the halving condition fail BOTH ways at phone heights 693-804 — the card no longer
+   fit even on the halved ground, the press was lost, and Event Info gained 176px of page.
+
+   A tier declaring `rescuePadding` keeps the old number for that question alone: the frame may still
+   reach for 16 when deciding whether a window can hold a card, while never emitting it as a card's
+   padding. Owner's decision, 2026-10-02 — "keep the gated 16 step as last resort". */
+export function fitPadding(groundTier: GroundTier): number {
+  return groundTier.rescuePadding ?? smallestPadding(groundTier);
+}
+
+/* The one statement of where a pair stands side by side, and so of where a non-hero section shows
+   its mount: a landscape window at the laptop or desktop width tier. The pair, the single sections,
+   the tier lines and tall mode all read it, so a page is never half mounted and half bare. */
+function sideBySideWindow(widthTier: WidthTier, landscape: boolean): boolean {
+  return landscape && (widthTier === "laptop" || widthTier === "desktop");
+}
+
+function sideBySideClass(
+  windowClass: WindowClass,
+  landscape: boolean,
 ): boolean {
-  return hero || groundTierName !== "phone";
+  return (
+    windowClass.landscapePossible &&
+    sideBySideWindow(windowClass.widthTier, landscape)
+  );
 }
 
-export function mountShows(windowClass: WindowClass, hero: boolean): boolean {
-  return groundTierShowsMount(windowClass.groundTier.name, hero);
+export function mountShows(
+  windowClass: WindowClass,
+  hero: boolean,
+  landscape: boolean,
+): boolean {
+  return hero || sideBySideClass(windowClass, landscape);
 }
 
-export function revealFor(windowClass: WindowClass, hero: boolean): number {
-  return mountShows(windowClass, hero) ? REVEAL[windowClass.widthTier] : 0;
-}
-
-/* A stacked card borrowing the hero's padding chain (`stackedPadding`) borrows its reveal too,
-   which never drops at the phone ground tier. */
-export function heroReveal(windowClass: WindowClass): number {
-  return revealFor(windowClass, true);
+/* A pair is never the hero, so this is a pair's reveal as well as a single card's. */
+export function revealFor(
+  windowClass: WindowClass,
+  hero: boolean,
+  landscape: boolean,
+): number {
+  return mountShows(windowClass, hero, landscape)
+    ? REVEAL[windowClass.widthTier]
+    : 0;
 }
 
 export function pairsSideBySide(
@@ -162,24 +272,7 @@ export function pairsSideBySide(
   windowClass: WindowClass,
   landscape: boolean,
 ): boolean {
-  return (
-    layout === "pair" &&
-    landscape &&
-    windowClass.landscapePossible &&
-    (windowClass.widthTier === "desktop" || windowClass.widthTier === "wide")
-  );
-}
-
-export function cardReveal(
-  windowClass: WindowClass,
-  hero: boolean,
-  layout: FrameLayout,
-  landscape: boolean,
-): number {
-  if (layout === "single") return revealFor(windowClass, hero);
-  return pairsSideBySide(layout, windowClass, landscape)
-    ? REVEAL[windowClass.widthTier]
-    : 0;
+  return layout === "pair" && sideBySideClass(windowClass, landscape);
 }
 
 /* The smallest card that holds the content at one padding: one rectangle per regime, because a
@@ -215,20 +308,19 @@ function tierLine(
   groundTier: GroundTier,
   narrowestWindow: number,
   layout: FrameLayout,
+  hero: boolean,
 ): number {
   const halved = groundTier.ground * GROUND_HALVING;
-  const padding = smallestPadding(groundTier);
-  /* A tier line only decides landscape windows, so it reads the landscape regimes. A single card
-     always shows the mount at the larger tier; a pair sits side by side only at the desktop and
-     wide width tiers, so its tablet and mobile lines use the stacked, unmounted arithmetic. */
-  const sideBySide =
-    layout === "pair" && (widthTier === "desktop" || widthTier === "wide");
-  const reveal = layout === "pair" && !sideBySide ? 0 : REVEAL[widthTier];
+  const padding = fitPadding(groundTier);
+  /* A tier line only decides landscape windows, so it reads the landscape regimes and the mount a
+     landscape window shows at this width tier. */
+  const sideBySide = sideBySideWindow(widthTier, true);
+  const reveal = hero || sideBySide ? REVEAL[widthTier] : 0;
   const heights = fitRectangles(
     regimesFor(fit.regimes[widthTier], "landscape"),
     reveal,
     padding,
-    sideBySide,
+    layout === "pair" && sideBySide,
   )
     .filter(
       (rectangle) =>
@@ -257,10 +349,10 @@ const SECTION_NAME = /^[a-z][a-z0-9-]*$/;
 const FIT_KEYS: readonly string[] = ["section", "regimes"];
 const REGIME_KEYS = ["minContentWidth", "contentHeight"] as const;
 const WIDTH_TIERS: readonly WidthTier[] = [
-  "mobile",
+  "phone",
   "tablet",
+  "laptop",
   "desktop",
-  "wide",
 ];
 const ORIENTATIONS: readonly Orientation[] = ["portrait", "landscape"];
 
@@ -304,7 +396,7 @@ function assertValidFit(fit: MeasuredFit): void {
   const byTier = record.regimes;
   if (!isPlainObject(byTier)) {
     throw new Error(
-      `mounted-sheet-frame: ${label} has no regimes. A measured fit needs a portrait and a landscape set for mobile, tablet, desktop and wide type.`,
+      `mounted-sheet-frame: ${label} has no regimes. A measured fit needs a portrait and a landscape set for phone, tablet, laptop and desktop type.`,
     );
   }
   for (const key of Object.keys(byTier)) {
@@ -387,13 +479,17 @@ function assertValidFit(fit: MeasuredFit): void {
 
 interface TierLines {
   tablet: number;
-  compact: number;
+  laptop: number;
   compactTouchscreen: number;
-  wide: number;
+  desktop: number;
   wideTouchscreen: number;
 }
 
-function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
+function tierLines(
+  fit: MeasuredFit,
+  layout: FrameLayout,
+  hero: boolean,
+): TierLines {
   assertValidFit(fit);
   const md = breakpointPx(BREAKPOINT_REM.md);
   const lg = breakpointPx(BREAKPOINT_REM.lg);
@@ -405,28 +501,38 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
      tier line is worked out the same way a single card's is. */
   const wideNarrowest = breakpointPx(BREAKPOINT_REM.xl);
   const lines = {
-    tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout),
-    compact: tierLine(
+    tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout, hero),
+    laptop: tierLine(
       fit,
-      "desktop",
-      GROUND_TIERS.compact,
+      "laptop",
+      GROUND_TIERS.laptop,
       compactNarrowest,
       layout,
+      hero,
     ),
     compactTouchscreen: tierLine(
       fit,
-      "desktop",
+      "laptop",
       GROUND_TIERS.tablet,
       compactNarrowest,
       layout,
+      hero,
     ),
-    wide: tierLine(fit, "wide", GROUND_TIERS.laptop, wideNarrowest, layout),
+    desktop: tierLine(
+      fit,
+      "desktop",
+      GROUND_TIERS.desktop,
+      wideNarrowest,
+      layout,
+      hero,
+    ),
     wideTouchscreen: tierLine(
       fit,
-      "wide",
+      "desktop",
       GROUND_TIERS.tablet,
       wideNarrowest,
       layout,
+      hero,
     ),
   };
   /* A portrait pair window from `{breakpoints.lg}` to `PAIR_TIER_LINE_WIDTH_REM` is taller than its
@@ -435,7 +541,7 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
      change to the caps or ground tiers. Only the compact tier line moves for a pair — the wide line
      always sits at `{breakpoints.xl}`, so it needs no such guard. */
   if (layout === "pair") {
-    for (const line of [lines.compact, lines.compactTouchscreen]) {
+    for (const line of [lines.laptop, lines.compactTouchscreen]) {
       if (!(line < lg)) {
         throw new Error(
           `mounted-sheet-frame: section "${fit.section}" cannot be framed. Its pair tier line ${formatPx(line)} is not below ${formatPx(lg)}, so a portrait window from ${formatPx(lg)} to ${formatPx(compactNarrowest)} wide could stand below it.`,
@@ -457,8 +563,9 @@ function tierLines(fit: MeasuredFit, layout: FrameLayout): TierLines {
 export function windowClasses(
   fit: MeasuredFit,
   layout: FrameLayout = "single",
+  hero = false,
 ): WindowClass[] {
-  const lines = tierLines(fit, layout);
+  const lines = tierLines(fit, layout, hero);
   const md = `${BREAKPOINT_REM.md}rem`;
   const lg = `${BREAKPOINT_REM.lg}rem`;
   const xl = `${BREAKPOINT_REM.xl}rem`;
@@ -477,7 +584,7 @@ export function windowClasses(
      pair's orientation-split classes under `PAIR_TIER_LINE_WIDTH_REM`, and is passed only for the
      compact tier — the wide tier has no such band. */
   const widthTierClasses = (
-    widthTier: "desktop" | "wide",
+    widthTier: "laptop" | "desktop",
     widthQuery: string,
     pointerQuery: string,
     aboveTier: GroundTier,
@@ -527,9 +634,9 @@ export function windowClasses(
   return [
     {
       media: `(width < ${md})`,
-      widthTier: "mobile",
+      widthTier: "phone",
       groundTier: GROUND_TIERS.phone,
-      regimes: fit.regimes.mobile,
+      regimes: fit.regimes.phone,
       portraitPossible: true,
       landscapePossible: true,
     },
@@ -550,15 +657,15 @@ export function windowClasses(
       landscapePossible: true,
     },
     ...widthTierClasses(
-      "desktop",
+      "laptop",
       compactWidth,
       pointer,
-      GROUND_TIERS.compact,
-      lines.compact,
+      GROUND_TIERS.laptop,
+      lines.laptop,
       compactNarrowBand,
     ),
     ...widthTierClasses(
-      "desktop",
+      "laptop",
       compactWidth,
       TOUCHSCREEN_QUERY,
       GROUND_TIERS.tablet,
@@ -566,14 +673,14 @@ export function windowClasses(
       compactNarrowBand,
     ),
     ...widthTierClasses(
-      "wide",
+      "desktop",
       wideWidth,
       pointer,
-      GROUND_TIERS.laptop,
-      lines.wide,
+      GROUND_TIERS.desktop,
+      lines.desktop,
     ),
     ...widthTierClasses(
-      "wide",
+      "desktop",
       wideWidth,
       TOUCHSCREEN_QUERY,
       GROUND_TIERS.tablet,
@@ -593,9 +700,13 @@ export interface TallWindowClass {
   media: string;
   widthTier: WidthTier;
   ground: number;
+  /* Tall mode has no give-way, so the pressed pair is not part of a tall class. */
+  portrait: Pick<PortraitGround, "block" | "inline">;
   padding: number;
-  reveal: number;
-  mountShows: boolean;
+  /* Per orientation, because one width tier holds both: a non-hero card's mount shows only in a
+     landscape window at the laptop or desktop tier. */
+  reveal: Readonly<Record<Orientation, number>>;
+  mountShows: Readonly<Record<Orientation, boolean>>;
 }
 
 /* One step above each ground tier's own largest (`paddingSteps[0]`), read off the spacing scale:
@@ -603,8 +714,8 @@ export interface TallWindowClass {
 const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   phone: 48,
   tablet: 96,
-  compact: 96,
-  laptop: 128,
+  laptop: 96,
+  desktop: 128,
 };
 
 export function tallWindowClasses(hero: boolean): TallWindowClass[] {
@@ -618,34 +729,39 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
     widthTier: WidthTier,
     groundTier: GroundTier,
   ): TallWindowClass => {
-    const shows = groundTierShowsMount(groundTier.name, hero);
+    const showsPortrait = hero || sideBySideWindow(widthTier, false);
+    const showsLandscape = hero || sideBySideWindow(widthTier, true);
     return {
       media,
       widthTier,
       ground: groundTier.ground,
+      portrait: groundTier.portrait,
       padding: TALL_PADDING[groundTier.name],
-      reveal: shows ? REVEAL[widthTier] : 0,
-      mountShows: shows,
+      reveal: {
+        portrait: showsPortrait ? REVEAL[widthTier] : 0,
+        landscape: showsLandscape ? REVEAL[widthTier] : 0,
+      },
+      mountShows: { portrait: showsPortrait, landscape: showsLandscape },
     };
   };
 
   return [
-    build(`(width < ${md})`, "mobile", GROUND_TIERS.phone),
+    build(`(width < ${md})`, "phone", GROUND_TIERS.phone),
     build(`(${md} <= width < ${lg})`, "tablet", GROUND_TIERS.tablet),
     build(
       `(${lg} <= width < ${xl}) and ${pointer}`,
-      "desktop",
-      GROUND_TIERS.compact,
+      "laptop",
+      GROUND_TIERS.laptop,
     ),
     build(
       `(${lg} <= width < ${xl}) and ${TOUCHSCREEN_QUERY}`,
-      "desktop",
+      "laptop",
       GROUND_TIERS.tablet,
     ),
-    build(`(width >= ${xl}) and ${pointer}`, "wide", GROUND_TIERS.laptop),
+    build(`(width >= ${xl}) and ${pointer}`, "desktop", GROUND_TIERS.desktop),
     build(
       `(width >= ${xl}) and ${TOUCHSCREEN_QUERY}`,
-      "wide",
+      "desktop",
       GROUND_TIERS.tablet,
     ),
   ];

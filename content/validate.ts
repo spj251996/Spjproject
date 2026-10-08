@@ -1,5 +1,6 @@
 import { parseIsoDate } from "./format.ts";
 import type {
+  ContactPerson,
   EventSegment,
   FamilyGroup,
   FamilyMember,
@@ -67,6 +68,21 @@ function assetPath(value: string | null, path: string): void {
   }
 }
 
+/* E.164: a leading "+", a country code that cannot start at zero, then up to fifteen digits in
+   total. Stricter than the `tel:` scheme, which permits spaces and punctuation — one canonical
+   stored form is what lets both the telephone and the WhatsApp target derive from this field. */
+const E164 = /^\+[1-9]\d{7,14}$/;
+
+function phoneNumber(value: string, path: string): void {
+  required(value, path);
+  if (!E164.test(value)) {
+    throw new ContentValidationError(
+      path,
+      `must be an E.164 number — a leading "+", then 8 to 15 digits, no spaces or punctuation ("${value}")`,
+    );
+  }
+}
+
 function isoDate(value: string, path: string): void {
   if (parseIsoDate(value) === null) {
     throw new ContentValidationError(
@@ -90,13 +106,49 @@ function claimId(id: string, path: string, seen: Set<string>): void {
   seen.add(id);
 }
 
+/* Malayalam pre-base vowel signs. In LOGICAL order each follows its base consonant; in VISUAL
+   order — how a PDF text layer often stores it — it precedes one. Two of the five ritual titles
+   arrived from the couple's PDF that way and would have shipped shaped wrongly.
+
+   THE RULE IS "PRECEDED BY", NOT "FOLLOWED BY", and that distinction is the whole check: in
+   correct logical order a pre-base sign is naturally FOLLOWED by the next syllable's consonant,
+   so a "followed by" rule flags every correct string too. Verified against all five shipped
+   titles (clean) and both PDF originals (flagged). */
+const MALAYALAM_PRE_BASE = /[െേൈ]/;
+const MALAYALAM_CONSONANT = /[ക-ഹ]/;
+
+function malayalamLogicalOrder(value: string, path: string): void {
+  for (let index = 0; index < value.length; index += 1) {
+    if (!MALAYALAM_PRE_BASE.test(value[index])) {
+      continue;
+    }
+    if (index === 0 || !MALAYALAM_CONSONANT.test(value[index - 1])) {
+      throw new ContentValidationError(
+        path,
+        `is in visual order at index ${index} — the vowel sign "${value[index]}" must follow its base consonant, not precede it`,
+      );
+    }
+  }
+}
+
+/* No `required()` on `title`, `tagline` or `description` (owner, 2026-10-07): tsc already
+   guarantees they exist and are strings, one component renders them, and a typo surfaces on the
+   page immediately. What is checked here is what types cannot see. */
+/* A COLLECTION-level guard, which no per-member check can stand in for: an emptied content file
+   satisfies every per-member rule trivially, builds green, and ships the section with no entries.
+   `familyGroups` and `contacts` already get this for free from their bride/groom pair checks. */
+function notEmpty(items: unknown[], path: string): void {
+  if (items.length === 0)
+    throw new ContentValidationError(path, "must hold at least one entry");
+}
+
 export function validateRituals(rituals: Ritual[]): Ritual[] {
+  notEmpty(rituals, "rituals");
   const seen = new Set<string>();
   rituals.forEach((ritual, index) => {
     const at = `rituals[${index}]`;
     claimId(ritual.id, `${at}.id`, seen);
-    required(ritual.title, `${at}.title`);
-    required(ritual.description, `${at}.description`);
+    malayalamLogicalOrder(ritual.malayalam, `${at}.malayalam`);
     ritual.images.forEach((image, i) => {
       required(image, `${at}.images[${i}]`);
       assetPath(image, `${at}.images[${i}]`);
@@ -114,12 +166,13 @@ function validateSegment(segment: EventSegment, at: string): void {
 }
 
 export function validateEvents(events: WeddingEvent[]): WeddingEvent[] {
+  notEmpty(events, "events");
   const seen = new Set<string>();
   events.forEach((event, index) => {
     const at = `events[${index}]`;
     claimId(event.id, `${at}.id`, seen);
-    required(event.name, `${at}.name`);
     required(event.cityTown, `${at}.cityTown`);
+    required(event.state, `${at}.state`);
     isoDate(event.date, `${at}.date`);
     if (event.segments.length === 0) {
       throw new ContentValidationError(
@@ -181,9 +234,33 @@ export function validateFamilyGroups(groups: FamilyGroup[]): FamilyGroup[] {
   return groups;
 }
 
+export function validateContacts(contacts: ContactPerson[]): ContactPerson[] {
+  const sides = contacts.map((c) => c.side);
+  if (
+    sides.length !== 2 ||
+    !sides.includes("bride") ||
+    !sides.includes("groom")
+  ) {
+    throw new ContentValidationError(
+      "contacts",
+      `must hold exactly one "bride" contact and one "groom" contact (got: ${sides.join(", ") || "none"})`,
+    );
+  }
+  const seen = new Set<string>();
+  contacts.forEach((person, index) => {
+    const at = `contacts[${index}]`;
+    claimId(person.id, `${at}.id`, seen);
+    required(person.name, `${at}.name`);
+    required(person.relationship, `${at}.relationship`);
+    phoneNumber(person.phone, `${at}.phone`);
+  });
+  return contacts;
+}
+
 export function validateInvite(invite: InviteContent): InviteContent {
-  required(invite.eyebrow, "invite.eyebrow");
   required(invite.coupleNames, "invite.coupleNames");
+  required(invite.passage, "invite.passage");
+  required(invite.passageAttribution, "invite.passageAttribution");
   return invite;
 }
 

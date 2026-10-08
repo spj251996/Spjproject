@@ -4,13 +4,13 @@ import {
   BREAKPOINT_REM,
   CAPS,
   type CardRectangle,
-  cardReveal,
   type FitRegime,
   type FrameLayout,
+  type FramePaint,
+  fitPadding,
   fitRectangles,
   formatPx,
   GROUND_HALVING,
-  heroReveal,
   type MeasuredFit,
   mountShows,
   type Orientation,
@@ -18,7 +18,6 @@ import {
   regimesFor,
   revealFor,
   SIDE_GROUND_MULTIPLE,
-  smallestPadding,
   tallWindowClasses,
   type WindowClass,
   windowClasses,
@@ -56,11 +55,25 @@ export function frameScopeClass(fit: MeasuredFit): string {
 const GROUND = "--mounted-sheet-ground";
 const GROUND_VALUE = `var(${GROUND})`;
 
+/* `--ring-block`/`--ring-side` republish the same padding the frame scope div already carries, as
+   custom properties an absolutely-positioned child (the botanical layer) can read by inheritance —
+   one source for the band, never a second ladder. `--ring-cap` is a local indirection so the
+   landscape side-padding expression (`max(...)`) is written once and only the height-cap token it
+   reads changes per width band, rather than the whole expression repeating. */
+const RING_BLOCK = "--ring-block";
+const RING_SIDE = "--ring-side";
+const RING_CAP = "--ring-cap";
+
+/* The window's own two bands, before the ring republishes them for the botanical layer. A portrait
+   window sets them apart; landscape leaves both at the one ground it has always used. */
+const GROUND_BLOCK = "--ground-block";
+const GROUND_INLINE = "--ground-inline";
+
 /* The card's minimum height from the window: every viewport-height term is `svh`, so nothing in the
-   frame moves as a phone's toolbar hides. A landscape card's is also capped — at the compact
-   laptop tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
-   everywhere else (mobile, tablet, wide). */
-const CARD_HEIGHT = `calc(100svh - 2 * ${GROUND_VALUE})`;
+   frame moves as a phone's toolbar hides. A landscape card's is also capped — at the laptop
+   tier's own, smaller cap tokens, `{breakpoints.lg}` to `{breakpoints.xl}`; the base cap
+   everywhere else (phone, tablet, desktop). */
+const CARD_HEIGHT = `calc(100svh - 2 * var(${GROUND_BLOCK}))`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-compact), ${CARD_HEIGHT})`;
 const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
@@ -68,7 +81,9 @@ const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_RE
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
    value, because the arithmetic needs the number a media query cannot read from the token — a
    spacing token change must change this map too. */
-const SPACING_TOKEN: Readonly<Record<number, string>> = {
+/* Exported for the test that checks this map against `app/styles/tokens.css` itself, in both
+   directions, rather than trusting one hand-picked step. */
+export const SPACING_TOKEN: Readonly<Record<number, string>> = {
   0: "--spacing-0",
   4: "--spacing-space-3xs",
   8: "--spacing-space-2xs",
@@ -80,6 +95,7 @@ const SPACING_TOKEN: Readonly<Record<number, string>> = {
   64: "--spacing-space-2xl",
   96: "--spacing-space-3xl",
   128: "--spacing-space-4xl",
+  172: "--spacing-space-5xl",
 };
 
 function spacing(px: number): string {
@@ -90,6 +106,12 @@ function spacing(px: number): string {
     );
   }
   return `var(${token})`;
+}
+
+/* Exported so a test can exercise the real lookup `mountedSheetFrameCss` uses, rather than reading
+   `SPACING_TOKEN` and inferring the throw behavior. */
+export function spacingTokenFor(px: number): string {
+  return spacing(px);
 }
 
 /* A condition is a parenthesised query fragment, or a constant once simplified. Every compound is
@@ -163,17 +185,29 @@ function windowFits(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
-  ground: number,
+  pressed: boolean,
   landscape: boolean,
 ): Condition {
   const rectangles = fitRectangles(
     regimesFor(windowClass.regimes, orientationName(landscape)),
-    cardReveal(windowClass, hero, layout, landscape),
-    smallestPadding(windowClass.groundTier),
+    revealFor(windowClass, hero, landscape),
+    fitPadding(windowClass.groundTier),
     pairsSideBySide(layout, windowClass, landscape),
   );
-  if (!landscape) return clears(rectangles, 2 * ground, 2 * ground);
+  if (!landscape) {
+    /* `clears` takes a width offset and a height offset separately: the inline band decides the
+       card's width, the block band its height. */
+    const portrait = windowClass.groundTier.portrait;
+    return clears(
+      rectangles,
+      2 * (pressed ? portrait.inlinePressed : portrait.inline),
+      2 * (pressed ? portrait.blockPressed : portrait.block),
+    );
+  }
 
+  const ground = pressed
+    ? windowClass.groundTier.ground * GROUND_HALVING
+    : windowClass.groundTier.ground;
   const cap = CAPS[windowClass.widthTier];
   const band = `(height <= ${formatPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
   return any(
@@ -200,10 +234,9 @@ function halvingCondition(
   layout: FrameLayout,
   landscape: boolean,
 ): Condition {
-  const ground = windowClass.groundTier.ground;
   return all(
-    not(windowFits(windowClass, hero, layout, ground, landscape)),
-    windowFits(windowClass, hero, layout, ground * GROUND_HALVING, landscape),
+    not(windowFits(windowClass, hero, layout, false, landscape)),
+    windowFits(windowClass, hero, layout, true, landscape),
   );
 }
 
@@ -214,22 +247,36 @@ function orientationsOf(windowClass: WindowClass): boolean[] {
   return orientations;
 }
 
+/* The class's own base rule sets all three properties to its landscape ground, so a window always
+   has a band even before an orientation rule narrows it; the portrait rules then override the two
+   band properties, and landscape needs no rule of its own because the base already is its value. */
 function groundRules(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
   scope: string,
 ): string {
-  const ground = windowClass.groundTier.ground;
+  const tier = windowClass.groundTier;
+  const ground = spacing(tier.ground);
   const rules = [
-    `@media ${windowClass.media} {\n${scope} { ${GROUND}: ${spacing(ground)}; }\n}`,
+    `@media ${windowClass.media} {\n${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }\n}`,
   ];
   for (const landscape of orientationsOf(windowClass)) {
+    const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
+    if (!landscape) {
+      rules.push(
+        `${prelude} {\n${scope} { ${GROUND_BLOCK}: ${spacing(tier.portrait.block)}; ${GROUND_INLINE}: ${spacing(tier.portrait.inline)}; }\n}`,
+      );
+    }
+    const halved = landscape ? spacing(tier.ground * GROUND_HALVING) : "";
+    const pressedBody = landscape
+      ? `${scope} { ${GROUND}: ${halved}; ${GROUND_BLOCK}: ${halved}; ${GROUND_INLINE}: ${halved}; }`
+      : `${scope} { ${GROUND_BLOCK}: ${spacing(tier.portrait.blockPressed)}; ${GROUND_INLINE}: ${spacing(tier.portrait.inlinePressed)}; }`;
     rules.push(
       mediaRule(
-        `@media ${windowClass.media} and ${orientationQuery(landscape)}`,
+        prelude,
         halvingCondition(windowClass, hero, layout, landscape),
-        `${scope} { ${GROUND}: ${spacing(ground * GROUND_HALVING)}; }`,
+        pressedBody,
       ),
     );
   }
@@ -239,17 +286,30 @@ function groundRules(
 /* The mount's reveal comes from the same number the fit arithmetic used, so the two cannot drift.
    Where the mount does not show it loses its fill and its grain, and keeps `shadow-mount`. The
    grain is the surface's background image (app/styles/surfaces.css), which is why clearing
-   `background-image` removes it; a grain drawn any other way would need a matching change here. */
+   `background-image` removes it; a grain drawn any other way would need a matching change here.
+
+   One rule per orientation, because a class above its tier line holds both and a non-hero card
+   shows its mount in landscape alone. */
 function mountRules(
   windowClass: WindowClass,
   hero: boolean,
   scope: string,
+  paint: FramePaint,
 ): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
-  const fill = mountShows(windowClass, hero)
-    ? ""
-    : " background-color: transparent; background-image: none;";
-  return `@media ${windowClass.media} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero))};${fill} }\n}`;
+  return orientationsOf(windowClass)
+    .map((landscape) => {
+      /* Under `"stock"` the mount element IS the card's painted surface at every width, so it is
+         never stripped: stripping it would leave a card below `{breakpoints.md}` painting nothing at
+         all, the sheet having given up its own fill. Under `"mount"` and `"none"` this is exactly as
+         before -- `"none"` gates its paint at the component, not here. */
+      const fill =
+        paint === "stock" || mountShows(windowClass, hero, landscape)
+          ? ""
+          : " background-color: transparent; background-image: none;";
+      return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero, landscape))};${fill} }\n}`;
+    })
+    .join("\n");
 }
 
 function sheetSelector(scope: string, layout: FrameLayout): string {
@@ -266,31 +326,43 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
 
    Stacked, the mount stops being a surface and its gap is the ground below one card plus the
    ground above the next. The leaf rule strips fill and grain but never `box-shadow`, so each
-   stacked card keeps `shadow-mount`. */
-function pairLayoutRules(windowClass: WindowClass, scope: string): string {
+   stacked card keeps `shadow-mount`: a single section is bare in the same windows. */
+function pairLayoutRules(
+  windowClass: WindowClass,
+  scope: string,
+  paint: FramePaint,
+): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
   const sheet = sheetSelector(scope, "pair");
   const crease = `${mount} > .${FRAME_CLASS.crease}`;
   const strip = "background-color: transparent; background-image: none;";
+  /* The leaf is the painted plate under `"stock"`, so the strip that clears a mount which does not
+     show would clear the card's own surface. The MOUNT's own strip in the stacked branch stays: there
+     the shared mount genuinely shows nothing, spanning both cards plus the ground between them. */
+  const leafStrip = paint === "stock" ? "" : ` ${strip}`;
 
   return orientationsOf(windowClass)
     .map((landscape) => {
       const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
       if (pairsSideBySide("pair", windowClass, landscape)) {
-        /* Side by side keeps the mount even at the phone ground tier, so its reveal is the width
-           tier's own (`cardReveal`) rather than `revealFor`, which would fall to zero there. */
-        const reveal = cardReveal(windowClass, false, "pair", landscape);
+        const reveal = revealFor(windowClass, false, landscape);
+        /* The owner's stock form, 2026-10-08: the plates reach the card's outer edges, so the mount
+           pads nothing -- but the GAP is unchanged, because the space between the two stocks must stay
+           the same. The mount also stops PAINTING: the band between the plates shows the page's own
+           ground rather than the mat, which is what "the gutter disappears" means now that the gap
+           stays, and the crease goes with the mat it was a fold in. The plates carry the cast, so the
+           mount keeps none. `paddingRules` gives the reveal back on each plate's three outer sides. */
+        const stock = paint === "stock";
         return `${prelude} {
-${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
-${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${sheet} { justify-content: flex-start; }
-${crease} { display: block; }
+${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${stock ? spacing(0) : spacing(reveal)};${stock ? ` ${strip} box-shadow: none;` : ""} }
+${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)};${leafStrip}${stock ? "" : " box-shadow: none;"} }
+${sheet} { justify-content: flex-start; }${stock ? "" : `\n${crease} { display: block; }`}
 }`;
       }
       return `${prelude} {
-${mount} { gap: calc(2 * ${GROUND_VALUE}); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; background-color: transparent; background-image: none; }
+${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)};${leafStrip} }
 }`;
     })
     .join("\n");
@@ -312,21 +384,40 @@ ${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: 
    One chain per orientation, each wrapped in its own `(orientation: …)` query and built from that
    orientation's own regimes, since their content differs. A class with no portrait windows gets no
    portrait chain. Where the ground halves, a second chain under the halving condition resets to the
-   smallest step and climbs again against the halved card.
-
-   A pair's stacked orientations may borrow another section's padding fit (`stackedPadding`). Only
-   the chain's regimes and reveal come from it: the ground, the halving condition, the padding steps
-   and the landscape cap skip stay the window's own, because the card the window gives the sheet is
-   unchanged. Side-by-side orientations never borrow. */
+   smallest step and climbs again against the halved card. */
 function paddingRules(
   windowClass: WindowClass,
   hero: boolean,
   layout: FrameLayout,
   scope: string,
-  stackedPadding?: MeasuredFit,
+  paint: FramePaint,
 ): string {
   const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
+  /* The stock pair's trade. The plates reach the card's outer edges, and each plate's sheet takes the
+     reveal back: the full reveal top and bottom, and HALF of it on each horizontal side, so the padding
+     is symmetric and the text sits centred in its own plate (owner, 2026-10-08).
+
+     That keeps the content's exact SIZE and moves it `reveal / 2` outward — the one place a paint moves
+     content, and the owner's instruction. The earlier form put the whole reveal on the outer side,
+     which held the content exactly where the painted pair puts it but left the text off-centre by a
+     whole reveal, 16px at the laptop tier.
+
+     Two consequences worth knowing. The two plates are IDENTICAL, so one rule covers both and the
+     stylesheet stays the size of the painted pair's — the mirrored version needed two rules per rung
+     and grew the inlined CSS by 62%. And `reveal / 2` is 8 / 6 / 8 / 12 by tier, of which 6 is NOT on
+     the spacing scale, so it is a division inside `calc` rather than a token lookup — the same shape as
+     the gap's `spacing(2 * reveal)`, halved.
+
+     `revealFor` returns 0 where the mount does not show and `--spacing-0` is `0px` rather than a bare
+     `0` (which CSS rejects inside `calc`), so both terms collapse to the step. That is why this is ONE
+     code path: a stacked stock pair takes it and comes out identical to today. */
+  const stockPairPadding = (padding: number, reveal: number): string => {
+    const step = spacing(padding);
+    const gap = spacing(reveal);
+    return `calc(${step} + ${gap}) calc(${step} + ${gap} / 2)`;
+  };
+  const stockPair = layout === "pair" && paint === "stock";
 
   /* One block per chain, so its condition is stated once and each rectangle nests inside it. A
      landscape chain skips a rectangle taller than the height cap: the box's landscape height is
@@ -335,13 +426,15 @@ function paddingRules(
      its chain keeps every rectangle. */
   const chain = (
     prelude: string,
-    ground: number,
+    blockBand: number,
     landscape: boolean,
     regimes: readonly FitRegime[],
     sideBySide: boolean,
     reveal: number,
   ): string => {
-    const rules = [`${sheet} { padding: ${spacing(ascending[0])}; }`];
+    const declare = (padding: number): string =>
+      `${sheet} { padding: ${stockPair ? stockPairPadding(padding, reveal) : spacing(padding)}; }`;
+    const rules = [declare(ascending[0])];
     for (const padding of ascending.slice(1)) {
       for (const rectangle of fitRectangles(
         regimes,
@@ -355,43 +448,33 @@ function paddingRules(
         )
           continue;
         rules.push(
-          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * ground)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
+          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
         );
       }
     }
     return `${prelude} {\n${rules.join("\n")}\n}`;
   };
 
-  const ground = windowClass.groundTier.ground;
+  const tier = windowClass.groundTier;
   const rules: string[] = [];
   for (const landscape of orientationsOf(windowClass)) {
+    /* The height query asks whether the window's card clears a rectangle, so it offsets by whatever
+       the card's height is measured from: the landscape ground, or portrait's block band. */
+    const blockBand = landscape ? tier.ground : tier.portrait.block;
+    const pressedBlockBand = landscape
+      ? tier.ground * GROUND_HALVING
+      : tier.portrait.blockPressed;
     const sideBySide = pairsSideBySide(layout, windowClass, landscape);
-    const stacked =
-      layout === "pair" && !sideBySide && stackedPadding !== undefined;
-    const regimes = stacked
-      ? regimesFor(
-          stackedPadding.regimes[windowClass.widthTier],
-          orientationName(landscape),
-        )
-      : regimesFor(windowClass.regimes, orientationName(landscape));
-    const reveal = stacked
-      ? heroReveal(windowClass)
-      : cardReveal(windowClass, hero, layout, landscape);
+    const regimes = regimesFor(windowClass.regimes, orientationName(landscape));
+    const reveal = revealFor(windowClass, hero, landscape);
     const base = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
-    rules.push(chain(base, ground, landscape, regimes, sideBySide, reveal));
+    rules.push(chain(base, blockBand, landscape, regimes, sideBySide, reveal));
 
     const halving = halvingCondition(windowClass, hero, layout, landscape);
     if (halving === false) continue;
     const prelude = halving === true ? base : `${base} and ${halving}`;
     rules.push(
-      chain(
-        prelude,
-        ground * GROUND_HALVING,
-        landscape,
-        regimes,
-        sideBySide,
-        reveal,
-      ),
+      chain(prelude, pressedBlockBand, landscape, regimes, sideBySide, reveal),
     );
   }
   return rules.join("\n");
@@ -421,23 +504,32 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
       : "";
 
   /* The box holds the card's minimum height and lengthens past it with its content. The mount and
-     the sheet grow inside it as flex items, so each fills the height above it. */
+     the sheet grow inside it as flex items, so each fills the height above it.
+
+     `--ring-cap` carries whichever height-cap token the current width band reads, so the landscape
+     side-padding formula (`max(...)`) is written once, on the general landscape rule, and the
+     compact-width rule only swaps the token `--ring-cap` resolves to — the `max(...)` expression
+     itself is never repeated. */
   return `${scope} {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  padding-block: ${GROUND_VALUE};
-  padding-inline: ${GROUND_VALUE};
+  ${RING_BLOCK}: var(${GROUND_BLOCK});
+  ${RING_SIDE}: var(${GROUND_INLINE});
+  padding-block: var(${RING_BLOCK});
+  padding-inline: var(${RING_SIDE});
   ${safeCentre}
 }
 @media (orientation: landscape) {
-${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap)) / 2)); }
+${scope} { ${RING_CAP}: var(--card-height-cap); ${RING_SIDE}: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(${RING_CAP})) / 2)); }
 }
 @media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
-${scope} { padding-inline: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(--card-height-cap-compact)) / 2)); }
+${scope} { ${RING_CAP}: var(--card-height-cap-compact); }
 }
 ${box} {
   container-type: inline-size;
+  position: relative;
+  z-index: var(--z-content);
   flex: none;
   display: flex;
   flex-direction: column;
@@ -470,32 +562,21 @@ ${sheet} {
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
-   tier line, a tier line not below its narrowest window, a value off the spacing scale, a pair
-   asked to be the hero, a single card given a stacked padding fit, or a stacked padding fit that
-   is itself malformed. */
+   tier line, a tier line not below its narrowest window, a value off the spacing scale, or a pair
+   asked to be the hero. */
 export function mountedSheetFrameCss(
   fit: MeasuredFit,
   hero: boolean,
   layout: FrameLayout = "single",
-  stackedPadding?: MeasuredFit,
+  paint: FramePaint = "mount",
 ): string {
   /* Validates the fit, so it runs before anything reads the fit's section name — including the
      hero-pair guard below, which needs a valid fit to report one. */
-  const classes = windowClasses(fit, layout);
+  const classes = windowClasses(fit, layout, hero);
   if (layout === "pair" && hero) {
     throw new Error(
       `mounted-sheet-frame-css: section "${fit.section}" asks for a hero pair, but a pair is never the hero — the opening section is a single card.`,
     );
-  }
-  if (stackedPadding !== undefined) {
-    if (layout !== "pair") {
-      throw new Error(
-        `mounted-sheet-frame-css: section "${fit.section}" was given a stacked padding fit, but a stacked padding fit is only for a pair — a single card has no stacked sheets to borrow padding for.`,
-      );
-    }
-    /* Validated the same way as the section's own fit, so a malformed stacked padding fit fails
-       with the same named error rather than a confusing one from reading its regimes later. */
-    windowClasses(stackedPadding);
   }
   const scope = `.${frameScopeClass(fit)}`;
   return [
@@ -503,27 +584,37 @@ export function mountedSheetFrameCss(
     ...classes.flatMap((windowClass) => [
       groundRules(windowClass, hero, layout, scope),
       layout === "pair"
-        ? pairLayoutRules(windowClass, scope)
-        : mountRules(windowClass, hero, scope),
-      paddingRules(windowClass, hero, layout, scope, stackedPadding),
+        ? pairLayoutRules(windowClass, scope, paint)
+        : mountRules(windowClass, hero, scope, paint),
+      paddingRules(windowClass, hero, layout, scope, paint),
     ]),
   ].join("\n");
 }
 
-/* Tall mode has no per-section threshold to scope, so every tall section shares one of two
-   stylesheets — but `hero` is per-section, and two tall cards with different `hero` would otherwise
-   collide on one class at identical specificity, with the later one in document order winning for
-   both. Keying the scope class on `hero` keeps the two apart. */
-export function tallScopeClass(hero: boolean): string {
-  return `mounted-sheet-frame--tall-${hero ? "hero" : "section"}`;
+/* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets — but
+   `hero` and `paint` are both PER-SECTION, and two tall cards differing in either would otherwise
+   collide on one class at identical specificity, with the later one in document order winning for both.
+   Keying the scope class on both keeps them apart.
+   `paint` joined the key when the stock paint landed: `tallFrameCss` emits a different fill-strip per
+   paint, so without it a page holding two tall cards at different paints would hand both whichever
+   `<style>` came last. One tall section ships today and the routes are separate documents, so this is a
+   hazard closed before it is reachable rather than a defect fixed. */
+export function tallScopeClass(
+  hero: boolean,
+  paint: FramePaint = "mount",
+): string {
+  return `mounted-sheet-frame--tall-${hero ? "hero" : "section"}-${paint}`;
 }
 
 /* A section that scrolls rather than fitting one window. No height query, no container query and no
    minimum card height: the card is its content's height, and the page scrolls past it. The landscape
    side ground is a flat double, with none of the fitted frame's leftover-from-the-height-cap term,
    because a tall card has no height cap to leave anything over. */
-export function tallFrameCss(hero: boolean): string {
-  const scope = `.${tallScopeClass(hero)}`;
+export function tallFrameCss(
+  hero: boolean,
+  paint: FramePaint = "mount",
+): string {
+  const scope = `.${tallScopeClass(hero, paint)}`;
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
@@ -532,17 +623,21 @@ export function tallFrameCss(hero: boolean): string {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  padding-block: ${GROUND_VALUE};
-  padding-inline: ${GROUND_VALUE};
+  ${RING_BLOCK}: var(${GROUND_BLOCK});
+  ${RING_SIDE}: var(${GROUND_INLINE});
+  padding-block: var(${RING_BLOCK});
+  padding-inline: var(${RING_SIDE});
   justify-content: center;
   justify-content: safe center;
   align-items: center;
   align-items: safe center;
 }
 @media (orientation: landscape) {
-${scope} { padding-inline: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
+${scope} { ${RING_SIDE}: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
 }
 ${box} {
+  position: relative;
+  z-index: var(--z-content);
   flex: none;
   display: flex;
   flex-direction: column;
@@ -570,13 +665,27 @@ ${sheet} {
 }`;
 
   const perClass = tallWindowClasses(hero).map((windowClass) => {
-    const fill = windowClass.mountShows
-      ? ""
-      : " background-color: transparent; background-image: none;";
+    const mountRule = (orientation: Orientation) => {
+      /* The same rule as `mountRules`, in this branch's own copy of the ternary: under `"stock"` the
+         mount is the card's painted surface at every width and is never stripped. Celebrations is the
+         page's one tall section, so a route painting every card stock reaches exactly here. */
+      const fill =
+        paint === "stock" || windowClass.mountShows[orientation]
+          ? ""
+          : " background-color: transparent; background-image: none;";
+      return `${mount} { padding: ${spacing(windowClass.reveal[orientation])};${fill} }`;
+    };
+    const ground = spacing(windowClass.ground);
     return `@media ${windowClass.media} {
-${scope} { ${GROUND}: ${spacing(windowClass.ground)}; }
-${mount} { padding: ${spacing(windowClass.reveal)};${fill} }
+${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
 ${sheet} { padding: ${spacing(windowClass.padding)}; }
+}
+@media ${windowClass.media} and (orientation: portrait) {
+${scope} { ${GROUND_BLOCK}: ${spacing(windowClass.portrait.block)}; ${GROUND_INLINE}: ${spacing(windowClass.portrait.inline)}; }
+${mountRule("portrait")}
+}
+@media ${windowClass.media} and (orientation: landscape) {
+${mountRule("landscape")}
 }`;
   });
 

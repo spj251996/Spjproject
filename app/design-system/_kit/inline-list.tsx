@@ -4,7 +4,7 @@
 export interface InlineEntry {
   /** The DESIGN.md entry name, e.g. "Event Info". */
   name: string;
-  /** The page file documented as composing it, e.g. "app/page.tsx". */
+  /** The source file documented as composing it, e.g. "app/_sections/event-info.tsx". */
   home: string;
   /** What the entry composes — the real components it is documented to arrange. */
   composes: string;

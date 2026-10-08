@@ -1,0 +1,167 @@
+import type { Motif, MotifId } from "./thread-geometry.ts";
+
+/* Each motif is drawn in a unit square and uniformly scaled at composition time, so a heart is a
+   heart at every tier. Tangent angles are degrees, measured as the direction of travel: 0 is
+   left-to-right. Source drawings: tmp/aaa/thread paths/.
+
+   Every lead-in and lead-out is held SHORT, close to the drawing's own body. A connector is
+   composed to arrive at the motif's declared terminal on its declared tangent, so a long tail puts
+   that terminal a long way from the shape and the connector's curve starts nowhere near the thing
+   it is joining — which is what reads as a bad join. The tail a motif keeps is the drawing's own
+   run-in, not a length of line for the connector to duplicate.
+
+   The tails are cut from the traced stroke by de Casteljau, so the kept part is the same curve the
+   tracer laid down, and the remainder is then renormalised into the 0-100 square: the ink's width
+   fills 0-100, the drawing keeps the vertical seat it already had, and `aspect` is re-measured from
+   the ink rather than carried forward. */
+export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
+  /* Traced from the owner's outline of `heart 1.jpg`: one line crossing itself once, with the
+     heart hanging off that crossing. Both tails are cut to the SAME arc length either side of that
+     crossing — 52.2 units of the motif's own 100 — so the drawing runs in and out symmetrically
+     and a connector meets it the same distance from the knot at both ends.
+
+     The loop that hangs off the crossing sits at x 26.2-84.5 against a crossing at x 51.2, so it
+     still leans right of the line rather than sitting squarely on it — but only just, where the
+     untrimmed drawing leaned right by most of its width.
+
+     The crossing at the base is composed by hand; the rest is the trace unchanged. No trace
+     setting recovers it: the drawing's two tails meet the X almost collinear, so the junction
+     rule's best continuation runs tail into tail and leaves the heart as a circuit to splice
+     back in — which lays the same ink but enters and leaves the base at two hairpins instead of
+     passing through. Raster widths 1200-2200 and bridge widths 1-12 all reproduce the hairpins.
+     The four arms are re-paired the way the drawing has them: the left tail carries up into the
+     RIGHT leg and the LEFT leg carries down into the right tail. */
+  heart: {
+    id: "heart",
+    d: "M 0 74.59 C 1.33 74.68, 2.68 74.76, 4.04 74.8 C 6.04 74.87, 8.06 74.8, 10.09 74.8 C 12.08 74.8, 14.14 74.87, 16.1 74.8 C 18.09 74.74, 20.09 74.61, 22.01 74.44 C 23.91 74.25, 25.67 74.02, 27.54 73.72 C 29.4 73.43, 31.29 73.07, 33.12 72.65 C 34.95 72.22, 36.75 71.67, 38.58 71.21 C 40.38 70.72, 42.27 70.33, 44 69.77 C 49.92 67.88, 52.56 66.8, 57.79 63.46 C 59.32 62.48, 61.06 61.47, 62.56 60.46 C 64.09 59.48, 65.6 58.53, 66.97 57.52 C 68.34 56.47, 69.55 55.49, 70.83 54.28 C 72.1 53.08, 73.47 51.54, 74.58 50.33 C 75.73 49.12, 76.67 48.24, 77.59 47.1 C 78.54 45.95, 79.45 44.84, 80.27 43.5 C 81.05 42.13, 81.77 40.56, 82.42 38.99 C 83.08 37.43, 83.93 35.89, 84.22 34.13 C 84.51 32.36, 84.58 30.07, 84.22 28.38 C 83.89 26.71, 83.01 25.34, 82.1 24.06 C 81.18 22.79, 80.2 21.48, 78.67 20.83 C 77.13 20.17, 74.81 20.17, 72.92 20.11 C 71.02 20.04, 69.09 19.98, 67.33 20.47 C 65.57 20.93, 63.74 22.04, 62.33 22.98 C 60.93 23.93, 60.11 25.21, 58.9 26.22 C 57.69 27.23, 56.12 29.42, 55.11 29.09 C 54.13 28.77, 53.77 25.63, 52.92 24.19 C 52.07 22.76, 51.25 21.48, 50.05 20.4 C 48.84 19.36, 47.33 18.51, 45.73 17.86 C 44.13 17.2, 42.2 16.48, 40.41 16.52 C 38.61 16.52, 36.49 17.27, 34.95 17.92 C 33.42 18.57, 32.31 19.42, 31.23 20.47 C 30.15 21.51, 29.23 22.76, 28.45 24.16 C 27.7 25.53, 27.01 27.07, 26.65 28.8 C 26.29 30.56, 26.16 32.82, 26.29 34.71 C 26.42 36.58, 26.85 38.34, 27.37 40.07 C 27.89 41.84, 28.71 43.63, 29.5 45.23 C 30.28 46.87, 31.16 48.4, 32.04 49.81 C 32.96 51.18, 33.97 52.39, 34.92 53.6 C 35.9 54.77, 36.75 55.79, 37.83 56.96 C 38.91 58.14, 40.05 59.48, 41.42 60.65 C 42.79 61.83, 44.75 62.81, 46.03 63.99 C 49.16 66.86, 52.37 67.03, 55.53 69.84 C 56.71 70.88, 58.77 71.76, 60.44 72.58 C 62.1 73.4, 63.83 74.08, 65.53 74.8 C 67.26 75.55, 68.96 76.3, 70.69 76.96 C 72.43 77.61, 74.22 78.17, 75.99 78.79 C 77.75 79.38, 79.48 80.03, 81.28 80.55 C 83.08 81.07, 84.87 81.6, 86.74 81.96 C 88.6 82.32, 90.59 82.48, 92.45 82.71 C 94.35 82.97, 96.05 83.3, 97.98 83.43 C 98.63 83.47, 99.31 83.49, 100 83.49",
+    entry: { x: 0, y: 0.7459, angle: 3.7 },
+    exit: { x: 1, y: 0.8349, angle: 0.8 },
+    aspect: 1.493,
+  },
+  /* Traced from the owner's outline of `ring 2.jpg`. The FIRST `rings.svg` could not be traced
+     at all: its two ring contours touch tangentially and the converter merged them into one
+     shared segment, so no single unbroken stroke could cover both rings - three measured sweeps
+     (bridge width, raster resolution, spur pruning) all plateaued at 57 per cent. `ring 2`
+     crosses properly rather than kissing, which the tracer handles, and it walks 98.8 per cent
+     of the skeleton.
+
+     It needs a wider crossing merge than the other motifs (`--bridge=9`), and that is a plateau
+     rather than a lucky value: 70.9 per cent at bridge 3-7, 98.8 at 8, 9 and 10, falling back to
+     96.7 at 12.
+
+     Both side tails are cut by 18 units of the TRACED drawing, a little under half of each. That is
+     about as far as they go: the entry's S-flick is the drawing's own character and is down to a
+     single hook by 26, and the last self-crossing sat 37.9 units from the exit terminal, so a
+     deeper cut on that side would take a crossing with it. */
+  rings: {
+    id: "rings",
+    d: "M 0 63.52 C 1.05 63.54, 2.08 63.62, 3.08 63.78 C 6.32 64.3, 9.35 66.05, 12.39 67.1 C 15.42 68.16, 18.18 69.94, 21.26 70.14 C 24.33 70.33, 29.38 69.74, 30.85 68.22 C 32.3 66.71, 30.71 63.54, 30.05 61.03 C 29.38 58.49, 26.6 55.76, 26.87 53.07 C 27.13 50.38, 29.69 47.14, 31.61 44.9 C 33.51 42.65, 35.59 40.93, 38.33 39.6 C 41.06 38.27, 45.06 36.73, 48 36.91 C 50.93 37.12, 54.67 38.57, 55.95 40.79 C 57.22 43.02, 56.51 47.67, 55.64 50.26 C 54.76 52.84, 52.69 54.48, 50.71 56.32 C 48.72 58.14, 46.47 60.1, 43.73 61.23 C 41 62.37, 36.19 64.18, 34.33 63.14 C 32.44 62.11, 31.78 57.67, 32.47 54.99 C 33.17 52.31, 36.26 49.1, 38.48 47.06 C 40.71 45.04, 43.42 43.22, 45.82 42.8 C 48.23 42.38, 52.38 43.08, 52.92 44.59 C 53.46 46.12, 50.85 49.83, 49.05 51.93 C 47.22 54.03, 44.51 56.13, 42.03 57.2 C 39.55 58.26, 34.02 58.79, 34.17 58.31 C 34.33 57.83, 40.4 55.91, 42.98 54.34 C 45.56 52.76, 48.21 50.74, 49.62 48.84 C 51.02 46.94, 50.24 42.92, 51.38 42.95 C 52.52 43, 55.69 46.75, 56.48 49.06 C 57.26 51.37, 54.81 54.89, 56.11 56.78 C 57.4 58.68, 61.6 60.59, 64.26 60.44 C 66.9 60.3, 70.81 58.34, 72 55.9 C 73.17 53.47, 72.31 48.9, 71.35 45.87 C 70.41 42.85, 68.18 39.94, 66.32 37.72 C 64.45 35.48, 62.67 33.75, 60.12 32.47 C 57.57 31.2, 53.17 29.62, 50.99 30.09 C 48.83 30.55, 46.27 34.01, 47.08 35.29 C 47.92 36.56, 53.48 36.36, 56 37.72 C 58.5 39.08, 60.4 41.16, 62.16 43.46 C 63.92 45.75, 66.41 48.95, 66.55 51.5 C 66.67 54.03, 64.65 58.48, 62.95 58.69 C 61.26 58.9, 56.51 53.52, 56.41 52.75 C 56.34 51.98, 59.84 53.67, 62.44 54.08 C 65.03 54.49, 69.17 55.73, 71.95 55.2 C 74.73 54.66, 76.62 52.42, 79.14 50.91 C 81.67 49.4, 84.17 47.37, 87.11 46.12 C 90.04 44.89, 93.39 43.96, 96.78 43.43 C 97.82 43.27, 98.9 43.19, 100 43.14",
+    entry: { x: 0, y: 0.6352, angle: 2.2 },
+    exit: { x: 1, y: 0.4314, angle: -3.2 },
+    aspect: 2.489,
+  },
+  /* Traced from the owner's outline of `knot 2.jpg`: a loose flat knot drawn ALONG a horizontal
+     run. `knot.jpg` before it was drawn on a vertical one and was forced into a horizontal slot,
+     which stretched it sideways and read as stiff and circle-y. */
+  knot: {
+    id: "knot",
+    d: "M 0 45.77 C 0.38 45.5, 1.49 44.64, 2.31 44.16 C 3.12 43.68, 3.92 43.23, 4.87 42.89 C 5.81 42.54, 6.9 42.26, 7.98 42.09 C 9.05 41.92, 10.21 41.94, 11.33 41.89 C 12.46 41.84, 13.64 41.71, 14.73 41.79 C 15.82 41.87, 16.82 42.19, 17.86 42.39 C 18.91 42.59, 19.97 42.75, 21 42.99 C 22.02 43.23, 23.03 43.53, 24.03 43.83 C 25.02 44.13, 25.99 44.45, 26.96 44.78 C 27.92 45.1, 28.86 45.41, 29.81 45.77 C 30.76 46.14, 31.73 46.56, 32.64 46.97 C 33.55 47.37, 34.37 47.78, 35.27 48.21 C 36.17 48.64, 37.11 49.08, 38.04 49.55 C 38.97 50.03, 39.98 50.51, 40.86 51.04 C 41.73 51.58, 42.42 52.25, 43.28 52.76 C 44.14 53.26, 45.12 53.6, 46.01 54.07 C 46.91 54.55, 47.78 55.15, 48.64 55.62 C 49.49 56.1, 50.27 56.45, 51.13 56.92 C 52 57.38, 52.98 57.96, 53.84 58.41 C 54.69 58.86, 55.39 59.19, 56.26 59.6 C 57.13 60.01, 58.15 60.45, 59.06 60.85 C 59.97 61.25, 60.82 61.64, 61.74 61.99 C 62.65 62.34, 63.55 62.67, 64.54 62.95 C 65.54 63.23, 66.6 63.53, 67.68 63.68 C 68.76 63.84, 69.93 63.91, 71.04 63.88 C 72.14 63.85, 73.3 63.69, 74.31 63.48 C 75.33 63.27, 76.22 63.01, 77.11 62.61 C 78.01 62.22, 78.94 61.71, 79.7 61.12 C 80.46 60.53, 81.13 59.79, 81.69 59.09 C 82.26 58.39, 82.69 57.77, 83.08 56.93 C 83.48 56.08, 83.82 55.01, 84.08 54.01 C 84.35 53.01, 84.61 52.01, 84.68 50.94 C 84.74 49.87, 84.63 48.66, 84.48 47.58 C 84.33 46.51, 84.13 45.42, 83.78 44.49 C 83.43 43.56, 82.95 42.72, 82.38 41.98 C 81.81 41.24, 81.14 40.65, 80.37 40.07 C 79.6 39.5, 78.7 38.9, 77.74 38.54 C 76.78 38.18, 75.7 38.02, 74.62 37.91 C 73.54 37.81, 72.36 37.81, 71.27 37.91 C 70.17 38.01, 69.1 38.24, 68.07 38.51 C 67.05 38.77, 66.04 39.14, 65.1 39.5 C 64.17 39.87, 63.35 40.25, 62.45 40.7 C 61.56 41.14, 60.56 41.67, 59.73 42.16 C 58.91 42.64, 58.26 43.06, 57.48 43.61 C 56.7 44.16, 55.8 44.88, 55.04 45.46 C 54.28 46.03, 53.62 46.53, 52.91 47.06 C 52.2 47.6, 51.56 48.05, 50.77 48.66 C 49.98 49.27, 49.03 50.09, 48.18 50.72 C 47.34 51.35, 46.48 51.91, 45.69 52.44 C 44.9 52.96, 44.23 53.38, 43.43 53.88 C 42.64 54.38, 41.76 54.93, 40.92 55.42 C 40.09 55.91, 39.31 56.35, 38.41 56.81 C 37.51 57.28, 36.51 57.77, 35.54 58.19 C 34.58 58.61, 33.61 58.97, 32.63 59.31 C 31.64 59.65, 30.64 59.96, 29.62 60.23 C 28.61 60.49, 27.58 60.75, 26.52 60.9 C 25.46 61.04, 24.33 61.14, 23.25 61.09 C 22.16 61.05, 21.02 60.89, 20.01 60.61 C 19 60.32, 18.06 59.92, 17.19 59.38 C 16.33 58.85, 15.47 58.14, 14.81 57.4 C 14.15 56.65, 13.65 55.8, 13.22 54.91 C 12.79 54.02, 12.45 53.06, 12.24 52.05 C 12.02 51.04, 11.91 49.94, 11.93 48.87 C 11.94 47.79, 12.12 46.63, 12.34 45.6 C 12.56 44.57, 12.77 43.49, 13.23 42.71 C 13.7 41.93, 14.49 41.58, 15.12 40.93 C 15.76 40.28, 16.27 39.41, 17.03 38.81 C 17.78 38.2, 18.73 37.71, 19.67 37.31 C 20.61 36.92, 21.63 36.62, 22.68 36.42 C 23.74 36.22, 24.89 36.12, 26 36.12 C 27.1 36.12, 28.23 36.27, 29.31 36.42 C 30.4 36.57, 31.51 36.77, 32.5 37.01 C 33.5 37.26, 34.36 37.57, 35.28 37.91 C 36.2 38.26, 37.07 38.67, 38.01 39.09 C 38.95 39.5, 39.98 39.95, 40.9 40.4 C 41.81 40.85, 42.66 41.33, 43.48 41.77 C 44.31 42.22, 45.05 42.62, 45.85 43.07 C 46.66 43.51, 47.47 43.95, 48.32 44.44 C 49.16 44.92, 50.04 45.52, 50.94 45.97 C 51.84 46.42, 52.86 46.67, 53.72 47.15 C 54.58 47.63, 55.26 48.36, 56.1 48.86 C 56.94 49.36, 57.89 49.73, 58.77 50.15 C 59.65 50.56, 60.48 50.96, 61.37 51.34 C 62.26 51.72, 63.15 52.11, 64.12 52.44 C 65.09 52.77, 66.17 53.05, 67.19 53.33 C 68.21 53.61, 69.2 53.91, 70.24 54.12 C 71.28 54.34, 72.33 54.51, 73.41 54.63 C 74.5 54.74, 75.65 54.83, 76.77 54.83 C 77.89 54.83, 79.01 54.71, 80.13 54.63 C 81.24 54.54, 82.37 54.53, 83.44 54.33 C 84.51 54.13, 85.54 53.71, 86.56 53.43 C 87.58 53.15, 88.58 52.93, 89.55 52.64 C 90.53 52.34, 91.47 52.03, 92.41 51.67 C 93.36 51.3, 94.35 50.9, 95.23 50.45 C 96.11 50, 96.91 49.46, 97.71 48.96 C 98.5 48.46, 99.62 47.71, 100 47.46",
+    entry: { x: 0, y: 0.4577, angle: -36.3 },
+    exit: { x: 1, y: 0.4746, angle: -33.5 },
+    aspect: 3.601,
+  },
+  /* Traced from the owner's outline of `phone 2.jpg`: a receiver lying on the line — a mouthpiece
+     bell low-left, an earpiece bell high-right, the handle between them, and the cord leaving
+     through three curls. Each bell's inner rim arc meets the bell tangentially at both ends, so
+     one open stroke cannot reach either without drawing something twice, and both are left out.
+
+     The drawing's two dead-straight tails ran 23.5 and 19.3 units of the traced path; each is cut
+     back to a 3-unit stud, which is where the connector now picks the line up. At the phone tier's
+     134px square that stud is about 6px of flat stroke against a 1.6px line — a stud, and still
+     several stroke widths, so it does not read as a frayed end. */
+  phone: {
+    id: "phone",
+    d: "M 3.44 61.53 C 4.02 61.54, 4.58 61.58, 5.08 61.65 C 6.44 61.85, 8.42 62.17, 8.5 62.77 C 8.57 63.36, 6.54 64.26, 5.57 65.23 C 4.59 66.2, 3.46 67.39, 2.67 68.57 C 1.87 69.73, 1.25 70.87, 0.8 72.22 C 0.36 73.56, -0.02 75.19, 0.03 76.64 C 0.06 78.09, 0.38 79.79, 1 80.9 C 1.63 82, 2.65 82.65, 3.78 83.28 C 4.9 83.89, 6.39 84.46, 7.75 84.61 C 9.09 84.76, 10.48 84.44, 11.89 84.21 C 13.29 84, 14.83 83.74, 16.17 83.3 C 17.52 82.87, 18.81 82.4, 19.97 81.6 C 21.13 80.79, 22.23 79.62, 23.1 78.53 C 23.97 77.44, 24.95 76.21, 25.19 75.02 C 25.44 73.85, 25.06 72.43, 24.54 71.44 C 24.03 70.45, 22.95 69.96, 22.16 69.09 C 21.35 68.22, 20.17 67.42, 19.71 66.23 C 19.27 65.06, 19.3 63.38, 19.45 61.97 C 19.61 60.56, 20.08 59.03, 20.6 57.76 C 21.12 56.51, 21.91 55.55, 22.58 54.39 C 23.27 53.21, 23.99 51.95, 24.67 50.8 C 25.36 49.67, 26.03 48.61, 26.7 47.57 C 27.39 46.51, 28.05 45.52, 28.75 44.53 C 29.45 43.54, 30.2 42.55, 30.93 41.6 C 31.66 40.65, 32.31 39.85, 33.14 38.84 C 34 37.85, 35.04 36.61, 36.01 35.59 C 37.01 34.58, 37.85 33.33, 39.02 32.78 C 40.2 32.23, 41.75 32.08, 43.05 32.31 C 44.33 32.52, 45.37 33.8, 46.73 34.12 C 48.09 34.46, 49.75 34.34, 51.2 34.26 C 52.66 34.17, 54.19 34.05, 55.46 33.6 C 56.72 33.18, 57.73 32.47, 58.78 31.65 C 59.82 30.81, 61.24 29.88, 61.75 28.63 C 62.25 27.38, 62.05 25.5, 61.81 24.16 C 61.55 22.83, 60.86 21.64, 60.2 20.62 C 59.55 19.58, 58.81 18.77, 57.84 17.99 C 56.88 17.21, 55.69 16.43, 54.39 15.98 C 53.09 15.5, 51.44 15.12, 50.04 15.21 C 48.64 15.3, 47.19 15.91, 45.96 16.48 C 44.74 17.06, 43.72 17.88, 42.73 18.68 C 41.75 19.46, 40.88 20.4, 40.04 21.21 C 39.19 22.03, 38.5 22.69, 37.63 23.56 C 36.78 24.43, 35.74 25.45, 34.85 26.43 C 33.95 27.41, 33.18 28.34, 32.24 29.42 C 31.31 30.51, 30.21 31.77, 29.27 32.93 C 28.31 34.08, 27.42 35.19, 26.54 36.32 C 25.64 37.43, 24.78 38.58, 23.94 39.68 C 23.1 40.79, 22.29 41.86, 21.47 42.94 C 20.63 44.03, 19.78 45.13, 18.98 46.21 C 18.19 47.28, 17.41 48.39, 16.71 49.38 C 15.99 50.38, 15.14 51.15, 14.71 52.18 C 14.28 53.2, 13.53 54.79, 14.14 55.52 C 14.77 56.25, 17.04 56.1, 18.4 56.54 C 19.74 56.98, 21.04 57.56, 22.23 58.17 C 23.44 58.79, 24.46 59.44, 25.61 60.24 C 26.73 61.01, 28.05 62.04, 29.07 62.92 C 30.11 63.81, 31.57 64.75, 31.82 65.55 C 32.08 66.32, 30.87 66.81, 30.55 67.65 C 30.24 68.48, 29.62 70.49, 29.97 70.52 C 30.31 70.55, 31.51 68.02, 32.63 67.84 C 33.76 67.64, 35.48 68.64, 36.67 69.35 C 37.88 70.06, 38.75 71.12, 39.83 72.11 C 40.9 73.09, 42.04 74.32, 43.11 75.27 C 44.19 76.21, 45.14 77.1, 46.28 77.79 C 47.43 78.47, 48.67 78.98, 49.98 79.39 C 51.29 79.82, 52.65 80.15, 54.11 80.3 C 55.58 80.46, 57.33 80.44, 58.75 80.3 C 60.17 80.17, 62.11 80.3, 62.63 79.46 C 63.15 78.63, 61.46 75.79, 61.85 75.25 C 62.23 74.72, 64.57 75.47, 64.98 76.24 C 65.39 77.04, 63.65 79.43, 64.29 80 C 64.92 80.58, 67.36 80, 68.78 79.65 C 70.2 79.31, 71.65 78.66, 72.83 77.94 C 73.99 77.22, 74.96 76.31, 75.8 75.34 C 76.66 74.38, 77.74 73.28, 77.89 72.19 C 78.04 71.07, 77.17 68.77, 76.7 68.69 C 76.23 68.61, 74.72 70.9, 75.07 71.73 C 75.42 72.55, 77.5 73.59, 78.79 73.65 C 80.1 73.71, 81.71 72.69, 82.9 72.08 C 84.09 71.48, 85.03 70.83, 85.93 70 C 86.85 69.18, 87.61 68.16, 88.35 67.13 C 89.09 66.1, 89.67 64.83, 90.42 63.84 C 91.15 62.83, 91.73 61.79, 92.76 61.12 C 93.79 60.46, 95.18 60.08, 96.59 59.82 C 97.62 59.63, 98.81 59.61, 99.98 59.59",
+    entry: { x: 0.0344, y: 0.6153, angle: 2.8 },
+    exit: { x: 0.9998, y: 0.5959, angle: -1.2 },
+    aspect: 1.439,
+  },
+  /* potrait loop 2.jpg — two to three circular passes with a natural offset, around one portrait.
+     The line BANKS into the loop's lower left and climbs back out of its lower right; run flat into
+     the loop it reads as a ring dropped onto a straight line rather than as the line coiling. The
+     bank lives BETWEEN the terminal and the loop, which is how the reference is drawn, not a
+     constraint the connector imposes.
+
+     The exit tail is cut to the entry's own length — each terminal now sits 30.8 units of THIS path
+     beyond the outermost self-crossing, against 30.8 and 81.8 before. The exit was the long one and
+     it alone moved. The entry still opens flat, because its bank starts further in; the
+     exit now ends part-way up its bank, at -29.8 degrees, so the drawing leaves climbing rather
+     than flattening off. That is the cost of matching the entry's length, and it is the declared
+     exit tangent, so a connector meets it without a kink. */
+  portraitLoop: {
+    id: "portraitLoop",
+    d: "M 0 54.77 C 2.32 54.77, 4.67 54.63, 6.93 55.19 C 9.29 55.76, 11.62 56.88, 13.85 58.23 C 16.26 59.69, 18.52 61.76, 20.78 63.78 C 23.14 65.9, 25.52 68.52, 27.71 70.7 C 29.65 72.65, 31.76 74.79, 33.24 76.24 C 34.23 77.19, 34.59 77.63, 35.74 78.6 C 37.94 80.44, 42.31 84.82, 45.81 86.11 C 48.83 87.23, 52.11 86.98, 55.2 86.72 C 58.28 86.47, 61.47 85.74, 64.34 84.62 C 67.22 83.49, 70.03 81.88, 72.45 79.98 C 74.88 78.08, 77.09 75.73, 78.85 73.22 C 80.61 70.7, 82.06 67.83, 83 64.93 C 83.96 62.04, 84.49 58.87, 84.57 55.83 C 84.64 52.79, 84.26 49.62, 83.43 46.71 C 82.62 43.8, 81.34 40.89, 79.72 38.34 C 78.11 35.8, 76.03 33.41, 73.74 31.45 C 71.46 29.49, 68.77 27.8, 66.03 26.58 C 63.28 25.39, 60.23 24.55, 57.27 24.19 C 54.29 23.85, 51.13 23.94, 48.19 24.46 C 45.25 24.98, 42.26 25.99, 39.6 27.33 C 36.94 28.69, 34.36 30.52, 32.21 32.58 C 30.05 34.65, 28.14 37.15, 26.67 39.75 C 25.21 42.34, 24.09 45.28, 23.44 48.19 C 22.78 51.1, 22.56 54.23, 22.78 57.21 C 22.99 60.19, 23.68 63.25, 24.74 66.02 C 25.81 68.8, 27.35 71.54, 29.16 73.89 C 30.97 76.24, 33.23 78.42, 35.64 80.14 C 38.04 81.88, 40.81 83.3, 43.62 84.26 C 46.41 85.23, 49.47 85.8, 52.42 85.9 C 55.37 86.02, 58.45 85.69, 61.29 84.96 C 64.13 84.21, 66.98 83.01, 69.47 81.5 C 71.97 79.98, 74.35 78.02, 76.3 75.85 C 78.24 73.68, 79.93 71.14, 81.17 68.5 C 82.4 65.88, 83.27 62.97, 83.69 60.1 C 84.11 57.25, 84.09 54.22, 83.67 51.36 C 83.24 48.53, 82.36 45.63, 81.11 43.04 C 79.89 40.47, 78.2 37.97, 76.28 35.86 C 74.35 33.75, 72.02 31.85, 69.56 30.4 C 67.13 28.95, 64.34 27.81, 61.59 27.14 C 58.82 26.46, 55.85 26.2, 53.02 26.35 C 50.18 26.51, 47.26 27.11, 44.6 28.08 C 41.93 29.05, 39.32 30.47, 37.04 32.18 C 34.78 33.87, 32.69 35.99, 31.01 38.28 C 29.34 40.57, 27.95 43.21, 27.02 45.87 C 26.08 48.53, 25.51 51.46, 25.37 54.28 C 25.24 57.1, 25.54 60.07, 26.23 62.8 C 26.91 65.54, 28.05 68.29, 29.49 70.72 C 30.94 73.13, 32.81 75.43, 34.89 77.33 C 36.95 79.23, 39.41 80.89, 41.93 82.12 C 44.46 83.33, 47.27 84.23, 50.04 84.66 C 52.79 85.11, 55.47 85.26, 58.51 84.76 C 62.23 84.17, 67.2 82.01, 70.64 80.53 C 73.32 79.38, 75.14 78.17, 77.57 76.93 C 80.22 75.59, 83.16 74.35, 85.89 72.78 C 88.7 71.14, 91.39 68.98, 94.19 67.23 C 96.12 66.03, 98.05 64.82, 100 63.72",
+    entry: { x: 0, y: 0.5477, angle: -0.4 },
+    exit: { x: 1, y: 0.6372, angle: -29.8 },
+    aspect: 1.588,
+  },
+  /* The Wishes loop, rendered in two complementary segments so it weaves through the illustration.
+     It has no reference drawing — it is specified by behaviour: the one self-crossing is the split
+     point the over/under weave needs, so a drawing without one cannot be substituted. */
+  wishesLoop: {
+    id: "wishesLoop",
+    d: "M 0 40 C 4.69 40, 9.48 40.49, 14 41.5 C 18.47 42.5, 22.95 44.05, 27 46 C 30.94 47.9, 34.33 51.12, 38 53 C 41.33 54.71, 44.45 56.47, 48 57 C 51.76 57.56, 56.31 57.19, 60 56 C 63.63 54.83, 67.31 52.57, 70 50 C 72.59 47.53, 75.19 44.23, 76 41 C 76.78 37.88, 76.5 33.67, 75 31 C 73.5 28.34, 70 25.84, 67 25 C 64 24.16, 59.84 24.65, 57 26 C 54.18 27.34, 51.5 30.19, 50 33 C 48.48 35.85, 48.25 39.65, 48 43 C 47.75 46.32, 48.17 49.67, 48.5 53 C 48.83 56.34, 49.59 59.58, 50 63 C 50.43 66.57, 50.89 70.25, 51 74 C 51.11 77.91, 50.76 81.85, 50.6 86 C 50.43 90.49, 50 95.33, 50 100",
+    entry: { x: 0, y: 0.4, angle: 0 },
+    exit: { x: 0.5, y: 1, angle: 90 },
+    aspect: 1.013,
+  },
+  /* Traced from the owner's outline of `final knot 2.jpg`, then MIRRORED left to right and walked
+     LEFT TO RIGHT — both on the owner's call, once they had seen the bow on the page.
+
+     It runs left to right like every other motif here. It did once run right to left, on the
+     reasoning that a terminal motif should be traversed the way the thread reaches it; that
+     convention is retired rather than merely overridden, so nothing should restore it.
+
+     The direction decides which tail the stroke ends on, and the two are on opposite sides of the
+     knot. Running this way the thread comes in along the long flowing tail, sweeps across the curls,
+     forms the right petal and then the left, cinches the tie, and leaves on the short descending
+     tail. **It does NOT finish at the knot.** This comment claimed for several rounds that it did —
+     "the line finishes at the knot rather than trailing away past it" — and a stage-by-stage render
+     (2026-10-05) showed the last ~8% of the motif's length is tail drawn PAST the cinch. The exit
+     below, bottom-right at 92 degrees, was always that tail. Whether `wishes` should instead end on
+     the cinch is an open question for the owner, not something this comment may keep asserting.
+
+     THE TIE IS DRAWN GEOMETRY, NOT PART OF THE TRACE (owner's ask, 2026-10-05: "it is not crossing
+     like bow properly ... it should atleast cross over correctly"). A centreline trace of a
+     photographed knot cannot carry the knot: the photo's tie is a dense blob of overlapping cord and
+     a single-width centreline collapses it to a node, so the trace arrived with six strand-ends
+     meeting at a point and nothing binding them — measured, two of them passing within 0.07 units,
+     about 0.13px against a 1.6px stroke, which merges rather than reads as tied.
+     Three facts fix where it goes, each measured rather than judged:
+       - The thread crosses itself three times here — the two petal strands against each other at
+         83.98,42.04 and each against the closing diagonal at 85.71,43.24 and 84.17,41.46. The tie is
+         centred on their CENTROID, 84.62,42.24, because centring on any single crossing puts it
+         beside the bundle instead of around it (the owner: it must "sit on top of both entry and
+         exit lines of petals and appear as if it tieing them together").
+       - It is spliced on the thread's LAST pass through the node, not its first, so both petals exist
+         before the knot cinches them — the order a bow is actually tied in, and the owner's ruling on
+         a stage render: "first is right petal and left petal then tie".
+       - It is a DOUBLE wrap whose two turns are offset 2.2 units ALONG the strand axis (11 degrees,
+         the line the petal strands run on). Concentric wraps were tried first and merge into one dot
+         at the shipped stroke width; offsetting along the axis is where a second wrap physically goes
+         on a cord, and the only direction that keeps both rings clear of the petals.
+     The loop enters and leaves at a point split into the curve itself, so the radius could be chosen
+     for the junction it has to enclose rather than snapping to whatever control point sat nearby, and
+     the trace either side of the tie is untouched. The motif's bbox, entry, exit and aspect are all
+     unchanged by it.
+
+     Its tails are deliberately NOT trimmed, unlike the other motifs above: the owner looked at the
+     bow in place and kept them. */
+  bow: {
+    id: "bow",
+    d: "M 0.02 52.74 C 0.18 53.28, 0.5 54.95, 0.95 56 C 1.41 57.06, 2.12 58.16, 2.75 59.07 C 3.37 59.99, 3.89 60.7, 4.69 61.46 C 5.49 62.21, 6.54 63.04, 7.55 63.61 C 8.56 64.19, 9.63 64.64, 10.76 64.9 C 11.89 65.15, 13.16 65.23, 14.34 65.16 C 15.53 65.1, 16.78 64.84, 17.89 64.53 C 19 64.21, 20.08 63.82, 21.02 63.27 C 21.96 62.71, 22.74 61.86, 23.53 61.2 C 24.31 60.54, 24.94 59.97, 25.74 59.29 C 26.54 58.6, 27.45 57.88, 28.36 57.13 C 29.26 56.39, 30.27 55.62, 31.21 54.82 C 32.14 54.01, 33.07 53.13, 33.98 52.31 C 34.88 51.5, 35.74 50.68, 36.64 49.93 C 37.55 49.18, 38.46 48.48, 39.42 47.81 C 40.37 47.14, 41.35 46.48, 42.37 45.92 C 43.38 45.37, 44.42 44.88, 45.5 44.46 C 46.57 44.04, 47.61 43.57, 48.79 43.39 C 49.97 43.21, 51.37 43.24, 52.57 43.39 C 53.77 43.55, 54.9 43.94, 55.99 44.32 C 57.07 44.7, 58.03 45.15, 59.08 45.67 C 60.14 46.19, 61.38 46.75, 62.31 47.44 C 63.24 48.13, 63.98 48.89, 64.68 49.8 C 65.39 50.71, 66.08 51.85, 66.55 52.91 C 67.02 53.98, 67.31 55.01, 67.48 56.18 C 67.66 57.34, 67.74 58.7, 67.62 59.91 C 67.49 61.11, 67.24 62.33, 66.75 63.41 C 66.26 64.49, 65.42 65.54, 64.67 66.37 C 63.93 67.21, 63.15 67.85, 62.27 68.41 C 61.38 68.96, 60.47 69.51, 59.36 69.7 C 58.26 69.9, 56.79 69.89, 55.64 69.57 C 54.5 69.25, 53.39 68.56, 52.49 67.8 C 51.58 67.04, 50.78 66.02, 50.23 65.01 C 49.68 63.99, 49.31 62.89, 49.18 61.71 C 49.05 60.53, 49.19 59.07, 49.45 57.92 C 49.71 56.77, 50.24 55.76, 50.73 54.8 C 51.22 53.84, 51.81 52.93, 52.39 52.15 C 52.96 51.36, 53.55 50.74, 54.19 50.07 C 54.84 49.39, 55.47 48.75, 56.26 48.09 C 57.05 47.42, 57.98 46.62, 58.93 46.09 C 59.88 45.56, 60.87 45.13, 61.94 44.92 C 63.01 44.71, 64.21 44.8, 65.36 44.85 C 66.5 44.9, 67.77 44.76, 68.82 45.23 C 69.86 45.69, 70.91 46.78, 71.62 47.64 C 72.33 48.5, 72.76 49.31, 73.09 50.37 C 73.42 51.44, 73.69 52.87, 73.62 54.04 C 73.56 55.21, 73.16 56.32, 72.71 57.39 C 72.27 58.46, 71.65 59.62, 70.95 60.48 C 70.26 61.35, 69.5 62.01, 68.55 62.59 C 67.6 63.17, 66.44 63.73, 65.27 63.96 C 64.09 64.19, 62.66 64.2, 61.48 63.96 C 60.3 63.73, 59.17 63.22, 58.18 62.55 C 57.19 61.87, 56.15 60.92, 55.54 59.91 C 54.93 58.88, 54.67 57.63, 54.52 56.43 C 54.38 55.23, 54.37 53.79, 54.66 52.71 C 54.94 51.63, 55.61 50.75, 56.24 49.95 C 56.87 49.15, 57.55 48.49, 58.43 47.93 C 59.31 47.37, 60.49 47, 61.53 46.6 C 62.57 46.19, 63.57 45.84, 64.67 45.53 C 65.77 45.22, 66.97 45.03, 68.12 44.74 C 69.28 44.45, 70.44 44.06, 71.62 43.79 C 72.81 43.52, 74.04 43.32, 75.23 43.12 C 76.43 42.92, 77.62 42.73, 78.82 42.59 C 80.03 42.45, 81.23 42.14, 82.46 42.27 C 83.69 42.4, 85 43.08, 86.2 43.36 C 87.4 43.63, 88.54 43.7, 89.67 43.93 C 90.8 44.15, 91.83 44.56, 92.99 44.73 C 94.14 44.89, 95.55 45.15, 96.6 44.9 C 97.65 44.66, 98.76 44.08, 99.31 43.26 C 99.85 42.44, 100.15 40.88, 99.87 39.97 C 99.59 39.06, 98.64 38.12, 97.67 37.78 C 96.7 37.43, 95.11 37.67, 94.03 37.91 C 92.94 38.15, 92.1 38.77, 91.15 39.21 C 90.2 39.66, 89.28 40.19, 88.32 40.6 C 87.36 41.02, 86.47 41.7, 85.39 41.71 C 84.31 41.71, 82.95 41.03, 81.84 40.63 C 80.71 40.25, 79.7 39.87, 78.7 39.38 C 77.69 38.89, 76.61 38.43, 75.82 37.7 C 75.02 36.96, 74.28 36.02, 73.92 34.97 C 73.55 33.92, 73.34 32.43, 73.62 31.41 C 73.91 30.38, 74.74 29.28, 75.63 28.82 C 76.52 28.36, 78.05 28.25, 78.97 28.63 C 79.88 29.01, 80.54 30.11, 81.09 31.09 C 81.65 32.06, 81.98 33.32, 82.31 34.47 C 82.65 35.63, 82.79 36.87, 83.11 38.03 C 83.44 39.19, 83.68 40.4, 84.26 41.44 C 84.72 42.24, 85.4 42.98, 86.07 43.64 C 85.71 43.74, 85.38 43.69, 85.04 43.53 C 84.67 43.36, 84.41 43.11, 84.2 42.76 C 84.01 42.43, 83.91 42.12, 83.93 41.74 C 83.95 41.47, 84.03 41.22, 84.25 41.05 C 84.41 40.94, 84.63 40.94, 84.78 41.06 C 84.98 41.22, 85.04 41.47, 85.04 41.72 C 85.04 42.07, 84.93 42.34, 84.72 42.62 C 84.51 42.91, 84.26 43.11, 83.91 43.22 C 83.61 43.31, 83.32 43.3, 83.05 43.15 C 82.81 43, 82.67 42.74, 82.67 42.46 C 82.68 42.11, 82.85 41.83, 83.11 41.58 C 83.44 41.28, 83.8 41.13, 84.25 41.05 C 84.74 40.98, 85.15 41.03, 85.61 41.22 C 86.02 41.4, 86.34 41.63, 86.57 42.02 C 86.75 42.33, 86.83 42.67, 86.72 43.01 C 86.61 43.32, 86.38 43.54, 86.07 43.64 C 86.27 43.83, 86.46 44.01, 86.65 44.19 C 87.49 44.98, 88.42 45.51, 89.32 46.19 C 90.21 46.88, 91.16 47.52, 92.02 48.29 C 92.88 49.07, 93.76 49.91, 94.46 50.86 C 95.17 51.81, 95.75 52.98, 96.26 54 C 96.77 55.02, 97.11 55.92, 97.5 56.98 C 97.89 58.04, 98.35 59.18, 98.6 60.34 C 98.85 61.51, 98.94 62.73, 99 63.99 C 99.07 65.24, 99.02 66.59, 99 67.87 C 98.98 69.16, 98.89 71.07, 98.87 71.71",
+    entry: { x: 0.0002, y: 0.5274, angle: 76.1 },
+    exit: { x: 0.9887, y: 0.7171, angle: 92.2 },
+    aspect: 2.308,
+  },
+} as const;

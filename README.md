@@ -13,13 +13,12 @@ one narrative rather than stacked sections.
 | --- | --- |
 | Language | TypeScript |
 | Framework | Next.js, App Router, static export |
-| UI library | None. Kept minimal by decision; Radix is an option if a concrete need appears, and is not installed |
 | Styling | Tailwind CSS |
-| Animation | Framer Motion + CSS |
+| Animation | CSS only — scroll-driven animations and transitions; no animation library is installed |
 | Content | Typed TypeScript modules under `content/`, each exported through its validator |
 | Lint and format | Biome, which fully replaces ESLint and Prettier |
 | Hosting | Vercel |
-| Images | `next/image` |
+| Images | Generated from `assets/` by `npm run images`; AVIF with a WebP fallback |
 
 ## Requirements
 

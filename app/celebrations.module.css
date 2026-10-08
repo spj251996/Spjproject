@@ -1,60 +1,69 @@
-/* `gap` lives here rather than on a Tailwind utility class so the segment bridge below can consume
-   the exact same value through `--celebrations-row-gap` — a utility class has no custom property
-   of its own to share, and the two must never disagree.
-
-   The intro-to-list gap lives here for a different reason: this rule is a plain, unlayered module
-   stylesheet, so its own `margin: 0` always wins over a `mt-*` Tailwind utility (inside the
-   framework's `utilities` layer) on the same element, regardless of value — setting the gap as a
-   margin utility on this element would silently do nothing. */
+/* This rule is a plain, unlayered module stylesheet, so its own `margin: 0` always wins over a
+   `mt-*` Tailwind utility (inside the framework's `utilities` layer) on the same element,
+   regardless of value — setting the intro-to-list gap as a margin utility on this element would
+   silently do nothing, so it lives here as `margin-block-start` instead. */
 .list {
   list-style: none;
   margin: 0;
   margin-block-start: var(--celebrations-intro-gap);
   padding: 0;
   width: 100%;
-  gap: var(--celebrations-row-gap);
+
+  /* THE BAND'S THREE VALUES, declared together because they are one decision (owner, 2026-10-07).
+     Single column below 1024px: full-width blocks, 64px apart, previews nominally 120px tall.
+     Both the rhythm and the photo height are inherited by the rows, and the photo height is read
+     back out by `photo-strip` — so this is the single place the 1024px threshold is written, and
+     no JavaScript restates it as a media query that could drift. */
+  --celebrations-block-width: 100%;
+  --celebrations-photo-height: 120px;
+  gap: 64px;
 }
 
+/* Alternating above 1024px (`{breakpoints.lg}`, 64rem). The blocks take 80% of the track and sit
+   32px apart — alternating rows are already separated horizontally, so they need less vertical
+   room than stacked ones. 80% rather than 85% was chosen on the offset it produces: 179px against
+   134px, and the smaller shift reads as rows that failed to line up. */
+@media (width >= 64rem) {
+  .list {
+    --celebrations-block-width: 80%;
+    --celebrations-photo-height: 150px;
+    gap: var(--spacing-space-lg);
+  }
+}
+
+/* Each ritual's block takes the band's width share. A mirrored row is pushed to the end by
+   `justify-content` and aligns its own text to the end — the row is never REVERSED, because that
+   also reverses the leaf and renders `മധുരംവെപ്പ് Wedding Eve [leaf]` (owner). */
 .row {
-  position: relative;
-  padding-inline-start: var(--celebrations-row-indent);
+  display: flex;
+  justify-content: flex-start;
 }
 
-/* The spine is drawn per row rather than as a border on each or a single rule behind the list,
-   so it can anchor to marks instead of to box edges: a fixed inset from the list's own top/bottom
-   stops at the first mark (which sits at a fixed offset from the list top) but overruns the last
-   one, whose row height varies with its description's wrap.
-
-   Every mark sits at the same offset from its own row's top, so the reach from one mark's centre
-   to the next is exactly this row's height plus the gap to the next row — the offset cancels out.
-   Skipping the segment on the last row lets the second-to-last row's segment be the one that ends
-   the chain exactly on the last mark, with no reference to the list's box needed at either end.
-   The gap comes from `--celebrations-row-gap`, the same property `.list` reads its own `gap` from,
-   so retuning the row rhythm can never leave the two disagreeing. Phase 6 replaces this with the
-   thread's own generated segment. */
-.row:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  inset-block-start: calc(
-    var(--celebrations-mark-offset) +
-    var(--celebrations-mark-size) /
-    2
-  );
-  inset-inline-start: var(--celebrations-spine-x);
-  width: var(--stroke-divider);
-  height: calc(100% + var(--celebrations-row-gap));
-  background-color: var(--color-accent-gold);
+.block {
+  width: var(--celebrations-block-width);
 }
 
-.mark {
-  position: absolute;
-  inset-inline-start: calc(
-    var(--celebrations-spine-x) -
-    var(--celebrations-mark-size) /
-    2
-  );
-  inset-block-start: var(--celebrations-mark-offset);
-  width: var(--celebrations-mark-size);
-  height: var(--celebrations-mark-size);
-  background-color: var(--color-accent-gold);
+@media (width >= 64rem) {
+  /* The hug: alternate rows end-justify, so every block's text leans toward the card's centre. */
+  .row:nth-child(even) {
+    justify-content: flex-end;
+  }
+}
+
+/* THE HUG (owner): each block's text leans toward the card's centre, so a left block aligns start
+   and a right block aligns end. Done in CSS on `:nth-child(even)` rather than from JavaScript, so
+   the section stays server-rendered — nothing about the alternation needs a client boundary. */
+.text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: start;
+}
+
+@media (width >= 64rem) {
+  .row:nth-child(even) .text {
+    align-items: flex-end;
+    text-align: end;
+  }
 }

@@ -1,0 +1,203 @@
+/* Everything about a thread that is the same on every screen — one page-length measured line
+   (`page-thread.tsx`) and `not-found`'s own closed, timed replay of `invite`'s route
+   (`not-found-thread.tsx`). The retired per-section, CSS-generated grid model (`section-thread.tsx`,
+   `thread-css.ts`) is gone as of the cutover that mounted this — `page-thread.tsx`'s own header
+   comment covers why the live `<path>` here deliberately does NOT carry `vector-effect:
+   non-scaling-stroke`, unlike that retired model's `.ink`. */
+
+/* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
+   kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
+   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `CardThread` copies it then had were
+   auto-placing into two of its four EXPLICIT rows, pushing `names` and `signoff` out into new
+   IMPLICIT ones. `.figureCol`'s `grid-row: 1 / -1` still spanned the same four tracks throughout --
+   `-1` resolves against the explicit grid only, so the span never moved -- but two of those tracks
+   now held a zero-height weave copy instead of a 112px row, which is what collapsed the column
+   384px -> 160px and spilled the illustration ~87px each way. Measured with `getComputedStyle`:
+   `20px 140px 112px 112px` fixed against `20px 140px 0px 0px 112px 112px` broken
+   (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
+   never be a grid item, whatever size it renders at -- an absolutely positioned box never
+   participates in a flex or grid parent's layout, regardless of `inset`. `inset: 0` here (rather
+   than the `height: 0` this carried through the Wishes fix) is what lets this wrapper actually cover
+   `<main>` for the no-JS fallback below, which cannot self-measure and has no other way to size
+   itself (`page-thread.tsx`'s closing comment). `<main>` (`app/page.tsx`) already carries Tailwind's
+   `relative`, so this wrapper's containing block is `<main>`'s own box, not the viewport or some
+   further ancestor -- confirmed on a real `javaScriptEnabled: false` render
+   (`final-review-fixes.md`). */
+.pageWrapper {
+  position: absolute;
+  display: block;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Positioned by `coverRect` once JS has measured; `inset: 0` is the CSS-only starting point a no-JS
+   reader gets. This rule resolves against `.pageWrapper` (its own nearest positioned ancestor), not
+   against `<main>` directly -- `.pageWrapper`'s own `inset: 0` above is what has to reach `<main>`,
+   and does, because `<main>` is already positioned. Everything JS-driven measures its own wrapper
+   instead and does not depend on either. */
+/* `width`/`height` are NOT redundant beside `inset: 0`. An `<svg>` carrying a `viewBox` is a
+   replaced element with an intrinsic aspect ratio, so with `height: auto` it resolves its width from
+   `left`/`right` and then takes its HEIGHT FROM THAT RATIO, ignoring `bottom: 0` — the static
+   fallback's `viewBox="0 0 1 1"` made it a 393x393 SQUARE inside a wrapper correctly spanning
+   `<main>` at 393x6576, so the whole page-length thread was squeezed into the first screen (7,050 of
+   its 7,053 ink pixels in the first 700px band, 3 in all the rest). Only the no-JS reader ever saw
+   it: the live svg is given an explicit box by `coverRect`, whose inline style wins here anyway.
+   (`not-found` carried a second SVG that had always declared the pair; it was retired with that
+   screen's thread on 2026-10-07, so this rule is the only place the lesson now lives.) */
+.pageRoot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: var(--z-thread);
+  overflow: visible;
+}
+
+/* THE OPENING SEQUENCE's last step (DESIGN.md → Motion → "The opening sequence"; `app/invite.css`
+   carries the steps ahead of it). The thread fades in once those have each completed in turn — the
+   ground carries no step at all, it is present from the first frame — so the two files describe one
+   discrete-beat sequence without sharing a keyframe across a module boundary.
+
+   Delay = 2 × fast + 2 × base = 1200ms, ending at 1600ms, which is `OPENING_DRAW_DELAY` in
+   `page-thread.tsx`. The fade drops the beat the earlier steps carry (`n × fast + (n − 1) × base`,
+   `app/invite.css`) and begins as the type LANDS — the owner's rule, to remove dead air between the
+   names appearing and the line starting. **The index moved on 2026-10-05** when the invitation took
+   the hero card's unpainted option: the mount and stock settles went, the flowers took one beat in
+   their place, so the type is second rather than third and this fade third rather than fourth. Under
+   the painted option it is `3 × fast + 3 × base = 1800ms`, ending 2200ms — DESIGN.md carries the
+   restoration. This rule governs BOTH the no-JS fallback svg and the live one (both
+   carry `.pageRoot`): the fallback paints the thread in its authored position and this is the only
+   thing that ever animates it, so "without JS the same sequence runs from CSS alone" (this file's
+   own header, and `page-thread.tsx`'s) holds with no second code path. It does not reach
+   `CardThread`'s `.cardRoot` root, which is Wishes' own in-card stretch, not the page-opening thread.
+
+   Reduced motion drops this whole rule (the media query it lives in) rather than overriding it, so
+   there is no specificity contest to lose — `opacity`'s un-animated initial value is already `1`,
+   which is the same "present and complete on the first frame" state `page-thread.tsx`'s own
+   `reducedMotion()` branch draws by clearing the dash. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pageThreadFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Gated with the sequence's other three steps: `.pageRoot` covers the whole of `<main>`, so this
+     one fade blanks the thread in EVERY section for 1600ms, which is what a reader reloading
+     part-way down the page actually complained about. `app/layout.tsx`'s own header carries why the
+     attribute is set at `DOMContentLoaded` by an inline script, and what the threshold means. */
+  :root:not([data-opening-skipped]) .pageRoot {
+    animation: pageThreadFadeIn var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 2 + var(--duration-base) * 2) both;
+  }
+}
+
+/* The static, authored fallback lives in a normalised 0-1 square (`page-thread.tsx`'s `normalise`)
+   so all three bands can share one `viewBox` and CSS alone decides which one paints -- the
+   hide-all-then-show-one rule pair lives entirely in `page-thread.tsx`'s own generated `<style>`, not
+   here, because both halves must carry the SAME specificity and rely on SOURCE ORDER to pick a
+   winner (the exact mechanism `thread-css.ts` used for its own band toggle above). Splitting them
+   across this CSS-module class and an inline `<style>` would let the module rule's higher
+   specificity always win regardless of `@media` -- the standing lesson this project keeps
+   re-learning about a bare utility losing to a scoped one, the other way round. JS hides the whole
+   fallback layer once it has measured and taken over. */
+
+/* The card thread's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why it must
+   take its place from the card's stacking context, behind the type, and a z-index would lift it out
+   of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
+   own edge; it is a drawn line, not content clipped to a box. */
+.cardRoot {
+  overflow: visible;
+}
+
+/* The bleed sits on the INK rather than the svg root. With the full-strength filter, one run on the
+   root took 22.1ms mean frame time / 74 dropped frames over a 5s scrub against 20.39ms / 55 (median
+   of three) with it on each piece; the two were never compared at the shipped strength. Filtered
+   pieces cost frames even while only one was drawing, which points to the filter being re-run on
+   every filtered sibling each frame (an SVG child is not its own compositor layer) -- inferred,
+   and piece count was never varied. */
+.pageInk,
+.pageInkBare {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+  stroke-width: var(--stroke-thread);
+}
+
+/* A piece that carries a taper takes its bleed on a group around the masked path (`ThreadInk`), so
+   the ink is cut before the filter runs. */
+.pageInk,
+.pageBleed {
+  filter: var(--bleed-thread);
+}
+
+/* A tapered end (`thread-light.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
+   takes the thread's own colour and its bleed: a taper that did not bleed would read as a different
+   material from the line it ends. The bleed is ONE filter on the group, as the head's halo is, over
+   geometry that never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
+   past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
+   compounds across the stack. The painter hides it with `display: none` once it has run and no run has
+   been reached; before that (the shipped markup, and for a reader with no script) the group is simply
+   empty, and an empty group's bounding box is empty, so it is INFERRED, not measured, that its filter
+   costs nothing. */
+.pageTaper {
+  filter: var(--bleed-thread);
+}
+
+.pageTaper path {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+}
+
+/* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
+   filter on this ONE group, never on the steps inside it: per path it cost 141 dropped frames over
+   these tight polylines, against 10 for the group in the same comparison (6 as built). The steps' own colour, width and cap are set per
+   element by `page-thread.tsx`; only what is the same for all of them lives here. Hidden with
+   `display: none` once a painter has run and nothing draws; before that (the shipped markup, and for a
+   reader with no script) the group is simply empty, and an empty group's bounding box is empty, so it
+   is INFERRED, not measured, that its filter costs nothing. */
+.pageHead {
+  filter: var(--halo-thread-head);
+}
+
+.pageHead path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+/* The re-trace (`thread-light.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
+   drawn line, one `<g>` per stretch that is animating, laid by script beneath the head. It takes NO
+   FILTER, and that is the point: the head's 4x halo as a filter over these segments cost 77 dropped
+   frames at three stretches at `wide` and the bleed's quarter-radius one still cost a buffer per
+   stretch, so its glow is `.pageRetraceGlow` below instead, a stack of translucent strokes (geometry,
+   which has been free every time a cost finding came down to a buffer). Colour, width and opacity
+   are set per element by `page-thread.tsx`. There is no CSS animation and so no media query: the loop
+   is script, and script does not start under reduced motion (the same gate the draw already has),
+   which leaves the group empty rather than overridden. */
+.pageRetrace path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+/* The re-trace's glow, under its core (DESIGN.md -> The re-trace -> The glow is strokes, not a
+   filter): eight translucent vermilion strokes on the segment's own path, fitted to the 4x halo's
+   measured falloff. One `<g>` per stretch, set by script, below `.pageRetrace` in paint order so the
+   core lies over it. */
+.pageRetraceGlow path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+/* Deliberate exclusion as insurance, not a fix for an observed defect. The no-JS fallback's paths
+   live in a 0-1 viewBox stretched over `<main>`, and in that arrangement the same three shadows
+   measured no visible effect (about 1350 tinted px with the filter against 1370 without), where in
+   a 1:1 pixel space they paint a plain halo (8669 against 1378). Why is not established. */
+.pageInk[data-thread-fallback] {
+  filter: none;
+}

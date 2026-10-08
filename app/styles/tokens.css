@@ -2,54 +2,56 @@
   /* Overriding the framework's own `--font-sans` lets preflight carry the body family instead of
      restating it on `body`. */
   --font-script: "Corinthia", cursive;
-  --font-serif: "Cormorant Garamond", Georgia, serif;
-  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Libre Baskerville", Georgia, serif;
+  /* Ritual titles in Malayalam, and nothing else. No Latin fallback is listed: a Latin face has no
+     Malayalam glyphs, so a fallback could only ever render boxes. */
+  --font-malayalam: "Noto Serif Malayalam", serif;
 
-  --color-surface-base: #fcfbf7;
-  --color-surface-mount: #ece6d7;
-  --color-surface-elevated: #fffefa;
-  --color-surface-contrast: #0c3125;
-  --color-ink: #0f3d2e;
-  --color-ink-on-contrast: #f4f1e8;
+  --color-surface-base: #fff9eb;
+  --color-surface-mount: #f1e2c5;
+  --color-surface-elevated: #fffcf4;
+  --color-ink: #2d1100;
+  --color-ink-muted: #5a3a2a;
+  --color-ink-inverse: #f4f1e8;
   --color-accent-gold: #d29b2f;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
-  /* The shadow and crease tokens below repeat this tint as literal rgba: an engine without
-     `color-mix()` drops the whole declaration. */
+  --color-thread-core: #ff7900;
   --color-shadow-warm: #3a301e;
+  --color-paper-light: #ffffff;
 
   /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
      type-scale.css. These are the phone values; the tablet and laptop steps override them on
      `:root` below. */
-  --text-display-name: 72px;
+  --text-display-name: 94px;
   --text-display-name--font-weight: 400;
-  --text-display-name--line-height: 108px;
+  --text-display-name--line-height: 141px;
   --text-heading-script: 56px;
   --text-heading-script--font-weight: 400;
   --text-heading-script--line-height: 56px;
-  --text-heading-xl: 34px;
+  --text-heading-xl: 26px;
   --text-heading-xl--font-weight: 700;
   --text-heading-xl--line-height: 40px;
-  --text-heading-lg: 22px;
+  --text-heading-lg: 14px;
   --text-heading-lg--font-weight: 700;
   --text-heading-lg--line-height: 28px;
-  --text-date-primary: 22px;
-  --text-date-primary--font-weight: 500;
+  --text-date-primary: 14px;
+  --text-date-primary--font-weight: 700;
   --text-date-primary--line-height: 28px;
-  --text-body: 17px;
+  --text-body: 13px;
   --text-body--font-weight: 400;
   --text-body--line-height: 26px;
-  --text-caption: 15px;
+  --text-action: 13px;
+  --text-action--line-height: 26px;
+  --text-caption: 12px;
   --text-caption--font-weight: 400;
   --text-caption--line-height: 22px;
-  --text-eyebrow: 14px;
-  --text-eyebrow--font-weight: 500;
+  --text-eyebrow: 10px;
+  --text-eyebrow--font-weight: 700;
   --text-eyebrow--letter-spacing: 0.2em;
   --text-eyebrow--line-height: 20px;
-  --text-action: 15px;
   --text-action--font-weight: 700;
-  --text-action--letter-spacing: 0.16em;
-  --text-action--line-height: 20px;
 
   /* Disabling the `--spacing` multiplier stops off-scale utilities such as `p-5` compiling. The
      bare zero step reopens only p-0, gap-0, inset-0 and the like. The named steps keep their
@@ -69,23 +71,51 @@
   --spacing-space-2xl: 64px;
   --spacing-space-3xl: 96px;
   --spacing-space-4xl: 128px;
+  --spacing-space-5xl: 172px;
 
-  --radius-sm: 8px;
-  --radius-lg: 16px;
+  /* Closing the namespace is what makes "one radius, on everything with corners" enforceable:
+     Tailwind ships its own xs/sm/md/lg/xl steps, so deleting the project's second and third
+     steps would leave `rounded-lg` compiling from the framework's default instead of failing.
+     `rounded-full` and `rounded-none` are static utilities and survive the closure. */
+  --radius-*: initial;
+  --radius-card: 3px;
 
-  /* Each token is a complete box-shadow, so a consumer applies one utility rather than composing
-     two that overwrite each other. */
+  /* Four recipes, one per separation, and each stays separately named so any one tunes without
+     touching the others. `--shadow-stock` is the composition a stock actually applies — the two
+     insets then the two drops — so a consumer sets one utility rather than two that would
+     overwrite each other.
+     Every tint is mixed from its colour token rather than restated, so one edit moves all of them.
+     `color-mix()` sets the support floor at Safari 16.2 → DESIGN.md → Technical Conventions. */
   --shadow-mount:
-    0 1px 2px rgba(58, 48, 30, 0.1), 0 18px 40px -14px rgba(58, 48, 30, 0.26);
+    0 1px 3px color-mix(in srgb, var(--color-shadow-warm) 11%, transparent),
+    0 10px 24px -9px
+    color-mix(in srgb, var(--color-shadow-warm) 19%, transparent),
+    0 34px 68px -20px
+    color-mix(in srgb, var(--color-shadow-warm) 28%, transparent);
+  --shadow-sheet-edge: inset 0 0 0 1px
+    color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
+  /* Zero blur, so the negative spread cancels the extra offset and this paints the top row itself,
+     1px tall — measured identical to `inset 0 1px 0 0`, and to any larger offset with a matching
+     spread. It shares that row with the hairline, which is listed first in `--shadow-stock` and so
+     composites over it: the highlight reads as the hairline's row lightened, not as a line of its
+     own. */
+  --shadow-sheet-highlight: inset 0 2px 0 -1px
+    color-mix(in srgb, var(--color-paper-light) 85%, transparent);
   --shadow-sheet:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 3px rgba(58, 48, 30, 0.16);
-  --shadow-sheet-contrast:
-    0 0 0 1px rgba(58, 48, 30, 0.14), 0 2px 8px rgba(58, 48, 30, 0.34);
-  /* The mount under the green stock. The mount's own ivory sits against an ivory ground, so on that
-     stock it reads as page rather than as a mat; a deeper cast lifts it off the ground instead of
-     giving it a second colour. */
-  --shadow-mount-contrast:
-    0 2px 4px rgba(58, 48, 30, 0.16), 0 26px 56px -16px rgba(58, 48, 30, 0.42);
+    0 1px 2px color-mix(in srgb, var(--color-shadow-warm) 14%, transparent),
+    0 4px 10px -3px
+    color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
+  --shadow-stock:
+    var(--shadow-sheet-edge), var(--shadow-sheet-highlight), var(--shadow-sheet);
+  /* The mountless stock's cast, for the thread lab's `stock` paint, where ONE element is both the
+     mount and the stock: the mount's three drops under the stock's two insets and two drops. SIX
+     layers on a box the size of mount + stock, which is fill-rate work and is measured against a
+     static control rather than assumed.
+     It has to be a token rather than two utilities because `shadow-mount` and `shadow-stock` both set
+     `box-shadow` and the second would overwrite the first — the same reason `--shadow-stock` is itself
+     a composition. `@theme static` above is what emits the inner `var()`s to `:root` whether or not a
+     utility reads them, so the composition resolves. */
+  --shadow-mounted-stock: var(--shadow-mount), var(--shadow-stock);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
@@ -113,6 +143,12 @@
 
   --touch-target: 44px;
 
+  /* The action disc's diameter. It was `--touch-target` until 2026-10-07, so the disc WAS the 44px
+     minimum and shrinking it would have shrunk the hit area with it. They are independent now: this
+     is a visual size, `--touch-target` is the floor `button-action`'s own target keeps whatever the
+     disc does. The mark's scale inside the disc is proportional to this — see button-action.tsx. */
+  --action-disc: 32px;
+
   /* A height, so it stays out of `--container-*`, whose utilities are widths.
      components/layout/mounted-sheet-frame*.ts derives its thresholds from the same number, because
      a media query cannot read this variable — change both together. */
@@ -122,51 +158,182 @@
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
   --stroke-thread: 1.6px;
-  --stroke-thread-wisp: 1.2px;
+  --stroke-thread-head: 3.2px;
+  /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
+     ends). */
+  --length-thread-taper: 24px;
+  /* THE RE-TRACE'S CADENCE (DESIGN.md -> Thread -> The re-trace): how long one loop of the lit segment
+     takes, and how long the thread must have been still before its cue loops. Both are exceptions to
+     the motion scale, set against the thread. Read by name from script, not by a CSS animation,
+     because the segment's length and gradient change every frame. The owner's picks (2026-10-02). */
+  --retrace-duration: 3.2s;
+  --retrace-settle: 1500ms;
+  /* How many whole loops the LONGEST stretch on the page runs once the page has been still for the
+     settle interval, before everything stops until the next scroll. A count and not a time, so the
+     pace can change without changing how long the page stays busy.
+
+     THE OWNER'S PICK, 2026-10-05: "max looping duration as 4 loops on biggest thread section", so
+     this is the budget for the longest stretch and every shorter one fits WHOLE loops into the same
+     window (`page-thread.tsx` -> `periodFor`). It supersedes their 2026-10-02 "at least 5 times
+     before stopping" only for that single longest stretch: every other stretch now runs MORE than
+     five, 7 to 41 of them at `wide` and 6 to 11 at `tall`, because its loop is shorter. */
+  --retrace-loops: 4;
+  /* THE RE-TRACE'S SPEED, in px of thread per second. A loop of fixed duration makes the light's
+     speed depend on how long the stretch is -- every stretch finishes in the same 3.2s, so a long one
+     travels several times faster than a short one. The owner judged that on a render, 2026-10-05:
+     "lets decouple speed and length, its not calm retrace but jarring effect". With a speed set, each
+     stretch's loop lasts as long as its own length needs and every lit stretch moves at one rate.
+     The budget stays a COUNT of whole loops, so the longest stretch on the page now bounds how long
+     it can stay busy. 0 keeps the fixed-duration behaviour exactly.
+
+     845 IS THE INVITE'S OWN SPEED TODAY, which is the one the owner picked by eye: its stretch is
+     1487px at `wide` and a 3.2s loop covers it in 1.76s, so 845px/s is what they have been watching
+     all along -- now every stretch moves at it instead of only that one. (At `tall` the invite is
+     1154px, so the same loop reads 656px/s there; 845 is the `wide` figure they judged.) */
+  --retrace-speed: 845;
+  /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. Measured 2026-10-05: `wishes.top` EQUALS the page's own
+     maximum scroll at every band (4100 at `wide`, 6780 at `tall`), because wishes occupies exactly the
+     final viewport — so its card is never scrolled THROUGH and the draw chain handed it only what the
+     previous section left over (100px of 4100 at `wide`, 524px of 6780 at `tall`). That is why it drew
+     too fast to read as a draw, and why the drawing head stayed lit over the closing taper at any
+     resting position short of the exact last pixel.
+
+     BOTH ARE FRACTIONS OF THE VIEWPORT'S HEIGHT, not px, so one value holds at every band — the scroll
+     available between wishes' card entering the viewport and the page's end is exactly one viewport
+     height, which is also this span's natural ceiling. `span` is how much of that the stretch draws
+     across; `finish` is how far before the page's end it completes, so the head retires while the
+     reader is still at the bottom and the taper is visible at rest.
+
+     The scroll they claim comes out of the earlier sections' shared budget — the page's total is
+     fixed — so raising `span` paces the closing stretch by compressing everything above it.
+     0 restores the pre-2026-10-05 behaviour. Read by name from script, never by a CSS rule.
+
+     THE OWNER'S PICKS, SET ON A RENDER 2026-10-05. `span` 0.2 roughly doubles the closing stretch's
+     window (68px to 139px at `wide`). `finish` 0.08 is the one that actually retires the drawing
+     head: it buys ~56px at `wide` and ~68px at `tall` of tolerance for coming to rest SHORT of the
+     page's last pixel, which is what a reader normally does and what left the head sitting on the
+     taper in the owner's own screenshot. Measured at both bands — stopping within that distance
+     leaves the stretch 100% drawn, the head retired and all 16 taper runs visible; outside it the
+     head is correctly still drawing, because there genuinely is thread left. */
+  /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL. The owner, 2026-10-05: "i want the thread
+     on section to draw a bit more slowly so that when page is scrolled fast to end it doesnt appear
+     like thread just popped."
+
+     The drawn length is a pure function of scroll position, so a fling to the bottom paints the
+     finished thread on the very next frame — there is no time in the mapping at all. This is the time
+     constant of the follower that eases toward that target instead of snapping to it (`page-thread.tsx`
+     -> `createCatchUp`), so a fast scroll still shows the line travelling. It is a FOLLOWER, not a
+     delay: the thread always ends at the length the scroll position means.
+
+     An exception to the motion scale, like the re-trace's own two values, because it is a response
+     rate rather than a transition. 0 paints immediately and starts no loop, which is the
+     pre-2026-10-05 behaviour exactly.
+
+     THE OWNER'S PICK, SET ON A RENDER 2026-10-05: 0.4s. It is a DURATION, not a time constant — the
+     follower is a fixed-duration ease precisely because an exponential never arrives, and the first
+     attempt at one left the weave 99.69% drawn 2.5s after the scroll stopped, with the head still
+     lit over the taper (`page-thread.tsx` -> `createCatchUp` carries that measurement). Measured at
+     0.4s: a fling to the page bottom takes the trunk 10% -> 100% over ~400ms instead of in a single
+     frame, and the weave follows once the trunk is done, so the page draws in reading order. */
+  --thread-catchup: 0.4s;
+  --thread-terminal-span: 0.2;
+  --thread-terminal-finish: 0.08;
   --stroke-rim-offset: 2px;
 
-  /* The SVG is drawn at three times the tile's CSS size: at 1:1 a high-density display upscales it
-     into blotches. `color-interpolation-filters='sRGB'` keeps the noise midpoint at 0.5 — filters
-     default to linear RGB. */
-  --grain-tile: 200px;
-  --grain-ground-blend: multiply;
-  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.03' intercept='0.97'/><feFuncG type='linear' slope='0.03' intercept='0.97'/><feFuncB type='linear' slope='0.03' intercept='0.97'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
-  --grain-mount-blend: overlay;
-  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.4' intercept='0.3'/><feFuncG type='linear' slope='0.4' intercept='0.3'/><feFuncB type='linear' slope='0.4' intercept='0.3'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
-  --grain-stock-paper-blend: hard-light;
-  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.05' intercept='0.475'/><feFuncG type='linear' slope='0.05' intercept='0.475'/><feFuncB type='linear' slope='0.05' intercept='0.475'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
-  --grain-stock-contrast-blend: hard-light;
-  --grain-stock-contrast: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.1' intercept='0.45'/><feFuncG type='linear' slope='0.1' intercept='0.45'/><feFuncB type='linear' slope='0.1' intercept='0.45'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='600' height='600' filter='url(%23n)'/></svg>");
+  /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same
+     shape `--crease-fill` below uses for a whole gradient). Vermilion is lighter than the thread's
+     own red but much darker than the ivory ground, which is what makes this an ink bleed that
+     DARKENS the paper rather than light added to the stroke.
+     The radii are a quarter of the retired glow's 3.5 / 12 / 33px, the strength the owner chose on a
+     render. The full radii cost 55 dropped frames over a 5s scrub and these cost 4 (DESIGN.md →
+     Thread). */
+  --bleed-thread: drop-shadow(
+      0 0 0.875px
+        color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)
+    )
+    drop-shadow(
+      0 0 3px color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)
+    )
+    drop-shadow(
+      0 0 8.25px
+        color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
+    );
 
+  /* THE DRAWING HEAD'S HALO — the bleed's own shape at 4x, as one value on one group wrapping the
+     whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
+     every piece of a static line they cost 55 dropped frames over a 5s scrub at 393x700; as one
+     filter over the moving head's tight silhouette they cost 6 as built (3 above the bleed alone).
+     What was isolated is that geometry dominated: dashed copies of whole pieces under the same
+     filter cost 54 against 10. Radius matters too (the bleed alone went 55 -> 9 -> 4 at 1.0x / 0.5x
+     / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). */
+  --halo-thread-head: drop-shadow(
+      0 0 3.5px
+        color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)
+    )
+    drop-shadow(
+      0 0 12px
+        color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)
+    )
+    drop-shadow(
+      0 0 33px
+        color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
+    );
+
+  /* Every texture is one SVG drawn at three times its tile's CSS size and rasterised once by
+     the browser, then tiled — at 1:1 a high-density display upscales the tile into blotches, and a
+     live filter on an element would isolate every blend inside it. `color-interpolation-filters`
+     is 'sRGB' on each because an SVG filter computes in linear RGB by default, which lands a noise
+     midpoint of 0.5 at about 0.73 and lightens instead of balancing.
+     Each grain closes on warm per-channel intercepts rather than one shared dark end, so the tooth
+     reads as a warm off-white rather than grey — blue is held down hardest, red least. */
+  --grain-tile: 300px;
+  --grain-ground-blend: multiply;
+  /* Chart paper: a fine laid weave under a soft fibre. fractalNoise baseFrequency 0.16667,
+     2 octaves, seed 3 is the fibre; a turbulence at 0.03030 x 0.05556, 1 octave, seed 7, clipped to
+     its first two table steps, is the ruling laid over it. */
+  --grain-ground: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.16667' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/><feComponentTransfer result='g'><feFuncR type='linear' slope='1' intercept='0.36'/><feFuncG type='linear' slope='1' intercept='0.36'/><feFuncB type='linear' slope='1' intercept='0.36'/></feComponentTransfer><feTurbulence type='turbulence' baseFrequency='0.03030 0.05556' numOctaves='1' seed='7' stitchTiles='stitch'/><feColorMatrix type='matrix' values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/><feComponentTransfer result='fb'><feFuncR type='table' tableValues='0.62 0.93 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/><feFuncG type='table' tableValues='0.62 0.93 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/><feFuncB type='table' tableValues='0.62 0.93 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/></feComponentTransfer><feComposite in='g' in2='fb' operator='arithmetic' k1='1' result='v'/><feComponentTransfer><feFuncR type='linear' slope='0.0550' intercept='0.9450'/><feFuncG type='linear' slope='0.0800' intercept='0.9200'/><feFuncB type='linear' slope='0.1350' intercept='0.8650'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  --grain-mount-blend: multiply;
+  /* Fine watercolour: the watercolour's own tooth at a fine scale. Two fractalNoise fields —
+     0.08333 at 3 octaves, seed 41, and a 0.01389 mottle at 2 octaves, seed 43, mixed 0.78 / 0.22 —
+     are read as a height field through the alpha channel and lit by a distant light at azimuth 270,
+     elevation 58, so the tooth has a direction rather than reading as flat noise. */
+  --grain-mount: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0825' intercept='0.9300'/><feFuncG type='linear' slope='0.1073' intercept='0.9090'/><feFuncB type='linear' slope='0.1486' intercept='0.8740'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  /* The stock and the mount are the same material at two tones, so they share one texture. */
+  --grain-stock-paper-blend: multiply;
+  --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0825' intercept='0.9300'/><feFuncG type='linear' slope='0.1073' intercept='0.9090'/><feFuncB type='linear' slope='0.1486' intercept='0.8740'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+
+  /* The crease is a bend in the stock, not a rule: 22px, centred on the mount, and the one
+     treatment lit from the side rather than from overhead — a fold reads only under side light, so
+     the shadowed face sits left of the fold. It shows only where a pair sits side by side.
+     Both faces are the mount's own hue. A pure-white lit face bleaches the cream mount — measured,
+     it lifts L* by 3.2 and drops chroma from 16.2 to 13.3, so the strip reads grey beside the fold. */
   --crease-width: 22px;
+  --crease-fold: #746131;
+  --crease-light: #fff2d6;
   --crease-fill: linear-gradient(
     to right,
-    rgba(58, 48, 30, 0) 0px,
-    rgba(58, 48, 30, 0.03) 5px,
-    rgba(58, 48, 30, 0.08) 9px,
-    rgba(58, 48, 30, 0.12) 10.5px,
-    rgba(58, 48, 30, 0.05) 12px,
-    rgba(255, 255, 255, 0.06) 13px,
-    rgba(255, 255, 255, 0.18) 16px,
-    rgba(255, 255, 255, 0.09) 19px,
-    rgba(255, 255, 255, 0) 22px
+    color-mix(in srgb, var(--crease-fold) 0%, transparent) 0px,
+    color-mix(in srgb, var(--crease-fold) 3%, transparent) 4px,
+    color-mix(in srgb, var(--crease-fold) 8.5%, transparent) 8px,
+    color-mix(in srgb, var(--crease-fold) 12.5%, transparent) 10.5px,
+    color-mix(in srgb, var(--crease-fold) 5.5%, transparent) 12.5px,
+    color-mix(in srgb, var(--crease-light) 8.5%, transparent) 13.5px,
+    color-mix(in srgb, var(--crease-light) 28%, transparent) 16.5px,
+    color-mix(in srgb, var(--crease-light) 14%, transparent) 19.5px,
+    color-mix(in srgb, var(--crease-light) 0%, transparent) 22px
   );
 
   --duration-fast: 200ms;
   --duration-base: 400ms;
-  --duration-slow: 700ms;
 
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--color-ink);
-  --focus-ring-color-on-contrast: var(--color-accent-gold);
+  --focus-ring-color-inverse: var(--color-accent-gold);
 
   /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
      off-scale `z-999` still compiles; only review enforces this scale. */
-  --z-base: 0;
-  --z-botanical: 10;
   --z-content: 20;
-  --z-elevated: 30;
   --z-thread: 40;
   --z-modal: 50;
 }
@@ -176,69 +343,69 @@
    Biome reads sibling `@variant` blocks as one block and flags the repeated names. */
 :root {
   @variant md {
-    --text-display-name: 104px;
-    --text-display-name--line-height: 156px;
+    --text-display-name: 135px;
+    --text-display-name--line-height: 203px;
     --text-heading-script: 72px;
     --text-heading-script--line-height: 72px;
-    --text-heading-xl: 42px;
+    --text-heading-xl: 32px;
     --text-heading-xl--line-height: 48px;
-    --text-heading-lg: 24px;
+    --text-heading-lg: 15px;
     --text-heading-lg--line-height: 30px;
-    --text-date-primary: 24px;
+    --text-date-primary: 15px;
     --text-date-primary--line-height: 30px;
-    --text-body: 18px;
+    --text-body: 14px;
     --text-body--line-height: 28px;
-    --text-caption: 16px;
+    --text-action: 14px;
+    --text-action--line-height: 28px;
+    --text-caption: 13px;
     --text-caption--line-height: 24px;
-    --text-eyebrow: 15px;
+    --text-eyebrow: 11px;
     --text-eyebrow--line-height: 20px;
-    --text-action: 16px;
-    --text-action--line-height: 20px;
   }
 }
 
 :root {
   @variant lg {
-    --text-display-name: 96px;
-    --text-display-name--line-height: 144px;
+    --text-display-name: 125px;
+    --text-display-name--line-height: 188px;
     --text-heading-script: 64px;
     --text-heading-script--line-height: 64px;
-    --text-heading-xl: 38px;
+    --text-heading-xl: 30px;
     --text-heading-xl--line-height: 44px;
-    --text-heading-lg: 22px;
+    --text-heading-lg: 14px;
     --text-heading-lg--line-height: 28px;
-    --text-date-primary: 22px;
+    --text-date-primary: 14px;
     --text-date-primary--line-height: 28px;
-    --text-body: 17px;
+    --text-body: 13px;
     --text-body--line-height: 26px;
-    --text-caption: 15px;
+    --text-action: 13px;
+    --text-action--line-height: 26px;
+    --text-caption: 12px;
     --text-caption--line-height: 22px;
-    --text-eyebrow: 14px;
+    --text-eyebrow: 10px;
     --text-eyebrow--line-height: 20px;
-    --text-action: 15px;
-    --text-action--line-height: 20px;
   }
 }
 
 :root {
   @variant xl {
-    --text-display-name: 120px;
-    --text-display-name--line-height: 180px;
+    --text-display-name: 156px;
+    --text-display-name--line-height: 234px;
     --text-heading-script: 80px;
     --text-heading-script--line-height: 80px;
-    --text-heading-xl: 48px;
+    --text-heading-xl: 38px;
     --text-heading-xl--line-height: 56px;
-    --text-heading-lg: 26px;
+    --text-heading-lg: 17px;
     --text-heading-lg--line-height: 32px;
-    --text-date-primary: 26px;
+    --text-date-primary: 17px;
     --text-date-primary--line-height: 32px;
-    --text-body: 20px;
+    --text-body: 16px;
     --text-body--line-height: 32px;
-    --text-caption: 17px;
+    --text-action: 16px;
+    --text-action--line-height: 32px;
+    --text-caption: 14px;
     --text-caption--line-height: 24px;
-    --text-eyebrow: 16px;
+    --text-eyebrow: 12px;
     --text-eyebrow--line-height: 22px;
-    --text-action: 17px;
-    --text-action--line-height: 24px;
   }
 }

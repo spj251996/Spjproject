@@ -12,9 +12,9 @@ export function BetrothalIcon({
   return (
     <IconBase
       className={className}
-      nudge={0.97}
+      nudge={0.9798}
       size={size}
-      viewBox="83.3 70.2 567.4 507.5"
+      viewBox="80.58 67.42 572.83 512.94"
     >
       <g
         stroke="currentColor"

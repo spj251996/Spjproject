@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type {
+  ContactPerson,
   EventSegment,
   FamilyGroup,
   InviteContent,
@@ -9,6 +11,7 @@ import type {
   WishesContent,
 } from "./types.ts";
 import {
+  validateContacts,
   validateEvents,
   validateFamilyGroups,
   validateInvite,
@@ -19,8 +22,9 @@ import {
 const ritual = (over: Partial<Ritual> = {}): Ritual => ({
   id: "a",
   title: "A Ritual",
+  malayalam: "വിവാഹം",
+  tagline: "What it is about.",
   description: "What happens.",
-  status: "upcoming",
   images: [],
   ...over,
 });
@@ -37,8 +41,8 @@ const segment = (over: Partial<EventSegment> = {}): EventSegment => ({
 
 const event = (over: Partial<WeddingEvent> = {}): WeddingEvent => ({
   id: "e",
-  name: "An Event",
   cityTown: "A Town",
+  state: "A State",
   date: "2027-01-09",
   segments: [segment()],
   ...over,
@@ -67,8 +71,9 @@ const pair = (over: Partial<FamilyGroup> = {}) => [
 ];
 
 const invite: InviteContent = {
-  eyebrow: "We are getting married",
   coupleNames: "A & B",
+  passage: "Text.",
+  passageAttribution: "Book 1:1",
 };
 
 const wishes: WishesContent = {
@@ -87,10 +92,10 @@ test("accepts well-formed content", () => {
   assert.deepEqual(validateWishes(wishes), wishes);
 });
 
-test("rejects an empty required string, naming the path", () => {
+test("rejects an empty invite passage, naming the path", () => {
   assert.throws(
-    () => validateRituals([ritual({ title: "" })]),
-    /rituals\[0\]\.title/,
+    () => validateInvite({ ...invite, passage: "" }),
+    /invite\.passage/,
   );
 });
 
@@ -112,6 +117,45 @@ test("rejects an empty image entry", () => {
   assert.throws(
     () => validateRituals([ritual({ images: [""] })]),
     /rituals\[0\]\.images\[0\]/,
+  );
+});
+
+test("rejects an empty rituals array", () => {
+  /* An emptied content file used to build green and ship a section with no entries. The guard is
+     on the COLLECTION, not on a member, so no per-ritual check can catch it. */
+  assert.throws(() => validateRituals([]), /rituals.*at least one/);
+});
+
+test("rejects an empty events array", () => {
+  assert.throws(() => validateEvents([]), /events.*at least one/);
+});
+
+test("validateRituals rejects a Malayalam title stored in visual order", () => {
+  // The PDF stored two of the five this way: the pre-base vowel sign `െ` BEFORE its
+  // consonant instead of after. It looks plausible in a diff and renders wrong.
+  assert.throws(
+    () => validateRituals([ritual({ malayalam: "മധുരംെവപ്പ്" })]),
+    /visual order/,
+  );
+});
+
+test("validateRituals accepts every shipped Malayalam title", () => {
+  // All five, in logical order. If this fails the rule is over-strict.
+  for (const malayalam of [
+    "മധുരംവെപ്പ്",
+    "മനസ്സമ്മതം",
+    "വിവാഹം",
+    "മോതിരമാറ്റം",
+    "മിന്നുകെട്ട്",
+  ]) {
+    assert.doesNotThrow(() => validateRituals([ritual({ malayalam })]));
+  }
+});
+
+test("rejects an empty event state, naming the path", () => {
+  assert.throws(
+    () => validateEvents([event({ state: "" })]),
+    /events\[0\]\.state must not be empty/,
   );
 });
 
@@ -260,12 +304,28 @@ test("accepts null in every nullable field", () => {
 
 test("rejects empty invite copy, naming the field", () => {
   assert.throws(
-    () => validateInvite({ ...invite, eyebrow: "" }),
-    /invite\.eyebrow must not be empty/,
-  );
-  assert.throws(
     () => validateInvite({ ...invite, coupleNames: "   " }),
     /invite\.coupleNames must not be empty/,
+  );
+  assert.throws(
+    () => validateInvite({ ...invite, passage: "" }),
+    /invite\.passage must not be empty/,
+  );
+});
+
+/* The eyebrow is chrome at the composition site, like Family's and Wishes' (owner, 2026-10-03), so
+   it is not content and not validated. Asserted on the SOURCE because a removed optional field is
+   invisible to a runtime check: `validateInvite` accepts an object carrying an extra key either way,
+   so no call to it can tell whether the field is still part of the model. */
+test("the invite content model carries no eyebrow", () => {
+  const types = readFileSync("content/types.ts", "utf8");
+  const from = types.indexOf("interface InviteContent");
+  assert.notStrictEqual(from, -1, "no InviteContent interface found");
+  assert.doesNotMatch(types.slice(from, types.indexOf("}", from)), /eyebrow/);
+  assert.doesNotMatch(readFileSync("content/invite.ts", "utf8"), /eyebrow/);
+  assert.doesNotMatch(
+    readFileSync("content/validate.ts", "utf8"),
+    /invite\.eyebrow/,
   );
 });
 
@@ -291,5 +351,91 @@ test("validateWishes rejects a missing sign-off lead", () => {
         wishesLine: "Marietta Joseph, Harry William & Amal Roy",
       }),
     /wishes\.wishesLead/,
+  );
+});
+
+const contact = (over: Partial<ContactPerson> = {}): ContactPerson => ({
+  id: "bride-contact",
+  side: "bride",
+  name: "Amal",
+  relationship: "Brother",
+  phone: "+919354187793",
+  ...over,
+});
+
+const contactPair = (): ContactPerson[] => [
+  contact(),
+  contact({
+    id: "groom-contact",
+    side: "groom",
+    name: "Christopher",
+    relationship: "Cousin",
+    phone: "+919048054495",
+  }),
+];
+
+test("accepts a well-formed contact pair", () => {
+  assert.deepEqual(validateContacts(contactPair()), contactPair());
+});
+
+test("rejects a contact list without one of each side", () => {
+  assert.throws(
+    () => validateContacts([contact()]),
+    /contacts must hold exactly one "bride"/,
+  );
+  assert.throws(
+    () => validateContacts([contact(), contact({ id: "second" })]),
+    /contacts must hold exactly one "bride"/,
+  );
+});
+
+test("rejects a duplicate contact id, naming the path", () => {
+  const pair = contactPair();
+  pair[1].id = pair[0].id;
+  assert.throws(
+    () => validateContacts(pair),
+    /contacts\[1\]\.id duplicates an earlier id/,
+  );
+});
+
+test("rejects an empty contact name or relationship, naming the path", () => {
+  assert.throws(
+    () => validateContacts([contact({ name: "" }), contactPair()[1]]),
+    /contacts\[0\]\.name/,
+  );
+  assert.throws(
+    () => validateContacts([contact({ relationship: "" }), contactPair()[1]]),
+    /contacts\[0\]\.relationship/,
+  );
+});
+
+test("rejects a phone number that is not E.164", () => {
+  for (const bad of [
+    "9354187793",
+    "+0 9354187793",
+    /* No space, so this one fails on the leading zero alone — the case above it fails on the
+       space and leaves the country-code rule unproven. */
+    "+09354187793",
+    "+91 93541 87793",
+    "+91935418779312345",
+    "+9135",
+  ]) {
+    assert.throws(
+      () => validateContacts([contact({ phone: bad }), contactPair()[1]]),
+      /contacts\[0\]\.phone must be an E\.164 number/,
+      `expected "${bad}" to be rejected`,
+    );
+  }
+});
+
+test("accepts an E.164 number at both length bounds", () => {
+  assert.doesNotThrow(() =>
+    validateContacts([contact({ phone: "+12345678" }), contactPair()[1]]),
+  );
+  assert.doesNotThrow(() =>
+    validateContacts([
+      contact({ phone: "+123456789012345" }),
+      contactPair()[1],
+    ]),
   );
 });

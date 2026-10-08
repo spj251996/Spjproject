@@ -1,10 +1,14 @@
-export type RitualStatus = "upcoming" | "completed";
-
 export interface Ritual {
   id: string;
   title: string;
+  /** The ritual's name in Malayalam, shown beside the English title at every band. */
+  malayalam: string;
+  /** One line, set in italic beneath the title. */
+  tagline: string;
   description: string;
-  status: RitualStatus;
+  /** A ritual shows its photographs when this is non-empty, and by nothing else. There is
+      deliberately no `status`: it existed, was read nowhere, and would have become a second
+      source of truth able to contradict this one. */
   images: string[];
 }
 
@@ -20,10 +24,21 @@ export interface EventSegment {
 /** Named WeddingEvent because `Event` collides with the DOM global. */
 export interface WeddingEvent {
   id: string;
-  name: string;
   cityTown: string;
+  /** The state the event is held in. Read by the invite, printed beneath the date. */
+  state: string;
   date: string;
   segments: EventSegment[];
+}
+
+/** Someone a guest can reach on the day. One per side; see PROJECT.md → Sections → Contact. */
+export interface ContactPerson {
+  id: string;
+  side: "bride" | "groom";
+  name: string;
+  relationship: string;
+  /** E.164. Both the telephone and WhatsApp targets derive from it; neither is authored. */
+  phone: string;
 }
 
 export interface FamilyMember {
@@ -42,8 +57,10 @@ export interface FamilyGroup {
 }
 
 export interface InviteContent {
-  eyebrow: string;
   coupleNames: string;
+  /** The passage set off from the rest of the invite by the ornamental divider. */
+  passage: string;
+  passageAttribution: string;
 }
 
 export interface WishesContent {

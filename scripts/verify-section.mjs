@@ -3,7 +3,7 @@
    transitive dependency of it.
 
    Usage:  npm run verify:section -- /
-           npm run verify:section -- /preview --widths=390,1440
+           npm run verify:section -- / --widths=390,1440
 
    `run-code` evaluates in the RUNNER context, where `page` exists and `document` does not, so every
    page-context read below is wrapped in `page.evaluate`. */

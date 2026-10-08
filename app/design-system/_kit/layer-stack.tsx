@@ -34,7 +34,7 @@ export function LayerStack({ items }: LayerStackProps) {
       >
         {ordered.map((item, index) => (
           <div
-            className="absolute flex flex-col gap-space-3xs overflow-hidden bg-surface-elevated shadow-sheet p-space-sm"
+            className="absolute flex flex-col gap-space-3xs overflow-hidden bg-surface-elevated shadow-stock p-space-sm"
             key={item.token}
             style={{
               top: index * OFFSET_Y,

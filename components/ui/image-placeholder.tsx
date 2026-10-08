@@ -17,7 +17,7 @@ export function ImagePlaceholder({
   return (
     <div
       aria-hidden="true"
-      className={`w-full bg-ink/6 ${className ?? ""}`}
+      className={`w-full rounded-card bg-ink/6 ${className ?? ""}`}
       style={{ aspectRatio: width / height }}
     />
   );

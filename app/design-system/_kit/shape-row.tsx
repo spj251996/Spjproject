@@ -2,7 +2,7 @@
 
 export interface ShapeItem {
   token: string;
-  /** Full CSS value, e.g. "var(--radius-lg)" or "9999px" for a shape with no token. */
+  /** Full CSS value, e.g. "var(--radius-card)" or "9999px" for a shape with no token. */
   radius: string;
   /** Human-readable value, e.g. "16px". */
   value: string;
@@ -24,7 +24,7 @@ export function ShapeRow({ items }: ShapeRowProps) {
         >
           <span
             aria-hidden="true"
-            className="size-space-2xl bg-surface-elevated shadow-sheet"
+            className="size-space-2xl bg-surface-elevated shadow-stock"
             style={{ borderRadius: radius }}
           />
           <span className="type-body whitespace-nowrap text-ink">

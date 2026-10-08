@@ -1,0 +1,386 @@
+#!/usr/bin/env node
+/* The join gate (Phase 6b): a section's thread must render as ONE connected run of ink.
+ *
+ * WHY A RENDER AND NOT A TEST. Two defects shipped past 137 unit tests, a clean `tsc`, clean lint
+ * and a green build, and the owner found both by looking at the page:
+ *   - every reveal mask is butt-capped and stops at its path's last point, while the visible stroke
+ *     is round-capped and reaches half a stroke width further, so two masks meeting at a join each
+ *     cut half a cap away and left a slit of ivory between them;
+ *   - a connector composed against a nominal tier box and a motif field sized from the real window
+ *     disagreed about where the join was by 3px at one viewport and 67px at another.
+ * Neither is visible to anything that does not rasterise the page. Connected-component analysis is:
+ * a break of one pixel anywhere splits the run in two, wherever it is and whatever caused it.
+ *
+ * METHOD, per section per viewport per state:
+ *   1. Park the section and screenshot it (the element, not the viewport — a section is taller than
+ *      the window and a viewport shot would cut the thread at the fold and report a false break).
+ *   2. Mark every ink pixel. The test is a RED-DOMINANT one rather than a window around the thread's
+ *      own hex, so a half-covered antialiased edge counts as ink and does not read as a break; the
+ *      gold eyebrow (r-g = 35) and the dark dev-tools badge both fall outside it.
+ *   3. Label 8-connected components with NO dilation. Dilating bridges a one-pixel gap, which is
+ *      exactly the defect this gate exists to see.
+ *   4. One component, of any size over a few pixels, is a pass.
+ *
+ * STATES. `rest` emulates reduced motion, which removes the animation and lands the sheet on its
+ * complete base; `scrub` parks the section mid-band with the animation live. A masking-geometry
+ * defect shows in both, a scrub-law one only in the second — running both is what tells them apart.
+ *
+ * ENGINE PIN (mandatory): `chromium.launch({ channel: "chromium" })`. The default launch reaches
+ * for Chromium's old `headless_shell`, whose glyph and edge rendering differ; every measurement on
+ * this project taken without the pin has been an artifact of the launch.
+ *
+ * DEV SERVER: never started, stopped or restarted here — :3000 is the owner's. If nothing answers,
+ * the script says so and exits rather than spawning its own.
+ *
+ * ROUTE: `/thread-lab` by default, because the thread is not mounted on `/` until the cutover
+ * (Task 10). Point it at `/` with `--route=/` once it is, and the gate is unchanged.
+ *
+ * CAPS: a fixed 7 sections x 2 viewports per aspect band x 2 states, navigation 20s, fonts 5s
+ * best-effort, one fixed 350ms settle after each park. No convergence loops, no unbounded waits.
+ *
+ * USAGE:
+ *   node scripts/check-thread-joins.mjs
+ *   node scripts/check-thread-joins.mjs --section=family --viewport=tall-nominal
+ *   node scripts/check-thread-joins.mjs --falsify     # prove the gate can see a break
+ */
+
+import { chromium } from "playwright";
+import sharp from "sharp";
+import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
+
+const ORIGIN = "http://localhost:3000";
+const NAV = 20000;
+const SETTLE = 350;
+
+const SECTIONS = [
+  "invite",
+  "event-info",
+  "contact",
+  "family",
+  "celebrations",
+  "wishes",
+];
+/* `not-found` was a member here until 2026-10-08 and is deliberately gone. It is a separate ROUTE, not a
+   section on this page, and its own thread was retired (DESIGN.md -> Domain Components -> Not found), so
+   this gate spent every run reporting `MISSING #not-found` for an element removed on purpose -- 48 lines
+   of noise per sweep. The route's coverage moved to `scripts/check-export-routes.mjs`, which asserts it
+   exists and carries no thread root; this is not a drop in coverage. */
+
+/* One window per ASPECT BAND, not per width tier: thread geometry is emitted per band now, so a
+   sweep keyed to widths could miss a band entirely. Each band contributes its own NOMINAL box —
+   where the emitted geometry renders 1:1 and a join is exact by construction — and one real window
+   that DRIFTS from it inside the same band, which is where a masking or pinning defect shows. */
+const DRIFTED = {
+  tall: { width: 360, height: 780, dpr: 2 },
+  upright: { width: 768, height: 1024, dpr: 1 },
+  wide: { width: 1280, height: 720, dpr: 1 },
+};
+
+const VIEWPORTS = THREAD_BANDS.flatMap((band) => [
+  {
+    name: `${band.id}-nominal`,
+    width: band.box.width,
+    height: band.box.height,
+    dpr: band.box.width < 500 ? 2 : 1,
+  },
+  { name: `${band.id}-drifted`, ...DRIFTED[band.id] },
+]);
+
+/* THE FORMER RECORDED EXCEPTION — REMOVED, per this file's own stale-exemption rule below.
+ *
+ * `event-info upright-nominal` was recorded here as a known break, attributed to `rings`/`knot`
+ * inverting at `r = 0.6849` against the `upright` band's own `0.6949` and composing a connector
+ * 0.9 px long, under a generator's 1 px floor. That whole mechanism — seeded scales, a four-row
+ * grid, per-band normalisation against a nominal box — belonged to the retired `thread-css.ts` grid
+ * model, which no longer exists: `event-info`'s connectors are now hand-authored, measured curves in
+ * `thread-paths.ts`, and every one of them at `upright` spans hundreds to low thousands of px (the
+ * shortest measured on the live page's mounted trunk at `upright` 820x1180 is 319.57 px, none under
+ * 2 px — `final-review-fixes.md`). There is no seeded scale left to invert and no floor left to fall
+ * under, so the exception's own cause cannot recur; that is why it is gone, not only that the render
+ * currently shows one run. A geometry change that reintroduces a sub-pixel connector would need a
+ * new mechanism capable of producing one, at which point a new entry belongs here. */
+
+const CROSSINGS = new Map();
+
+const flag = (name, fallback = null) => {
+  const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));
+  return found === undefined ? fallback : found.slice(name.length + 3);
+};
+/* The thread is not on the published page -- `/` carries none since the lab split, so the default is
+ * the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). It was `/thread-lab`, a scratch
+ * route that has since been deleted. */
+const route = flag("route", "/thread/current");
+const falsify = process.argv.includes("--falsify");
+const only = flag("section");
+const onlyViewport = flag("viewport");
+
+/* Thread red against ivory, with its antialiased edge: red-dominant and not pale. The gold eyebrow
+   (#b08d57, r-g = 35) and the dev badge (near-neutral) are outside it.
+   TIGHTENED for the real page (Task 7): `/thread-lab`'s stand-in boxes never contained a
+   photograph, so the original bound never met one. Family's ten real portraits contain skin-tone
+   pixels that satisfy a loose red-dominant test, misread as disconnected "thread" fragments.
+   `g<90` overshot: `celebrations` draws a long connector through a stretch where its on-screen
+   tangent is nearly horizontal, which is exactly where a sub-2px stroke antialiases faintest, and
+   the single bridging pixel there measures `g=93` — three units past `g<90` — splitting one
+   drawn run into two on the page's own rendered `<path>` (proven gap-free to <0.1px in the `d`
+   itself; `.superpowers/sdd/celebrations-break-diagnosis.md`).
+
+   RE-CALIBRATED against the real page, not guessed: swept every candidate red-dominant pixel at
+   all three bands, both classified by exact SVG geometry (`isPointInStroke`, not colour) against
+   the mounted path — the `portraitLoop` motif is drawn directly over Family's portraits by design,
+   so "thread ink" and "bare skin" are sometimes the same few pixels apart, and a single g-bound
+   cannot separate them by colour alone in the abstract. What DOES separate them, on this render, is
+   where the two populations' worst cases fall in practice: re-running the join gate's own
+   connected-component classifier at every integer bound from 85 to 150 shows `celebrations
+   wide-nominal` first reads as one run at `g<94` (the miss is `g=93`), and Family's tightest
+   NOMINAL-viewport render first admits a new skin-tone fragment at `g<111` (`family tall-nominal`,
+   an 18-19px patch of dark hair/brow that reads red-dominant). `g<105` sits at the centre of that
+   measured 94-110 safe band — margin 12 below (to the last-broken `g<93`) and 6 above (to the
+   first-contaminated `g<111`) — not a guess and not the exact midpoint, but inside the only band
+   that closes `celebrations` without opening a new hole in `family`.
+
+   `r - g > 80` HAS ITS OWN SWEEP (F7, `final-review-fixes.md`) — a prior pass tightened it from 60
+   without recording why. Swept on the real page at `family tall-nominal rest`, the exact case the
+   `g` calibration above already names: `r - g > 60` reads Family's skin tones as ink and breaks the
+   thread into 46 pieces; the count falls as the bound tightens (28 at 65, 7 at 70) and the render
+   first reads as one run at `r - g > 75`, holding through 80. `celebrations wide-nominal rest` stays
+   a single run up to `r - g > 90` and first breaks at `r - g > 100`. `80` sits inside the resulting
+   75-99 safe band, 5 above the tight edge and 20 below the other — kept rather than loosened back to
+   60, which does not hold. */
+function isInk(r, g, b) {
+  return g < 105 && r - g > 80 && r - b > 60;
+}
+
+function components(data, width, height, channels) {
+  const ink = new Uint8Array(width * height);
+  for (let pixel = 0; pixel < width * height; pixel += 1) {
+    const at = pixel * channels;
+    if (isInk(data[at], data[at + 1], data[at + 2])) ink[pixel] = 1;
+  }
+  const seen = new Uint8Array(width * height);
+  const found = [];
+  for (let start = 0; start < width * height; start += 1) {
+    if (!ink[start] || seen[start]) continue;
+    let size = 0;
+    let minX = width;
+    let minY = height;
+    let maxX = 0;
+    let maxY = 0;
+    const stack = [start];
+    seen[start] = 1;
+    while (stack.length > 0) {
+      const pixel = stack.pop();
+      size += 1;
+      const y = Math.floor(pixel / width);
+      const x = pixel - y * width;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const ny = y + dy;
+          const nx = x + dx;
+          if (ny < 0 || ny >= height || nx < 0 || nx >= width) continue;
+          const next = ny * width + nx;
+          if (ink[next] && !seen[next]) {
+            seen[next] = 1;
+            stack.push(next);
+          }
+        }
+      }
+    }
+    /* A handful of pixels is antialiasing noise, not a piece of thread. */
+    if (size > 12) found.push({ size, box: [minX, minY, maxX, maxY] });
+  }
+  return found.sort((a, b) => b.size - a.size);
+}
+
+const reachable = await fetch(`${ORIGIN}${route}`, {
+  signal: AbortSignal.timeout(NAV),
+})
+  .then((response) => response.ok)
+  .catch(() => false);
+if (!reachable) {
+  console.error(
+    `check-thread-joins: nothing answers on ${ORIGIN}${route}. Start the dev server yourself — this script never does.`,
+  );
+  process.exit(2);
+}
+
+const browser = await chromium.launch({ channel: "chromium" });
+/* `rest` and `scrub` are named once: the loop and the coverage assertion below read the
+   same list, so neither can drift from the other. */
+const STATES = ["rest", "scrub"];
+const failures = [];
+/* Which recorded crossings this run actually saw break, and which have stopped breaking — the
+   second set is what keeps the record from outliving the route that caused it. */
+const crossed = new Set();
+const mended = new Set();
+let measured = 0;
+try {
+  for (const viewport of VIEWPORTS) {
+    if (onlyViewport !== null && viewport.name !== onlyViewport) continue;
+    for (const state of STATES) {
+      const page = await browser.newPage({
+        viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: viewport.dpr,
+        reducedMotion: state === "rest" ? "reduce" : "no-preference",
+      });
+      page.setDefaultTimeout(NAV);
+      await page.goto(`${ORIGIN}${route}`, {
+        waitUntil: "load",
+        timeout: NAV,
+      });
+      await page
+        .evaluate(() => document.fonts.ready)
+        .catch(() =>
+          console.warn("  fonts did not settle; geometry is unaffected"),
+        );
+
+      if (falsify) {
+        /* Step 3: break every connector on purpose. A gate that cannot see this cannot see the
+           defect it is here for, and a run that passes under --falsify is the gate failing. */
+        await page.addStyleTag({
+          content: ".thread__connector { stroke-dasharray: 14 8 !important; }",
+        });
+      }
+
+      for (const id of SECTIONS) {
+        if (only !== null && id !== only) continue;
+        measured += 1;
+        const section = page.locator(`#${id}`);
+        /* A MISSING section is a failure, not a skip. `waitUntil: "load"` does not wait for React,
+           so a dev recompile mid-run can leave `#id` matching nothing — and silently continuing
+           made that indistinguishable from a section that was never there. Measured: four whole
+           viewports produced no line at all and the gate still exited 0, reporting 28 cases where
+           it should have reported 84. A gate that can measure a third of its surface and call it
+           success is not a gate. */
+        if ((await section.count()) === 0) {
+          const label = `${id} ${viewport.name} ${state}`;
+          console.log(
+            `  MISSING ${label}: no element matches #${id} — not rendered`,
+          );
+          /* Pushed in the same shape as the other failure path below -- a bare string printed as
+             `undefined` in the summary, which hid 12 real findings behind a word that looks like a
+             crash. */
+          failures.push({ label, found: 0 });
+          continue;
+        }
+        /* Three things that are not this section's thread and would read as a second piece of ink:
+           a NEIGHBOUR's thread, which legitimately runs past a section boundary and lands inside
+           this section's box (a placement question, not a join); the Next dev-tools badge, which
+           turns into a red pill the moment the dev server has anything to say; and the tuning
+           panel's own chrome, which is `position: fixed` over the whole route.
+
+           The panel is untracked scratch, so this hides it by a marker it opts into rather than by
+           naming a file that may not exist — with no panel present the selector simply matches
+           nothing. Without it the gate reports every section broken into the SAME 212 pieces at
+           the SAME coordinates, which is the tell: a sweep whose answer is "everything is broken"
+           is a bug in the sweep. */
+        await page.evaluate((id) => {
+          for (const thread of document.querySelectorAll(".thread")) {
+            thread.style.visibility =
+              thread.closest("section")?.id === id ? "" : "hidden";
+          }
+          for (const portal of document.querySelectorAll("nextjs-portal")) {
+            portal.style.display = "none";
+          }
+          /* The panel's chrome is hidden by an injected STYLESHEET, not an inline style: the
+             overlay is React-managed and re-renders when the section below is scrolled into view,
+             which replaces the nodes and takes any inline `display` with them. A rule in the
+             document outlives that. Measured: with the inline form the gate still reported 12
+             broken invite renders; the same frames collapse to one run of ink under the rule. */
+          const HIDE_ID = "thread-joins-hide-lab-chrome";
+          if (document.getElementById(HIDE_ID) === null) {
+            const style = document.createElement("style");
+            style.id = HIDE_ID;
+            style.textContent = "[data-lab-chrome]{display:none !important}";
+            document.head.append(style);
+          }
+        }, id);
+        await section.evaluate((node, at) => {
+          node.scrollIntoView();
+          /* `scrub` parks the section's own top at the window's top, which sits inside the hold
+             band — the thread fully drawn and the animation live rather than removed. */
+          if (at === "scrub") window.scrollBy(0, 1);
+        }, state);
+        await page.waitForTimeout(SETTLE);
+
+        const shot = await section.screenshot();
+        const { data, info } = await sharp(shot)
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        const found = components(data, info.width, info.height, info.channels);
+        const label = `${id} ${viewport.name} ${state}`;
+        const crossing = CROSSINGS.get(`${id} ${viewport.name}`);
+        if (found.length === 1) {
+          if (crossing !== undefined) mended.add(`${id} ${viewport.name}`);
+          console.log(`  ok    ${label}: one run of ink (${found[0].size}px)`);
+        } else if (crossing !== undefined) {
+          crossed.add(`${id} ${viewport.name}`);
+          console.log(`  known ${label}: ${found.length} pieces — ${crossing}`);
+        } else {
+          failures.push({ label, found });
+          console.log(
+            `  BREAK ${label}: ${found.length} pieces — ` +
+              found
+                .slice(0, 6)
+                .map((piece) => `${piece.size}px@[${piece.box}]`)
+                .join(" "),
+          );
+        }
+      }
+      await page.close();
+    }
+  }
+} finally {
+  await browser.close();
+}
+
+if (falsify) {
+  const seen = failures.length;
+  console.log(
+    seen > 0
+      ? `\nfalsify: the gate reported ${seen} broken renders against a deliberately cut thread — it can see a break.`
+      : "\nfalsify: the gate saw nothing wrong with a deliberately cut thread. IT IS NOT A GATE.",
+  );
+  process.exit(seen > 0 ? 0 : 1);
+}
+
+console.log(
+  failures.length === 0
+    ? `\nevery section renders as one connected run of ink${
+        crossed.size === 0
+          ? ""
+          : `, apart from ${crossed.size} recorded crossing(s)`
+      }.`
+    : `\n${failures.length} render(s) show a thread in pieces:\n${failures.map((f) => `  ${f.label}`).join("\n")}`,
+);
+/* The expected case count is asserted outright, so a whole viewport dropping out can never read as
+   a pass: every section, at every viewport, in every state. */
+const expected = SECTIONS.length * VIEWPORTS.length * STATES.length;
+if (only === null && onlyViewport === null && measured !== expected) {
+  console.log(
+    `\nMEASURED ${measured} of ${expected} expected cases — the gate did not cover its surface.`,
+  );
+  process.exit(1);
+}
+
+/* A recorded crossing that no longer breaks is a stale exemption, and a stale exemption is a hole
+   in the gate. Tuning one away deletes its entry; it does not leave it here. */
+if (only === null && onlyViewport === null && !falsify) {
+  const stale = [...CROSSINGS.keys()].filter(
+    (key) => mended.has(key) && !crossed.has(key),
+  );
+  if (stale.length > 0) {
+    console.log(
+      `\nRECORDED CROSSINGS THAT NO LONGER BREAK — remove them from CROSSINGS:\n${stale
+        .map((key) => `  ${key}`)
+        .join("\n")}`,
+    );
+    process.exit(1);
+  }
+}
+process.exit(failures.length === 0 ? 0 : 1);

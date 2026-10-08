@@ -8,15 +8,36 @@ body {
   color: var(--color-ink);
 }
 
-/* Set on `html` so it inherits everywhere. iOS Safari needs the prefixed property, and the
-   long-press menu needs the callout suppression as well. */
+/* NOTHING ON THE SITE IS SELECTABLE. Set on `html` so it inherits everywhere without any element
+   opting in, and so a component added later cannot become selectable by omission. iOS Safari needs
+   the prefixed property, and the long-press menu needs the callout suppression as well.
+
+   A round on 2026-10-03 briefly scoped this to chrome and let content select; the owner restated the
+   rule and it was reverted. Do not re-scope it without them saying so. */
 html {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
 
-/* A component on a contrast ground rebinds `--focus-ring-color` on its subtree rather than adding a
+/* The Call action is the ONE exemption, and it is to the long-press callout alone -- never to
+   selection (owner, 2026-10-03: "only for phone buttons"). Contact prints no number, so the
+   platform's own `tel:` sheet is the only way a guest can copy it. That sheet comes from the LINK
+   rather than from a text selection, so it works while nothing on the page is selectable.
+
+   WhatsApp is deliberately NOT exempt: its href is a `wa.me` web URL, so its sheet would offer
+   "Copy Link" and put the number inside a copied URL. It needs no rule of its own -- the `html`
+   suppression above already covers it.
+
+   The descendant `*` is not defensive breadth. `-webkit-touch-callout` inherits, so the anchor alone
+   would be enough today; naming the descendants keeps the exemption true if any rule ever sets the
+   property on an inner element, which is how the label and the 44px disc came to disagree once. */
+a[href^="tel:"],
+a[href^="tel:"] * {
+  -webkit-touch-callout: default;
+}
+
+/* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
    second ring rule. */
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

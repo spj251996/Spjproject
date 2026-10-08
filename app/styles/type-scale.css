@@ -19,10 +19,19 @@
       align-items: center;
       line-height: 0.9;
     }
+  }
 
-    .type-display-name__joiner {
-      font-size: 0.5em;
-    }
+  /* The joiner is half the name it sits between, at every size and in both orientations: the
+     invite's one-line landscape form and its three-line portrait form are the same couple.
+
+     `line-height: 1` because the joiner inherits its parent's line-height as a LENGTH, so a
+     half-size inline box carries half-leading it does not need and grows the line box — measured,
+     Wishes' line went 56px to 61px from making the "&" smaller. The invite does not show it only
+     because its portrait form is a flex column, where each span owns its own line. */
+  .type-display-name__joiner,
+  .type-heading-script__joiner {
+    font-size: 0.5em;
+    line-height: 1;
   }
 
   .type-heading-script {
@@ -77,6 +86,15 @@
     line-height: var(--text-caption--line-height);
   }
 
+  /* The caption role in italic, on the same terms as `type-body-italic`. */
+  .type-caption-italic {
+    font-family: var(--font-sans);
+    font-size: var(--text-caption);
+    font-weight: var(--text-caption--font-weight);
+    font-style: italic;
+    line-height: var(--text-caption--line-height);
+  }
+
   /* Paired with `type-caption` on the raised ordinal, whose leading would otherwise push the date
      line past its own line height. Wins only by source order, so it stays below `.type-caption`. */
   .type-date-ordinal {
@@ -93,12 +111,16 @@
     color: var(--color-accent-gold);
   }
 
+  /* Sentence-case italic, not the small-caps this role carried before (owner, 2026-09-28): an
+     action now reads in the card's own written voice beside a marked disc, rather than as chrome.
+     The tracking goes with the uppercase it was tuned for — italic lowercase needs none, and the
+     size is `type-body-italic`'s, so an action reads at the weight of the card's own prose. */
   .type-action {
     font-family: var(--font-sans);
     font-size: var(--text-action);
     font-weight: var(--text-action--font-weight);
-    letter-spacing: var(--text-action--letter-spacing);
+    font-style: italic;
+    letter-spacing: normal;
     line-height: var(--text-action--line-height);
-    text-transform: uppercase;
   }
 }
