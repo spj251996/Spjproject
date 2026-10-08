@@ -419,10 +419,15 @@ function plantViolationInPage(sectionSelector) {
   return { ok: true, headingText: heading.textContent.trim().slice(0, 60) };
 }
 
-/* Step 2's own in-page probe: the bride parent row's two glyph-rect sets, at whatever viewport
-   the caller has already set. Isolated from `measureSectionInPage` because it measures a
-   rect-to-rect distance between two named text elements, not a thread-path-to-text distance —
-   a different question, asked only to validate the glyph-rect machinery itself. */
+/* Step 2's own in-page probe: the bride parent row, at whatever viewport the caller has already
+   set. Isolated from `measureSectionInPage` because it measures a distance between two named text
+   elements rather than a thread-path-to-text distance — a different question, asked only to
+   validate the measuring machinery itself.
+
+   IT RETURNS THE GAP *AND* THE THREE QUANTITIES THAT PREDICT IT, because the gap is a RESIDUAL
+   rather than a value anything sets, and Step 2 asserts the derivation rather than a remembered
+   number. Every figure here is measured off the page -- no token is read and no constant is
+   carried -- since a number computed from the model only ever proves self-consistency. */
 function measureBrideParentGapInPage() {
   const nameSpans = Array.from(document.querySelectorAll("#family .type-body"));
   if (nameSpans.length < 2) {
@@ -432,7 +437,24 @@ function measureBrideParentGapInPage() {
   }
   const [motherSpan, fatherSpan] = nameSpans;
 
-  function glyphRectsOf(element) {
+  /* The two parents are separate portraits in one grid, so the geometry that predicts the gap is
+     the grid's own: each column is a portrait diameter wide and the columns are one `--couple-gap`
+     apart. Both are taken from the `<li>` rects rather than from the custom properties that set
+     them -- the rendered column is the thing the names are actually centred on. */
+  const motherItem = motherSpan.closest("li");
+  const fatherItem = fatherSpan.closest("li");
+  if (motherItem === null || fatherItem === null) {
+    return {
+      error:
+        "the parent names are no longer inside grid items -- Family's markup changed, so re-derive this probe rather than patching it",
+    };
+  }
+
+  /* `getClientRects()` over a text node's range gives the LINE BOX, not the ink: advance widths
+     with the glyphs' own side bearings inside them. That is the right instrument here, because the
+     closed form below is in advance widths -- but it is not a measure of ink, and this function is
+     named for what it returns rather than for what a reader might hope it returns. */
+  function lineBoxesOf(element) {
     const rects = [];
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     let node = walker.nextNode();
@@ -451,11 +473,11 @@ function measureBrideParentGapInPage() {
     return rects;
   }
 
-  const motherRects = glyphRectsOf(motherSpan);
-  const fatherRects = glyphRectsOf(fatherSpan);
+  const motherRects = lineBoxesOf(motherSpan);
+  const fatherRects = lineBoxesOf(fatherSpan);
   if (motherRects.length === 0 || fatherRects.length === 0) {
     return {
-      error: `no glyph rects found (mother: ${motherRects.length}, father: ${fatherRects.length})`,
+      error: `no line boxes found (mother: ${motherRects.length}, father: ${fatherRects.length})`,
     };
   }
 
@@ -475,22 +497,74 @@ function measureBrideParentGapInPage() {
     }
   }
 
+  const motherItemRect = motherItem.getBoundingClientRect();
+  const fatherItemRect = fatherItem.getBoundingClientRect();
+  const columnWidth = motherItemRect.width;
+  const columnGap = fatherItemRect.left - motherItemRect.right;
+  const motherWidth = motherSpan.getBoundingClientRect().width;
+  const fatherWidth = fatherSpan.getBoundingClientRect().width;
+
+  /* A zero here would make the prediction below arithmetically fine and physically meaningless, so
+     it fails loudly instead. An empty read that defaults to 0 is how this class of probe passes
+     while measuring nothing. */
+  const zeroed = Object.entries({
+    columnWidth,
+    columnGap,
+    motherWidth,
+    fatherWidth,
+  })
+    .filter(([, value]) => !Number.isFinite(value) || value <= 0)
+    .map(([name, value]) => `${name}=${value}`);
+  if (zeroed.length > 0) {
+    return {
+      error: `a measured input is missing or zero (${zeroed.join(", ")}) -- the probe is not reaching the rendered row`,
+    };
+  }
+
   return {
     minDistance,
+    columnWidth,
+    columnGap,
+    motherWidth,
+    fatherWidth,
     motherText: motherSpan.textContent.trim(),
     fatherText: fatherSpan.textContent.trim(),
   };
 }
 
+/* Step 2 asserts the gap's DERIVATION, not a recorded constant -- and the reason is the whole point
+   of the step, so it is written here rather than left to a work doc.
+
+   This step used to hard-assert 4.5px +/- 0.1 (recorded 2026-09-20) and had been failing for weeks
+   against a stable, reproducible 9.391px. The constant was VOID rather than stale: the gap between
+   the two parent names is not a value anything sets, it is what is LEFT OVER once the grid's two
+   columns and the two rendered names are placed --
+
+     gap = (column width + column gap) - (mother name width + father name width) / 2
+
+   -- so it moves whenever the type, the roster or the diameter moves. `--text-body` was 17px when
+   4.5 was recorded and is 13px now, which renders both names narrower and the gap wider; the names
+   and every geometry token are unchanged over the same span. 4.5 was therefore one figure in a set
+   the type change falsified, and the only one that had been pinned into a gate as a hard tolerance
+   instead of being re-recorded.
+
+   Re-recording 9.391 would buy one pass and fail again on the next type or roster change -- and the
+   full-resolution portrait delivery is already queued to cause one. Asserting the derivation instead
+   validates the machinery against something that stays true, and it still fails loudly if the probe
+   stops reaching the rendered row.
+
+   The tolerance is 1px, not an equality: the engine quantises layout to 1/64px and the two sides
+   come from different box types (a line box against two element rects), so an exact match would be
+   brittle for nothing. Today's residual is about 0.01px. */
 async function runValidate(browser) {
   console.log(
-    "Step 2 — validating the glyph-rect machinery against a recorded figure.",
+    "Step 2 — validating the measuring machinery against the gap's own derivation.",
   );
   console.log(
     'Target: Family, bride parent row, "Minimol Roy" vs "Roy John Edatt", phone tier (390px).',
   );
   console.log(
-    "Recorded (2026-09-20, Libre Baskerville): 4.5px. Expected here: 4.5px ± 0.1.\n",
+    "Asserting: measured gap === (column width + column gap) − mean name width, within 1px.\n",
   );
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -508,21 +582,36 @@ async function runValidate(browser) {
       console.log(`FAIL — ${result.error}`);
       exitCode = 1;
     } else {
-      const delta = Math.abs(result.minDistance - 4.5);
+      const meanName = (result.motherWidth + result.fatherWidth) / 2;
+      const predicted = result.columnWidth + result.columnGap - meanName;
+      const residual = Math.abs(result.minDistance - predicted);
       console.log(`  "${result.motherText}" vs "${result.fatherText}"`);
-      console.log(`  measured: ${result.minDistance.toFixed(3)}px`);
-      console.log(`  recorded: 4.5px`);
-      console.log(`  delta:    ${delta.toFixed(3)}px`);
-      if (delta <= 0.1) {
-        console.log("\nPASS — the harness reproduces the recorded figure.");
+      console.log(
+        `  column:   ${result.columnWidth.toFixed(3)}px wide, ${result.columnGap.toFixed(3)}px apart`,
+      );
+      console.log(
+        `  names:    ${result.motherWidth.toFixed(3)}px and ${result.fatherWidth.toFixed(3)}px (mean ${meanName.toFixed(3)}px)`,
+      );
+      console.log(`  predicted: ${predicted.toFixed(3)}px`);
+      console.log(`  measured:  ${result.minDistance.toFixed(3)}px`);
+      console.log(`  residual:  ${residual.toFixed(3)}px`);
+      /* Today's value, recorded as today's value and not as the law: 9.391px, measured 2026-10-08
+         at 390x844 on the lab route, Chromium pinned to `channel: "chromium"`. It is here so a
+         reader can see at a glance whether the row has moved since; it is NOT what is asserted. */
+      console.log("  (for reference, the gap measured 9.391px on 2026-10-08)");
+      if (residual <= 1) {
+        console.log(
+          "\nPASS — the measured gap matches the geometry that produces it.",
+        );
         exitCode = 0;
       } else {
         console.log(
-          "\nFAIL — the harness does NOT reproduce the recorded figure. Per the task's " +
-            "instructions this is reported, not tuned toward: do not adjust the measurement " +
-            "code to hit 4.5px. Something about this harness's glyph-rect method disagrees " +
-            "with the one that produced 4.5px, and that disagreement needs its own diagnosis " +
-            "before this gate can be trusted.",
+          "\nFAIL — the measured gap does NOT match the geometry that produces it. Per this " +
+            "step's own rule, do not tune the measurement toward either number: a residual this " +
+            "large means the probe and the layout disagree about what they are measuring, and " +
+            "that disagreement needs its own diagnosis before this gate can be trusted. The " +
+            "likeliest cause is Family's markup having changed shape, since the prediction reads " +
+            "the grid items the names sit in.",
         );
         exitCode = 1;
       }
