@@ -9,19 +9,19 @@ export const inviteFit: MeasuredFit = {
   regimes: {
     phone: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 561.171875 },
-        { minContentWidth: 135.3125, contentHeight: 539.171875 },
-        { minContentWidth: 198.34375, contentHeight: 517.171875 },
-        { minContentWidth: 260.90625, contentHeight: 495.171875 },
-        { minContentWidth: 492.921875, contentHeight: 473.171875 },
+        { minContentWidth: 120, contentHeight: 577.171875 },
+        { minContentWidth: 135.3125, contentHeight: 555.171875 },
+        { minContentWidth: 198.34375, contentHeight: 533.171875 },
+        { minContentWidth: 260.90625, contentHeight: 511.171875 },
+        { minContentWidth: 492.921875, contentHeight: 489.171875 },
       ],
       landscape: [
-        { minContentWidth: 120, contentHeight: 626.984375 },
-        { minContentWidth: 135.3125, contentHeight: 604.984375 },
-        { minContentWidth: 198.34375, contentHeight: 582.984375 },
-        { minContentWidth: 260.90625, contentHeight: 560.984375 },
-        { minContentWidth: 437.671875, contentHeight: 419.984375 },
-        { minContentWidth: 492.921875, contentHeight: 397.984375 },
+        { minContentWidth: 120, contentHeight: 642.984375 },
+        { minContentWidth: 135.3125, contentHeight: 620.984375 },
+        { minContentWidth: 198.34375, contentHeight: 598.984375 },
+        { minContentWidth: 260.90625, contentHeight: 576.984375 },
+        { minContentWidth: 437.671875, contentHeight: 435.984375 },
+        { minContentWidth: 492.921875, contentHeight: 413.984375 },
       ],
     },
     tablet: {
@@ -43,11 +43,11 @@ export const inviteFit: MeasuredFit = {
     },
     laptop: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 632.484375 },
-        { minContentWidth: 135.3125, contentHeight: 610.484375 },
-        { minContentWidth: 198.34375, contentHeight: 588.484375 },
-        { minContentWidth: 260.90625, contentHeight: 566.484375 },
-        { minContentWidth: 492.921875, contentHeight: 544.484375 },
+        { minContentWidth: 120, contentHeight: 648.484375 },
+        { minContentWidth: 135.3125, contentHeight: 626.484375 },
+        { minContentWidth: 198.34375, contentHeight: 604.484375 },
+        { minContentWidth: 260.90625, contentHeight: 582.484375 },
+        { minContentWidth: 492.921875, contentHeight: 560.484375 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 720.984375 },
@@ -60,12 +60,12 @@ export const inviteFit: MeasuredFit = {
     },
     desktop: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 778.5 },
-        { minContentWidth: 120.34375, contentHeight: 754.5 },
-        { minContentWidth: 157.875, contentHeight: 730.5 },
-        { minContentWidth: 231.390625, contentHeight: 706.5 },
-        { minContentWidth: 304.390625, contentHeight: 682.5 },
-        { minContentWidth: 575.0625, contentHeight: 658.5 },
+        { minContentWidth: 120, contentHeight: 794.5 },
+        { minContentWidth: 120.34375, contentHeight: 770.5 },
+        { minContentWidth: 157.875, contentHeight: 746.5 },
+        { minContentWidth: 231.390625, contentHeight: 722.5 },
+        { minContentWidth: 304.390625, contentHeight: 698.5 },
+        { minContentWidth: 575.0625, contentHeight: 674.5 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 887.71875 },

@@ -19,10 +19,10 @@ const SYMBOL =
 
 const INVITE_RUN =
   '<p class="type-eyebrow">We are getting married</p>' +
-  '<h1 class="type-display-name text-ink mt-space-lg"><span>Flemy</span>' +
-  '<span class="type-display-name__joiner"> &amp; </span><span>Sebastian</span></h1>' +
+  '<h1 class="type-display-name text-ink mt-space-lg"><span>Sebastian</span>' +
+  '<span class="type-display-name__joiner"> &amp; </span><span>Flemy</span></h1>' +
   '<p class="type-caption text-ink-muted mt-space-3xs" data-invite-line="true">invite you to celebrate our wedding</p>' +
-  '<p class="type-date-primary text-ink mt-space-lg">' +
+  '<p class="type-date-primary text-ink mt-space-lg md:mt-space-3xs [@media(width&gt;=64rem)_and_(orientation:portrait)]:mt-space-lg [@media(width&gt;=64rem)_and_(orientation:landscape)]:mt-space-sm">' +
   '<time dateTime="2027-01-09">9<span class="type-caption type-date-ordinal align-super">th</span> January 2027</time></p>' +
   '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Kerala</p>';
 

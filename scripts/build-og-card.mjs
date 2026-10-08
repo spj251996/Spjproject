@@ -111,8 +111,13 @@ export function extractFontVars(html) {
 }
 
 /* Anchored on the eyebrow's exact text and on `data-invite-place`, a data attribute the section
-   already carries — not on Tailwind class soup, which is what went stale last time. The four rows
+   already carries — not on Tailwind class soup, which is what went stale last time. The five rows
    are contiguous in the DOM, so one slice takes all of them and the card never re-assembles them.
+
+   CONTIGUITY IS THE WHOLE CONTRACT, and it is silent when broken: anything added to the invite's
+   header OUTSIDE this run is simply missing from the card, and no check here would see it. The
+   invitation's own line was added inside it in Phase 7; `app/invite-line.test.ts` is what asserts the
+   source order that keeps it there.
 
    It must fail LOUDLY: a silent fallback would ship a card missing a line. */
 export function extractInvite(html) {

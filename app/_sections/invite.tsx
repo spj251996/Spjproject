@@ -149,17 +149,21 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
               invite you to celebrate our wedding
             </p>
 
-            {/* THE TABLET STEP IS FORCED, NOT CHOSEN, and removing it un-frames the section.
-                This gap was `space-lg` (32) when the names sat directly above the date. The line
-                costs 24px of its own text at the tablet tier, so the two gaps around it have 8px
-                between them if the block is to stay the height it was — `space-3xs` either side,
-                landing on exactly 32 again.
+            {/* ONLY THE TABLET BAND CHANGED, AND IT IS FORCED. Every other window keeps the value it
+                had before this line existed: `space-lg` everywhere, stepping to `space-sm` from
+                `{breakpoints.lg}` in landscape alone.
 
-                It has to stay the height it was because the tablet band has no give: the invite's
-                landscape card already stood 717px against a 720px cap, and `mounted-sheet-frame`
-                refuses to frame a section with no tier line rather than overflowing it. Phone and
-                desktop keep `space-sm` — they have the room, and the date reads better with it. */}
-            <p className="type-date-primary text-ink mt-space-sm md:mt-space-3xs lg:mt-space-sm">
+                The tablet band has no give. The invite's landscape card already stood 717px against a
+                720px cap, and `mounted-sheet-frame` REFUSES to frame a section with no tier line
+                rather than overflowing it — adding the line above threw at build time. The line costs
+                24px of its own text there, and the gap it sits inside was 32px, so the two gaps
+                around it have 8px to share: `space-3xs` either side, landing on exactly 32 again.
+                Measured height-neutral, +0 at every tablet row.
+
+                The two `{breakpoints.lg}` rules are bounded by ORIENTATION rather than left open,
+                so neither can beat the other on string order — the hazard `ornamental-divider`'s own
+                note records. */}
+            <p className="type-date-primary text-ink mt-space-lg md:mt-space-3xs [@media(width>=64rem)_and_(orientation:portrait)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-sm">
               <PrimaryDate date={weddingDate} weekday={false} fullMonth />
             </p>
 

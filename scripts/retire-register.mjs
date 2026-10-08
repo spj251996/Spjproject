@@ -10,7 +10,17 @@
  *   "temporary" — still rendered somewhere on purpose; the deletion is a decision, not a confirmation.
  *
  * An entry is deleted from here in the SAME commit as its subject. `retire-register.test.mjs` fails
- * if one outlives the other. */
+ * if one outlives the other.
+ *
+ * THE GATE IS ONE-DIRECTIONAL AND A GREEN RUN DOES NOT MEAN THIS LIST IS COMPLETE. It can catch an
+ * entry whose subject is gone; it cannot catch a subject that was never added — which is the half
+ * that actually bites, since Phase 9 reads this list once and acts on it. Adding a file here is a
+ * human step, and no check will notice if you skip it.
+ *
+ * Every entry today is `temporary`, so the `unused` arm has never fired on a real one. Half 2 adds
+ * the first: `type-display-name`, `type-heading-script` and `splitCoupleNames` lose their consumers
+ * when the names asset lands. They are SYMBOLS, not paths, and `{ path }` plus `existsSync` cannot
+ * express them — that entry shape has to be designed then, not improvised. */
 export const RETIRE_REGISTER = Object.freeze([
   {
     path: "public/rituals",
@@ -36,5 +46,10 @@ export const RETIRE_REGISTER = Object.freeze([
     path: "content/contacts.ts",
     kind: "temporary",
     why: "Both contacts' names and numbers, still rendered on the lab routes. Goes with the section in Phase 9.",
+  },
+  {
+    path: "components/ui/contact-actions.test.ts",
+    kind: "temporary",
+    why: "Contact's own gate — the Call/WhatsApp actions and the long-press callout exemption. It outlives the section only as long as the section does, so it goes in the same Phase 9 sweep.",
   },
 ]);

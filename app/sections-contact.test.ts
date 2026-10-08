@@ -26,8 +26,11 @@ test("the published page turns it off", () => {
   assert.match(home, /<Sections[^>]*contact=\{false\}/);
 });
 
-test("the lab route does not, so the thread keeps its six sections", () => {
-  assert.doesNotMatch(lab, /contact=/);
+/* The claim is that the lab route does not turn Contact OFF — not that it stays silent about it.
+   `/contact=/` would also fail on an explicit `contact={true}`, which is a correct rewrite rather
+   than a regression, and Half 3 may well write one. */
+test("the lab route does not turn it off, so the thread keeps its six sections", () => {
+  assert.doesNotMatch(lab, /contact=\{false\}/);
 });
 
 test("THREAD_IDS still contains contact, which is why the lab keeps it", () => {
