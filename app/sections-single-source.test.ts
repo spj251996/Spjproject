@@ -51,9 +51,17 @@ test("the published route neither imports the thread nor sets the flag", () => {
 
 test("the lab route sets the thread", () => {
   const source = readFileSync("app/thread/[variant]/page.tsx", "utf8");
+  /* The CLAIM — `thread` is among the props the lab route hands `Sections` — rather than the spelling
+     `<Sections thread`, which also required it to be the FIRST prop. It was, until the route gained a
+     `paint` prop that sorts before it, and this gate then failed correct code: the third time on this
+     branch that an assertion on a source spelling has failed the correct rewrite rather than the
+     mutation it was written for. The element's prop list is bounded by its own `>`. */
+  const at = source.indexOf("<Sections");
+  assert.ok(at !== -1, "the lab route does not compose Sections at all");
+  const props = source.slice(at + "<Sections".length, source.indexOf(">", at));
   assert.match(
-    source,
-    /<Sections\s+thread/,
-    "the lab route does not set the thread on Sections",
+    props,
+    /\bthread\b/,
+    `the lab route does not set the thread on Sections: <Sections${props}>`,
   );
 });
