@@ -607,12 +607,19 @@ export function mountedSheetFrameCss(
   ].join("\n");
 }
 
-/* Tall mode has no per-section threshold to scope, so every tall section shares one of two
-   stylesheets — but `hero` is per-section, and two tall cards with different `hero` would otherwise
-   collide on one class at identical specificity, with the later one in document order winning for
-   both. Keying the scope class on `hero` keeps the two apart. */
-export function tallScopeClass(hero: boolean): string {
-  return `mounted-sheet-frame--tall-${hero ? "hero" : "section"}`;
+/* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets — but
+   `hero` and `paint` are both PER-SECTION, and two tall cards differing in either would otherwise
+   collide on one class at identical specificity, with the later one in document order winning for both.
+   Keying the scope class on both keeps them apart.
+   `paint` joined the key when the stock paint landed: `tallFrameCss` emits a different fill-strip per
+   paint, so without it a page holding two tall cards at different paints would hand both whichever
+   `<style>` came last. One tall section ships today and the routes are separate documents, so this is a
+   hazard closed before it is reachable rather than a defect fixed. */
+export function tallScopeClass(
+  hero: boolean,
+  paint: FramePaint = "mount",
+): string {
+  return `mounted-sheet-frame--tall-${hero ? "hero" : "section"}-${paint}`;
 }
 
 /* A section that scrolls rather than fitting one window. No height query, no container query and no
@@ -623,7 +630,7 @@ export function tallFrameCss(
   hero: boolean,
   paint: FramePaint = "mount",
 ): string {
-  const scope = `.${tallScopeClass(hero)}`;
+  const scope = `.${tallScopeClass(hero, paint)}`;
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;

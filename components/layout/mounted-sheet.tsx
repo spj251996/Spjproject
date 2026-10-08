@@ -153,7 +153,7 @@ export function MountedSheet({
     return (
       <>
         <style>{tallFrameCss(hero, paint)}</style>
-        <div className={tallScopeClass(hero)}>
+        <div className={tallScopeClass(hero, paint)}>
           <div className={FRAME_CLASS.box}>
             <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[paint]}`}>
               <div

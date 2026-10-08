@@ -158,4 +158,12 @@ test("the gallery shows the lab's stock paint and says where it lives", () => {
     !specimen.includes("the two specimens below"),
     'the note still says "the two specimens below" while three are rendered',
   );
+  /* And the note must not claim `mount` is what EVERY framed section on `/` takes: the invite is a
+     framed section on `/` and takes `none`, so that clause is false and the sentence contradicts its
+     own next clause. Sixth gallery-prose drift on this branch, and the count assertion above does not
+     reach it. */
+  assert.ok(
+    !/every framed section on \/ takes/.test(specimen),
+    "the note claims mount is what every framed section on / takes -- the invite is one and takes none",
+  );
 });

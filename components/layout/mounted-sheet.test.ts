@@ -9,6 +9,20 @@ const source = readFileSync(
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
 
+/* `mounted-pair.tsx` grew its own paint records when the pair learned the enum, and nothing read them:
+   every record test below pointed at `mounted-sheet.tsx` alone, so the pair's arm count, its geometry
+   leakage and its empty-`none` rule were ungated. The records are the same shape in both files, so the
+   parsers take both sources. */
+const pairSource = readFileSync(
+  "components/layout/mounted-pair.tsx",
+  "utf8",
+).replace(/\/\*[\s\S]*?\*\//g, "");
+
+const PAINT_SOURCES = [
+  ["mounted-sheet.tsx", source],
+  ["mounted-pair.tsx", pairSource],
+] as const;
+
 /* The hero card has a painted and an unpainted option (owner, 2026-10-05 -- DESIGN.md ->
    Foundations -> Layout -> mounted-sheet -> The hero card's two options), and the paint lives in
    THIS file's utility strings rather than in the generated frame stylesheet: `mountRules` only ever
@@ -181,13 +195,23 @@ function paintRecords(src: string): Record<string, Record<string, string>> {
 }
 
 test("every paint record carries exactly the three paints, as literals", () => {
-  const records = paintRecords(source);
+  for (const [file, src] of PAINT_SOURCES) {
+    const found = Object.keys(paintRecords(src));
+    assert.ok(
+      found.length >= 3,
+      `${file} exposes ${found.length} paint records, which is too few to be the whole set: ${found}`,
+    );
+  }
+  const records = { ...paintRecords(source), ...paintRecords(pairSource) };
   const names = Object.keys(records);
   /* Four: the fitted mount, the fitted sheet, and the unfitted branch's hero and section. A count
      that drifted down would mean a record stopped being parseable, not that one stopped existing. */
+  /* Seven: the sheet's fitted mount and sheet, its unfitted hero and section, and the pair's mount,
+     leaf and sheet. A count that drifted DOWN would mean a record stopped being parseable rather than
+     stopped existing. */
   assert.ok(
-    names.length >= 4,
-    `expected at least four paint records, found ${names.length}: ${names}`,
+    names.length >= 7,
+    `expected at least seven paint records across both frame components, found ${names.length}: ${names}`,
   );
   for (const [name, record] of Object.entries(records)) {
     assert.deepStrictEqual(
@@ -199,7 +223,7 @@ test("every paint record carries exactly the three paints, as literals", () => {
 });
 
 test("every paint arm carries paint utilities only", () => {
-  const records = paintRecords(source);
+  const records = { ...paintRecords(source), ...paintRecords(pairSource) };
   assert.ok(
     Object.keys(records).length > 0,
     "no paint records found -- re-anchor this test",

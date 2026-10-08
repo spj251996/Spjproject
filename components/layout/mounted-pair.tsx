@@ -61,10 +61,32 @@ const PAIR_SHEET_PAINT: Record<FramePaint, string> = {
 
 /* The reveal ladder's rungs from `{breakpoints.md}` up, with the gap twice each one so both sheets
    sit centred on their own leaf. Below `{breakpoints.md}` the pair stacks and has no mount, so the
-   base gap is two cards' spacing rather than a rung of the ladder. */
-const MOUNT = `relative flex flex-col gap-space-md ${CARD_CORNERS} md:flex-row md:gap-space-md lg:gap-space-lg xl:gap-space-xl md:bg-surface-mount md:p-space-xs lg:p-space-sm xl:p-space-md md:shadow-mount`;
+   base gap is two cards' spacing rather than a rung of the ladder.
 
-const SHEET = `relative flex-1 ${CARD_CORNERS} bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-stock lg:p-space-3xl`;
+   GEOMETRY ONLY, with the paint in its own records below. They were one string until the review found
+   that the unfitted branch took a `paint` argument and ignored it: `<MountedPair paint="stock">` with no
+   fit rendered a fully mount-painted pair, with `tsc` clean and every gate green, because the generator
+   -call scan that guards the fitted branch has no call to find here. Third instance in this codebase of
+   one constant answering two questions and so being ungatable for one of them. */
+const UNFITTED_MOUNT = `relative flex flex-col gap-space-md md:flex-row md:gap-space-md lg:gap-space-lg xl:gap-space-xl md:p-space-xs lg:p-space-sm xl:p-space-md`;
+
+const UNFITTED_SHEET = `relative flex-1 p-space-lg md:p-space-2xl lg:p-space-3xl`;
+
+/* The unfitted branch's paint, per state. The mount arm keeps the `md:` prefixes the ladder had: below
+   `{breakpoints.md}` a stacked specimen shows no mount, so its fill and cast appear from that breakpoint
+   up, exactly as before. Under `"stock"` the SHEET is the painted surface at every width — the specimen
+   has no leaf to promote — so the mount paints nothing and the sheet carries the composed cast. */
+const UNFITTED_MOUNT_PAINT: Record<FramePaint, string> = {
+  mount: `${CARD_CORNERS} md:bg-surface-mount md:shadow-mount`,
+  stock: "",
+  none: "",
+};
+
+const UNFITTED_SHEET_PAINT: Record<FramePaint, string> = {
+  mount: `${CARD_CORNERS} bg-surface-elevated shadow-mount md:shadow-stock`,
+  stock: `${CARD_CORNERS} bg-surface-elevated shadow-mounted-stock`,
+  none: "",
+};
 
 export function MountedPair({
   children,
@@ -110,11 +132,16 @@ export function MountedPair({
     );
   }
 
+  const unfittedMount = `${UNFITTED_MOUNT} ${UNFITTED_MOUNT_PAINT[paint]}`;
+  const unfittedSheet = `${UNFITTED_SHEET} ${UNFITTED_SHEET_PAINT[paint]}`;
   return (
-    <div className={MOUNT}>
-      <div aria-hidden className={`hidden md:block ${CREASE_GEOMETRY}`} />
-      <div className={SHEET}>{first}</div>
-      <div className={SHEET}>{second}</div>
+    <div className={unfittedMount}>
+      {/* The crease is a fold in the mat, so it goes with the mat the stock paint does not show. */}
+      {paint === "stock" ? null : (
+        <div aria-hidden className={`hidden md:block ${CREASE_GEOMETRY}`} />
+      )}
+      <div className={unfittedSheet}>{first}</div>
+      <div className={unfittedSheet}>{second}</div>
     </div>
   );
 }

@@ -38,16 +38,6 @@ const EXPECTED = [
     label: "/thread/current (lab)",
     stockPaint: false,
   },
-  /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
-   * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
-   * is nothing thread-shaped left to assert -- what is left is that the route exists and carries none.
-   *
-   * BOTH files are checked because the export emits both and both ship: `404.html` is what a static host
-   * serves for an unknown path, `_not-found.html` is the route-named emission. They are byte-identical
-   * today, so asserting one would leave the other unguarded for free.
-   *
-   * Asserted against the built file, never a served URL: an SPA-fallback rewrite returns the index
-   * document for any unknown path, which has already made a check of `/404` measure the HOME page. */
   {
     sections: true,
     path: "out/thread/mount.html",
@@ -62,6 +52,16 @@ const EXPECTED = [
     label: "/thread/stock (lab)",
     stockPaint: true,
   },
+  /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
+   * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
+   * is nothing thread-shaped left to assert -- what is left is that the route exists and carries none.
+   *
+   * BOTH files are checked because the export emits both and both ship: `404.html` is what a static host
+   * serves for an unknown path, `_not-found.html` is the route-named emission. They are byte-identical
+   * today, so asserting one would leave the other unguarded for free.
+   *
+   * Asserted against the built file, never a served URL: an SPA-fallback rewrite returns the index
+   * document for any unknown path, which has already made a check of `/404` measure the HOME page. */
   { path: "out/404.html", roots: 0, label: "/404 (not found, served)" },
   { path: "out/_not-found.html", roots: 0, label: "/_not-found (route-named)" },
 ];
@@ -181,6 +181,36 @@ for (const path of FORBIDDEN) {
     failed = true;
   }
 }
+/* `/thread/mount` DIFFERS FROM `/thread/current` IN ONE THING ONLY: it overrides the hero's `"none"`,
+ * so it paints one more mount than `/` does. Nothing gated that — set its variant's paint to `undefined`
+ * and the route becomes byte-equivalent to `current` with the suite, `tsc` and every row above still
+ * green, because `stockPaint: false` is satisfied by an unpainted hero just as well as by a painted one.
+ * The owner's whole reason for that route is a uniform comparison, so a silently-unpainted hero would
+ * invalidate the look it exists for.
+ *
+ * Asserted as a STRICT INEQUALITY against `current` rather than as a count, because the absolute number
+ * moves whenever a card's paint utilities change and a pinned figure would then fail correct work. */
+const MOUNT_FILL = "bg-surface-mount";
+const paintedMounts = (path) =>
+  existsSync(path)
+    ? (readFileSync(path, "utf8").match(new RegExp(MOUNT_FILL, "g")) ?? [])
+        .length
+    : null;
+const currentMounts = paintedMounts("out/thread/current.html");
+const mountMounts = paintedMounts("out/thread/mount.html");
+if (currentMounts === null || mountMounts === null) {
+  console.error(
+    "FAIL: cannot compare the lab's paint routes -- one of them is missing",
+  );
+  failed = true;
+} else {
+  const ok = mountMounts > currentMounts;
+  console.log(
+    `${ok ? "ok  " : "FAIL"} /thread/mount paints more mounts than /thread/current: ${mountMounts} against ${currentMounts}`,
+  );
+  if (!ok) failed = true;
+}
+
 if (existsSync("out/thread")) {
   /* The variant names are read off the emitted HTML documents alone -- the same directory also holds
    * each route's RSC payload directory and `.txt` files, which are not routes. */

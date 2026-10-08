@@ -12,6 +12,7 @@ import {
   plateSelectors,
   SPACING_TOKEN,
   tallFrameCss,
+  tallScopeClass,
 } from "./mounted-sheet-frame-css.ts";
 
 /* The inverse of the generator's own scale, built FROM it rather than written out, so a scale edit
@@ -73,9 +74,14 @@ test("a tall section accepts the stock paint", () => {
     !stock.includes("background-color: transparent"),
     "a tall stock mount is stripped, so the tall card paints nothing in that window",
   );
+  /* The scope class now carries the paint, deliberately — two tall cards at different paints must not
+     collide on one class — so it is normalised away before the geometry is compared. Normalising the
+     SCOPE is safe; normalising a declaration would not be. */
+  const sameScope = (css: string) =>
+    css.replaceAll(/mounted-sheet-frame--tall-(hero|section)-\w+/g, "SCOPE");
   assert.strictEqual(
-    geometryOnly(stock),
-    geometryOnly(tallFrameCss(false, "mount")),
+    sameScope(geometryOnly(stock)),
+    sameScope(geometryOnly(tallFrameCss(false, "mount"))),
     "the tall stock paint moved a geometry declaration",
   );
 });
@@ -358,5 +364,82 @@ test("every frame stylesheet is generated with its caller's paint", () => {
   assert.ok(
     calls >= 3,
     `expected at least three generator calls, found ${calls}`,
+  );
+});
+
+/* I2 — THE UNFITTED PAIR ACCEPTED `paint` AND IGNORED IT. `MOUNT` and `SHEET` hard-coded the mount's
+   paint mixed into one string with geometry, and the argument never reached them, so
+   `<MountedPair paint="stock">` with no fit rendered a fully mount-painted pair with every gate green.
+   Live effect was nil — the one unfitted caller passes no paint — but it is the exact sibling of the
+   defect found in the fitted branch, in the one place the generator-call scan structurally cannot see
+   it, because the unfitted branch makes no generator call. It is also a third instance of this
+   project's "one constant answering two questions cannot be gated for one of them". */
+test("the unfitted pair's geometry strings carry no paint", () => {
+  const pair = readFileSync(
+    "components/layout/mounted-pair.tsx",
+    "utf8",
+  ).replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const name of ["UNFITTED_MOUNT", "UNFITTED_SHEET"]) {
+    const match = pair.match(new RegExp(`const ${name} =\\s*\`([^\`]*)\``));
+    assert.ok(match, `no \`${name}\` declaration found -- re-anchor this test`);
+    assert.doesNotMatch(
+      match[1],
+      /bg-surface-|shadow-mount|shadow-stock|shadow-mounted-stock|rounded-card/,
+      `${name} names paint inline, so the paint prop cannot gate it: ${match[1]}`,
+    );
+  }
+  /* And each unfitted record must be indexed by the VARIABLE. Named one by one, because a looser
+     pattern is satisfied by the FITTED branch's records sitting in the same file — which is exactly how
+     the first version of this assertion passed while the unfitted branch hard-coded `.mount`. An
+     assertion matched by an adjacent thing is not an assertion about its subject. */
+  for (const record of ["UNFITTED_MOUNT_PAINT", "UNFITTED_SHEET_PAINT"]) {
+    assert.ok(
+      pair.includes(`${record}[paint]`),
+      `${record} is not indexed by \`paint\`, so the unfitted pair ignores its paint argument`,
+    );
+  }
+});
+
+/* I3 — `tallScopeClass` was keyed on `hero` alone. Its own comment explains why that key exists: two
+   tall cards differing in that value would collide on one class at identical specificity, the later one
+   in document order winning for both. `paint` is now a second per-section value feeding the same
+   stylesheet, so it belongs in the same key. Nil effect today (Celebrations is the only tall section)
+   and a real one the moment a second tall card exists at a different paint. */
+test("a tall section's scope class separates every value its stylesheet varies on", () => {
+  const seen = new Set<string>();
+  for (const hero of [true, false]) {
+    for (const paint of ["mount", "stock"] as const) {
+      const scope = tallScopeClass(hero, paint);
+      const css = tallFrameCss(hero, paint);
+      assert.ok(
+        css.includes(`.${scope}`),
+        `tallFrameCss(${hero}, "${paint}") does not scope its rules to ${scope}`,
+      );
+      assert.ok(
+        !seen.has(scope),
+        `tallScopeClass collides at (${hero}, "${paint}") on ${scope}: two tall cards differing only there would share one class, and the later <style> would decide for both`,
+      );
+      seen.add(scope);
+    }
+  }
+  assert.strictEqual(seen.size, 4, "expected four distinct tall scope classes");
+});
+
+/* M14 — nothing asserted that the invitation takes the unpainted option. Nothing asserted it of the old
+   `unbacked` prop either, so this gap is older than the enum; it is closed now because the restoration
+   recipe corrected in this same pass names an edit to exactly this line, and painting the published
+   hero would otherwise ship with every gate green. */
+test("the invitation's hero takes the unpainted option", () => {
+  const invite = readFileSync("app/_sections/invite.tsx", "utf8");
+  const at = invite.indexOf("<MountedSheet");
+  assert.ok(at !== -1, "the invite section no longer composes MountedSheet");
+  const props = invite.slice(
+    at,
+    invite.indexOf(">", invite.indexOf("fit=", at)),
+  );
+  assert.match(
+    props,
+    /paint=\{paint \?\? "none"\}/,
+    `the invite's hero no longer defaults to the unpainted option: ${props.replace(/\s+/g, " ")}`,
   );
 });
