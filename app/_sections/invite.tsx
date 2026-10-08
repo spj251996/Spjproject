@@ -133,7 +133,25 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
               )}
             </h1>
 
-            <p className="type-date-primary text-ink mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-sm">
+            {/* The invitation's own sentence, in the couple's first-person voice — the same voice as
+                the eyebrow above, and a literal here for the same reason: it names the occasion rather
+                than carrying any of the couple's data (owner, 2026-10-08).
+
+                `type-caption` is the invite's quiet role, shared with the passage at the card's foot.
+                PROVISIONAL: the role is confirmed in Half 2, when the rebuilt date block lands directly
+                beneath it and the two are judged on a render together. */}
+            <p
+              className="type-caption text-ink-muted mt-space-sm"
+              data-invite-line
+            >
+              invite you to celebrate our wedding
+            </p>
+
+            {/* `space-sm` rather than the `space-lg` that opened the names-to-date gap before this
+                line existed: the line now sits between two equal gaps instead of inheriting the old
+                opening. The landscape override that used to sit here is gone with it — it set
+                `space-sm`, which is now the base, so it had become a rule that changed nothing. */}
+            <p className="type-date-primary text-ink mt-space-sm">
               <PrimaryDate date={weddingDate} weekday={false} fullMonth />
             </p>
 
