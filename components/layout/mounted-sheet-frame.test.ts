@@ -28,6 +28,25 @@ import {
 /* `assertValidFit` is private; every throw is exercised through `windowClasses` or
    `mountedSheetFrameCss`, the way production code reaches it. */
 
+/* `plateSelectors` addresses the stock pair's two plates by ADJACENCY to the crease -- `.crease + .leaf`
+   and `.leaf + .leaf` -- because the crease is the mount's first child, so `:first-child` would match
+   the crease and `:nth-of-type` cannot tell three divs apart. Nothing else in the codebase depends on
+   that document order, so nothing else would catch it changing: the selectors would simply stop
+   matching, and a padding rule that matches nothing looks exactly like one that was never needed. */
+test("the pair renders its crease before both leaves", () => {
+  const source = readFileSync("components/layout/mounted-pair.tsx", "utf8");
+  const crease = source.indexOf("FRAME_CLASS.crease");
+  const firstLeaf = source.indexOf("className={leaf}");
+  assert.ok(
+    crease !== -1 && firstLeaf !== -1,
+    "re-anchor this test: mounted-pair.tsx no longer names its crease or its leaves this way",
+  );
+  assert.ok(
+    crease < firstLeaf,
+    "the crease must stay the mount's first child -- plateSelectors addresses the plates by adjacency to it",
+  );
+});
+
 const TINY: readonly FitRegime[] = [
   { minContentWidth: 120, contentHeight: 100 },
 ];

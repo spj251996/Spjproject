@@ -33,6 +33,32 @@ const CREASE_GEOMETRY =
    casting `shadow-mount` in that shape either way. */
 const CARD_CORNERS = "rounded-card";
 
+/* THE FITTED PAIR'S PAINT, per paint state. Which of these shows is decided by the generated
+   stylesheet, which strips whichever surface a layout does not reveal -- so both the mount and the leaf
+   carry a fill here and the stylesheet picks.
+
+   Under `"stock"` the LEAF is the plate: it takes the stock's fill, the corners and the composed cast,
+   and the mount is stripped side by side so the band between the plates shows the page's own ground
+   (DESIGN.md -> Foundations -> Layout -> `mounted-sheet` -> The card's three paints). `"none"` throws
+   above, so its arms are unreachable and exist only to complete the record. */
+const PAIR_MOUNT_PAINT: Record<FramePaint, string> = {
+  mount: `${CARD_CORNERS} bg-surface-mount shadow-mount`,
+  stock: `${CARD_CORNERS} bg-surface-mount shadow-mount`,
+  none: "",
+};
+
+const PAIR_LEAF_PAINT: Record<FramePaint, string> = {
+  mount: `${CARD_CORNERS} bg-surface-mount shadow-mount`,
+  stock: `${CARD_CORNERS} bg-surface-elevated shadow-mounted-stock`,
+  none: "",
+};
+
+const PAIR_SHEET_PAINT: Record<FramePaint, string> = {
+  mount: `${CARD_CORNERS} bg-surface-elevated shadow-stock`,
+  stock: "",
+  none: "",
+};
+
 /* The reveal ladder's rungs from `{breakpoints.md}` up, with the gap twice each one so both sheets
    sit centred on their own leaf. Below `{breakpoints.md}` the pair stacks and has no mount, so the
    base gap is two cards' spacing rather than a rung of the ladder. */
@@ -57,15 +83,15 @@ export function MountedPair({
   }
 
   if (fit !== undefined) {
-    const leaf = `${FRAME_CLASS.leaf} relative ${CARD_CORNERS} bg-surface-mount shadow-mount`;
-    const sheet = `${FRAME_CLASS.sheet} ${CARD_CORNERS} bg-surface-elevated shadow-stock`;
+    const leaf = `${FRAME_CLASS.leaf} relative ${PAIR_LEAF_PAINT[paint]}`;
+    const sheet = `${FRAME_CLASS.sheet} ${PAIR_SHEET_PAINT[paint]}`;
     return (
       <>
-        <style>{mountedSheetFrameCss(fit, false, "pair")}</style>
+        <style>{mountedSheetFrameCss(fit, false, "pair", paint)}</style>
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div
-              className={`${FRAME_CLASS.mount} relative ${CARD_CORNERS} bg-surface-mount shadow-mount`}
+              className={`${FRAME_CLASS.mount} relative ${PAIR_MOUNT_PAINT[paint]}`}
             >
               <div
                 aria-hidden

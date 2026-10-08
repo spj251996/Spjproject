@@ -312,6 +312,26 @@ function mountRules(
     .join("\n");
 }
 
+/* The two plates of a stock pair, addressed by ADJACENCY. The crease is the mount's first child
+   (`mounted-pair.tsx` renders crease, leaf, leaf), so `:first-child` would match the crease and
+   `:nth-of-type` cannot tell three divs apart. `display: none` on a hidden crease does not affect `+`,
+   so these hold under the stock paint too, where the crease is never revealed. A test in
+   mounted-sheet-frame.test.ts pins that document order, since this is the only thing depending on it.
+
+   Exported so a test addresses the plates with these selectors rather than re-deriving them, the way
+   `spacingTokenFor` is exported so a test exercises the real spacing lookup. */
+export function plateSelectors(scope: string): {
+  first: string;
+  second: string;
+} {
+  const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
+  const leaf = `.${FRAME_CLASS.leaf}`;
+  return {
+    first: `${mount} > .${FRAME_CLASS.crease} + ${leaf} > .${FRAME_CLASS.sheet}`,
+    second: `${mount} > ${leaf} + ${leaf} > .${FRAME_CLASS.sheet}`,
+  };
+}
+
 function sheetSelector(scope: string, layout: FrameLayout): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   return layout === "pair"
@@ -347,11 +367,17 @@ function pairLayoutRules(
       const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
       if (pairsSideBySide("pair", windowClass, landscape)) {
         const reveal = revealFor(windowClass, false, landscape);
+        /* The owner's stock form, 2026-10-08: the plates reach the card's outer edges, so the mount
+           pads nothing -- but the GAP is unchanged, because the space between the two stocks must stay
+           the same. The mount also stops PAINTING: the band between the plates shows the page's own
+           ground rather than the mat, which is what "the gutter disappears" means now that the gap
+           stays, and the crease goes with the mat it was a fold in. The plates carry the cast, so the
+           mount keeps none. `paddingRules` gives the reveal back on each plate's three outer sides. */
+        const stock = paint === "stock";
         return `${prelude} {
-${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
-${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)};${leafStrip} box-shadow: none; }
-${sheet} { justify-content: flex-start; }
-${crease} { display: block; }
+${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${stock ? spacing(0) : spacing(reveal)};${stock ? ` ${strip} box-shadow: none;` : ""} }
+${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)};${leafStrip}${stock ? "" : " box-shadow: none;"} }
+${sheet} { justify-content: flex-start; }${stock ? "" : `\n${crease} { display: block; }`}
 }`;
       }
       return `${prelude} {
@@ -384,9 +410,28 @@ function paddingRules(
   hero: boolean,
   layout: FrameLayout,
   scope: string,
+  paint: FramePaint,
 ): string {
   const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
+  const plates = plateSelectors(scope);
+
+  /* The stock pair's trade, as declarations rather than one: the gutter side keeps the plain step and
+     the three outer sides take the reveal with it, mirrored per plate. Order is top right bottom left.
+
+     `revealFor` returns 0 where the mount does not show and `--spacing-0` is `0px` rather than a bare
+     `0` (which CSS would reject inside `calc`), so `calc(step + 0px)` is valid and collapses to the
+     step. That is why this is ONE code path: a stacked stock pair takes it and comes out identical to
+     today. */
+  const plateRules = (padding: number, reveal: number): string[] => {
+    const step = spacing(padding);
+    const outer = `calc(${step} + ${spacing(reveal)})`;
+    return [
+      `${plates.first} { padding: ${outer} ${step} ${outer} ${outer}; }`,
+      `${plates.second} { padding: ${outer} ${outer} ${outer} ${step}; }`,
+    ];
+  };
+  const stockPair = layout === "pair" && paint === "stock";
 
   /* One block per chain, so its condition is stated once and each rectangle nests inside it. A
      landscape chain skips a rectangle taller than the height cap: the box's landscape height is
@@ -401,7 +446,11 @@ function paddingRules(
     sideBySide: boolean,
     reveal: number,
   ): string => {
-    const rules = [`${sheet} { padding: ${spacing(ascending[0])}; }`];
+    const declare = (padding: number): string =>
+      stockPair
+        ? plateRules(padding, reveal).join("\n")
+        : `${sheet} { padding: ${spacing(padding)}; }`;
+    const rules = [declare(ascending[0])];
     for (const padding of ascending.slice(1)) {
       for (const rectangle of fitRectangles(
         regimes,
@@ -415,7 +464,7 @@ function paddingRules(
         )
           continue;
         rules.push(
-          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${sheet} { padding: ${spacing(padding)}; }\n}\n}`,
+          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
         );
       }
     }
@@ -553,7 +602,7 @@ export function mountedSheetFrameCss(
       layout === "pair"
         ? pairLayoutRules(windowClass, scope, paint)
         : mountRules(windowClass, hero, scope, paint),
-      paddingRules(windowClass, hero, layout, scope),
+      paddingRules(windowClass, hero, layout, scope, paint),
     ]),
   ].join("\n");
 }
