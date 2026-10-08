@@ -1,6 +1,11 @@
 import type { FamilyGroup } from "./types.ts";
 import { validateFamilyGroups } from "./validate.ts";
 
+/* THE GROOM'S SHEET RENDERS IN THREE ROWS, not two: his parents, then Marietta's whole family on one
+   row (herself, Harry, Oliver), then Sebastian alone beneath. The groom asked for his sister's family
+   to read as one line (owner, 2026-10-08). The NESTING here is unchanged and still states the
+   relationships: Oliver is Marietta's child, not a sibling of the groom. Only the layout changed;
+   see `components/family/family-cluster.ts`. */
 export const familyGroups: FamilyGroup[] = validateFamilyGroups([
   {
     id: "bride-family",

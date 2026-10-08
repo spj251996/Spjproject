@@ -1,7 +1,7 @@
 import { Children, type ReactNode } from "react";
 import type { FamilyGroup, FamilyMember } from "@/content/types";
 import { Portrait } from "../ui/portrait";
-import { splitCluster, splitRoster } from "./family-cluster";
+import { flattenCluster, splitChildren, splitRoster } from "./family-cluster";
 
 /* One group's sheet. `measure:fit` finds each sheet by the `h2` that is a direct child of this root. */
 
@@ -27,25 +27,26 @@ const PORTRAIT_TO_NAME = "gap-space-2xs md:gap-space-3xs";
 const EQUAL_GAP = "[--couple-gap:var(--family-row-gap)]";
 const EQUAL_ROW_GAP = "gap-(--family-row-gap)";
 
-/* The nephews are the exception: they sit under their parents rather than across the sheet, and
-   share the width of one sibling slot, so they keep their own per-side spacing. */
-const NEPHEWS_GAP: Readonly<Record<Side, string>> = {
-  bride: "gap-space-2xl md:gap-space-4xl lg:gap-space-3xl xl:gap-space-4xl",
-  groom: "gap-space-md md:gap-space-2xl lg:gap-space-xl xl:gap-space-2xl",
-};
+/* How far a name or relationship may run past its portrait before it wraps. One value per side for
+   the child rows now, rather than three per role: every child-row member sits in the same kind of
+   slot since the clusters flattened, so the old spouse / child / sibling split described an
+   arrangement that no longer exists.
 
-/* How far a name or relationship may run past its portrait on each side before it wraps: measured
-   per slot against the gap beside it and the longest label there, so the real roster's text never
-   meets. */
+   RE-MEASURED 2026-10-08 against the real roster after the flattening, and KEPT UNCHANGED — the
+   groom's three-member row clears at all four tiers with no label wrapping and no ink meeting.
+
+   Read the rendered row, not a box comparison, if these are ever revisited. `Portrait`'s `TextLine`
+   is deliberately WIDER than the portrait — that is what `--portrait-overrun` buys — so adjacent
+   outer spans overlap by design and a harness comparing them reports collisions that are not
+   there. On the shipped roster those phantom overlaps run to 64-80px on the BRIDE's long-accepted
+   row, against 16px on this new one. */
 const OVERRUN = {
   parent: "[--portrait-overrun:20px] xl:[--portrait-overrun:28px]",
-  spouse: "[--portrait-overrun:16px]",
-  child: "[--portrait-overrun:48px]",
-  sibling: {
+  row: {
     bride: "[--portrait-overrun:32px] md:[--portrait-overrun:64px]",
     groom: "[--portrait-overrun:12px] md:[--portrait-overrun:32px]",
   },
-} as const;
+} as const satisfies { parent: string; row: Record<Side, string> };
 
 /* Both lists below restore `role="list"`: WebKit and VoiceOver drop list semantics once
    list-style is none. Each is folded into one constant (clearance included) so the tag stays on
@@ -57,6 +58,7 @@ const COUPLE_LIST_CLASS =
 export function Family({ group, eyebrow }: FamilyProps) {
   const { parents, children } = splitRoster(group.members);
   const [mother, father] = parents;
+  const { clusters, plain } = splitChildren(children);
   return (
     <div className={SHEET_CLASS}>
       <p className="type-eyebrow">{eyebrow}</p>
@@ -68,11 +70,29 @@ export function Family({ group, eyebrow }: FamilyProps) {
           <MemberPortrait member={mother} overrun={OVERRUN.parent} />
           <MemberPortrait member={father} overrun={OVERRUN.parent} />
         </Couple>
-        <Row gap={EQUAL_ROW_GAP}>
-          {children.map((child) => (
-            <ChildSlot child={child} key={child.id} side={group.side} />
-          ))}
-        </Row>
+        {clusters.map((cluster) => (
+          <Row gap={EQUAL_ROW_GAP} key={cluster.id}>
+            {flattenCluster(cluster).map((member) => (
+              <MemberPortrait
+                key={member.id}
+                member={member}
+                overrun={OVERRUN.row[group.side]}
+              />
+            ))}
+          </Row>
+        ))}
+        {/* No row at all when there are none: an empty `Row` is a gap with no portraits in it. */}
+        {plain.length > 0 && (
+          <Row gap={EQUAL_ROW_GAP}>
+            {plain.map((member) => (
+              <MemberPortrait
+                key={member.id}
+                member={member}
+                overrun={OVERRUN.row[group.side]}
+              />
+            ))}
+          </Row>
+        )}
       </div>
     </div>
   );
@@ -92,29 +112,6 @@ function MemberPortrait({
       relationship={member.relationship}
       src={member.portrait}
     />
-  );
-}
-
-function ChildSlot({ child, side }: { child: FamilyMember; side: Side }) {
-  const { row, children } = splitCluster(child);
-  const [sibling, spouse] = row;
-  if (spouse === undefined) {
-    return <MemberPortrait member={sibling} overrun={OVERRUN.sibling[side]} />;
-  }
-  return (
-    <div className="flex flex-col items-center gap-(--rows-gap)">
-      <Couple gap={EQUAL_GAP}>
-        <MemberPortrait member={sibling} overrun={OVERRUN.spouse} />
-        <MemberPortrait member={spouse} overrun={OVERRUN.spouse} />
-      </Couple>
-      {children.length === 0 ? null : (
-        <Row gap={NEPHEWS_GAP[side]}>
-          {children.map((kid) => (
-            <MemberPortrait key={kid.id} member={kid} overrun={OVERRUN.child} />
-          ))}
-        </Row>
-      )}
-    </div>
   );
 }
 

@@ -10,13 +10,13 @@ export const familyFit: MeasuredFit = {
     phone: {
       portrait: [
         { minContentWidth: 120, contentHeight: 736 },
-        { minContentWidth: 128.15625, contentHeight: 716 },
+        { minContentWidth: 130.65625, contentHeight: 716 },
         { minContentWidth: 187.515625, contentHeight: 676 },
         { minContentWidth: 280, contentHeight: 520 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 736 },
-        { minContentWidth: 128.15625, contentHeight: 716 },
+        { minContentWidth: 130.65625, contentHeight: 716 },
         { minContentWidth: 187.515625, contentHeight: 676 },
         { minContentWidth: 280, contentHeight: 520 },
       ],
@@ -24,13 +24,13 @@ export const familyFit: MeasuredFit = {
     tablet: {
       portrait: [
         { minContentWidth: 120, contentHeight: 912 },
-        { minContentWidth: 140.96875, contentHeight: 892 },
+        { minContentWidth: 143.71875, contentHeight: 892 },
         { minContentWidth: 230.796875, contentHeight: 844 },
         { minContentWidth: 464, contentHeight: 616 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 912 },
-        { minContentWidth: 140.96875, contentHeight: 892 },
+        { minContentWidth: 143.71875, contentHeight: 892 },
         { minContentWidth: 230.796875, contentHeight: 844 },
         { minContentWidth: 464, contentHeight: 616 },
       ],
@@ -38,13 +38,13 @@ export const familyFit: MeasuredFit = {
     laptop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 700 },
-        { minContentWidth: 128.15625, contentHeight: 680 },
+        { minContentWidth: 130.65625, contentHeight: 680 },
         { minContentWidth: 216.375, contentHeight: 636 },
         { minContentWidth: 312, contentHeight: 468 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 700 },
-        { minContentWidth: 128.15625, contentHeight: 680 },
+        { minContentWidth: 130.65625, contentHeight: 680 },
         { minContentWidth: 216.375, contentHeight: 636 },
         { minContentWidth: 312, contentHeight: 468 },
       ],
@@ -52,13 +52,13 @@ export const familyFit: MeasuredFit = {
     desktop: {
       portrait: [
         { minContentWidth: 120, contentHeight: 852 },
-        { minContentWidth: 153.78125, contentHeight: 830 },
+        { minContentWidth: 156.78125, contentHeight: 830 },
         { minContentWidth: 274.078125, contentHeight: 774 },
         { minContentWidth: 392, contentHeight: 566 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 852 },
-        { minContentWidth: 153.78125, contentHeight: 830 },
+        { minContentWidth: 156.78125, contentHeight: 830 },
         { minContentWidth: 274.078125, contentHeight: 774 },
         { minContentWidth: 392, contentHeight: 566 },
       ],
