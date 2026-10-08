@@ -17,6 +17,15 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
    Celebrations is a list whose height will grow again when the photo gallery lands in Ship 2.
    Composing a thread against one box per band stretched those sections' geometry up to 2.4x
    vertically past what the render actually shows. */
+/* RE-MEASURED 2026-10-08 after Phase 7's content round (the invite gained a line, Family's groom
+   sheet was restructured) and UNCHANGED at all 18 figures. Not a skipped check: every section but
+   `celebrations` is sized from the viewport rather than its content, so content that grows inside one
+   screen does not move the section — the invite's own measured fit grew 10-12px and this did not
+   move at all. Family came out height-neutral for a different reason: the nephew moved up a row and
+   the groom moved down one, so the sheet kept its row count.
+   Measured on the built export at `/thread/current.html`, at the band nominals below, via each
+   section's own `getBoundingClientRect().height`. Instrument validated first on `contact` and
+   `wishes`, which reproduced their recorded 700 / 1180 / 695 exactly. */
 type SectionHeights = Record<Exclude<ThreadId, "not-found">, number>;
 
 const TALL_HEIGHTS: SectionHeights = {
