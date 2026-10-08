@@ -306,13 +306,11 @@ const IMAGERY_POINTERS = [
 const DURATION_TOKENS: DurationToken[] = [
   { token: "--duration-fast", ms: 200 },
   { token: "--duration-base", ms: 400 },
-  { token: "--duration-slow", ms: 700 },
 ];
 
 const DURATION_USES = [
   "fast · the action press and hover, and the opening sequence beat",
   "base · section and sheet reveals, the modal",
-  "slow · no consumer — its only one, the closed thread draw on not-found, was retired",
 ];
 
 const EASING_TOKENS: EasingToken[] = [
