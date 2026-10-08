@@ -141,9 +141,15 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 PROVISIONAL: the role is confirmed in Half 2, when the rebuilt date block lands directly
                 beneath it and the two are judged on a render together. */}
             {/* `space-3xs`, tight to the names, because the two are one sentence — the names are
-                its subject and it does not stand alone. */}
+                its subject and it does not stand alone.
+
+                FLUSH from `{breakpoints.md}` UP, not at the tablet tier alone — one rule rather
+                than a tablet exception, because the tablet band's arithmetic forces 0 there (see the
+                date's note below) and the same 0 costs nothing at laptop, which came back
+                height-neutral too. Flush does not read as touching: `type-body` carries 26-32px of
+                line box around 13-16px of text, so its own leading is the gap. */}
             <p
-              className="type-caption text-ink-muted mt-space-3xs"
+              className="type-body text-ink-muted mt-space-3xs md:mt-0"
               data-invite-line
             >
               invite you to celebrate our wedding
@@ -155,10 +161,15 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
 
                 The tablet band has no give. The invite's landscape card already stood 717px against a
                 720px cap, and `mounted-sheet-frame` REFUSES to frame a section with no tier line
-                rather than overflowing it — adding the line above threw at build time. The line costs
-                24px of its own text there, and the gap it sits inside was 32px, so the two gaps
-                around it have 8px to share: `space-3xs` either side, landing on exactly 32 again.
-                Measured height-neutral, +0 at every tablet row.
+                rather than overflowing it — adding the line above threw at build time, twice. The
+                line costs **28px** of its own text there at `type-body`, and the gap it sits inside
+                was 32px, so the two gaps around it have exactly 4px to share: flush above, `space-3xs`
+                below. Measured height-neutral, +0 at every tablet row.
+
+                `type-caption` was tried first and fitted with 4px either side; the owner chose
+                `type-body`, whose extra 4px of leading is what spent the gap above. There is no
+                third arrangement — 28 + 4 is the budget, and the spacing scale has nothing between
+                0 and 4.
 
                 The two `{breakpoints.lg}` rules are bounded by ORIENTATION rather than left open,
                 so neither can beat the other on string order — the hazard `ornamental-divider`'s own
