@@ -114,3 +114,48 @@ test("the gallery does not claim the thread is live on the published page", () =
     'a thread entry still claims "Live at /." -- the thread is on the lab route, not the published page',
   );
 });
+
+/* THE THIRD PAINT. The gallery restates `DESIGN.md` by hand and has drifted four times on this branch,
+   so a new documented option gets its gate IN THE SAME CHANGE as its specimen rather than a note asking
+   the next person to remember. The CLAIM is what is pinned, and for this option the claim has two
+   halves: a specimen that renders the paint, and prose saying WHERE it is live — because it is the one
+   option the published page does not ship, and a reader who cannot tell that would read the gallery as
+   describing `/`. */
+test("the gallery shows the lab's stock paint and says where it lives", () => {
+  /* Matched as an ELEMENT, not as the text `paint="stock"`: that string also appears in the spec list
+     describing the option, so a bare substring match is satisfied by the PROSE and passes with no
+     specimen rendered at all. It did — deleting the specimen left this test green until the mutation
+     was run and read. */
+  assert.match(
+    foundations,
+    /<MountedSheet[^>]*paint=\{?"stock"/,
+    "no specimen renders the stock paint, so the gallery documents two of three options",
+  );
+  const at = foundations.indexOf('id="layout-mounted-sheet"');
+  const specimen = foundations.slice(
+    at,
+    foundations.indexOf("</Specimen>", at),
+  );
+  assert.ok(
+    at !== -1 && specimen.length > 0,
+    "the mounted-sheet specimen moved -- re-anchor this test rather than deleting it",
+  );
+  /* The route is required in the SPEC ROW for this option, not merely somewhere in the specimen: the
+     note names it too, so a slice-wide match is satisfied by either copy and neither is pinned. The
+     row is bounded by the quote that closes it. */
+  const rowAt = specimen.indexOf('paint="stock"');
+  assert.ok(rowAt !== -1, "no spec row describes the stock paint");
+  const rowEnd = specimen.indexOf("',", rowAt);
+  const row =
+    rowAt !== -1 && rowEnd !== -1 ? specimen.slice(rowAt, rowEnd) : "";
+  assert.ok(
+    row.length > 0 && row.includes("/thread/stock"),
+    `the stock option's spec row does not name the route it is live at, so a reader cannot tell it is lab-only: ${row}`,
+  );
+  /* The note still described TWO specimens for as long as it said so. Pinned as the negative, because
+     that is the drift: the count in the prose silently disagreeing with the specimens below it. */
+  assert.ok(
+    !specimen.includes("the two specimens below"),
+    'the note still says "the two specimens below" while three are rendered',
+  );
+});
