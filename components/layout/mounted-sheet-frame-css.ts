@@ -312,26 +312,6 @@ function mountRules(
     .join("\n");
 }
 
-/* The two plates of a stock pair, addressed by ADJACENCY. The crease is the mount's first child
-   (`mounted-pair.tsx` renders crease, leaf, leaf), so `:first-child` would match the crease and
-   `:nth-of-type` cannot tell three divs apart. `display: none` on a hidden crease does not affect `+`,
-   so these hold under the stock paint too, where the crease is never revealed. A test in
-   mounted-sheet-frame.test.ts pins that document order, since this is the only thing depending on it.
-
-   Exported so a test addresses the plates with these selectors rather than re-deriving them, the way
-   `spacingTokenFor` is exported so a test exercises the real spacing lookup. */
-export function plateSelectors(scope: string): {
-  first: string;
-  second: string;
-} {
-  const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
-  const leaf = `.${FRAME_CLASS.leaf}`;
-  return {
-    first: `${mount} > .${FRAME_CLASS.crease} + ${leaf} > .${FRAME_CLASS.sheet}`,
-    second: `${mount} > ${leaf} + ${leaf} > .${FRAME_CLASS.sheet}`,
-  };
-}
-
 function sheetSelector(scope: string, layout: FrameLayout): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   return layout === "pair"
@@ -414,22 +394,28 @@ function paddingRules(
 ): string {
   const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
-  const plates = plateSelectors(scope);
+  /* The stock pair's trade. The plates reach the card's outer edges, and each plate's sheet takes the
+     reveal back: the full reveal top and bottom, and HALF of it on each horizontal side, so the padding
+     is symmetric and the text sits centred in its own plate (owner, 2026-10-08).
 
-  /* The stock pair's trade, as declarations rather than one: the gutter side keeps the plain step and
-     the three outer sides take the reveal with it, mirrored per plate. Order is top right bottom left.
+     That keeps the content's exact SIZE and moves it `reveal / 2` outward — the one place a paint moves
+     content, and the owner's instruction. The earlier form put the whole reveal on the outer side,
+     which held the content exactly where the painted pair puts it but left the text off-centre by a
+     whole reveal, 16px at the laptop tier.
+
+     Two consequences worth knowing. The two plates are IDENTICAL, so one rule covers both and the
+     stylesheet stays the size of the painted pair's — the mirrored version needed two rules per rung
+     and grew the inlined CSS by 62%. And `reveal / 2` is 8 / 6 / 8 / 12 by tier, of which 6 is NOT on
+     the spacing scale, so it is a division inside `calc` rather than a token lookup — the same shape as
+     the gap's `spacing(2 * reveal)`, halved.
 
      `revealFor` returns 0 where the mount does not show and `--spacing-0` is `0px` rather than a bare
-     `0` (which CSS would reject inside `calc`), so `calc(step + 0px)` is valid and collapses to the
-     step. That is why this is ONE code path: a stacked stock pair takes it and comes out identical to
-     today. */
-  const plateRules = (padding: number, reveal: number): string[] => {
+     `0` (which CSS rejects inside `calc`), so both terms collapse to the step. That is why this is ONE
+     code path: a stacked stock pair takes it and comes out identical to today. */
+  const stockPairPadding = (padding: number, reveal: number): string => {
     const step = spacing(padding);
-    const outer = `calc(${step} + ${spacing(reveal)})`;
-    return [
-      `${plates.first} { padding: ${outer} ${step} ${outer} ${outer}; }`,
-      `${plates.second} { padding: ${outer} ${outer} ${outer} ${step}; }`,
-    ];
+    const gap = spacing(reveal);
+    return `calc(${step} + ${gap}) calc(${step} + ${gap} / 2)`;
   };
   const stockPair = layout === "pair" && paint === "stock";
 
@@ -447,9 +433,7 @@ function paddingRules(
     reveal: number,
   ): string => {
     const declare = (padding: number): string =>
-      stockPair
-        ? plateRules(padding, reveal).join("\n")
-        : `${sheet} { padding: ${spacing(padding)}; }`;
+      `${sheet} { padding: ${stockPair ? stockPairPadding(padding, reveal) : spacing(padding)}; }`;
     const rules = [declare(ascending[0])];
     for (const padding of ascending.slice(1)) {
       for (const rectangle of fitRectangles(

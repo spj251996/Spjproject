@@ -9,7 +9,6 @@ import { familyFit } from "../../app/family-fit.ts";
 import { wishesFit } from "../../app/wishes-fit.ts";
 import {
   mountedSheetFrameCss,
-  plateSelectors,
   SPACING_TOKEN,
   tallFrameCss,
   tallScopeClass,
@@ -103,7 +102,6 @@ for (const [name, fit] of [
   ["event-info", eventInfoFit],
   ["family", familyFit],
 ] as const) {
-  const plates = plateSelectors(`.mounted-sheet-frame--${fit.section}`);
   const rowRules = (css: string) =>
     [
       ...css.matchAll(/flex-direction: row; gap: ([^;]+); padding: ([^;]+);/g),
@@ -165,37 +163,24 @@ for (const [name, fit] of [
       assert.strictEqual(
         gutter,
         2 * reveal,
-        `rule ${i}'s gutter is not twice its reveal (${gutter} against ${reveal}), so the stock plates' inner content edge no longer lands where the painted pair's does`,
+        `rule ${i}'s gutter is not twice its reveal (${gutter} against ${reveal}), so splitting the reveal no longer preserves the content's width`,
       );
     }
   });
 
-  test(`the stock plates pad asymmetrically and mirror each other, at ${name}`, () => {
+  test(`the stock plates pad symmetrically, splitting the reveal, at ${name}`, () => {
     const stock = mountedSheetFrameCss(fit, false, "pair", "stock");
     const painted = mountedSheetFrameCss(fit, false, "pair", "mount");
 
-    const padsFor = (selector: string) =>
-      [
-        ...stock.matchAll(
-          new RegExp(
-            `${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\{ padding: ([^;]+); \\}`,
-            "g",
-          ),
-        ),
-      ].map((m) => m[1]);
-    const first = padsFor(plates.first);
-    const second = padsFor(plates.second);
-    assert.ok(
-      first.length > 0,
-      "no first-plate padding rule -- re-anchor this test",
+    const pads = [...stock.matchAll(/__sheet \{ padding: ([^;]+); \}/g)].map(
+      (m) => m[1],
     );
-    assert.strictEqual(
-      first.length,
-      second.length,
-      "the two plates have different numbers of padding rules, so they cannot be mirrors",
+    assert.ok(
+      pads.length > 0,
+      "no stock sheet padding rule -- re-anchor this test",
     );
 
-    /* Four values split on TOP-LEVEL whitespace only: a `calc(var(--a) + var(--b))` term contains both
+    /* Values split on TOP-LEVEL whitespace only: a `calc(var(--a) + var(--b) / 2)` term contains both
        spaces and parentheses, so neither a plain split nor a lookahead gets this right. */
     const sides = (value: string) => {
       const out: string[] = [];
@@ -212,61 +197,68 @@ for (const [name, fit] of [
         token += char;
       }
       if (token !== "") out.push(token);
-      assert.strictEqual(out.length, 4, `${value} is not a four-value padding`);
       return out;
     };
 
-    /* The added term is a painted-mount reveal where the pair stands side by side, and
-       `var(--spacing-0)` where it stacks -- `revealFor` returns 0 when the mount does not show, which
-       is what collapses the mirrored form back to the plain step on one code path. BOTH must occur: a
-       set of only zeros would mean the side-by-side path never emits the reveal at all, which is the
-       thing this test exists to check, and it would otherwise pass. */
-    const reveals = new Set(rowRules(painted).map((row) => row.padding));
-    const added = new Set<string>();
-    for (const [i, value] of first.entries()) {
-      const [top, right, bottom, left] = sides(value);
-      assert.strictEqual(
-        second[i],
-        [top, left, bottom, right].join(" "),
-        `plate ${i} is not mirrored: ${value} against ${second[i]}`,
-      );
-      assert.strictEqual(
-        top,
-        bottom,
-        `plate ${i} is asymmetric vertically, which it must not be`,
-      );
-      assert.strictEqual(
-        left,
-        top,
-        `plate ${i}'s three outer sides disagree, so the expansion is uneven`,
-      );
-      /* The gutter side keeps the plain step; the outer sides are that same step plus a painted reveal.
-         Read out of the two stylesheets rather than written down: the reveal is 16 / 12 / 16 / 24 by
-         tier and the step varies per rectangle, so no single number could stand here. */
-      assert.ok(
-        painted.includes(`padding: ${right};`),
-        `plate ${i}'s gutter side (${right}) is not a step the painted pair's sheet uses`,
-      );
-      const parts = top.slice("calc(".length, -1).split(" + ");
+    const reveals = new Set(
+      [
+        ...painted.matchAll(
+          /flex-direction: row; gap: [^;]+; padding: ([^;]+);/g,
+        ),
+      ].map((m) => m[1]),
+    );
+    const halves = new Set<string>();
+    for (const [i, value] of pads.entries()) {
+      const parts = sides(value);
+      /* TWO values, not four: the owner's form is symmetric, so block and inline are the whole
+         declaration. A four-value padding would mean the mirrored version crept back in — and with it
+         the per-plate selectors and the 62% larger stylesheet. */
       assert.strictEqual(
         parts.length,
         2,
-        `plate ${i}'s outer side (${top}) is not a two-term sum`,
+        `stock sheet rule ${i} is not a two-value padding, so it is not symmetric: ${value}`,
+      );
+      const [block, inline] = parts;
+      /* Block takes the whole reveal, inline takes half of it, both read out of the painted
+         stylesheet rather than written down: the reveal is 16 / 12 / 16 / 24 by tier and the step
+         varies per rectangle, so no single number could stand here. */
+      const blockParts = block.slice("calc(".length, -1).split(" + ");
+      const inlineParts = inline.slice("calc(".length, -1).split(" + ");
+      assert.strictEqual(
+        blockParts.length,
+        2,
+        `${block} is not a two-term sum`,
       );
       assert.strictEqual(
-        parts[0],
-        right,
-        `plate ${i}'s outer side sums a different step than its gutter side uses`,
+        inlineParts.length,
+        2,
+        `${inline} is not a two-term sum`,
+      );
+      assert.strictEqual(
+        blockParts[0],
+        inlineParts[0],
+        `rule ${i} sums a different step on each axis: ${value}`,
       );
       assert.ok(
-        reveals.has(parts[1]) || parts[1] === "var(--spacing-0)",
-        `plate ${i} adds ${parts[1]}, which is neither a reveal the painted pair's mount uses nor the stacked zero`,
+        painted.includes(`padding: ${blockParts[0]};`),
+        `rule ${i} sums ${blockParts[0]}, which is not a step the painted pair's sheet uses`,
       );
-      added.add(parts[1]);
+      assert.ok(
+        reveals.has(blockParts[1]) || blockParts[1] === "var(--spacing-0)",
+        `rule ${i} adds ${blockParts[1]} on the block axis, which is neither a painted reveal nor the stacked zero`,
+      );
+      assert.strictEqual(
+        inlineParts[1],
+        `${blockParts[1]} / 2`,
+        `rule ${i}'s inline padding is not HALF the block's reveal, so the text is not centred in its plate: ${value}`,
+      );
+      halves.add(inlineParts[1]);
     }
+    /* A set of only `var(--spacing-0) / 2` would mean the side-by-side reveal is never split at all —
+       the thing this test exists to check — and it would otherwise pass. */
     assert.ok(
-      [...added].some((term) => term !== "var(--spacing-0)"),
-      `every plate rule adds zero, so the side-by-side reveal is never emitted: ${[...added]}`,
+      [...halves].some((term) => !term.startsWith("var(--spacing-0)")),
+      `every rule halves zero, so the side-by-side reveal is never split: ${[...halves]}`,
     );
   });
 
