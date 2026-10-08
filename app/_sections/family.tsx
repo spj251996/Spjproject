@@ -1,4 +1,3 @@
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { familyFit } from "@/app/family-fit";
 import {
   Botanical,
@@ -6,6 +5,7 @@ import {
 } from "@/components/background/botanical";
 import { Family } from "@/components/family/family";
 import { MountedPair } from "@/components/layout/mounted-pair";
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { type FamilyGroup, familyGroups } from "@/content";
 
 const FAMILY_EYEBROWS: Readonly<Record<FamilyGroup["side"], string>> = {

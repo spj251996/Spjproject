@@ -1,4 +1,3 @@
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { splitCoupleNames } from "@/app/_sections/shared";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
@@ -7,6 +6,7 @@ import {
   SECTION_PLACEMENT,
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { CardThread } from "@/components/thread/page-thread";
 import { wishes } from "@/content";
 

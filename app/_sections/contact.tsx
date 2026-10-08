@@ -1,4 +1,3 @@
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { contactFit } from "@/app/contact-fit";
 import {
   Botanical,
@@ -6,6 +5,7 @@ import {
 } from "@/components/background/botanical";
 import { CallIcon, ChatIcon, LoveIcon, SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { ButtonAction } from "@/components/ui/button-action";
 import { type ContactPerson, contacts } from "@/content";
 

@@ -1,4 +1,3 @@
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import celebrations from "@/app/celebrations.module.css";
 import {
   Botanical,
@@ -6,6 +5,7 @@ import {
 } from "@/components/background/botanical";
 import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { PhotoStrip } from "@/components/ui/photo-strip";
 import { rituals } from "@/content";
 

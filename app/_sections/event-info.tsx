@@ -1,5 +1,5 @@
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import type { ComponentType } from "react";
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import "@/app/event-info.css";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
 import { eventInfoFit } from "@/app/event-info-fit";
