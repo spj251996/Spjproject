@@ -17,36 +17,26 @@ export function splitCoupleNames(coupleNames: string): [string, string] | null {
   return parts.length === 2 ? [parts[0], parts[1]] : null;
 }
 
-/* Both month spellings render; `display: none` keeps the hidden one out of the accessibility tree,
+/* The event sheets' date line, and now their only one: the invite composes its own date as a block
+   (`InviteDate`), which is a bare numeral rather than a line with a raised ordinal.
+
+   Both month spellings render; `display: none` keeps the hidden one out of the accessibility tree,
    so no `aria-hidden` is needed. The `<time>` carries the ISO value so the rendered string — which
-   is split across spans and duplicated for two month spellings — is still readable as one date. */
-export function PrimaryDate({
-  date,
-  weekday = true,
-  fullMonth = false,
-}: {
-  date: FormattedDate;
-  weekday?: boolean;
-  /* The invite spells the month out at every width. Elsewhere a phone takes the short form, where
-     the date shares its line with a place and a time. */
-  fullMonth?: boolean;
-}) {
+   is split across spans and duplicated for two month spellings — is still readable as one date.
+
+   It took `weekday` and `fullMonth` props while the invite was the caller that needed the other arm
+   of each. With one caller there is one behaviour, so both are gone rather than left as branches no
+   render reaches. */
+export function PrimaryDate({ date }: { date: FormattedDate }) {
   return (
     <time dateTime={date.iso}>
-      {weekday ? `${date.weekday}, ` : null}
+      {`${date.weekday}, `}
       {date.day}
       <span className="type-caption type-date-ordinal align-super">
         {date.ordinal}
       </span>{" "}
-      {fullMonth ? (
-        date.month
-      ) : (
-        <>
-          <span className="md:hidden">{date.monthShort}</span>
-          <span className="hidden md:inline">{date.month}</span>
-        </>
-      )}{" "}
-      {date.year}
+      <span className="md:hidden">{date.monthShort}</span>
+      <span className="hidden md:inline">{date.month}</span> {date.year}
     </time>
   );
 }
