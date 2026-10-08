@@ -1,10 +1,8 @@
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
+import type { FormattedDate } from "@/content/types";
 import "@/app/invite.css";
-import {
-  eventById,
-  PrimaryDate,
-  splitCoupleNames,
-} from "@/app/_sections/shared";
+import { eventById, splitCoupleNames } from "@/app/_sections/shared";
+import dateBlock from "@/app/invite-date.module.css";
 import { inviteFit } from "@/app/invite-fit";
 import {
   Botanical,
@@ -13,6 +11,51 @@ import {
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 import { formatEventDate, invite } from "@/content";
+
+/* The wedding date as a bracketed figure — DESIGN.md → Domain Components → Invite → `date-block`,
+   which owns every ratio and every reason. The geometry is in `invite-date.module.css`; what is here
+   is the figure's parts and where they sit in its grid.
+
+   It composes the date's parts itself rather than taking `PrimaryDate`, which renders one line with a
+   raised ordinal. The block's day is a BARE numeral: a superscript inside the bracket collides with
+   the rule. */
+function InviteDate({ date }: { date: FormattedDate }) {
+  const hairline = (
+    <span className={dateBlock.hairlineAnchor}>
+      <span aria-hidden className={dateBlock.hairline} />
+    </span>
+  );
+
+  return (
+    <div className={`${dateBlock.block} text-ink`} data-invite-date>
+      <p
+        className={`type-date-label ${dateBlock.weekday} col-start-3 row-start-1`}
+      >
+        {date.weekday}
+      </p>
+      <p
+        className={`type-date-label ${dateBlock.label} col-start-1 row-start-2 justify-self-end`}
+      >
+        {date.monthShort}
+      </p>
+      <span className="col-start-2 row-start-2">{hairline}</span>
+      {/* The `<time>` carries the ISO value, so a date split across five elements is still readable
+          as one date. */}
+      <time
+        className="type-date-day col-start-3 row-start-2 justify-self-center"
+        dateTime={date.iso}
+      >
+        {date.day}
+      </time>
+      <span className="col-start-4 row-start-2">{hairline}</span>
+      <p
+        className={`type-date-label ${dateBlock.label} col-start-5 row-start-2 justify-self-start`}
+      >
+        {date.year}
+      </p>
+    </div>
+  );
+}
 
 function InvitePassage() {
   return (
@@ -121,7 +164,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 couple's data, exactly like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
             <p className="type-eyebrow">We are getting married</p>
 
-            <h1 className="type-display-name text-ink mt-space-lg">
+            <h1 className="type-display-name text-ink mt-space-md">
               {names ? (
                 <>
                   <span>{names[0]}</span>
@@ -135,52 +178,30 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
 
             {/* The invitation's own sentence, in the couple's first-person voice — the same voice as
                 the eyebrow above, and a literal here for the same reason: it names the occasion rather
-                than carrying any of the couple's data (owner, 2026-10-08).
+                than carrying any of the couple's data.
 
-                `type-caption` is the invite's quiet role, shared with the passage at the card's foot.
-                PROVISIONAL: the role is confirmed in Half 2, when the rebuilt date block lands directly
-                beneath it and the two are judged on a render together. */}
-            {/* `space-3xs`, tight to the names, because the two are one sentence — the names are
-                its subject and it does not stand alone.
-
-                FLUSH from `{breakpoints.md}` UP, not at the tablet tier alone — one rule rather
-                than a tablet exception, because the tablet band's arithmetic forces 0 there (see the
-                date's note below) and the same 0 costs nothing at laptop, which came back
-                height-neutral too. Flush does not read as touching: `type-body` carries 26-32px of
-                line box around 13-16px of text, so its own leading is the gap. */}
+                WITHIN a beat, so `space-3xs`: the names are this sentence's subject and it does not
+                stand alone. It had been flush from `{breakpoints.md}` up, which the tablet band's
+                arithmetic forced; the names stepping down at that tier is what pays for the 4px now,
+                so the rule is one value at every width. */}
             <p
-              className="type-body text-ink-muted mt-space-3xs md:mt-0"
+              className="type-body text-ink-muted mt-space-3xs"
               data-invite-line
             >
               invite you to celebrate our wedding
             </p>
 
-            {/* ONLY THE TABLET BAND CHANGED, AND IT IS FORCED. Every other window keeps the value it
-                had before this line existed: `space-lg` everywhere, stepping to `space-sm` from
-                `{breakpoints.lg}` in landscape alone.
+            {/* BETWEEN beats, so `space-md` — one value at every width, where this gap was five
+                values across five tiers and no two bands read the card the same way. The
+                orientation-qualified rules it replaced are gone with it; the block absorbs the
+                weekday, so the header runs four elements where it ran five. */}
+            <div className="mt-space-md">
+              <InviteDate date={weddingDate} />
+            </div>
 
-                The tablet band has no give. The invite's landscape card already stood 717px against a
-                720px cap, and `mounted-sheet-frame` REFUSES to frame a section with no tier line
-                rather than overflowing it — adding the line above threw at build time, twice. The
-                line costs **28px** of its own text there at `type-body`, and the gap it sits inside
-                was 32px, so the two gaps around it have exactly 4px to share: flush above, `space-3xs`
-                below. Measured height-neutral, +0 at every tablet row.
-
-                `type-caption` was tried first and fitted with 4px either side; the owner chose
-                `type-body`, whose extra 4px of leading is what spent the gap above. There is no
-                third arrangement — 28 + 4 is the budget, and the spacing scale has nothing between
-                0 and 4.
-
-                The two `{breakpoints.lg}` rules are bounded by ORIENTATION rather than left open,
-                so neither can beat the other on string order — the hazard `ornamental-divider`'s own
-                note records. */}
-            <p className="type-date-primary text-ink mt-space-lg md:mt-space-3xs [@media(width>=64rem)_and_(orientation:portrait)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-sm">
-              <PrimaryDate date={weddingDate} weekday={false} fullMonth />
-            </p>
-
-            {/* The state, not the town: where the wedding is rather than which venue. It takes the
-                date's own role at the weight the role carried before the date went bold — same
-                size, not bold. */}
+            {/* The state, not the town: where the wedding is rather than which venue. It keeps
+                `type-date-primary` at weight 500 — the invite's one remaining use of that role, and
+                the reason the role is not retired here. */}
             <p
               className="type-date-primary font-medium text-ink mt-space-3xs"
               data-invite-place

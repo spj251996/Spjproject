@@ -11,7 +11,10 @@ const AT = {
   eyebrow: source.indexOf("type-eyebrow"),
   names: source.indexOf("type-display-name"),
   line: source.indexOf("data-invite-line"),
-  date: source.indexOf("<PrimaryDate"),
+  /* The COMPOSITION site, not the definition: `<InviteDate` matches only the JSX usage, where
+     `function InviteDate(` sits above the eyebrow and would invert the order this test checks. The
+     anchor moved from `<PrimaryDate` when the date became a block that composes its own parts. */
+  date: source.indexOf("<InviteDate"),
   place: source.indexOf("data-invite-place"),
 };
 

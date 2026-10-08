@@ -62,6 +62,27 @@
     line-height: var(--text-date-primary--line-height);
   }
 
+  /* The invite date block's two roles. Both take lining figures, so the day and the year sit on the
+     baseline the bracket is measured from — the serif's own figures descend, which drops the numeral
+     through the rule that is supposed to enclose it. */
+  .type-date-label {
+    font-family: var(--font-serif);
+    font-size: var(--text-date-label);
+    font-variant-numeric: lining-nums;
+    font-weight: var(--text-date-label--font-weight);
+    letter-spacing: var(--text-date-label--letter-spacing);
+    line-height: var(--text-date-label--line-height);
+    text-transform: uppercase;
+  }
+
+  .type-date-day {
+    font-family: var(--font-serif);
+    font-size: var(--text-date-day);
+    font-variant-numeric: lining-nums;
+    font-weight: var(--text-date-day--font-weight);
+    line-height: var(--text-date-day--line-height);
+  }
+
   .type-body {
     font-family: var(--font-sans);
     font-size: var(--text-body);

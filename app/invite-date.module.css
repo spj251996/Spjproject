@@ -1,0 +1,58 @@
+/* The invite's date block — DESIGN.md → Domain Components → Invite → `date-block`, which owns every
+   ratio these values resolve from. The geometry lives here rather than in utilities because it is one
+   figure's internal proportions: values that only mean anything together, three of them positioned
+   from a BASELINE rather than from a box. */
+
+.block {
+  align-items: baseline;
+  column-gap: var(--spacing-space-sm);
+  display: grid;
+  /* The equal outer tracks are what put the day on the card's centre axis: both size to the wider of
+     the month and the year, so the centre cell is centred whatever those two measure, and the day
+     shares an axis with the place below it and the names above. */
+  grid-template-columns: 1fr var(--stroke-divider) auto var(--stroke-divider) 1fr;
+  justify-content: center;
+  /* The rows are spaced by the weekday's own pull, not by a gap — see `.weekday`. */
+  row-gap: 0;
+}
+
+/* The weekday sizes the centre track, which is what keeps the bracket around it at every width and
+   in every month rather than only for the dates that happen to fit.
+
+   ITS PULL IS NEGATIVE, AND THAT IS THE POINT. The gap a reader sees here is ink to ink, not box to
+   box: the weekday's line box carries a descender it never uses and the day's carries half-leading
+   above its cap, so with the rows flush the block still reads looser than the figure it is drawn
+   from. A positive gap can only make it worse. */
+.weekday {
+  margin-bottom: var(--date-weekday-pull);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* The month and year hang at the bracket's waist, lifted off the day's baseline they otherwise
+   share. */
+.label {
+  transform: translateY(calc(var(--date-label-lift) * -1));
+}
+
+/* A zero-height box ON the baseline, so the rule is placed from the baseline rather than from a line
+   box whose leading differs per face. Aligning the rule on boxes instead lifts the numeral out of
+   its own bracket — the day's line box is taller than the rule that encloses it. */
+.hairlineAnchor {
+  display: inline-block;
+  height: 0;
+  position: relative;
+  vertical-align: baseline;
+  width: var(--stroke-divider);
+}
+
+.hairline {
+  background: var(--color-rule-faint);
+  height: var(--rule-date-bracket);
+  left: 0;
+  position: absolute;
+  /* The bracket ends `space-3xs` BELOW the day's baseline. A rule that stopped at the baseline would
+     read as a cell divider and the block would read as a table. */
+  top: calc(var(--spacing-space-3xs) - var(--rule-date-bracket));
+  width: var(--stroke-divider);
+}

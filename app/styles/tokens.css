@@ -15,6 +15,13 @@
   --color-ink-muted: #5a3a2a;
   --color-ink-inverse: #f4f1e8;
   --color-accent-gold: #d29b2f;
+  /* The date block's hairlines, and nothing else. It must read lighter than the type it brackets —
+     a rule as dark as the words reads as a table cell (DESIGN.md → Foundations → Colors). */
+  --color-rule-faint: color-mix(
+    in srgb,
+    var(--color-ink) 22%,
+    var(--color-surface-base)
+  );
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
   --color-thread-core: #ff7900;
@@ -39,6 +46,15 @@
   --text-date-primary: 14px;
   --text-date-primary--font-weight: 700;
   --text-date-primary--line-height: 28px;
+  /* The invite's date block. Both roles set line height to their own size: the block's geometry is
+     stated against baselines, and leading inside a row would offset every one of them. */
+  --text-date-label: 12px;
+  --text-date-label--font-weight: 400;
+  --text-date-label--letter-spacing: 0.14em;
+  --text-date-label--line-height: 12px;
+  --text-date-day: 44px;
+  --text-date-day--font-weight: 400;
+  --text-date-day--line-height: 44px;
   --text-body: 13px;
   --text-body--font-weight: 400;
   --text-body--line-height: 26px;
@@ -154,6 +170,16 @@
      a media query cannot read this variable — change both together. */
   --card-height-cap: 720px;
   --card-height-cap-compact: 576px;
+
+  /* The invite date block's bracket geometry — off the spacing scale by the exception in DESIGN.md ->
+     Cross-Cutting Rules, because the figure's parts hold a fixed relation to each other rather than
+     to the system. Each is the reference's ratio against the label's cap height, resolved to whole
+     pixels per tier: the bracket is 5.00 caps, the labels' baseline sits 1.56 above the day's, and
+     the weekday is pulled up so its baseline lands 1.44 above the day's cap. The pull is one value
+     at every tier; the other two step with `--text-date-label`. */
+  --rule-date-bracket: 42px;
+  --date-label-lift: 13px;
+  --date-weekday-pull: -5px;
 
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
@@ -343,8 +369,8 @@
    Biome reads sibling `@variant` blocks as one block and flags the repeated names. */
 :root {
   @variant md {
-    --text-display-name: 135px;
-    --text-display-name--line-height: 203px;
+    --text-display-name: 110px;
+    --text-display-name--line-height: 165px;
     --text-heading-script: 72px;
     --text-heading-script--line-height: 72px;
     --text-heading-xl: 32px;
@@ -353,6 +379,12 @@
     --text-heading-lg--line-height: 30px;
     --text-date-primary: 15px;
     --text-date-primary--line-height: 30px;
+    --text-date-label: 13px;
+    --text-date-label--line-height: 13px;
+    --text-date-day: 48px;
+    --text-date-day--line-height: 48px;
+    --rule-date-bracket: 46px;
+    --date-label-lift: 14px;
     --text-body: 14px;
     --text-body--line-height: 28px;
     --text-action: 14px;
@@ -366,8 +398,8 @@
 
 :root {
   @variant lg {
-    --text-display-name: 125px;
-    --text-display-name--line-height: 188px;
+    --text-display-name: 110px;
+    --text-display-name--line-height: 165px;
     --text-heading-script: 64px;
     --text-heading-script--line-height: 64px;
     --text-heading-xl: 30px;
@@ -376,6 +408,12 @@
     --text-heading-lg--line-height: 28px;
     --text-date-primary: 14px;
     --text-date-primary--line-height: 28px;
+    --text-date-label: 12px;
+    --text-date-label--line-height: 12px;
+    --text-date-day: 44px;
+    --text-date-day--line-height: 44px;
+    --rule-date-bracket: 42px;
+    --date-label-lift: 13px;
     --text-body: 13px;
     --text-body--line-height: 26px;
     --text-action: 13px;
@@ -399,6 +437,12 @@
     --text-heading-lg--line-height: 32px;
     --text-date-primary: 17px;
     --text-date-primary--line-height: 32px;
+    --text-date-label: 14px;
+    --text-date-label--line-height: 14px;
+    --text-date-day: 51px;
+    --text-date-day--line-height: 51px;
+    --rule-date-bracket: 49px;
+    --date-label-lift: 15px;
     --text-body: 16px;
     --text-body--line-height: 32px;
     --text-action: 16px;
