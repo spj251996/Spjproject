@@ -14,9 +14,15 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
  * root, and the card thread's. Not a remembered figure. */
 const LAB_ROOTS = 3;
 
+/* `sections: true` marks a route that composes `app/_sections/index.tsx`. The not-found rows below do
+ * NOT: that screen is its own route with its own frame, botanical, eyebrow, heading and action, and it
+ * composes none of the six sections. The flag lives on the row rather than in a parallel list so that
+ * adding a route sets it in the same object literal -- and it is a flag rather than a filter on the
+ * path, because a filter would silently re-include the next not-found-shaped route. */
 const EXPECTED = [
-  { path: "out/index.html", roots: 0, label: "/ (published)" },
+  { path: "out/index.html", roots: 0, label: "/ (published)", sections: true },
   {
+    sections: true,
     /* MEASURED, not assumed: under `output: "export"` this version emits a dynamic route as
      * `out/thread/<variant>.html`, NOT `out/thread/<variant>/index.html`. The sibling
      * `out/thread/<variant>/` directory it also writes holds only RSC payload `.txt` files. */
@@ -42,20 +48,70 @@ const FORBIDDEN = ["out/design-system/index.html", "out/lab-scratch"];
  * listing forbidden paths means Plan 2 updates one line instead of remembering to delete a guard. */
 const LAB_ROUTES = ["current"];
 
+/* THE OTHER HALF OF THE DOC PARITY GATE. Its first half -- every `[lab]` entry's subject absent from
+ * the published page -- is the thread assertion above. Its second half, "every non-`[lab]` one is
+ * present", was asserted NOWHERE: this gate counted thread roots and route names and nothing else, so a
+ * section dropped from the export would have passed it. A missing section is exactly what a bundler can
+ * lose without erroring, which is why a green build is not evidence.
+ *
+ * The component list is read from the one module that composes them, so adding a section reaches this
+ * gate without anyone remembering to. The COUNT is asserted because a zero-match extraction looks
+ * exactly like a successful one. */
+const SECTION_COMPONENTS = [
+  ...readFileSync("app/_sections/index.tsx", "utf8").matchAll(
+    /<(\w+Section)\b/g,
+  ),
+].map((m) => m[1]);
+
+/* Five, not six: `invite` carries no `id` attribute, which `tasks.md` already records as a known gap
+ * in `check:thread-joins` -- the gate that walks sections has never checked it either. Listing five
+ * where the component count says six is deliberate, and the two numbers are asserted separately so a
+ * sixth id appearing is a prompt to add it here rather than a silent pass. */
+const SECTION_IDS = [
+  "event-info",
+  "contact",
+  "family",
+  "celebrations",
+  "wishes",
+];
+
 let failed = false;
-for (const { path, roots, label } of EXPECTED) {
+
+if (SECTION_COMPONENTS.length !== 6) {
+  console.error(
+    `FAIL: expected six sections in app/_sections/index.tsx, found ${SECTION_COMPONENTS.length} [${SECTION_COMPONENTS}] -- re-anchor this gate`,
+  );
+  failed = true;
+}
+if (!EXPECTED.some((route) => route.sections)) {
+  console.error(
+    "FAIL: no route is marked `sections: true`, so the section-presence check would pass vacuously",
+  );
+  failed = true;
+}
+
+for (const { path, roots, label, sections } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
     continue;
   }
-  const found = (readFileSync(path, "utf8").match(/data-thread-svg/g) ?? [])
-    .length;
+  const html = readFileSync(path, "utf8");
+  const found = (html.match(/data-thread-svg/g) ?? []).length;
   const ok = found === roots;
   console.log(
     `${ok ? "ok  " : "FAIL"} ${label}: ${found} thread roots, expected ${roots}`,
   );
   if (!ok) failed = true;
+
+  if (!sections) continue;
+  const missing = SECTION_IDS.filter((id) => !html.includes(`id="${id}"`));
+  const present = SECTION_IDS.length - missing.length;
+  const allThere = missing.length === 0;
+  console.log(
+    `${allThere ? "ok  " : "FAIL"} ${label}: ${present}/${SECTION_IDS.length} documented sections present${allThere ? "" : ` -- missing ${missing}`}`,
+  );
+  if (!allThere) failed = true;
 }
 for (const path of FORBIDDEN) {
   if (existsSync(path)) {
