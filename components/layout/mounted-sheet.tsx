@@ -37,6 +37,16 @@ interface MountedSheetProps {
 
 const MOUNT_SHADOW = "shadow-mount";
 
+/* The `stock` paint's own cast — the mount's lift and the stock's contact shadow composed into one
+   token, because two `box-shadow` utilities overwrite each other
+   (DESIGN.md -> Foundations -> Elevation & Depth). */
+const STOCK_SHADOW = "shadow-mounted-stock";
+
+/* The `stock` paint: this element becomes the paper stock at the mount + stock footprint, carrying the
+   fill, the grain, the corners and both shadows, while the sheet below keeps its padding and paints
+   nothing. */
+const STOCK_PAINT = `${STOCK_SHADOW} rounded-card bg-surface-elevated`;
+
 /* Unmounted is the base, so a non-hero section never paints a mount and then loses it. The reveal
    ladder's four rungs, in `{spacing.*}` utilities: `{reveal.base}` · `{reveal.md}` · `{reveal.lg}` ·
    `{reveal.xl}`. Only the hero reaches the first — an ordinary section has no mount below
@@ -78,9 +88,14 @@ const SHEET = "bg-surface-elevated shadow-stock";
    Hoisted into constants so a framed branch never names a paint utility inline, where the paint prop
    could not gate it. `MOUNT_REVEAL` keeps its own `bg-surface-mount`: that is the unfitted path's
    reveal ladder, not the fitted card's paint. */
+/* An EMPTY arm must stay exactly empty, and that is load-bearing rather than tidy: an empty
+   interpolation emits the same string the retired `unbacked ? "" : …` ternary did, which is how the
+   built markup came back byte-identical across the migration -- `mounted-sheet-frame__mount ` keeps its
+   trailing space and `mounted-sheet-frame__sheet  invite-settle` its double space. Collapsing that
+   whitespace would be a visual no-op and would break the one proof the migration rests on. */
 const MOUNT_PAINT: Record<FramePaint, string> = {
   mount: `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`,
-  stock: "",
+  stock: `${STOCK_PAINT}`,
   none: "",
 };
 
@@ -100,13 +115,16 @@ const SHEET_PAINT: Record<FramePaint, string> = {
    like a guard that passes. */
 const UNFITTED_HERO_PAINT: Record<FramePaint, string> = {
   mount: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.hero}`,
-  stock: "",
+  stock: `${STOCK_PAINT}`,
   none: "",
 };
 
+/* The stock arm does NOT take `MOUNT_REVEAL_FILL`: that ladder deliberately leaves a non-hero specimen
+   bare below `{breakpoints.md}`, and under `"stock"` this element is the card's only painted surface at
+   every width, so a ladder-gated arm would show nothing there. */
 const UNFITTED_SECTION_PAINT: Record<FramePaint, string> = {
   mount: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.section}`,
-  stock: "",
+  stock: `${STOCK_PAINT}`,
   none: "",
 };
 
@@ -134,7 +152,7 @@ export function MountedSheet({
        not show, so neither element carries a padding utility. */
     return (
       <>
-        <style>{tallFrameCss(hero)}</style>
+        <style>{tallFrameCss(hero, paint)}</style>
         <div className={tallScopeClass(hero)}>
           <div className={FRAME_CLASS.box}>
             <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[paint]}`}>
@@ -155,7 +173,7 @@ export function MountedSheet({
        not show, so neither element carries a padding utility. */
     return (
       <>
-        <style>{mountedSheetFrameCss(fit, hero)}</style>
+        <style>{mountedSheetFrameCss(fit, hero, "single", paint)}</style>
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
             <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[paint]}`}>

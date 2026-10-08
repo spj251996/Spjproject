@@ -1,3 +1,4 @@
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import celebrations from "@/app/celebrations.module.css";
 import {
   Botanical,
@@ -24,7 +25,7 @@ const CELEBRATIONS_PROMISE =
    module instead (celebrations.module.css), through `--celebrations-intro-gap`. */
 const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
-export function CelebrationsSection() {
+export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
   /* Every ritual's set, keyed by id, handed WHOLE to each strip: `photoFit` must be solved across
      all of them or the section's height stops being a constant (`components/ui/photo-fit.ts`). */
   const photoSets = Object.fromEntries(
@@ -34,7 +35,7 @@ export function CelebrationsSection() {
   return (
     <section className="relative" id="celebrations">
       <Botanical pieces={SECTION_PLACEMENT.celebrations} />
-      <MountedSheet tall>
+      <MountedSheet paint={paint} tall>
         <div
           className="flex w-full flex-col items-center"
           style={{

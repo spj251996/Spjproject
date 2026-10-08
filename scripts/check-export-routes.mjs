@@ -9,6 +9,7 @@
  * that went stale immediately.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 /* Measured on the export before this gate was written: the trunk's no-JS fallback, the trunk's live
  * root, and the card thread's. Not a remembered figure. */
@@ -20,7 +21,13 @@ const LAB_ROOTS = 3;
  * adding a route sets it in the same object literal -- and it is a flag rather than a filter on the
  * path, because a filter would silently re-include the next not-found-shaped route. */
 const EXPECTED = [
-  { path: "out/index.html", roots: 0, label: "/ (published)", sections: true },
+  {
+    path: "out/index.html",
+    roots: 0,
+    label: "/ (published)",
+    sections: true,
+    stockPaint: false,
+  },
   {
     sections: true,
     /* MEASURED, not assumed: under `output: "export"` this version emits a dynamic route as
@@ -29,6 +36,7 @@ const EXPECTED = [
     path: "out/thread/current.html",
     roots: LAB_ROOTS,
     label: "/thread/current (lab)",
+    stockPaint: false,
   },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
    * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
@@ -40,13 +48,27 @@ const EXPECTED = [
    *
    * Asserted against the built file, never a served URL: an SPA-fallback rewrite returns the index
    * document for any unknown path, which has already made a check of `/404` measure the HOME page. */
+  {
+    sections: true,
+    path: "out/thread/mount.html",
+    roots: LAB_ROOTS,
+    label: "/thread/mount (lab)",
+    stockPaint: false,
+  },
+  {
+    sections: true,
+    path: "out/thread/stock.html",
+    roots: LAB_ROOTS,
+    label: "/thread/stock (lab)",
+    stockPaint: true,
+  },
   { path: "out/404.html", roots: 0, label: "/404 (not found, served)" },
   { path: "out/_not-found.html", roots: 0, label: "/_not-found (route-named)" },
 ];
 const FORBIDDEN = ["out/design-system/index.html", "out/lab-scratch"];
 /* The exact SET of lab routes, so an extra one cannot appear unnoticed. Asserting the set rather than
  * listing forbidden paths means Plan 2 updates one line instead of remembering to delete a guard. */
-const LAB_ROUTES = ["current"];
+const LAB_ROUTES = ["current", "mount", "stock"];
 
 /* THE OTHER HALF OF THE DOC PARITY GATE. Its first half -- every `[lab]` entry's subject absent from
  * the published page -- is the thread assertion above. Its second half, "every non-`[lab]` one is
@@ -90,7 +112,38 @@ if (!EXPECTED.some((route) => route.sections)) {
   failed = true;
 }
 
-for (const { path, roots, label, sections } of EXPECTED) {
+/* THE `stock` PAINT REACHES THE BUILT CSS, AND ONLY THE ROUTE THAT ASKS FOR IT. Both halves need the
+ * built artifact and neither is visible in the source: a `var()` that resolves to nothing builds green,
+ * and the frame's stylesheet is inlined PER SECTION, so what each page ships is decided by the argument
+ * its call sites pass rather than by anything a grep of the component would show.
+ *
+ * `--shadow-mounted-stock` is a comma list of two `var()`s, which Tailwind inlines into the utility's
+ * own `--tw-shadow`. The inner names are asserted, not just the token's presence: a token that resolved
+ * to nothing would still appear here. */
+const CSS_DIR = "out/_next/static/chunks";
+const STOCK_CLASS = "shadow-mounted-stock";
+if (existsSync(CSS_DIR)) {
+  const css = readdirSync(CSS_DIR)
+    .filter((name) => name.endsWith(".css"))
+    .map((name) => readFileSync(join(CSS_DIR, name), "utf8"))
+    .join("\n");
+  const rule = css.match(/\.shadow-mounted-stock\{[^}]*\}/)?.[0] ?? "";
+  const composed =
+    rule.includes("var(--shadow-mount)") &&
+    rule.includes("var(--shadow-stock)");
+  console.log(
+    `${composed ? "ok  " : "FAIL"} built CSS: .${STOCK_CLASS} composes both shadow recipes`,
+  );
+  if (!composed) {
+    console.error(`     rule found: ${rule || "(none)"}`);
+    failed = true;
+  }
+} else {
+  console.error(`FAIL: ${CSS_DIR} is missing -- no built CSS to check`);
+  failed = true;
+}
+
+for (const { path, roots, label, sections, stockPaint } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -103,6 +156,15 @@ for (const { path, roots, label, sections } of EXPECTED) {
     `${ok ? "ok  " : "FAIL"} ${label}: ${found} thread roots, expected ${roots}`,
   );
   if (!ok) failed = true;
+
+  if (stockPaint !== undefined) {
+    const uses = (html.match(new RegExp(STOCK_CLASS, "g")) ?? []).length;
+    const ok = stockPaint ? uses > 0 : uses === 0;
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${label}: ${uses} ${STOCK_CLASS} uses, expected ${stockPaint ? "some" : "none"}`,
+    );
+    if (!ok) failed = true;
+  }
 
   if (!sections) continue;
   const missing = SECTION_IDS.filter((id) => !html.includes(`id="${id}"`));

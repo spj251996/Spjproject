@@ -1,3 +1,4 @@
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { familyFit } from "@/app/family-fit";
 import {
   Botanical,
@@ -24,11 +25,11 @@ function familyGroupBySide(side: FamilyGroup["side"]) {
 
 /* The id scopes `measure:fit`'s selector. Measured by `familyFit`: any content or type change
    re-runs `npm run measure:fit`. */
-export function FamilySection() {
+export function FamilySection({ paint }: { paint?: FramePaint }) {
   return (
     <section className="relative" id="family">
       <Botanical fit={familyFit} pieces={SECTION_PLACEMENT.family} />
-      <MountedPair fit={familyFit}>
+      <MountedPair fit={familyFit} paint={paint}>
         <Family
           eyebrow={FAMILY_EYEBROWS.bride}
           group={familyGroupBySide("bride")}

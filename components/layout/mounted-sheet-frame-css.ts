@@ -6,6 +6,7 @@ import {
   type CardRectangle,
   type FitRegime,
   type FrameLayout,
+  type FramePaint,
   fitPadding,
   fitRectangles,
   formatPx,
@@ -293,13 +294,19 @@ function mountRules(
   windowClass: WindowClass,
   hero: boolean,
   scope: string,
+  paint: FramePaint,
 ): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   return orientationsOf(windowClass)
     .map((landscape) => {
-      const fill = mountShows(windowClass, hero, landscape)
-        ? ""
-        : " background-color: transparent; background-image: none;";
+      /* Under `"stock"` the mount element IS the card's painted surface at every width, so it is
+         never stripped: stripping it would leave a card below `{breakpoints.md}` painting nothing at
+         all, the sheet having given up its own fill. Under `"mount"` and `"none"` this is exactly as
+         before -- `"none"` gates its paint at the component, not here. */
+      const fill =
+        paint === "stock" || mountShows(windowClass, hero, landscape)
+          ? ""
+          : " background-color: transparent; background-image: none;";
       return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero, landscape))};${fill} }\n}`;
     })
     .join("\n");
@@ -320,12 +327,20 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
    Stacked, the mount stops being a surface and its gap is the ground below one card plus the
    ground above the next. The leaf rule strips fill and grain but never `box-shadow`, so each
    stacked card keeps `shadow-mount`: a single section is bare in the same windows. */
-function pairLayoutRules(windowClass: WindowClass, scope: string): string {
+function pairLayoutRules(
+  windowClass: WindowClass,
+  scope: string,
+  paint: FramePaint,
+): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
   const sheet = sheetSelector(scope, "pair");
   const crease = `${mount} > .${FRAME_CLASS.crease}`;
   const strip = "background-color: transparent; background-image: none;";
+  /* The leaf is the painted plate under `"stock"`, so the strip that clears a mount which does not
+     show would clear the card's own surface. The MOUNT's own strip in the stacked branch stays: there
+     the shared mount genuinely shows nothing, spanning both cards plus the ground between them. */
+  const leafStrip = paint === "stock" ? "" : ` ${strip}`;
 
   return orientationsOf(windowClass)
     .map((landscape) => {
@@ -334,14 +349,14 @@ function pairLayoutRules(windowClass: WindowClass, scope: string): string {
         const reveal = revealFor(windowClass, false, landscape);
         return `${prelude} {
 ${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
-${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)}; ${strip} box-shadow: none; }
+${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)};${leafStrip} box-shadow: none; }
 ${sheet} { justify-content: flex-start; }
 ${crease} { display: block; }
 }`;
       }
       return `${prelude} {
 ${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; ${strip} }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)};${leafStrip} }
 }`;
     })
     .join("\n");
@@ -520,6 +535,7 @@ export function mountedSheetFrameCss(
   fit: MeasuredFit,
   hero: boolean,
   layout: FrameLayout = "single",
+  paint: FramePaint = "mount",
 ): string {
   /* Validates the fit, so it runs before anything reads the fit's section name — including the
      hero-pair guard below, which needs a valid fit to report one. */
@@ -535,8 +551,8 @@ export function mountedSheetFrameCss(
     ...classes.flatMap((windowClass) => [
       groundRules(windowClass, hero, layout, scope),
       layout === "pair"
-        ? pairLayoutRules(windowClass, scope)
-        : mountRules(windowClass, hero, scope),
+        ? pairLayoutRules(windowClass, scope, paint)
+        : mountRules(windowClass, hero, scope, paint),
       paddingRules(windowClass, hero, layout, scope),
     ]),
   ].join("\n");
@@ -554,7 +570,10 @@ export function tallScopeClass(hero: boolean): string {
    minimum card height: the card is its content's height, and the page scrolls past it. The landscape
    side ground is a flat double, with none of the fitted frame's leftover-from-the-height-cap term,
    because a tall card has no height cap to leave anything over. */
-export function tallFrameCss(hero: boolean): string {
+export function tallFrameCss(
+  hero: boolean,
+  paint: FramePaint = "mount",
+): string {
   const scope = `.${tallScopeClass(hero)}`;
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
@@ -607,9 +626,13 @@ ${sheet} {
 
   const perClass = tallWindowClasses(hero).map((windowClass) => {
     const mountRule = (orientation: Orientation) => {
-      const fill = windowClass.mountShows[orientation]
-        ? ""
-        : " background-color: transparent; background-image: none;";
+      /* The same rule as `mountRules`, in this branch's own copy of the ternary: under `"stock"` the
+         mount is the card's painted surface at every width and is never stripped. Celebrations is the
+         page's one tall section, so a route painting every card stock reaches exactly here. */
+      const fill =
+        paint === "stock" || windowClass.mountShows[orientation]
+          ? ""
+          : " background-color: transparent; background-image: none;";
       return `${mount} { padding: ${spacing(windowClass.reveal[orientation])};${fill} }`;
     };
     const ground = spacing(windowClass.ground);

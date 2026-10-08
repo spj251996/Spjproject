@@ -107,6 +107,15 @@
     color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
   --shadow-stock:
     var(--shadow-sheet-edge), var(--shadow-sheet-highlight), var(--shadow-sheet);
+  /* The mountless stock's cast, for the thread lab's `stock` paint, where ONE element is both the
+     mount and the stock: the mount's three drops under the stock's two insets and two drops. SIX
+     layers on a box the size of mount + stock, which is fill-rate work and is measured against a
+     static control rather than assumed.
+     It has to be a token rather than two utilities because `shadow-mount` and `shadow-stock` both set
+     `box-shadow` and the second would overwrite the first — the same reason `--shadow-stock` is itself
+     a composition. `@theme static` above is what emits the inner `var()`s to `:root` whether or not a
+     utility reads them, so the composition resolves. */
+  --shadow-mounted-stock: var(--shadow-mount), var(--shadow-stock);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);

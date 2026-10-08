@@ -61,6 +61,8 @@ test("the painted arms between them carry every paint an unpainted card drops", 
     const CARD_CORNERS = ${declared("CARD_CORNERS")};
     const SHEET = ${declared("SHEET")};
     const MOUNT_REVEAL_FILL = ${declared("MOUNT_REVEAL_FILL")};
+    const STOCK_SHADOW = ${declared("STOCK_SHADOW")};
+    const STOCK_PAINT = ${declared("STOCK_PAINT")};
     return [
       ${declared("MOUNT_PAINT")},
       ${declared("SHEET_PAINT")},
@@ -75,6 +77,9 @@ test("the painted arms between them carry every paint an unpainted card drops", 
     "rounded-card",
     "bg-surface-mount",
     "bg-surface-elevated",
+    /* The `stock` paint's own composed cast, listed here so a card that paints nothing is asserted to
+       drop that too -- it is the one paint utility the enum added. */
+    "shadow-mounted-stock",
   ]) {
     assert.ok(
       paint.includes(utility),

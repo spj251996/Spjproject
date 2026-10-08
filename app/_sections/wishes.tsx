@@ -1,3 +1,4 @@
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { splitCoupleNames } from "@/app/_sections/shared";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
@@ -13,13 +14,19 @@ import { wishes } from "@/content";
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
    illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
    the thread. */
-export function WishesSection({ thread = false }: { thread?: boolean }) {
+export function WishesSection({
+  paint,
+  thread = false,
+}: {
+  paint?: FramePaint;
+  thread?: boolean;
+}) {
   const wishesNames = splitCoupleNames(wishes.coupleNames);
 
   return (
     <section className="relative" id="wishes">
       <Botanical fit={wishesFit} pieces={SECTION_PLACEMENT.wishes} />
-      <MountedSheet fit={wishesFit}>
+      <MountedSheet fit={wishesFit} paint={paint}>
         <div
           className={`${wishesStyles.stack} wishes-stack flex w-full flex-col items-center`}
           style={{

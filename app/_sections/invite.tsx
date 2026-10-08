@@ -1,3 +1,4 @@
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import "@/app/invite.css";
 import {
   eventById,
@@ -82,7 +83,7 @@ function InvitePassage() {
 
    The painted option returns by deleting the one prop; the sequence it needs back is recorded in
    `DESIGN.md` → Foundations → Layout → `mounted-sheet` → The hero card's two options. */
-export function InviteSection() {
+export function InviteSection({ paint }: { paint?: FramePaint }) {
   const wedding = eventById("wedding");
   const weddingDate = formatEventDate(wedding.date);
   const names = splitCoupleNames(invite.coupleNames);
@@ -90,7 +91,12 @@ export function InviteSection() {
   return (
     <section className="relative">
       <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
-      <MountedSheet className="invite-settle" fit={inviteFit} hero paint="none">
+      <MountedSheet
+        className="invite-settle"
+        fit={inviteFit}
+        hero
+        paint={paint ?? "none"}
+      >
         {/* The stack fills the card so the passage can settle against its bottom edge. Growth
             shares rather than `1fr` grid rows: a share with no free space collapses to 0 in
             `measure:fit`'s detached clone, so the measured height stays the content's own, while

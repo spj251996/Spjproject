@@ -1,3 +1,4 @@
+import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { contactFit } from "@/app/contact-fit";
 import {
   Botanical,
@@ -110,11 +111,11 @@ function ContactMark() {
 /* `data-contact-stack` on the inner div scopes `measure:fit`'s selector — the outer `#contact` section already carries the sheet's own
    padding and mount, so measuring it directly would double-count that padding against the frame's
    own addition of it. */
-export function ContactSection() {
+export function ContactSection({ paint }: { paint?: FramePaint }) {
   return (
     <section className="relative" id="contact">
       <Botanical fit={contactFit} pieces={SECTION_PLACEMENT.contact} />
-      <MountedSheet fit={contactFit}>
+      <MountedSheet fit={contactFit} paint={paint}>
         <div
           className="flex w-full flex-col items-center text-center [@media(width>=100rem)_and_(orientation:landscape)]:flex-1"
           data-contact-stack
