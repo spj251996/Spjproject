@@ -89,7 +89,7 @@ const SKIP_OPENING_WHEN_SCROLLED = `addEventListener("DOMContentLoaded",function
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Flemy & Sebastian",
+  title: "Sebastian & Flemy",
   description: "You’re invited — 9th January 2027, Koothattukulam, Kerala",
   robots: { index: false, follow: false },
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
@@ -105,14 +105,14 @@ export const metadata: Metadata = {
        face, so the title carries the occasion and the description carries the date and the town —
        together the pair holds names, date and city (PROJECT.md → Link Sharing) with nothing said
        twice. The card shows the state; this says the town the card omits. */
-    title: "Flemy & Sebastian are getting married",
+    title: "Sebastian & Flemy are getting married",
     description: "You’re invited — 9th January 2027, Koothattukulam, Kerala",
     images: [
       {
         url: "/og-card.jpg",
         width: 1200,
         height: 630,
-        alt: "Flemy and Sebastian, 9th January 2027, Kerala",
+        alt: "Sebastian and Flemy, 9th January 2027, Kerala",
       },
     ],
   },
