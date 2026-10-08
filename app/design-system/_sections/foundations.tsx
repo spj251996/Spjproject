@@ -90,6 +90,12 @@ const COLOR_GROUPS: SwatchGroup[] = [
         usage:
           "Eyebrows, dividers, an action's label and mark, portrait rims, active states.",
       },
+      {
+        token: "--color-rule-faint",
+        name: "rule-faint",
+        usage:
+          "The invite date block's two hairlines, and nothing else. It must read lighter than the type it brackets — a rule as dark as the words reads as a table cell.",
+      },
     ],
   },
   {
@@ -141,8 +147,8 @@ const TYPE_TOKENS: TypeToken[] = [
     weight: 400,
     sample: "Bride & Groom",
     phone: { size: 94, lh: 141 },
-    tablet: { size: 135, lh: 203 },
-    laptop: { size: 125, lh: 188 },
+    tablet: { size: 110, lh: 165 },
+    laptop: { size: 110, lh: 165 },
     desktop: { size: 156, lh: 234 },
   },
   {
@@ -180,11 +186,32 @@ const TYPE_TOKENS: TypeToken[] = [
     token: "type-date-primary",
     family: "Playfair Display",
     weight: 700,
-    sample: "The major date line on the invite and the event sheets.",
+    sample:
+      "The event sheets' date line, and the invite's place beneath its date block.",
     phone: { size: 14, lh: 28 },
     tablet: { size: 15, lh: 30 },
     laptop: { size: 14, lh: 28 },
     desktop: { size: 17, lh: 32 },
+  },
+  {
+    token: "type-date-label",
+    family: "Playfair Display",
+    weight: 400,
+    sample: "Saturday · Jan · 2027",
+    phone: { size: 12, lh: 12 },
+    tablet: { size: 13, lh: 13 },
+    laptop: { size: 12, lh: 12 },
+    desktop: { size: 14, lh: 14 },
+  },
+  {
+    token: "type-date-day",
+    family: "Playfair Display",
+    weight: 400,
+    sample: "9",
+    phone: { size: 44, lh: 44 },
+    tablet: { size: 48, lh: 48 },
+    laptop: { size: 44, lh: 44 },
+    desktop: { size: 51, lh: 51 },
   },
   {
     token: "type-body",
@@ -462,7 +489,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families, nine roles, each stepping at phone, tablet, laptop and desktop."
+        intro="Four families, thirteen roles, each stepping at phone, tablet, laptop and desktop."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
