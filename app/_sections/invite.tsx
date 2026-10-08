@@ -140,18 +140,26 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 `type-caption` is the invite's quiet role, shared with the passage at the card's foot.
                 PROVISIONAL: the role is confirmed in Half 2, when the rebuilt date block lands directly
                 beneath it and the two are judged on a render together. */}
+            {/* `space-3xs`, tight to the names, because the two are one sentence — the names are
+                its subject and it does not stand alone. */}
             <p
-              className="type-caption text-ink-muted mt-space-sm"
+              className="type-caption text-ink-muted mt-space-3xs"
               data-invite-line
             >
               invite you to celebrate our wedding
             </p>
 
-            {/* `space-sm` rather than the `space-lg` that opened the names-to-date gap before this
-                line existed: the line now sits between two equal gaps instead of inheriting the old
-                opening. The landscape override that used to sit here is gone with it — it set
-                `space-sm`, which is now the base, so it had become a rule that changed nothing. */}
-            <p className="type-date-primary text-ink mt-space-sm">
+            {/* THE TABLET STEP IS FORCED, NOT CHOSEN, and removing it un-frames the section.
+                This gap was `space-lg` (32) when the names sat directly above the date. The line
+                costs 24px of its own text at the tablet tier, so the two gaps around it have 8px
+                between them if the block is to stay the height it was — `space-3xs` either side,
+                landing on exactly 32 again.
+
+                It has to stay the height it was because the tablet band has no give: the invite's
+                landscape card already stood 717px against a 720px cap, and `mounted-sheet-frame`
+                refuses to frame a section with no tier line rather than overflowing it. Phone and
+                desktop keep `space-sm` — they have the room, and the date reads better with it. */}
+            <p className="type-date-primary text-ink mt-space-sm md:mt-space-3xs lg:mt-space-sm">
               <PrimaryDate date={weddingDate} weekday={false} fullMonth />
             </p>
 
