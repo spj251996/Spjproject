@@ -82,13 +82,11 @@ const SAMPLE_BUDGET = 200;
 
 const THREAD_SELECTOR = "svg[data-thread-svg] path";
 
-/* The invite section carries no `id` (it is the page's first section, and nothing else has
-   needed to address it) — every other section does. `sectionSelectorFor` is the one place this
-   exception lives; everywhere else in this script deals in the plain `ThreadId`-shaped name. */
+/* Every section carries its own `id`, invite included since 2026-10-08. It did not until then, and
+   this function held a `main > section:first-of-type` exception for it with a comment claiming
+   nothing else needed to address it — which `check-thread-joins.mjs` had been quietly disproving,
+   reporting invite MISSING at all 12 of its windows because `#invite` matched nothing. */
 function sectionSelectorFor(sectionId) {
-  if (sectionId === "invite") {
-    return "main > section:first-of-type";
-  }
   return `#${sectionId}`;
 }
 

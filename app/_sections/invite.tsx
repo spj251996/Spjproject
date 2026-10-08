@@ -89,7 +89,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
   const names = splitCoupleNames(invite.coupleNames);
 
   return (
-    <section className="relative">
+    <section className="relative" id="invite">
       <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
       <MountedSheet
         className="invite-settle"
