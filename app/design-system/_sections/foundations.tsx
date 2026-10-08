@@ -545,7 +545,7 @@ export function FoundationsSections() {
             "mount · surface-mount · shadow-mount · carries no text, ever",
             "stock · surface-elevated · shadow-stock",
             "corners · radius-card on both layers",
-            "unbacked · the hero's unpainted option · no fill, no shadow, no corners, geometry unchanged",
+            'paint="none" · the hero\'s unpainted option · no fill, no shadow, no corners, geometry unchanged',
             "reveal · 16px below md · 12px md to lg · 16px lg to xl · 24px from xl — the tablet rung is the narrowest deliberately, the invite's landscape card at that width having no height left to give",
           ]}
         >
@@ -561,7 +561,7 @@ export function FoundationsSections() {
             {/* The unpainted option, which the invitation takes. It keeps the hero's reveal and
                 padding and paints none of it, so on the ground it reads as type with no card —
                 which is why this specimen looks like bare text rather than a box. */}
-            <MountedSheet hero unbacked>
+            <MountedSheet hero paint="none">
               <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">Hero · unpainted</p>
                 <p className="type-body text-ink">

@@ -33,30 +33,40 @@ test("a framed branch takes its paint only from the gated constants", () => {
     assert.strictEqual(
       paints,
       null,
-      `a framed branch names paint inline, so \`unbacked\` cannot gate it: ${line.trim()}`,
+      `a framed branch names paint inline, so the paint prop cannot gate it: ${line.trim()}`,
     );
   }
 });
 
-/* Every paint the unpainted option drops, asserted against the constants' RESOLVED values rather
-   than their spelling: they are composed from each other (`MOUNT_PAINT` reads `MOUNT_SHADOW`), so a
-   text match would reject the composition it is meant to encourage, and pinning a spelling is the
+/* Every paint the unpainted option drops, asserted against the records' RESOLVED values rather than
+   their spelling: the arms are composed from each other (`MOUNT_PAINT.mount` reads `MOUNT_SHADOW`), so
+   a text match would reject the composition it is meant to encourage, and pinning a spelling is the
    failure mode this project keeps re-learning -- it passes the mutation that matters and fails the
-   correct rewrite. The declarations are evaluated the way `button-action.test.ts` evaluates
-   `sameTab`, so what is checked is what ships. */
-test("the two paint constants between them carry every paint the option drops", () => {
+   correct rewrite. The declarations are evaluated the way `button-action.test.ts` evaluates `sameTab`,
+   so what is checked is what ships. */
+test("the painted arms between them carry every paint an unpainted card drops", () => {
   const declared = (name: string) => {
     const match = source.match(
-      new RegExp(`const ${name} =\\s*([\\s\\S]*?);\\n`),
+      new RegExp(
+        `const ${name}(?:: Record<FramePaint, string>)? =\\s*([\\s\\S]*?);\\n`,
+      ),
     );
     assert.ok(match, `no \`${name}\` declaration found`);
-    return match[1];
+    /* `MOUNT_REVEAL_FILL` ends `} as const`, which is TypeScript and not evaluable JavaScript -- the
+       declaration is sliced to the statement's `;`, so the assertion comes with it. */
+    return match[1].replace(/\s+as const$/, "");
   };
   const resolve = new Function(`
     const MOUNT_SHADOW = ${declared("MOUNT_SHADOW")};
     const CARD_CORNERS = ${declared("CARD_CORNERS")};
     const SHEET = ${declared("SHEET")};
-    return [${declared("MOUNT_PAINT")}, ${declared("SHEET_PAINT")}].join(" ");
+    const MOUNT_REVEAL_FILL = ${declared("MOUNT_REVEAL_FILL")};
+    return [
+      ${declared("MOUNT_PAINT")},
+      ${declared("SHEET_PAINT")},
+      ${declared("UNFITTED_HERO_PAINT")},
+      ${declared("UNFITTED_SECTION_PAINT")},
+    ].flatMap((record) => Object.values(record)).join(" ");
   `) as () => string;
   const paint = resolve();
   for (const utility of [
@@ -68,75 +78,21 @@ test("the two paint constants between them carry every paint the option drops", 
   ]) {
     assert.ok(
       paint.includes(utility),
-      `${utility} is not carried by either paint constant, so \`unbacked\` cannot drop it`,
+      `${utility} is not carried by any painted arm, so the paint prop cannot drop it`,
     );
   }
 });
 
-/* THE ASSERTION THAT MATTERS, and the one that makes this an OPTION rather than a fork. The owner
-   chose "backing only -- keep the box" precisely so the measured fit, the section's height, the
-   thread's card box and the page's height are identical either way.
+/* THE ASSERTION THAT MATTERS, and the one that makes this an OPTION rather than a fork, now lives in
+   "every paint arm carries paint utilities only" below: the owner chose "backing only -- keep the box"
+   precisely so the measured fit, the section's height, the thread's card box and the page's height are
+   identical whichever paint is selected.
 
-   Asserted on what the prop SELECTS BETWEEN, not on what shares a line with it: the reveal ladder
-   and the sheet's padding sit on the same `className` as the paint, unconditionally and correctly,
-   so a line-local check would forbid the one arrangement the component needs. What must hold is that
-   every `unbacked` ternary chooses between a paint constant and nothing at all -- never a reveal,
-   never a padding, and never with the arms the wrong way round. */
-/* Each `${unbacked ? … : …}` is read by walking braces to its own close, not by a regex that stops
-   at the first `:` or demands a bare identifier. The earlier version required the painted arm to
-   match `[A-Za-z_$][\w$]*`, so any arm that was a string or a template literal produced NO MATCH and
-   was silently skipped -- it passed both mutations it existed to catch: moving `SHEET_PADDING` into
-   the painted arm, and swapping the arms. A guard that skips what it cannot parse is worse than
-   none, because the skip reads as a pass. Braces are the delimiter the syntax uses, so braces are
-   what bounds the slice. */
-function unbackedInterpolations(src: string): string[] {
-  const found: string[] = [];
-  for (
-    let at = src.indexOf("${unbacked");
-    at !== -1;
-    at = src.indexOf("${unbacked", at + 1)
-  ) {
-    let depth = 0;
-    for (let i = at + 1; i < src.length; i++) {
-      if (src[i] === "{") depth++;
-      else if (src[i] === "}") {
-        depth--;
-        if (depth === 0) {
-          found.push(src.slice(at + 2, i));
-          break;
-        }
-      }
-    }
-  }
-  return found;
-}
-
-const PAINT_CONSTANTS = ["MOUNT_PAINT", "SHEET_PAINT", "UNFITTED_MOUNT_PAINT"];
-
-test("the unbacked prop selects paint and nothing else", () => {
-  const interpolations = unbackedInterpolations(source);
-  assert.ok(interpolations.length > 0, "no `unbacked` interpolation found");
-  for (const expression of interpolations) {
-    const split = expression.indexOf("?");
-    const colon = expression.indexOf(":", split);
-    assert.ok(colon !== -1, `not a ternary: ${expression}`);
-    assert.strictEqual(
-      expression.slice(split + 1, colon).trim(),
-      '""',
-      `the unbacked arm must paint nothing at all, and must be the FIRST arm: ${expression}`,
-    );
-    const painted = expression.slice(colon + 1).trim();
-    assert.ok(
-      PAINT_CONSTANTS.some((name) => painted.startsWith(name)),
-      `the painted arm must be a paint constant, never geometry: ${expression}`,
-    );
-    assert.doesNotMatch(
-      painted,
-      /MOUNT_REVEAL\b|SHEET_PADDING|\bp-|\bpx-|\bpy-|\bflex|\bmin-h|justify-|items-|\bw-full/,
-      `the painted arm reaches geometry, so \`unbacked\` would gate it: ${expression}`,
-    );
-  }
-});
+   It used to be asserted by walking each `${unbacked ? … : …}` ternary. The records replaced the
+   ternaries, so the walk had nothing left to read -- and the record form is the stronger check, because
+   it sees an arm that no call site happens to interpolate. What is kept from the old test is its
+   lesson, written into `paintRecords` above: bound a slice by the delimiter the SYNTAX uses, and never
+   let an arm the parser cannot read count as a pass. */
 
 /* Painted is the DEFAULT, which is what keeps every other caller untouched -- including
    `not-found`, the same single-screen shape with the same two botanical pieces, which keeps its
@@ -144,8 +100,8 @@ test("the unbacked prop selects paint and nothing else", () => {
 test("a card paints its backing unless asked not to", () => {
   assert.match(
     source,
-    /unbacked\s*=\s*false/,
-    "`unbacked` must default to false, or every other card loses its backing",
+    /paint\s*=\s*"mount"/,
+    '`paint` must default to "mount", or every other card loses its backing',
   );
 });
 
@@ -153,32 +109,112 @@ test("a card paints its backing unless asked not to", () => {
    compose into a silent no-op: `tall` has never wanted an unpainted card, so passing both is a
    mistake and should say so.
 
-   Asserted as a THROW on both flags, in either order, rather than as the spelling `unbacked && tall`
-   -- which this file's own comments preach against, and which would fail the correct rewrite
-   `tall && unbacked` while passing a downgrade of the throw to a `console.warn`. */
-test("a tall card refuses the unbacked prop", () => {
+   Asserted as a THROW on both conditions, in either order, rather than as one spelling -- which this
+   file's own comments preach against, and which would fail the correct rewrite while passing a
+   downgrade of the throw to a `console.warn`. */
+test("a tall card refuses the unpainted option", () => {
   const guard = source.match(
-    /if\s*\(([^)]*\bunbacked\b[^)]*\btall\b[^)]*|[^)]*\btall\b[^)]*\bunbacked\b[^)]*)\)\s*\{\s*throw new Error\(/,
+    /if\s*\(([^)]*paint === "none"[^)]*\btall\b[^)]*|[^)]*\btall\b[^)]*paint === "none"[^)]*)\)\s*\{\s*throw new Error\(/,
   );
   assert.ok(
     guard,
-    "no `throw` guarding the unbacked + tall combination — a warn or a silent no-op is not enough",
+    'no `throw` guarding the paint="none" + tall combination — a warn or a silent no-op is not enough',
   );
 });
 
 /* THE REVEAL LADDER CARRIES NO FILL. `MOUNT_REVEAL` once set the mount's colour and its padding in
-   one string, so `unbacked` could gate `MOUNT_PAINT` and the reveal would go on painting underneath
+   one string, so the prop could gate `MOUNT_PAINT` and the reveal would go on painting underneath
    -- the unfitted branch then rendered an unpainted hero as a solid tan block, which is the opposite
    of what the option means, and it is the branch the gallery's specimen uses. Fill belongs to the
    gated paint constants; the ladder keeps only the padding that is geometry and must never be gated. */
-test("the reveal ladder carries padding only, so unbacked can drop every fill", () => {
+test("the reveal ladder carries padding only, so a paint can drop every fill", () => {
   const ladder = source.match(/const MOUNT_REVEAL = \{[\s\S]*?\} as const;/);
   assert.ok(ladder, "no `MOUNT_REVEAL` declaration found");
   assert.doesNotMatch(
     ladder[0],
     /bg-/,
-    "the reveal ladder must carry no background utility, or an unbacked card still paints one",
+    "the reveal ladder must carry no background utility, or an unpainted card still paints one",
   );
+});
+
+/* THE PAINT RECORDS, and what makes this a three-state enum rather than a boolean beside one. Three
+   mutually exclusive paints are one `FramePaint`; a boolean next to an enum is one constant answering
+   two questions, which this codebase has shipped as a defect twice -- the frame's padding floor, and
+   `MOUNT_REVEAL` carrying a fill and a padding in one string.
+
+   Every record is read by walking braces from its own header, so a reformat cannot break the parse,
+   and both the record count and each record's exact key set are asserted. That second assertion is
+   the one that matters: a record whose arms this parser could not see would be SILENTLY UNCHECKED,
+   and a guard that skips what it cannot parse reads exactly like a guard that passes -- the failure
+   the failure the retired ternary walk above records. An arm must therefore be a LITERAL -- a bare
+   identifier would not match, and would vanish from the check. */
+const PAINT_ARMS = ["mount", "stock", "none"];
+
+function paintRecords(src: string): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  const header = /const (\w+): Record<FramePaint, string> = \{/g;
+  for (let m = header.exec(src); m !== null; m = header.exec(src)) {
+    let depth = 1;
+    let at = m.index + m[0].length;
+    while (depth > 0 && at < src.length) {
+      if (src[at] === "{") depth += 1;
+      if (src[at] === "}") depth -= 1;
+      at += 1;
+    }
+    const body = src.slice(m.index + m[0].length, at - 1);
+    const record: Record<string, string> = {};
+    /* Both quote styles: an arm with no interpolation is a plain string, and the formatter rewrites
+       an interpolation-free template literal into one -- so a backtick-only parser would silently
+       drop every literal arm, including all three `none` arms. That is this file's own recorded
+       failure one level up: a guard that skips what it cannot parse reads exactly like a pass. */
+    for (const arm of body.matchAll(/(\w+):\s*(?:`([^`]*)`|"([^"]*)")/g)) {
+      record[arm[1]] = arm[2] ?? arm[3];
+    }
+    out[m[1]] = record;
+  }
+  return out;
+}
+
+test("every paint record carries exactly the three paints, as literals", () => {
+  const records = paintRecords(source);
+  const names = Object.keys(records);
+  /* Four: the fitted mount, the fitted sheet, and the unfitted branch's hero and section. A count
+     that drifted down would mean a record stopped being parseable, not that one stopped existing. */
+  assert.ok(
+    names.length >= 4,
+    `expected at least four paint records, found ${names.length}: ${names}`,
+  );
+  for (const [name, record] of Object.entries(records)) {
+    assert.deepStrictEqual(
+      Object.keys(record).sort(),
+      [...PAINT_ARMS].sort(),
+      `${name}'s arms are not exactly ${PAINT_ARMS} -- an arm this parser cannot see is an arm nothing below checks`,
+    );
+  }
+});
+
+test("every paint arm carries paint utilities only", () => {
+  const records = paintRecords(source);
+  assert.ok(
+    Object.keys(records).length > 0,
+    "no paint records found -- re-anchor this test",
+  );
+  for (const [name, record] of Object.entries(records)) {
+    for (const [arm, value] of Object.entries(record)) {
+      assert.doesNotMatch(
+        value,
+        /MOUNT_REVEAL\b|SHEET_PADDING|\bp-|\bpx-|\bpy-|\bflex|\bmin-h|justify-|items-|\bw-full/,
+        `${name}.${arm} names geometry, so the paint prop would gate it: ${value}`,
+      );
+      if (arm === "none") {
+        assert.strictEqual(
+          value,
+          "",
+          `${name}.none must paint nothing at all -- the unpainted option is a subtraction, not a substitution`,
+        );
+      }
+    }
+  }
 });
 
 /* Every branch, not just the framed ones: the unfitted branch is what the gallery renders, and it is
@@ -191,7 +227,7 @@ test("no branch names a fill outside a gated paint constant", () => {
     assert.doesNotMatch(
       line,
       /bg-surface-(mount|elevated)/,
-      `a branch names a fill inline, so \`unbacked\` cannot gate it: ${line.trim()}`,
+      `a branch names a fill inline, so the paint prop cannot gate it: ${line.trim()}`,
     );
   }
 });

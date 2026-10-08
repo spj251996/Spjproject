@@ -18,15 +18,24 @@ const inviteCss = readFileSync("app/invite.css", "utf8");
    the gallery demonstrates BOTH. The painted specimen is the component's default and the documented
    alternative -- it is correct, not stale -- and the unpainted one is what the invitation ships. */
 test("the gallery shows a hero specimen of each option", () => {
-  assert.match(
-    foundations,
-    /<MountedSheet hero>/,
+  /* Matched on what each specimen SELECTS rather than on a prop's spelling. The previous version
+     asserted the literal `<MountedSheet hero unbacked>`, against this file's own header -- and that is
+     exactly the failure the header names: when `unbacked` became `paint="none"`, a spelling assertion
+     would have failed the correct rewrite while passing any mutation that kept the words. */
+  const heroSpecimens = [
+    ...foundations.matchAll(/<MountedSheet hero([^>]*)>/g),
+  ].map((m) => m[1]);
+  assert.ok(
+    heroSpecimens.length >= 2,
+    `expected at least two hero specimens, found ${heroSpecimens.length}`,
+  );
+  assert.ok(
+    heroSpecimens.some((props) => props.trim() === ""),
     "the painted hero specimen must stay: it is the component default and the documented alternative",
   );
-  assert.match(
-    foundations,
-    /<MountedSheet hero unbacked>/,
-    "the unpainted hero specimen is missing, so the gallery shows only one of two documented options",
+  assert.ok(
+    heroSpecimens.some((props) => /paint=\{?"none"/.test(props)),
+    "the unpainted hero specimen is missing, so the gallery shows only one of the documented options",
   );
 });
 

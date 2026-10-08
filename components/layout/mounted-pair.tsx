@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { MeasuredFit } from "./mounted-sheet-frame";
+import type { FramePaint, MeasuredFit } from "./mounted-sheet-frame";
 import {
   FRAME_CLASS,
   frameScopeClass,
@@ -18,6 +18,11 @@ interface MountedPairProps {
   children: [ReactNode, ReactNode];
   /* Measured from the taller of the two sheets. */
   fit?: MeasuredFit;
+  /** Which of the card's paints to apply, as `mounted-sheet` takes it. A pair has only two of the
+      three: `"mount"`, today's painted pair and the default, and `"stock"`, the thread lab's
+      mountless stock. `"none"` throws -- the unpainted card is the hero's alone and a pair is never
+      the hero. */
+  paint?: FramePaint;
 }
 
 const CREASE_GEOMETRY =
@@ -35,8 +40,21 @@ const MOUNT = `relative flex flex-col gap-space-md ${CARD_CORNERS} md:flex-row m
 
 const SHEET = `relative flex-1 ${CARD_CORNERS} bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl md:shadow-stock lg:p-space-3xl`;
 
-export function MountedPair({ children, fit }: MountedPairProps) {
+export function MountedPair({
+  children,
+  fit,
+  paint = "mount",
+}: MountedPairProps) {
   const [first, second] = children;
+
+  /* Stated as a throw rather than left to compose into a silent no-op: the unpainted option exists
+     for the page's opening card, and `mounted-sheet-frame-css` already refuses a hero pair outright,
+     so an unpainted pair is a mistake at the call site rather than a configuration. */
+  if (paint === "none") {
+    throw new Error(
+      "mounted-pair: a pair takes no unpainted option. The unpainted card is the hero's alone (DESIGN.md -> Foundations -> Layout -> `mounted-sheet`), and a pair is never the hero.",
+    );
+  }
 
   if (fit !== undefined) {
     const leaf = `${FRAME_CLASS.leaf} relative ${CARD_CORNERS} bg-surface-mount shadow-mount`;

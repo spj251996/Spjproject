@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { MeasuredFit } from "./mounted-sheet-frame";
+import type { FramePaint, MeasuredFit } from "./mounted-sheet-frame";
 import {
   FRAME_CLASS,
   frameScopeClass,
@@ -27,9 +27,12 @@ interface MountedSheetProps {
   fit?: MeasuredFit;
   tall?: boolean;
   className?: string;
-  /** Select the hero card's unpainted option: no mount fill, no stock fill, no shadow, no corners.
-      Geometry is unchanged. Absent selects the painted option, which every other caller takes. */
-  unbacked?: boolean;
+  /** Which of the card's three paints to apply. `"mount"` is today's painted card and the default
+      every framed section takes. `"none"` is the hero's unpainted option, which the invitation takes:
+      no mount fill, no stock fill, no shadow, no corners. `"stock"` is the thread lab's mountless
+      stock, where this element carries the stock surface and both shadows. Geometry is unchanged in
+      all three (DESIGN.md -> Technical Conventions -> Variant Routes). */
+  paint?: FramePaint;
 }
 
 const MOUNT_SHADOW = "shadow-mount";
@@ -44,7 +47,7 @@ const MOUNT_REVEAL = {
 } as const;
 
 /* The ladder's FILL, split out from its padding so the two can be gated separately. They were one
-   string until 2026-10-05, which meant an unpainted card still painted: `unbacked` gated the paint
+   string until 2026-10-05, which meant an unpainted card still painted: the prop gated the paint
    constants while the reveal went on supplying `bg-surface-mount` underneath, and the unfitted branch
    rendered an unpainted hero as a solid tan block. The padding above is geometry and is never gated;
    this is paint and always is. The section's `bg-transparent` below `{breakpoints.md}` is what keeps
@@ -72,20 +75,40 @@ const SHEET = "bg-surface-elevated shadow-stock";
    `mountRules` only ever strips a fill where the mount does not show, so with the utility absent that
    rule is a no-op.
 
-   Hoisted into constants so a framed branch never names a paint utility inline, where `unbacked`
+   Hoisted into constants so a framed branch never names a paint utility inline, where the paint prop
    could not gate it. `MOUNT_REVEAL` keeps its own `bg-surface-mount`: that is the unfitted path's
    reveal ladder, not the fitted card's paint. */
-const MOUNT_PAINT = `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`;
-const SHEET_PAINT = `${SHEET} ${CARD_CORNERS}`;
+const MOUNT_PAINT: Record<FramePaint, string> = {
+  mount: `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`,
+  stock: "",
+  none: "",
+};
+
+const SHEET_PAINT: Record<FramePaint, string> = {
+  mount: `${SHEET} ${CARD_CORNERS}`,
+  stock: "",
+  none: "",
+};
 
 /* The unfitted branch takes its fill from the reveal ladder rather than from `MOUNT_PAINT`, because
    a non-hero specimen is deliberately bare below `{breakpoints.md}` and only the ladder knows that.
    Using `MOUNT_PAINT` here would fold an unconditional `bg-surface-mount` into a branch that never
    had one, painting mount grain under a card the ladder means to leave transparent. */
-const UNFITTED_MOUNT_PAINT = {
-  hero: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.hero}`,
-  section: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.section}`,
-} as const;
+/* Two FLAT records rather than one keyed by hero/section, so every arm sits directly under a
+   `Record<FramePaint, string>` header -- which is what the test's parser walks. A nested record would
+   leave both inner arm sets invisible to it, and a guard that skips what it cannot parse reads exactly
+   like a guard that passes. */
+const UNFITTED_HERO_PAINT: Record<FramePaint, string> = {
+  mount: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.hero}`,
+  stock: "",
+  none: "",
+};
+
+const UNFITTED_SECTION_PAINT: Record<FramePaint, string> = {
+  mount: `${MOUNT_SHADOW} ${CARD_CORNERS} ${MOUNT_REVEAL_FILL.section}`,
+  stock: "",
+  none: "",
+};
 
 export function MountedSheet({
   children,
@@ -93,11 +116,11 @@ export function MountedSheet({
   fit,
   tall = false,
   className,
-  unbacked = false,
+  paint = "mount",
 }: MountedSheetProps) {
-  if (unbacked && tall) {
+  if (paint === "none" && tall) {
     throw new Error(
-      "mounted-sheet: `unbacked` selects the unpainted option for a card that fits its tier's height cap; a tall section has never wanted one, so passing both is a mistake rather than a configuration.",
+      'mounted-sheet: `paint="none"` selects the unpainted option for a card that fits its tier\'s height cap; a tall section has never wanted one, so passing both is a mistake rather than a configuration.',
     );
   }
 
@@ -114,11 +137,9 @@ export function MountedSheet({
         <style>{tallFrameCss(hero)}</style>
         <div className={tallScopeClass(hero)}>
           <div className={FRAME_CLASS.box}>
-            <div
-              className={`${FRAME_CLASS.mount} ${unbacked ? "" : MOUNT_PAINT}`}
-            >
+            <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[paint]}`}>
               <div
-                className={`${FRAME_CLASS.sheet} ${unbacked ? "" : SHEET_PAINT} ${className ?? ""}`}
+                className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[paint]} ${className ?? ""}`}
               >
                 {children}
               </div>
@@ -137,11 +158,9 @@ export function MountedSheet({
         <style>{mountedSheetFrameCss(fit, hero)}</style>
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
-            <div
-              className={`${FRAME_CLASS.mount} ${unbacked ? "" : MOUNT_PAINT}`}
-            >
+            <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[paint]}`}>
               <div
-                className={`${FRAME_CLASS.sheet} ${unbacked ? "" : SHEET_PAINT} ${className ?? ""}`}
+                className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[paint]} ${className ?? ""}`}
               >
                 {children}
               </div>
@@ -154,10 +173,10 @@ export function MountedSheet({
 
   return (
     <div
-      className={`${unbacked ? "" : UNFITTED_MOUNT_PAINT[hero ? "hero" : "section"]} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
+      className={`${(hero ? UNFITTED_HERO_PAINT : UNFITTED_SECTION_PAINT)[paint]} ${hero ? MOUNT_REVEAL.hero : MOUNT_REVEAL.section}`}
     >
       <div
-        className={`${unbacked ? "" : SHEET_PAINT} ${SHEET_PADDING} ${className ?? ""}`}
+        className={`${SHEET_PAINT[paint]} ${SHEET_PADDING} ${className ?? ""}`}
       >
         {children}
       </div>

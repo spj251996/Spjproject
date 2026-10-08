@@ -14,6 +14,17 @@ export type Orientation = "portrait" | "landscape";
 
 export type FrameLayout = "single" | "pair";
 
+/* Three mutually exclusive paints, so one enum rather than a boolean beside one: a boolean next to an
+   enum is one constant answering two questions, which this codebase has shipped as a defect twice --
+   the frame's padding floor, and `MOUNT_REVEAL` carrying a fill and a padding in one string.
+
+   `"mount"` is today's painted card and the default every framed section takes. `"none"` is the hero's
+   unpainted option, which the invitation takes. `"stock"` is the thread lab's mountless stock, where
+   the mount element carries the stock surface and both shadows (DESIGN.md -> Foundations -> Layout ->
+   `mounted-sheet`). The GEOMETRY is identical in all three, which is what makes this an option rather
+   than a fork and what licenses one set of fit files across every route. */
+export type FramePaint = "mount" | "stock" | "none";
+
 type GroundTierName = "phone" | "tablet" | "laptop" | "desktop";
 
 /* From this content width upward, the section's content stands this tall. Content width is the
