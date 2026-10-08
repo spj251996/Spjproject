@@ -23,7 +23,7 @@ const INVITE_RUN =
   '<span class="type-display-name__joiner"> &amp; </span><span>Sebastian</span></h1>' +
   '<p class="type-date-primary text-ink mt-space-lg">' +
   '<time dateTime="2027-01-09">9<span class="type-caption type-date-ordinal align-super">th</span> January 2027</time></p>' +
-  '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Keralam</p>';
+  '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Kerala</p>';
 
 const PAGE =
   '<html lang="en" class="corinthia_x__variable playfair_y__variable h-full antialiased">' +
@@ -113,7 +113,7 @@ test("cardHtml carries one surface and the invite's own rows", () => {
     );
   }
   assert.ok(out.includes("We are getting married"));
-  assert.ok(out.includes("Keralam"));
+  assert.ok(out.includes("Kerala"));
   assert.match(out, /<use href="#sprig-mark">/);
 });
 
