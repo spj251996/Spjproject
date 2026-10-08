@@ -21,6 +21,7 @@ const INVITE_RUN =
   '<p class="type-eyebrow">We are getting married</p>' +
   '<h1 class="type-display-name text-ink mt-space-lg"><span>Flemy</span>' +
   '<span class="type-display-name__joiner"> &amp; </span><span>Sebastian</span></h1>' +
+  '<p class="type-caption text-ink-muted mt-space-3xs" data-invite-line="true">invite you to celebrate our wedding</p>' +
   '<p class="type-date-primary text-ink mt-space-lg">' +
   '<time dateTime="2027-01-09">9<span class="type-caption type-date-ordinal align-super">th</span> January 2027</time></p>' +
   '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Kerala</p>';
@@ -54,6 +55,16 @@ test("extractFontVars throws when the page carries none", () => {
 
 test("extractInvite returns the contiguous eyebrow-to-place run", () => {
   assert.equal(extractInvite(PAGE), INVITE_RUN);
+});
+
+/* `extractInvite` lifts ONE contiguous run, eyebrow to `data-invite-place`. Anything added outside
+   that run vanishes from the card silently -- the overflow guard in the generator cannot see a
+   missing element, only an oversized one. Phase 7 added the invitation's own line inside the run;
+   this is what says so. */
+test("extractInvite carries the invitation's own line", () => {
+  const run = extractInvite(PAGE);
+  assert.match(run, /data-invite-line/);
+  assert.match(run, /invite you to celebrate our wedding/);
 });
 
 test("extractInvite throws when the place hook is gone", () => {
