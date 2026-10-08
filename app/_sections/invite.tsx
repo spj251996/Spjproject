@@ -81,8 +81,11 @@ function InvitePassage() {
    whole section without it — which would re-place the invite's stretch across the full window width
    and move the page's height. Dropping the paint costs neither.
 
-   The painted option returns by deleting the one prop; the sequence it needs back is recorded in
-   `DESIGN.md` → Foundations → Layout → `mounted-sheet` → The hero card's two options. */
+   The painted option returns by dropping the `?? "none"` from the paint prop below, so the hero takes
+   the component's `"mount"` default like every other section. NOT by deleting the prop: that would also
+   sever the lab routes' override — `/thread/stock` would render a mount-painted hero over five stock
+   cards — and would leave `paint` destructured and unused. The sequence it needs back is recorded in
+   `DESIGN.md` → Foundations → Layout → `mounted-sheet` → The card's three paints. */
 export function InviteSection({ paint }: { paint?: FramePaint }) {
   const wedding = eventById("wedding");
   const weddingDate = formatEventDate(wedding.date);
