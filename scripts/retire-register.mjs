@@ -22,4 +22,19 @@ export const RETIRE_REGISTER = Object.freeze([
     kind: "temporary",
     why: "The thread lab. Its deliverable is a decision — adopt the thread onto `/` or remove these routes — taken before Ship 2.",
   },
+  {
+    path: "app/_sections/contact.tsx",
+    kind: "temporary",
+    why: "Off the published page since Phase 7; still rendered on the lab routes because `contact` is in THREAD_IDS and the thread refuses to measure a page whose section count disagrees. It leaves the lab in Phase 7's Half 3, and the files go in Phase 9.",
+  },
+  {
+    path: "app/contact-fit.ts",
+    kind: "temporary",
+    why: "Contact's measured fit. NOTE FOR WHOEVER REGENERATES IT: the source route must be a lab route, not `/` — `/` no longer carries the section, so `measure:fit --route=/` would find no selector to measure.",
+  },
+  {
+    path: "content/contacts.ts",
+    kind: "temporary",
+    why: "Both contacts' names and numbers, still rendered on the lab routes. Goes with the section in Phase 9.",
+  },
 ]);
