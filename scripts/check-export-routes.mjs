@@ -3,9 +3,10 @@
  * bundler can drop a file without erroring. Reads `out/` directly, never a served URL: `serve -s`
  * rewrites unknown paths to `index.html`, which has twice made a check measure the home page.
  *
- * It also discharges the `[lab]`-matches-reality claim for the thread, which is Plan 1's only `[lab]`
- * entry: asserting `/` carries zero thread roots IS the assertion that its subject is absent from the
- * published page.
+ * It also discharges the `[lab]`-matches-reality claim for the thread: asserting `/` carries zero thread
+ * roots IS the assertion that its subject is absent from the published page. It does NOT state how many
+ * `[lab]` entries the doc has -- that count lives in the doc, and restating it here was a second copy
+ * that went stale immediately.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 
@@ -23,6 +24,18 @@ const EXPECTED = [
     roots: LAB_ROOTS,
     label: "/thread/current (lab)",
   },
+  /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
+   * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
+   * is nothing thread-shaped left to assert -- what is left is that the route exists and carries none.
+   *
+   * BOTH files are checked because the export emits both and both ship: `404.html` is what a static host
+   * serves for an unknown path, `_not-found.html` is the route-named emission. They are byte-identical
+   * today, so asserting one would leave the other unguarded for free.
+   *
+   * Asserted against the built file, never a served URL: an SPA-fallback rewrite returns the index
+   * document for any unknown path, which has already made a check of `/404` measure the HOME page. */
+  { path: "out/404.html", roots: 0, label: "/404 (not found, served)" },
+  { path: "out/_not-found.html", roots: 0, label: "/_not-found (route-named)" },
 ];
 const FORBIDDEN = ["out/design-system/index.html", "out/lab-scratch"];
 /* The exact SET of lab routes, so an extra one cannot appear unnoticed. Asserting the set rather than

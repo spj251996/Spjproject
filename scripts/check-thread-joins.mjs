@@ -59,8 +59,12 @@ const SECTIONS = [
   "family",
   "celebrations",
   "wishes",
-  "not-found",
 ];
+/* `not-found` was a member here until 2026-10-08 and is deliberately gone. It is a separate ROUTE, not a
+   section on this page, and its own thread was retired (DESIGN.md -> Domain Components -> Not found), so
+   this gate spent every run reporting `MISSING #not-found` for an element removed on purpose -- 48 lines
+   of noise per sweep. The route's coverage moved to `scripts/check-export-routes.mjs`, which asserts it
+   exists and carries no thread root; this is not a drop in coverage. */
 
 /* One window per ASPECT BAND, not per width tier: thread geometry is emitted per band now, so a
    sweep keyed to widths could miss a band entirely. Each band contributes its own NOMINAL box —
@@ -257,7 +261,10 @@ try {
           console.log(
             `  MISSING ${label}: no element matches #${id} — not rendered`,
           );
-          failures.push(label);
+          /* Pushed in the same shape as the other failure path below -- a bare string printed as
+             `undefined` in the summary, which hid 12 real findings behind a word that looks like a
+             crash. */
+          failures.push({ label, found: 0 });
           continue;
         }
         /* Three things that are not this section's thread and would read as a second piece of ink:
