@@ -90,11 +90,17 @@ const COLOR_GROUPS: SwatchGroup[] = [
         usage:
           "Eyebrows, dividers, an action's label and mark, portrait rims, active states.",
       },
+    ],
+  },
+  {
+    label: "Borders",
+    note: "Below the 3:1 of a meaning-bearing graphic at 1.61:1, knowingly — the date reads whole without its bracket. Its requirement is the ratio to the TYPE, not to the ground.",
+    tokens: [
       {
         token: "--color-rule-faint",
         name: "rule-faint",
         usage:
-          "The invite date block's two hairlines, and nothing else. It must read lighter than the type it brackets — a rule as dark as the words reads as a table cell.",
+          "The invite date block's two hairlines, and nothing else. It must read lighter than the type it brackets — a rule as dark as the words reads as a table cell. Never a fill, never text.",
       },
     ],
   },
@@ -299,7 +305,7 @@ const SPACING_USES = [
   "space-sm to space-md · component padding",
   "space-md · viewport edge for sections without a frame",
   "space-2xl to space-3xl · between two unframed sections back to back",
-  "space-4xl · between the bride's siblings in Family",
+  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame)",
 ];
 
 const LAYOUT_CAPS = [
@@ -479,7 +485,7 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own three: red ink, vermilion light and the head's orange tip."
+        intro="A fixed palette: ivory, mahogany ink, one gold, one faint rule, and the thread's own three: red ink, vermilion light and the head's orange tip."
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"
@@ -489,7 +495,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Four families, thirteen roles, each stepping at phone, tablet, laptop and desktop."
+        intro="Four families and thirteen roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes caption's size with that family substituted — so it has no row below; see it on the page at Domain · Timeline."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
@@ -507,7 +513,7 @@ export function FoundationsSections() {
           description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows display-name's portrait split and the ordinal's zero-height superscript."
           id="typography-names-and-date"
           name="Names and date line"
-          note="Rotate or resize to portrait to see display-name split onto three lines — the split belongs to that role alone. The date line's raised ordinal takes no line height, visible only against a real baseline."
+          note="Rotate or resize to portrait to see display-name split onto three lines — the split belongs to that role alone. The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
           spec="display-name · heading-script · joiner at 0.5em · date-primary · caption ordinal"
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
@@ -564,7 +570,7 @@ export function FoundationsSections() {
           description="The card every section is built on: a backing mount with an inner sheet laid onto it — or, for the hero, no backing at all."
           id="layout-mounted-sheet"
           name="mounted-sheet"
-          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card also chooses WHICH of three paints to apply, and the three specimens below are those paints: mount (the component default, which the five non-hero framed sections on / take), none (the hero's unpainted option, which the invitation takes), and stock (the thread lab's, live at /thread/stock only and nowhere on the published page). Their geometry is identical in all three — same reveal, same padding, same box — so only the paint differs, which is what licenses one set of fit files for every route."
+          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card also chooses WHICH of three paints to apply, and the three specimens below are those paints: mount (the component default, which the four non-hero framed sections on / take — Contact was the fifth before it left the published page), none (the hero's unpainted option, which the invitation takes), and stock (the thread lab's, live at /thread/stock only and nowhere on the published page). The lab's third route, /thread/mount, paints every card its mount including the hero, so it is this same `mount` specimen applied uniformly. Their geometry is identical in all three — same reveal, same padding, same box — so only the paint differs, which is what licenses one set of fit files for every route."
           source="@/components/layout/mounted-sheet"
           spec={[
             "mount · surface-mount · shadow-mount · carries no text, ever",

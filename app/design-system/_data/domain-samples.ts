@@ -1,9 +1,10 @@
 import type { FamilyGroup } from "@/content/types";
 
 /* The two groups mirror the real roster's shape: the bride's two siblings, and the groom's sibling
-   with a spouse and a child beside a second sibling. Family's name overruns are verified against the
-   real roster only, so each sample name is no wider than the real name in the same slot, and each
-   relationship is the real one for that slot; a wider sample would collide where the page does not. */
+   with a spouse and a child on one row, and a second sibling on the row beneath. Family's name
+   overruns are verified against the real roster only, so each sample name is no wider than the real
+   name in the same slot, and each relationship is the real one for that slot; a wider sample would
+   collide where the page does not. */
 
 export const sampleFamilyGroups: FamilyGroup[] = [
   {
