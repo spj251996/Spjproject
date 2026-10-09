@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
+import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import "@/app/event-info.css";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
 import { eventInfoFit } from "@/app/event-info-fit";
@@ -109,7 +110,9 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
   return (
     <>
       {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-      <p className="type-eyebrow">{eyebrowFor(event.id)}</p>
+      <p className="type-eyebrow">
+        <SprigOrnament>{eyebrowFor(event.id)}</SprigOrnament>
+      </p>
       <h2
         className="type-heading-xl text-ink-muted mt-space-2xs"
         data-event={event.id}

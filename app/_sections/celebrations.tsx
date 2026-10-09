@@ -7,6 +7,7 @@ import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { PhotoStrip } from "@/components/ui/photo-strip";
+import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { rituals } from "@/content";
 
 /* The timeline card. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured
@@ -48,7 +49,9 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
               reason the block width was chosen (owner, 2026-10-07). */}
           <div className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center">
             {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-            <p className="type-eyebrow">Our traditions</p>
+            <p className="type-eyebrow">
+              <SprigOrnament>Our traditions</SprigOrnament>
+            </p>
             <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
               The Celebrations
             </h2>

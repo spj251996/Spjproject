@@ -1,4 +1,5 @@
 import { Children, type ReactNode } from "react";
+import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import type { FamilyGroup, FamilyMember } from "@/content/types";
 import { Portrait } from "../ui/portrait";
 import { flattenCluster, splitChildren, splitRoster } from "./family-cluster";
@@ -61,7 +62,9 @@ export function Family({ group, eyebrow }: FamilyProps) {
   const { clusters, plain } = splitChildren(children);
   return (
     <div className={SHEET_CLASS}>
-      <p className="type-eyebrow">{eyebrow}</p>
+      <p className="type-eyebrow">
+        <SprigOrnament>{eyebrow}</SprigOrnament>
+      </p>
       <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
         {group.familyName}
       </h2>

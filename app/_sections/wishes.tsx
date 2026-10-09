@@ -8,6 +8,7 @@ import {
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { CardThread } from "@/components/thread/page-thread";
+import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { wishes } from "@/content";
 
 /* The page's close. The illustration's size and bleed
@@ -34,7 +35,9 @@ export function WishesSection({
             ["--wishes-figure-ratio" as string]: "560 / 550",
           }}
         >
-          <p className="type-eyebrow">A life in love</p>
+          <p className="type-eyebrow">
+            <SprigOrnament>A life in love</SprigOrnament>
+          </p>
 
           {/* This gap and the two below halve at phone, with `.figureCol`'s in `wishes.module.css`
               — the fourth of the same four, where the reason is written. */}

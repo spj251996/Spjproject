@@ -23,10 +23,20 @@ function eventSheetHeading(): string {
   );
   const rest = source.slice(start + 1);
   const end = rest.indexOf("\nfunction ");
-  const body = end === -1 ? rest : rest.slice(0, end);
+  /* THE RUNAWAY CASE IS `end === -1`: with no following declaration the slice takes the rest of the
+     file, and every assertion below then passes against the wrong text. That is the structural
+     question, so it is the one asked. A character ceiling stood here instead and went stale the
+     first time this function legitimately grew — it failed with "the slice is wrong, not the code"
+     when neither was wrong, which is a gate accusing its own subject. */
+  assert.notStrictEqual(
+    end,
+    -1,
+    "EventSheetHeading is not followed by another top-level function — the slice would run to EOF",
+  );
+  const body = rest.slice(0, end);
   assert.ok(
-    body.length > 200 && body.length < 2000,
-    `EventSheetHeading slice is ${body.length} chars — the slice is wrong, not the code`,
+    body.length > 200,
+    `EventSheetHeading slice is ${body.length} chars — empty or near it`,
   );
   return body;
 }
