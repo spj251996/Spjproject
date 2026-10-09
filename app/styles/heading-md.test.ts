@@ -20,12 +20,31 @@ import test from "node:test";
 const CSS_DIR = "out/_next/static/chunks";
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
+const gallery = readFileSync(
+  "app/design-system/_sections/foundations.tsx",
+  "utf8",
+);
+
 /* Every declaration of one token, in source order — which is the tier order the tokens file uses:
    the base block, then `md`, `lg` and `xl`. */
 function declared(name: string): string[] {
   return [...tokens.matchAll(new RegExp(`${name}:\\s*(\\d+)px`, "g"))].map(
     (match) => match[1],
   );
+}
+
+/* Bounded by the entry's own closing brace at its indent, so the nested per-tier objects cannot end
+   the slice early. */
+function gallerySpecimen(): string {
+  const at = gallery.indexOf('token: "type-heading-md"');
+  assert.notStrictEqual(
+    at,
+    -1,
+    "no type-heading-md entry in the gallery's TYPE_TOKENS",
+  );
+  const end = gallery.indexOf("\n  },", at);
+  assert.notStrictEqual(end, -1, "the TYPE_TOKENS entry is unterminated");
+  return gallery.slice(at, end);
 }
 
 test("heading-md is declared at all four tiers", () => {
@@ -76,4 +95,28 @@ test("the role survives into the built CSS with a size that resolves", (t) => {
     /--text-heading-md:\s*\d+px/,
     "the class survived but its token did not — the size resolves to nothing",
   );
+});
+
+test("the gallery's specimen carries the token file's own figures", () => {
+  const specimen = gallerySpecimen();
+  const sizes = declared("--text-heading-md");
+  const heights = declared("--text-heading-md--line-height");
+  const tiers = ["phone", "tablet", "laptop", "desktop"];
+  tiers.forEach((tier, index) => {
+    const row = new RegExp(
+      `${tier}:\\s*\\{\\s*size:\\s*(\\d+),\\s*lh:\\s*(\\d+)`,
+    );
+    const match = row.exec(specimen);
+    assert.notStrictEqual(match, null, `no ${tier} row in the specimen`);
+    assert.strictEqual(
+      (match as RegExpExecArray)[1],
+      sizes[index],
+      `the specimen's ${tier} size disagrees with tokens.css`,
+    );
+    assert.strictEqual(
+      (match as RegExpExecArray)[2],
+      heights[index],
+      `the specimen's ${tier} line height disagrees with tokens.css`,
+    );
+  });
 });

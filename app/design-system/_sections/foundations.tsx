@@ -178,6 +178,16 @@ const TYPE_TOKENS: TypeToken[] = [
     desktop: { size: 38, lh: 56 },
   },
   {
+    token: "type-heading-md",
+    family: "Playfair Display",
+    weight: 700,
+    sample: "Each ritual's English title.",
+    phone: { size: 19, lh: 32 },
+    tablet: { size: 21, lh: 34 },
+    laptop: { size: 19, lh: 32 },
+    desktop: { size: 23, lh: 36 },
+  },
+  {
     token: "type-heading-lg",
     family: "Playfair Display",
     weight: 700,
