@@ -1,3 +1,4 @@
+import "@/app/couple-names.css";
 import { splitCoupleNames } from "@/app/_sections/shared";
 import wishesStyles from "@/app/wishes.module.css";
 import { wishesFit } from "@/app/wishes-fit";
@@ -8,6 +9,7 @@ import {
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { CardThread } from "@/components/thread/page-thread";
+import { CoupleNames } from "@/components/ui/couple-names";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { wishes } from "@/content";
 
@@ -62,16 +64,32 @@ export function WishesSection({
           </div>
           {thread ? <CardThread /> : null}
 
+          {/* The same drawn names on ONE line — one source, two layouts, placement arithmetic
+              rather than a second trace. The role stays for the same reason it does at the invite:
+              it is the `em` the asset's width resolves against, so the signature keeps the size it
+              ships at today (260.8px at 56px, 335.2 at 72, 298 at 64 — 4.656em at every one). */}
           <p className="type-heading-script mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
-            {wishesNames ? (
-              <>
-                <span>{wishesNames[0]}</span>
-                <span className="type-heading-script__joiner">{" & "}</span>
-                <span>{wishesNames[1]}</span>
-              </>
-            ) : (
-              wishes.coupleNames
-            )}
+            {/* 2.2 units, kept where the owner settled it on the render. Note it lands this lockup's
+                thinnest stroke at 0.95px on a phone, a hair UNDER the one-device-pixel floor the
+                figures above derive — their eye governs over the floor, and 2.5 is the number if it
+                ever reads washed out on a monitor. */}
+            <CoupleNames
+              layout="line"
+              names={wishes.coupleNames}
+              strokeUnits={2.2}
+            />
+            {/* Lever 2's alternate, hidden by `app/couple-names.css`. */}
+            <span data-names-alt>
+              {wishesNames ? (
+                <>
+                  <span>{wishesNames[0]}</span>
+                  <span className="type-heading-script__joiner">{" & "}</span>
+                  <span>{wishesNames[1]}</span>
+                </>
+              ) : (
+                wishes.coupleNames
+              )}
+            </span>
           </p>
 
           {/* Two lines in both layouts: the lead in italic, the names who send it in regular. */}

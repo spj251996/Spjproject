@@ -6,7 +6,7 @@ import {
   Noto_Serif_Malayalam,
   Playfair_Display,
 } from "next/font/google";
-import { SprigSymbol } from "@/components/icons";
+import { CoupleNamesSymbol, SprigSymbol } from "@/components/icons";
 import "./globals.css";
 
 /* Corinthia and Libre Baskerville ship as static faces and need explicit weights; Playfair Display
@@ -156,6 +156,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <script>{SKIP_OPENING_WHEN_SCROLLED}</script>
         <SprigSymbol />
+        <CoupleNamesSymbol />
         {children}
         <Analytics />
       </body>

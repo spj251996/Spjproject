@@ -1,6 +1,7 @@
 export { BetrothalIcon } from "./betrothal";
 export { CallIcon } from "./call";
 export { ChatIcon } from "./chat";
+export { CoupleNamesSymbol } from "./couple-names-symbol";
 export { LoveIcon } from "./love";
 export { LunchIcon } from "./lunch";
 export { MapIcon } from "./map";

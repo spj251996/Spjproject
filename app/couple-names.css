@@ -1,0 +1,16 @@
+/* LEVER 2's ALTERNATE: today's script-type markup for the couple's names, kept in the tree so
+   `/preview` can show the couple both forms, and never painted on the published page.
+
+   THE HIDE HAS TO BE A COMMITTED RULE RATHER THAN ONE IN `app/preview/preview.css`, which loads
+   only on `/preview`: a default expressed there would leave `/` painting the drawn asset AND the
+   script text at once. `/preview` un-hides it with `display: contents`, not `revert` — the two
+   call sites' own roles set `display: flex` in portrait, so a wrapper reverting to `block` or
+   `inline` would change the lockup's layout rather than get out of its way.
+
+   `display: none` also keeps the alternate out of the accessibility tree, which is what stops the
+   invite's `<h1>` announcing the couple's names twice.
+
+   It goes with the alternate in Half 3, once the couple have chosen. */
+[data-names-alt] {
+  display: none;
+}

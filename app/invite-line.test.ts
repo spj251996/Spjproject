@@ -9,7 +9,10 @@ const source = readFileSync("app/_sections/invite.tsx", "utf8");
 
 const AT = {
   eyebrow: source.indexOf("type-eyebrow"),
-  names: source.indexOf("type-display-name"),
+  /* `<CoupleNames` and not the role's class: the drawn asset is what renders the names now, and
+     the class is scheduled for removal — anchoring on it would make this ordering test fail in
+     Phase 9 for a reason that has nothing to do with the order. */
+  names: source.indexOf("<CoupleNames"),
   line: source.indexOf("data-invite-line"),
   /* The COMPOSITION site, not the definition: `<InviteDate` matches only the JSX usage, where
      `function InviteDate(` sits above the eyebrow and would invert the order this test checks. The

@@ -63,6 +63,35 @@ export const RETIRE_REGISTER = Object.freeze([
     why: 'The Malayalam\'s second weight, loaded only so the owner can judge 600 against 400 — a synthetic bold cannot be judged fairly. ITS COST IS +64KB, NOT THE +22KB A SECOND STATIC CUT WOULD BE: two weights make the loader fetch the variable face, so the three subset files go 41,172 to 105,256 bytes, and +36KB of that sits on every route\'s critical path because the preloaded Malayalam-range file serves both weights. Measured by building both ways, 2026-10-09. Half 3 drops the losing weight and this entry with it. Removing it is one edit here — `weight: "400"` or `"600"` — with no other site to sweep, because nothing in the sections names a weight.',
   },
   {
+    symbol: ".type-display-name {",
+    in: "app/styles/type-scale.css",
+    kind: "temporary",
+    why: "The invite's script heading role, superseded by the drawn names asset. Still rendered as /preview's lever-2 alternate until the couple pick, and still on the `<h1>` itself because the asset's width is `em` of this role — so the class goes in Half 3 at the earliest. WARNING FOR WHOEVER SWEEPS IT: the TOKEN `--text-display-name` must NOT go with the class. `couple-names.tsx` resolves the lockup's 2.513em against it, which is what keeps the asset on the names scale the owner settled in Half 1.",
+  },
+  {
+    symbol: ".type-heading-script {",
+    in: "app/styles/type-scale.css",
+    kind: "temporary",
+    why: "Wishes' signature role, superseded by the same asset on one line, and kept on the `<p>` for the same reason. `--text-heading-script` must survive it: the single line's 4.656em resolves against that token.",
+  },
+  {
+    symbol: ".type-display-name__joiner",
+    in: "app/styles/type-scale.css",
+    kind: "temporary",
+    why: "The half-size ampersand rule, shared by both script roles in one declaration (— and `.type-heading-script__joiner` with it). It styles the alternates' middle span and nothing else; it goes with them.",
+  },
+  {
+    symbol: "splitCoupleNames",
+    in: "app/_sections/shared.tsx",
+    kind: "temporary",
+    why: "Splits the couple's names into the three spans the script roles need. Its only callers are the two alternates above, so it goes when they do. The drawn asset takes the whole string as its accessible name and never splits it.",
+  },
+  {
+    path: "app/couple-names.css",
+    kind: "temporary",
+    why: "The one rule hiding lever 2's alternate on the published page. It goes with the alternate in Half 3, together with the `[data-names-alt]` span in `app/_sections/invite.tsx` and the one in `app/_sections/wishes.tsx` — neither of which is registered separately, because removing this file without them would PAINT both forms at once rather than fail quietly.",
+  },
+  {
     path: "components/ui/contact-actions.test.ts",
     kind: "temporary",
     why: "Contact's own gate — the Call/WhatsApp actions and the long-press callout exemption. It outlives the section only as long as the section does, so it goes in the same Phase 9 sweep.",

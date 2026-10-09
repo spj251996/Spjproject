@@ -1,5 +1,6 @@
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import type { FormattedDate } from "@/content/types";
+import "@/app/couple-names.css";
 import "@/app/invite.css";
 import { eventById, splitCoupleNames } from "@/app/_sections/shared";
 import dateBlock from "@/app/invite-date.module.css";
@@ -10,6 +11,7 @@ import {
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
+import { CoupleNames } from "@/components/ui/couple-names";
 import { formatEventDate, invite } from "@/content";
 
 /* The wedding date as a bracketed figure — DESIGN.md → Domain Components → Invite → `date-block`,
@@ -164,16 +166,49 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 couple's data, exactly like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
             <p className="type-eyebrow">We are getting married</p>
 
-            <h1 className="type-display-name text-ink mt-space-md">
-              {names ? (
-                <>
-                  <span>{names[0]}</span>
-                  <span className="type-display-name__joiner">{" & "}</span>
-                  <span>{names[1]}</span>
-                </>
-              ) : (
-                invite.coupleNames
-              )}
+            {/* THE DRAWN NAMES, and the role STAYS on the `<h1>` doing two jobs, both
+                load-bearing. It is the `em` the asset's width resolves against, so the names scale
+                the owner settled in Half 1 — 94/110/110/156 — still governs the lockup's size
+                rather than a figure chosen in the component. And in portrait it is
+                `display: flex; flex-direction: column`, which is what stacks the ALTERNATE's three
+                spans when `/preview` un-hides them. `[retire]` marks the ROLE, not this use of it:
+                the class goes in Phase 9 and the TOKEN it reads must not go with it.
+
+                `layout="orientation"` rather than the plain stack, and this is a deviation from the
+                plan worth knowing: the asset's stacked box is 1.35:1 where today's three-line
+                portrait lockup is 0.97:1, so at landscape a stacked lockup measures 276px wide and
+                205px tall in an 864px card — +40px on the header against the +37px of headroom the
+                date-block round left at the desktop tier line, and a shape the owner has never
+                seen. The single line is 6.09:1, reproduces today's landscape width exactly and
+                comes out 81px SHORTER, so it frees headroom instead of spending it. The switch is
+                `(orientation: landscape)`, the same condition the role's own rule uses, so the two
+                cannot disagree. */}
+            <h1 className="type-display-name text-ink mt-space-md [@media(64rem<=width<100rem)_and_(orientation:landscape)]:py-space-xs [@media(width>=100rem)_and_(orientation:landscape)]:py-space-sm">
+              {/* 1.6 units, down from the 2.2 Wishes takes (owner, 2026-10-09: "invite one is too thick").
+                  This lockup renders about 1.75x larger relative to its own viewBox, so the same
+                  unit count lands that much heavier in pixels — and it only needs 0.54 to clear a
+                  device pixel on its smallest band, against Wishes' 2.44. 1.6 is still three times
+                  its floor: the phone hairline lands at 1.34px and the laptop line at 1.81px. */}
+              <CoupleNames
+                layout="orientation"
+                names={invite.coupleNames}
+                strokeUnits={1.6}
+              />
+              {/* Lever 2's alternate — today's script markup, unchanged, so the couple compare the
+                  two fairly. Hidden on the published page by `app/couple-names.css`; `/preview`
+                  un-hides it. It keeps `text-ink`, the colour it ships in today, while the asset
+                  takes `ink-muted`. */}
+              <span data-names-alt>
+                {names ? (
+                  <>
+                    <span>{names[0]}</span>
+                    <span className="type-display-name__joiner">{" & "}</span>
+                    <span>{names[1]}</span>
+                  </>
+                ) : (
+                  invite.coupleNames
+                )}
+              </span>
             </h1>
 
             {/* The invitation's own sentence, in the couple's first-person voice — the same voice as
