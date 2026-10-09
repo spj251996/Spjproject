@@ -27,9 +27,15 @@ export function SprigOrnament({
       className="inline-flex items-center justify-center gap-space-2xs"
       data-sprig-ornament
     >
+      {/* BOTH MARKS FACE THE WAY `ornamental-divider`'s DOES — unmirrored (owner, 2026-10-09).
+          The mark has one canonical orientation in this system, set by the divider, which renders
+          it plain; mirroring the trailing one made the pair symmetrical at the cost of putting a
+          sprig on the page that points the wrong way. A later symmetry pass is the thing to guard
+          against here, so the absence of a flip is asserted rather than left to read as an
+          oversight. */}
       <SprigIcon className="shrink-0" size={size} />
       {children}
-      <SprigIcon className="shrink-0 [transform:scaleX(-1)]" size={size} />
+      <SprigIcon className="shrink-0" size={size} />
     </span>
   );
 }

@@ -55,6 +55,23 @@ test("the default mark clears the iconography floor on its RENDERED height", () 
   );
 });
 
+/* `ornamental-divider` renders the mark PLAIN, and it is the only other place the mark stands on
+   its own, so it is what sets the mark's canonical direction. Both of the ornament's marks face
+   that way: a flip on the trailing one reads as symmetry and ships a sprig pointing the wrong
+   way, which is exactly what a later consistency pass would "restore". */
+test("neither mark is mirrored, so both face the divider's direction", () => {
+  assert.doesNotMatch(
+    SOURCE,
+    /scaleX|scale-x|-scale-x/,
+    "a mirrored mark points the opposite way to ornamental-divider's own",
+  );
+  assert.doesNotMatch(
+    readFileSync("components/layout/ornamental-divider.tsx", "utf8"),
+    /scaleX|scale-x|-scale-x/,
+    "the divider's mark is what sets the direction — if it gains a flip, this pair's claim is void",
+  );
+});
+
 test("every section-head eyebrow is wrapped", () => {
   for (const site of SITES) {
     assert.match(
