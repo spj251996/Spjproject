@@ -48,6 +48,13 @@
     line-height: var(--text-heading-xl--line-height);
   }
 
+  .type-heading-md {
+    font-family: var(--font-serif);
+    font-size: var(--text-heading-md);
+    font-weight: var(--text-heading-md--font-weight);
+    line-height: var(--text-heading-md--line-height);
+  }
+
   .type-heading-lg {
     font-family: var(--font-serif);
     font-size: var(--text-heading-lg);

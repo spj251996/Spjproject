@@ -40,6 +40,9 @@
   --text-heading-xl: 26px;
   --text-heading-xl--font-weight: 700;
   --text-heading-xl--line-height: 40px;
+  --text-heading-md: 19px;
+  --text-heading-md--font-weight: 700;
+  --text-heading-md--line-height: 32px;
   --text-heading-lg: 14px;
   --text-heading-lg--font-weight: 700;
   --text-heading-lg--line-height: 28px;
@@ -375,6 +378,8 @@
     --text-heading-script--line-height: 72px;
     --text-heading-xl: 32px;
     --text-heading-xl--line-height: 48px;
+    --text-heading-md: 21px;
+    --text-heading-md--line-height: 34px;
     --text-heading-lg: 15px;
     --text-heading-lg--line-height: 30px;
     --text-date-primary: 15px;
@@ -404,6 +409,8 @@
     --text-heading-script--line-height: 64px;
     --text-heading-xl: 30px;
     --text-heading-xl--line-height: 44px;
+    --text-heading-md: 19px;
+    --text-heading-md--line-height: 32px;
     --text-heading-lg: 14px;
     --text-heading-lg--line-height: 28px;
     --text-date-primary: 14px;
@@ -433,6 +440,8 @@
     --text-heading-script--line-height: 80px;
     --text-heading-xl: 38px;
     --text-heading-xl--line-height: 56px;
+    --text-heading-md: 23px;
+    --text-heading-md--line-height: 36px;
     --text-heading-lg: 17px;
     --text-heading-lg--line-height: 32px;
     --text-date-primary: 17px;
