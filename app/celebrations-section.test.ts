@@ -24,23 +24,90 @@ test("with no photographs the section renders no preview row and no gallery acti
   );
 });
 
-test("the leaf precedes both titles in source order", () => {
-  /* The owner's rule, and it was broken once: reversing the row to mirror it rendered
-     `മധുരംവെപ്പ് Wedding Eve [leaf]`. Source order is what guarantees it, so source order is what
-     is asserted — a mirrored row is pushed and aligned by its parent, never reversed. */
-  const leaf = source.indexOf("<SprigIcon");
-  const english = source.indexOf("{ritual.title}");
-  const malayalam = source.indexOf("{ritual.malayalam}");
-  assert.ok(leaf !== -1 && english !== -1 && malayalam !== -1);
-  assert.ok(leaf < english, "the leaf must come before the English title");
+/* THE RITUAL LIST'S OWN SLICE, and it is load-bearing: `<SprigOrnament>` also wraps the SECTION's
+   eyebrow forty lines above, so an unscoped `indexOf` reads the head's ornament and every order
+   assertion below passes against the wrong element. */
+function ritualList(): string {
+  const start = source.indexOf("CELEBRATIONS_LIST_CLASS}");
+  assert.notStrictEqual(
+    start,
+    -1,
+    "no ritual list in app/_sections/celebrations.tsx",
+  );
+  const end = source.indexOf("</ol>", start);
   assert.ok(
-    english < malayalam,
-    "the English title must come before the Malayalam one",
+    end > start,
+    "the ritual list is not closed — the slice would run to EOF",
+  );
+  return source.slice(start, end);
+}
+
+test("each ritual leads with its Malayalam above a larger English title", () => {
+  /* The hierarchy inverted on 2026-10-09 (owner): the Malayalam and the sprig move into the
+     eyebrow position ABOVE, and the English title grows beneath them. Source order is what
+     guarantees it, because a mirrored row is pushed and aligned by its parent and never reversed
+     — reversing it once rendered `മധുരംവെപ്പ് Wedding Eve [leaf]`. */
+  const list = ritualList();
+  const ornament = list.indexOf("<SprigOrnament>");
+  const malayalam = list.indexOf("{ritual.malayalam}");
+  const title = list.indexOf("{ritual.title}");
+  assert.notStrictEqual(
+    ornament,
+    -1,
+    "the ritual's Malayalam carries no sprig ornament",
+  );
+  assert.ok(malayalam !== -1 && title !== -1);
+  assert.ok(
+    ornament < malayalam,
+    "the sprig brackets the Malayalam, so the ornament opens that line",
+  );
+  assert.ok(
+    malayalam < title,
+    "the Malayalam must sit ABOVE the English title, not beside it",
+  );
+  /* Scoped to `className` values, not the slice: the prose above this markup names
+     `type-heading-md`, so matching the slice passes while the title carries no role at all —
+     proven by mutation, and it is the third face of this file's own comment-matching trap. */
+  assert.ok(
+    (list.match(/className="[^"]*"/g) ?? []).some((value) =>
+      value.includes("type-heading-md"),
+    ),
+    "the freed English title takes the new role",
   );
   assert.ok(
     !/flex-row-reverse/.test(source),
-    "a reversed row reverses the leaf too — mirror by justification, never by reversal",
+    "a reversed row reverses the ornament too — mirror by justification, never by reversal",
   );
+});
+
+/* THE MALAYALAM TAKES heading-lg's SIZE AND NOT THE ROLE, and the distinction is the whole point:
+   `--text-heading-lg--font-weight` is 700, and `.type-heading-lg` would therefore render SYNTHETIC
+   bold on the conjuncts — a smeared outline rather than a heavier face. A real 600 cut is loaded
+   temporarily (app/layout.tsx) so the owner can judge one against the other on /preview; until they
+   pick, the shipped default is 400, and a weight utility here would pre-empt that decision. */
+test("the Malayalam takes heading-lg's size at weight 400, never the role", () => {
+  /* `className` values only, never the whole slice: the prose beside this markup NAMES both
+     `.type-heading-lg` and synthetic bold in order to say they are deliberately absent, and a
+     plain substring search over the slice matched that comment and failed on correct code — the
+     same trap the reading-measure test below already records. */
+  const classNames = ritualList().match(/className="[^"]*"/g) ?? [];
+  assert.ok(classNames.length > 0, "the slice must contain some className");
+  const joined = classNames.join(" ");
+  assert.match(
+    joined,
+    /text-\(length:--text-heading-lg\)/,
+    "the Malayalam must take heading-lg's size explicitly",
+  );
+  for (const value of classNames) {
+    assert.ok(
+      !value.includes("type-heading-lg"),
+      `the role carries weight 700 — synthetic bold on Malayalam conjuncts: ${value}`,
+    );
+    assert.ok(
+      !/\bfont-(bold|semibold|medium)\b/.test(value),
+      `the weight is the owner's /preview lever, not a utility on the shipped default: ${value}`,
+    );
+  }
 });
 
 test("the Malayalam title takes the Malayalam family, which nothing else does", () => {
@@ -63,14 +130,10 @@ test("the Malayalam title takes the Malayalam family, which nothing else does", 
 test("the ritual description takes no reading-measure cap", () => {
   /* The block's own width IS the measure (owner). `max-w-text` on the paragraph held every block
      width above about 65% at an identical 600px paragraph, which made the width decision dead. */
-  const list = source.indexOf("CELEBRATIONS_LIST_CLASS}");
-  const listEnd = source.indexOf("</ol>", list);
-  assert.ok(list !== -1 && listEnd > list);
   /* Only `className` values are read, not the whole slice: the prose beside this markup names
      `max-w-text` to say it is deliberately absent, and a plain substring search matched that
      comment and failed on correct code. */
-  const classNames =
-    source.slice(list, listEnd).match(/className="[^"]*"/g) ?? [];
+  const classNames = ritualList().match(/className="[^"]*"/g) ?? [];
   assert.ok(classNames.length > 0, "the slice must contain some className");
   for (const value of classNames) {
     assert.ok(

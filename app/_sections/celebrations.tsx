@@ -3,7 +3,6 @@ import {
   Botanical,
   SECTION_PLACEMENT,
 } from "@/components/background/botanical";
-import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { PhotoStrip } from "@/components/ui/photo-strip";
@@ -76,39 +75,37 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
               <li className={celebrations.row} data-thread-row key={ritual.id}>
                 <div className={celebrations.block}>
                   <div className={celebrations.text}>
-                    {/* The leaf sits on the title's own line so a wrapping description cannot
-                        orphan it, and it is ALWAYS the row's first child -- a mirrored row is
-                        pushed and aligned by its parent, never reversed, which would render
-                        the Malayalam before the English (owner). `items-baseline` rather than
-                        `items-center`: the leaf reads as punctuation opening the title, and
-                        punctuation sits on the text's baseline. */}
-                    {/* `flex-wrap` rather than a media query, and it is self-adjusting: a flex
-                        item moves to the next line on its MAX-CONTENT hypothetical size, so the
-                        Malayalam drops below the title exactly when the three cannot share a line,
-                        and the English then has the full width and stops wrapping itself. At 320px
-                        that is what happens; from 360px up all three still fit on one line and
-                        nothing moves (owner, 2026-10-07). No width is hardcoded, so a longer title
-                        or a wider Malayalam is handled the day it arrives. */}
-                    <div className="flex flex-wrap items-baseline gap-space-2xs">
-                      <SprigIcon
-                        className="shrink-0 text-accent-gold"
-                        size={32}
-                      />
-                      <h3 className="type-heading-lg text-ink">
-                        {ritual.title}
-                      </h3>
-                      {/* Beside the English title at every band (owner), never stacked under it.
-                          `leading-tight` because Malayalam's own ascenders and the pre-base signs
-                          otherwise grow the shared line box past the title's line height.
-                          `type-caption`, NOT the `type-heading-lg` of the title beside it: Malayalam
-                          carries more apparent height than Latin at the same point size, so at
-                          heading-lg it out-weighed the English it accompanies -- and it is what
-                          makes the title row fit the phone band (owner, 2026-10-07; the width
-                          arithmetic is in DESIGN.md -> Timeline). */}
-                      <span className="type-caption font-(family-name:--font-malayalam) text-accent-gold leading-tight">
-                        {ritual.malayalam}
-                      </span>
-                    </div>
+                    {/* THE MALAYALAM LEADS, IN THE EYEBROW POSITION, BRACKETED BY THE SPRIG
+                        (owner, 2026-10-09), and the English title then has its row to itself and
+                        grows into `type-heading-md`. What the split BUYS is measured rather than
+                        asserted: the old shared line put the leaf, the English and the Malayalam
+                        in one 216px block at 360px, where the Malayalam alone took 83px at
+                        heading-lg's size -- so the three only ever fit by shortening a title and
+                        stepping the Malayalam down to `type-caption`. On its own line that
+                        constraint does not exist, which is what pays for the larger title.
+
+                        A mirrored row is still pushed and aligned by its parent and NEVER
+                        reversed: reversing it renders the Malayalam after the English, and the
+                        ornament's two marks with it.
+
+                        `text-(length:--text-heading-lg)` and NOT `.type-heading-lg`: that role is
+                        weight 700 while the shipped Malayalam cut is 400, so the role would render
+                        SYNTHETIC bold on the conjuncts -- a smeared outline, not a heavier face. A
+                        real 600 cut loads temporarily (see `app/layout.tsx`) so the owner can
+                        judge the two on /preview; `font-normal` pins the shipped default meanwhile.
+
+                        NOT `.type-eyebrow` despite taking the eyebrow's position: that role's
+                        0.2em tracking breaks Malayalam conjuncts rather than spacing them, and its
+                        10px phone size sits below every reading role in the system.
+
+                        `leading-tight` because Malayalam's ascenders and its pre-base signs
+                        otherwise grow the line box past the size's own line height. */}
+                    <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-lg) text-accent-gold font-normal leading-tight">
+                      <SprigOrnament>{ritual.malayalam}</SprigOrnament>
+                    </span>
+                    <h3 className="type-heading-md text-ink mt-space-2xs">
+                      {ritual.title}
+                    </h3>
                     <p className="type-body-italic text-ink-muted mt-space-2xs">
                       {ritual.tagline}
                     </p>
