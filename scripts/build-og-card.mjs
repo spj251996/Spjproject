@@ -119,7 +119,23 @@ export function extractFontVars(html) {
    invitation's own line was added inside it in Phase 7; `app/invite-line.test.ts` is what asserts the
    source order that keeps it there.
 
-   It must fail LOUDLY: a silent fallback would ship a card missing a line. */
+   It must fail LOUDLY: a silent fallback would ship a card missing a line.
+
+   BROKEN SINCE PHASE 7 HALF 2, MEASURED AND NOT FIXED — THE CARD NOW RENDERS NO NAMES AT ALL.
+   The invite's `<h1>` holds the drawn names asset, which is three `<use href="#names-*">`
+   elements. A `<use>` resolves against ITS OWN document, and the symbols are mounted in the site's
+   root layout — this generator writes its own `card.html` and renders it over `file://`, so the
+   references resolve to nothing. It does not throw: the lift succeeds, the height guard passes,
+   the run reports `names 116px` of reserved space, and exits 0 with a blank gap where the couple's
+   names belong. Seen on the rendered preview, 2026-10-09, not inferred.
+   THE COMMITTED `public/og-card.jpg` IS UNAFFECTED until someone regenerates it — it still shows
+   the names, and the old date line it has shown since the date block landed.
+   The card is PARKED by the owner and travels with the bronze colour in its own plan, so this is
+   recorded rather than repaired. The repair is small and belongs there: inline the symbol defs
+   into the card document beside the lifted run, the same way the sprig mark is already available
+   to it. What is NOT broken: the type overrides still reach the asset, because the `<h1>` keeps
+   `type-display-name` and the lockup's width is `em` of that role, so `--text-display-name` on
+   `.og-card` still scales it. */
 export function extractInvite(html) {
   const start = html.indexOf(
     '<p class="type-eyebrow">We are getting married</p>',
