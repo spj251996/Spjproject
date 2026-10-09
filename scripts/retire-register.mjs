@@ -17,10 +17,19 @@
  * that actually bites, since Phase 9 reads this list once and acts on it. Adding a file here is a
  * human step, and no check will notice if you skip it.
  *
- * Every entry today is `temporary`, so the `unused` arm has never fired on a real one. Half 2 adds
- * the first: `type-display-name`, `type-heading-script` and `splitCoupleNames` lose their consumers
- * when the names asset lands. They are SYMBOLS, not paths, and `{ path }` plus `existsSync` cannot
- * express them — that entry shape has to be designed then, not improvised. */
+ * AN ENTRY NAMES EITHER A `path` OR A `symbol` IN A FILE, never both:
+ *   { path }          — a whole file or directory, checked with `existsSync`.
+ *   { symbol, in }    — an exact source substring inside `in`, checked by reading that file.
+ * The symbol shape exists because a thing can be scheduled for removal without its file being:
+ * Half 2 loads a second Malayalam font weight purely so the owner can judge it, and `{ path }`
+ * cannot express "these bytes, not this layout". `symbol` is matched LITERALLY, so it is the
+ * source text to delete and not a description of it — which is what makes the gate fire when the
+ * subject goes.
+ *
+ * Every entry today is `temporary`, and the `unused` arm has never fired on a real one. An earlier
+ * version of this header predicted Half 2 would add the first `unused` entries — it does not:
+ * `type-display-name`, `type-heading-script` and `splitCoupleNames` keep consumers as the /preview
+ * route's alternates, so they enter as `temporary` and become `unused` only in Half 3. */
 export const RETIRE_REGISTER = Object.freeze([
   {
     path: "public/rituals",
@@ -46,6 +55,12 @@ export const RETIRE_REGISTER = Object.freeze([
     path: "content/contacts.ts",
     kind: "temporary",
     why: "Both contacts' names and numbers, still rendered on the lab routes. Goes with the section in Phase 9.",
+  },
+  {
+    symbol: 'weight: ["400", "600"]',
+    in: "app/layout.tsx",
+    kind: "temporary",
+    why: 'The Malayalam\'s second weight, loaded only so the owner can judge 600 against 400 — a synthetic bold cannot be judged fairly. ITS COST IS +64KB, NOT THE +22KB A SECOND STATIC CUT WOULD BE: two weights make the loader fetch the variable face, so the three subset files go 41,172 to 105,256 bytes, and +36KB of that sits on every route\'s critical path because the preloaded Malayalam-range file serves both weights. Measured by building both ways, 2026-10-09. Half 3 drops the losing weight and this entry with it. Removing it is one edit here — `weight: "400"` or `"600"` — with no other site to sweep, because nothing in the sections names a weight.',
   },
   {
     path: "components/ui/contact-actions.test.ts",
