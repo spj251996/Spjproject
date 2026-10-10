@@ -34,7 +34,10 @@ const ZONES: SpanZone[] = [
     name: "Desktop",
     width: "≥ 64rem (1024px)",
     changes: [
-      "Parallel splits; timeline nodes alternate sides",
+      /* The timeline's alternation was RETIRED 2026-10-10 — one full-width column at every tier
+         now — and `timeline-node` itself went in Phase 5b, so this row named a component that had
+         not existed for days and a layout that no longer exists either. Both halves were wrong. */
+      "Parallel splits",
       "Compact type step from lg, desktop type step from xl",
     ],
   },

@@ -66,7 +66,7 @@ const TIMELINE_ENTRIES: InlineEntry[] = [
     name: "Timeline",
     home: "app/_sections/celebrations.tsx",
     composes:
-      "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each opened by the sprig mark on the title's own line, a heading-lg title and a body description",
+      "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each led by its Malayalam name bracketed by the sprig in the eyebrow position, then a heading-md English title, a body-italic tagline and a body description",
     note: "Live at /.",
   },
 ];
