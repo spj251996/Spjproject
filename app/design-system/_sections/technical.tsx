@@ -9,6 +9,19 @@ import {
   type SpanZone,
 } from "@/app/design-system/_kit";
 
+/* Published, lab and review routes in one list. The three lab routes carry [lab] in the doc —
+   built and verified but not on the published page; /preview carries [retire] instead, because it
+   IS published and is deleted before the branch merges rather than at Phase 9. */
+const VARIANT_ROUTES = [
+  "/ · five sections, Contact off it · no thread · the hero unpainted, the other four mounted",
+  "/thread/current · six sections, Contact included · the thread · card paint identical to /",
+  "/thread/mount · the same six · every card painted with its mount, the hero included",
+  "/thread/stock · the same six · every card the mountless stock",
+  "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
+  "At rest /preview IS the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root — shipped state removes the attribute, so an untouched panel matches no rule and its <main> is byte-identical to /'s",
+  "The three levers it carries → Event Info (six phone layouts), sprig-ornament (two arrangements), Timeline (four text alignments); each entry names its own",
+];
+
 const TRY_IT = [
   "Focus and hover · tab to or hover the map action under Components · UI",
   "Text selection · try selecting any text on this page — nothing selects",
@@ -137,6 +150,16 @@ export function TechnicalSections() {
         <SpanTable zones={ZONES} />
         <DeviceRuler stops={ZONE_BARS} />
         <RuleList rules={RESPONSIVE_POINTERS} />
+      </GallerySection>
+
+      <GallerySection
+        id="variant-routes"
+        intro="Five routes compose from one section module. What differs between them is which sections it is told to render, whether the thread mounts, and which paint the cards take — never the geometry, which is identical for every section two routes share."
+        mapsTo="Technical Conventions → Variant Routes"
+        source="app/_sections/index.tsx · app/thread/[variant]/page.tsx · app/preview/page.tsx"
+        title="Technical · Variant Routes"
+      >
+        <RuleList rules={VARIANT_ROUTES} />
       </GallerySection>
 
       <GallerySection

@@ -505,7 +505,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Four families and thirteen roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes caption's size with that family substituted — so it has no row below; see it on the page at Domain · Timeline."
+        intro="Four families and fourteen roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-lg's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
@@ -514,7 +514,7 @@ export function FoundationsSections() {
           description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. The two script rows: display-name is the invite's couple names; heading-script is Wishes' couple names, the script face's only other section-level use."
+          note="Samples render at the window's current tier. The two script rows are SUPERSEDED and tagged [retire]: the invite's couple names and Wishes' signature are drawn geometry now (Components · UI · couple-names), and the script markup these styled is hidden on every published route. They keep their rows because the classes are still on those elements, carrying the em the drawn lockup's width resolves against — which is why their SIZE TOKENS have to outlive the roles themselves."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
@@ -674,7 +674,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are Contact, the Celebrations rows and the link preview card, each set inline rather than through this component."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows and each ritual's Malayalam, both through sprig-ornament (Components · UI), plus Contact and the link preview card, which set it inline."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -831,7 +831,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, marks Contact, opens each Celebrations ritual row, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows and each Celebrations ritual's Malayalam in pairs through sprig-ornament, marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"
