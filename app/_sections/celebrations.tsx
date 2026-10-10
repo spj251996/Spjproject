@@ -84,9 +84,10 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                         stepping the Malayalam down to `type-caption`. On its own line that
                         constraint does not exist, which is what pays for the larger title.
 
-                        A mirrored row is still pushed and aligned by its parent and NEVER
-                        reversed: reversing it renders the Malayalam after the English, and the
-                        ornament's two marks with it.
+                        NO ROW IS REVERSED, and that outlives the mirrored rows themselves —
+                        they went with the alternating band on 2026-10-10. Reversing one renders
+                        the Malayalam after the English, and the ornament's two marks with it, so
+                        the ordering is the markup's rather than a parent's to flip.
 
                         `text-(length:--text-heading-lg)` and NOT `.type-heading-lg`: that role is
                         weight 700 and Noto Serif Malayalam ships no cut above 600, so the role

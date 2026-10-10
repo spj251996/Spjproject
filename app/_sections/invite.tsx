@@ -177,7 +177,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 THE BLOCK PADDING ON THE TWO LANDSCAPE BANDS MAKES THE DRAWN NAMES SIT IN THE AIR
                 THE TYPESET ONES DID (owner, 2026-10-10), and it is ASYMMETRIC because the gaps it
                 is matching are. Measured ink to ink, which is the only comparison that means
-                anything here — the drawn asset's box is padded by a full stroke width while a
+                anything here — the drawn asset's box is padded by THREE stroke widths while a
                 script line box carries ~110px of leading its ink never uses, so the two states'
                 BOX gaps were identical at a constant 24/4 while a reader saw nothing of the kind:
 
