@@ -1,0 +1,765 @@
+/* `/preview`'s ALTERNATES — never a default, and that distinction is the architecture.
+   DESIGN.md → Technical Conventions → Variant Routes.
+
+   Every rule here is gated on a `data-pv-*` attribute that `_panel.tsx` sets on the document
+   root, and SHIPPED STATE IS THE ABSENCE OF THE ATTRIBUTE. So with every control untouched this
+   file matches nothing and `/preview` IS the published page — which is also why a default must
+   never be expressed here: this file loads only on `/preview`, so a default written here would
+   leave `/` painting neither state or both. Lever 2's default hide therefore lives in the
+   committed `app/couple-names.css` instead.
+
+   UNLAYERED, deliberately. Tailwind's utilities and the type scale sit in `@layer` blocks, and an
+   unlayered rule beats any layered one outright however low its specificity — so these rules do
+   not have to out-specify a utility. Where they compete with something ALSO unlayered — the
+   generated botanical stylesheet, inlined per section — specificity decides, and each selector
+   below carries at least one more class-level component than the sheet's two.
+
+   Removal is pure subtraction: this file, the route, the panel and one `check-export-routes.mjs`
+   row go in one commit, and no section file is touched. */
+
+/* WHAT WAS LEVER 2 — the couple's names, drawn against today's typeset script — IS GONE, and
+   deliberately rather than by omission (owner, 2026-10-10: "ship only drawn to couple, no need
+   options"). The drawn asset is the answer, so there is nothing for the couple to arbitrate.
+   TWO THINGS SURVIVE IT AND NEITHER IS DEAD BY ACCIDENT. The typeset markup is still in the tree
+   behind `[data-names-alt]`, hidden by the committed `app/couple-names.css`, and
+   `scripts/retire-register.mjs` now carries it as `unused` rather than `temporary` — the pick is
+   made, so it goes in the scheduled Phase 9 sweep rather than waiting on an answer. And
+   `.type-display-name` and `.type-heading-script` stay on their elements regardless, because the
+   asset's width is `em` of those roles; the register says so in its own `why`. */
+
+/* ───────── LEVER 3 — the leaf marks beside a heading ─────────
+   Promoted from the owner's tuning levers to the couple's third question (owner, 2026-10-10).
+
+   Pseudo-elements rather than markup: the wrapper is `inline-flex`, so a `::before` and `::after`
+   become flex items in the right places and `components/ui/sprig-ornament.tsx` needs no `rules`
+   prop to carry a state nobody has chosen yet. `currentColor` because the wrapper deliberately
+   sets no colour of its own — the call site's role owns it, and `.type-eyebrow`'s gold is declared
+   in `@layer components`.
+
+   It reaches EVERY ornament, the five section eyebrows and the five ritual Malayalams alike,
+   because they are one component. That is what changing the component would do, so it is what the
+   couple should be looking at. */
+html[data-pv-ornament="rules"] [data-sprig-ornament]::before,
+html[data-pv-ornament="rules"] [data-sprig-ornament]::after {
+  content: "";
+  flex: 0 0 auto;
+  width: var(--spacing-space-lg);
+  height: var(--stroke-divider);
+  background: currentColor;
+}
+
+/* WHAT USED TO BE LEVER 3 — the invite's eyebrow against the flowers — IS GONE, and deliberately
+   rather than by omission (owner, 2026-10-10). Its default was the one option with a measurement
+   behind it: `falling-spray`'s phone record at y -18.4vw, which took overlapping ink across the
+   phone band from 1224 to 147, with the residual bud on the largest handsets accepted as a Known
+   Gap. The two alternates it carried — mirroring the piece, and swapping in `arching-branch` —
+   had no clearance figure at all, so the couple would have been choosing between one measured
+   arrangement and two unmeasured ones. The owner settled it instead. */
+
+/* ───────── TUNING — the owner's, settled on a render and STRIPPED at T9 ─────────
+   The couple never see these. Each one is the whole of its lever: when a value is settled it lands
+   in the file that owns it and the rule and its control are deleted together.
+
+   TWO HAVE ALREADY LEFT THIS BLOCK. `data-pv-ornament` was promoted to the couple's third
+   question, above. `data-pv-malayalam` is SETTLED — 600 — so it ships in
+   `app/_sections/celebrations.tsx` and `app/layout.tsx` loads that cut alone; there is no rule
+   here because there is nothing left to compare. */
+
+/* Ritual text alignment. CENTRED NOW SHIPS (owner, 2026-10-10) — the reasoning and the measured
+   cost are on `.text` in `app/celebrations.module.css`, which is the rule this one is the
+   alternate to — so the two alternates below are the forms it replaced. The lever is held open
+   for one more look rather than stripped with the decision.
+
+   The selector names the ritual block's text column structurally: it is the only direct `div`
+   child of the only direct `div` child of a row, and `celebrations.module.css`'s class names are
+   hashed and unreachable from a plain stylesheet. `align-items` has to be restated alongside
+   `text-align`, because the column's own cross-axis alignment is what places the ornament and the
+   photo strip's action; `text-align` alone would leave both centred over left-aligned prose. */
+html[data-pv-ritual-align="start"] #celebrations ol > li > div > div {
+  align-items: flex-start;
+  text-align: start;
+}
+
+/* THE RAIL — a sprig spine down the left with every ritual hugging it (owner asked for it as a
+   fourth form, 2026-10-10). Four things define it, all four the owner's words: the Malayalam
+   carries ONE sprig, not two, and that sprig IS the rail's node; the rituals hug the spine; the
+   rail is on EVERY tier; and the English title shares the Malayalam's line at every tier EXCEPT
+   phone, where it stays beneath.
+
+   "every tier except phone" QUALIFIES THE TITLE, NOT THE RAIL, and reading it the other way round
+   is a correction rather than a refinement — a first build bounded the whole arrangement to 48rem
+   and up, which left the phone tier with no spine at all. The rail is here at every width; only
+   the title's placement is banded.
+
+   WHAT THE RAIL COSTS AT PHONE, so it is not a surprise later: the 32px indent takes the
+   description's measure from 249px to 217px — about 29 characters a line against 33 — where above
+   48rem the same indent costs 372 to 340 and 736 to 704, which is nothing. It is the one band
+   where the spine is paid for in measure.
+
+   THE PROMOTION IS TWO LEVELS DEEP, which is the one thing that is not obvious: the chain is
+   `li > div.block > div.text > children`, so BOTH wrappers take `display: contents` before the
+   Malayalam, the title, the tagline, the description and the photo strip become grid items of the
+   `li` itself. With one level they stay inside a box the rail cannot reach around.
+
+   ROWS ARE DECLARED, NEVER A GENEROUS MAXIMUM: an unused trailing row still contributes its
+   row-gap, which in the Event Info rail left the grid area taller than its content and the tail
+   overshooting by 7.5px. Five at phone and four above it — the title leaves its own row when it
+   moves up beside the Malayalam. `row-gap: 0` because the children carry their own
+   `mt-space-2xs`, which is the within-ritual rhythm and not the rail's to restate. */
+html[data-pv-ritual-align="rail"] #celebrations ol > li {
+  --rail-node: 16px;
+  /* The breath either side of a node (owner, 2026-10-10). `space-3xs` is the within-group rung the
+     Event Info rail uses for the same job. */
+  --rail-gap: var(--spacing-space-3xs);
+  /* WHERE THE SPINE BEGINS, measured from the row's top. This is the PHONE value: there the
+     sprig sits at the row's top, so one node and one gap clears it. Above phone the baseline
+     rule moves the whole ornament down and the sprig with it, so that band states its own —
+     see its override. One variable, so the spine's two rules never have to know the band. */
+  --rail-start: calc(var(--rail-node) + var(--rail-gap));
+  display: grid;
+  align-items: start;
+  text-align: start;
+  row-gap: 0;
+  column-gap: var(--spacing-space-sm);
+}
+
+html[data-pv-ritual-align="rail"] #celebrations ol > li > div,
+html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div {
+  display: contents;
+}
+
+/* One sprig, and it is the node. The ornament renders the mark either side by construction, so the
+   trailing one goes — `nth-of-type(2)` rather than `last-child`, because the Malayalam between
+   them is a text node and not an element. Scoped to the rituals, so the five section eyebrows keep
+   their pair. */
+html[data-pv-ritual-align="rail"]
+  #celebrations
+  ol
+  > li
+  [data-sprig-ornament]
+  > svg:nth-of-type(2) {
+  display: none;
+}
+
+/* THE ORNAMENT CENTRES ITSELF BY CONSTRUCTION, and that is what made the spine wander. Its wrapper
+   is `inline-flex … justify-center`, so a span placed across the rail column and the Malayalam's
+   put its sprig at a different x in every ritual — measured 149.1 to 161.4, a 12px spread where
+   the whole point is a straight line. */
+html[data-pv-ritual-align="rail"] #celebrations ol > li [data-sprig-ornament] {
+  justify-content: flex-start;
+}
+
+html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > span {
+  justify-self: start;
+}
+
+/* ALL THE TEXT HUGS THE RAIL (owner, 2026-10-10), AND IT TOOK TWO RULES RATHER THAN ONE.
+
+   The first version set `align-items` on `li > div > div > div > div` and changed nothing, because
+   `photo-strip` wraps `photo-row` in a `w-full` div of its own — so that selector landed on a
+   `display: block` element one level ABOVE the flex column it meant, where `align-items` has no
+   effect, and the column stayed `items-center`. Measured: the strip and its button sat at x+179
+   while every line of type beside them started at x+32. `[data-photo-ready]` is the strip's own
+   hook and names that wrapper outright, so its child is the column without counting levels.
+
+   The second is `text-align`. `.text` carries `center` for the shipped centred form, and
+   `display: contents` removes its BOX but not its place in the inheritance chain — so `start` on
+   the `li` was overridden for every descendant by a declaration closer to them. The column is an
+   `inline-flex`, which is an inline box, and an inline box is what `text-align` positions.
+
+   The shipped centred form keeps both as they are: there the button is centred ON PURPOSE. */
+html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div {
+  text-align: start;
+}
+
+html[data-pv-ritual-align="rail"]
+  #celebrations
+  ol
+  > li
+  [data-photo-ready]
+  > div {
+  align-items: flex-start;
+}
+
+/* The spine: the `divider`'s own stroke and colour, the same pair the Event Info rail takes.
+
+   IT BREAKS AROUND THE NODE RATHER THAN RUNNING OUT OF IT (owner, 2026-10-10). It starts
+   `--rail-gap` BELOW the sprig's bottom and stops the same distance ABOVE the next ritual's sprig,
+   so each mark sits in its own clear space instead of being skewered. The arithmetic is stated
+   rather than tuned: the grid area runs from this row's top to its bottom, the next node sits at
+   the next row's top, and the rows are `space-xl` apart — so reaching the next node is
+   `100% + space-xl`, and clearing both ends takes the node's full height plus two gaps off that.
+
+   The LAST segment's tail stops where its own content ends rather than at a guessed length, which
+   is what lets a longer final ritual lengthen it by itself. */
+html[data-pv-ritual-align="rail"] #celebrations ol > li::after {
+  content: "";
+  grid-column: 1;
+  grid-row: 1 / -1;
+  justify-self: start;
+  margin-top: var(--rail-start);
+  margin-left: calc(var(--rail-node) / 2 - var(--stroke-divider) / 2);
+  width: var(--stroke-divider);
+  height: calc(
+    100% +
+    var(--spacing-space-xl) -
+    var(--rail-start) -
+    var(--rail-gap)
+  );
+  background: var(--color-accent-gold);
+}
+
+html[data-pv-ritual-align="rail"] #celebrations ol > li:last-child::after {
+  height: calc(100% - var(--rail-start));
+}
+
+/* ── phone: the title stays beneath the Malayalam ───────────────────────────────────── */
+@media (width < 48rem) {
+  html[data-pv-ritual-align="rail"] #celebrations ol > li {
+    grid-template-columns: var(--rail-node) 1fr;
+    grid-template-rows: repeat(5, auto);
+  }
+
+  /* The ornament spans both, so its sprig lands in the rail column and the Malayalam flows past
+     it — "right next to the sprig in the rail". */
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > span {
+    grid-area: 1 / 1 / 2 / -1;
+  }
+
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > h3 {
+    grid-area: 2 / 2;
+  }
+
+  html[data-pv-ritual-align="rail"]
+    #celebrations
+    ol
+    > li
+    > div
+    > div
+    > p:nth-of-type(1) {
+    grid-area: 3 / 2;
+  }
+
+  html[data-pv-ritual-align="rail"]
+    #celebrations
+    ol
+    > li
+    > div
+    > div
+    > p:nth-of-type(2) {
+    grid-area: 4 / 2;
+  }
+
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > div {
+    grid-area: 5 / 2;
+  }
+}
+
+/* ── above phone: the title moves up onto the Malayalam's line ──────────────────────── */
+@media (width >= 48rem) {
+  /* THE MALAYALAM'S COLUMN IS A STATED WIDTH, AND `max-content` CANNOT DO THIS JOB — the reason is
+     structural rather than a tuning preference. Each `li` is its OWN grid, so a `max-content`
+     column is sized by that one ritual's Malayalam and nothing aligns across the five: measured,
+     the titles started at 331, 339, 348, 352 and 357 — a 26px stagger. `10em` of the Malayalam's
+     own role scales with it per tier rather than pinning a pixel figure: the widest of the five
+     measures 142px at tablet and about 155 at desktop, against the 150 and 170 this gives. If the
+     rail is chosen, the shipped version should take this from a subgrid or one measured constant
+     rather than from slack. */
+  html[data-pv-ritual-align="rail"] #celebrations ol > li {
+    /* `max-content` ON THE MALAYALAM'S COLUMN, AND THE TITLE FOLLOWS AT A WORD'S DISTANCE (owner,
+       2026-10-10: "separated by normal space not so much"). This REPLACES a stated `10em` column
+       that reserved room for the widest of the five, which put the title 77-107px past the end of
+       its own Malayalam and the distance varied per ritual anyway.
+       WHAT IT COSTS, so nobody reinstates the stated width by surprise: each `li` is its own grid,
+       so `max-content` is sized by that ritual's Malayalam alone and the five titles no longer
+       start at one x. That stagger is the price of a normal space, and it is the owner's call —
+       they asked for the space. */
+    /* THE SPINE STARTS LOWER HERE, AND THE FIGURE IS MEASURED RATHER THAN DERIVED. Putting the
+       Malayalam on the title's baseline moves the whole ornament DOWN — by the difference between
+       the two ascents — so the sprig goes with it, and the phone arithmetic (`node + gap` from the
+       row's top) then lands the spine ACROSS the mark instead of below it: measured at 9.8 to
+       12.6px of overlap. The sprig's own bottom sits 31.4 / 29.8 / 32.6px down at tablet / laptop /
+       desktop, so clearing the widest of those by one gap takes 36px — a 2.8px spread over the
+       three bands, which leaves the gap between 3.4 and 6.2px against the 4 it asks for.
+       IT IS TIED TO THE TYPE SIZES, not to the layout: change `heading-md` or `heading-lg` and it
+       needs re-measuring. `tmp/half2/sprig-offset.mjs` is the harness. */
+    --rail-start: 36px;
+    grid-template-columns: var(--rail-node) max-content 1fr;
+    grid-template-rows: repeat(4, auto);
+    /* The gap does double duty — rail to text, and Malayalam to title — so it is the smaller rung
+       at this band. `space-2xs` reads as a word space beside 21-25px type where `space-sm` read as
+       a column. */
+    column-gap: var(--spacing-space-2xs);
+  }
+
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > span {
+    grid-area: 1 / 1 / 2 / 3;
+  }
+
+  /* THE TWO SHARE A BASELINE, NOT A BOX, and that distinction is the whole of this rule. The
+     title is 21-25px against the Malayalam's 14-17px, so aligning their boxes — top, centre or
+     bottom — cannot put their type on one line. `align-self: baseline` alone did not either: the
+     title's baseline measured 13px low at laptop and 14px at tablet, because the Malayalam's grid
+     item is the ornament's `inline-flex` wrapper and a flex container takes its baseline from its
+     FIRST item, which is the sprig — an `<svg>` with no baseline of its own, so one is synthesised
+     from its margin box.
+     `align-items: baseline` on the ornament with the sprig excluded by `align-self: center` is
+     what makes the wrapper report the MALAYALAM's baseline instead, and then both grid items line
+     up on type rather than on boxes. */
+  html[data-pv-ritual-align="rail"]
+    #celebrations
+    ol
+    > li
+    [data-sprig-ornament] {
+    align-items: baseline;
+  }
+
+  html[data-pv-ritual-align="rail"]
+    #celebrations
+    ol
+    > li
+    [data-sprig-ornament]
+    > svg {
+    align-self: center;
+  }
+
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > span {
+    align-self: baseline;
+  }
+
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > h3 {
+    grid-area: 1 / 3;
+    /* It sits beside the Malayalam rather than under it, so its own top margin would push it off
+       that line. */
+    margin-top: 0;
+    align-self: baseline;
+  }
+
+  /* The body hugs the spine — indented past the rail column only, not past the Malayalam's, so the
+     description keeps its measure. */
+  html[data-pv-ritual-align="rail"]
+    #celebrations
+    ol
+    > li
+    > div
+    > div
+    > p:nth-of-type(1) {
+    grid-area: 2 / 2 / 3 / -1;
+  }
+
+  html[data-pv-ritual-align="rail"]
+    #celebrations
+    ol
+    > li
+    > div
+    > div
+    > p:nth-of-type(2) {
+    grid-area: 3 / 2 / 4 / -1;
+  }
+
+  html[data-pv-ritual-align="rail"] #celebrations ol > li > div > div > div {
+    grid-area: 4 / 2 / 5 / -1;
+  }
+}
+
+/* MORE AIR BETWEEN THE SPINE AND THE RIGHT-HAND COLUMN, at laptop and desktop only (owner,
+   2026-10-10). The body — tagline, description and photo strip — starts 24px from the row's left
+   at every band the rail reaches, which reads tight once the measure is 704px or 864px wide; it
+   doubles to 48px here. Tablet keeps 24, because its 340px measure cannot spare the other 24.
+
+   IT IS DONE BY WIDENING THE RAIL'S OWN COLUMN, which is the one lever that moves the body and
+   nothing else. The ornament spans columns 1 and 2 and starts at column 1's LEFT, so the sprig
+   and the Malayalam do not move; and column 2 is `max-content`, so the span's overhang into it
+   shrinks by exactly what column 1 gains and the title does not move either. Raising the
+   `column-gap` instead would have widened the Malayalam-to-title space, which is the word space
+   the owner asked for two messages earlier.
+
+   The spine itself is pinned to the node's centre by its own `margin-left` and `justify-self:
+   start`, so a wider lane leaves it exactly where it was. */
+@media (width >= 64rem) {
+  html[data-pv-ritual-align="rail"] #celebrations ol > li {
+    /* The body's distance from the row's left is this plus one `column-gap`. */
+    grid-template-columns:
+      calc(var(--spacing-space-xl) - var(--spacing-space-2xs))
+      max-content
+      1fr;
+  }
+}
+
+/* Justified FAILED ON MEASUREMENT rather than taste, and it stays on the route only so the owner
+   can confirm that by eye once: at 24-37 characters a line the widest word gap stretches to
+   14.75px on two of nine lines — 3.93x the natural space and wider than a character at 13px — and
+   the Malayalam line cannot justify at all. `flex-start` rides with it, because a justified
+   paragraph whose column still centres would sit in a shrink-wrapped box with nothing to
+   justify against. */
+html[data-pv-ritual-align="justify"] #celebrations ol > li > div > div {
+  align-items: flex-start;
+  text-align: justify;
+}
+
+/* TWO MORE LEVERS HAVE LEFT THIS BLOCK BECAUSE THEY ARE SETTLED (owner, 2026-10-10), and both
+   landed as values rather than as factors:
+   - `data-pv-heading-md` — the ritual title is **21/23/21/25px** in `app/styles/tokens.css`, up 8%
+     from the ladder it was built at and rounded to whole pixels per this project's own rule. The
+     step below it was dropped on measurement: +5% is a one-pixel change on a 19px title, below
+     what anyone sees without the two side by side, so the real choice was +8% or nothing.
+   - `data-pv-amp` — the ampersand is drawn at **65%** in `components/ui/couple-names.tsx`, and it
+     KEEPS ITS FULL SLOT there so the words do not move and neither measured fit changes. That
+     detail is the whole of why it landed faithfully; the component's own note has it.
+   Only the ritual's alignment is still held, and only for one more look. */
+
+/* ───────── LEVER 1 — Event Info on a phone: six candidates, all preview-only ─────────
+   Ported from the scratch route the owner settled them on over seven rounds of their own
+   direction. That route was never tracked, so there is nothing of it in git and this file is now
+   the ONLY copy of these rules — every one of its 34 was carried over with a byte-identical
+   declaration body, checked rather than eyeballed. The attribute names moved into the `data-pv-*`
+   namespace on the way: one namespace is what lets the panel's root-attribute guard be a guard
+   rather than a list of four names it has to forgive.
+
+   TWO FAMILIES, six combinations:
+     html[data-pv-rail="dot"]  + data-pv-dot-label=time|event + data-pv-dot-place=above|below
+     html[data-pv-rail="icon"] + data-pv-icon-split=time|both
+   Shipped sets no attribute at all, so at shipped this block matches nothing and `/` is untouched
+   — which is the whole reason `app/event-info-fit.ts` needs no regeneration this half: all six
+   measure 1704px, identical to what ships.
+
+   THE MECHANISM: `display: contents` on the text column AND on its first paragraph promotes the
+   five pieces — mark, time, event label, venue, button — to grid items of the `li` itself, so CSS
+   alone can place any of them in either column. Without it the text column is one grid item and
+   its children are unreachable.
+
+   Stable anchors inside a segment:
+     li > div:first-child                      the mark wrapper; its FIRST span is the phone mark
+     li > div:last-child > p:first-of-type     > span:first-child = time, > span:last-child = event
+     li > div:last-child > p:nth-of-type(2)    the venue
+     li > div:last-child > a                   "Meet us here"
+
+   Phone band only. Every wider band is settled and these rules must not reach it. */
+@media (width < 48rem) {
+  /* ── Shared by both rails ──────────────────────────────────────────────────────────── */
+  html[data-pv-rail] #event-info ol[role="list"] {
+    display: block;
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  html[data-pv-rail] #event-info li {
+    position: relative;
+    display: grid;
+    align-items: start;
+    /* One event's time, label, venue and button read as one group; the space between events is
+       what separates them. 4px within against 24-32px between. */
+    row-gap: var(--spacing-space-3xs);
+    column-gap: var(--spacing-space-2xs);
+    padding-bottom: var(--spacing-space-lg);
+  }
+
+  html[data-pv-rail] #event-info li:last-child {
+    padding-bottom: 0;
+  }
+
+  html[data-pv-rail] #event-info li > div:last-child,
+  html[data-pv-rail] #event-info li > div:last-child > p:first-of-type {
+    display: contents;
+  }
+
+  /* The <wbr> is a line-break hint for the single-line form; once time and event are separate
+     grid items it has no job, and left alone it would claim a cell. */
+  html[data-pv-rail] #event-info li > div:last-child > p:first-of-type > wbr {
+    display: none;
+  }
+
+  /* The diamond separated time from event on one line. Split across columns, nothing to separate. */
+  html[data-pv-rail]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child
+    svg {
+    display: none;
+  }
+
+  html[data-pv-rail]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:first-child {
+    margin-inline-end: 0;
+  }
+
+  /* THE OWNER'S HARD CONSTRAINT: the button never wraps; the venue may. The 4px top margin
+     replaces the shipped `mt-space-2xs` in ALL FOUR looks (owner, 2026-10-09) — it belongs to the
+     within-event rhythm, not to one variant's height budget. */
+  html[data-pv-rail] #event-info li > div:last-child > a {
+    margin-top: var(--spacing-space-3xs);
+    white-space: nowrap;
+  }
+
+  html[data-pv-rail] #event-info li > div:last-child > p:nth-of-type(2) {
+    text-wrap: pretty;
+  }
+
+  /* The icon is 40px in both families (owner, 2026-10-09). In the dot rail that also buys back
+     most of the dead row above the venue in the label-BELOW placement, where row 1 is sized by
+     the icon rather than by the label beside it — its natural size is 47. */
+  html[data-pv-rail] #event-info li > div:first-child > span:first-child > svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* The rail: the `divider`'s own stroke and colour — `--stroke-divider` in
+     `--color-accent-gold`, matching `components/layout/divider.tsx`. A pseudo-element is a grid
+     item, which is what lets it sit in a column whose width is computed rather than known.
+     It starts at this node's centre and ends on the next one's: `100%` is the grid AREA, which
+     excludes the row's bottom padding, so adding that padding back lands it exactly. */
+  html[data-pv-rail] #event-info li::after {
+    content: "";
+    grid-column: 2;
+    grid-row: 1 / -1;
+    justify-self: center;
+    margin-top: var(--node-centre);
+    width: var(--stroke-divider);
+    height: calc(100% + var(--spacing-space-lg));
+    background: var(--color-accent-gold);
+  }
+
+  /* The tail runs until the text ends, not a fixed length: the final segment carries no bottom
+     padding, so the grid area's bottom IS the last row's bottom. A venue wrapping to a third line
+     lengthens the tail by itself. */
+  html[data-pv-rail] #event-info li:last-child::after {
+    height: calc(100% - var(--node-centre));
+  }
+
+  /* ── The dot rail ──────────────────────────────────────────────────────────────────── */
+  html[data-pv-rail="dot"] #event-info li {
+    /* The dot is 7px tall, 12px down from the row's top. */
+    --node-centre: 15.5px;
+    /* DECLARED PER FAMILY, not as a generous maximum: an unused trailing row still contributes
+       its row-gap, which left the grid area taller than its own content and the tail overshooting
+       the button by 7.5px. Three rows here, four for the icon rail. */
+    grid-template-rows: repeat(3, auto);
+    /* "Same length if possible" AND "off centre to the left such that the button fits" are one
+       declaration: `minmax(min-content, 1fr)` splits evenly when the content allows and shrinks
+       the LEFT exactly when the right column's min-content — set by the unwrappable button —
+       needs more than half. Measured: the right pins at 152.75px while the left takes 71px at
+       360, 88px at 393 and 141px at 430. */
+    grid-template-columns: minmax(min-content, 1fr) var(--spacing-space-md) minmax(
+        min-content,
+        1fr
+      );
+  }
+
+  html[data-pv-rail="dot"] #event-info li::before {
+    content: "";
+    z-index: 1;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: center;
+    margin-top: 12px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--color-accent-gold);
+  }
+
+  html[data-pv-rail="dot"] #event-info li > div:first-child {
+    grid-column: 1;
+    justify-self: end;
+  }
+
+  html[data-pv-rail="dot"] #event-info li > div:last-child > p:nth-of-type(2) {
+    grid-area: 2 / 3;
+    text-align: left;
+  }
+
+  html[data-pv-rail="dot"] #event-info li > div:last-child > a {
+    grid-area: 3 / 3;
+    justify-self: start;
+  }
+
+  /* Which label takes the left column; the other leads the right in row 1. */
+  html[data-pv-rail="dot"][data-pv-dot-label="time"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:first-child {
+    grid-column: 1;
+    text-align: right;
+  }
+
+  html[data-pv-rail="dot"][data-pv-dot-label="time"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child {
+    grid-area: 1 / 3;
+    text-align: left;
+  }
+
+  html[data-pv-rail="dot"][data-pv-dot-label="event"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child {
+    grid-column: 1;
+    text-align: right;
+  }
+
+  html[data-pv-rail="dot"][data-pv-dot-label="event"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:first-child {
+    grid-area: 1 / 3;
+    text-align: left;
+  }
+
+  /* Label above the icon, or below it. ABOVE is what removes the dead row over the venue: with
+     the icon in row 1 that row is sized by the ICON while the label beside it is 28px, so the
+     venue starts lower than it needs to. Above, row 1 is the label's own height. */
+  html[data-pv-rail="dot"][data-pv-dot-place="above"]
+    #event-info
+    li
+    > div:first-child {
+    grid-row: 2;
+  }
+
+  html[data-pv-rail="dot"][data-pv-dot-place="above"][data-pv-dot-label="time"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:first-child,
+  html[data-pv-rail="dot"][data-pv-dot-place="above"][data-pv-dot-label="event"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child {
+    grid-row: 1;
+  }
+
+  html[data-pv-rail="dot"][data-pv-dot-place="below"]
+    #event-info
+    li
+    > div:first-child {
+    grid-row: 1;
+  }
+
+  html[data-pv-rail="dot"][data-pv-dot-place="below"][data-pv-dot-label="time"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:first-child,
+  html[data-pv-rail="dot"][data-pv-dot-place="below"][data-pv-dot-label="event"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child {
+    grid-row: 2;
+  }
+
+  /* ── The icon rail ─────────────────────────────────────────────────────────────────── */
+  html[data-pv-rail="icon"] #event-info li {
+    /* A 40px icon with no block padding of its own, so its centre is 20px down. */
+    --node-centre: 20px;
+    /* Four: the icon takes a row of its own above the text. */
+    grid-template-rows: repeat(4, auto);
+    /* Closer together and further left: the left column is sized to its own content rather than
+       taking a half share, which slides the rail left, and the 16px rail column plus 4px gaps
+       brings the two text columns to 24px apart. The icon overflows the narrow rail column
+       symmetrically, which is harmless because nothing else occupies its row. */
+    grid-template-columns: auto var(--spacing-space-sm) minmax(min-content, 1fr);
+    column-gap: var(--spacing-space-3xs);
+    padding-bottom: var(--spacing-space-md);
+  }
+
+  html[data-pv-rail="icon"] #event-info li > div:first-child {
+    position: relative;
+    z-index: 1;
+    grid-area: 1 / 2;
+    justify-self: center;
+    background: var(--color-surface-elevated);
+  }
+
+  html[data-pv-rail="icon"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:first-child {
+    grid-area: 2 / 1;
+    text-align: right;
+  }
+
+  /* Split "time": the time alone on the left, the event leading the right column. */
+  html[data-pv-rail="icon"][data-pv-icon-split="time"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child {
+    grid-area: 2 / 3;
+    text-align: left;
+  }
+
+  html[data-pv-rail="icon"][data-pv-icon-split="time"]
+    #event-info
+    li
+    > div:last-child
+    > p:nth-of-type(2) {
+    grid-area: 3 / 3;
+    text-align: left;
+  }
+
+  html[data-pv-rail="icon"][data-pv-icon-split="time"]
+    #event-info
+    li
+    > div:last-child
+    > a {
+    grid-area: 4 / 3;
+    justify-self: start;
+  }
+
+  /* Split "both": time and event stacked on the left, the venue spanning BOTH their rows so
+     neither side stretches the other. Without the span the venue's two lines set row 2 to 52px,
+     so the time sat 28px above the event while the venue and button touched — one event reading
+     as two pairs rather than as one group. */
+  html[data-pv-rail="icon"][data-pv-icon-split="both"]
+    #event-info
+    li
+    > div:last-child
+    > p:first-of-type
+    > span:last-child {
+    grid-area: 3 / 1;
+    text-align: right;
+  }
+
+  html[data-pv-rail="icon"][data-pv-icon-split="both"]
+    #event-info
+    li
+    > div:last-child
+    > p:nth-of-type(2) {
+    grid-row: 2 / 4;
+    grid-column: 3;
+    text-align: left;
+  }
+
+  html[data-pv-rail="icon"][data-pv-icon-split="both"]
+    #event-info
+    li
+    > div:last-child
+    > a {
+    grid-area: 4 / 3;
+    justify-self: start;
+  }
+}

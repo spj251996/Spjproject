@@ -58,6 +58,24 @@ const EXPECTED = [
     label: "/thread/stock (lab)",
     stockPaint: true,
   },
+  {
+    sections: true,
+    /* MEASURED on the export, not assumed: a non-dynamic static route emits `out/preview.html`
+     * with a sibling `out/preview/` directory holding only RSC payload `.txt` files -- the same
+     * shape the dynamic thread routes take. A gate that listed `out/preview` would find the
+     * directory and prove nothing.
+     *
+     * `[retire]`: THIS ROW GOES WITH THE ROUTE, and it has to be REPLACED by a `FORBIDDEN` entry
+     * rather than merely deleted. Nothing here enumerates `out/`'s root, so a stray
+     * `out/preview.html` left behind by a half-done removal would fail nothing at all. */
+    path: "out/preview.html",
+    roots: 0,
+    label: "/preview (the couple's review)",
+    stockPaint: false,
+    /* It renders `app/page.tsx`, which passes `contact={false}`, so it omits exactly what `/`
+     * omits. */
+    omits: ["contact"],
+  },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
    * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
    * is nothing thread-shaped left to assert -- what is left is that the route exists and carries none.
@@ -209,6 +227,55 @@ for (const path of FORBIDDEN) {
     console.error(`FAIL: ${path} must not be in the export`);
     failed = true;
   }
+}
+
+/* `/preview`'s TWO OWN CLAIMS, and both need the built artifact.
+ *
+ * ONE: NO ROUTE SERVER-RENDERS A LEVER. The panel sets its attributes in a client effect, so the
+ * shipped state is the absence of every one of them -- which is what makes the couple's first
+ * paint the recommended state with nothing to jump, and what makes `/preview` at rest the
+ * published page. Asserted across EVERY route rather than just `/preview`: an attribute appearing
+ * on `/` would mean an alternate had leaked into the published page, which is the worse failure
+ * and the one no source test can see.
+ *
+ * TWO: THE ALTERNATES' CSS REACHES `/preview` ALONE. Measured, not hoped for -- route-scoped CSS
+ * imported from a route file gets its own chunk, so `/` carries zero bytes of it rather than the
+ * "zero uses in a shared chunk" the plan had budgeted for. If a later change folds it into a
+ * shared chunk this fails, and the claim to fall back to is zero USES, not zero bytes. */
+const PV_PREFIX = "data-pv-";
+const PV_ROUTES = EXPECTED.filter((route) => route.sections);
+for (const { path, label } of PV_ROUTES) {
+  if (!existsSync(path)) continue;
+  const uses = (readFileSync(path, "utf8").match(/data-pv-/g) ?? []).length;
+  const ok = uses === 0;
+  console.log(
+    `${ok ? "ok  " : "FAIL"} ${label}: ${uses} ${PV_PREFIX} attributes server-rendered, expected none`,
+  );
+  if (!ok) failed = true;
+}
+
+if (existsSync(CSS_DIR)) {
+  const variantSheets = readdirSync(CSS_DIR)
+    .filter((name) => name.endsWith(".css"))
+    .filter((name) =>
+      readFileSync(join(CSS_DIR, name), "utf8").includes(PV_PREFIX),
+    );
+  const preview = existsSync("out/preview.html")
+    ? readFileSync("out/preview.html", "utf8")
+    : "";
+  const published = existsSync("out/index.html")
+    ? readFileSync("out/index.html", "utf8")
+    : "";
+  const onPreview = variantSheets.filter((name) => preview.includes(name));
+  const onPublished = variantSheets.filter((name) => published.includes(name));
+  const ok =
+    variantSheets.length > 0 &&
+    onPreview.length === variantSheets.length &&
+    onPublished.length === 0;
+  console.log(
+    `${ok ? "ok  " : "FAIL"} the alternates' CSS is on /preview alone: ${variantSheets.length} sheet(s), ${onPreview.length} on /preview, ${onPublished.length} on /`,
+  );
+  if (!ok) failed = true;
 }
 /* `/thread/mount` DIFFERS FROM `/thread/current` IN ONE THING ONLY: it overrides the hero's `"none"`,
  * so it paints one more mount than `/` does. Nothing gated that — set its variant's paint to `undefined`
