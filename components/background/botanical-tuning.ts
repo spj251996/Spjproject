@@ -97,7 +97,7 @@ export const TUNING: Readonly<
     phone: {
       anchor: "top-right",
       x: 2.380952,
-      y: -6,
+      y: -18.4,
       size: 76.6,
       rotation: 0,
       flip: true,

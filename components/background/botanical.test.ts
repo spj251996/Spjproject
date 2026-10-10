@@ -278,3 +278,40 @@ test("every piece the section carries gets a rule at every tier, and no other pi
     "a section's stylesheet must carry only its own pieces",
   );
 });
+
+/* `falling-spray`'s PHONE record is an eye-settled value with a measured reason behind it, which
+   is exactly the shape this project pins: a later re-tune, a conversion pass or a tidy-up can
+   overwrite it and nothing else in the build would notice.
+
+   `y: -18.4` was chosen on a render on 2026-10-10 to lift the piece off the invite's eyebrow. It
+   took the crossing from 1224 overlapping ink pixels across the phone band to 147, and it is the
+   LAST value before the cost starts showing: the two bands that still carry a bud on the line need
+   `-22` and `-26`, both far enough to thin the cascade. `size` stays 76.6 deliberately — the owner
+   kept the full cascade and paid for it in lift alone.
+
+   WHAT THIS TEST CANNOT SEE, stated so nobody reads a green run as clearance: a bud still sits on
+   the eyebrow on the largest phones with the URL bar showing. That is an accepted Known Gap, not a
+   regression, and it is measured by a bud metric no unit test can run — DESIGN.md → Known Gaps
+   carries the figures and the devices. */
+test("falling-spray's phone placement is the value settled on a render", () => {
+  assert.deepEqual(TUNING["falling-spray"].phone, {
+    anchor: "top-right",
+    x: 2.380952,
+    y: -18.4,
+    size: 76.6,
+    rotation: 0,
+    flip: true,
+  });
+});
+
+/* The other three tiers were NOT part of that decision and must not drift with it: the owner's
+   record changed one line. A re-tune that moves a wider tier is a different decision and needs its
+   own render. */
+test("the re-tune touched the phone tier alone", () => {
+  assert.equal(TUNING["falling-spray"].tablet.y, 0);
+  assert.equal(TUNING["falling-spray"].tablet.size, 60);
+  assert.equal(TUNING["falling-spray"].laptop.y, 0);
+  assert.equal(TUNING["falling-spray"].laptop.size, 35.6);
+  assert.equal(TUNING["falling-spray"].desktop.y, 0);
+  assert.equal(TUNING["falling-spray"].desktop.size, 31.026636);
+});
