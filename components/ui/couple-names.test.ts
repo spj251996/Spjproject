@@ -30,7 +30,6 @@ function code(path: string): string {
 const SYMBOL = code("components/icons/couple-names-symbol.tsx");
 const NAMES = code("components/ui/couple-names.tsx");
 const INVITE = code("app/_sections/invite.tsx");
-const WISHES = code("app/_sections/wishes.tsx");
 
 test("every word-group takes currentColor, so a colour token reaches all three", () => {
   assert.doesNotMatch(
@@ -110,6 +109,22 @@ test("the asset is sized in em of the role it replaces, at the measured ratios",
     /w-\[4\.656em\]/,
     "the single line's width literal drifted",
   );
+  /* NO CONTAINER CAP, AND THAT IS A RULING RATHER THAN AN OVERSIGHT. `w-[min(2.513em,100%)]` was
+     built and reverted: it fixes a real overflow — the invite's stacked lockup is 236.2px at the
+     phone tier against a content box that measures 176px at 320x844 — but it makes the lockup's
+     height GROW with the window over the capped range, and `measure:fit` throws on exactly that
+     ("phone portrait regime 1 stands taller than regime 0 at a wider width"), because the frame's
+     model requires content height to FALL as width rises. A media query cannot rescue it either:
+     a step still jumps the height upward at the boundary.
+     So the 320px overflow stands as a Known Gap, the owner's to price, and this assertion exists
+     to stop the cap being re-added as an obvious fix that silently breaks the fit generator. */
+  for (const w of NAMES.match(/w-\[[^\]]+\]/g) ?? []) {
+    assert.doesNotMatch(
+      w,
+      /min\(/,
+      `a container cap on a lockup width breaks measure:fit's monotonicity guard: ${w}`,
+    );
+  }
 });
 
 /* THE DILATION IS LOAD-BEARING AND LOOKS LIKE DECORATION, which is exactly how it would get
@@ -219,33 +234,32 @@ test("the invite's h1 holds the asset and is still the page's only h1", () => {
   );
 });
 
-test("today's script markup survives as /preview's alternate, and is hidden on the published page", () => {
-  assert.match(
-    INVITE,
-    /type-display-name/,
-    "lever 2's alternate needs today's markup present",
-  );
-  assert.match(WISHES, /type-heading-script/);
-  for (const [file, src] of [
-    ["app/_sections/invite.tsx", INVITE],
-    ["app/_sections/wishes.tsx", WISHES],
-  ]) {
-    assert.match(src, /data-names-alt/, `${file} must mark its alternate`);
+test("the typeset markup is still hidden, and is now dead rather than pending", () => {
+  /* THE NAMES LEVER WAS DROPPED, NOT DECIDED (owner, 2026-10-10: ship only drawn, no options), so
+     this markup has no consumer on any route from that moment. It stays in the tree and stays
+     HIDDEN — `app/couple-names.css`'s `display: none` is now the only thing keeping it off the
+     page, where before `/preview` un-hid it — and `scripts/retire-register.mjs` carries both it
+     and `splitCoupleNames` as `unused`, which is what schedules the deletion rather than leaving
+     it to look like a pending answer.
+     THE HIDE AND THE MARKUP MUST GO TOGETHER. Removing the stylesheet alone would PAINT both the
+     drawn asset and the typeset script at once, which is why neither span is registered
+     separately and why this test asserts the pair rather than either half. */
+  for (const file of ["app/_sections/invite.tsx", "app/_sections/wishes.tsx"]) {
+    const src = readFileSync(file, "utf8");
+    assert.match(src, /data-names-alt/, `${file} lost its alternate's marker`);
+    assert.match(
+      src,
+      /@\/app\/couple-names\.css/,
+      `${file} renders the alternate without importing the rule that hides it`,
+    );
   }
-  /* The hide is a COMMITTED rule, not one in the preview route's own stylesheet: that file loads
-     only on /preview, so a default expressed there would leave `/` painting both forms at once. */
   assert.match(
     readFileSync("app/couple-names.css", "utf8"),
     /\[data-names-alt\][^{]*\{[^}]*display:\s*none/,
     "app/couple-names.css must hide the alternate on the published page",
   );
-  /* One rule, imported by both call sites — not a copy per section, and not a CSS module, whose
-     selectors must each carry a local class or the build refuses them. */
-  for (const file of ["app/_sections/invite.tsx", "app/_sections/wishes.tsx"]) {
-    assert.match(
-      readFileSync(file, "utf8"),
-      /app\/couple-names\.css/,
-      `${file} renders the alternate, so it must import the rule that hides it`,
-    );
-  }
+  /* That nothing UN-hides it any more is `app/preview/preview.css`'s business and is asserted in
+     `app/preview/preview-route.test.ts`, which owns that file. Reading a route-scoped stylesheet
+     from here would make this test depend on a file that need not exist — and it would throw
+     rather than skip at any commit before the route lands. */
 });

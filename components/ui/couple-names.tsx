@@ -18,10 +18,19 @@ const FLEMY = { w: 415.43, h: 183.42, x: 101.36, y: 262.08 };
    source group's own `scale(0.1)`. */
 const GAP = 20.2;
 
-/* The ampersand's scale on the single line only — the stacked lockup is left exactly as drawn,
-   because scaling one word of a drawn composition is not the same decision as re-laying it. One
-   number, because it is the owner's tuning lever on /preview and everything below derives from it. */
-const AMPERSAND_SCALE = 1;
+/* THE AMPERSAND IS DRAWN AT 65% — settled by the owner on a render, 2026-10-10, after three
+   reductions clustered on the width the typeset mark it replaced read at (27.0px of ink against
+   this one's 40.0 at the phone tier, so 68%; 65% is one step past it).
+
+   IT KEEPS ITS FULL SLOT IN THE LAYOUT, and that is the whole of why this lands faithfully. The
+   obvious form — shrinking `AMPERSAND.w` and letting the line re-close around it — makes the LINE
+   box 35.5 units narrower, and since the lockup's CSS width is a fixed `em` of its role, a
+   narrower box renders everything inside it 3.2% LARGER. The owner judged this on a lever that
+   scaled the mark with a `transform`, which moves no boxes: the words stayed exactly where they
+   were and only the swash shrank. Reserving the slot reproduces that — the visible gaps either
+   side of the mark grow from 20.2 to 37.95 units, equally, which is precisely what the transform
+   produced, and `LINE.w`, `STACK` and therefore both measured fits do not move at all. */
+const AMPERSAND_SCALE = 0.65;
 
 /* STROKE WEIGHT, PER CALL SITE. The trace is a FILLED OUTLINE, not a stroked path, so there is no
    pen width to turn up — the only way to make the lettering heavier is to DILATE the contours, by
@@ -69,8 +78,34 @@ const AMPERSAND_SCALE = 1;
    reaches BOTH call sites, because both render this same lockup.
    THE CONSEQUENCE TO CARRY: the asset's SIZE still comes from `--text-display-name` and
    `--text-heading-script`, so those TOKENS outlive the ROLES that are retiring. Phase 9 must not
-   sweep them with the classes. */
+   sweep them with the classes.
 
+   THE PHONE TIER TAKES SMALLER RATIOS — 1.85em stacked and 3.65em on the line, against the 2.513
+   and 4.656 every wider tier keeps (owner, 2026-10-10, choosing this over accepting the overflow
+   they reported as the names reading cut off). An `em` width is FIXED per tier while the card's
+   content box SHRINKS with the window, so both lockups ran off their cards at the narrow end.
+   MEASURED ACROSS THE WHOLE TIER rather than at one window, because the box depends on HEIGHT as
+   much as on width:
+
+     invite, stacked at 2.513em = 236.2px     Wishes, line at 4.656em = 260.8px
+       320 wide: box 176-208, over by up to 60   320 wide: box 208-240, over by up to 53
+       360 wide: box 216-232, over by up to 20   360 wide: box 248-264, over by 13
+       375 wide and up: fits                     393 wide and up: fits
+
+   The narrowest box anywhere is 176px at 320x844 for the invite and 208px there for Wishes, so the
+   ceilings are 1.872em and 3.714em. 1.85 and 3.65 sit just inside them, leaving 2.1px and 3.6px at
+   the worst box rather than the 0.22px a value at the ceiling would leave. Nothing clips either
+   lockup, so before this the ink simply painted out over the card's padding and, at 320, past the
+   sheet's own edge.
+
+   THE COST IS REAL AND IS THE OWNER'S OWN CHOICE: the names are about 26% smaller at EVERY phone,
+   including the wide ones that had 50px and 73px of slack to spare. The alternatives were a
+   container cap, which the fit model refuses — see the viewBox note below — or living with ink
+   over the card's edge at 320 and 360. `md:` restores the settled ratio from 48rem up, so only
+   this tier moves. */
+
+/* The DRAWN size of the mark. Its SLOT stays `AMPERSAND.w` x `AMPERSAND.h` — see the scale's own
+   note above — so this is only ever the `<use>` box, never a layout dimension. */
 const ampersand = {
   w: AMPERSAND.w * AMPERSAND_SCALE,
   h: AMPERSAND.h * AMPERSAND_SCALE,
@@ -81,25 +116,39 @@ const ampersand = {
    a letter in either. */
 const LINE = {
   sebastian: { x: 0, y: 0 },
+  /* Centred in its full-width slot, horizontally and vertically, so the two visible gaps stay
+     equal at any scale and the words never move. */
   ampersand: {
-    x: SEBASTIAN.w + GAP,
+    x: SEBASTIAN.w + GAP + (AMPERSAND.w - ampersand.w) / 2,
     y: (SEBASTIAN.h - ampersand.h) / 2,
   },
   flemy: {
-    x: SEBASTIAN.w + GAP + ampersand.w + GAP,
+    x: SEBASTIAN.w + GAP + AMPERSAND.w + GAP,
     y: SEBASTIAN.h - FLEMY.h,
   },
-  w: SEBASTIAN.w + GAP + ampersand.w + GAP + FLEMY.w,
+  w: SEBASTIAN.w + GAP + AMPERSAND.w + GAP + FLEMY.w,
   h: SEBASTIAN.h,
 };
 
-/* The stack is the source box re-origined on its ink, so every position is the drawing's own. */
+/* The stack is the source box re-origined on its ink, so the two WORDS sit exactly where the
+   drawing puts them.
+   THE AMPERSAND IS THE ONE EXCEPTION, AND IT IS CENTRED RATHER THAN RE-ORIGINED (owner,
+   2026-10-10): the trace places it 21.905 of 599.68 units right of the lockup's centre and 20.36
+   of 445.31 above it, which is the drawing's own composition and reads as an error once the mark
+   is small. Centring it on the lockup both ways is what the owner approved on the render, and it
+   reproduces that exactly — the preview lever got there with a translate of the same two
+   figures. */
+const STACK_W = SEBASTIAN.w;
+const STACK_H = FLEMY.y + FLEMY.h - SEBASTIAN.y;
 const STACK = {
   sebastian: { x: 0, y: 0 },
-  ampersand: { x: AMPERSAND.x - SEBASTIAN.x, y: AMPERSAND.y - SEBASTIAN.y },
+  ampersand: {
+    x: (STACK_W - ampersand.w) / 2,
+    y: (STACK_H - ampersand.h) / 2,
+  },
   flemy: { x: FLEMY.x - SEBASTIAN.x, y: FLEMY.y - SEBASTIAN.y },
-  w: SEBASTIAN.w,
-  h: FLEMY.y + FLEMY.h - SEBASTIAN.y,
+  w: STACK_W,
+  h: STACK_H,
 };
 
 export type CoupleNamesLayout = "stacked" | "line" | "orientation";
@@ -114,11 +163,25 @@ function Lockup({
   strokeUnits: number;
 }): ReactElement {
   const box = layout === "line" ? LINE : STACK;
-  const amp = layout === "line" ? ampersand : AMPERSAND;
+  /* THE SCALED MARK IN BOTH LAYOUTS. This read `layout === "line" ? ampersand : AMPERSAND` while
+     the scale was the line's alone and the stack was "left exactly as drawn" — and when the scale
+     became both lockups' the stacked `<use>` kept rendering at FULL size while `STACK.ampersand`
+     had already been computed for the scaled one, so the mark was both the wrong size and off
+     centre. Caught by measuring the rendered mark against its as-drawn width — 98.9% where 65%
+     was asked for — and by nothing else: the constant, the types and every source assertion were
+     all satisfied. */
+  const amp = ampersand;
   return (
     <svg
       aria-hidden
       className={className}
+      /* WHICH LOCKUP THIS IS, as markup rather than as a class spelling. `orientation` renders
+         BOTH and hides one by media query, so neither a stylesheet nor a measuring harness can
+         tell them apart without re-deriving the orientation rule — and the two differ in a way
+         that matters: the ampersand is centred between the words on the LINE, and sits 3.6% right
+         and 4.6% above the lockup's centre in the STACK, which is the drawing's own composition.
+         A rule that wants to re-centre it has to know which it is looking at. */
+      data-names-layout={layout}
       role="presentation"
       /* `round` on both, not the default miter: a trace of handwriting is full of shallow cusps,
          and a mitered join turns each one into a spike that reads as a burr on the letterform. */
@@ -126,17 +189,29 @@ function Lockup({
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={strokeUnits * 10}
-      /* PADDED BY A FULL STROKE WIDTH ON EVERY SIDE. The group boxes are tight to the drawing's
-         ink, and the outermost <svg> clips at its viewBox by default, so a stroke that falls
-         outside the contour had its swash tips shaved flat instead of tapering to a point —
-         measured as ink sitting in the first and last pixel columns at both call sites.
-         THE PAD IS EMPIRICAL, NOT DERIVED: half the stroke is what the geometry says should be
-         enough, and it still left ink on the edge at both sites; a full stroke width takes every
-         edge to zero. Measured, not reasoned, because the shortfall is in the sub-pixel behaviour
-         of joins and antialiasing rather than in the arithmetic.
-         The ink therefore renders about 0.5% narrower than the box for a given CSS width, which is
-         below the measuring sweep's own resolution and leaves the `em` figures above intact. */
-      viewBox={`${-strokeUnits} ${-strokeUnits} ${box.w + 2 * strokeUnits} ${box.h + 2 * strokeUnits}`}
+      /* PADDED BY THREE STROKE WIDTHS ON EVERY SIDE, and the FACTOR is what was wrong before.
+         The group boxes are tight to the drawing's ink and the outermost <svg> clips at its
+         viewBox, so a stroke falling outside the contour has its swash tips shaved flat instead of
+         tapering to a point. ONE stroke width was measured to clear at dpr 2 and 3 — and at dpr 1
+         it does not, which is where the owner saw it (2026-10-10, "slightly cutoff in phone
+         tier"): one stroke width is **0.63 CSS px** at the invite's phone lockup and **0.50px** at
+         Wishes', so the outermost antialiased ink lands in the boundary pixel itself. Measured per
+         edge in device px, at all three densities:
+           dpr 3  every site and tier clear, 1-5px of pad
+           dpr 2  every site and tier clear, 1-5px of pad
+           dpr 1  invite phone CLIPPED top and left; Wishes CLIPPED left at phone and bottom-left
+                  at tablet and laptop — four of eight cases with ink in the boundary pixel
+         Three strokes puts the narrowest pad at about 1.5 CSS px, which leaves a whole boundary
+         pixel at dpr 1 with room for the antialiasing either side.
+         THE COST, and it is why the factor is 3 rather than larger: the pad grows the viewBox, so
+         the ink renders slightly smaller for a given CSS width — about 1.0% at the invite and 0.4%
+         at Wishes. Both fits are regenerated on it, and the `em` figures above are ratios of the
+         ROLE rather than of the ink, so they are untouched.
+         NOT FIXED BY A CONTAINER CAP, which was tried first and is not available: `min(2.513em,
+         100%)` makes the lockup's height GROW with the window over the capped range, and
+         `measure:fit` throws on exactly that — "regime 1 stands taller than regime 0 at a wider
+         width" — because the frame's model requires content height to fall as width rises. */
+      viewBox={`${-3 * strokeUnits} ${-3 * strokeUnits} ${box.w + 6 * strokeUnits} ${box.h + 6 * strokeUnits}`}
     >
       <use
         height={SEBASTIAN.h}
@@ -185,8 +260,8 @@ export function CoupleNames({
         <Lockup
           className={
             layout === "orientation"
-              ? "mx-auto block h-auto w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
-              : "mx-auto block h-auto w-[2.513em] text-ink-muted"
+              ? "mx-auto block h-auto w-[1.85em] md:w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
+              : "mx-auto block h-auto w-[1.85em] md:w-[2.513em] text-ink-muted"
           }
           layout="stacked"
           strokeUnits={strokeUnits}
@@ -196,8 +271,8 @@ export function CoupleNames({
         <Lockup
           className={
             layout === "orientation"
-              ? "mx-auto hidden h-auto w-[4.656em] text-ink-muted [@media(orientation:landscape)]:block [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em]"
-              : "mx-auto block h-auto w-[4.656em] text-ink-muted [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em]"
+              ? "mx-auto hidden h-auto w-[3.65em] md:w-[4.656em] text-ink-muted [@media(orientation:landscape)]:block [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em]"
+              : "mx-auto block h-auto w-[3.65em] md:w-[4.656em] text-ink-muted [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em]"
           }
           layout="line"
           strokeUnits={strokeUnits}

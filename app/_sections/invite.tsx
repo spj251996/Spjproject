@@ -174,6 +174,35 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 spans when `/preview` un-hides them. `[retire]` marks the ROLE, not this use of it:
                 the class goes in Phase 9 and the TOKEN it reads must not go with it.
 
+                THE BLOCK PADDING ON THE TWO LANDSCAPE BANDS MAKES THE DRAWN NAMES SIT IN THE AIR
+                THE TYPESET ONES DID (owner, 2026-10-10), and it is ASYMMETRIC because the gaps it
+                is matching are. Measured ink to ink, which is the only comparison that means
+                anything here — the drawn asset's box is padded by a full stroke width while a
+                script line box carries ~110px of leading its ink never uses, so the two states'
+                BOX gaps were identical at a constant 24/4 while a reader saw nothing of the kind:
+
+                  band      drawn, as it was   typeset      needed
+                  laptop    43.5 / 22.5        78.5 / 42.5  +35.0 above, +20.0 below
+                  desktop   48.0 / 30.0        97.0 / 57.0  +49.0 above, +27.0 below
+
+                Both bands take `pt-space-xl` + `pb-space-lg` (+36 / +20), which lands laptop
+                within a pixel on both gaps. Desktop asks for more than any clearing pair can
+                give — see the constraint below.
+
+                DESKTOP IS BOUNDED BY A HARD CONSTRAINT RATHER THAN BY THE SCALE, so its pair is
+                the most air that clears every window rather than the closest match. The owner's
+                rule is that the invite never runs past one screen, and a wide-and-short window —
+                1600x700 and 1920x700 — is where the header's own height decides that. Six
+                combinations measured there: `pt-2xl/pb-xl` lands 732px in a 700px viewport,
+                `pt-2xl/pb-lg` and `pt-xl/pb-xl` both 716, and `pt-xl/pb-lg` is the first that
+                fits at 700. So desktop takes the same pair laptop does.
+                RE-MEASURED AFTER THE VIEWBOX PAD WENT TO THREE STROKES: that change grew the
+                lockup's own box, which pushed `pt-2xl/pb-lg` from 700 to 716 — a pair that had
+                cleared every window before it. A padding value settled against this header is
+                only valid for the geometry it was settled against.
+                `pt-`/`pb-` rather than the `py-` it replaces: one value cannot serve two different
+                gaps, and the whole point is that the two gaps differ.
+
                 `layout="orientation"` rather than the plain stack, and this is a deviation from the
                 plan worth knowing: the asset's stacked box is 1.35:1 where today's three-line
                 portrait lockup is 0.97:1, so at landscape a stacked lockup measures 276px wide and
@@ -183,7 +212,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 comes out 81px SHORTER, so it frees headroom instead of spending it. The switch is
                 `(orientation: landscape)`, the same condition the role's own rule uses, so the two
                 cannot disagree. */}
-            <h1 className="type-display-name text-ink mt-space-md [@media(64rem<=width<100rem)_and_(orientation:landscape)]:py-space-xs [@media(width>=100rem)_and_(orientation:landscape)]:py-space-sm">
+            <h1 className="type-display-name text-ink mt-space-md [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pt-space-xl [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pb-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:pt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:pb-space-lg">
               {/* 1.6 units, down from the 2.2 Wishes takes (owner, 2026-10-09: "invite one is too thick").
                   This lockup renders about 1.75x larger relative to its own viewBox, so the same
                   unit count lands that much heavier in pixels — and it only needs 0.54 to clear a
