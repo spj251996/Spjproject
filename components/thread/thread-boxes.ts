@@ -40,11 +40,17 @@ const TALL_HEIGHTS: SectionHeights = {
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
      THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
-     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
-     them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 2668,
+     main (`content/rituals.ts`). The photo-free base is 2404 / 2423 / 1666 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — so removing
+     them means subtracting two increments, not re-deriving the height.
+     RE-MEASURED 2026-10-10 on two changes at once, and the BASE moved while the INCREMENT did not:
+     the ritual restructure put each Malayalam on its own line, and the alternating band above
+     1024px was removed in favour of one full-width column at every tier with a single 48px gap
+     (was a raw 64px below 1024 and 32 above). Base 2308 / 2308 / 1520 -> 2404 / 2423 / 1666; the
+     photo increment is unchanged, which is what the separate base and increment are for — the
+     strip's height is per tier and the gap is between rituals, so neither reaches the other.
+     Instrument validated on `contact` and `wishes` first, both reproducing 700 / 1180 / 695. */
+  celebrations: 2764,
   wishes: 700,
 };
 
@@ -60,11 +66,11 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
      THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     main (`content/rituals.ts`). The photo-free base is 2404 / 2423 / 1666 at tall / upright /
      wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 2676,
+  celebrations: 2791,
   wishes: 1180,
 };
 
@@ -80,11 +86,11 @@ const WIDE_HEIGHTS: SectionHeights = {
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
      THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2308 / 2308 / 1520 at tall / upright /
+     main (`content/rituals.ts`). The photo-free base is 2404 / 2423 / 1666 at tall / upright /
      wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 1948,
+  celebrations: 2094,
   wishes: 695,
 };
 
