@@ -52,7 +52,11 @@ export function PhotoRow({
   return (
     /* Shrink-wrapped, not `w-full`: the action is aligned to the END OF THE STRIP, which only means
        "under the last photograph" if the column is as wide as the photographs. */
-    <div className="inline-flex flex-col items-end gap-space-3xs">
+    /* `items-center`, not `items-end` — the action centres under its strip (owner, 2026-10-10),
+       which OVERRIDES the recorded "action below the strip, aligned to its end". That rule was
+       written for a ritual block whose text aligned to one side; the rituals centre now, and an
+       end-aligned button under a centred column reads as the one thing that missed the memo. */
+    <div className="inline-flex flex-col items-center gap-space-3xs">
       <ul className="m-0 inline-flex list-none gap-space-2xs p-0">
         {frames.map(({ src, key }, index) => {
           const aspect = cappedAspect(src, aspects, aspectCap);

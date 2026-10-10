@@ -45,21 +45,20 @@ const sans = Libre_Baskerville({
 /* The three Latin faces carry no Malayalam glyphs, so the ritual titles' second script needs a
    family of its own.
 
-   TWO WEIGHTS, AND THE SECOND IS TEMPORARY. This AMENDS the recorded decision rather than
-   reversing it silently: "400 only, the design uses one weight, and loading 400+600 would be 42KB
-   for nothing" was right while the Malayalam shared a line with the English title. Phase 7 moves
-   it above the title, where it carries the line, and the owner judges 400 against a real 600 — a
-   SYNTHETIC bold is not a fair thing to ask anyone to look at, since it smears a conjunct rather
-   than thickening it.
+   ONE WEIGHT, AND IT IS 600 — settled by the owner on a render, 2026-10-10. The design still uses
+   exactly one weight; which one changed. "400 only" was right while the Malayalam shared a line
+   with the English title; Phase 7 moves it above the title, where it carries the line, and at that
+   job it wanted the heavier cut.
 
-   ITS PRICE IS NOT WHAT THE OLD COMMENT PREDICTED, AND THE MECHANISM IS THE SURPRISE: asking for
-   two weights makes the loader fetch the VARIABLE face — the whole `wght` axis — instead of two
-   static instances, so the three subset files go 41,172 → 105,256 bytes. **+64KB, not the +22KB a
-   second static cut would have cost**, measured by building both ways. Only the Malayalam-range
-   file is preloaded, and that one file serves both weights, so +36KB of it lands on the critical
-   path of EVERY route including `/` — there is no lazy saving to be had by not using 600.
-   THE WHOLE 64KB LEAVES WITH THE LOSING WEIGHT; `scripts/retire-register.mjs` carries that
-   obligation, because an unregistered temporary outlives the decision that bought it.
+   WHY BOTH WERE EVER LOADED, and why the cost is back to one cut's: judging 400 against a
+   SYNTHETIC bold is not a fair comparison — synthesis smears a conjunct rather than thickening it
+   — so a real 600 had to ship through the review. Asking for TWO weights made the loader fetch the
+   VARIABLE face, the whole `wght` axis, rather than two static instances: the three subset files
+   went 41,172 → 105,256 bytes, +64KB with +36KB of it on every route's critical path. Asking for
+   one again returns a single static instance, so that whole cost comes back off: the three subset
+   files now measure 23,056 + 8,036 + 12,988 = **44,080 bytes**, against 105,256 with both weights
+   and 41,172 when the one cut was 400. So the settled weight costs 2,908 bytes more than the cut
+   it replaces and 61,176 bytes LESS than the review did. Measured by building all three ways.
 
    Subsetting to the ~19 codepoints the five titles use would reach 3-6KB and was REJECTED: it
    breaks silently the day a title changes or a sixth ritual lands, and a missing glyph renders as
@@ -67,7 +66,7 @@ const sans = Libre_Baskerville({
 const malayalam = Noto_Serif_Malayalam({
   variable: "--font-malayalam",
   subsets: ["malayalam"],
-  weight: ["400", "600"],
+  weight: "600",
   display: "swap",
 });
 

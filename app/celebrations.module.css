@@ -1,7 +1,7 @@
 /* This rule is a plain, unlayered module stylesheet, so its own `margin: 0` always wins over a
-   `mt-*` Tailwind utility (inside the framework's `utilities` layer) on the same element,
-   regardless of value — setting the intro-to-list gap as a margin utility on this element would
-   silently do nothing, so it lives here as `margin-block-start` instead. */
+   `mt-*` Tailwind utility (inside the framework's `utilities` layer) on the same element —
+   setting the intro-to-list gap as a margin utility on this element would silently do nothing, so
+   it lives here as `margin-block-start` instead. */
 .list {
   list-style: none;
   margin: 0;
@@ -9,31 +9,38 @@
   padding: 0;
   width: 100%;
 
-  /* THE BAND'S THREE VALUES, declared together because they are one decision (owner, 2026-10-07).
-     Single column below 1024px: full-width blocks, 64px apart, previews nominally 120px tall.
-     Both the rhythm and the photo height are inherited by the rows, and the photo height is read
-     back out by `photo-strip` — so this is the single place the 1024px threshold is written, and
-     no JavaScript restates it as a media query that could drift. */
+  /* ONE COLUMN, FULL WIDTH, AT EVERY TIER (owner, 2026-10-10). This REPLACES the alternating band
+     above 1024px, where blocks took 80% of the track and odd and even rows leaned to opposite
+     sides — the hug. Both go: every ritual's block is now the full measure and every ritual's text
+     starts at the same edge, at every width.
+
+     WHAT THE ALTERNATION WAS BUYING, so nobody reinstates it by accident: offset rows are already
+     separated horizontally, which is why they needed less vertical room than stacked ones and why
+     the gap was two values. With one column at every tier that reason is gone, so the gap is ONE
+     value too.
+
+     `space-xl` (48px) is a REDUCTION at the phone tier, which is what the owner asked for — it
+     was a raw 64px, off the spacing scale — and a small increase above 1024px, where it was 32.
+     Identical at every tier is the point: the rhythm between rituals reads the same whatever the
+     window.
+
+     The photo height stays per tier and is read back out by `photo-strip`, so this is still the
+     single place the 1024px threshold is written and no JavaScript restates it. */
   --celebrations-block-width: 100%;
   --celebrations-photo-height: 120px;
-  gap: 64px;
+  gap: var(--spacing-space-xl);
 }
 
-/* Alternating above 1024px (`{breakpoints.lg}`, 64rem). The blocks take 80% of the track and sit
-   32px apart — alternating rows are already separated horizontally, so they need less vertical
-   room than stacked ones. 80% rather than 85% was chosen on the offset it produces: 179px against
-   134px, and the smaller shift reads as rows that failed to line up. */
 @media (width >= 64rem) {
   .list {
-    --celebrations-block-width: 80%;
     --celebrations-photo-height: 150px;
-    gap: var(--spacing-space-lg);
   }
 }
 
-/* Each ritual's block takes the band's width share. A mirrored row is pushed to the end by
-   `justify-content` and aligns its own text to the end — the row is never REVERSED, because that
-   also reverses the leaf and renders `മധുരംവെപ്പ് Wedding Eve [leaf]` (owner). */
+/* Each ritual's block takes the full measure. `justify-content` stays declared rather than being
+   dropped with the alternation: a flex row with one full-width child has nothing to justify, so
+   this is the statement that there is no longer a side to lean to — and the row is still never
+   REVERSED, which would reverse the sprig too and render `മധുരംവെപ്പ് Wedding Eve 🌿` (owner). */
 .row {
   display: flex;
   justify-content: flex-start;
@@ -43,27 +50,29 @@
   width: var(--celebrations-block-width);
 }
 
-@media (width >= 64rem) {
-  /* The hug: alternate rows end-justify, so every block's text leans toward the card's centre. */
-  .row:nth-child(even) {
-    justify-content: flex-end;
-  }
-}
+/* EVERY RITUAL CENTRES, AT EVERY TIER (owner, 2026-10-10), which also centres the sprig-bracketed
+   Malayalam, the title, the tagline, the description and the photo strip's action — `align-items`
+   reaches the strip because it is a flex item like the rest.
 
-/* THE HUG (owner): each block's text leans toward the card's centre, so a left block aligns start
-   and a right block aligns end. Done in CSS on `:nth-child(even)` rather than from JavaScript, so
-   the section stays server-rendered — nothing about the alternation needs a client boundary. */
+   WHY CENTRED RATHER THAN THE START IT REPLACED, measured at 393px: a ritual was the ONLY
+   eyebrow-led block on the page whose eyebrow did not centre. Six of the page's eleven ornaments
+   sit centred in their measure; the five that did not were these, leaving 113-138px of white to
+   the right of a mark that is symmetrical by construction — 45-55% of a 249px line. And every
+   body paragraph on the site is centred; the only two that were not were a ritual's description
+   and its tagline. The `:nth-child(even)` mirror that used to flip the start side above 1024px
+   went with the alternation above, so there is no longer a side to lean toward either.
+
+   THE COST, accepted knowingly: centring trades one ragged edge for two. At 393px the start form
+   was ragged 43px on the right alone; centred is ragged 44px left and 21px right over a nine-line
+   description, which makes a ritual the longest centred body block on the site.
+
+   JUSTIFIED WAS REJECTED ON MEASUREMENT, not taste: at 24-37 characters a line and a 3.23-3.75px
+   natural word space, justification stretched the widest gap to 14.75px on two of nine lines —
+   3.93x, wider than a character at 13px — and the Malayalam line cannot justify at all. */
 .text {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: start;
-}
-
-@media (width >= 64rem) {
-  .row:nth-child(even) .text {
-    align-items: flex-end;
-    text-align: end;
-  }
+  align-items: center;
+  text-align: center;
 }

@@ -81,11 +81,14 @@ test("each ritual leads with its Malayalam above a larger English title", () => 
 });
 
 /* THE MALAYALAM TAKES heading-lg's SIZE AND NOT THE ROLE, and the distinction is the whole point:
-   `--text-heading-lg--font-weight` is 700, and `.type-heading-lg` would therefore render SYNTHETIC
-   bold on the conjuncts — a smeared outline rather than a heavier face. A real 600 cut is loaded
-   temporarily (app/layout.tsx) so the owner can judge one against the other on /preview; until they
-   pick, the shipped default is 400, and a weight utility here would pre-empt that decision. */
-test("the Malayalam takes heading-lg's size at weight 400, never the role", () => {
+   `--text-heading-lg--font-weight` is 700 and Noto Serif Malayalam ships no cut above 600, so
+   `.type-heading-lg` would render SYNTHETIC bold on the conjuncts — a smeared outline rather than a
+   heavier face. The size therefore comes from the role and the weight is stated on its own.
+   THE WEIGHT IS 600, SETTLED BY THE OWNER ON A RENDER (2026-10-10), and it is asserted here rather
+   than merely permitted: the utility and the one cut `app/layout.tsx` loads have to agree, and a
+   `font-semibold` left behind after someone edits the loader back to 400 is a silent synthetic
+   bold — the exact failure this role avoids by not using `.type-heading-lg`. */
+test("the Malayalam takes heading-lg's size at the loaded weight, never the role", () => {
   /* `className` values only, never the whole slice: the prose beside this markup NAMES both
      `.type-heading-lg` and synthetic bold in order to say they are deliberately absent, and a
      plain substring search over the slice matched that comment and failed on correct code — the
@@ -98,16 +101,35 @@ test("the Malayalam takes heading-lg's size at weight 400, never the role", () =
     /text-\(length:--text-heading-lg\)/,
     "the Malayalam must take heading-lg's size explicitly",
   );
+  assert.match(
+    joined,
+    /\bfont-semibold\b/,
+    "the settled weight is 600 and must be stated, not inherited",
+  );
   for (const value of classNames) {
     assert.ok(
       !value.includes("type-heading-lg"),
       `the role carries weight 700 — synthetic bold on Malayalam conjuncts: ${value}`,
     );
     assert.ok(
-      !/\bfont-(bold|semibold|medium)\b/.test(value),
-      `the weight is the owner's /preview lever, not a utility on the shipped default: ${value}`,
+      !/\bfont-(bold|black|extrabold)\b/.test(value),
+      `no cut above 600 exists in this family, so a heavier utility is synthetic: ${value}`,
     );
   }
+  /* THE TWO HAVE TO AGREE. A `font-semibold` here against a loader asking for 400 is a synthetic
+     bold that no other gate can see — it renders, it builds, and only a conjunct looks wrong. */
+  const loader = readFileSync("app/layout.tsx", "utf8");
+  const requested =
+    loader.match(/Noto_Serif_Malayalam\(\{[\s\S]*?\}\)/)?.[0] ?? "";
+  assert.ok(
+    requested.length > 0,
+    "no Noto_Serif_Malayalam call in app/layout.tsx",
+  );
+  assert.match(
+    requested,
+    /weight:\s*"600"/,
+    "the ritual asks for 600; the loader must ship exactly that cut",
+  );
 });
 
 test("the Malayalam title takes the Malayalam family, which nothing else does", () => {

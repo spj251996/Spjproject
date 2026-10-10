@@ -89,10 +89,11 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                         ornament's two marks with it.
 
                         `text-(length:--text-heading-lg)` and NOT `.type-heading-lg`: that role is
-                        weight 700 while the shipped Malayalam cut is 400, so the role would render
-                        SYNTHETIC bold on the conjuncts -- a smeared outline, not a heavier face. A
-                        real 600 cut loads temporarily (see `app/layout.tsx`) so the owner can
-                        judge the two on /preview; `font-normal` pins the shipped default meanwhile.
+                        weight 700 and Noto Serif Malayalam ships no cut above 600, so the role
+                        would render SYNTHETIC bold on the conjuncts -- a smeared outline, not a
+                        heavier face. The size is taken from the role and the weight is stated
+                        separately: 600, settled by the owner on a render (2026-10-10), and the only
+                        cut `app/layout.tsx` now loads.
 
                         NOT `.type-eyebrow` despite taking the eyebrow's position: that role's
                         0.2em tracking breaks Malayalam conjuncts rather than spacing them, and its
@@ -100,7 +101,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
 
                         `leading-tight` because Malayalam's ascenders and its pre-base signs
                         otherwise grow the line box past the size's own line height. */}
-                    <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-lg) text-accent-gold font-normal leading-tight">
+                    <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-lg) text-accent-gold font-semibold leading-tight">
                       <SprigOrnament>{ritual.malayalam}</SprigOrnament>
                     </span>
                     <h3 className="type-heading-md text-ink mt-space-2xs">
