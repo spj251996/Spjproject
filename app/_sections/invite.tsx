@@ -164,7 +164,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
             {/* A colour utility here would override the colour `.type-eyebrow` owns. The copy is a
                 literal, not a content field: it names the occasion rather than carrying any of the
                 couple's data, exactly like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
-            <p className="type-eyebrow">We are getting married</p>
+            <p className="type-eyebrow">By God’s Grace</p>
 
             {/* THE DRAWN NAMES, and the role STAYS on the `<h1>` doing two jobs, both
                 load-bearing. It is the `em` the asset's width resolves against, so the names scale
@@ -252,7 +252,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
               className="type-body text-ink-muted mt-space-3xs"
               data-invite-line
             >
-              invite you to celebrate our wedding
+              joyfully invite you to share in the celebration of their wedding
             </p>
 
             {/* BETWEEN beats, so `space-md` — one value at every width, where this gap was five

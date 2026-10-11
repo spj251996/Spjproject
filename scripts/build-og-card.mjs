@@ -137,9 +137,7 @@ export function extractFontVars(html) {
    `type-display-name` and the lockup's width is `em` of that role, so `--text-display-name` on
    `.og-card` still scales it. */
 export function extractInvite(html) {
-  const start = html.indexOf(
-    '<p class="type-eyebrow">We are getting married</p>',
-  );
+  const start = html.indexOf('<p class="type-eyebrow">By God’s Grace</p>');
   const placeAt = html.indexOf('data-invite-place="true"');
   const end = placeAt === -1 ? -1 : html.indexOf("</p>", placeAt);
   if (start === -1 || placeAt === -1 || end === -1 || placeAt < start) {
