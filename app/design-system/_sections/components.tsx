@@ -19,7 +19,7 @@ import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { PhotoStrip } from "@/components/ui/photo-strip";
 import { Portrait } from "@/components/ui/portrait";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
-import { invite, rituals } from "@/content";
+import { invite, rituals, wishes } from "@/content";
 import { GalleryButtonActionDemo } from "./gallery-action-demos";
 
 interface VariantProps {
@@ -180,7 +180,10 @@ export function ComponentsSections() {
               <div style={{ fontSize: "var(--text-heading-script)" }}>
                 <CoupleNames
                   layout="line"
-                  names={invite.coupleNames}
+                  /* Wishes' OWN field, not the invite's. They hold the same string today and are
+                     two separate content fields, so a later edit can diverge them — at which
+                     point a specimen reading the invite's would misrepresent the section. */
+                  names={wishes.coupleNames}
                   strokeUnits={NAMES_STROKE_UNITS.wishes}
                 />
               </div>
