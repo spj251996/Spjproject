@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
+import sharp from "sharp";
 import {
+  emitRitualPhoto,
   expectedOutputs,
   orphansIn,
   outputBaseName,
   PRUNED_DIRS,
   ritualManifestSource,
+  uprightRitualImage,
 } from "./generate-images.mjs";
 
 /* `public/` is copied wholesale into `out/` by `output: "export"`, so a file the generator no longer
@@ -169,4 +174,66 @@ test("public/rituals is never pruned, because the expected set does not describe
     !PRUNED_DIRS.includes("public/rituals"),
     "public/rituals must not be pruned: expectedOutputs() does not cover it, so a prune would empty it",
   );
+});
+
+test("an EXIF-rotated photograph is emitted and measured upright", async () => {
+  /* The one fact that moves the section's height: a phone portrait is STORED landscape and tagged
+     orientation 6. Without the rotation it is emitted sideways AND its manifest dimensions come out
+     swapped, and `photoFit` solves one row height across every ritual from them. The stand-in
+     photographs carry no orientation tag, so nothing else on the branch can see this. */
+  const stored = await sharp({
+    create: { width: 200, height: 100, channels: 3, background: "#808080" },
+  })
+    .jpeg()
+    .withMetadata({ orientation: 6 })
+    .toBuffer();
+  const { info } = await uprightRitualImage(stored)
+    .resize({ width: 50 })
+    .toBuffer({ resolveWithObject: true });
+  assert.deepEqual([info.width, info.height], [50, 100]);
+});
+
+test("the manifest row a page reads records an EXIF-rotated portrait upright", async () => {
+  /* Spec gate 2 asks for the assertion on the MANIFEST's numbers, not on a helper: a resize that
+     bypassed `uprightRitualImage` would pass the test above and still record the portrait sideways,
+     moving the whole section's height. Written to a temp directory, never into `public/`. */
+  const dir = mkdtempSync(join(tmpdir(), "ritual-emit-"));
+  const source = join(dir, "portrait.jpg");
+  writeFileSync(
+    source,
+    await sharp({
+      create: { width: 200, height: 100, channels: 3, background: "#808080" },
+    })
+      .jpeg()
+      .withMetadata({ orientation: 6 })
+      .toBuffer(),
+  );
+  const row = await emitRitualPhoto(source, "wedding", "portrait.jpg", dir);
+  assert.deepEqual([row.width, row.height], [100, 200]);
+});
+
+test("a filename's awkward characters survive into the manifest and the URL", async () => {
+  /* A name renamed by hand on a phone can carry a quote, a backslash or a `#`. Interpolated raw, a
+     quote breaks the module, a backslash is read as an escape, and a `#` turns the rest of the URL
+     into a fragment — the last two a 404'd tile with every gate green. */
+  const awkward = '/rituals/wedding/a"b\\c-600.avif';
+  const source = ritualManifestSource({
+    wedding: [{ thumb: awkward, display: awkward, width: 1, height: 1 }],
+  });
+  assert.ok(
+    source.includes(`thumb: ${JSON.stringify(awkward)},`),
+    "string values must be emitted as escaped literals",
+  );
+  const dir = mkdtempSync(join(tmpdir(), "ritual-emit-"));
+  const file = join(dir, "p#1.jpg");
+  writeFileSync(
+    file,
+    await sharp({
+      create: { width: 20, height: 10, channels: 3, background: "#808080" },
+    })
+      .jpeg()
+      .toBuffer(),
+  );
+  const row = await emitRitualPhoto(file, "wedding", "p#1.jpg", dir);
+  assert.equal(row.thumb, "/rituals/wedding/p%231-600.avif");
 });

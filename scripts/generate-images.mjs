@@ -273,10 +273,10 @@ export const ritualPhotos: Record<string, RitualPhoto[]> = {};
       const rows = photosByRitual[id]
         .map(
           (photo) =>
-            `    {\n      thumb: "${photo.thumb}",\n      display: "${photo.display}",\n      width: ${photo.width},\n      height: ${photo.height},\n    },`,
+            `    {\n      thumb: ${JSON.stringify(photo.thumb)},\n      display: ${JSON.stringify(photo.display)},\n      width: ${photo.width},\n      height: ${photo.height},\n    },`,
         )
         .join("\n");
-      return `  "${id}": [\n${rows}\n  ],`;
+      return `  ${JSON.stringify(id)}: [\n${rows}\n  ],`;
     })
     .join("\n");
   return `${header}
@@ -409,13 +409,29 @@ async function prune({ dryRun }) {
    `.rotate()` against 50x100 with it. So an un-rotated phone portrait is both emitted sideways AND
    recorded with its width and height swapped; a swapped aspect feeds `photoFit`, which solves ONE
    row height across every ritual, so a single sideways portrait moves the whole section's height —
-   and the thread's measured constants derive from that height. */
-async function emitRitualPhoto(sourcePath, ritualId, fileName) {
+   and the thread's measured constants derive from that height.
+
+   Exported so the rotation is tested on a tagged fixture: the stand-in photographs carry no
+   orientation tag, so removing `.rotate()` changes nothing they produce. */
+export function uprightRitualImage(input) {
+  return sharp(input).rotate();
+}
+
+/* `outRoot` is injectable so the test can assert on the ROW the manifest records, written to a temp
+   directory. The web path is URL-encoded because a filename renamed by hand can carry a `#` or `?`,
+   which a browser would otherwise read as a fragment or query and 404 on; the disk path is not. */
+export async function emitRitualPhoto(
+  sourcePath,
+  ritualId,
+  fileName,
+  outRoot = join(ROOT, RITUAL_OUT_ROOT),
+) {
   const base = outputBaseName(fileName);
-  const upright = () => sharp(sourcePath).rotate();
-  const webPath = (width) => `/rituals/${ritualId}/${base}-${width}.avif`;
-  const diskPath = (width) =>
-    join(ROOT, RITUAL_OUT_ROOT, ritualId, `${base}-${width}.avif`);
+  const upright = () => uprightRitualImage(sourcePath);
+  const webPath = (width) =>
+    `/rituals/${encodeURIComponent(ritualId)}/${encodeURIComponent(`${base}-${width}.avif`)}`;
+  const diskPath = (width) => join(outRoot, ritualId, `${base}-${width}.avif`);
+  await mkdir(join(outRoot, ritualId), { recursive: true });
 
   await upright()
     .resize({ width: RITUAL_THUMB_WIDTH, withoutEnlargement: true })
@@ -461,9 +477,6 @@ async function writeRitualPhotos({ dryRun }) {
         .sort();
       const bases = new Set();
       const photos = [];
-      if (!dryRun) {
-        await mkdir(join(ROOT, RITUAL_OUT_ROOT, id), { recursive: true });
-      }
 
       for (const name of names) {
         const extension = name.slice(name.lastIndexOf(".")).toLowerCase();
