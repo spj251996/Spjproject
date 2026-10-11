@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -10,8 +16,10 @@ import {
   orphansIn,
   outputBaseName,
   PRUNED_DIRS,
+  planRitualPhotos,
   ritualManifestSource,
   uprightRitualImage,
+  writeRitualPhotos,
 } from "./generate-images.mjs";
 
 /* `public/` is copied wholesale into `out/` by `output: "export"`, so a file the generator no longer
@@ -146,25 +154,6 @@ test("an unknown --only family throws rather than silently selecting nothing", (
   assert.match(source, /const ONLY_FAMILIES = new Set\(\["rituals"\]\)/);
 });
 
-test("two photographs sharing a base name are refused, not silently overwritten", () => {
-  const source = readFileSync(
-    new URL("./generate-images.mjs", import.meta.url),
-    "utf8",
-  );
-  assert.match(source, /two photographs share the base name/);
-  assert.match(source, /bases\.has\(base\)/);
-});
-
-test("an unreadable photograph fails the build naming the file and the HEIC case", () => {
-  const source = readFileSync(
-    new URL("./generate-images.mjs", import.meta.url),
-    "utf8",
-  );
-  assert.match(source, /could not be read as an image/);
-  assert.match(source, /Most Compatible/);
-  assert.match(source, /unrecognised extension/);
-});
-
 test("public/rituals is never pruned, because the expected set does not describe it", () => {
   /* The rituals family is deliberately outside RECIPES, so `expectedOutputs()` knows nothing about
      its deliveries. Adding `public/rituals` to PRUNED_DIRS would therefore make the next FULL run
@@ -236,4 +225,154 @@ test("a filename's awkward characters survive into the manifest and the URL", as
   );
   const row = await emitRitualPhoto(file, "wedding", "p#1.jpg", dir);
   assert.equal(row.thumb, "/rituals/wedding/p%231-600.avif");
+});
+
+/* A throwaway source tree under the OS temp directory: each key a ritual folder, each entry a
+   `[name, kind]` — a real JPEG, bytes that are not an image, a sub-folder, or an empty dotfile.
+   Nothing here touches `public/`, `assets/` or `content/`. */
+async function tree(folders) {
+  const root = mkdtempSync(join(tmpdir(), "ritual-run-"));
+  const source = join(root, "assets");
+  const out = join(root, "public");
+  const manifest = join(root, "manifest.ts");
+  const jpg = await sharp({
+    create: { width: 20, height: 10, channels: 3, background: "#808080" },
+  })
+    .jpeg()
+    .toBuffer();
+  for (const [folder, entries] of Object.entries(folders)) {
+    mkdirSync(join(source, folder), { recursive: true });
+    for (const [name, kind] of entries) {
+      const path = join(source, folder, name);
+      if (kind === "dir") mkdirSync(path);
+      else
+        writeFileSync(
+          path,
+          kind === "jpg" ? jpg : kind === "text" ? "not an image" : "",
+        );
+    }
+  }
+  return { root, source, out, manifest };
+}
+
+const run = (t) =>
+  writeRitualPhotos({
+    dryRun: false,
+    sourceRoot: t.source,
+    outRoot: t.out,
+    manifestPath: t.manifest,
+  });
+
+test("a folder holding only dotfiles yields an empty list and no error", async () => {
+  const t = await tree({
+    wedding: [
+      [".gitkeep", "empty"],
+      [".DS_Store", "empty"],
+    ],
+  });
+  assert.deepEqual(await planRitualPhotos(t.source), { wedding: [] });
+});
+
+test("an uppercase or multi-dot photograph name is accepted", async () => {
+  const t = await tree({
+    wedding: [
+      ["IMG_1.JPG", "jpg"],
+      ["a.b.jpg", "jpg"],
+    ],
+  });
+  assert.deepEqual(await planRitualPhotos(t.source), {
+    wedding: ["IMG_1.JPG", "a.b.jpg"],
+  });
+});
+
+test("a file with no extension is named as having none", async () => {
+  const t = await tree({ wedding: [["IMG_1", "jpg"]] });
+  await assert.rejects(
+    planRitualPhotos(t.source),
+    /wedding\/IMG_1: has no extension/,
+  );
+});
+
+test("a folder inside a ritual folder is named as a folder", async () => {
+  const t = await tree({ wedding: [["more", "dir"]] });
+  await assert.rejects(
+    planRitualPhotos(t.source),
+    /wedding\/more: is a folder/,
+  );
+});
+
+test("an unrecognised extension is refused, naming it", async () => {
+  const t = await tree({ wedding: [["clip.gif", "jpg"]] });
+  await assert.rejects(
+    planRitualPhotos(t.source),
+    /wedding\/clip\.gif: unrecognised extension "\.gif"/,
+  );
+});
+
+test("two photographs sharing a base name are refused, not silently overwritten", async () => {
+  const t = await tree({
+    wedding: [
+      ["a.jpg", "jpg"],
+      ["a.JPG", "jpg"],
+    ],
+  });
+  await assert.rejects(
+    planRitualPhotos(t.source),
+    /two photographs share the base name "a"/,
+  );
+});
+
+test("an unreadable photograph fails naming the file and the HEIC case", async () => {
+  const t = await tree({ wedding: [["zbad.jpg", "text"]] });
+  await assert.rejects(
+    run(t),
+    /wedding\/zbad\.jpg: could not be read as an image.*Most Compatible/s,
+  );
+});
+
+test("a write failure is reported as one, not blamed on the photograph", async () => {
+  const t = await tree({ wedding: [["a.jpg", "jpg"]] });
+  const blocker = join(t.root, "blocker");
+  writeFileSync(blocker, "a file, so nothing can be made beneath it");
+  await assert.rejects(
+    emitRitualPhoto(
+      join(t.source, "wedding", "a.jpg"),
+      "wedding",
+      "a.jpg",
+      join(blocker, "out"),
+    ),
+    (error) => {
+      assert.match(
+        error.message,
+        /wedding\/a\.jpg: its deliveries could not be written/,
+      );
+      assert.doesNotMatch(error.message, /HEIC/);
+      return true;
+    },
+  );
+});
+
+test("the generator validates every folder before it wipes anything", async () => {
+  const t = await tree({
+    betrothal: [["ok.jpg", "jpg"]],
+    wedding: [["IMG_1", "jpg"]],
+  });
+  mkdirSync(join(t.out, "betrothal"), { recursive: true });
+  writeFileSync(join(t.out, "betrothal", "previous-600.avif"), "previous");
+  writeFileSync(t.manifest, "// previous manifest");
+  await assert.rejects(run(t), /has no extension/);
+  assert.equal(
+    readFileSync(join(t.out, "betrothal", "previous-600.avif"), "utf8"),
+    "previous",
+  );
+  assert.equal(readFileSync(t.manifest, "utf8"), "// previous manifest");
+});
+
+test("with no source folder at all, every previous delivery is wiped", async () => {
+  const t = await tree({});
+  mkdirSync(join(t.out, "betrothal"), { recursive: true });
+  writeFileSync(join(t.out, "betrothal", "stale-600.avif"), "stale");
+  await run(t);
+  assert.ok(!existsSync(t.out), "public/rituals must not survive its sources");
+  assert.match(readFileSync(t.manifest, "utf8"), /= \{\};/);
 });
