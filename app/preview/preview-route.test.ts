@@ -31,10 +31,10 @@ const COUPLE_FACING = [
   "dot-label",
   "dot-place",
   "icon-split",
-  "ornament",
   "ritual-align",
+  "side-pad",
   "name-scale",
-  "name-tone",
+  "scrim",
 ];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
@@ -309,44 +309,40 @@ test("the six retired levers are gone from both files", () => {
   );
 });
 
-test("the rail reaches every tier, and only the title's placement is banded", () => {
-  /* "every tier except phone" QUALIFIES THE TITLE, NOT THE RAIL — a first build read it the other
-     way round and left the phone tier with no spine at all, which the owner saw before any gate
-     did. So the structural rules sit OUTSIDE any media query and only the grid's columns, its rows
-     and the title's cell are banded. Asserted as the shape of the file rather than as a render,
-     because the failure was a whole arrangement going missing at one tier. */
-  const unbanded = CSS_CODE.slice(
-    CSS_CODE.indexOf('html[data-pv-ritual-align="rail"]'),
-    CSS_CODE.indexOf("@media (width < 48rem)"),
+test("every ritual form shares the header line at every tier; only the photographs' side is banded", () => {
+  /* Owner, 2026-10-11: "sprig title malayalam on same baseline in all tiers" — so the header line's
+     rules are gated on the lever's attribute alone and sit OUTSIDE any media query, while the
+     photographs-on-the-right grid is the one thing bounded to 64rem and up (below it two frames
+     fill the whole measure). Asserted as the shape of the file, because the recorded failure on this
+     route was a whole arrangement going missing at one tier. */
+  const start = CSS_CODE.indexOf("html[data-pv-ritual-align] #celebrations");
+  const banded = CSS_CODE.indexOf('html[data-pv-ritual-align$="-side"]');
+  assert.ok(
+    start >= 0 && banded > start,
+    "the ritual block is not where the gate expects it",
   );
+  const before = CSS_CODE.slice(start, banded);
+  const unbanded = before.slice(0, before.lastIndexOf("@media"));
   for (const [rule, what] of [
-    ["display: grid", "the grid itself"],
+    ["flex-wrap: wrap", "the header line's flow"],
     ["display: contents", "the two-level promotion"],
-    ["svg:nth-of-type(2)", "the second sprig's hide"],
-    ["justify-content: flex-start", "the ornament's left-justification"],
-    ["[data-photo-ready]", "the photo strip's hug"],
-    ["::after", "the spine"],
+    ["svg:nth-of-type(2)", "the trailing sprig's hide"],
+    ["order: -2", "the sprig leading the line"],
+    ["order: -1", "the title before the Malayalam"],
   ]) {
     assert.ok(
-      unbanded.includes(rule),
-      `${what} is inside a media query — the rail would go missing at some tier`,
+      unbanded.includes(rule) && !unbanded.includes("@media"),
+      `${what} is missing or inside a media query — the header line would go missing at some tier`,
     );
   }
-  /* And the title IS banded, both ways round, so neither band can quietly lose its placement. */
-  const phone = CSS_CODE.slice(
-    CSS_CODE.indexOf("@media (width < 48rem)"),
-    CSS_CODE.indexOf("@media (width >= 48rem)"),
-  );
-  const wide = CSS_CODE.slice(CSS_CODE.indexOf("@media (width >= 48rem)"));
   assert.match(
-    phone,
-    /> h3 \{\s*grid-area: 2 \/ 2;/,
-    "at phone the title must take its own row",
+    CSS_CODE.slice(banded - 40, banded),
+    /@media \(width >= 64rem\)/,
+    "the photographs-on-the-right grid must be bounded to 64rem and up",
   );
-  assert.match(
-    wide,
-    /> h3 \{\s*grid-area: 1 \/ 3;/,
-    "above phone the title must share the Malayalam's row",
+  assert.ok(
+    !CSS_CODE.includes('data-pv-ritual-align="rail"'),
+    "the rail left the route (owner, 2026-10-11)",
   );
 });
 

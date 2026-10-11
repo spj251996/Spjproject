@@ -33,10 +33,10 @@ const ATTRIBUTES = [
   "data-pv-dot-label",
   "data-pv-dot-place",
   "data-pv-icon-split",
-  "data-pv-ornament",
   "data-pv-ritual-align",
+  "data-pv-side-pad",
   "data-pv-name-scale",
-  "data-pv-name-tone",
+  "data-pv-scrim",
 ] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
@@ -141,66 +141,61 @@ const COUPLE_LEVERS: readonly Lever[] = [
     ],
   },
   {
-    id: "ornament",
-    title: "The leaf marks beside a heading",
-    note: "Every section heading carries them, and so does each ritual's Malayalam.",
-    options: [
-      { label: "Leaves only", attrs: {} },
-      { label: "Leaves between rules", attrs: { "data-pv-ornament": "rules" } },
-      { label: "Leaves turned inward", attrs: { "data-pv-ornament": "in" } },
-      { label: "Leaves turned outward", attrs: { "data-pv-ornament": "out" } },
-      {
-        label: "Inward, between rules",
-        attrs: { "data-pv-ornament": "in-rules" },
-      },
-      {
-        label: "Outward, between rules",
-        attrs: { "data-pv-ornament": "out-rules" },
-      },
-    ],
-  },
-  {
     id: "name-scale",
     title: "The names on a phone",
-    note: "Larger names on the invitation, phone only. Nothing else on the card moves.",
+    /* The block beneath the names moves down with them, so the gap to the invitation line matches
+       the gap from that line to the date. CSS-only — see `preview.css`. */
+    note: "Larger names on the invitation, phone only. The lines beneath move down to make room.",
     options: [
       { label: "As now", attrs: {} },
-      { label: "10% larger", attrs: { "data-pv-name-scale": "110" } },
-      { label: "20% larger", attrs: { "data-pv-name-scale": "120" } },
       { label: "30% larger", attrs: { "data-pv-name-scale": "130" } },
-    ],
-  },
-  {
-    id: "name-tone",
-    title: "The colour of the names",
-    options: [
-      { label: "Soft brown", attrs: {} },
-      { label: "Dark brown", attrs: { "data-pv-name-tone": "ink" } },
+      { label: "40% larger", attrs: { "data-pv-name-scale": "140" } },
+      { label: "50% larger", attrs: { "data-pv-name-scale": "150" } },
     ],
   },
   {
     id: "ritual-align",
-    title: "Ritual text alignment",
-    /* CENTRED SHIPS as of 2026-10-10, so the two forms it replaced are the alternates and the
-       lever is inverted from its first cut. Kept open for one more look rather than stripped with
-       the decision — the one thing no figure settles is whether nine double-ragged lines read
-       better than one ragged edge, and that is what a second look is for.
-       THE RAIL IS A FOURTH FORM, not a variant of the other three (owner, 2026-10-10): one sprig
-       per ritual as a timeline node, a gold spine down the left, the rituals hugging it, and the
-       English title beside the Malayalam at every tier except phone. It is here to be compared
-       against centred. */
+    title: "The rituals",
+    /* CENTRED AND THE RAIL LEFT THE ROUTE (owner, 2026-10-11), and centred is still what `/` ships —
+       so this is the ONE group whose first choice is not the published page. Option 0 carries an
+       attribute, which the panel applies on load like any choice; the server-rendered markup is
+       still the published page's, so `/preview`'s `<main>` stays byte-identical to `/`'s. */
+    note: "The title, its Malayalam and the leaf now share one line. The invitation still shows the centred layout until one of these is chosen.",
     options: [
-      /* Centred is FIRST because it is what ships, which is the promise the panel's own heading
-         makes to the couple — "the first choice in each group is what the invitation shows now".
-         The owner listed the four as left, centred, justified, rail; the set is theirs and only
-         the order differs, so that promise is not broken for one group. */
-      { label: "Centred", attrs: {} },
       { label: "Left", attrs: { "data-pv-ritual-align": "start" } },
       { label: "Justified", attrs: { "data-pv-ritual-align": "justify" } },
       {
-        label: "Sprig rail down the left",
-        attrs: { "data-pv-ritual-align": "rail" },
+        label: "Left, photographs on the right",
+        note: "On a laptop or wider; on a phone or tablet the photographs stay below.",
+        attrs: { "data-pv-ritual-align": "start-side" },
       },
+      {
+        label: "Justified, photographs on the right",
+        note: "On a laptop or wider; on a phone or tablet the photographs stay below.",
+        attrs: { "data-pv-ritual-align": "justify-side" },
+      },
+    ],
+  },
+  {
+    id: "side-pad",
+    title: "Space beside the rituals on a phone",
+    note: "Less room between the card's edge and the text, so each line holds more.",
+    options: [
+      { label: "As now", attrs: {} },
+      { label: "16px", attrs: { "data-pv-side-pad": "sm" } },
+      { label: "12px", attrs: { "data-pv-side-pad": "xs" } },
+      { label: "8px", attrs: { "data-pv-side-pad": "2xs" } },
+    ],
+  },
+  {
+    id: "scrim",
+    title: "Behind the full-screen photographs",
+    note: "Pick one, then open a ritual's photographs.",
+    options: [
+      { label: "As now (warm shadow)", attrs: {} },
+      { label: "Ink", attrs: { "data-pv-scrim": "ink" } },
+      { label: "Ink-black", attrs: { "data-pv-scrim": "ink-black" } },
+      { label: "Black", attrs: { "data-pv-scrim": "black" } },
     ],
   },
 ];
@@ -298,7 +293,14 @@ function LeverGroup({
             onClick={() => onChoose(index)}
             type="radio"
           />
-          <span>{option.label}</span>
+          <span>
+            {option.label}
+            {option.note === undefined ? null : (
+              <span style={{ display: "block", opacity: 0.75, fontSize: 12 }}>
+                {option.note}
+              </span>
+            )}
+          </span>
         </label>
       ))}
     </fieldset>
