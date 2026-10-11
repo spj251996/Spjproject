@@ -48,6 +48,8 @@ export function Portrait({
   return (
     <figure
       className={`flex w-(--portrait-diameter) flex-col items-center ${className ?? ""}`}
+      /* A styling and measuring hook: `/preview` keys the couple's own portraits on it. */
+      data-relationship={relationship}
     >
       <div className="relative size-(--portrait-diameter) shrink-0 rounded-full ring-(length:--stroke-divider) ring-accent-gold ring-offset-(length:--stroke-rim-offset) ring-offset-surface-elevated">
         <div className="absolute inset-0 overflow-hidden rounded-full">
