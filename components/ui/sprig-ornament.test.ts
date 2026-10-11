@@ -68,14 +68,29 @@ test("the mark clears the iconography floor on its RENDERED height", () => {
 });
 
 /* `ornamental-divider` renders the mark PLAIN, and it is the only other place the mark stands on
-   its own, so it is what sets the mark's canonical direction. Both of the ornament's marks face
-   that way: a flip on the trailing one reads as symmetry and ships a sprig pointing the wrong
-   way, which is exactly what a later consistency pass would "restore". */
-test("neither mark is mirrored, so both face the divider's direction", () => {
-  assert.doesNotMatch(
+   its own, so it is what sets the mark's canonical direction. In the PLAIN form both of the
+   ornament's marks face that way: a flip on the trailing one reads as symmetry and ships a sprig
+   pointing the wrong way, which is exactly what a later consistency pass would "restore". The
+   EYEBROW form flips the LEADING mark only — outward, the owner's pick (2026-10-11) — so the one
+   flip is asserted to be the eyebrow's and the leading mark's, and nothing else. */
+test("only the eyebrow form mirrors, and only its leading mark", () => {
+  const flips = SOURCE.match(/scaleX|scale-x/g) ?? [];
+  assert.strictEqual(
+    flips.length,
+    1,
+    "exactly one flip, the eyebrow's leading mark",
+  );
+  assert.match(
     SOURCE,
-    /scaleX|scale-x|-scale-x/,
-    "a mirrored mark points the opposite way to ornamental-divider's own",
+    /className=\{eyebrow \? "shrink-0 -scale-x-100" : "shrink-0"\}/,
+    "the flip must be conditional on the eyebrow form, or the ritual's plain pair points the wrong way",
+  );
+  const marks = [...SOURCE.matchAll(/<SprigIcon\b/g)].map((m) => m.index ?? -1);
+  assert.strictEqual(marks.length, 2, "two marks");
+  assert.ok(
+    SOURCE.indexOf("-scale-x-100") > marks[0] &&
+      SOURCE.indexOf("-scale-x-100") < SOURCE.indexOf("{children}"),
+    "the flip belongs to the LEADING mark — the trailing one already points away from the words",
   );
   assert.doesNotMatch(
     readFileSync("components/layout/ornamental-divider.tsx", "utf8"),
@@ -84,12 +99,39 @@ test("neither mark is mirrored, so both face the divider's direction", () => {
   );
 });
 
-test("every section-head eyebrow is wrapped", () => {
+test("the eyebrow form's rules are the hairline token, in the wrapper's own colour", () => {
+  assert.match(
+    SOURCE,
+    /h-\(--stroke-hairline\)/,
+    "the rule must take --stroke-hairline",
+  );
+  assert.match(
+    SOURCE,
+    /\bbg-current\b/,
+    "the rule takes currentColor, so an eyebrow's rules are its gold",
+  );
+  const rules =
+    SOURCE.match(/\{eyebrow && <span aria-hidden className=\{RULE\} \/>\}/g) ??
+    [];
+  assert.strictEqual(
+    rules.length,
+    2,
+    "one rule outside each mark, and only in the eyebrow form",
+  );
+  const tokens = readFileSync("app/styles/tokens.css", "utf8");
+  assert.match(
+    tokens,
+    /--stroke-hairline:\s*0\.5px;/,
+    "the hairline token is gone or has moved",
+  );
+});
+
+test("every section-head eyebrow takes the eyebrow form", () => {
   for (const site of SITES) {
     assert.match(
       readFileSync(site, "utf8"),
-      /<SprigOrnament>/,
-      `${site} has an unwrapped section-head eyebrow`,
+      /<SprigOrnament eyebrow>/,
+      `${site} has a section-head eyebrow not in the eyebrow form`,
     );
   }
 });

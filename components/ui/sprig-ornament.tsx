@@ -22,25 +22,44 @@ import { SprigIcon } from "@/components/icons";
    genuinely wanted, the floor below is the constraint it has to clear. */
 const FLOOR_DIAGONAL = 23;
 
+/* TWO FORMS, and only the eyebrow form was chosen (owner, 2026-10-11, on `/preview` from six):
+   the marks mirrored OUTWARD and set between two hairline rules. The ritual's Malayalam keeps the
+   plain pair, which is why the eyebrow form is opt-in rather than the default — the plain form is
+   what the one non-eyebrow consumer needs, and it is the form the canonical direction is stated
+   for.
+
+   OUTWARD MEANS THE LEADING MARK FLIPS AND THE TRAILING ONE DOES NOT. The mark as drawn points
+   right, so on the trailing side it already points away from the words. The rules are elements
+   rather than pseudo-elements so the wrapper's `gap` spaces them like the marks, and
+   `bg-current` makes an eyebrow's rules its own gold without this component naming a colour. */
+const RULE = "h-(--stroke-hairline) w-space-lg shrink-0 bg-current";
+
 export function SprigOrnament({
   children,
+  eyebrow = false,
 }: {
   children: ReactNode;
+  eyebrow?: boolean;
 }): ReactElement {
   return (
     <span
       className="inline-flex items-center justify-center gap-space-2xs"
       data-sprig-ornament
     >
-      {/* BOTH MARKS FACE THE WAY `ornamental-divider`'s DOES — unmirrored (owner, 2026-10-09).
-          The mark has one canonical orientation in this system, set by the divider, which renders
-          it plain; mirroring the trailing one made the pair symmetrical at the cost of putting a
-          sprig on the page that points the wrong way. A later symmetry pass is the thing to guard
-          against here, so the absence of a flip is asserted rather than left to read as an
-          oversight. */}
-      <SprigIcon className="shrink-0" size={FLOOR_DIAGONAL} />
+      {/* IN THE PLAIN FORM BOTH MARKS FACE THE WAY `ornamental-divider`'S DOES — unmirrored
+          (owner, 2026-10-09). The mark has one canonical orientation in this system, set by the
+          divider, which renders it plain; mirroring the trailing one made the pair symmetrical at
+          the cost of putting a sprig on the page that points the wrong way. A later symmetry pass
+          is the thing to guard against here, so the absence of a flip is asserted rather than
+          left to read as an oversight. */}
+      {eyebrow && <span aria-hidden className={RULE} />}
+      <SprigIcon
+        className={eyebrow ? "shrink-0 -scale-x-100" : "shrink-0"}
+        size={FLOOR_DIAGONAL}
+      />
       {children}
       <SprigIcon className="shrink-0" size={FLOOR_DIAGONAL} />
+      {eyebrow && <span aria-hidden className={RULE} />}
     </span>
   );
 }

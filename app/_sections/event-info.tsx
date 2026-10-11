@@ -111,7 +111,7 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
     <>
       {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
       <p className="type-eyebrow">
-        <SprigOrnament>{eyebrowFor(event.id)}</SprigOrnament>
+        <SprigOrnament eyebrow>{eyebrowFor(event.id)}</SprigOrnament>
       </p>
       <h2
         className="type-heading-xl text-ink-muted mt-space-2xs"

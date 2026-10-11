@@ -63,7 +63,7 @@ export function Family({ group, eyebrow }: FamilyProps) {
   return (
     <div className={SHEET_CLASS}>
       <p className="type-eyebrow">
-        <SprigOrnament>{eyebrow}</SprigOrnament>
+        <SprigOrnament eyebrow>{eyebrow}</SprigOrnament>
       </p>
       <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
         {group.familyName}

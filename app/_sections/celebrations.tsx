@@ -54,7 +54,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
           <div className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center">
             {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
             <p className="type-eyebrow">
-              <SprigOrnament>Our traditions</SprigOrnament>
+              <SprigOrnament eyebrow>Our traditions</SprigOrnament>
             </p>
             <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
               The Celebrations
