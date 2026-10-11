@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -9,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import {
   emitRitualPhoto,
@@ -437,4 +439,50 @@ test("a clean run writes every delivery and a manifest row per photograph", asyn
   );
   assert.match(manifest, /width: 20,\n {6}height: 10,/);
   assert.match(manifest, /"wedding": \[\n\n {2}\],/);
+});
+
+test("a photograph left beside the ritual folders is refused, not skipped", async () => {
+  /* `prebuild` already refuses this in `content/verify.ts`; the generator refuses it too, so a direct
+     `npm run images` cannot quietly leave the couple's photograph out. */
+  const t = await tree({ wedding: [[".gitkeep", "empty"]] });
+  writeFileSync(join(t.source, "IMG_2041.jpg"), "a photo in the wrong folder");
+  await assert.rejects(
+    planRitualPhotos(t.source),
+    /assets\/rituals\/IMG_2041\.jpg: belongs to no ritual/,
+  );
+});
+
+test("every line of the generated manifest fits the project's line width", () => {
+  const source = ritualManifestSource({
+    wedding: [
+      {
+        thumb: "/rituals/wedding/a-600.avif",
+        display: "/rituals/wedding/a-1000.avif",
+        width: 1,
+        height: 1,
+      },
+    ],
+  });
+  for (const line of source.split("\n")) {
+    assert.ok(line.length <= 100, `${line.length} chars: ${line}`);
+  }
+});
+
+test("a refused flag puts the sentence first, not a source frame", () => {
+  /* A deploy log on a phone shows the first line; it must be the explanation. Refused before any
+     work starts, so this writes nothing. */
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+      fileURLToPath(new URL("./generate-images.mjs", import.meta.url)),
+      "--dryrun",
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr.split("\n")[0],
+    /^unrecognised argument "--dryrun"/,
+  );
 });
