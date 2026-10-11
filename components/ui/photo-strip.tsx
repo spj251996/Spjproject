@@ -22,6 +22,8 @@ interface PhotoStripProps {
   aspects: Record<string, number>;
   /** Display path to its 600px thumbnail, from the generated manifest. */
   thumbs: Record<string, string>;
+  /** Display path to its viewer copy (bounded 2000×2000), from the generated manifest. */
+  fulls: Record<string, string>;
   /** Which of `sets` this strip renders. */
   id: string;
   /** Names the gallery for assistive technology. */
@@ -43,6 +45,7 @@ export function PhotoStrip({
   sets,
   aspects,
   thumbs,
+  fulls,
   id,
   title,
 }: PhotoStripProps) {
@@ -97,6 +100,7 @@ export function PhotoStrip({
       <PhotoRow
         aspectCap={DEFAULT_ASPECT_CAP}
         aspects={aspects}
+        fulls={fulls}
         photos={photos}
         rowHeight={fit.rowHeight}
         shown={fit.shown[id] ?? Math.min(2, photos.length)}

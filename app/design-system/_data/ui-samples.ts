@@ -64,6 +64,11 @@ export const sampleRitualThumbs: Record<string, string> = Object.fromEntries(
   sampleRitualImages.map((image) => [image, image]),
 );
 
+/* Likewise the viewer copy: the image itself, for the same reason. */
+export const sampleRitualFulls: Record<string, string> = Object.fromEntries(
+  sampleRitualImages.map((image) => [image, image]),
+);
+
 export const sampleEvent = {
   venue: "Placeholder Cathedral of the Sample Parish",
   mapUrl: "https://example.com/placeholder-map-location",

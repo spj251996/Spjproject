@@ -1,17 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { GalleryModalPanel } from "./gallery-modal-panel";
+import {
+  back,
+  type GalleryState,
+  openGallery,
+  showGrid,
+  stepViewer,
+  tapTile,
+} from "./gallery-state";
+import { PhotoViewerPanel } from "./photo-viewer";
 
 /* Not a native `<dialog>`: its top layer sits outside the z-index scale, so the dialog role and its
    attributes are declared by hand.
 
-   The scroll lock captures and replays the offset rather than using `overflow: hidden`, which
-   discards the offset on some platforms.
+   Two layers — the grid and the full-screen viewer — and the history contract between them is
+   `gallery-state.ts`'s: every forward step is one history entry, so the phone's back button pops one
+   layer. Every close therefore goes THROUGH `history.back()` and is finished by the `popstate`
+   listener, never by calling `onClose` directly — a direct close would strand the entry, and the next
+   back press would land on the page doing nothing. The entries are pushed without a URL, and Next's
+   router patches `pushState` to copy its own state into them, so popping between them re-renders
+   nothing.
 
-   `onClose` is read through a ref because an inline arrow is a fresh reference on every parent
-   render. Focus and scroll lock are mount-scoped, so they never share an effect with the key
-   listener, which re-creates when `step` changes. */
+   The scroll lock captures and replays the offset rather than using `overflow: hidden`, which
+   discards the offset on some platforms. The browser's own scroll restoration is held off while the
+   modal is open, or a back press would restore its remembered offset on top of the captured one.
+
+   Swipe and the arrow keys belong to the viewer; in the grid, scrolling is the only gesture.
+
+   `onClose` and the state are read through refs because the history listener is mount-scoped.
+   Focus and scroll lock are mount-scoped too, so they never share an effect with the key listener. */
 
 const SWIPE_THRESHOLD_PX = 40;
 
@@ -20,35 +39,39 @@ const FOCUSABLE =
 
 interface GalleryModalProps {
   title: string;
+  /** Display paths, in strip order. */
   images: string[];
+  /** Display path to its viewer copy (bounded 2000×2000). */
+  fulls: Record<string, string>;
+  /** The photograph to open full screen, or `null` for the grid. */
+  start: number | null;
   onClose: () => void;
 }
 
-export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
+export function GalleryModal({
+  title,
+  images,
+  fulls,
+  start,
+  onClose,
+}: GalleryModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const touchStartXRef = useRef<number | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [state, setState] = useState<GalleryState>(() => openGallery(start));
+  const stateRef = useRef(state);
+  /* Survives React's development-only double mount, which would otherwise push a second entry. */
+  const pushedRef = useRef(false);
   const titleId = useId();
   const count = images.length;
 
   useEffect(() => {
     onCloseRef.current = onClose;
+    stateRef.current = state;
   });
 
-  const step = useCallback(
-    (delta: number) => {
-      if (count === 0) {
-        return;
-      }
-      setActiveIndex((current) =>
-        Math.min(count - 1, Math.max(0, current + delta)),
-      );
-    },
-    [count],
-  );
-
-  /* Mount-scoped: focus acquisition, scroll capture, and their exact inverses on release. */
+  /* Mount-scoped: focus acquisition, scroll capture, the first history entry, and their exact
+     inverses on release. */
   useEffect(() => {
     const previouslyFocused = document.activeElement;
     containerRef.current?.focus();
@@ -63,31 +86,66 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
     body.style.width = "100%";
+    const previousRestoration = history.scrollRestoration;
+    history.scrollRestoration = "manual";
+
+    if (!pushedRef.current) {
+      pushedRef.current = true;
+      history.pushState({ gallery: 1 }, "");
+    }
+    const onPopState = () => {
+      const next = back(stateRef.current);
+      if (next === null) {
+        onCloseRef.current();
+        return;
+      }
+      setState(next);
+    };
+    window.addEventListener("popstate", onPopState);
 
     return () => {
+      window.removeEventListener("popstate", onPopState);
       body.style.position = previous.position;
       body.style.top = previous.top;
       body.style.width = previous.width;
       window.scrollTo(0, scrollY);
+      history.scrollRestoration = previousRestoration;
       if (previouslyFocused instanceof HTMLElement) {
         previouslyFocused.focus();
       }
     };
   }, []);
 
+  const close = () => history.back();
+  const step = (delta: number) =>
+    setState((current) => stepViewer(current, delta, count));
+  const openPhoto = (index: number) => {
+    history.pushState({ gallery: 2 }, "");
+    setState(tapTile(index));
+  };
+  /* From a grid-opened viewer the grid is one entry back, so going there consumes it; from a
+     strip-opened viewer there is no grid entry, so the layer swaps in place and adds none. */
+  const toGrid = () => {
+    if (state.layer === "viewer" && state.fromGrid) {
+      history.back();
+      return;
+    }
+    setState(showGrid);
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        history.back();
         return;
       }
-      if (event.key === "ArrowRight") {
-        step(1);
-        return;
-      }
-      if (event.key === "ArrowLeft") {
-        step(-1);
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        if (state.layer === "viewer") {
+          setState((current) =>
+            stepViewer(current, event.key === "ArrowRight" ? 1 : -1, count),
+          );
+        }
         return;
       }
       if (event.key !== "Tab") {
@@ -121,13 +179,7 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [step]);
-
-  useEffect(() => {
-    containerRef.current
-      ?.querySelector(`[data-gallery-index="${activeIndex}"]`)
-      ?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
+  }, [state.layer, count]);
 
   return (
     <div
@@ -138,7 +190,7 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
         const startX = touchStartXRef.current;
         touchStartXRef.current = null;
         const endX = event.changedTouches[0]?.clientX;
-        if (startX === null || endX === undefined) {
+        if (state.layer !== "viewer" || startX === null || endX === undefined) {
           return;
         }
         const delta = endX - startX;
@@ -154,13 +206,26 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
       role="dialog"
       tabIndex={-1}
     >
-      <GalleryModalPanel
-        activeIndex={activeIndex}
-        images={images}
-        onClose={onClose}
-        title={title}
-        titleId={titleId}
-      />
+      {state.layer === "viewer" ? (
+        <PhotoViewerPanel
+          count={count}
+          index={state.index}
+          onClose={close}
+          onShowGrid={toGrid}
+          onStep={step}
+          src={fulls[images[state.index]] ?? images[state.index]}
+          title={title}
+          titleId={titleId}
+        />
+      ) : (
+        <GalleryModalPanel
+          images={images}
+          onClose={close}
+          onOpenPhoto={openPhoto}
+          title={title}
+          titleId={titleId}
+        />
+      )}
     </div>
   );
 }

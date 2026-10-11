@@ -34,6 +34,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
     sets: photoSets,
     aspects: photoAspects,
     thumbs: photoThumbs,
+    fulls: photoFulls,
   } = ritualPhotoProps(rituals, ritualPhotos);
 
   return (
@@ -129,6 +130,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                       <div className="mt-space-sm w-full">
                         <PhotoStrip
                           aspects={photoAspects}
+                          fulls={photoFulls}
                           id={ritual.id}
                           sets={photoSets}
                           thumbs={photoThumbs}

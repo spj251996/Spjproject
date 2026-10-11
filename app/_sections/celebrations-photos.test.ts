@@ -25,6 +25,9 @@ test("every display path the strip is given has a thumbnail beside it", () => {
      invisible on screen. The generator emits them in pairs, so this asserts the section does not
      lose one on the way through. */
   assert.match(source, /thumbs=\{photoThumbs\}/);
+  /* And the viewer copy beside it: without it the full-screen view falls back to the grid's
+     1000px file, soft once stretched to a phone's full height. */
+  assert.match(source, /fulls=\{photoFulls\}/);
   /* The derivation is `ritualPhotoProps`'s, and its own tests carry the behaviour
      (`ritual-photo-props.test.ts`); this asserts only that the section uses it. */
   assert.match(source, /ritualPhotoProps\(rituals, ritualPhotos\)/);

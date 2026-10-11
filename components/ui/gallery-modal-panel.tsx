@@ -5,7 +5,13 @@ import { ImagePlaceholder } from "./image-placeholder";
 
    `<img>` rather than `next/image`: `next.config.ts` sets `images: { unoptimized: true }`, because a
    static export has no runtime optimiser, so `next/image` would add nothing here — and this panel
-   takes paths only, not the manifest's dimensions. A failed image therefore collapses its figure. */
+   takes paths only, not the manifest's dimensions. A failed image therefore collapses its figure —
+   and that is kept deliberately: a grey box among photographs reads as broken, and the masonry
+   closes over the gap.
+
+   Each tile is a button that opens the viewer on its photograph, and carries the save cover: a
+   transparent `aria-hidden` layer over a non-draggable image, so a right-click, a long-press or a
+   drag lands on the cover while a tap still reaches the button. */
 
 /* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the
    array index. */
@@ -21,19 +27,19 @@ function withKeys(images: string[]) {
 interface GalleryModalPanelProps {
   title: string;
   images: string[];
-  /** Index the wrapper's swipe/arrow navigation currently points at. */
-  activeIndex?: number;
   titleId?: string;
   onClose?: () => void;
+  /** Opens the viewer on the tapped photograph. Absent in a static specimen. */
+  onOpenPhoto?: (index: number) => void;
   className?: string;
 }
 
 export function GalleryModalPanel({
   title,
   images,
-  activeIndex,
   titleId,
   onClose,
+  onOpenPhoto,
   className,
 }: GalleryModalPanelProps) {
   return (
@@ -56,22 +62,30 @@ export function GalleryModalPanel({
       <div className="columns-2 gap-space-2xs lg:columns-3">
         {withKeys(images).map(({ src, key }, index) => (
           <figure
-            aria-current={index === activeIndex ? "true" : undefined}
             className="relative mb-space-2xs block break-inside-avoid overflow-hidden rounded-card"
             data-gallery-index={index}
             key={key}
           >
-            <ImagePlaceholder
-              className="absolute inset-0 h-full"
-              height={5}
-              width={4}
-            />
-            <img
-              alt=""
+            <button
+              aria-label={`Photo ${index + 1}`}
               className="relative block w-full"
-              loading="lazy"
-              src={src}
-            />
+              onClick={() => onOpenPhoto?.(index)}
+              type="button"
+            >
+              <ImagePlaceholder
+                className="absolute inset-0 h-full"
+                height={5}
+                width={4}
+              />
+              <img
+                alt=""
+                className="relative block w-full"
+                draggable={false}
+                loading="lazy"
+                src={src}
+              />
+              <span aria-hidden="true" className="absolute inset-0" />
+            </button>
           </figure>
         ))}
       </div>

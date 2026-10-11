@@ -6,6 +6,7 @@ import {
   samplePortrait,
   samplePortraitImage,
   sampleRitualAspects,
+  sampleRitualFulls,
   sampleRitualThumbs,
 } from "@/app/design-system/_data/ui-samples";
 import {
@@ -206,6 +207,7 @@ export function ComponentsSections() {
             id="ritual"
             sets={samplePhotoSets}
             thumbs={sampleRitualThumbs}
+            fulls={sampleRitualFulls}
             title="Placeholder Ritual Gallery"
           />
         </Specimen>
