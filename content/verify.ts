@@ -91,6 +91,18 @@ export function verifyRitualDirectories(
   );
 }
 
+/* The same channel's other mistake: github.com's upload lands in the directory being VIEWED, so a
+   photograph uploaded while looking at `assets/rituals/` itself belongs to no ritual. Both scanners
+   only read directories, so it would vanish with every gate green. Dotfiles are skipped — the
+   `.gitkeep` that holds each ritual's empty folder in place is one. */
+export function verifyRitualRootFiles(files: string[], ids: string[]): void {
+  const stray = files.filter((file) => !file.startsWith("."));
+  if (stray.length === 0) return;
+  throw new UnknownRitualDirectoryError(
+    `Files directly under assets/rituals/ belong to no ritual (${stray.length}): ${stray.join(", ")}. Move each into the folder of the ritual it belongs to: ${ids.join(", ")}.`,
+  );
+}
+
 /** `exists` is injected so the check itself is testable without touching a filesystem. */
 export function verifyAssetPaths(
   references: AssetReference[],
@@ -120,12 +132,20 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
      made. The deliveries under `public/rituals/` are generated from these directories a moment
      later in `prebuild`, so they cannot disagree. */
   const ritualSources = new URL("../assets/rituals", import.meta.url);
+  const ritualEntries = existsSync(ritualSources)
+    ? readdirSync(ritualSources, { withFileTypes: true })
+    : [];
+  const ritualIds = rituals.map((ritual) => ritual.id);
+  verifyRitualRootFiles(
+    ritualEntries
+      .filter((entry) => !entry.isDirectory())
+      .map((entry) => entry.name),
+    ritualIds,
+  );
   verifyRitualDirectories(
-    existsSync(ritualSources)
-      ? readdirSync(ritualSources, { withFileTypes: true })
-          .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-          .map((entry) => entry.name)
-      : [],
-    rituals.map((ritual) => ritual.id),
+    ritualEntries
+      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+      .map((entry) => entry.name),
+    ritualIds,
   );
 }

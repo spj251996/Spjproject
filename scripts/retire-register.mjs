@@ -46,7 +46,7 @@ export const RETIRE_REGISTER = Object.freeze([
   {
     path: "assets/rituals",
     kind: "temporary",
-    why: "The first two rituals' photographs are stand-ins for the couple's Ship 1 review and come out before Ship 2. Removing them is TWO steps since Phase 8: delete `assets/rituals/wedding-eve/` and `assets/rituals/betrothal/`, then re-measure Celebrations' height back to the photo-free base. `public/rituals/` needs no step — it is generated from these directories and gitignored.",
+    why: "The first two rituals' photographs are stand-ins for the couple's Ship 1 review and come out before Ship 2. Removing them is TWO steps since Phase 8: delete the photographs in `assets/rituals/wedding-eve/` and `assets/rituals/betrothal/` but KEEP each folder's `.gitkeep` — the folders are where the owner uploads, and github.com cannot upload into one that does not exist — then re-measure Celebrations' height back to the photo-free base. `public/rituals/` needs no step — it is generated from these directories and gitignored.",
   },
   {
     path: "app/preview",

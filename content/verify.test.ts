@@ -9,6 +9,7 @@ import {
   unknownRitualDirectories,
   verifyAssetPaths,
   verifyRitualDirectories,
+  verifyRitualRootFiles,
 } from "./verify.ts";
 
 const member = (over: Partial<FamilyMember> = {}): FamilyMember => ({
@@ -217,4 +218,20 @@ test("an unknown ritual directory throws naming it and the ids it could have mea
       return true;
     },
   );
+});
+
+test("a photograph uploaded beside the ritual folders, not into one, fails naming it", () => {
+  /* github.com's upload lands in the directory being viewed, so a photo dropped at
+     `assets/rituals/` itself belongs to no ritual and would otherwise vanish with every gate green. */
+  assert.throws(
+    () => verifyRitualRootFiles(["IMG_4821.JPG", ".gitkeep"], ["wedding"]),
+    (error: unknown) => {
+      assert.ok(error instanceof UnknownRitualDirectoryError);
+      assert.match(error.message, /IMG_4821\.JPG/);
+      assert.match(error.message, /wedding/);
+      assert.doesNotMatch(error.message, /gitkeep/);
+      return true;
+    },
+  );
+  assert.doesNotThrow(() => verifyRitualRootFiles([".gitkeep"], ["wedding"]));
 });
