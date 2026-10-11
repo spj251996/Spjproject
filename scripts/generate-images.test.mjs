@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
-import { expectedOutputs, orphansIn, PRUNED_DIRS } from "./generate-images.mjs";
+import {
+  expectedOutputs,
+  orphansIn,
+  outputBaseName,
+  PRUNED_DIRS,
+  ritualManifestSource,
+} from "./generate-images.mjs";
 
 /* `public/` is copied wholesale into `out/` by `output: "export"`, so a file the generator no longer
    writes still ships to every guest. The generator only ever wrote and copied, never deleted, so a
@@ -83,5 +90,83 @@ test("the expected set covers every delivered image family", async () => {
   assert.ok(
     [...expected].some((path) => path.startsWith("public/og-card")),
     "the OG card must be in the expected set even though its directory is not pruned",
+  );
+});
+
+test("a delivery's base name drops the extension and nothing else", () => {
+  assert.equal(outputBaseName("IMG_4821.JPG"), "IMG_4821");
+  assert.equal(outputBaseName("01-hero.jpeg"), "01-hero");
+  assert.equal(outputBaseName("a.b.c.png"), "a.b.c");
+});
+
+test("the manifest emits one typed entry per ritual, in the order given", () => {
+  const source = ritualManifestSource({
+    "wedding-eve": [
+      {
+        thumb: "/rituals/wedding-eve/og-1-600.avif",
+        display: "/rituals/wedding-eve/og-1-1000.avif",
+        width: 1000,
+        height: 563,
+      },
+    ],
+  });
+  assert.match(source, /import type \{ RitualPhoto \} from "\.\/types\.ts";/);
+  assert.match(
+    source,
+    /export const ritualPhotos: Record<string, RitualPhoto\[\]> = \{/,
+  );
+  assert.match(source, /"wedding-eve": \[/);
+  assert.match(source, /display: "\/rituals\/wedding-eve\/og-1-1000\.avif",/);
+  assert.match(source, /width: 1000,/);
+  assert.match(source, /height: 563,/);
+});
+
+test("an empty manifest is still a valid module", () => {
+  const source = ritualManifestSource({});
+  assert.match(
+    source,
+    /export const ritualPhotos: Record<string, RitualPhoto\[\]> = \{\};/,
+  );
+});
+
+test("an unknown --only family throws rather than silently selecting nothing", () => {
+  const source = readFileSync(
+    new URL("./generate-images.mjs", import.meta.url),
+    "utf8",
+  );
+  /* Asserted on the source rather than by invoking `run`, which is module-local and would generate
+     files. The claim is that the guard exists and builds its message from the single known set, not
+     that one particular string fails. */
+  assert.match(source, /selects nothing\. Known families/);
+  assert.match(source, /const ONLY_FAMILIES = new Set\(\["rituals"\]\)/);
+});
+
+test("two photographs sharing a base name are refused, not silently overwritten", () => {
+  const source = readFileSync(
+    new URL("./generate-images.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /two photographs share the base name/);
+  assert.match(source, /bases\.has\(base\)/);
+});
+
+test("an unreadable photograph fails the build naming the file and the HEIC case", () => {
+  const source = readFileSync(
+    new URL("./generate-images.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /could not be read as an image/);
+  assert.match(source, /Most Compatible/);
+  assert.match(source, /unrecognised extension/);
+});
+
+test("public/rituals is never pruned, because the expected set does not describe it", () => {
+  /* The rituals family is deliberately outside RECIPES, so `expectedOutputs()` knows nothing about
+     its deliveries. Adding `public/rituals` to PRUNED_DIRS would therefore make the next FULL run
+     read every ritual delivery as an orphan and delete all of them — after writing them. The
+     directory is wiped wholesale by its own recipe instead. */
+  assert.ok(
+    !PRUNED_DIRS.includes("public/rituals"),
+    "public/rituals must not be pruned: expectedOutputs() does not cover it, so a prune would empty it",
   );
 });

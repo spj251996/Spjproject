@@ -5,7 +5,7 @@
   "description": "SF Wedding — a single-page, red-thread wedding invitation for Flemy and Sebastian, built with Next.js.",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON content/verify.ts",
+    "prebuild": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON content/verify.ts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-images.mjs --only=rituals",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
