@@ -18,8 +18,8 @@ const VARIANT_ROUTES = [
   "/thread/mount · the same six · every card painted with its mount, the hero included",
   "/thread/stock · the same six · every card the mountless stock",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
-  "At rest /preview IS the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root — shipped state removes the attribute, so an untouched panel matches no rule and its <main> is byte-identical to /'s",
-  "The three levers it carries → Event Info (six phone layouts), sprig-ornament (two arrangements), Timeline (four text alignments); each entry names its own",
+  "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute — except the rituals' lever, whose shipped centred form the owner withdrew, so the panel applies its first alternate on load",
+  "The levers it carries → Event Info (six phone layouts), Timeline (four ritual layouts, and the card's side padding on a phone), couple-names (larger on a phone), the photo viewer's ground; DESIGN.md → Iteration Notes → Open Decisions carries one row each",
 ];
 
 const TRY_IT = [

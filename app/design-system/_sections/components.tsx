@@ -141,16 +141,16 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="A pair of sprig marks either side of whatever it is given. Used on five section-head eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's — and on each ritual's Malayalam title. Six call sites; ELEVEN ornaments on the published page, since Event Info and Family each render theirs twice and there are five rituals."
+          description="A pair of sprig marks either side of whatever it is given, in two forms: the EYEBROW form on five section-head eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's — and the PLAIN form on each ritual's Malayalam title. Six call sites; ELEVEN ornaments on the published page, since Event Info and Family each render theirs twice and there are five rituals."
           id="ui-sprig-ornament"
           name="sprig-ornament"
-          note="It carries no type role and no colour, which is what lets one component serve both rows below: each call site keeps its own element and role. A colour utility here would beat .type-eyebrow's own gold, declared in @layer components, and the Malayalam must not take that role at all — its 0.2em tracking breaks conjuncts rather than spacing them. The second row is the real Malayalam from content, not a sample. The invite's eyebrow and Contact's deliberately take none: the invite's leads the hero, and Contact's files are scheduled for removal. A second arrangement — the marks between two short rules — is behind a lever at /preview for the couple to judge (DESIGN.md → Iteration Notes → Open Decisions); the marks alone are the default and what ships."
+          note="It carries no type role and no colour, which is what lets one component serve both rows below: each call site keeps its own element and role. A colour utility here would beat .type-eyebrow's own gold, declared in @layer components, and the Malayalam must not take that role at all — its 0.2em tracking breaks conjuncts rather than spacing them. The second row is the real Malayalam from content, not a sample. The invite's eyebrow and Contact's deliberately take none: the invite's leads the hero, and Contact's files are scheduled for removal. The eyebrow form is the owner's pick from six arrangements on /preview (2026-10-11); the ritual keeps the plain pair, so the flip is opt-in rather than the default."
           source="@/components/ui/sprig-ornament"
-          spec="the sprig mark at 23px on the diagonal, which renders 16px tall — the Iconography floor for this mark, whose viewBox is not square · gap space-2xs each side · NEITHER mark flipped, so both face the way ornamental-divider's does"
+          spec="the sprig mark at 23px on the diagonal, which renders 16px tall — the Iconography floor for this mark, whose viewBox is not square · gap space-2xs between every item · plain: NEITHER mark flipped, so both face the way ornamental-divider's does · eyebrow: the LEADING mark flipped so both point outward, and a rule outside each mark, space-lg (32px) long at --stroke-hairline (0.5px), in the wrapper's own colour"
         >
           <div className="flex flex-col items-center gap-space-md">
             <p className="type-eyebrow">
-              <SprigOrnament>Our traditions</SprigOrnament>
+              <SprigOrnament eyebrow>Our traditions</SprigOrnament>
             </p>
             <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight">
               <SprigOrnament>{rituals[0].malayalam}</SprigOrnament>

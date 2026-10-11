@@ -831,7 +831,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows and each Celebrations ritual's Malayalam in pairs through sprig-ornament, marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows (mirrored outward, between rules) and each Celebrations ritual's Malayalam (as drawn) in pairs through sprig-ornament, marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"
