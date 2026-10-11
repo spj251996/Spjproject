@@ -122,15 +122,25 @@ html[data-pv-ritual-align^="justify"] #celebrations ol > li > div > div > p {
   text-align: justify;
 }
 
-/* PHOTOGRAPHS ON THE RIGHT, from 64rem up — an ALIGNMENT, not a column split (owner, 2026-10-11:
-   "not column split just alignment of strip"). The strip stays beneath the text at full measure and
-   moves to the block's right edge, its "View photos" action centred under it. Below 64rem it keeps the
-   left edge like every other form. A first build split the block into text and strip columns; that is
-   what this replaces. */
-@media (width >= 64rem) {
-  html[data-pv-ritual-align$="-side"] #celebrations ol > li > div > div > div {
-    text-align: end;
-  }
+/* PHOTOGRAPHS ALIGNED RIGHT, at every tier — an ALIGNMENT, not a column split (owner, 2026-10-11:
+   "not column split just alignment of strip", then "right alignment in all tiers"). The strip stays
+   beneath the text at full measure and moves to the block's right edge, and its "View photos" action
+   moves with it, right-aligned under the strip rather than centred. A first build split the block into
+   text and strip columns from 64rem up; that is what this replaces. */
+html[data-pv-ritual-align$="-side"] #celebrations ol > li > div > div > div {
+  text-align: end;
+}
+
+html[data-pv-ritual-align$="-side"]
+  #celebrations
+  ol
+  > li
+  > div
+  > div
+  > div
+  > [data-photo-ready]
+  > div {
+  align-items: flex-end;
 }
 
 /* ───────── CELEBRATIONS' SIDE PADDING ON A PHONE ─────────
@@ -529,10 +539,11 @@ html[data-pv-ritual-align^="justify"] #celebrations ol > li > div > div > p {
    The h1 then takes a bottom margin that pushes the invitation line, the date and everything under
    them down by exactly what the names grew — plus the difference that makes the names-to-line INK gap
    equal the line-to-date ink gap (owner: "keep the space between names and invite line same as line
-   to date"). Measured at six phone viewports, 320x568 to 430x932: line-to-date is 32.5px everywhere,
+   to date"). Measured at six phone viewports, 320x568 to 430x932: line-to-date is 46.5px everywhere
+   (32.5 until the date block dropped by `--date-place-pull`, 14px, on 2026-10-11),
    names-to-line 10.8-11.8 (11.3 typical), and the names' ink runs 128.5px below the lockup's top. So:
 
-     margin = (32.5 - 11.3) + 128.5 * (scale - 1)
+     margin = (46.5 - 11.3) + 128.5 * (scale - 1)
 
    Constant across phone widths because the lockup is `em` of a role that does not change size within
    the phone tier. CSS-ONLY: the invite's fit is generated from the shipped layout, so whether the
@@ -544,7 +555,7 @@ html[data-pv-ritual-align^="justify"] #celebrations ol > li > div > div > p {
     transform: scale(var(--pv-name-scale));
   }
   html[data-pv-name-scale] #invite h1 {
-    margin-block-end: calc(21.2px + 128.5px * (var(--pv-name-scale) - 1));
+    margin-block-end: calc(35.2px + 128.5px * (var(--pv-name-scale) - 1));
   }
   html[data-pv-name-scale="150"] {
     --pv-name-scale: 1.5;
@@ -553,3 +564,16 @@ html[data-pv-ritual-align^="justify"] #celebrations ol > li > div > div > p {
 
 /* THE PHOTO VIEWER'S GROUND LEFT THE ROUTE (owner, 2026-10-11): the near-black ink was chosen and ships
    as `--color-scrim` in `app/styles/tokens.css`. */
+
+/* ───────── THE INVITE'S DATE BLOCK — gold on the day, gold on the hairlines ─────────
+   Owner, 2026-10-11: "try variants - gold 9, gold date lines". Two independent levers, every tier.
+   The hairlines ship in `rule-faint` because gold was declined for them on 2026-10-08 (gold belongs to
+   the ornament, and the reference's rules are lighter than its type); this puts it in front of the
+   owner again rather than re-deciding it. Colour only — no geometry moves. */
+html[data-pv-date-day="gold"] #invite [data-invite-date] time {
+  color: var(--color-accent-gold);
+}
+
+html[data-pv-date-rules="gold"] #invite [data-invite-date] [aria-hidden] {
+  background: var(--color-accent-gold);
+}

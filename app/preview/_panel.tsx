@@ -36,6 +36,8 @@ const ATTRIBUTES = [
   "data-pv-ritual-align",
   "data-pv-side-pad",
   "data-pv-name-scale",
+  "data-pv-date-day",
+  "data-pv-date-rules",
 ] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
@@ -151,6 +153,22 @@ const COUPLE_LEVERS: readonly Lever[] = [
     ],
   },
   {
+    id: "date-day",
+    title: "The day in the date",
+    options: [
+      { label: "Dark brown", attrs: {} },
+      { label: "Gold", attrs: { "data-pv-date-day": "gold" } },
+    ],
+  },
+  {
+    id: "date-rules",
+    title: "The lines either side of the day",
+    options: [
+      { label: "Faint", attrs: {} },
+      { label: "Gold", attrs: { "data-pv-date-rules": "gold" } },
+    ],
+  },
+  {
     id: "ritual-align",
     title: "The rituals",
     /* CENTRED AND THE RAIL LEFT THE ROUTE (owner, 2026-10-11), and centred is still what `/` ships —
@@ -163,12 +181,12 @@ const COUPLE_LEVERS: readonly Lever[] = [
       { label: "Justified", attrs: { "data-pv-ritual-align": "justify" } },
       {
         label: "Left, photographs aligned right",
-        note: "Laptop and wider: the photographs move to the right, still below the text.",
+        note: "The photographs and their button move to the right, still below the text.",
         attrs: { "data-pv-ritual-align": "start-side" },
       },
       {
         label: "Justified, photographs aligned right",
-        note: "Laptop and wider: the photographs move to the right, still below the text.",
+        note: "The photographs and their button move to the right, still below the text.",
         attrs: { "data-pv-ritual-align": "justify-side" },
       },
     ],

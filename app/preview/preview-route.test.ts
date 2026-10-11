@@ -34,6 +34,8 @@ const COUPLE_FACING = [
   "ritual-align",
   "side-pad",
   "name-scale",
+  "date-day",
+  "date-rules",
 ];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
@@ -308,36 +310,31 @@ test("the six retired levers are gone from both files", () => {
   );
 });
 
-test("every ritual form shares the header line at every tier; only the photographs' side is banded", () => {
-  /* Owner, 2026-10-11: "sprig title malayalam on same baseline in all tiers" — so the header line's
-     rules are gated on the lever's attribute alone and sit OUTSIDE any media query, while the
-     photographs' right alignment is the one thing bounded to 64rem and up. Asserted as the shape of the file, because the recorded failure on this
-     route was a whole arrangement going missing at one tier. */
+test("every ritual form, and the photographs' right alignment, holds at every tier", () => {
+  /* Owner, 2026-10-11: "sprig title malayalam on same baseline in all tiers", then the photographs
+     and their button "right alignment in all tiers". So no ritual rule is banded: the whole block,
+     from the header line to the strip's alignment, sits outside any media query. Asserted as the
+     shape of the file, because the recorded failure on this route was a whole arrangement going
+     missing at one tier. */
   const start = CSS_CODE.indexOf("html[data-pv-ritual-align] #celebrations");
-  const banded = CSS_CODE.indexOf('html[data-pv-ritual-align$="-side"]');
+  const end = CSS_CODE.indexOf("html[data-pv-side-pad]");
   assert.ok(
-    start >= 0 && banded > start,
+    start >= 0 && end > start,
     "the ritual block is not where the gate expects it",
   );
-  const before = CSS_CODE.slice(start, banded);
-  const unbanded = before.slice(0, before.lastIndexOf("@media"));
+  const block = CSS_CODE.slice(start, CSS_CODE.lastIndexOf("@media", end));
+  assert.ok(!block.includes("@media"), "a ritual rule is inside a media query");
   for (const [rule, what] of [
     ["flex-wrap: wrap", "the header line's flow"],
     ["display: contents", "the two-level promotion"],
     ["svg:nth-of-type(2)", "the trailing sprig's hide"],
     ["order: -2", "the sprig leading the line"],
     ["order: -1", "the title before the Malayalam"],
+    ["text-align: end", "the photographs' right alignment"],
+    ["align-items: flex-end", "the button following the strip right"],
   ]) {
-    assert.ok(
-      unbanded.includes(rule) && !unbanded.includes("@media"),
-      `${what} is missing or inside a media query — the header line would go missing at some tier`,
-    );
+    assert.ok(block.includes(rule), `${what} is missing from the ritual block`);
   }
-  assert.match(
-    CSS_CODE.slice(banded - 40, banded),
-    /@media \(width >= 64rem\)/,
-    "the photographs' right alignment must be bounded to 64rem and up",
-  );
   assert.ok(
     !CSS_CODE.includes('data-pv-ritual-align="rail"'),
     "the rail left the route (owner, 2026-10-11)",
