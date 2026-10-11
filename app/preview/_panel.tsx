@@ -35,6 +35,8 @@ const ATTRIBUTES = [
   "data-pv-icon-split",
   "data-pv-ornament",
   "data-pv-ritual-align",
+  "data-pv-name-scale",
+  "data-pv-name-tone",
 ] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
@@ -141,10 +143,39 @@ const COUPLE_LEVERS: readonly Lever[] = [
   {
     id: "ornament",
     title: "The leaf marks beside a heading",
-    note: "Every section heading carries them. The second form adds a short rule either side.",
+    note: "Every section heading carries them, and so does each ritual's Malayalam.",
     options: [
       { label: "Leaves only", attrs: {} },
       { label: "Leaves between rules", attrs: { "data-pv-ornament": "rules" } },
+      { label: "Leaves turned inward", attrs: { "data-pv-ornament": "in" } },
+      { label: "Leaves turned outward", attrs: { "data-pv-ornament": "out" } },
+      {
+        label: "Inward, between rules",
+        attrs: { "data-pv-ornament": "in-rules" },
+      },
+      {
+        label: "Outward, between rules",
+        attrs: { "data-pv-ornament": "out-rules" },
+      },
+    ],
+  },
+  {
+    id: "name-scale",
+    title: "The names on a phone",
+    note: "Larger names on the invitation, phone only. Nothing else on the card moves.",
+    options: [
+      { label: "As now", attrs: {} },
+      { label: "10% larger", attrs: { "data-pv-name-scale": "110" } },
+      { label: "20% larger", attrs: { "data-pv-name-scale": "120" } },
+      { label: "30% larger", attrs: { "data-pv-name-scale": "130" } },
+    ],
+  },
+  {
+    id: "name-tone",
+    title: "The colour of the names",
+    options: [
+      { label: "Soft brown", attrs: {} },
+      { label: "Dark brown", attrs: { "data-pv-name-tone": "ink" } },
     ],
   },
   {

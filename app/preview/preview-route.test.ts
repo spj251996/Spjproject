@@ -33,6 +33,8 @@ const COUPLE_FACING = [
   "icon-split",
   "ornament",
   "ritual-align",
+  "name-scale",
+  "name-tone",
 ];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 

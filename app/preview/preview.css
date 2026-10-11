@@ -44,13 +44,28 @@
    It reaches EVERY ornament, the five section eyebrows and the five ritual Malayalams alike,
    because they are one component. That is what changing the component would do, so it is what the
    couple should be looking at. */
-html[data-pv-ornament="rules"] [data-sprig-ornament]::before,
-html[data-pv-ornament="rules"] [data-sprig-ornament]::after {
+/* SIX FORMS FROM TWO AXES (owner, 2026-10-11, the couple's first feedback round): the leaves'
+   direction — as shipped, mirrored inward, mirrored outward — crossed with rules or none. One
+   attribute carries both, read by prefix and suffix: `in`/`out` start the value, `rules` ends it.
+
+   THE RULES ARE HALF `--stroke-divider` (owner: "all rules less stroke width"). 0.5px is the
+   preview's stand-in; the landed weight is settled on the render, and at dpr 1 a half-pixel line
+   paints as a fainter full pixel rather than a thinner one. */
+html[data-pv-ornament$="rules"] [data-sprig-ornament]::before,
+html[data-pv-ornament$="rules"] [data-sprig-ornament]::after {
   content: "";
   flex: 0 0 auto;
   width: var(--spacing-space-lg);
-  height: var(--stroke-divider);
+  height: calc(var(--stroke-divider) / 2);
   background: currentColor;
+}
+
+/* Both marks face the divider's way when shipped, so mirroring ONE of them is what turns the pair
+   inward or outward. Which one is "inward" was read off the render, not assumed from the drawing.
+   `nth-of-type` because the text between the marks is a text node, not an element. */
+html[data-pv-ornament^="in"] [data-sprig-ornament] > svg:nth-of-type(2),
+html[data-pv-ornament^="out"] [data-sprig-ornament] > svg:nth-of-type(1) {
+  transform: scaleX(-1);
 }
 
 /* WHAT USED TO BE LEVER 3 — the invite's eyebrow against the flowers — IS GONE, and deliberately
@@ -767,4 +782,33 @@ html[data-pv-ritual-align="justify"] #celebrations ol > li > div > div {
     grid-area: 4 / 3;
     justify-self: start;
   }
+}
+
+/* ───────── THE COUPLE'S NAMES — size on a phone, tone at every tier ─────────
+   Owner, 2026-10-11. Both scoped to the INVITE; Wishes' signature is untouched.
+
+   SIZE IS A TRANSFORM, which is the whole of "without moving the space of other items": a
+   transform moves no box, so the eyebrow, the line and the date stay exactly where they are and no
+   fit is re-derived. CSS-ONLY — landing it for real is an `em` change in `couple-names.tsx` plus a
+   `measure:fit` run, and the phone ceiling before ink leaves the card at 320px is 1.872em against
+   the 1.85em that ships, so the larger steps are EXPECTED to spill there. Measured, per width. */
+@media (width < 48rem) {
+  html[data-pv-name-scale] #invite h1 svg[data-names-layout] {
+    transform-origin: center;
+  }
+  html[data-pv-name-scale="110"] #invite h1 svg[data-names-layout] {
+    transform: scale(1.1);
+  }
+  html[data-pv-name-scale="120"] #invite h1 svg[data-names-layout] {
+    transform: scale(1.2);
+  }
+  html[data-pv-name-scale="130"] #invite h1 svg[data-names-layout] {
+    transform: scale(1.3);
+  }
+}
+
+/* The drawn names ship in `ink-muted`; the alternate is full `ink`. Unlayered, so it beats the
+   `text-ink-muted` utility on the lockup. */
+html[data-pv-name-tone="ink"] #invite h1 svg[data-names-layout] {
+  color: var(--color-ink);
 }
