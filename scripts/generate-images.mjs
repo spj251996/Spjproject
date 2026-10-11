@@ -576,12 +576,34 @@ export async function writeRitualPhotos({
    other families, and the rituals family wipes its own directory instead. */
 const ONLY_FAMILIES = new Set(["rituals"]);
 
-async function run({ dryRun, only }) {
+/* A typo here must FAIL rather than fall through: `--only rituals` (a space) or `--dryrun` used to
+   run every recipe — 152 botanical files re-encoded, or a "dry" run that wrote. */
+export function parseGeneratorArgs(argv) {
+  let dryRun = false;
+  let only = null;
+  for (const argument of argv) {
+    if (argument === "--dry-run") dryRun = true;
+    else if (argument.startsWith("--only="))
+      only = argument.slice("--only=".length);
+    else if (argument === "--only") {
+      throw new Error(
+        `--only takes its family after "=": --only=${[...ONLY_FAMILIES][0]}`,
+      );
+    } else {
+      throw new Error(
+        `unrecognised argument "${argument}". Known: --dry-run, --only=<family>.`,
+      );
+    }
+  }
   if (only !== null && !ONLY_FAMILIES.has(only)) {
     throw new Error(
       `--only=${only} selects nothing. Known families: ${[...ONLY_FAMILIES].join(", ")}. Omit --only to run every recipe.`,
     );
   }
+  return { dryRun, only };
+}
+
+async function run({ dryRun, only }) {
   await writeRitualPhotos({ dryRun });
   if (only !== null) return;
   /* A dry run reports orphans and generates nothing. The expected set is read from `RECIPES`, never
@@ -619,11 +641,7 @@ async function run({ dryRun, only }) {
 
 /* Guarded so the module can be imported by its test without generating anything. */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  const onlyFlag = process.argv.find((argument) =>
-    argument.startsWith("--only="),
-  );
-  await run({
-    dryRun: process.argv.includes("--dry-run"),
-    only: onlyFlag === undefined ? null : onlyFlag.slice("--only=".length),
-  });
+  /* `npm run images -- <flags>` passes exactly the flags after `--`, so `argv.slice(2)` is all of
+     them. */
+  await run(parseGeneratorArgs(process.argv.slice(2)));
 }

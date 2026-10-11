@@ -16,6 +16,7 @@ import {
   orphansIn,
   outputBaseName,
   PRUNED_DIRS,
+  parseGeneratorArgs,
   planRitualPhotos,
   ritualManifestSource,
   uprightRitualImage,
@@ -139,29 +140,6 @@ test("an empty manifest is still a valid module", () => {
   assert.match(
     source,
     /export const ritualPhotos: Record<string, RitualPhoto\[\]> = \{\};/,
-  );
-});
-
-test("an unknown --only family throws rather than silently selecting nothing", () => {
-  const source = readFileSync(
-    new URL("./generate-images.mjs", import.meta.url),
-    "utf8",
-  );
-  /* Asserted on the source rather than by invoking `run`, which is module-local and would generate
-     files. The claim is that the guard exists and builds its message from the single known set, not
-     that one particular string fails. */
-  assert.match(source, /selects nothing\. Known families/);
-  assert.match(source, /const ONLY_FAMILIES = new Set\(\["rituals"\]\)/);
-});
-
-test("public/rituals is never pruned, because the expected set does not describe it", () => {
-  /* The rituals family is deliberately outside RECIPES, so `expectedOutputs()` knows nothing about
-     its deliveries. Adding `public/rituals` to PRUNED_DIRS would therefore make the next FULL run
-     read every ritual delivery as an orphan and delete all of them — after writing them. The
-     directory is wiped wholesale by its own recipe instead. */
-  assert.ok(
-    !PRUNED_DIRS.includes("public/rituals"),
-    "public/rituals must not be pruned: expectedOutputs() does not cover it, so a prune would empty it",
   );
 });
 
@@ -375,4 +353,49 @@ test("with no source folder at all, every previous delivery is wiped", async () 
   await run(t);
   assert.ok(!existsSync(t.out), "public/rituals must not survive its sources");
   assert.match(readFileSync(t.manifest, "utf8"), /= \{\};/);
+});
+
+test("the generator's flags parse in either order", () => {
+  assert.deepEqual(parseGeneratorArgs(["--dry-run", "--only=rituals"]), {
+    dryRun: true,
+    only: "rituals",
+  });
+  assert.deepEqual(parseGeneratorArgs(["--only=rituals", "--dry-run"]), {
+    dryRun: true,
+    only: "rituals",
+  });
+  assert.deepEqual(parseGeneratorArgs([]), { dryRun: false, only: null });
+});
+
+test("an unknown --only family throws rather than silently selecting nothing", () => {
+  assert.throws(
+    () => parseGeneratorArgs(["--only=ritual"]),
+    /--only=ritual selects nothing\. Known families: rituals/,
+  );
+});
+
+test("a mistyped flag is refused rather than running every recipe", () => {
+  assert.throws(
+    () => parseGeneratorArgs(["--only", "rituals"]),
+    /--only takes its family after "=": --only=rituals/,
+  );
+  assert.throws(
+    () => parseGeneratorArgs(["--dryrun"]),
+    /unrecognised argument "--dryrun"/,
+  );
+});
+
+test("public/rituals is never pruned, in any spelling or by any parent", () => {
+  /* The rituals family is outside RECIPES, so `expectedOutputs()` does not describe its deliveries:
+     a prune reaching them — by a trailing slash, or through a parent — would delete every one after
+     writing it. Its own run wipes the directory instead. */
+  const target = "public/rituals";
+  for (const dir of PRUNED_DIRS.map((d) => d.replace(/\/+$/, ""))) {
+    assert.ok(
+      dir !== target &&
+        !target.startsWith(`${dir}/`) &&
+        !dir.startsWith(`${target}/`),
+      `${dir} reaches ${target}`,
+    );
+  }
 });
