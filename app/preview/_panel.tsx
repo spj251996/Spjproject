@@ -82,10 +82,17 @@ const COUPLE_LEVERS: readonly Lever[] = [
     id: "events",
     title: "The event details on a phone",
     /* PREVIEW ONLY, and the mark is not politeness. `app/event-info-fit.ts` is GENERATED from the
-       shipped layout and a CSS override cannot re-derive it, so an alternate can in principle
-       render a composition the production build will not produce. All six happen to measure
-       1704px — identical to what ships — which is why `/` needs no new fit this round; the mark
-       stays because the next candidate might not. */
+       shipped layout and a CSS override cannot re-derive it, so an alternate can render a
+       composition the production build will not produce.
+       **THE SIX ARE HEIGHT-NEUTRAL ONLY FROM 393px UP, which corrects the claim this comment
+       carried until 2026-10-10.** At 393 and 430 every candidate measures what ships (1704 /
+       1864). Below that they diverge: at 375x667 they measure 1502 / 1538 / 1502 / 1538 / 1648 /
+       1578 against a shipped 1578 — a 146px SPREAD, with `icon on the line, time on the left`
+       running 70px taller than the layout the committed fit was derived from. Nothing on `/`
+       breaks, because the alternates are preview-only and the committed fit is `/`'s.
+       **WHAT IT COSTS IS A CARRY-THROUGH SHORTCUT: Half 3 MUST re-run `measure:fit` when it
+       lands the couple's winner in `event-info.tsx`.** "All six measure 1704" was the stated
+       reason it would not have to, and that reason only holds on two of the band's widths. */
     note: "Six arrangements of the same details. Preview only — the spacing is derived in code, so the final build may sit a few pixels off.",
     options: [
       { label: "Today's", attrs: {} },
@@ -247,10 +254,21 @@ function LeverGroup({
       )}
       {lever.options.map((option, index) => (
         <label key={option.label} style={CHOICE}>
+          {/* `onClick` AS WELL AS `onChange`, and it is the couple's first tap that needs it.
+              This panel is server-rendered OPEN, so its radios are tappable long before React
+              hydrates — on a phone over a mobile connection that window is the normal case. A tap
+              landing in it flips the DOM's own `checked` without changing React state, and from
+              then on a click on an ALREADY-CHECKED radio fires no `change` event at all, so
+              `onChange` alone leaves the control dead until two further taps move the selection
+              away and back. Measured, not reasoned: with the chunks delayed, two taps applied
+              nothing. `onClick` fires on every click including that one, so the second tap
+              recovers; firing both on an ordinary selection is harmless, since choosing the same
+              index twice is idempotent. The mount effect below repairs the lie in the meantime. */}
           <input
             checked={chosen === index}
             name={`pv-${lever.id}`}
             onChange={() => onChoose(index)}
+            onClick={() => onChoose(index)}
             type="radio"
           />
           <span>{option.label}</span>
@@ -268,6 +286,27 @@ export function LeverPanel() {
   /* Restore before anything persists: a save gated on first render would overwrite the stored
      value with the default before the restore had a chance to run. */
   useEffect(() => setOpen(readOpen()), []);
+
+  /* REPAIR ANY PRE-HYDRATION TAP, so the panel never shows a selection the page is not in.
+     React does not reconcile a radio's `checked` that the DOM changed under it — the state it
+     rendered has not changed, so there is nothing to re-render — and the result is a control
+     reading as chosen over a page that is still shipped. One pass at mount puts every radio back
+     in step with the state that is actually applied. It runs once, so it cannot fight a real
+     selection. */
+  useEffect(() => {
+    /* Against SHIPPED rather than against `chosen`, which is what makes this a mount-only effect
+       with no dependency to declare: no lever's state is restored from storage, so at mount the
+       state IS the shipped set. */
+    for (const lever of ALL_LEVERS) {
+      const wanted = SHIPPED[lever.id] ?? 0;
+      const radios = document.querySelectorAll<HTMLInputElement>(
+        `input[name="pv-${lever.id}"]`,
+      );
+      radios.forEach((radio, index) => {
+        radio.checked = index === wanted;
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const wanted: Record<string, string> = {};

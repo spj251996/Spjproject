@@ -14,8 +14,13 @@
    generated botanical stylesheet, inlined per section — specificity decides, and each selector
    below carries at least one more class-level component than the sheet's two.
 
-   Removal is pure subtraction: this file, the route, the panel and one `check-export-routes.mjs`
-   row go in one commit, and no section file is touched. */
+   Removal is pure subtraction for the SECTIONS — no section file is touched, and nothing of this
+   route survives in one when it goes. **It is NOT one row in `check-export-routes.mjs`, which is
+   what this comment claimed until 2026-10-10.** Deleting this file empties that gate's
+   `variantSheets`, and its claim is written `variantSheets.length > 0 && ...`, so the gate FAILS
+   on the removal commit itself. The removal is: this file, the route, the panel, the `EXPECTED`
+   row REPLACED by a `FORBIDDEN` entry, and the two `data-pv-` blocks at the end of that script —
+   about fifty lines, in one commit. */
 
 /* WHAT WAS LEVER 2 — the couple's names, drawn against today's typeset script — IS GONE, and
    deliberately rather than by omission (owner, 2026-10-10: "ship only drawn to couple, no need

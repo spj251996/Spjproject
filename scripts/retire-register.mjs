@@ -49,6 +49,11 @@ export const RETIRE_REGISTER = Object.freeze([
     why: "The first two rituals' photographs are stand-ins for the couple's Ship 1 review and come out before Ship 2. Removing them is three steps — empty both `images` arrays, delete this directory, and re-measure Celebrations' height back to the photo-free base.",
   },
   {
+    path: "app/preview",
+    kind: "temporary",
+    why: "The couple's review route and everything that serves it — the route, the panel, the alternates' stylesheet and its gate. REGISTERED 2026-10-10 after a whole-branch review found it tagged `[retire]` in `DESIGN.md` while appearing in no machine-readable list, which falsified that doc's own statement that this file is where the members live. ITS WINDOW IS THE NARROWEST HERE AND IT IS NOT PHASE 9: it goes BEFORE THE BRANCH MERGES, once the couple have answered. THE REMOVAL IS NOT ONE ROW IN THE EXPORT GATE — deleting `preview.css` empties that gate's `variantSheets`, whose claim reads `variantSheets.length > 0 && ...`, so the gate fails on the removal commit unless the `EXPECTED` row is REPLACED by a `FORBIDDEN` entry and both `data-pv-` blocks go with it.",
+  },
+  {
     path: "app/thread/[variant]/page.tsx",
     kind: "temporary",
     why: "The thread lab. Its deliverable is a decision — adopt the thread onto `/` or remove these routes — taken before Ship 2.",

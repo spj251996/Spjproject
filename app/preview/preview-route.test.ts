@@ -354,3 +354,49 @@ test("the close control cannot scroll out of reach", () => {
     "the close button is not inside the sticky header",
   );
 });
+
+/* THE COUPLE'S FIRST TAP, which is the one the panel is most likely to lose. The panel is
+   server-rendered OPEN, so its radios paint and accept taps long before React hydrates — on a
+   phone over a mobile connection that window is ordinary, not exotic. A tap landing in it flips
+   the DOM's own `checked` while React's state does not move, and React never reconciles a radio
+   the DOM changed under it; from then on a click on an already-checked radio fires no `change`
+   event at all. MEASURED against the real page with the JS chunks delayed: two taps applied
+   nothing and the panel showed a selection the page was not in. Both halves of the repair are
+   asserted here because each fails differently — without `onClick` the control stays dead, and
+   without the mount reconcile the panel keeps lying about what is applied. */
+test("a tap that lands before hydration cannot leave a lever dead or the panel lying", () => {
+  const input = PANEL_CODE.match(/<input[\s\S]{0,320}?\/>/)?.[0] ?? "";
+  assert.match(
+    input,
+    /type="radio"/,
+    "the choice control is not a radio any more",
+  );
+  assert.match(
+    input,
+    /onClick=\{\(\) => onChoose\(index\)\}/,
+    "onChange alone: a click on an already-checked radio fires no change event, so the couple's re-tap does nothing",
+  );
+  assert.match(
+    input,
+    /onChange=\{\(\) => onChoose\(index\)\}/,
+    "onClick alone would not carry keyboard selection",
+  );
+  const reconcile =
+    PANEL_CODE.match(
+      /useEffect\(\(\) => \{[\s\S]{0,700}?radio\.checked[\s\S]{0,200}?\}, \[\]\);/,
+    )?.[0] ?? "";
+  assert.ok(
+    reconcile,
+    "no mount effect puts the radios back in step with the applied state",
+  );
+  assert.match(
+    reconcile,
+    /SHIPPED\[lever\.id\]/,
+    "the reconcile must restore the SHIPPED state, which is what the page is actually in at mount",
+  );
+  assert.match(
+    reconcile,
+    /\}, \[\]\);$/,
+    "the reconcile must run once, or it fights a real selection",
+  );
+});
