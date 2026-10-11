@@ -94,8 +94,8 @@ export const RETIRE_REGISTER = Object.freeze([
   {
     symbol: "splitCoupleNames",
     in: "app/_sections/shared.tsx",
-    kind: "unused",
-    why: "Splits the couple's names into the three spans the script roles need. UNUSED as of 2026-10-10: the names lever was dropped from the couple's review rather than decided by it, so the two alternates it fed have no consumer and this has no reachable caller. REMOVAL WINDOW (owner): earliest once the couple confirm the preview, latest Phase 9 — and it goes in one commit with the other three parts of the typeset alternate, listed in this file's header. The drawn asset takes the whole string as its accessible name and never splits it.",
+    kind: "temporary",
+    why: "Splits the couple's names into the three spans the script roles need. **IT IS RETIRED ONCE THE COUPLE CONFIRM THE DRAWN NAMES ON THE PREVIEW** (owner, 2026-10-11), and it goes in ONE commit with the other three parts of the typeset alternate, listed in this file's header. CORRECTED 2026-10-11 FROM `unused`, which was wrong in the way that stalls Phase 9: it has two live callers, `app/_sections/invite.tsx` and `app/_sections/wishes.tsx`, so anyone following the `unused` protocol — confirm zero consumers, then delete — finds two and stops. Its OUTPUT is rendered and never painted, into the `[data-names-alt]` span that `app/couple-names.css` hides, which is exactly what `temporary` means here: the deletion is a decision, not a confirmation. The drawn asset takes the whole string as its accessible name and never splits it.",
   },
   {
     path: "app/couple-names.css",

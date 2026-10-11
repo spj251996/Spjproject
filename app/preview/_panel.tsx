@@ -174,10 +174,6 @@ const COUPLE_LEVERS: readonly Lever[] = [
   },
 ];
 
-/* The owner's, settled on a render one at a time, and REMOVED with their controls once each value
-   lands in the file that owns it (Task 9). The couple are not asked about any of these. */
-const ALL_LEVERS = COUPLE_LEVERS;
-
 const OPEN_KEY = "preview-panel-open";
 
 /* Only the open flag persists. A chosen lever deliberately does not: the couple's answer is what
@@ -212,7 +208,7 @@ function writeOpen(open: boolean): void {
    lines — an unwrapped button otherwise read as two, the shipped one included. */
 
 const SHIPPED: Readonly<Record<string, number>> = Object.fromEntries(
-  ALL_LEVERS.map((lever) => [lever.id, 0]),
+  COUPLE_LEVERS.map((lever) => [lever.id, 0]),
 );
 
 const SHELL: CSSProperties = {
@@ -297,7 +293,7 @@ export function LeverPanel() {
     /* Against SHIPPED rather than against `chosen`, which is what makes this a mount-only effect
        with no dependency to declare: no lever's state is restored from storage, so at mount the
        state IS the shipped set. */
-    for (const lever of ALL_LEVERS) {
+    for (const lever of COUPLE_LEVERS) {
       const wanted = SHIPPED[lever.id] ?? 0;
       const radios = document.querySelectorAll<HTMLInputElement>(
         `input[name="pv-${lever.id}"]`,
@@ -310,7 +306,7 @@ export function LeverPanel() {
 
   useEffect(() => {
     const wanted: Record<string, string> = {};
-    for (const lever of ALL_LEVERS) {
+    for (const lever of COUPLE_LEVERS) {
       Object.assign(wanted, lever.options[chosen[lever.id] ?? 0]?.attrs ?? {});
     }
     const root = document.documentElement;
@@ -375,15 +371,15 @@ export function LeverPanel() {
         overscrollBehavior: "contain",
       }}
     >
-      {/* THE CLOSE IS ALWAYS REACHABLE (owner, 2026-10-10). The panel scrolls — three groups plus a
-          folded tuning block do not fit 70svh on a phone — and the close button scrolled away with
-          the heading, so getting the panel out of the way meant first scrolling back up inside it.
-          It is sticky to the top of the panel's own scroll box now.
+      {/* THE CLOSE IS ALWAYS REACHABLE (owner, 2026-10-10). The panel scrolls — three groups do
+          not fit 70svh on a phone — and the close button scrolled away with the heading, so
+          getting the panel out of the way meant first scrolling back up inside it. It is sticky
+          to the top of the panel's own scroll box now.
           The background is RESTATED rather than inherited: a sticky child paints over the content
           sliding beneath it, and `SHELL`'s background sits on the scroll container, not on this
-          row. `top: -14` cancels the container's own padding so the band sits flush at rest, and
-          the negative inline margins with matching padding let it reach both edges while the
-          groups below keep the panel's 14px inset. */}
+          row. `top` is 0 and the padding moved onto this band: the negative inline margins with
+          matching padding let it reach both edges while the groups below keep the panel's 14px
+          inset. The comment above records why `top: -14` is NOT the way to do that. */}
       <div
         style={{
           position: "sticky",

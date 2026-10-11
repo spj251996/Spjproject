@@ -177,11 +177,14 @@ function Lockup({
       className={className}
       /* WHICH LOCKUP THIS IS, as markup rather than as a class spelling. `orientation` renders
          BOTH and hides one by media query, so neither a stylesheet nor a measuring harness can
-         tell them apart without re-deriving the orientation rule — and the two place the
-         ampersand by different arithmetic: on the LINE it is centred in the slot the trace gives
-         it, in the STACK on the lockup's own box. Both land it dead centre now; the stack's 3.6%
-         right and 4.6% above, which is where the TRACE put it, was corrected on 2026-10-10. A
-         rule that keys on one lockup's geometry still has to know which it is looking at. */
+         tell them apart without re-deriving the orientation rule.
+         IT IS A MEASURING HOOK AND NOTHING ELSE READS IT — no stylesheet, no test, no script, as
+         of 2026-10-11. That is deliberate rather than dead: a harness measuring one lockup on a
+         render has no other way to say WHICH it just measured, and this round's own did exactly
+         that. Do not go looking for the CSS rule that keys on it, and do not delete it as unused
+         without checking the harnesses in `tmp/`. The two lockups do differ: on the LINE the
+         ampersand is centred in the slot the trace gives it, in the STACK on the lockup's own
+         box, and both land it dead centre since 2026-10-10. */
       data-names-layout={layout}
       role="presentation"
       /* `round` on both, not the default miter: a trace of handwriting is full of shallow cusps,

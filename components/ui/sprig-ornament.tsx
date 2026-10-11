@@ -12,15 +12,20 @@ import { SprigIcon } from "@/components/icons";
 /* The mark's `size` is a DIAGONAL; the floor below which its lines grey out is 16px of RENDERED
    HEIGHT, and for this mark those are different numbers — its viewBox is not square. 23 is the
    diagonal that renders 16.04px tall, which is why `ornamental-divider` reaches the same floor with
-   the same number in its tablet band. */
+   the same number in its tablet band.
+
+   IT IS FIXED RATHER THAN A PROP, which it was until 2026-10-11: eight call sites, none ever
+   passing one. The mark is deliberately FLAT across tiers here — a ritual is a repeated list item
+   rather than a section's single ornament, so it does not scale into the room `ornamental-divider`
+   and `love` scale into — so there is no caller coming that needs a second size, and a prop that
+   exists for one is the speculative API this project's own rules forbid. If a second size is ever
+   genuinely wanted, the floor below is the constraint it has to clear. */
 const FLOOR_DIAGONAL = 23;
 
 export function SprigOrnament({
   children,
-  size = FLOOR_DIAGONAL,
 }: {
   children: ReactNode;
-  size?: number;
 }): ReactElement {
   return (
     <span
@@ -33,9 +38,9 @@ export function SprigOrnament({
           sprig on the page that points the wrong way. A later symmetry pass is the thing to guard
           against here, so the absence of a flip is asserted rather than left to read as an
           oversight. */}
-      <SprigIcon className="shrink-0" size={size} />
+      <SprigIcon className="shrink-0" size={FLOOR_DIAGONAL} />
       {children}
-      <SprigIcon className="shrink-0" size={size} />
+      <SprigIcon className="shrink-0" size={FLOOR_DIAGONAL} />
     </span>
   );
 }

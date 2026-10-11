@@ -43,9 +43,21 @@ test("the ornament sets no colour of its own", () => {
   );
 });
 
-test("the default mark clears the iconography floor on its RENDERED height", () => {
-  const fallback = /size\s*=\s*([A-Z_]+|\d+)/.exec(SOURCE);
-  assert.notStrictEqual(fallback, null, "the mark's size has no default");
+test("the mark clears the iconography floor on its RENDERED height", () => {
+  /* The size is FIXED rather than a prop as of 2026-10-11 — eight call sites, none ever passed
+     one — so what this has to assert is that both marks are given the named constant, not that a
+     default exists. A literal here would be the drift this file exists to catch. */
+  assert.doesNotMatch(
+    SOURCE,
+    /size\?:\s*number/,
+    "the size is fixed; a prop here is the speculative API that was removed",
+  );
+  const given = SOURCE.match(/<SprigIcon[^/]*size=\{FLOOR_DIAGONAL\}/g) ?? [];
+  assert.strictEqual(
+    given.length,
+    2,
+    "both marks must take the named floor constant, never a literal",
+  );
   const literal = /FLOOR_DIAGONAL\s*=\s*(\d+)/.exec(SOURCE);
   assert.notStrictEqual(literal, null, "no named default to read");
   const diagonal = Number((literal as RegExpExecArray)[1]);

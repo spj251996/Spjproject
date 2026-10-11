@@ -34,10 +34,7 @@ const COUPLE_FACING = [
   "ornament",
   "ritual-align",
 ];
-const TUNING: readonly string[] = [];
-const VOCABULARY = [...COUPLE_FACING, ...TUNING].map(
-  (name) => `data-pv-${name}`,
-);
+const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
 test("the route mounts the real page rather than re-composing it", () => {
   assert.match(
@@ -285,12 +282,29 @@ test("the six retired levers are gone from both files", () => {
       `${dead} is not an entry in the retire register`,
     );
     const entry = register.slice(at, register.indexOf("},", at));
+    /* THE LABEL IS PER SUBJECT, and getting it wrong is what stalls Phase 9 rather than what
+       breaks the page. `unused` promises zero consumers — follow it and you delete on sight — so
+       only the STYLESHEET earns it: nothing un-hides the alternate any more, so its single rule
+       hides markup nobody can reach. `splitCoupleNames` has two live callers and its output IS
+       rendered, into the span that stylesheet hides, so it is `temporary`: the deletion is a
+       decision, not a confirmation. It was registered `unused` until 2026-10-11, which this
+       assertion required and a whole-branch review caught. */
+    const expected = dead.includes("couple-names.css")
+      ? /kind: "unused"/
+      : /kind: "temporary"/;
     assert.match(
       entry,
-      /kind: "unused"/,
-      `${dead} lost its last consumer with the names lever and must be registered unused`,
+      expected,
+      `${dead} carries the wrong kind: \`unused\` promises Phase 9 zero consumers, and splitCoupleNames has two`,
     );
   }
+  /* Both go in ONE commit whatever their labels, once the couple confirm the drawn names (owner,
+     2026-10-11) — removing the stylesheet alone paints both forms of the names at once. */
+  assert.match(
+    register,
+    /couple confirm the drawn names|couple confirm the preview/,
+    "the removal window the owner set is not written in the register",
+  );
 });
 
 test("the rail reaches every tier, and only the title's placement is banded", () => {
@@ -335,7 +349,7 @@ test("the rail reaches every tier, and only the title's placement is banded", ()
 });
 
 test("the close control cannot scroll out of reach", () => {
-  /* The panel scrolls — three groups plus the folded tuning block do not fit 70svh on a phone —
+  /* The panel scrolls — three groups do not fit 70svh on a phone —
      so a close button in normal flow leaves the couple scrolling back up inside the panel to get
      it out of the way (owner, 2026-10-10). It is sticky, and its background is restated because
      a sticky child paints over what slides under it while the shell's own background sits on the
