@@ -31,8 +31,13 @@ const FLOOR_DIAGONAL = 23;
    OUTWARD MEANS THE LEADING MARK FLIPS AND THE TRAILING ONE DOES NOT. The mark as drawn points
    right, so on the trailing side it already points away from the words. The rules are elements
    rather than pseudo-elements so the wrapper's `gap` spaces them like the marks, and
-   `bg-current` makes an eyebrow's rules its own gold without this component naming a colour. */
-const RULE = "h-(--stroke-hairline) w-space-lg shrink-0 bg-current";
+   `border-current` makes an eyebrow's rules its own gold without this component naming a colour.
+
+   EACH RULE IS A BORDER, NOT A FILLED BOX (owner, 2026-10-11). A half-pixel box lands on a fractional
+   device pixel and is rounded by where it sits on the page, so on a phone two eyebrows painted two
+   different weights. A border width snaps to whole device pixels, so every eyebrow paints one. */
+const RULE =
+  "h-0 w-space-lg shrink-0 border-t-(length:--stroke-hairline) border-current";
 
 export function SprigOrnament({
   children,

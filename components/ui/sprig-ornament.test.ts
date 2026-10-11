@@ -102,12 +102,12 @@ test("only the eyebrow form mirrors, and only its leading mark", () => {
 test("the eyebrow form's rules are the hairline token, in the wrapper's own colour", () => {
   assert.match(
     SOURCE,
-    /h-\(--stroke-hairline\)/,
-    "the rule must take --stroke-hairline",
+    /border-t-\(length:--stroke-hairline\)/,
+    "the rule must be a top border of --stroke-hairline — a filled half-pixel box rounds to two weights on a phone",
   );
   assert.match(
     SOURCE,
-    /\bbg-current\b/,
+    /\bborder-current\b/,
     "the rule takes currentColor, so an eyebrow's rules are its gold",
   );
   const rules =
