@@ -47,7 +47,7 @@ export function GalleryModalPanel({
 }: GalleryModalPanelProps) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-shadow-warm/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)] ${className ?? ""}`}
+      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-scrim/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-space-md">
         <h2 className="type-heading-sm text-ink-inverse" id={titleId}>

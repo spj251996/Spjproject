@@ -26,6 +26,9 @@
   --color-thread-vermilion: #e2502c;
   --color-thread-core: #ff7900;
   --color-shadow-warm: #3a301e;
+  /* The photo grid's and viewer's ground, at 92% (DESIGN.md -> Colors). Its own token so it can move
+     without every cast shadow that reads `shadow-warm`. */
+  --color-scrim: #140904;
   --color-paper-light: #ffffff;
 
   /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in

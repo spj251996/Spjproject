@@ -41,7 +41,7 @@ export function PhotoViewerPanel({
   /* Keyed by the source so stepping to the next photograph clears a previous failure. */
   const [failed, setFailed] = useState<string | null>(null);
   return (
-    <div className="absolute inset-0 flex flex-col gap-space-md bg-shadow-warm/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)]">
+    <div className="absolute inset-0 flex flex-col gap-space-md bg-scrim/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)]">
       <header className="flex items-start justify-between gap-space-md">
         <h2 className="type-heading-sm text-ink-inverse" id={titleId}>
           {title}
