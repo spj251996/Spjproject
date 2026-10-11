@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { MOTIFS } from "./thread-motifs.ts";
 
 /* The routing laws this file used to carry — the handoff between two sections, the page order, and
-   which ends are free — moved to `thread-grid.test.ts` with the routing itself. What is left is the
+   which ends are free — left with the routing itself, whose module no longer exists. What remains is the
    drawings, which this file has always owned. */
 
 /* ---------- the drawings themselves ---------- */

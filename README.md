@@ -22,8 +22,12 @@ one narrative rather than stacked sections.
 
 ## Requirements
 
-Node 22.18 or newer, as pinned in `package.json`. The `prebuild` step runs a TypeScript file directly,
-which earlier 22.x releases reject with `ERR_UNKNOWN_FILE_EXTENSION`.
+Node **22.x**, as pinned in `package.json` — a pin, not a floor: 23 and 24 are excluded deliberately,
+so that a new major cannot arrive unannounced on a deploy nobody is watching. The lower bound inside
+that range is 22.18, because the `prebuild` step runs a TypeScript file directly and earlier 22.x
+releases reject it with `ERR_UNKNOWN_FILE_EXTENSION`. A local Node outside 22.x warns on install
+(`EBADENGINE`) and otherwise works; the warning is accepted rather than fixed, because any range wide
+enough to admit it would also let the host pick an unannounced major.
 
 ## Getting started
 

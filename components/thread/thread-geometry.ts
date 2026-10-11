@@ -1,6 +1,7 @@
 /* The red thread's pure geometry: a motif is a small square drawing with a tangent at each end, and
    an end of a connector is a point stated in the two units the page resolves it in. Routing itself
-   lives in `thread-grid.ts` and composition in `thread-css.ts`. No React, no DOM. */
+   no longer lives beside it — the two modules that held routing and composition are gone, and
+   this file was deliberately left as the geometry alone. No React, no DOM. */
 
 export type MotifId =
   | "heart"
