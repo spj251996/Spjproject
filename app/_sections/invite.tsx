@@ -258,8 +258,11 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
             {/* BETWEEN beats, so `space-md` — one value at every width, where this gap was five
                 values across five tiers and no two bands read the card the same way. The
                 orientation-qualified rules it replaced are gone with it; the block absorbs the
-                weekday, so the header runs four elements where it ran five. */}
-            <div className="mt-space-md">
+                weekday, so the header runs four elements where it ran five. Plus
+                `--date-place-pull`, which the place beneath takes back off its own margin: the block
+                sits as close to the place as its weekday sits to its day, and the header's height is
+                unchanged. */}
+            <div className="mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
               <InviteDate date={weddingDate} />
             </div>
 
@@ -267,7 +270,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 `type-date-primary` at weight 500 — the invite's one remaining use of that role, and
                 the reason the role is not retired here. */}
             <p
-              className="type-date-primary font-medium text-ink mt-space-3xs"
+              className="type-date-primary font-medium text-ink mt-[calc(var(--spacing-space-3xs)-var(--date-place-pull))]"
               data-invite-place
             >
               {wedding.state}

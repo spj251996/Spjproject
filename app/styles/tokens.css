@@ -55,11 +55,11 @@
   /* The invite's date block. Both roles set line height to their own size: the block's geometry is
      stated against baselines, and leading inside a row would offset every one of them. */
   --text-date-label: 12px;
-  --text-date-label--font-weight: 400;
+  --text-date-label--font-weight: 700;
   --text-date-label--letter-spacing: 0.14em;
   --text-date-label--line-height: 12px;
   --text-date-day: 44px;
-  --text-date-day--font-weight: 400;
+  --text-date-day--font-weight: 700;
   --text-date-day--line-height: 44px;
   --text-body: 13px;
   --text-body--font-weight: 400;
@@ -186,6 +186,12 @@
   --rule-date-bracket: 42px;
   --date-label-lift: 13px;
   --date-weekday-pull: -5px;
+  /* How far the date block drops toward the place beneath it, so the day-to-place INK gap equals the
+     weekday-to-day one (owner, 2026-10-11). Measured at weight 700: the two gaps were 17.5-19.5px and
+     4-6px at the four tier nominals, a difference of 13.5-14px, so one whole value holds every tier
+     within half a pixel. The place stays put and the block takes the space above it instead, which is
+     why the header's height -- and the invite's measured fit -- does not move. */
+  --date-place-pull: 14px;
 
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
