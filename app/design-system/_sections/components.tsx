@@ -7,6 +7,7 @@ import {
   samplePortraitImage,
   sampleRitualAspects,
   sampleRitualFulls,
+  sampleRitualImages,
   sampleRitualThumbs,
 } from "@/app/design-system/_data/ui-samples";
 import {
@@ -20,6 +21,7 @@ import { CoupleNames } from "@/components/ui/couple-names";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
 import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { PhotoStrip } from "@/components/ui/photo-strip";
+import { PhotoViewerPanel } from "@/components/ui/photo-viewer";
 import { Portrait } from "@/components/ui/portrait";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { invite, rituals, wishes } from "@/content";
@@ -55,7 +57,7 @@ export function ComponentsSections() {
     <>
       <GallerySection
         id="ui"
-        intro="Portable primitives: the action, the sprig ornament, the couple's drawn names, portraits, the preview row, the gallery overlay and the image stand-in."
+        intro="Portable primitives: the action, the sprig ornament, the couple's drawn names, portraits, the preview row, the gallery overlay, the full-screen photo viewer and the image stand-in."
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
@@ -198,9 +200,9 @@ export function ComponentsSections() {
           description="One ritual's preview strip, the cue that its set continues, and the action that opens the gallery. A ritual with no photographs renders none of it."
           id="ui-photo-row"
           name="photo-row"
-          note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that pairs the two deliveries on the page. Pressing a frame or the action opens the real gallery."
+          note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that derives three deliveries on the page. Pressing a frame opens the real viewer on that photograph; the +N frame and the action open the real grid."
           source="@/components/ui/photo-row"
-          spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, centred under it — it aligned to the strip's end until 2026-10-10, when the rituals became one centred column · a frame shows the 600px copy, the gallery the 1000px one, so the strip never fetches the larger file"
+          spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, centred under it — it aligned to the strip's end until 2026-10-10, when the rituals became one centred column · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover"
         >
           <PhotoStrip
             aspects={sampleRitualAspects}
@@ -213,15 +215,33 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="Full-viewport overlay holding one ritual's images, opened from that ritual's photo-row."
+          description="Full-viewport overlay holding one ritual's images, opened from that ritual's photo-row. Two layers: this grid, and photo-viewer."
           id="ui-gallery-modal"
           name="gallery-modal"
-          note="Shown through its presentational panel with generated sample images: swipe, focus handling and the scroll restore on close need the live modal."
+          note="Shown through its grid panel with generated sample images; tiles here open nothing. The history that lets back pop one layer, focus handling and the scroll restore on close need the live modal — open it from photo-row above."
           source="@/components/ui/gallery-modal"
-          spec="z-modal · scrim shadow-warm at 0.92 · masonry · radius-card tiles"
+          spec="z-modal · scrim shadow-warm at 0.92 · masonry · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover"
         >
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />
+          </ChromeFrame>
+        </Specimen>
+
+        <Specimen
+          description="One ritual photograph, full screen — the layer a photo-row frame or a gallery-modal tile opens."
+          id="ui-photo-viewer"
+          name="photo-viewer"
+          note="Shown through its panel at the second of three sample images, so both previous and next show; the controls here move nothing. Swipe, the arrow keys and back popping one layer need the live modal — open a frame in photo-row above."
+          source="@/components/ui/photo-viewer"
+          spec="the grid's scrim · one photograph fitted whole (object-contain), never cropped · counter n / N in type-action · All photos · Close · previous / next, absent at the ends · the viewer copy only for the photograph on screen · a failed copy reads This photo couldn't load · a transparent save cover"
+        >
+          <ChromeFrame height={320}>
+            <PhotoViewerPanel
+              count={3}
+              index={1}
+              src={sampleRitualImages[1]}
+              title="Placeholder Ritual Gallery"
+            />
           </ChromeFrame>
         </Specimen>
 
