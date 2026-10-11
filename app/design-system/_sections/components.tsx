@@ -165,7 +165,7 @@ export function ComponentsSections() {
           note="Each lockup here is sized by the type role it replaces, read from the token rather than copied, which is how the drawing stays on the names scale rather than on a size chosen for it — so the two specimens step at the breakpoints their roles do. The dilation is per call site and has no default (the values above copy the two sections). What a specimen cannot show: the invite switches between these two forms on orientation, and the single line grows to 5.3em at laptop and 5.8em at desktop in landscape. The names are real text to a reader — an sr-only span carries them and the drawing is aria-hidden, so the invite's h1 has an accessible name. It supersedes display-name and heading-script, both tagged [retire] along with the two __joiner selectors that share one declaration between them, and their SIZE TOKENS must outlive them because these em widths resolve against them."
           source="@/components/ui/couple-names"
           spec={[
-            "the invite's stack · 1.85em wide at phone, 2.513em from md up · dilated 1.6 units",
+            "the invite's stack · 2.68em wide at phone, 2.513em from md up · dilated 1.6 units",
             "Wishes' line · 3.65em at phone, 4.656em from md up · dilated 2.2 units · 6.09 : 1",
             "the ampersand drawn 35% smaller than the trace while keeping its full layout slot — a narrower slot would render the names larger, the width being a fixed em",
             "viewBox padded three stroke widths every side, or the swash tips clip flat at dpr 1 · fill currentColor, set to ink-muted INSIDE the component rather than at either call site — the invite's h1 carries text-ink and this overrides it",

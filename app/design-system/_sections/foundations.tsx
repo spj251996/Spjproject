@@ -93,18 +93,6 @@ const COLOR_GROUPS: SwatchGroup[] = [
     ],
   },
   {
-    label: "Borders",
-    note: "Below the 3:1 of a meaning-bearing graphic at 1.61:1, knowingly — the date reads whole without its bracket. Its requirement is the ratio to the TYPE, not to the ground.",
-    tokens: [
-      {
-        token: "--color-rule-faint",
-        name: "rule-faint",
-        usage:
-          "The invite date block's two hairlines, and nothing else. It must read lighter than the type it brackets — a rule as dark as the words reads as a table cell. Never a fill, never text.",
-      },
-    ],
-  },
-  {
     label: "Thread",
     note: "Reserved for the thread and the seal mark.",
     tokens: [
@@ -501,7 +489,7 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, mahogany ink, one gold, one faint rule, and the thread's own three: red ink, vermilion light and the head's orange tip."
+        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own three: red ink, vermilion light and the head's orange tip."
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"
