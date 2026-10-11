@@ -1,0 +1,35 @@
+{
+  "band": "tall",
+  "width": 393,
+  "height": 6568,
+  "viewport": {
+    "width": 393,
+    "height": 700
+  },
+  "sections": [
+    {
+      "top": 0,
+      "height": 700
+    },
+    {
+      "top": 700,
+      "height": 1400
+    },
+    {
+      "top": 2100,
+      "height": 700
+    },
+    {
+      "top": 2800,
+      "height": 1400
+    },
+    {
+      "top": 4200,
+      "height": 1667.78125
+    },
+    {
+      "top": 5867.78125,
+      "height": 700
+    }
+  ]
+}

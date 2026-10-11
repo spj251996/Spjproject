@@ -1,0 +1,130 @@
+[
+  {
+    "section": "invite",
+    "motif": "heart",
+    "which": "entry",
+    "x": 39.43784668551529,
+    "y": 419.92680600196337,
+    "heading": 24.7
+  },
+  {
+    "section": "invite",
+    "motif": "heart",
+    "which": "exit",
+    "x": 110.31034105394616,
+    "y": 454.62529535174247,
+    "heading": 21.8
+  },
+  {
+    "section": "event-info",
+    "motif": "rings",
+    "which": "entry",
+    "x": 35.70466179727003,
+    "y": 1245.265400096542,
+    "heading": 42.2
+  },
+  {
+    "section": "event-info",
+    "motif": "rings",
+    "which": "exit",
+    "x": 123.83928961812659,
+    "y": 1293.080506748118,
+    "heading": 36.8
+  },
+  {
+    "section": "event-info",
+    "motif": "knot",
+    "which": "entry",
+    "x": 330.9785994987972,
+    "y": 1819.0828395054011,
+    "heading": 33.7
+  },
+  {
+    "section": "event-info",
+    "motif": "knot",
+    "which": "exit",
+    "x": 363.02178946067573,
+    "y": 1911.9755382940982,
+    "heading": 36.5
+  },
+  {
+    "section": "contact",
+    "motif": "phone",
+    "which": "entry",
+    "x": 45.65050575904007,
+    "y": 2606.217011170496,
+    "heading": 32.8
+  },
+  {
+    "section": "contact",
+    "motif": "phone",
+    "which": "exit",
+    "x": 112.12731444938095,
+    "y": 2642.8366809937893,
+    "heading": 28.8
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "entry",
+    "x": 85.71253535472525,
+    "y": 3197.6279429209926,
+    "heading": 29.6
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "exit",
+    "x": 198.67896714527478,
+    "y": 3277.064343509997,
+    "heading": 0.1999999999999993
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "entry",
+    "x": 236.848,
+    "y": 3864.561135,
+    "heading": -0.4
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "exit",
+    "x": 374.39799999999997,
+    "y": 3876.87186,
+    "heading": -29.8
+  },
+  {
+    "section": "celebrations",
+    "motif": "wishesLoop",
+    "which": "entry",
+    "x": 284.925,
+    "y": 4555.598383928572,
+    "heading": 0
+  },
+  {
+    "section": "celebrations",
+    "motif": "wishesLoop",
+    "which": "exit",
+    "x": 343.875,
+    "y": 4626.338383928572,
+    "heading": 90
+  },
+  {
+    "section": "wishes",
+    "motif": "bow",
+    "which": "entry",
+    "x": 259.0847780816307,
+    "y": 6345.612422244712,
+    "heading": 51.099999999999994
+  },
+  {
+    "section": "wishes",
+    "motif": "bow",
+    "which": "exit",
+    "x": 374.1617724335337,
+    "y": 6316.628880786646,
+    "heading": 67.2
+  }
+]

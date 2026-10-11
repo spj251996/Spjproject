@@ -4,7 +4,8 @@ import type { ThreadId } from "./thread-geometry.ts";
 /* MEASURED on the real render (never `/thread-lab`, which has no cards) at each band's own
    nominal viewport, with `channel: "chromium"` — the pin every render figure on this project
    needs (a default `chromium.launch()` quantises glyph advances and renders text ~3% wider).
-   Script: `tmp/thread-measure/authored-cards.mjs`. Re-measure by rendering the real page at a
+   Script: `scripts/measure-authored-cards.mjs`, brought into the repo on 2026-10-11 from
+   gitignored `tmp/` so this pointer resolves for anyone who clones. Re-measure by rendering the real page at a
    band's nominal viewport, waiting for `document.fonts.ready` and every image to report
    `complete && naturalWidth > 0`, then reading `.mounted-sheet-frame__box`'s rect for the card
    and the outer `<section>`'s rect for the height — never derive either from a CSS expression,

@@ -1,0 +1,146 @@
+[
+  {
+    "section": "invite",
+    "motif": "heart",
+    "which": "entry",
+    "x": 319.73238103462813,
+    "y": 437.7103859567355,
+    "heading": 28.699932474020216,
+    "top": 0
+  },
+  {
+    "section": "invite",
+    "motif": "heart",
+    "which": "exit",
+    "x": 500.8553625274631,
+    "y": 542.6439805172771,
+    "heading": 25.799932474020217,
+    "top": 0
+  },
+  {
+    "section": "event-info",
+    "motif": "rings",
+    "which": "entry",
+    "x": 607.831348818451,
+    "y": 1301.0923909370954,
+    "heading": -25.39954196042167,
+    "top": 695
+  },
+  {
+    "section": "event-info",
+    "motif": "rings",
+    "which": "exit",
+    "x": 761.9134872088703,
+    "y": 1175.7898411509634,
+    "heading": -30.799541960421667,
+    "top": 695
+  },
+  {
+    "section": "event-info",
+    "motif": "knot",
+    "which": "entry",
+    "x": 1222.913457853751,
+    "y": 1140.836525759501,
+    "heading": 97.1021258304102,
+    "top": 695
+  },
+  {
+    "section": "event-info",
+    "motif": "knot",
+    "which": "exit",
+    "x": 1125.6978100948322,
+    "y": 1240.2127608543358,
+    "heading": 99.9021258304102,
+    "top": 695
+  },
+  {
+    "section": "contact",
+    "motif": "phone",
+    "which": "entry",
+    "x": 346.130302563085,
+    "y": 1600.4336707675413,
+    "heading": 25.800051177077993,
+    "top": 1390
+  },
+  {
+    "section": "contact",
+    "motif": "phone",
+    "which": "exit",
+    "x": 452.0204971659444,
+    "y": 1642.8914448549895,
+    "heading": 21.800051177077993,
+    "top": 1390
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "entry",
+    "x": 409.1715726033092,
+    "y": 2390.5120585737054,
+    "heading": 41.783051177077986,
+    "top": 2085
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "exit",
+    "x": 503.81721334987213,
+    "y": 2493.0692071686353,
+    "heading": 12.383051177077984,
+    "top": 2085
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "entry",
+    "x": 1072.2033762996323,
+    "y": 2491.222200067702,
+    "heading": -32.21587416958981,
+    "top": 2085
+  },
+  {
+    "section": "family",
+    "motif": "portraitLoop",
+    "which": "exit",
+    "x": 1196.8766852375486,
+    "y": 2428.5138905806743,
+    "heading": -61.615874169589816,
+    "top": 2085
+  },
+  {
+    "section": "celebrations",
+    "motif": "wishesLoop",
+    "which": "entry",
+    "x": 1016.6278156460834,
+    "y": 3002.9114449403105,
+    "heading": 17.999030978519315,
+    "top": 2780
+  },
+  {
+    "section": "celebrations",
+    "motif": "wishesLoop",
+    "which": "exit",
+    "x": 1077.1199885202823,
+    "y": 3154.1026137331937,
+    "heading": 107.99903097851931,
+    "top": 2780
+  },
+  {
+    "section": "wishes",
+    "motif": "bow",
+    "which": "entry",
+    "x": 970.0031260764495,
+    "y": 4659.337192903494,
+    "heading": 74.09924346792647,
+    "top": 4099.78125
+  },
+  {
+    "section": "wishes",
+    "motif": "bow",
+    "which": "exit",
+    "x": 1177.3606116917533,
+    "y": 4691.669945885014,
+    "heading": 90.1992434679265,
+    "top": 4099.78125
+  }
+]
