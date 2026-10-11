@@ -138,6 +138,12 @@ const COLOR_GROUPS: SwatchGroup[] = [
           "The tint of every shadow that lands on paper, and of the stock's edge hairline.",
       },
       {
+        token: "--color-scrim",
+        name: "scrim",
+        usage:
+          "The ground behind the ritual photographs at full screen — the grid and the viewer — at 92%. Its own token so it moves without the cast shadows.",
+      },
+      {
         token: "--color-paper-light",
         name: "paper-light",
         usage: "The light a surface catches: the stock's lit top edge alone.",

@@ -220,7 +220,7 @@ export function ComponentsSections() {
           name="gallery-modal"
           note="Shown through its grid panel with generated sample images; tiles here open nothing. The history that lets back pop one layer, focus handling and the scroll restore on close need the live modal — open it from photo-row above."
           source="@/components/ui/gallery-modal"
-          spec="z-modal · scrim shadow-warm at 0.92 · masonry · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover"
+          spec="z-modal · scrim at 0.92 · masonry · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover"
         >
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />
