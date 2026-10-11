@@ -62,3 +62,45 @@ test("the browser's own scroll restoration is held off while the gallery is open
 test("the viewer is handed the full-screen copy, never the grid's", () => {
   assert.match(modal, /src=\{fulls\[images\[state\.index\]\] \?\? /);
 });
+
+test("the grid panel creates no handler of its own, so a server page can still render it", () => {
+  /* The design-system gallery renders the panel from a server component, where a function created
+     inside it cannot reach a \`<button>\` — the route answers 500. Neither tsc, this suite nor the build
+     sees it, because that route is dev-only. A tile's handler must come from \`onOpenPhoto\` itself. */
+  assert.ok(
+    !panel.includes('"use client"'),
+    "the panel is meant to stay server-renderable",
+  );
+  assert.match(
+    panel,
+    /onClick=\{onOpenPhoto && \(\(\) => onOpenPhoto\(index\)\)\}/,
+  );
+  assert.ok(
+    !/onClick=\{\(\) =>/.test(panel),
+    "an unconditional inline handler breaks a server render",
+  );
+});
+
+test("every strip frame has a name, since each opens something different", () => {
+  /* Its image, placeholder and cover are all hidden from assistive technology, so without a label a
+     screen reader announces two or three bare "button"s. */
+  assert.match(
+    row,
+    /aria-label=\{\s*cue\s*\? `All \$\{photos\.length\} photos`\s*: `Photo \$\{index \+ 1\} of \$\{photos\.length\}`\s*\}/,
+  );
+});
+
+test("focus is put back inside the dialog whenever a layer swap removes the focused control", () => {
+  /* Tapping a tile, "All photos", or Next onto the last photograph unmounts the focused button, so
+     focus falls to <body> and the next Tab reaches the page behind the modal. */
+  assert.match(modal, /\}, \[state\.layer, shownIndex\]\);/);
+  assert.match(modal, /!container\.contains\(document\.activeElement\)/);
+});
+
+test("a second close before the first has landed does not go back again", () => {
+  /* history.back() lands asynchronously; a double tap on Close would otherwise go back twice and take
+     the guest off the invitation. */
+  /* Both ways back are guarded: the close control (and "All photos" from a grid-opened viewer), and
+     Escape. */
+  assert.equal(modal.match(/if \(closingRef\.current\) return;/g)?.length, 2);
+});

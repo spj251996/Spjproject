@@ -1,7 +1,10 @@
 import { ImagePlaceholder } from "./image-placeholder";
 
 /* The presentational half of `gallery-modal`, split out because `'use client'` is file-scoped: with
-   no hooks it renders from a server page and demos in a plain bounded box.
+   no hooks it renders from a server page and demos in a plain bounded box. That holds only while it
+   CREATES no function of its own: a server render cannot hand one to a `<button>`, so a tile's
+   handler exists only when the caller passes `onOpenPhoto` — the live modal does, a specimen does
+   not.
 
    `<img>` rather than `next/image`: `next.config.ts` sets `images: { unoptimized: true }`, because a
    static export has no runtime optimiser, so `next/image` would add nothing here — and this panel
@@ -69,7 +72,7 @@ export function GalleryModalPanel({
             <button
               aria-label={`Photo ${index + 1}`}
               className="relative block w-full"
-              onClick={() => onOpenPhoto?.(index)}
+              onClick={onOpenPhoto && (() => onOpenPhoto(index))}
               type="button"
             >
               <ImagePlaceholder

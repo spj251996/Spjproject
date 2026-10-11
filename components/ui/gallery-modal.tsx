@@ -62,6 +62,10 @@ export function GalleryModal({
   const stateRef = useRef(state);
   /* Survives React's development-only double mount, which would otherwise push a second entry. */
   const pushedRef = useRef(false);
+  /* `history.back()` lands asynchronously, so a double tap on Close would otherwise go back twice
+     and take the guest off the invitation. Cleared when the pop arrives. */
+  const closingRef = useRef(false);
+  const shownIndex = state.layer === "viewer" ? state.index : -1;
   const titleId = useId();
   const count = images.length;
 
@@ -94,6 +98,7 @@ export function GalleryModal({
       history.pushState({ gallery: 1 }, "");
     }
     const onPopState = () => {
+      closingRef.current = false;
       const next = back(stateRef.current);
       if (next === null) {
         onCloseRef.current();
@@ -116,7 +121,12 @@ export function GalleryModal({
     };
   }, []);
 
-  const close = () => history.back();
+  const goBack = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    history.back();
+  };
+  const close = goBack;
   const step = (delta: number) =>
     setState((current) => stepViewer(current, delta, count));
   const openPhoto = (index: number) => {
@@ -127,7 +137,7 @@ export function GalleryModal({
      strip-opened viewer there is no grid entry, so the layer swaps in place and adds none. */
   const toGrid = () => {
     if (state.layer === "viewer" && state.fromGrid) {
-      history.back();
+      goBack();
       return;
     }
     setState(showGrid);
@@ -137,6 +147,8 @@ export function GalleryModal({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
+        if (closingRef.current) return;
+        closingRef.current = true;
         history.back();
         return;
       }
@@ -180,6 +192,17 @@ export function GalleryModal({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [state.layer, count]);
+
+  /* A layer swap unmounts the control that had focus — the tapped tile, "All photos", or Next on
+     reaching the last photograph — and focus falls to <body>, where the next Tab reaches the page
+     behind the modal. Put it back on the dialog whenever the shown layer or photograph changes. */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the layer and photograph are the TRIGGER, read from the DOM rather than the closure.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container !== null && !container.contains(document.activeElement)) {
+      container.focus();
+    }
+  }, [state.layer, shownIndex]);
 
   return (
     <div

@@ -79,6 +79,11 @@ export function PhotoRow({
               style={{ height: rowHeight, width: aspect * rowHeight }}
             >
               <button
+                aria-label={
+                  cue
+                    ? `All ${photos.length} photos`
+                    : `Photo ${index + 1} of ${photos.length}`
+                }
                 className="block size-full"
                 onClick={() => setStart(cue ? null : index)}
                 type="button"
