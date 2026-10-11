@@ -18,13 +18,16 @@ test("every ritual gets a set, empty where its folder holds nothing or is absent
   assert.deepEqual(sets, { a: ["/rituals/r/x-1000.avif"], b: [], c: [] });
 });
 
-test("aspects and thumbnails are keyed on the display path, from the measured dimensions", () => {
-  const { aspects, thumbs } = ritualPhotoProps([{ id: "a" }], {
+test("aspects, thumbnails and viewer copies are keyed on the display path, from the measured dimensions", () => {
+  const { aspects, thumbs, fulls } = ritualPhotoProps([{ id: "a" }], {
     a: [photo("p", 512, 911)],
   });
   assert.deepEqual(aspects, { "/rituals/r/p-1000.avif": 512 / 911 });
   assert.deepEqual(thumbs, {
     "/rituals/r/p-1000.avif": "/rituals/r/p-600.avif",
+  });
+  assert.deepEqual(fulls, {
+    "/rituals/r/p-1000.avif": "/rituals/r/p-2000.avif",
   });
 });
 
