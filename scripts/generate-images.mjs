@@ -420,37 +420,38 @@ export function uprightRitualImage(input) {
 /* `outRoot` is injectable so the test can assert on the ROW the manifest records, written to a temp
    directory. The web path is URL-encoded because a filename renamed by hand can carry a `#` or `?`,
    which a browser would otherwise read as a fragment or query and 404 on; the disk path is not. */
-export async function emitRitualPhoto(
-  sourcePath,
-  ritualId,
-  fileName,
-  outRoot = join(ROOT, RITUAL_OUT_ROOT),
-) {
+/* Decode and encode into MEMORY. A failure here is about the PHOTOGRAPH; a failure in
+   `writeRitualDeliveries` is about the DISK. One catch around both once blamed a full disk on HEIC. */
+async function encodeRitualPhoto(sourcePath, ritualId, fileName) {
   const label = `${RITUAL_SOURCE_ROOT}/${ritualId}/${fileName}`;
-  const base = outputBaseName(fileName);
-  const webPath = (width) =>
-    `/rituals/${encodeURIComponent(ritualId)}/${encodeURIComponent(`${base}-${width}.avif`)}`;
-  const diskPath = (width) => join(outRoot, ritualId, `${base}-${width}.avif`);
-
-  /* Decode and encode first, into memory, so a failure here is about the PHOTOGRAPH and a failure
-     below is about the DISK. One catch around both blamed a full disk on HEIC. */
-  let thumb;
-  let display;
   try {
-    thumb = await uprightRitualImage(sourcePath)
+    const thumb = await uprightRitualImage(sourcePath)
       .resize({ width: RITUAL_THUMB_WIDTH, withoutEnlargement: true })
       .avif({ quality: 55 })
       .toBuffer({ resolveWithObject: true });
-    display = await uprightRitualImage(sourcePath)
+    const display = await uprightRitualImage(sourcePath)
       .resize({ width: RITUAL_DISPLAY_WIDTH, withoutEnlargement: true })
       .avif({ quality: 50 })
       .toBuffer({ resolveWithObject: true });
+    return { ritualId, fileName, thumb, display };
   } catch (cause) {
     throw new Error(
       `${label}: could not be read as an image. An iPhone HEIC is the likeliest cause — this libvips build has no HEVC support. Set the camera to Settings > Camera > Formats > Most Compatible and re-upload, or convert the file.`,
       { cause },
     );
   }
+}
+
+/* Writes one encoded photograph's two deliveries and returns its manifest row. The web path is
+   URL-encoded because a filename renamed by hand can carry a `#` or `?`, which a browser would
+   otherwise read as a fragment or query and 404 on; the disk path is not. */
+async function writeRitualDeliveries(encoded, outRoot) {
+  const { ritualId, fileName, thumb, display } = encoded;
+  const label = `${RITUAL_SOURCE_ROOT}/${ritualId}/${fileName}`;
+  const base = outputBaseName(fileName);
+  const webPath = (width) =>
+    `/rituals/${encodeURIComponent(ritualId)}/${encodeURIComponent(`${base}-${width}.avif`)}`;
+  const diskPath = (width) => join(outRoot, ritualId, `${base}-${width}.avif`);
   try {
     await mkdir(join(outRoot, ritualId), { recursive: true });
     await writeFile(diskPath(RITUAL_THUMB_WIDTH), thumb.data);
@@ -469,9 +470,25 @@ export async function emitRitualPhoto(
   };
 }
 
-/* READS ONLY. Every refusal happens here, before anything is wiped, so a bad upload leaves the
-   previous deliveries and the previous manifest exactly as they were — `next dev` keeps showing the
-   last good state instead of a manifest pointing at deleted files. */
+/* One photograph, encoded then written — the unit the tests drive. `outRoot` is injectable so they
+   assert on the ROW the manifest records, written to a temp directory. */
+export async function emitRitualPhoto(
+  sourcePath,
+  ritualId,
+  fileName,
+  outRoot = join(ROOT, RITUAL_OUT_ROOT),
+) {
+  return writeRitualDeliveries(
+    await encodeRitualPhoto(sourcePath, ritualId, fileName),
+    outRoot,
+  );
+}
+
+/* READS ONLY. Every refusal a folder listing can find happens here — a nested folder, a missing or
+   unknown extension, a base-name collision — before anything is encoded or wiped. What a listing
+   cannot find (a file that will not decode) is caught by encoding everything before the wipe, in
+   `writeRitualPhotos`. Together: a bad upload leaves the previous deliveries and manifest as they
+   were, and `next dev` keeps the last good state. */
 export async function planRitualPhotos(
   sourceRoot = join(ROOT, RITUAL_SOURCE_ROOT),
 ) {
@@ -548,19 +565,30 @@ export async function writeRitualPhotos({
     console.log("dry run: no ritual delivery written and no manifest emitted");
     return;
   }
+  /* EVERY photograph is encoded into memory before the wipe, because the plan cannot see the likeliest
+     failure: an iPhone HEIC carries an accepted extension and fails only when decoded. So a bad
+     upload of any kind leaves the previous deliveries and manifest as they were. Memory is two small
+     AVIFs per photograph — about a few MB for a whole gallery. */
+  const encoded = {};
+  for (const [id, names] of Object.entries(plan)) {
+    encoded[id] = [];
+    for (const name of names) {
+      encoded[id].push(
+        await encodeRitualPhoto(join(sourceRoot, id, name), id, name),
+      );
+    }
+  }
   await rm(outRoot, { recursive: true, force: true });
   const photosByRitual = {};
-  for (const [id, names] of Object.entries(plan)) {
+  for (const [id, photos] of Object.entries(encoded)) {
     /* A folder holding no photographs gets an EMPTY list rather than no key: the section's trigger
        is the list's length, so an empty list is the honest answer and renders nothing. */
     photosByRitual[id] = [];
-    for (const name of names) {
-      photosByRitual[id].push(
-        await emitRitualPhoto(join(sourceRoot, id, name), id, name, outRoot),
-      );
+    for (const photo of photos) {
+      photosByRitual[id].push(await writeRitualDeliveries(photo, outRoot));
     }
     console.log(
-      `wrote   ${RITUAL_OUT_ROOT}/${id}/  ${names.length * 2} file(s)`,
+      `wrote   ${RITUAL_OUT_ROOT}/${id}/  ${photos.length * 2} file(s)`,
     );
   }
   await mkdir(dirname(manifestPath), { recursive: true });

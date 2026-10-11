@@ -399,3 +399,42 @@ test("public/rituals is never pruned, in any spelling or by any parent", () => {
     );
   }
 });
+
+test("a photograph that will not decode leaves the previous deliveries and manifest untouched", async () => {
+  /* The plan phase cannot see this one: an iPhone HEIC carries an accepted extension and fails only
+     when encoded. Every photograph is therefore encoded into memory BEFORE the wipe. */
+  const t = await tree({
+    betrothal: [["ok.jpg", "jpg"]],
+    wedding: [["IMG_1.jpg", "text"]],
+  });
+  mkdirSync(join(t.out, "betrothal"), { recursive: true });
+  writeFileSync(join(t.out, "betrothal", "previous-600.avif"), "previous");
+  writeFileSync(t.manifest, "// previous manifest");
+  await assert.rejects(run(t), /IMG_1\.jpg: could not be read as an image/);
+  assert.equal(
+    readFileSync(join(t.out, "betrothal", "previous-600.avif"), "utf8"),
+    "previous",
+  );
+  assert.ok(
+    !existsSync(join(t.out, "betrothal", "ok-600.avif")),
+    "nothing new is written until every photograph has encoded",
+  );
+  assert.equal(readFileSync(t.manifest, "utf8"), "// previous manifest");
+});
+
+test("a clean run writes every delivery and a manifest row per photograph", async () => {
+  const t = await tree({
+    betrothal: [["ok.jpg", "jpg"]],
+    wedding: [[".gitkeep", "empty"]],
+  });
+  await run(t);
+  assert.ok(existsSync(join(t.out, "betrothal", "ok-600.avif")));
+  assert.ok(existsSync(join(t.out, "betrothal", "ok-1000.avif")));
+  const manifest = readFileSync(t.manifest, "utf8");
+  assert.match(
+    manifest,
+    /"betrothal": \[\n {4}\{\n {6}thumb: "\/rituals\/betrothal\/ok-600\.avif",/,
+  );
+  assert.match(manifest, /width: 20,\n {6}height: 10,/);
+  assert.match(manifest, /"wedding": \[\n\n {2}\],/);
+});
