@@ -142,13 +142,18 @@ const LINE = {
    is small. Centring it on the lockup both ways is what the owner approved on the render, and it
    reproduces that exactly — the preview lever got there with a translate of the same two
    figures. */
+/* In source units: about 10px at the phone's 2.68em lockup. */
+const AMPERSAND_LIFT = 24;
+
 const STACK_W = SEBASTIAN.w;
 const STACK_H = FLEMY.y + FLEMY.h - SEBASTIAN.y;
 const STACK = {
   sebastian: { x: 0, y: 0 },
   ampersand: {
     x: (STACK_W - ampersand.w) / 2,
-    y: (STACK_H - ampersand.h) / 2,
+    /* LIFTED above the box's centre (owner, 2026-10-11): centred on the lockup's box it read low,
+       because Sebastian's ink is lighter at its foot than Flemy's is at its head. */
+    y: (STACK_H - ampersand.h) / 2 - AMPERSAND_LIFT,
   },
   flemy: { x: FLEMY.x - SEBASTIAN.x, y: FLEMY.y - SEBASTIAN.y },
   w: STACK_W,

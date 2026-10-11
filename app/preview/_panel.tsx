@@ -28,7 +28,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    read `:root:not([data-opening-skipped])`. A panel that cleared or rewrote the root's attribute
    set would re-arm the invite's 1600ms opening in the middle of a scroll. One prefix makes the
    gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive. */
-const ATTRIBUTES = ["data-pv-gold"] as const;
+const ATTRIBUTES = ["data-pv-event-icon", "data-pv-amp"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -79,19 +79,20 @@ interface Lever {
    destinations. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
-    id: "gold",
-    title: "The gold, darkened",
-    /* ONE VALUE PER OPTION, everywhere gold reads (owner, 2026-10-11), each `--color-accent-gold`
-       replaced at the root. Shades between today's gold, light bronze and #CD7F32 — darker, less
-       yellow; the browner bronzes were dropped. */
-    note: "Changes every gold on the page at once — words, leaves and lines.",
+    id: "event-icon",
+    title: "The event icons on a phone",
+    note: "Smaller icons give the venue room for one line. Preview only — the spacing is derived in code.",
     options: [
-      { label: "Gold, as now", attrs: {} },
-      { label: "Dark gold", attrs: { "data-pv-gold": "dark" } },
-      { label: "Gold–bronze", attrs: { "data-pv-gold": "gold-bronze" } },
-      { label: "Light bronze", attrs: { "data-pv-gold": "light" } },
-      { label: "Deep gold", attrs: { "data-pv-gold": "deep-gold" } },
-      { label: "Bronze #CD7F32", attrs: { "data-pv-gold": "bronze" } },
+      { label: "As now", attrs: {} },
+      { label: "Smaller", attrs: { "data-pv-event-icon": "small" } },
+    ],
+  },
+  {
+    id: "amp",
+    title: "The “&” between the names",
+    options: [
+      { label: "Soft brown, as now", attrs: {} },
+      { label: "Gold", attrs: { "data-pv-amp": "gold" } },
     ],
   },
 ];

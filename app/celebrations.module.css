@@ -58,6 +58,15 @@
 
    JUSTIFIED WAS OFFERED AGAIN AND NOT CHOSEN. Its measured cost stands: at 24-37 characters a line
    and a 3.23-3.75px natural word space, the widest gap stretched to 14.75px on two of nine lines. */
+/* A ritual with photographs closes up to the next on a laptop and wider (owner, 2026-10-11): the
+   strip's action already carries its own touch-target air below it, so the full `space-xl` read
+   as a gap. `space-md` from the strip's foot to the next ritual. */
+@media (width >= 64rem) {
+  .row:has([data-photo-ready]) {
+    margin-block-end: calc(var(--spacing-space-md) - var(--spacing-space-xl));
+  }
+}
+
 .text {
   display: flex;
   min-width: 0;

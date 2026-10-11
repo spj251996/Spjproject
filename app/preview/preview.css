@@ -49,27 +49,17 @@
    Event Info at every tier with the map action under the venue, the ritual leaf from 64rem only, the
    Malayalam right-aligned on a phone, and the day in gold. */
 
-/* ───────── THE GOLD, DARKENED TOWARD BRONZE ─────────
-   Owner, 2026-10-11: one value per option, everywhere gold reads. Replacing the token at the root
-   reaches every consumer at once — text, marks, rules, rims, the glow — because each reads it as a
-   variable. The selector out-specifies the token's own `:root`. Darker and less yellow than today's
-   gold, between it, light bronze and #CD7F32. */
-html[data-pv-gold="dark"] {
-  --color-accent-gold: #c58c36;
+/* THE GOLD LEFT THE ROUTE (owner, 2026-10-11): deep gold #b88528 ships as `--color-accent-gold`.
+
+   THE EVENT ICONS ON A PHONE, at 56/72 of their size — `zoom` rather than `scale` so the box
+   shrinks with the drawing and the venue gains the width. */
+@media (width < 48rem) {
+  html[data-pv-event-icon="small"] #event-info li > div:first-child > span {
+    zoom: 0.78;
+  }
 }
 
-html[data-pv-gold="gold-bronze"] {
-  --color-accent-gold: #cf8d30;
-}
-
-html[data-pv-gold="light"] {
-  --color-accent-gold: #b97e3c;
-}
-
-html[data-pv-gold="deep-gold"] {
-  --color-accent-gold: #b88528;
-}
-
-html[data-pv-gold="bronze"] {
-  --color-accent-gold: #cd7f32;
+/* THE NAMES' "&" IN GOLD, on the invite and Wishes alike. */
+html[data-pv-amp="gold"] [data-names-layout] use[href*="ampersand"] {
+  color: var(--color-accent-gold);
 }
