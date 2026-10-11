@@ -34,7 +34,6 @@ const COUPLE_FACING = [
   "ritual-align",
   "side-pad",
   "name-scale",
-  "scrim",
 ];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
@@ -312,8 +311,7 @@ test("the six retired levers are gone from both files", () => {
 test("every ritual form shares the header line at every tier; only the photographs' side is banded", () => {
   /* Owner, 2026-10-11: "sprig title malayalam on same baseline in all tiers" — so the header line's
      rules are gated on the lever's attribute alone and sit OUTSIDE any media query, while the
-     photographs-on-the-right grid is the one thing bounded to 64rem and up (below it two frames
-     fill the whole measure). Asserted as the shape of the file, because the recorded failure on this
+     photographs' right alignment is the one thing bounded to 64rem and up. Asserted as the shape of the file, because the recorded failure on this
      route was a whole arrangement going missing at one tier. */
   const start = CSS_CODE.indexOf("html[data-pv-ritual-align] #celebrations");
   const banded = CSS_CODE.indexOf('html[data-pv-ritual-align$="-side"]');
@@ -338,7 +336,7 @@ test("every ritual form shares the header line at every tier; only the photograp
   assert.match(
     CSS_CODE.slice(banded - 40, banded),
     /@media \(width >= 64rem\)/,
-    "the photographs-on-the-right grid must be bounded to 64rem and up",
+    "the photographs' right alignment must be bounded to 64rem and up",
   );
   assert.ok(
     !CSS_CODE.includes('data-pv-ritual-align="rail"'),

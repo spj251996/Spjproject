@@ -36,7 +36,6 @@ const ATTRIBUTES = [
   "data-pv-ritual-align",
   "data-pv-side-pad",
   "data-pv-name-scale",
-  "data-pv-scrim",
 ] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
@@ -148,8 +147,6 @@ const COUPLE_LEVERS: readonly Lever[] = [
     note: "Larger names on the invitation, phone only. The lines beneath move down to make room.",
     options: [
       { label: "As now", attrs: {} },
-      { label: "30% larger", attrs: { "data-pv-name-scale": "130" } },
-      { label: "40% larger", attrs: { "data-pv-name-scale": "140" } },
       { label: "50% larger", attrs: { "data-pv-name-scale": "150" } },
     ],
   },
@@ -165,13 +162,13 @@ const COUPLE_LEVERS: readonly Lever[] = [
       { label: "Left", attrs: { "data-pv-ritual-align": "start" } },
       { label: "Justified", attrs: { "data-pv-ritual-align": "justify" } },
       {
-        label: "Left, photographs on the right",
-        note: "On a laptop or wider; on a phone or tablet the photographs stay below.",
+        label: "Left, photographs aligned right",
+        note: "Laptop and wider: the photographs move to the right, still below the text.",
         attrs: { "data-pv-ritual-align": "start-side" },
       },
       {
-        label: "Justified, photographs on the right",
-        note: "On a laptop or wider; on a phone or tablet the photographs stay below.",
+        label: "Justified, photographs aligned right",
+        note: "Laptop and wider: the photographs move to the right, still below the text.",
         attrs: { "data-pv-ritual-align": "justify-side" },
       },
     ],
@@ -181,21 +178,10 @@ const COUPLE_LEVERS: readonly Lever[] = [
     title: "Space beside the rituals on a phone",
     note: "Less room between the card's edge and the text, so each line holds more.",
     options: [
-      { label: "As now", attrs: {} },
-      { label: "16px", attrs: { "data-pv-side-pad": "sm" } },
+      { label: "As now (48px)", attrs: {} },
       { label: "12px", attrs: { "data-pv-side-pad": "xs" } },
       { label: "8px", attrs: { "data-pv-side-pad": "2xs" } },
-    ],
-  },
-  {
-    id: "scrim",
-    title: "Behind the full-screen photographs",
-    note: "Pick one, then open a ritual's photographs.",
-    options: [
-      { label: "As now (warm shadow)", attrs: {} },
-      { label: "Ink", attrs: { "data-pv-scrim": "ink" } },
-      { label: "Ink-black", attrs: { "data-pv-scrim": "ink-black" } },
-      { label: "Black", attrs: { "data-pv-scrim": "black" } },
+      { label: "4px", attrs: { "data-pv-side-pad": "3xs" } },
     ],
   },
 ];
