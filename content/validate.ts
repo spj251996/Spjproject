@@ -149,10 +149,6 @@ export function validateRituals(rituals: Ritual[]): Ritual[] {
     const at = `rituals[${index}]`;
     claimId(ritual.id, `${at}.id`, seen);
     malayalamLogicalOrder(ritual.malayalam, `${at}.malayalam`);
-    ritual.images.forEach((image, i) => {
-      required(image, `${at}.images[${i}]`);
-      assetPath(image, `${at}.images[${i}]`);
-    });
   });
   return rituals;
 }

@@ -5,6 +5,8 @@ import {
   samplePhotoSets,
   samplePortrait,
   samplePortraitImage,
+  sampleRitualAspects,
+  sampleRitualThumbs,
 } from "@/app/design-system/_data/ui-samples";
 import {
   ChromeFrame,
@@ -200,8 +202,10 @@ export function ComponentsSections() {
           spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, centred under it — it aligned to the strip's end until 2026-10-10, when the rituals became one centred column"
         >
           <PhotoStrip
+            aspects={sampleRitualAspects}
             id="ritual"
             sets={samplePhotoSets}
+            thumbs={sampleRitualThumbs}
             title="Placeholder Ritual Gallery"
           />
         </Specimen>

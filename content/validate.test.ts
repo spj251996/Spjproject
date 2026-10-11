@@ -25,7 +25,6 @@ const ritual = (over: Partial<Ritual> = {}): Ritual => ({
   malayalam: "വിവാഹം",
   tagline: "What it is about.",
   description: "What happens.",
-  images: [],
   ...over,
 });
 
@@ -110,13 +109,6 @@ test("rejects a whitespace-only id", () => {
   assert.throws(
     () => validateRituals([ritual({ id: "  " })]),
     /rituals\[0\]\.id/,
-  );
-});
-
-test("rejects an empty image entry", () => {
-  assert.throws(
-    () => validateRituals([ritual({ images: [""] })]),
-    /rituals\[0\]\.images\[0\]/,
   );
 });
 

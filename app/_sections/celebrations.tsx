@@ -8,6 +8,7 @@ import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { PhotoStrip } from "@/components/ui/photo-strip";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { rituals } from "@/content";
+import { ritualPhotos } from "@/content/ritual-photos.generated";
 
 /* The timeline card. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured
    fit — it grows to its content and the page scrolls past it, which is why it is the one section
@@ -27,9 +28,24 @@ const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
 export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
   /* Every ritual's set, keyed by id, handed WHOLE to each strip: `photoFit` must be solved across
-     all of them or the section's height stops being a constant (`components/ui/photo-fit.ts`). */
+     all of them or the section's height stops being a constant (`components/ui/photo-fit.ts`).
+     Everything is keyed on the DISPLAY path, which is the photograph's identity — the thumbnail is
+     a second delivery of the same photograph, not a second photograph. */
+  const everyPhoto = rituals.flatMap((ritual) => ritualPhotos[ritual.id] ?? []);
   const photoSets = Object.fromEntries(
-    rituals.map((ritual) => [ritual.id, ritual.images]),
+    rituals.map((ritual) => [
+      ritual.id,
+      (ritualPhotos[ritual.id] ?? []).map((photo) => photo.display),
+    ]),
+  );
+  /* Known at module load, so `photoFit` waits on nothing but the strip's own width measurement —
+     never on an image decoding. That removes the one path by which this section could settle its
+     height while photographs were still arriving. */
+  const photoAspects = Object.fromEntries(
+    everyPhoto.map((photo) => [photo.display, photo.width / photo.height]),
+  );
+  const photoThumbs = Object.fromEntries(
+    everyPhoto.map((photo) => [photo.display, photo.thumb]),
   );
 
   return (
@@ -117,13 +133,17 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                     <p className="type-body text-ink mt-space-2xs text-pretty">
                       {ritual.description}
                     </p>
-                    {/* The only trigger. A ritual with no photographs renders no strip, no
-                        gallery action and no client boundary at all, which is what ships today. */}
-                    {ritual.images.length > 0 && (
+                    {/* The only trigger, and it is the LIST'S LENGTH, never the manifest key's
+                        presence: an uploaded-then-emptied directory leaves an empty list behind.
+                        A ritual with no photographs renders no strip, no gallery action and no
+                        client boundary at all. */}
+                    {photoSets[ritual.id].length > 0 && (
                       <div className="mt-space-sm w-full">
                         <PhotoStrip
+                          aspects={photoAspects}
                           id={ritual.id}
                           sets={photoSets}
+                          thumbs={photoThumbs}
                           title={ritual.title}
                         />
                       </div>

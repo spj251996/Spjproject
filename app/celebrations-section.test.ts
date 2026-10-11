@@ -15,8 +15,8 @@ test("with no photographs the section renders no preview row and no gallery acti
     "the thread's per-row hook must survive",
   );
   assert.ok(
-    /ritual\.images\.length\s*>\s*0/.test(source),
-    "the photo row must be gated on images being non-empty, not on a status field",
+    /photoSets\[ritual\.id\]\.length\s*>\s*0/.test(source),
+    "the photo row must be gated on the ritual's photo list being non-empty, not on a status field",
   );
   assert.ok(
     !/RitualStatus|ritual\.status/.test(source),

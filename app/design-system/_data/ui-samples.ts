@@ -25,23 +25,44 @@ export const samplePortraitImage = svgImage(
   `<rect width="256" height="256" fill="${PHOTO_MID}"/><circle cx="128" cy="96" r="46" fill="${PHOTO_BACK}"/><path d="M32 256a96 96 0 0 1 192 0Z" fill="${PHOTO_FORE}"/>`,
 );
 
-export const sampleRitualImages = [
-  svgImage(
-    320,
-    400,
-    `<circle cx="160" cy="150" r="70" fill="${PHOTO_MID}"/><path d="M0 400 L120 240 L200 320 L320 200 V400Z" fill="${PHOTO_FORE}"/>`,
-  ),
-  svgImage(
-    320,
-    240,
-    `<rect x="40" y="40" width="240" height="160" fill="${PHOTO_MID}"/><circle cx="160" cy="120" r="40" fill="${PHOTO_FORE}"/>`,
-  ),
-  svgImage(
-    320,
-    480,
-    `<path d="M160 60 L260 420 H60Z" fill="${PHOTO_MID}"/><rect x="0" y="420" width="320" height="60" fill="${PHOTO_FORE}"/>`,
-  ),
+/* Each frame's size is stated once and the aspect derived from it, so the specimen's aspects
+   cannot disagree with the images they describe. */
+const SAMPLE_RITUAL_FRAMES = [
+  {
+    width: 320,
+    height: 400,
+    body: `<circle cx="160" cy="150" r="70" fill="${PHOTO_MID}"/><path d="M0 400 L120 240 L200 320 L320 200 V400Z" fill="${PHOTO_FORE}"/>`,
+  },
+  {
+    width: 320,
+    height: 240,
+    body: `<rect x="40" y="40" width="240" height="160" fill="${PHOTO_MID}"/><circle cx="160" cy="120" r="40" fill="${PHOTO_FORE}"/>`,
+  },
+  {
+    width: 320,
+    height: 480,
+    body: `<path d="M160 60 L260 420 H60Z" fill="${PHOTO_MID}"/><rect x="0" y="420" width="320" height="60" fill="${PHOTO_FORE}"/>`,
+  },
 ];
+
+export const sampleRitualImages = SAMPLE_RITUAL_FRAMES.map((frame) =>
+  svgImage(frame.width, frame.height, frame.body),
+);
+
+/* `photo-strip` takes aspects from the build-time manifest on the page; a specimen has no
+   manifest, so they come from the frames' own sizes. */
+export const sampleRitualAspects: Record<string, number> = Object.fromEntries(
+  SAMPLE_RITUAL_FRAMES.map((frame, index) => [
+    sampleRitualImages[index],
+    frame.width / frame.height,
+  ]),
+);
+
+/* The specimen demonstrates the component, not the pipeline, so its sample has ONE delivery per
+   frame and each thumbnail is the image itself — the honest value here, not a stand-in for one. */
+export const sampleRitualThumbs: Record<string, string> = Object.fromEntries(
+  sampleRitualImages.map((image) => [image, image]),
+);
 
 export const sampleEvent = {
   venue: "Placeholder Cathedral of the Sample Parish",

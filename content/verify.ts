@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { familyGroups, rituals } from "./index.ts";
-import type { FamilyGroup, FamilyMember, Ritual } from "./types.ts";
+import type { FamilyGroup, FamilyMember } from "./types.ts";
 
 /* The build-time half of content checking: `validate.ts` proves a path is well-formed, this proves the
    file behind it is really there. The two cannot live together — every content module imports the
@@ -50,18 +50,15 @@ function collectPortraits(
   });
 }
 
+/* Portraits only. The ritual photographs left the content layer in Phase 8: the generator derives
+   their paths from files that exist by definition, so a per-path check would be vacuous — what can
+   go wrong on that channel is a misnamed DIRECTORY, which `verifyRitualDirectories` catches. */
 export function collectAssetPaths(content: {
   familyGroups: FamilyGroup[];
-  rituals: Ritual[];
 }): AssetReference[] {
   const found: AssetReference[] = [];
   content.familyGroups.forEach((group, index) => {
     collectPortraits(group.members, `familyGroups[${index}].members`, found);
-  });
-  content.rituals.forEach((ritual, index) => {
-    ritual.images.forEach((image, i) => {
-      found.push({ at: `rituals[${index}].images[${i}]`, path: image });
-    });
   });
   return found;
 }
@@ -118,7 +115,7 @@ const fileExists = (assetPath: string): boolean =>
 /* Only running this file as an entry point touches disk — importing it (as the unit tests do) stays
    side-effect free. */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  verifyAssetPaths(collectAssetPaths({ familyGroups, rituals }), fileExists);
+  verifyAssetPaths(collectAssetPaths({ familyGroups }), fileExists);
   /* `assets/`, not `public/`: this checks the SOURCES the couple upload, which is where a typo is
      made. The deliveries under `public/rituals/` are generated from these directories a moment
      later in `prebuild`, so they cannot disagree. */

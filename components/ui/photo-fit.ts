@@ -7,7 +7,8 @@
    per ritual the increment varied (measured 171, 161, 145, 159, 159px at 360px wide), because a
    ritual gaining photographs could change which ritual binds the shared height.
 
-   Pure: no DOM, no React, no fetching. Where the aspects come from is `use-aspects`' business. */
+   Pure: no DOM, no React, no fetching. The aspects come from the build-time manifest
+   (`content/ritual-photos.generated.ts`), read by the section and handed down. */
 
 export const PHOTO_GAP = 8;
 

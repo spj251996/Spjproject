@@ -9,19 +9,19 @@
    stops being a constant (see `photo-fit.ts`), and every block is the same share of the card, so
    every instance measures the same width and is given the same `sets`. Identical inputs give
    identical output, so the shared height is REPRODUCED rather than coordinated — no context, no
-   lifted state, and nothing mounts at all while every ritual's `images` is empty, which is what
-   ships today. */
+   lifted state, and nothing mounts at all for a ritual with no photographs. */
 
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_ASPECT_CAP, photoFit } from "./photo-fit";
 import { PhotoRow } from "./photo-row";
-import { useAspects } from "./use-aspects";
-
-const PREVIEW_CAP = 3;
 
 interface PhotoStripProps {
-  /** Every ritual's photographs, keyed by id — not just this one's. The fit needs all of them. */
+  /** Every ritual's photographs by DISPLAY path, keyed by id — not just this one's. The fit needs all of them. */
   sets: Record<string, string[]>;
+  /** Display path to aspect, from the generated manifest. Static, so the fit waits only on this strip's width. */
+  aspects: Record<string, number>;
+  /** Display path to its 600px thumbnail, from the generated manifest. */
+  thumbs: Record<string, string>;
   /** Which of `sets` this strip renders. */
   id: string;
   /** Names the gallery for assistive technology. */
@@ -39,7 +39,13 @@ interface Room {
 
 const FALLBACK_HEIGHT = 120;
 
-export function PhotoStrip({ sets, id, title }: PhotoStripProps) {
+export function PhotoStrip({
+  sets,
+  aspects,
+  thumbs,
+  id,
+  title,
+}: PhotoStripProps) {
   const anchorRef = useRef<HTMLDivElement>(null);
   /* `available: 0` until the first layout pass, which `photoFit` treats as unsolved rather than
      dividing by — a loop bounded by a measured value is unbounded before the first measurement. */
@@ -75,10 +81,6 @@ export function PhotoStrip({ sets, id, title }: PhotoStripProps) {
     return () => observer.disconnect();
   }, []);
 
-  /* Only the previewable frames are decoded — the rest load when the gallery opens. */
-  const aspects = useAspects(
-    Object.values(sets).flatMap((photos) => photos.slice(0, PREVIEW_CAP)),
-  );
   const fit = photoFit(
     sets,
     room.nominalHeight,
@@ -98,6 +100,7 @@ export function PhotoStrip({ sets, id, title }: PhotoStripProps) {
         photos={photos}
         rowHeight={fit.rowHeight}
         shown={fit.shown[id] ?? Math.min(2, photos.length)}
+        thumbs={thumbs}
         title={title}
       />
     </div>

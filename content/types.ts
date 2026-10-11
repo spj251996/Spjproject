@@ -21,10 +21,6 @@ export interface Ritual {
   /** One line, set in italic beneath the title. */
   tagline: string;
   description: string;
-  /** A ritual shows its photographs when this is non-empty, and by nothing else. There is
-      deliberately no `status`: it existed, was read nowhere, and would have become a second
-      source of truth able to contradict this one. */
-  images: string[];
 }
 
 export interface EventSegment {

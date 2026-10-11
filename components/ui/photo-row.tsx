@@ -35,6 +35,9 @@ interface PhotoRowProps {
   aspectCap: number;
   /** Names the gallery for assistive technology; never rendered in the strip. */
   title: string;
+  /** Display path to its 600px thumbnail. Required, not optional: an optional prop is how this
+      project last shipped a frame generated at the wrong paint with tsc clean. */
+  thumbs: Record<string, string>;
 }
 
 export function PhotoRow({
@@ -44,6 +47,7 @@ export function PhotoRow({
   aspects,
   aspectCap,
   title,
+  thumbs,
 }: PhotoRowProps) {
   const [open, setOpen] = useState(false);
   const remaining = photos.length - shown;
@@ -72,14 +76,18 @@ export function PhotoRow({
                 type="button"
               >
                 <ImagePlaceholder height={1} width={aspect} />
-                {/* A bare `<img>`: the content schema carries no dimensions, so neither the sized
-                    nor the `fill` form of `next/image` is available. `gallery-modal-panel` does
-                    the same for the same reason. */}
+                {/* A bare `<img>`: `next.config.ts` sets `images: { unoptimized: true }` because a
+                    static export has no runtime optimiser, so `next/image` would buy only the
+                    sizing this frame already gets from its placeholder. */}
                 <img
                   alt=""
                   className="absolute inset-0 size-full object-cover"
                   loading="lazy"
-                  src={src}
+                  /* The thumbnail, never the display copy: a 1000px file in a 150px tile is about
+                     250KB where 50 was budgeted, and the difference is invisible on screen. The
+                     fallback cannot normally be reached — the generator emits the two in pairs —
+                     and exists so a lost pair degrades to a heavy image rather than a broken one. */
+                  src={thumbs[src] ?? src}
                 />
                 {index === frames.length - 1 && remaining > 0 && (
                   /* The cue that the set continues. On the last frame rather than beside the row,
