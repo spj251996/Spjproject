@@ -55,11 +55,11 @@
     line-height: var(--text-heading-md--line-height);
   }
 
-  .type-heading-lg {
+  .type-heading-sm {
     font-family: var(--font-serif);
-    font-size: var(--text-heading-lg);
-    font-weight: var(--text-heading-lg--font-weight);
-    line-height: var(--text-heading-lg--line-height);
+    font-size: var(--text-heading-sm);
+    font-weight: var(--text-heading-sm--font-weight);
+    line-height: var(--text-heading-sm--line-height);
   }
 
   .type-date-primary {

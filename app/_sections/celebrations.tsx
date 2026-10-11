@@ -80,7 +80,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                         grows into `type-heading-md`. What the split BUYS is measured rather than
                         asserted: the old shared line put the leaf, the English and the Malayalam
                         in one 216px block at 360px, where the Malayalam alone took 83px at
-                        heading-lg's size -- so the three only ever fit by shortening a title and
+                        heading-sm's size -- so the three only ever fit by shortening a title and
                         stepping the Malayalam down to `type-caption`. On its own line that
                         constraint does not exist, which is what pays for the larger title.
 
@@ -89,7 +89,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                         the Malayalam after the English, and the ornament's two marks with it, so
                         the ordering is the markup's rather than a parent's to flip.
 
-                        `text-(length:--text-heading-lg)` and NOT `.type-heading-lg`: that role is
+                        `text-(length:--text-heading-sm)` and NOT `.type-heading-sm`: that role is
                         weight 700 and Noto Serif Malayalam ships no cut above 600, so the role
                         would render SYNTHETIC bold on the conjuncts -- a smeared outline, not a
                         heavier face. The size is taken from the role and the weight is stated
@@ -102,7 +102,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
 
                         `leading-tight` because Malayalam's ascenders and its pre-base signs
                         otherwise grow the line box past the size's own line height. */}
-                    <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-lg) text-accent-gold font-semibold leading-tight">
+                    <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight">
                       <SprigOrnament>{ritual.malayalam}</SprigOrnament>
                     </span>
                     <h3 className="type-heading-md text-ink mt-space-2xs">

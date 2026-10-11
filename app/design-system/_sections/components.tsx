@@ -147,7 +147,7 @@ export function ComponentsSections() {
             <p className="type-eyebrow">
               <SprigOrnament>Our traditions</SprigOrnament>
             </p>
-            <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-lg) text-accent-gold font-semibold leading-tight">
+            <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight">
               <SprigOrnament>{rituals[0].malayalam}</SprigOrnament>
             </span>
           </div>

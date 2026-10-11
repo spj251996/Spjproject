@@ -286,7 +286,7 @@ html[data-pv-ritual-align="rail"] #celebrations ol > li:last-child::after {
        12.6px of overlap. The sprig's own bottom sits 31.4 / 29.8 / 32.6px down at tablet / laptop /
        desktop, so clearing the widest of those by one gap takes 36px — a 2.8px spread over the
        three bands, which leaves the gap between 3.4 and 6.2px against the 4 it asks for.
-       IT IS TIED TO THE TYPE SIZES, not to the layout: change `heading-md` or `heading-lg` and it
+       IT IS TIED TO THE TYPE SIZES, not to the layout: change `heading-md` or `heading-sm` and it
        needs re-measuring. `tmp/half2/sprig-offset.mjs` is the harness. */
     --rail-start: 36px;
     grid-template-columns: var(--rail-node) max-content 1fr;

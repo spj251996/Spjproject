@@ -42,7 +42,7 @@ function ContactPlate({ person }: { person: ContactPerson }) {
       {/* The plate's primary line, so it takes the same serif role an event plate's segment line
           takes — the system carries no bold cut of `type-body`, and a raw weight at this call site
           would be a role with no token behind it. */}
-      <p className="type-heading-lg text-ink mt-space-2xs [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-xs">
+      <p className="type-heading-sm text-ink mt-space-2xs [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-xs">
         {person.name}
       </p>
       {/* `portrait`'s register, down to the negative margin it uses: the relationship one step

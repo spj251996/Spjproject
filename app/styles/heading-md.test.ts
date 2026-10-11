@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
-/* `heading-md` exists because nothing sat between `heading-lg` (14px) and `heading-xl` (26px), and
-   `heading-lg` could not be grown to reach it.
+/* `heading-md` exists because nothing sat between `heading-sm` (14px) and `heading-xl` (26px), and
+   `heading-sm` could not be grown to reach it.
    SETTLED AT 21/23/21/25 (owner, 2026-10-10), up 8% from the 19/21/19/23 it was first built at and
    LANDED AS WHOLE PIXELS rather than a factor, per this project's own rule. The step below it was
    dropped on measurement rather than taste: +5% is a ONE-pixel change on a 19px title, which is
@@ -147,4 +147,30 @@ test("the gallery's specimen carries the token file's own figures", () => {
       `the specimen's ${tier} line height disagrees with tokens.css`,
     );
   });
+});
+
+/* THE RENAME'S NEGATIVE, WHICH IS THE HALF A SOURCE SWEEP CANNOT GIVE YOU. `heading-lg` became
+   `heading-sm` on 2026-10-11 (owner) because the scale had stopped ordering by name — `xl` 26 >
+   `md` 21 > `lg` 14, so a maintainer picking a role by name alone got it backwards. A rename of a
+   design token fails in a way nothing reports: a class whose `font-size` names a token that no
+   longer exists compiles to nothing and the element silently paints at its inherited size. One
+   missed consumer is invisible to `tsc`, to lint and to every source test — including the source
+   tests renamed alongside it, which is exactly why this reads the BUILT stylesheet instead. */
+test("the renamed role resolves on the published page, and the old name is gone from it", () => {
+  const css = publishedCss();
+  assert.match(
+    css,
+    /\.type-heading-sm\{[^}]*font-size:var\(--text-heading-sm\)/,
+    "the renamed class does not resolve against its own token in the published CSS",
+  );
+  assert.strictEqual(
+    (css.match(/--text-heading-sm:\s*\d+px/g) ?? []).length,
+    4,
+    "expected one base value and three tier overrides for the renamed token",
+  );
+  assert.doesNotMatch(
+    css,
+    /heading-lg/,
+    "the old name survives in the published CSS, so the rename reached the source and not the build",
+  );
 });

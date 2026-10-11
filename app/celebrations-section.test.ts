@@ -80,17 +80,17 @@ test("each ritual leads with its Malayalam above a larger English title", () => 
   );
 });
 
-/* THE MALAYALAM TAKES heading-lg's SIZE AND NOT THE ROLE, and the distinction is the whole point:
-   `--text-heading-lg--font-weight` is 700 and Noto Serif Malayalam ships no cut above 600, so
-   `.type-heading-lg` would render SYNTHETIC bold on the conjuncts — a smeared outline rather than a
+/* THE MALAYALAM TAKES heading-sm's SIZE AND NOT THE ROLE, and the distinction is the whole point:
+   `--text-heading-sm--font-weight` is 700 and Noto Serif Malayalam ships no cut above 600, so
+   `.type-heading-sm` would render SYNTHETIC bold on the conjuncts — a smeared outline rather than a
    heavier face. The size therefore comes from the role and the weight is stated on its own.
    THE WEIGHT IS 600, SETTLED BY THE OWNER ON A RENDER (2026-10-10), and it is asserted here rather
    than merely permitted: the utility and the one cut `app/layout.tsx` loads have to agree, and a
    `font-semibold` left behind after someone edits the loader back to 400 is a silent synthetic
-   bold — the exact failure this role avoids by not using `.type-heading-lg`. */
-test("the Malayalam takes heading-lg's size at the loaded weight, never the role", () => {
+   bold — the exact failure this role avoids by not using `.type-heading-sm`. */
+test("the Malayalam takes heading-sm's size at the loaded weight, never the role", () => {
   /* `className` values only, never the whole slice: the prose beside this markup NAMES both
-     `.type-heading-lg` and synthetic bold in order to say they are deliberately absent, and a
+     `.type-heading-sm` and synthetic bold in order to say they are deliberately absent, and a
      plain substring search over the slice matched that comment and failed on correct code — the
      same trap the reading-measure test below already records. */
   const classNames = ritualList().match(/className="[^"]*"/g) ?? [];
@@ -98,8 +98,8 @@ test("the Malayalam takes heading-lg's size at the loaded weight, never the role
   const joined = classNames.join(" ");
   assert.match(
     joined,
-    /text-\(length:--text-heading-lg\)/,
-    "the Malayalam must take heading-lg's size explicitly",
+    /text-\(length:--text-heading-sm\)/,
+    "the Malayalam must take heading-sm's size explicitly",
   );
   assert.match(
     joined,
@@ -108,7 +108,7 @@ test("the Malayalam takes heading-lg's size at the loaded weight, never the role
   );
   for (const value of classNames) {
     assert.ok(
-      !value.includes("type-heading-lg"),
+      !value.includes("type-heading-sm"),
       `the role carries weight 700 — synthetic bold on Malayalam conjuncts: ${value}`,
     );
     assert.ok(

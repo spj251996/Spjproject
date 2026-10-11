@@ -121,12 +121,12 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
       </h2>
       <div className="flex flex-col items-center gap-space-3xs mt-space-sm">
         {/* The date carries the weight and the address steps back, the way the invite sets the same
-            two lines (owner, 2026-10-07). `date-primary` and `heading-lg` share a size at every
+            two lines (owner, 2026-10-07). `date-primary` and `heading-sm` share a size at every
             tier, so weight is the only thing telling these two apart. */}
         <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
-        <address className="type-heading-lg font-medium text-ink not-italic">
+        <address className="type-heading-sm font-medium text-ink not-italic">
           <AddressLine address={sharedAddress(event)} />
         </address>
       </div>
@@ -188,7 +188,7 @@ function Diamond() {
    what a screen reader hears in the diamond's place. */
 function SegmentLine({ segment }: { segment: EventSegment }) {
   return (
-    <p className="type-heading-lg text-ink text-balance">
+    <p className="type-heading-sm text-ink text-balance">
       <span className="me-space-2xs whitespace-nowrap">{segment.time}</span>
       <wbr />
       <span className="whitespace-nowrap">

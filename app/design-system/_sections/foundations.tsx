@@ -188,7 +188,7 @@ const TYPE_TOKENS: TypeToken[] = [
     desktop: { size: 25, lh: 36 },
   },
   {
-    token: "type-heading-lg",
+    token: "type-heading-sm",
     family: "Playfair Display",
     weight: 700,
     sample:
@@ -505,7 +505,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Four families and fourteen roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-lg's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
+        intro="Four families and fourteen roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"

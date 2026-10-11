@@ -43,9 +43,9 @@
   --text-heading-md: 21px;
   --text-heading-md--font-weight: 700;
   --text-heading-md--line-height: 32px;
-  --text-heading-lg: 14px;
-  --text-heading-lg--font-weight: 700;
-  --text-heading-lg--line-height: 28px;
+  --text-heading-sm: 14px;
+  --text-heading-sm--font-weight: 700;
+  --text-heading-sm--line-height: 28px;
   --text-date-primary: 14px;
   --text-date-primary--font-weight: 700;
   --text-date-primary--line-height: 28px;
@@ -380,8 +380,8 @@
     --text-heading-xl--line-height: 48px;
     --text-heading-md: 23px;
     --text-heading-md--line-height: 34px;
-    --text-heading-lg: 15px;
-    --text-heading-lg--line-height: 30px;
+    --text-heading-sm: 15px;
+    --text-heading-sm--line-height: 30px;
     --text-date-primary: 15px;
     --text-date-primary--line-height: 30px;
     --text-date-label: 13px;
@@ -411,8 +411,8 @@
     --text-heading-xl--line-height: 44px;
     --text-heading-md: 21px;
     --text-heading-md--line-height: 32px;
-    --text-heading-lg: 14px;
-    --text-heading-lg--line-height: 28px;
+    --text-heading-sm: 14px;
+    --text-heading-sm--line-height: 28px;
     --text-date-primary: 14px;
     --text-date-primary--line-height: 28px;
     --text-date-label: 12px;
@@ -442,8 +442,8 @@
     --text-heading-xl--line-height: 56px;
     --text-heading-md: 25px;
     --text-heading-md--line-height: 36px;
-    --text-heading-lg: 17px;
-    --text-heading-lg--line-height: 32px;
+    --text-heading-sm: 17px;
+    --text-heading-sm--line-height: 32px;
     --text-date-primary: 17px;
     --text-date-primary--line-height: 32px;
     --text-date-label: 14px;
