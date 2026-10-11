@@ -25,23 +25,19 @@ test("every display path the strip is given has a thumbnail beside it", () => {
      invisible on screen. The generator emits them in pairs, so this asserts the section does not
      lose one on the way through. */
   assert.match(source, /thumbs=\{photoThumbs\}/);
-  assert.match(source, /photo\.thumb/);
-  assert.match(source, /photo\.display/);
+  /* The derivation is `ritualPhotoProps`'s, and its own tests carry the behaviour
+     (`ritual-photo-props.test.ts`); this asserts only that the section uses it. */
+  assert.match(source, /ritualPhotoProps\(rituals, ritualPhotos\)/);
   /* And the frame must actually PAINT the thumbnail: the section handing the map down proves
      nothing if the row's <img> still reads the display path it is keyed on. */
   assert.match(rowSource, /src=\{thumbs\[src\] \?\? src\}/);
 });
 
-test("the aspect comes from the manifest's measured dimensions", () => {
-  assert.match(source, /photo\.width \/ photo\.height/);
-  assert.ok(
-    !source.includes("use-aspects"),
-    "the browser decode is retired — dimensions are known at module load",
-  );
-});
-
 test("a ritual with an empty set renders no strip, no cue and no action", () => {
-  /* A ritual directory can exist and hold nothing — the generator emits an empty array for it
+  /* A STRUCTURAL claim, deliberately: the gate is JSX and cannot be exercised without rendering the
+     section. The list it reads is behaviour-tested in `ritual-photo-props.test.ts`.
+
+     A ritual directory can exist and hold nothing — the generator emits an empty array for it
      rather than omitting the key, so the trigger must read the LIST'S LENGTH and not the key's
      presence. `ritualPhotos[id] && ...` would render an empty strip with a gallery action that
      opens on nothing. */

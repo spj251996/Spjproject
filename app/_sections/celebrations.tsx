@@ -1,3 +1,4 @@
+import { ritualPhotoProps } from "@/app/_sections/ritual-photo-props";
 import celebrations from "@/app/celebrations.module.css";
 import {
   Botanical,
@@ -27,26 +28,13 @@ const CELEBRATIONS_PROMISE =
 const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
 export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
-  /* Every ritual's set, keyed by id, handed WHOLE to each strip: `photoFit` must be solved across
-     all of them or the section's height stops being a constant (`components/ui/photo-fit.ts`).
-     Everything is keyed on the DISPLAY path, which is the photograph's identity — the thumbnail is
-     a second delivery of the same photograph, not a second photograph. */
-  const everyPhoto = rituals.flatMap((ritual) => ritualPhotos[ritual.id] ?? []);
-  const photoSets = Object.fromEntries(
-    rituals.map((ritual) => [
-      ritual.id,
-      (ritualPhotos[ritual.id] ?? []).map((photo) => photo.display),
-    ]),
-  );
   /* Known at module load, so `photoFit` waits on nothing but the strip's own width measurement —
-     never on an image decoding. That removes the one path by which this section could settle its
-     height while photographs were still arriving. */
-  const photoAspects = Object.fromEntries(
-    everyPhoto.map((photo) => [photo.display, photo.width / photo.height]),
-  );
-  const photoThumbs = Object.fromEntries(
-    everyPhoto.map((photo) => [photo.display, photo.thumb]),
-  );
+     never on an image decoding. The derivation and its reasons live in the helper. */
+  const {
+    sets: photoSets,
+    aspects: photoAspects,
+    thumbs: photoThumbs,
+  } = ritualPhotoProps(rituals, ritualPhotos);
 
   return (
     <section className="relative" id="celebrations">
