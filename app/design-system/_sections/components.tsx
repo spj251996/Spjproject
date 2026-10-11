@@ -194,12 +194,12 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="One ritual's preview strip, the cue that its set continues, and the action that opens the gallery. A ritual with no photographs renders none of it — which is what ships today, so this specimen is the only place the row can be seen."
+          description="One ritual's preview strip, the cue that its set continues, and the action that opens the gallery. A ritual with no photographs renders none of it."
           id="ui-photo-row"
           name="photo-row"
-          note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count. Pressing a frame or the action opens the real gallery."
+          note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that pairs the two deliveries on the page. Pressing a frame or the action opens the real gallery."
           source="@/components/ui/photo-row"
-          spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, centred under it — it aligned to the strip's end until 2026-10-10, when the rituals became one centred column"
+          spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, centred under it — it aligned to the strip's end until 2026-10-10, when the rituals became one centred column · a frame shows the 600px copy, the gallery the 1000px one, so the strip never fetches the larger file"
         >
           <PhotoStrip
             aspects={sampleRitualAspects}
