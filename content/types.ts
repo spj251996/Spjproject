@@ -1,14 +1,17 @@
-/** One ritual photograph's two deliveries and the display copy's post-rotation dimensions.
+/** One ritual photograph's three deliveries and the display copy's post-rotation dimensions.
     Written by `scripts/generate-images.mjs` into `content/ritual-photos.generated.ts`, which is
     gitignored — this type is committed so a fresh clone still typechecks the shape.
 
     The dimensions are the EMITTED file's own, straight off sharp's `toFile`, so they are
     post-rotation by construction. The aspect is scale-invariant, which is all `photoFit` needs. */
 export interface RitualPhoto {
-  /** Web path to the 600px-wide copy the preview strip renders. */
+  /** Web path to the copy bounded 600×600 that the preview strip renders. */
   thumb: string;
-  /** Web path to the 1000px-wide copy the overlay renders. Also the photograph's identity. */
+  /** Web path to the 1000px-wide copy the grid renders. Also the photograph's identity. */
   display: string;
+  /** Web path to the copy bounded 2000×2000 that the full-screen viewer shows. Fetched only for the
+      photograph on screen. */
+  full: string;
   width: number;
   height: number;
 }

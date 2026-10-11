@@ -5,6 +5,7 @@ import { ritualPhotoProps } from "./ritual-photo-props.ts";
 const photo = (name: string, width: number, height: number) => ({
   thumb: `/rituals/r/${name}-600.avif`,
   display: `/rituals/r/${name}-1000.avif`,
+  full: `/rituals/r/${name}-2000.avif`,
   width,
   height,
 });

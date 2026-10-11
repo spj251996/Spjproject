@@ -121,6 +121,7 @@ test("the manifest emits one typed entry per ritual, in the order given", () => 
       {
         thumb: "/rituals/wedding-eve/og-1-600.avif",
         display: "/rituals/wedding-eve/og-1-1000.avif",
+        full: "/rituals/wedding-eve/og-1-2000.avif",
         width: 1000,
         height: 563,
       },
@@ -133,6 +134,7 @@ test("the manifest emits one typed entry per ritual, in the order given", () => 
   );
   assert.match(source, /"wedding-eve": \[/);
   assert.match(source, /display: "\/rituals\/wedding-eve\/og-1-1000\.avif",/);
+  assert.match(source, /full: "\/rituals\/wedding-eve\/og-1-2000\.avif",/);
   assert.match(source, /width: 1000,/);
   assert.match(source, /height: 563,/);
 });
@@ -187,7 +189,9 @@ test("a filename's awkward characters survive into the manifest and the URL", as
      into a fragment — the last two a 404'd tile with every gate green. */
   const awkward = '/rituals/wedding/a"b\\c-600.avif';
   const source = ritualManifestSource({
-    wedding: [{ thumb: awkward, display: awkward, width: 1, height: 1 }],
+    wedding: [
+      { thumb: awkward, display: awkward, full: awkward, width: 1, height: 1 },
+    ],
   });
   assert.ok(
     source.includes(`thumb: ${JSON.stringify(awkward)},`),
@@ -208,7 +212,8 @@ test("a filename's awkward characters survive into the manifest and the URL", as
 });
 
 /* A throwaway source tree under the OS temp directory: each key a ritual folder, each entry a
-   `[name, kind]` — a real JPEG, bytes that are not an image, a sub-folder, or an empty dotfile.
+   `[name, kind]` — a real JPEG, one carrying a date taken (`["jpg-dated", "<date>"]`), a 1200x2400
+   portrait (`"jpg-big"`), bytes that are not an image, a sub-folder, or an empty dotfile.
    Nothing here touches `public/`, `assets/` or `content/`. */
 async function tree(folders) {
   const root = mkdtempSync(join(tmpdir(), "ritual-run-"));
@@ -225,7 +230,36 @@ async function tree(folders) {
     for (const [name, kind] of entries) {
       const path = join(source, folder, name);
       if (kind === "dir") mkdirSync(path);
-      else
+      else if (Array.isArray(kind) && kind[0] === "jpg-dated") {
+        writeFileSync(
+          path,
+          await sharp({
+            create: {
+              width: 20,
+              height: 10,
+              channels: 3,
+              background: "#808080",
+            },
+          })
+            .jpeg()
+            .withExif({ IFD2: { DateTimeOriginal: kind[1] } })
+            .toBuffer(),
+        );
+      } else if (kind === "jpg-big") {
+        writeFileSync(
+          path,
+          await sharp({
+            create: {
+              width: 1200,
+              height: 2400,
+              channels: 3,
+              background: "#808080",
+            },
+          })
+            .jpeg()
+            .toBuffer(),
+        );
+      } else
         writeFileSync(
           path,
           kind === "jpg" ? jpg : kind === "text" ? "not an image" : "",
@@ -432,6 +466,7 @@ test("a clean run writes every delivery and a manifest row per photograph", asyn
   await run(t);
   assert.ok(existsSync(join(t.out, "betrothal", "ok-600.avif")));
   assert.ok(existsSync(join(t.out, "betrothal", "ok-1000.avif")));
+  assert.ok(existsSync(join(t.out, "betrothal", "ok-2000.avif")));
   const manifest = readFileSync(t.manifest, "utf8");
   assert.match(
     manifest,
@@ -458,6 +493,7 @@ test("every line of the generated manifest fits the project's line width", () =>
       {
         thumb: "/rituals/wedding/a-600.avif",
         display: "/rituals/wedding/a-1000.avif",
+        full: "/rituals/wedding/a-2000.avif",
         width: 1,
         height: 1,
       },
@@ -485,4 +521,45 @@ test("a refused flag puts the sentence first, not a source frame", () => {
     result.stderr.split("\n")[0],
     /^unrecognised argument "--dryrun"/,
   );
+});
+
+test("photographs sort by date taken, undated ones last by name", async () => {
+  /* iOS renames every upload to a random id, so name order is not capture order. Two share a second
+     (name breaks the tie), and two carry no date at all (after every dated one, by name). */
+  const t = await tree({
+    wedding: [
+      ["zz.jpg", ["jpg-dated", "2027:01:09 09:00:00"]],
+      ["aa.jpg", ["jpg-dated", "2027:01:09 11:00:00"]],
+      ["mm.jpg", "jpg"],
+      ["bb.jpg", ["jpg-dated", "2027:01:09 09:00:00"]],
+      ["ab.jpg", "jpg"],
+    ],
+  });
+  assert.deepEqual((await planRitualPhotos(t.source)).wedding, [
+    "bb.jpg",
+    "zz.jpg",
+    "aa.jpg",
+    "ab.jpg",
+    "mm.jpg",
+  ]);
+});
+
+test("each photograph gets three copies, each within its own bound", async () => {
+  const t = await tree({ wedding: [["tall.jpg", "jpg-big"]] });
+  await run(t);
+  const size = async (name) => {
+    const m = await sharp(join(t.out, "wedding", name)).metadata();
+    return [m.width, m.height];
+  };
+  assert.deepEqual(await size("tall-600.avif"), [300, 600]);
+  assert.deepEqual(await size("tall-1000.avif"), [1000, 2000]);
+  assert.deepEqual(await size("tall-2000.avif"), [1000, 2000]);
+  const manifest = readFileSync(t.manifest, "utf8");
+  assert.match(manifest, /full: "\/rituals\/wedding\/tall-2000\.avif",/);
+  assert.match(manifest, /width: 1000,\n {6}height: 2000,/);
+});
+
+test("the unreadable-photograph message names both phone settings", async () => {
+  const t = await tree({ wedding: [["zbad.jpg", "text"]] });
+  await assert.rejects(run(t), /Most Compatible.*Android.*High efficiency/s);
 });
