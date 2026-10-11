@@ -29,12 +29,9 @@ const CSS_CODE = code(CSS);
 const COUPLE_FACING = [
   "events",
   "map-action",
-  "date-space",
-  "day-weight",
   "date-colour",
-  "glow",
-  "ritual-align",
-  "side-pad",
+  "ritual-leaf",
+  "gold",
 ];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
@@ -273,7 +270,7 @@ test("the six retired levers are gone from both files", () => {
   const tokens = readFileSync("app/styles/tokens.css", "utf8");
   assert.deepStrictEqual(
     [...tokens.matchAll(/--text-heading-md:\s*(\d+)px/g)].map((m) => m[1]),
-    ["21", "23", "21", "25"],
+    ["18", "20", "18", "21"],
     "the title size was stripped from the route but not landed in the token ladder",
   );
   const names = readFileSync("components/ui/couple-names.tsx", "utf8");
@@ -326,34 +323,60 @@ test("the six retired levers are gone from both files", () => {
   );
 });
 
-test("every ritual form, and the photographs' right alignment, holds at every tier", () => {
-  /* Owner, 2026-10-11: "sprig title malayalam on same baseline in all tiers", then the photographs
-     and their button "right alignment in all tiers". So no ritual rule is banded: the whole block,
-     from the header line to the strip's alignment, sits outside any media query. Asserted as the
-     shape of the file, because the recorded failure on this route was a whole arrangement going
-     missing at one tier. */
-  const start = CSS_CODE.indexOf("html[data-pv-ritual-align] #celebrations");
-  const end = CSS_CODE.indexOf("html[data-pv-side-pad]");
-  assert.ok(
-    start >= 0 && end > start,
-    "the ritual block is not where the gate expects it",
-  );
-  const block = CSS_CODE.slice(start, CSS_CODE.lastIndexOf("@media", end));
-  assert.ok(!block.includes("@media"), "a ritual rule is inside a media query");
-  for (const [rule, what] of [
-    ["flex-wrap: wrap", "the header line's flow"],
-    ["display: contents", "the two-level promotion"],
-    ["svg:nth-of-type(2)", "the trailing sprig's hide"],
-    ["order: -2", "the sprig leading the line"],
-    ["order: -1", "the title before the Malayalam"],
-    ["text-align: end", "the photographs' right alignment"],
-    ["align-items: flex-end", "the button following the strip right"],
+/* SIX LEVERS LEFT ON 2026-10-11 (owner) AND EACH IS CHECKED WHERE IT LANDED, because a stripped
+   control with no landed value reads as a decision taken and leaves the page on the old value. */
+test("the 2026-10-11 picks left the route and landed in code", () => {
+  for (const retired of [
+    "data-pv-date-space",
+    "data-pv-day-weight",
+    "data-pv-glow",
+    "data-pv-ritual-align",
+    "data-pv-side-pad",
   ]) {
-    assert.ok(block.includes(rule), `${what} is missing from the ritual block`);
+    assert.ok(!PANEL_CODE.includes(retired), `${retired} still has a control`);
+    assert.ok(!CSS_CODE.includes(retired), `${retired} still has a rule`);
   }
-  assert.ok(
-    !CSS_CODE.includes('data-pv-ritual-align="rail"'),
-    "the rail left the route (owner, 2026-10-11)",
+  const tokens = readFileSync("app/styles/tokens.css", "utf8");
+  assert.match(
+    tokens,
+    /--date-weekday-pull:\s*3px;/,
+    "the date's 8px opening above the day",
+  );
+  assert.match(
+    readFileSync("app/_sections/invite.tsx", "utf8"),
+    /mt-\[calc\(var\(--spacing-space-xs\)-var\(--date-place-pull\)\)\]/,
+    "the date's 8px opening below the day",
+  );
+  assert.match(
+    tokens,
+    /--text-date-day--font-weight:\s*400;/,
+    "the day at regular",
+  );
+  assert.match(
+    tokens,
+    /--shadow-glow-couple:\s*0 0 14px 3px/,
+    "the medium glow",
+  );
+  assert.match(
+    readFileSync("components/family/family.tsx", "utf8"),
+    /glow=\{COUPLE\.has\(member\.relationship\)\}/,
+    "the glow reaches the couple's portraits",
+  );
+  assert.match(
+    tokens,
+    /--tall-inline-phone:\s*36px;/,
+    "the 36px phone padding",
+  );
+  const module = readFileSync("app/celebrations.module.css", "utf8");
+  const text = module.slice(
+    module.indexOf(".text {"),
+    module.indexOf("}", module.indexOf(".text {")),
+  );
+  assert.match(text, /text-align:\s*start/, "the rituals left-aligned");
+  assert.match(
+    readFileSync("app/_sections/celebrations.tsx", "utf8"),
+    /mt-space-sm w-full text-end/,
+    "the photographs at the block's right edge",
   );
 });
 

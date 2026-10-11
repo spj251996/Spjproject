@@ -260,8 +260,9 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 orientation-qualified rules it replaced are gone with it; the block absorbs the
                 weekday, so the header runs four elements where it ran five. Plus
                 `--date-place-pull`, which the place beneath takes back off its own margin: the block
-                sits as close to the place as its weekday sits to its day, and the header's height is
-                unchanged. */}
+                sits as close to the place as its weekday sits to its day. The place's own margin is
+                `space-xs` rather than `space-3xs` because both of the block's inner gaps were opened
+                by `space-2xs` (owner, 2026-10-11) — the weekday's half lives in `--date-weekday-pull`. */}
             <div className="mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
               <InviteDate date={weddingDate} />
             </div>
@@ -270,7 +271,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 `type-date-primary` at weight 500 — the invite's one remaining use of that role, and
                 the reason the role is not retired here. */}
             <p
-              className="type-date-primary font-medium text-ink mt-[calc(var(--spacing-space-3xs)-var(--date-place-pull))]"
+              className="type-date-primary font-medium text-ink mt-[calc(var(--spacing-space-3xs)+var(--date-open)-var(--date-place-pull))]"
               data-invite-place
             >
               {wedding.state}

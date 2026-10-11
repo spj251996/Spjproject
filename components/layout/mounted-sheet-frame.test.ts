@@ -1061,13 +1061,29 @@ test("each tall window class's own block binds its ground and sheet padding, nev
       ),
       `${windowClass.media}: ground ${windowClass.ground}`,
     );
+    /* The phone's sides are the one exception (owner, 2026-10-11): 36px through its own token, so
+       a ritual's measure gains 24px where it is shortest. Every other class keeps one padding. */
+    const inline =
+      windowClass.widthTier === "phone"
+        ? " padding-inline: var(--tall-inline-phone);"
+        : "";
+    assert.strictEqual(
+      windowClass.paddingInline === null ? "" : windowClass.paddingInline,
+      windowClass.widthTier === "phone" ? "--tall-inline-phone" : "",
+      `${windowClass.media}: only the phone class overrides the sides`,
+    );
     assert.ok(
       block?.includes(
-        `mounted-sheet-frame__sheet { padding: var(${PADDING_TOKEN[windowClass.padding]}); }`,
+        `mounted-sheet-frame__sheet { padding: var(${PADDING_TOKEN[windowClass.padding]});${inline} }`,
       ),
-      `${windowClass.media}: padding ${windowClass.padding}`,
+      `${windowClass.media}: padding ${windowClass.padding}${inline}`,
     );
   }
+  assert.match(
+    readFileSync("app/styles/tokens.css", "utf8"),
+    /--tall-inline-phone:\s*36px;/,
+    "the phone side padding's token is gone or has moved",
+  );
 });
 
 test("a tall card strips its mount per orientation, exactly where the mount does not show", () => {

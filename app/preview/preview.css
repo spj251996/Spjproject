@@ -45,129 +45,14 @@
    had no clearance figure at all, so the couple would have been choosing between one measured
    arrangement and two unmeasured ones. The owner settled it instead. */
 
-/* ───────── RITUALS — text alignment, the header line, and where the photographs sit ─────────
-   Owner, 2026-10-11, the couple's first feedback round. CENTRED AND THE RAIL ARE OFF THE ROUTE: centred
-   still ships on `/` until a pick lands, so this lever is the one group whose first choice is NOT the
-   published page — the panel applies it on load and says so.
+/* ───────── THE RITUALS' LAYOUT, THEIR SIDE PADDING AND THE COUPLE'S GLOW LEFT THE ROUTE ─────────
+   Owner, 2026-10-11: left-aligned (`app/_sections/celebrations.tsx`), 36px on a phone
+   (`components/layout/mounted-sheet-frame.ts`), and the medium glow (`components/ui/portrait.tsx`).
 
-   THE HEADER LINE IS COMMON TO EVERY FORM: sprig · English title · Malayalam, on one baseline, at every
-   tier. The ornament's ONE leading sprig is kept (unmirrored, the original mark) and its trailing one
-   goes. Both wrappers between the column and the Malayalam take `display: contents`, so the sprig, the
-   title and the Malayalam's own text become siblings and `order` sets them in the owner's sequence
-   without touching markup. The Malayalam is an ANONYMOUS item — the ornament's text node — which is
-   why it is the one item with no `order` of its own (0): everything else is placed around it.
-   Where the three do not fit one line, the Malayalam wraps under the title rather than squeezing it.
-
-   `T` below is the ritual's text column: the only direct `div` child of the only direct `div` child of
-   a row — `celebrations.module.css`'s class names are hashed and unreachable from here. */
-html[data-pv-ritual-align] #celebrations ol > li > div > div {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: flex-start;
-  column-gap: var(--spacing-space-2xs);
-  text-align: start;
-}
-
-html[data-pv-ritual-align] #celebrations ol > li > div > div > span,
-html[data-pv-ritual-align]
-  #celebrations
-  ol
-  > li
-  > div
-  > div
-  > span
-  > [data-sprig-ornament] {
-  display: contents;
-}
-
-html[data-pv-ritual-align]
-  #celebrations
-  ol
-  > li
-  > div
-  > div
-  > span
-  > [data-sprig-ornament]
-  > svg:nth-of-type(1) {
-  order: -2;
-}
-
-html[data-pv-ritual-align]
-  #celebrations
-  ol
-  > li
-  > div
-  > div
-  > span
-  > [data-sprig-ornament]
-  > svg:nth-of-type(2) {
+   THE RITUAL'S LEADING SPRIG — with it (ships) or without. The header line's other two items close
+   up to the start; nothing else moves. */
+html[data-pv-ritual-leaf="none"] #celebrations [data-ritual-header] > svg {
   display: none;
-}
-
-html[data-pv-ritual-align] #celebrations ol > li > div > div > h3 {
-  order: -1;
-  margin-block-start: 0;
-}
-
-html[data-pv-ritual-align] #celebrations ol > li > div > div > p,
-html[data-pv-ritual-align] #celebrations ol > li > div > div > div {
-  order: 1;
-  flex-basis: 100%;
-}
-
-/* Justified: the prose justifies, the header line and the strip do not (the Malayalam cannot). The
-   word-gap cost recorded on `.text` in `celebrations.module.css` still applies at phone. */
-html[data-pv-ritual-align^="justify"] #celebrations ol > li > div > div > p {
-  text-align: justify;
-}
-
-/* PHOTOGRAPHS ALIGNED RIGHT, at every tier and in both forms — FIXED, not a choice any more (owner,
-   2026-10-11: "photostrip is fixed as right alignment along with its button"). The strip stays beneath
-   the text at full measure and moves to the block's right edge, its "View photos" action right-aligned
-   under it. A first build split the block into text and strip columns from 64rem up; this replaces it. */
-html[data-pv-ritual-align] #celebrations ol > li > div > div > div {
-  text-align: end;
-}
-
-html[data-pv-ritual-align]
-  #celebrations
-  ol
-  > li
-  > div
-  > div
-  > div
-  > [data-photo-ready]
-  > div {
-  align-items: flex-end;
-}
-
-/* ───────── CELEBRATIONS' SIDE PADDING ON A PHONE ─────────
-   Owner, 2026-10-11: less card padding left and right so a ritual's measure grows. Today the card's
-   edge is 48px from the text at every phone width (the sheet's own padding; the ground outside the card
-   is a further 24px). The owner's options are 36 and 24 — "16 was too extra", not too little. 36 is off
-   the spacing scale (32 and 48 bracket it); landing it would need a token. CSS-ONLY: the tall frame
-   grows to its content, so nothing refuses — but Celebrations' height MOVES with the measure, and the
-   thread's recorded constants with it. Landing it is a frame change, not a class swap. */
-@media (width < 48rem) {
-  html[data-pv-side-pad] #celebrations .mounted-sheet-frame__sheet {
-    padding-inline: var(--pv-side-pad);
-  }
-  html[data-pv-side-pad="36"] {
-    --pv-side-pad: 36px;
-  }
-  html[data-pv-side-pad="md"] {
-    --pv-side-pad: var(--spacing-space-md);
-  }
-}
-
-/* THE TITLE AND ITS MALAYALAM SIT FURTHER APART ON A LAPTOP AND WIDER (owner, 2026-10-11). The header
-   line's items are 8px apart at every tier; from 64rem up the title takes a further `space-sm`, so the
-   Malayalam sits 24px from it. Phone and tablet keep 8, where the line is tight. */
-@media (width >= 64rem) {
-  html[data-pv-ritual-align] #celebrations ol > li > div > div > h3 {
-    margin-inline-end: var(--spacing-space-sm);
-  }
 }
 
 /* ───────── EVENT INFO — the six phone layouts LEFT THE ROUTE (owner, 2026-10-11) ─────────
@@ -190,21 +75,30 @@ html[data-pv-ritual-align]
     #event-info
     li
     > div:last-child
+    [data-venue-block]
     > p.type-body
     .whitespace-nowrap {
     white-space: normal;
   }
 }
 
-/* "MEET US HERE" — centred under the venue, or right-aligned, at every tier (owner, 2026-10-11). It
-   ships centred on a phone and at the text's start from a laptop up; both alternates hold one rule at
-   every width. */
-html[data-pv-map-action="center"] #event-info li > div:last-child > a {
-  align-self: center;
+/* "MEET US HERE" LEFT-ALIGNED TO THE VENUE, at every tier (owner, 2026-10-11): the disc's left edge
+   on the venue's first letter. The venue and its action share `[data-venue-block]`, which is
+   `display: contents` on the published page; here it becomes a box the venue's own width, so its
+   start IS the venue's start, and the box keeps its place in the column — centred on a phone, at the
+   text's start from a laptop up. The venue's lines start-align inside it, which only shows where it
+   wraps. The button's mark sits `space-sm` inside its target, so the target is pulled back by it. */
+html[data-pv-map-action="start"] #event-info [data-venue-block] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  text-align: start;
 }
 
-html[data-pv-map-action="end"] #event-info li > div:last-child > a {
-  align-self: flex-end;
+html[data-pv-map-action="start"] #event-info [data-venue-block] > a {
+  margin-inline-start: calc(-1 * var(--spacing-space-sm));
 }
 
 /* THE COUPLE'S NAMES LEFT THE ROUTE (owner, 2026-10-11): 45% larger on a phone, landed as the stacked
@@ -213,41 +107,9 @@ html[data-pv-map-action="end"] #event-info li > div:last-child > a {
 /* THE PHOTO VIEWER'S GROUND LEFT THE ROUTE (owner, 2026-10-11): the near-black ink was chosen and ships
    as `--color-scrim` in `app/styles/tokens.css`. */
 
-/* ───────── THE INVITE'S DATE BLOCK — spacing, the day's weight, colour ─────────
-   Owner, 2026-10-11. The gold hairlines were CONFIRMED and ship (`app/invite-date.module.css`), so
-   that lever left.
-
-   MORE SPACE: SATURDAY stays where it is; the day moves down by the step and Kerala by twice it, so
-   both gaps grow by the step. The header grows by twice the step at every tier — CSS-only, against an
-   invite fit generated from the shipped layout. */
-html[data-pv-date-space] #invite [data-invite-date] {
-  --date-weekday-pull: calc(-5px + var(--pv-date-space));
-}
-
-html[data-pv-date-space] #invite [data-invite-place] {
-  margin-top: calc(
-    var(--spacing-space-3xs) -
-    var(--date-place-pull) +
-    var(--pv-date-space)
-  );
-}
-
-html[data-pv-date-space="4"] {
-  --pv-date-space: var(--spacing-space-3xs);
-}
-
-html[data-pv-date-space="8"] {
-  --pv-date-space: var(--spacing-space-2xs);
-}
-
-html[data-pv-date-space="12"] {
-  --pv-date-space: var(--spacing-space-xs);
-}
-
-html[data-pv-day-weight="400"] #invite [data-invite-date] time {
-  font-weight: 400;
-}
-
+/* ───────── THE INVITE'S DATE — its colour ─────────
+   Owner, 2026-10-11. The block's inner spacing (8px) and the day's weight (400) left the route and
+   ship from `app/styles/tokens.css` and `app/_sections/invite.tsx`. */
 html[data-pv-date-colour="day-gold"] #invite [data-invite-date] time {
   color: var(--color-accent-gold);
 }
@@ -260,36 +122,20 @@ html[data-pv-date-colour="all-gold"] #invite [data-invite-date] {
   color: var(--color-accent-gold);
 }
 
-/* ───────── A GOLD GLOW AROUND THE COUPLE'S OWN PORTRAITS ─────────
-   Owner, 2026-10-11: the bride's and the groom's portraits only. Tailwind's ring is a `box-shadow`
-   chain that ends in `--tw-shadow`, so setting that variable adds a layer UNDER the paper offset and
-   the gold rim — the glow shows only beyond the rim, outward. Selected by the figure's own
-   `data-relationship`. */
-html[data-pv-glow]
-  figure:is([data-relationship="Bride"], [data-relationship="Groom"])
-  > div:first-child {
-  --tw-shadow: 0 0 var(--pv-glow-blur) var(--pv-glow-spread)
-    color-mix(
-      in srgb,
-      var(--color-accent-gold) var(--pv-glow-alpha),
-      transparent
-    );
+/* ───────── THE GOLD, DARKENED TOWARD BRONZE ─────────
+   Owner, 2026-10-11: one value per option, everywhere gold reads. Replacing the token at the root
+   reaches every consumer at once — text, marks, rules, rims, the glow — because each reads it as a
+   variable. The selector out-specifies the token's own `:root`. Contrast on `surface-elevated`, where
+   gold measures 2.42:1: light 3.35, mid 4.29, deep 5.53 (the first to clear AA for body text). Each
+   steps OKLCH lightness down 0.06 and turns the hue a few degrees toward orange, 66 → 58. */
+html[data-pv-gold="light"] {
+  --color-accent-gold: #b97e3c;
 }
 
-html[data-pv-glow="soft"] {
-  --pv-glow-blur: 8px;
-  --pv-glow-spread: 2px;
-  --pv-glow-alpha: 45%;
+html[data-pv-gold="mid"] {
+  --color-accent-gold: #a46c36;
 }
 
-html[data-pv-glow="medium"] {
-  --pv-glow-blur: 14px;
-  --pv-glow-spread: 3px;
-  --pv-glow-alpha: 60%;
-}
-
-html[data-pv-glow="strong"] {
-  --pv-glow-blur: 22px;
-  --pv-glow-spread: 4px;
-  --pv-glow-alpha: 75%;
+html[data-pv-gold="deep"] {
+  --color-accent-gold: #8f5b30;
 }

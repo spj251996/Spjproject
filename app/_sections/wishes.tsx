@@ -38,7 +38,7 @@ export function WishesSection({
           }}
         >
           <p className="type-eyebrow">
-            <SprigOrnament eyebrow>A life in love</SprigOrnament>
+            <SprigOrnament>A life in love</SprigOrnament>
           </p>
 
           {/* This gap and the two below halve at phone, with `.figureCol`'s in `wishes.module.css`

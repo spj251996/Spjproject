@@ -36,7 +36,7 @@
   --text-heading-xl: 26px;
   --text-heading-xl--font-weight: 700;
   --text-heading-xl--line-height: 40px;
-  --text-heading-md: 21px;
+  --text-heading-md: 18px;
   --text-heading-md--font-weight: 700;
   --text-heading-md--line-height: 32px;
   --text-heading-sm: 14px;
@@ -52,14 +52,14 @@
   --text-date-label--letter-spacing: 0.14em;
   --text-date-label--line-height: 12px;
   --text-date-day: 44px;
-  --text-date-day--font-weight: 700;
+  --text-date-day--font-weight: 400;
   --text-date-day--line-height: 44px;
   --text-body: 13px;
   --text-body--font-weight: 400;
   --text-body--line-height: 26px;
   --text-action: 13px;
   --text-action--line-height: 26px;
-  --text-caption: 12px;
+  --text-caption: 11px;
   --text-caption--font-weight: 400;
   --text-caption--line-height: 22px;
   --text-eyebrow: 10px;
@@ -131,6 +131,11 @@
      a composition. `@theme static` above is what emits the inner `var()`s to `:root` whether or not a
      utility reads them, so the composition resolves. */
   --shadow-mounted-stock: var(--shadow-mount), var(--shadow-stock);
+  /* The bride's and the groom's portraits (DESIGN.md -> Components -> `portrait`). The ring utilities
+     compose their box-shadow chain over `--tw-shadow`, so this lands UNDER the paper ring and the rim
+     and shows only outward of it. The owner's "medium" of three, chosen on `/preview` (2026-10-11). */
+  --shadow-glow-couple: 0 0 14px 3px
+    color-mix(in srgb, var(--color-accent-gold) 60%, transparent);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
@@ -169,16 +174,24 @@
      a media query cannot read this variable — change both together. */
   --card-height-cap: 720px;
   --card-height-cap-compact: 576px;
+  /* A tall card's side padding below 48rem (DESIGN.md -> mounted-sheet -> Tall mode). Off the spacing
+     scale by the owner's choice (2026-10-11): 48 left a ritual's measure short and 24 was "too extra".
+     `mounted-sheet-frame.ts` holds it as a number, because the frame emits plain pixel rules. */
+  --tall-inline-phone: 36px;
 
   /* The invite date block's bracket geometry — off the spacing scale by the exception in DESIGN.md ->
      Cross-Cutting Rules, because the figure's parts hold a fixed relation to each other rather than
      to the system. Each is the reference's ratio against the label's cap height, resolved to whole
      pixels per tier: the bracket is 5.00 caps, the labels' baseline sits 1.56 above the day's, and
-     the weekday is pulled up so its baseline lands 1.44 above the day's cap. The pull is one value
-     at every tier; the other two step with `--text-date-label`. */
+     the weekday's pull is one value at every tier; the other two step with `--text-date-label`.
+     The pull was -5px, landing the weekday's baseline 1.44 caps above the day's cap; the owner opened
+     both inner gaps by `space-2xs` (2026-10-11), so it is +3 and the place takes the same 8px below. */
   --rule-date-bracket: 42px;
   --date-label-lift: 13px;
-  --date-weekday-pull: -5px;
+  /* Both inner gaps of the date block open by this (owner, 2026-10-11): 8px, 7px on a laptop, where
+     8 left the invite 2px past its compact-touchscreen tier line. */
+  --date-open: 8px;
+  --date-weekday-pull: calc(var(--date-open) - 5px);
   /* How far the date block drops toward the place beneath it, so the day-to-place INK gap equals the
      weekday-to-day one (owner, 2026-10-11). Measured at weight 700: the two gaps were 17.5-19.5px and
      4-6px at the four tier nominals, a difference of 13.5-14px, so one whole value holds every tier
@@ -388,7 +401,7 @@
     --text-heading-script--line-height: 72px;
     --text-heading-xl: 32px;
     --text-heading-xl--line-height: 48px;
-    --text-heading-md: 23px;
+    --text-heading-md: 20px;
     --text-heading-md--line-height: 34px;
     --text-heading-sm: 15px;
     --text-heading-sm--line-height: 30px;
@@ -419,7 +432,7 @@
     --text-heading-script--line-height: 64px;
     --text-heading-xl: 30px;
     --text-heading-xl--line-height: 44px;
-    --text-heading-md: 21px;
+    --text-heading-md: 18px;
     --text-heading-md--line-height: 32px;
     --text-heading-sm: 14px;
     --text-heading-sm--line-height: 28px;
@@ -431,6 +444,7 @@
     --text-date-day--line-height: 44px;
     --rule-date-bracket: 42px;
     --date-label-lift: 13px;
+    --date-open: 7px;
     --text-body: 13px;
     --text-body--line-height: 26px;
     --text-action: 13px;
@@ -450,7 +464,7 @@
     --text-heading-script--line-height: 80px;
     --text-heading-xl: 38px;
     --text-heading-xl--line-height: 56px;
-    --text-heading-md: 25px;
+    --text-heading-md: 21px;
     --text-heading-md--line-height: 36px;
     --text-heading-sm: 17px;
     --text-heading-sm--line-height: 32px;
@@ -462,6 +476,7 @@
     --text-date-day--line-height: 51px;
     --rule-date-bracket: 49px;
     --date-label-lift: 15px;
+    --date-open: 8px;
     --text-body: 16px;
     --text-body--line-height: 32px;
     --text-action: 16px;

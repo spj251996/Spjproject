@@ -678,7 +678,7 @@ ${sheet} {
     const ground = spacing(windowClass.ground);
     return `@media ${windowClass.media} {
 ${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
-${sheet} { padding: ${spacing(windowClass.padding)}; }
+${sheet} { padding: ${spacing(windowClass.padding)};${windowClass.paddingInline === null ? "" : ` padding-inline: var(${windowClass.paddingInline});`} }
 }
 @media ${windowClass.media} and (orientation: portrait) {
 ${scope} { ${GROUND_BLOCK}: ${spacing(windowClass.portrait.block)}; ${GROUND_INLINE}: ${spacing(windowClass.portrait.inline)}; }

@@ -63,11 +63,10 @@ export function PhotoRow({
 
   return (
     /* Shrink-wrapped, not `w-full`, so the frames sit together rather than spreading across the block.
-       `items-center`, not `items-end` — the action centres under its strip (owner, 2026-10-10), which
-       OVERRIDES the recorded "action below the strip, aligned to its end". That rule was written for a
-       ritual block whose text aligned to one side; the rituals centre now, and an end-aligned button
-       under a centred column reads as the one thing that missed the memo. */
-    <div className="inline-flex flex-col items-center gap-space-3xs">
+       `items-end`: the action sits below the strip, aligned to its end (owner, 2026-10-11). The rituals
+       are left-aligned and their photographs gather to the block's right edge, so the action follows
+       the strip rather than the text. The caller places the strip itself. */
+    <div className="inline-flex flex-col items-end gap-space-3xs">
       <ul className="m-0 inline-flex list-none gap-space-2xs p-0">
         {frames.map(({ src, key }, index) => {
           const aspect = cappedAspect(src, aspects, aspectCap);

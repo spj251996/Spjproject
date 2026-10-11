@@ -33,7 +33,10 @@ const TALL_HEIGHTS: SectionHeights = {
      content now overruns one 393x700 screen by 7px (measured 707.06 on `/thread/current`, with
      `contact` and `wishes` reproducing 700 in the same run). */
   invite: 707,
-  "event-info": 1400,
+  /* 1411, not two screens' 1400, since 2026-10-11: the two entries in each sheet moved one step
+     apart and the stacked pair now overruns 393x700 by 10.5px (measured 1410.53 on
+     `/thread/current`, with `contact` and `wishes` reproducing 700 in the same run). */
+  "event-info": 1411,
   contact: 700,
   family: 1400,
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
@@ -43,8 +46,8 @@ const TALL_HEIGHTS: SectionHeights = {
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
      THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2404 / 2423 / 1666 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — so removing
+     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — so removing
      them means subtracting two increments, not re-deriving the height.
      RE-MEASURED 2026-10-10 on two changes at once, and the BASE moved while the INCREMENT did not:
      the ritual restructure put each Malayalam on its own line, and the alternating band above
@@ -52,8 +55,12 @@ const TALL_HEIGHTS: SectionHeights = {
      (was a raw 64px below 1024 and 32 above). Base 2308 / 2308 / 1520 -> 2404 / 2423 / 1666; the
      photo increment is unchanged, which is what the separate base and increment are for — the
      strip's height is per tier and the gap is between rituals, so neither reaches the other.
+     RE-MEASURED 2026-10-11 on `/thread/current` after the rituals went left-aligned on one header
+     line, the title went to 18/20/18/21px and the phone card's sides to 36px: base 2404 / 2423 /
+     1666 -> 2173 / 2262 / 1513. The phone INCREMENT moved too, 180 -> 184 — the wider measure lets
+     the strip hold its nominal 120px row — measured per ritual as the strip's box plus its margin.
      Instrument validated on `contact` and `wishes` first, both reproducing 700 / 1180 / 695. */
-  celebrations: 2764,
+  celebrations: 2541,
   wishes: 700,
 };
 
@@ -69,11 +76,11 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
      THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2404 / 2423 / 1666 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 2791,
+  celebrations: 2630,
   wishes: 1180,
 };
 
@@ -89,11 +96,11 @@ const WIDE_HEIGHTS: SectionHeights = {
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
      THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2404 / 2423 / 1666 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +180 / +184 / +214 — measured to
+     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
+     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 2094,
+  celebrations: 1941,
   wishes: 695,
 };
 

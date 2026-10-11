@@ -37,7 +37,7 @@ export default function NotFound() {
             data-not-found-stack
           >
             <p className="type-eyebrow">
-              <SprigOrnament eyebrow>A Small Detour</SprigOrnament>
+              <SprigOrnament>A Small Detour</SprigOrnament>
             </p>
             <h1 className="type-heading-xl text-ink-muted mt-space-2xs">
               This page isn&apos;t part of the invitation.

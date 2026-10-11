@@ -703,6 +703,9 @@ export interface TallWindowClass {
   /* Tall mode has no give-way, so the pressed pair is not part of a tall class. */
   portrait: Pick<PortraitGround, "block" | "inline">;
   padding: number;
+  /* A side padding that overrides `padding`'s inline sides, as the custom property that carries it, or
+     null where the sides take `padding` too. */
+  paddingInline: string | null;
   /* Per orientation, because one width tier holds both: a non-hero card's mount shows only in a
      landscape window at the laptop or desktop tier. */
   reveal: Readonly<Record<Orientation, number>>;
@@ -716,6 +719,13 @@ const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   tablet: 96,
   laptop: 96,
   desktop: 128,
+};
+
+/* The phone's sides are the one exception (owner, 2026-10-11): 36px, off the spacing scale, so a
+   ritual's measure gains 24px where it is shortest. A token rather than a number because `spacing()`
+   admits only the scale. */
+const TALL_INLINE: Readonly<Partial<Record<WidthTier, string>>> = {
+  phone: "--tall-inline-phone",
 };
 
 export function tallWindowClasses(hero: boolean): TallWindowClass[] {
@@ -737,6 +747,7 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
       ground: groundTier.ground,
       portrait: groundTier.portrait,
       padding: TALL_PADDING[groundTier.name],
+      paddingInline: TALL_INLINE[widthTier] ?? null,
       reveal: {
         portrait: showsPortrait ? REVEAL[widthTier] : 0,
         landscape: showsLandscape ? REVEAL[widthTier] : 0,

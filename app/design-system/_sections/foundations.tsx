@@ -176,10 +176,10 @@ const TYPE_TOKENS: TypeToken[] = [
     family: "Playfair Display",
     weight: 700,
     sample: "Each ritual's English title.",
-    phone: { size: 21, lh: 32 },
-    tablet: { size: 23, lh: 34 },
-    laptop: { size: 21, lh: 32 },
-    desktop: { size: 25, lh: 36 },
+    phone: { size: 18, lh: 32 },
+    tablet: { size: 20, lh: 34 },
+    laptop: { size: 18, lh: 32 },
+    desktop: { size: 21, lh: 36 },
   },
   {
     token: "type-heading-sm",
@@ -216,7 +216,7 @@ const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-date-day",
     family: "Playfair Display",
-    weight: 700,
+    weight: 400,
     sample: "9",
     phone: { size: 44, lh: 44 },
     tablet: { size: 48, lh: 48 },
@@ -250,7 +250,7 @@ const TYPE_TOKENS: TypeToken[] = [
     weight: 400,
     sample:
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
-    phone: { size: 12, lh: 22 },
+    phone: { size: 11, lh: 22 },
     tablet: { size: 13, lh: 24 },
     laptop: { size: 12, lh: 22 },
     desktop: { size: 14, lh: 24 },
@@ -261,7 +261,7 @@ const TYPE_TOKENS: TypeToken[] = [
     weight: 400,
     sample:
       "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
-    phone: { size: 12, lh: 22 },
+    phone: { size: 11, lh: 22 },
     tablet: { size: 13, lh: 24 },
     laptop: { size: 12, lh: 22 },
     desktop: { size: 14, lh: 24 },
@@ -403,6 +403,13 @@ const DEPTH_LEVELS: DepthLevel[] = [
     className: "bg-surface-elevated shadow-stock rounded-card",
     usage:
       "The stock composes three recipes into one value — its edge hairline and its lit top edge, both inset, then two drops cast by the card itself — setting how close the stock sits to its mount.",
+  },
+  {
+    name: "The couple's glow · the bride's and the groom's portraits",
+    spec: "surface-elevated · shadow-glow-couple",
+    className: "bg-surface-elevated shadow-glow-couple rounded-full",
+    usage:
+      "A soft gold light, 14px blur and 3px spread at 60%, laid under a portrait's paper ring and rim so it shows only outward of the rim. The couple's two portraits alone.",
   },
 ];
 
@@ -723,7 +730,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="elevation"
-        intro="Depth from paper edge, subtle shadow and tone. The outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other. Four recipes in all; every shadow is tinted warm, and the stock's inset highlight alone stays untinted."
+        intro="Depth from paper edge, subtle shadow and tone. The outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other. Four recipes in all, plus the couple's portrait glow, which is light rather than depth; every shadow is tinted warm, the glow is gold, and the stock's inset highlight alone stays untinted."
         mapsTo="Foundations → Elevation & Depth"
         source="--shadow-*"
         title="Foundations · Elevation & Depth"
@@ -825,7 +832,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows (mirrored outward, between rules) and each Celebrations ritual's Malayalam (as drawn) in pairs through sprig-ornament, marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line (once, as drawn), marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

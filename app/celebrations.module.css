@@ -50,29 +50,34 @@
   width: var(--celebrations-block-width);
 }
 
-/* EVERY RITUAL CENTRES, AT EVERY TIER (owner, 2026-10-10), which also centres the sprig-bracketed
-   Malayalam, the title, the tagline, the description and the photo strip's action — `align-items`
-   reaches the strip because it is a flex item like the rest.
+/* EVERY RITUAL IS LEFT-ALIGNED, AT EVERY TIER (owner and couple, 2026-10-11, on `/preview`, over
+   justified). It replaces the centred column of 2026-10-10, whose case — the ritual was the page's
+   only eyebrow-led block not centring its ornament — went when the ornament became one leading sprig
+   on the title's own line. The photographs lean the other way on purpose: their wrapper is `text-end`
+   in the section file.
 
-   WHY CENTRED RATHER THAN THE START IT REPLACED, measured at 393px: a ritual was the ONLY
-   eyebrow-led block on the page whose eyebrow did not centre. Six of the page's eleven ornaments
-   sit centred in their measure; the five that did not were these, leaving 113-138px of white to
-   the right of a mark that is symmetrical by construction — 45-55% of a 249px line. And every
-   body paragraph on the site is centred; the only two that were not were a ritual's description
-   and its tagline. The `:nth-child(even)` mirror that used to flip the start side above 1024px
-   went with the alternation above, so there is no longer a side to lean toward either.
-
-   THE COST, accepted knowingly: centring trades one ragged edge for two. At 393px the start form
-   was ragged 43px on the right alone; centred is ragged 44px left and 21px right over a nine-line
-   description, which makes a ritual the longest centred body block on the site.
-
-   JUSTIFIED WAS REJECTED ON MEASUREMENT, not taste: at 24-37 characters a line and a 3.23-3.75px
-   natural word space, justification stretched the widest gap to 14.75px on two of nine lines —
-   3.93x, wider than a character at 13px — and the Malayalam line cannot justify at all. */
+   JUSTIFIED WAS OFFERED AGAIN AND NOT CHOSEN. Its measured cost stands: at 24-37 characters a line
+   and a 3.23-3.75px natural word space, the widest gap stretched to 14.75px on two of nine lines. */
 .text {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: stretch;
+  text-align: start;
+}
+
+/* Sprig · title · Malayalam on one baseline; the Malayalam wraps under the title where all three do
+   not fit. 8px between items, and 24px between the title and the Malayalam from 64rem up, where the
+   line has room to set them apart (owner, 2026-10-11). */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--spacing-space-2xs);
+}
+
+@media (width >= 64rem) {
+  .title {
+    margin-inline-end: var(--spacing-space-sm);
+  }
 }

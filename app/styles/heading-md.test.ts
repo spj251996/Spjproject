@@ -81,7 +81,7 @@ function gallerySpecimen(): string {
 test("heading-md is declared at all four tiers", () => {
   assert.deepStrictEqual(
     declared("--text-heading-md"),
-    ["21", "23", "21", "25"],
+    ["18", "20", "18", "21"],
     "expected a base value and three tier overrides, in tier order",
   );
   assert.deepStrictEqual(declared("--text-heading-md--line-height"), [

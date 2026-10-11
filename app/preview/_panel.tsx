@@ -31,20 +31,17 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
 const ATTRIBUTES = [
   "data-pv-events",
   "data-pv-map-action",
-  "data-pv-date-space",
-  "data-pv-day-weight",
   "data-pv-date-colour",
-  "data-pv-glow",
-  "data-pv-ritual-align",
-  "data-pv-side-pad",
+  "data-pv-ritual-leaf",
+  "data-pv-gold",
 ] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
 
    THREE WERE SETTLED and landed as values rather than as the factors the route carried them as:
-   the ritual title is 21/23/21/25px in `app/styles/tokens.css` (up 8%, rounded to whole pixels per
-   this project's own rule); the ampersand is drawn 35% SMALLER in
+   the ritual title's size in `app/styles/tokens.css` (up 8% then; 18px on a phone since
+   2026-10-11); the ampersand is drawn 35% SMALLER in
    `components/ui/couple-names.tsx`, keeping its full layout slot so the words do not move and
    neither measured fit changes; and the Malayalam is weight 600, the only cut `app/layout.tsx`
    loads. `preview-route.test.ts` checks the first two AT THEIR DESTINATIONS, because a stripped
@@ -77,16 +74,22 @@ interface Lever {
   options: readonly Option[];
 }
 
-/* The three the couple decide. Option 0 of each is what ships today, so an untouched panel shows
-   the recommended state and there is nothing to jump on first paint. */
+/* The open questions. Option 0 of each is what ships today, so an untouched panel shows the
+   published page and there is nothing to jump on first paint.
+
+   SIX LEFT ON 2026-10-11 (owner) AND EACH LANDED AS A VALUE: the date block's inner spacing (8px)
+   and the day's weight (400) in `app/styles/tokens.css` and `app/_sections/invite.tsx`; the gold
+   glow on the couple's portraits (medium) in `components/ui/portrait.tsx`; the rituals left-aligned
+   in `app/_sections/celebrations.tsx`; and the timeline card's 36px phone padding in
+   `components/layout/mounted-sheet-frame.ts`. `preview-route.test.ts` checks them at their
+   destinations. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
     id: "events",
     title: "The event details on a phone",
     /* PREVIEW ONLY, and the mark is not politeness. `app/event-info-fit.ts` is GENERATED from the
        shipped layout and a CSS override cannot re-derive it, so the alternate can render a
-       composition the production build will not produce. The six earlier candidates left the route
-       on 2026-10-11 (owner); this is the one that replaced them. */
+       composition the production build will not produce. */
     note: "Preview only — the spacing is derived in code, so the final build may sit a few pixels off.",
     options: [
       { label: "As now", attrs: {} },
@@ -103,29 +106,10 @@ const COUPLE_LEVERS: readonly Lever[] = [
     options: [
       { label: "As now", attrs: {} },
       {
-        label: "Centred under the venue",
-        attrs: { "data-pv-map-action": "center" },
+        label: "Left, in line with the venue",
+        note: "The button's circle starts where the venue's first letter does.",
+        attrs: { "data-pv-map-action": "start" },
       },
-      { label: "Right-aligned", attrs: { "data-pv-map-action": "end" } },
-    ],
-  },
-  {
-    id: "date-space",
-    title: "Space inside the date",
-    note: "Between the weekday and the day, and between the day and the place.",
-    options: [
-      { label: "As now", attrs: {} },
-      { label: "4px more", attrs: { "data-pv-date-space": "4" } },
-      { label: "8px more", attrs: { "data-pv-date-space": "8" } },
-      { label: "12px more", attrs: { "data-pv-date-space": "12" } },
-    ],
-  },
-  {
-    id: "day-weight",
-    title: "The day's weight",
-    options: [
-      { label: "Bold", attrs: {} },
-      { label: "Regular", attrs: { "data-pv-day-weight": "400" } },
     ],
   },
   {
@@ -148,37 +132,25 @@ const COUPLE_LEVERS: readonly Lever[] = [
     ],
   },
   {
-    id: "glow",
-    title: "A glow around the couple's portraits",
+    id: "ritual-leaf",
+    title: "The leaf before each ritual's name",
     options: [
-      { label: "None", attrs: {} },
-      { label: "Soft", attrs: { "data-pv-glow": "soft" } },
-      { label: "Medium", attrs: { "data-pv-glow": "medium" } },
-      { label: "Strong", attrs: { "data-pv-glow": "strong" } },
+      { label: "With the leaf", attrs: {} },
+      { label: "Without", attrs: { "data-pv-ritual-leaf": "none" } },
     ],
   },
   {
-    id: "ritual-align",
-    title: "The rituals",
-    /* CENTRED, THE RAIL AND THE COLUMN SPLIT ALL LEFT THE ROUTE (owner, 2026-10-11), and centred is
-       still what `/` ships — so this is the ONE group whose first choice is not the published page.
-       Option 0 carries an attribute, which the panel applies on load like any choice; the
-       server-rendered markup is still the published page's, so `/preview`'s `<main>` stays
-       byte-identical to `/`'s. The photographs aligned right are fixed in both forms. */
-    note: "The leaf, title and Malayalam share one line; the photographs sit on the right. The invitation still shows the centred layout until one of these is chosen.",
+    id: "gold",
+    title: "The gold, darkened toward bronze",
+    /* ONE VALUE PER OPTION, everywhere gold reads (owner, 2026-10-11: "singular option change across
+       text and marks/rules") — the eyebrows, the marks, the rules, the rims, the Malayalam, the
+       buttons. Each is `--color-accent-gold` replaced at the root, so nothing gold can be missed. */
+    note: "Changes every gold on the page at once — words, leaves and lines.",
     options: [
-      { label: "Left", attrs: { "data-pv-ritual-align": "start" } },
-      { label: "Justified", attrs: { "data-pv-ritual-align": "justify" } },
-    ],
-  },
-  {
-    id: "side-pad",
-    title: "Space beside the rituals on a phone",
-    note: "Room between the card's edge and the text.",
-    options: [
-      { label: "As now (48px)", attrs: {} },
-      { label: "36px", attrs: { "data-pv-side-pad": "36" } },
-      { label: "24px", attrs: { "data-pv-side-pad": "md" } },
+      { label: "Gold, as now", attrs: {} },
+      { label: "Light bronze", attrs: { "data-pv-gold": "light" } },
+      { label: "Bronze", attrs: { "data-pv-gold": "mid" } },
+      { label: "Deep bronze", attrs: { "data-pv-gold": "deep" } },
     ],
   },
 ];

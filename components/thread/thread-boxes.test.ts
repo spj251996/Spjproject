@@ -19,11 +19,12 @@ test("celebrations is measured taller than the band's own nominal box, at wide",
   /* Re-measured three times: when the five-ritual section replaced the placeholder (1320 was the
      placeholder's), when the first two rituals gained their temporary photographs, and on
      2026-10-10 when each Malayalam moved onto its own line and the alternating band gave way to
-     one full-width column at every tier. The photo-free base is 1666 at this band and each ritual
-     with photographs adds a constant +214 — so 1666 + 2 x 214 = 2094, and dropping the
-     photographs before main returns it to 1666.
+     one full-width column at every tier, and again on 2026-10-11 when the rituals went left-aligned
+     on one header line with a smaller title. The photo-free base is 1513 at this band and each
+     ritual with photographs adds a constant +214 — so 1513 + 2 x 214 = 1941, and dropping the
+     photographs before main returns it to 1513.
      It is still the point of this test that it exceeds the band's 695. */
-  assert.equal(box.height, 2094);
+  assert.equal(box.height, 1941);
   assert.ok(box.height > 695);
   assert.ok(box.height > 695);
 });
@@ -57,13 +58,13 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("invite", "tall"), { width: 393, height: 707 });
   assert.deepEqual(sectionBox("event-info", "tall"), {
     width: 393,
-    height: 1400,
+    height: 1411,
   });
   assert.deepEqual(sectionBox("contact", "tall"), { width: 393, height: 700 });
   assert.deepEqual(sectionBox("family", "tall"), { width: 393, height: 1400 });
   assert.deepEqual(sectionBox("celebrations", "tall"), {
     width: 393,
-    height: 2764,
+    height: 2541,
   });
   assert.deepEqual(sectionBox("wishes", "tall"), { width: 393, height: 700 });
 
@@ -85,7 +86,7 @@ test("the measured heights match the render exactly", () => {
   });
   assert.deepEqual(sectionBox("celebrations", "upright"), {
     width: 820,
-    height: 2791,
+    height: 2630,
   });
   assert.deepEqual(sectionBox("wishes", "upright"), {
     width: 820,
@@ -101,7 +102,7 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("family", "wide"), { width: 1536, height: 695 });
   assert.deepEqual(sectionBox("celebrations", "wide"), {
     width: 1536,
-    height: 2094,
+    height: 1941,
   });
   assert.deepEqual(sectionBox("wishes", "wide"), { width: 1536, height: 695 });
 });

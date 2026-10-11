@@ -63,7 +63,7 @@ export function Family({ group, eyebrow }: FamilyProps) {
   return (
     <div className={SHEET_CLASS}>
       <p className="type-eyebrow">
-        <SprigOrnament eyebrow>{eyebrow}</SprigOrnament>
+        <SprigOrnament>{eyebrow}</SprigOrnament>
       </p>
       <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
         {group.familyName}
@@ -101,6 +101,10 @@ export function Family({ group, eyebrow }: FamilyProps) {
   );
 }
 
+/* The couple's own portraits glow (owner, 2026-10-11 — DESIGN.md -> Components -> `portrait`).
+   Keyed on the relationship the reader sees, so it follows them wherever they are listed. */
+const COUPLE: ReadonlySet<string> = new Set(["Bride", "Groom"]);
+
 function MemberPortrait({
   member,
   overrun,
@@ -111,6 +115,7 @@ function MemberPortrait({
   return (
     <Portrait
       className={`${PORTRAIT_TO_NAME} ${overrun}`}
+      glow={COUPLE.has(member.relationship)}
       name={member.name}
       relationship={member.relationship}
       src={member.portrait}

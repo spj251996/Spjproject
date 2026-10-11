@@ -24,7 +24,7 @@ import { PhotoStrip } from "@/components/ui/photo-strip";
 import { PhotoViewerPanel } from "@/components/ui/photo-viewer";
 import { Portrait } from "@/components/ui/portrait";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
-import { invite, rituals, wishes } from "@/content";
+import { invite, wishes } from "@/content";
 import { GalleryButtonActionDemo } from "./gallery-action-demos";
 
 interface VariantProps {
@@ -141,21 +141,16 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="A pair of sprig marks either side of whatever it is given, in two forms: the EYEBROW form on five section-head eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's — and the PLAIN form on each ritual's Malayalam title. Six call sites; ELEVEN ornaments on the published page, since Event Info and Family each render theirs twice and there are five rituals."
+          description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules, on five eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's. Five call sites; SEVEN ornaments on the published page, since Event Info and Family each render theirs twice."
           id="ui-sprig-ornament"
           name="sprig-ornament"
-          note="It carries no type role and no colour, which is what lets one component serve both rows below: each call site keeps its own element and role. A colour utility here would beat .type-eyebrow's own gold, declared in @layer components, and the Malayalam must not take that role at all — its 0.2em tracking breaks conjuncts rather than spacing them. The second row is the real Malayalam from content, not a sample. The invite's eyebrow and Contact's deliberately take none: the invite's leads the hero, and Contact's files are scheduled for removal. The eyebrow form is the owner's pick from six arrangements on /preview (2026-10-11); the ritual keeps the plain pair, so the flip is opt-in rather than the default."
+          note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow and Contact's deliberately take none: the invite's leads the hero, and Contact's files are scheduled for removal. The form is the owner's pick from six arrangements on /preview (2026-10-11). Its plain pair, which served the ritual's Malayalam, left when the rituals' header line took one leading sprig instead — see it on the page at Domain · Timeline."
           source="@/components/ui/sprig-ornament"
-          spec="the sprig mark at 23px on the diagonal, which renders 16px tall — the Iconography floor for this mark, whose viewBox is not square · gap space-2xs between every item · plain: NEITHER mark flipped, so both face the way ornamental-divider's does · eyebrow: the LEADING mark flipped so both point outward, and a rule outside each mark, space-lg (32px) long at --stroke-hairline (0.5px), in the wrapper's own colour"
+          spec="the sprig mark at 23px on the diagonal, which renders 16px tall — the Iconography floor for this mark, whose viewBox is not square · gap space-2xs between every item · the LEADING mark flipped so both point outward — the trailing one as drawn already does · a rule outside each mark, space-lg (32px) long, a top border at --stroke-hairline (0.5px), in the wrapper's own colour"
         >
-          <div className="flex flex-col items-center gap-space-md">
-            <p className="type-eyebrow">
-              <SprigOrnament eyebrow>Our traditions</SprigOrnament>
-            </p>
-            <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight">
-              <SprigOrnament>{rituals[0].malayalam}</SprigOrnament>
-            </span>
-          </div>
+          <p className="type-eyebrow">
+            <SprigOrnament>Our traditions</SprigOrnament>
+          </p>
         </Specimen>
 
         <Specimen
@@ -202,7 +197,7 @@ export function ComponentsSections() {
           name="photo-row"
           note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that derives three deliveries on the page. Pressing a frame opens the real viewer on that photograph; the +N frame and the action open the real grid."
           source="@/components/ui/photo-row"
-          spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, centred under it — it aligned to the strip's end until 2026-10-10, when the rituals became one centred column · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover"
+          spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, aligned to its end; on the page the strip and its action sit at the ritual block's right edge (owner, 2026-10-11) · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover"
         >
           <PhotoStrip
             aspects={sampleRitualAspects}

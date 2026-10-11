@@ -19,6 +19,8 @@ interface PortraitProps {
   name: string;
   relationship: string;
   src: string | null;
+  /** The couple's own gold glow outside the rim; the composing section decides who takes it. */
+  glow?: boolean;
   className?: string;
 }
 
@@ -43,15 +45,20 @@ export function Portrait({
   name,
   relationship,
   src,
+  glow = false,
   className,
 }: PortraitProps) {
   return (
     <figure
       className={`flex w-(--portrait-diameter) flex-col items-center ${className ?? ""}`}
-      /* A styling and measuring hook: `/preview` keys the couple's own portraits on it. */
+      /* A measuring hook for harnesses. */
       data-relationship={relationship}
     >
-      <div className="relative size-(--portrait-diameter) shrink-0 rounded-full ring-(length:--stroke-divider) ring-accent-gold ring-offset-(length:--stroke-rim-offset) ring-offset-surface-elevated">
+      {/* The couple's own glow (DESIGN.md -> Components -> `portrait`). `shadow-*` sets the
+          `--tw-shadow` the ring's chain ends in, so it sits under the paper ring and the rim. */}
+      <div
+        className={`relative size-(--portrait-diameter) shrink-0 rounded-full ring-(length:--stroke-divider) ring-accent-gold ring-offset-(length:--stroke-rim-offset) ring-offset-surface-elevated${glow ? " shadow-glow-couple" : ""}`}
+      >
         <div className="absolute inset-0 overflow-hidden rounded-full">
           <ImagePlaceholder
             className="absolute inset-0 h-full"

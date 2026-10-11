@@ -24,9 +24,9 @@ test("with no photographs the section renders no preview row and no gallery acti
   );
 });
 
-/* THE RITUAL LIST'S OWN SLICE, and it is load-bearing: `<SprigOrnament>` also wraps the SECTION's
-   eyebrow forty lines above, so an unscoped `indexOf` reads the head's ornament and every order
-   assertion below passes against the wrong element. */
+/* THE RITUAL LIST'S OWN SLICE, and it is load-bearing: the section's head sits forty lines above
+   with an eyebrow, an ornament and a heading of its own, so an unscoped `indexOf` can read the head
+   and pass every order assertion below against the wrong element. */
 function ritualList(): string {
   const start = source.indexOf("CELEBRATIONS_LIST_CLASS}");
   assert.notStrictEqual(
@@ -42,41 +42,37 @@ function ritualList(): string {
   return source.slice(start, end);
 }
 
-test("each ritual leads with its Malayalam above a larger English title", () => {
-  /* The hierarchy inverted on 2026-10-09 (owner): the Malayalam and the sprig move into the
-     eyebrow position ABOVE, and the English title grows beneath them. Source order is what
-     guarantees it, because a mirrored row is pushed and aligned by its parent and never reversed
-     — reversing it once rendered `മധുരംവെപ്പ് Wedding Eve [leaf]`. */
+test("each ritual opens on one header line: sprig, English title, Malayalam", () => {
+  /* The owner's order (2026-10-11): the sprig, then the English title, then its Malayalam, on one
+     baseline. Source order is what sets it — a reversed row once rendered `മധുരംവെപ്പ് Wedding Eve
+     [leaf]` — and the sprig is the mark ONCE, not the eyebrows' outward pair between rules. */
   const list = ritualList();
-  const ornament = list.indexOf("<SprigOrnament>");
-  const malayalam = list.indexOf("{ritual.malayalam}");
+  const header = list.indexOf("data-ritual-header");
+  const sprig = list.indexOf("<SprigIcon");
   const title = list.indexOf("{ritual.title}");
-  assert.notStrictEqual(
-    ornament,
-    -1,
-    "the ritual's Malayalam carries no sprig ornament",
-  );
-  assert.ok(malayalam !== -1 && title !== -1);
+  const malayalam = list.indexOf("{ritual.malayalam}");
+  assert.ok(header !== -1, "no header line in the ritual block");
+  assert.ok(sprig !== -1 && title !== -1 && malayalam !== -1);
   assert.ok(
-    ornament < malayalam,
-    "the sprig brackets the Malayalam, so the ornament opens that line",
+    header < sprig && sprig < title && title < malayalam,
+    "the header line runs sprig, English title, Malayalam — in that order",
   );
   assert.ok(
-    malayalam < title,
-    "the Malayalam must sit ABOVE the English title, not beside it",
+    !list.includes("<SprigOrnament"),
+    "the ritual takes one sprig, not the eyebrows' ornament",
   );
-  /* Scoped to `className` values, not the slice: the prose above this markup names
-     `type-heading-md`, so matching the slice passes while the title carries no role at all —
-     proven by mutation, and it is the third face of this file's own comment-matching trap. */
+  /* Scoped to class values, not the slice: the prose above this markup names `type-heading-md`, so
+     matching the slice passes while the title carries no role at all. Template-literal class names
+     count, because the title composes the role with the module's own class. */
   assert.ok(
-    (list.match(/className="[^"]*"/g) ?? []).some((value) =>
+    (list.match(/className=(?:"[^"]*"|\{`[^`]*`\})/g) ?? []).some((value) =>
       value.includes("type-heading-md"),
     ),
-    "the freed English title takes the new role",
+    "the English title takes heading-md",
   );
   assert.ok(
     !/flex-row-reverse/.test(source),
-    "a reversed row reverses the ornament too — mirror by justification, never by reversal",
+    "a reversed row reverses the sprig too — never reverse the line",
   );
 });
 
