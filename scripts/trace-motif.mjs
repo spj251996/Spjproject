@@ -39,7 +39,7 @@
  * every skeleton traversal is bounded by the pixel count it walks.
  *
  * USAGE:
- *   npm run trace:motif -- "tmp/aaa/thread paths/heart.svg"
+ *   npm run trace:motif -- "tmp/aaa/source/thread paths/heart.svg"
  *   npm run trace:motif -- <file.svg> --width=1600 --spur=0.06 --segments=64 --bridge=5
  */
 

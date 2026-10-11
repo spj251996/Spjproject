@@ -1,6 +1,6 @@
 /* THE COUPLE'S NAMES, drawn. Source: the owner's potrace conversion of the legacy site's raster
    — there is no font and no vector original, and `legacy-html/index.html` holds only a 780x580 PNG
-   inline as a data URI. Generated once from `tmp/aaa/Names-svg.svg` by
+   inline as a data URI. Generated once from `tmp/aaa/source/Names-svg.svg` by
    `tmp/half2/gen-names-symbol.mjs`; the asset is gitignored, so this file is the only copy of the
    geometry. A re-trace must re-run that script, not hand-edit these paths.
 
