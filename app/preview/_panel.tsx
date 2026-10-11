@@ -28,7 +28,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    read `:root:not([data-opening-skipped])`. A panel that cleared or rewrote the root's attribute
    set would re-arm the invite's 1600ms opening in the middle of a scroll. One prefix makes the
    gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive. */
-const ATTRIBUTES = ["data-pv-event-icon", "data-pv-amp"] as const;
+const ATTRIBUTES = ["data-pv-portrait"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -79,20 +79,17 @@ interface Lever {
    destinations. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
-    id: "event-icon",
-    title: "The event icons on a phone",
-    note: "Smaller icons give the venue room for one line. Preview only — the spacing is derived in code.",
+    id: "portrait",
+    title: "The new family photos",
+    note: "The groom's family. Their white backgrounds melt into the card, the way the flowers do.",
     options: [
       { label: "As now", attrs: {} },
-      { label: "Smaller", attrs: { "data-pv-event-icon": "small" } },
-    ],
-  },
-  {
-    id: "amp",
-    title: "The “&” between the names",
-    options: [
-      { label: "Soft brown, as now", attrs: {} },
-      { label: "Gold", attrs: { "data-pv-amp": "gold" } },
+      { label: "Blended, no rim", attrs: { "data-pv-portrait": "blend" } },
+      {
+        label: "Blended, no rim, soft edges",
+        attrs: { "data-pv-portrait": "fade" },
+      },
+      { label: "Blended, with the rim", attrs: { "data-pv-portrait": "rim" } },
     ],
   },
 ];
