@@ -29,15 +29,14 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    set would re-arm the invite's 1600ms opening in the middle of a scroll. One prefix makes the
    gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive. */
 const ATTRIBUTES = [
-  "data-pv-rail",
-  "data-pv-dot-label",
-  "data-pv-dot-place",
-  "data-pv-icon-split",
+  "data-pv-events",
+  "data-pv-map-action",
+  "data-pv-date-space",
+  "data-pv-day-weight",
+  "data-pv-date-colour",
+  "data-pv-glow",
   "data-pv-ritual-align",
   "data-pv-side-pad",
-  "data-pv-name-scale",
-  "data-pv-date-day",
-  "data-pv-date-rules",
 ] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
@@ -85,121 +84,101 @@ const COUPLE_LEVERS: readonly Lever[] = [
     id: "events",
     title: "The event details on a phone",
     /* PREVIEW ONLY, and the mark is not politeness. `app/event-info-fit.ts` is GENERATED from the
-       shipped layout and a CSS override cannot re-derive it, so an alternate can render a
-       composition the production build will not produce.
-       **THE SIX ARE HEIGHT-NEUTRAL ONLY FROM 393px UP, which corrects the claim this comment
-       carried until 2026-10-10.** At 393 and 430 every candidate measures what ships (1704 /
-       1864). Below that they diverge: at 375x667 they measure 1502 / 1538 / 1502 / 1538 / 1648 /
-       1578 against a shipped 1578 — a 146px SPREAD, with `icon on the line, time on the left`
-       running 70px taller than the layout the committed fit was derived from. Nothing on `/`
-       breaks, because the alternates are preview-only and the committed fit is `/`'s.
-       **WHAT IT COSTS IS A CARRY-THROUGH SHORTCUT: Half 3 MUST re-run `measure:fit` when it
-       lands the couple's winner in `event-info.tsx`.** "All six measure 1704" was the stated
-       reason it would not have to, and that reason only holds on two of the band's widths. */
-    note: "Six arrangements of the same details. Preview only — the spacing is derived in code, so the final build may sit a few pixels off.",
-    options: [
-      { label: "Today's", attrs: {} },
-      {
-        label: "Centre line · time on the left, above the icon",
-        attrs: {
-          "data-pv-rail": "dot",
-          "data-pv-dot-label": "time",
-          "data-pv-dot-place": "above",
-        },
-      },
-      {
-        label: "Centre line · time on the left, below the icon",
-        attrs: {
-          "data-pv-rail": "dot",
-          "data-pv-dot-label": "time",
-          "data-pv-dot-place": "below",
-        },
-      },
-      {
-        label: "Centre line · event on the left, above the icon",
-        attrs: {
-          "data-pv-rail": "dot",
-          "data-pv-dot-label": "event",
-          "data-pv-dot-place": "above",
-        },
-      },
-      {
-        label: "Centre line · event on the left, below the icon",
-        attrs: {
-          "data-pv-rail": "dot",
-          "data-pv-dot-label": "event",
-          "data-pv-dot-place": "below",
-        },
-      },
-      {
-        label: "Icon on the line · time on the left",
-        attrs: { "data-pv-rail": "icon", "data-pv-icon-split": "time" },
-      },
-      {
-        label: "Icon on the line · time and event on the left",
-        attrs: { "data-pv-rail": "icon", "data-pv-icon-split": "both" },
-      },
-    ],
-  },
-  {
-    id: "name-scale",
-    title: "The names on a phone",
-    /* The block beneath the names moves down with them, so the gap to the invitation line matches
-       the gap from that line to the date. CSS-only — see `preview.css`. */
-    note: "Larger names on the invitation, phone only. The lines beneath move down to make room.",
+       shipped layout and a CSS override cannot re-derive it, so the alternate can render a
+       composition the production build will not produce. The six earlier candidates left the route
+       on 2026-10-11 (owner); this is the one that replaced them. */
+    note: "Preview only — the spacing is derived in code, so the final build may sit a few pixels off.",
     options: [
       { label: "As now", attrs: {} },
-      { label: "50% larger", attrs: { "data-pv-name-scale": "150" } },
+      {
+        label: "Two columns, as on a laptop",
+        note: "The venue may wrap.",
+        attrs: { "data-pv-events": "columns" },
+      },
     ],
   },
   {
-    id: "date-day",
-    title: "The day in the date",
+    id: "map-action",
+    title: "The “Meet us here” button",
     options: [
-      { label: "Dark brown", attrs: {} },
-      { label: "Gold", attrs: { "data-pv-date-day": "gold" } },
+      { label: "As now", attrs: {} },
+      {
+        label: "Centred under the venue",
+        attrs: { "data-pv-map-action": "center" },
+      },
+      { label: "Right-aligned", attrs: { "data-pv-map-action": "end" } },
     ],
   },
   {
-    id: "date-rules",
-    title: "The lines either side of the day",
+    id: "date-space",
+    title: "Space inside the date",
+    note: "Between the weekday and the day, and between the day and the place.",
     options: [
-      { label: "Faint", attrs: {} },
-      { label: "Gold", attrs: { "data-pv-date-rules": "gold" } },
+      { label: "As now", attrs: {} },
+      { label: "4px more", attrs: { "data-pv-date-space": "4" } },
+      { label: "8px more", attrs: { "data-pv-date-space": "8" } },
+      { label: "12px more", attrs: { "data-pv-date-space": "12" } },
+    ],
+  },
+  {
+    id: "day-weight",
+    title: "The day's weight",
+    options: [
+      { label: "Bold", attrs: {} },
+      { label: "Regular", attrs: { "data-pv-day-weight": "400" } },
+    ],
+  },
+  {
+    id: "date-colour",
+    title: "The date's colour",
+    options: [
+      { label: "As now", attrs: {} },
+      {
+        label: "The day in gold",
+        attrs: { "data-pv-date-colour": "day-gold" },
+      },
+      {
+        label: "The day in soft brown",
+        attrs: { "data-pv-date-colour": "day-muted" },
+      },
+      {
+        label: "The whole date in gold",
+        attrs: { "data-pv-date-colour": "all-gold" },
+      },
+    ],
+  },
+  {
+    id: "glow",
+    title: "A glow around the couple's portraits",
+    options: [
+      { label: "None", attrs: {} },
+      { label: "Soft", attrs: { "data-pv-glow": "soft" } },
+      { label: "Medium", attrs: { "data-pv-glow": "medium" } },
+      { label: "Strong", attrs: { "data-pv-glow": "strong" } },
     ],
   },
   {
     id: "ritual-align",
     title: "The rituals",
-    /* CENTRED AND THE RAIL LEFT THE ROUTE (owner, 2026-10-11), and centred is still what `/` ships —
-       so this is the ONE group whose first choice is not the published page. Option 0 carries an
-       attribute, which the panel applies on load like any choice; the server-rendered markup is
-       still the published page's, so `/preview`'s `<main>` stays byte-identical to `/`'s. */
-    note: "The title, its Malayalam and the leaf now share one line. The invitation still shows the centred layout until one of these is chosen.",
+    /* CENTRED, THE RAIL AND THE COLUMN SPLIT ALL LEFT THE ROUTE (owner, 2026-10-11), and centred is
+       still what `/` ships — so this is the ONE group whose first choice is not the published page.
+       Option 0 carries an attribute, which the panel applies on load like any choice; the
+       server-rendered markup is still the published page's, so `/preview`'s `<main>` stays
+       byte-identical to `/`'s. The photographs aligned right are fixed in both forms. */
+    note: "The leaf, title and Malayalam share one line; the photographs sit on the right. The invitation still shows the centred layout until one of these is chosen.",
     options: [
       { label: "Left", attrs: { "data-pv-ritual-align": "start" } },
       { label: "Justified", attrs: { "data-pv-ritual-align": "justify" } },
-      {
-        label: "Left, photographs aligned right",
-        note: "The photographs and their button move to the right, still below the text.",
-        attrs: { "data-pv-ritual-align": "start-side" },
-      },
-      {
-        label: "Justified, photographs aligned right",
-        note: "The photographs and their button move to the right, still below the text.",
-        attrs: { "data-pv-ritual-align": "justify-side" },
-      },
     ],
   },
   {
     id: "side-pad",
     title: "Space beside the rituals on a phone",
-    note: "Less room between the card's edge and the text, so each line holds more.",
+    note: "Room between the card's edge and the text.",
     options: [
       { label: "As now (48px)", attrs: {} },
-      { label: "12px", attrs: { "data-pv-side-pad": "xs" } },
-      { label: "8px", attrs: { "data-pv-side-pad": "2xs" } },
-      { label: "4px", attrs: { "data-pv-side-pad": "3xs" } },
+      { label: "36px", attrs: { "data-pv-side-pad": "36" } },
+      { label: "24px", attrs: { "data-pv-side-pad": "md" } },
     ],
   },
 ];

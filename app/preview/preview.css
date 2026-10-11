@@ -122,16 +122,15 @@ html[data-pv-ritual-align^="justify"] #celebrations ol > li > div > div > p {
   text-align: justify;
 }
 
-/* PHOTOGRAPHS ALIGNED RIGHT, at every tier — an ALIGNMENT, not a column split (owner, 2026-10-11:
-   "not column split just alignment of strip", then "right alignment in all tiers"). The strip stays
-   beneath the text at full measure and moves to the block's right edge, and its "View photos" action
-   moves with it, right-aligned under the strip rather than centred. A first build split the block into
-   text and strip columns from 64rem up; that is what this replaces. */
-html[data-pv-ritual-align$="-side"] #celebrations ol > li > div > div > div {
+/* PHOTOGRAPHS ALIGNED RIGHT, at every tier and in both forms — FIXED, not a choice any more (owner,
+   2026-10-11: "photostrip is fixed as right alignment along with its button"). The strip stays beneath
+   the text at full measure and moves to the block's right edge, its "View photos" action right-aligned
+   under it. A first build split the block into text and strip columns from 64rem up; this replaces it. */
+html[data-pv-ritual-align] #celebrations ol > li > div > div > div {
   text-align: end;
 }
 
-html[data-pv-ritual-align$="-side"]
+html[data-pv-ritual-align]
   #celebrations
   ol
   > li
@@ -144,436 +143,153 @@ html[data-pv-ritual-align$="-side"]
 }
 
 /* ───────── CELEBRATIONS' SIDE PADDING ON A PHONE ─────────
-   Owner, 2026-10-11: less card padding left and right so a ritual's measure grows. Today the
-   card's edge is 48px from the text at every phone width (the sheet's own padding; the ground outside
-   the card is a further 24px). 16 was offered and is too much (owner), so 12 / 8 / 4. CSS-ONLY: the tall
-   frame grows to its content, so nothing refuses — but Celebrations' height MOVES with the measure,
-   and the thread's recorded constants with it. Landing it is a frame change, not a class swap. */
+   Owner, 2026-10-11: less card padding left and right so a ritual's measure grows. Today the card's
+   edge is 48px from the text at every phone width (the sheet's own padding; the ground outside the card
+   is a further 24px). The owner's options are 36 and 24 — "16 was too extra", not too little. 36 is off
+   the spacing scale (32 and 48 bracket it); landing it would need a token. CSS-ONLY: the tall frame
+   grows to its content, so nothing refuses — but Celebrations' height MOVES with the measure, and the
+   thread's recorded constants with it. Landing it is a frame change, not a class swap. */
 @media (width < 48rem) {
   html[data-pv-side-pad] #celebrations .mounted-sheet-frame__sheet {
     padding-inline: var(--pv-side-pad);
   }
-  html[data-pv-side-pad="xs"] {
-    --pv-side-pad: var(--spacing-space-xs);
+  html[data-pv-side-pad="36"] {
+    --pv-side-pad: 36px;
   }
-  html[data-pv-side-pad="2xs"] {
-    --pv-side-pad: var(--spacing-space-2xs);
-  }
-  html[data-pv-side-pad="3xs"] {
-    --pv-side-pad: var(--spacing-space-3xs);
+  html[data-pv-side-pad="md"] {
+    --pv-side-pad: var(--spacing-space-md);
   }
 }
 
-/* TWO MORE LEVERS HAVE LEFT THIS BLOCK BECAUSE THEY ARE SETTLED (owner, 2026-10-10), and both
-   landed as values rather than as factors:
-   - `data-pv-heading-md` — the ritual title is **21/23/21/25px** in `app/styles/tokens.css`, up 8%
-     from the ladder it was built at and rounded to whole pixels per this project's own rule. The
-     step below it was dropped on measurement: +5% is a one-pixel change on a 19px title, below
-     what anyone sees without the two side by side, so the real choice was +8% or nothing.
-   - `data-pv-amp` — the ampersand is drawn at **65%** in `components/ui/couple-names.tsx`, and it
-     KEEPS ITS FULL SLOT there so the words do not move and neither measured fit changes. That
-     detail is the whole of why it landed faithfully; the component's own note has it.
-   Only the ritual's alignment is still held, and only for one more look. */
+/* THE TITLE AND ITS MALAYALAM SIT FURTHER APART ON A LAPTOP AND WIDER (owner, 2026-10-11). The header
+   line's items are 8px apart at every tier; from 64rem up the title takes a further `space-sm`, so the
+   Malayalam sits 24px from it. Phone and tablet keep 8, where the line is tight. */
+@media (width >= 64rem) {
+  html[data-pv-ritual-align] #celebrations ol > li > div > div > h3 {
+    margin-inline-end: var(--spacing-space-sm);
+  }
+}
 
-/* ───────── LEVER 1 — Event Info on a phone: six candidates, all preview-only ─────────
-   Ported from the scratch route the owner settled them on over seven rounds of their own
-   direction. That route was never tracked, so there is nothing of it in git and this file is now
-   the ONLY copy of these rules — every one of its 34 was carried over with a byte-identical
-   declaration body, checked rather than eyeballed. The attribute names moved into the `data-pv-*`
-   namespace on the way: one namespace is what lets the panel's root-attribute guard be a guard
-   rather than a list of four names it has to forgive.
-
-   TWO FAMILIES, six combinations:
-     html[data-pv-rail="dot"]  + data-pv-dot-label=time|event + data-pv-dot-place=above|below
-     html[data-pv-rail="icon"] + data-pv-icon-split=time|both
-   Shipped sets no attribute at all, so at shipped this block matches nothing and `/` is untouched
-   — which is the whole reason `app/event-info-fit.ts` needs no regeneration this half: all six
-   measure 1704px, identical to what ships.
-
-   THE MECHANISM: `display: contents` on the text column AND on its first paragraph promotes the
-   five pieces — mark, time, event label, venue, button — to grid items of the `li` itself, so CSS
-   alone can place any of them in either column. Without it the text column is one grid item and
-   its children are unreachable.
-
-   Stable anchors inside a segment:
-     li > div:first-child                      the mark wrapper; its FIRST span is the phone mark
-     li > div:last-child > p:first-of-type     > span:first-child = time, > span:last-child = event
-     li > div:last-child > p:nth-of-type(2)    the venue
-     li > div:last-child > a                   "Meet us here"
-
-   Phone band only. Every wider band is settled and these rules must not reach it. */
+/* ───────── EVENT INFO — the six phone layouts LEFT THE ROUTE (owner, 2026-10-11) ─────────
+   Replaced by one: the same two columns a laptop shows — the mark in its own column, the time, venue
+   and action left-aligned beside it — with the venue free to wrap. PREVIEW ONLY: `app/event-info-fit.ts`
+   is generated from the shipped layout and a CSS override cannot re-derive it, so the build may sit a
+   few pixels off what this renders. */
 @media (width < 48rem) {
-  /* ── Shared by both rails ──────────────────────────────────────────────────────────── */
-  html[data-pv-rail] #event-info ol[role="list"] {
-    display: block;
-    width: 100%;
-    margin-inline: 0;
+  html[data-pv-events="columns"] #event-info ol[role="list"] {
+    grid-template-columns: auto 1fr;
   }
-
-  html[data-pv-rail] #event-info li {
-    position: relative;
-    display: grid;
-    align-items: start;
-    /* One event's time, label, venue and button read as one group; the space between events is
-       what separates them. 4px within against 24-32px between. */
-    row-gap: var(--spacing-space-3xs);
-    column-gap: var(--spacing-space-2xs);
-    padding-bottom: var(--spacing-space-lg);
+  html[data-pv-events="columns"] #event-info li > div:first-child {
+    padding-top: var(--spacing-space-xs);
   }
-
-  html[data-pv-rail] #event-info li:last-child {
-    padding-bottom: 0;
-  }
-
-  html[data-pv-rail] #event-info li > div:last-child,
-  html[data-pv-rail] #event-info li > div:last-child > p:first-of-type {
-    display: contents;
-  }
-
-  /* The <wbr> is a line-break hint for the single-line form; once time and event are separate
-     grid items it has no job, and left alone it would claim a cell. */
-  html[data-pv-rail] #event-info li > div:last-child > p:first-of-type > wbr {
-    display: none;
-  }
-
-  /* The diamond separated time from event on one line. Split across columns, nothing to separate. */
-  html[data-pv-rail]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child
-    svg {
-    display: none;
-  }
-
-  html[data-pv-rail]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:first-child {
-    margin-inline-end: 0;
-  }
-
-  /* THE OWNER'S HARD CONSTRAINT: the button never wraps; the venue may. The 4px top margin
-     replaces the shipped `mt-space-2xs` in ALL FOUR looks (owner, 2026-10-09) — it belongs to the
-     within-event rhythm, not to one variant's height budget. */
-  html[data-pv-rail] #event-info li > div:last-child > a {
-    margin-top: var(--spacing-space-3xs);
-    white-space: nowrap;
-  }
-
-  html[data-pv-rail] #event-info li > div:last-child > p:nth-of-type(2) {
-    text-wrap: pretty;
-  }
-
-  /* The icon is 40px in both families (owner, 2026-10-09). In the dot rail that also buys back
-     most of the dead row above the venue in the label-BELOW placement, where row 1 is sized by
-     the icon rather than by the label beside it — its natural size is 47. */
-  html[data-pv-rail] #event-info li > div:first-child > span:first-child > svg {
-    width: 40px;
-    height: 40px;
-  }
-
-  /* The rail: the `divider`'s own stroke and colour — `--stroke-divider` in
-     `--color-accent-gold`, matching `components/layout/divider.tsx`. A pseudo-element is a grid
-     item, which is what lets it sit in a column whose width is computed rather than known.
-     It starts at this node's centre and ends on the next one's: `100%` is the grid AREA, which
-     excludes the row's bottom padding, so adding that padding back lands it exactly. */
-  html[data-pv-rail] #event-info li::after {
-    content: "";
-    grid-column: 2;
-    grid-row: 1 / -1;
-    justify-self: center;
-    margin-top: var(--node-centre);
-    width: var(--stroke-divider);
-    height: calc(100% + var(--spacing-space-lg));
-    background: var(--color-accent-gold);
-  }
-
-  /* The tail runs until the text ends, not a fixed length: the final segment carries no bottom
-     padding, so the grid area's bottom IS the last row's bottom. A venue wrapping to a third line
-     lengthens the tail by itself. */
-  html[data-pv-rail] #event-info li:last-child::after {
-    height: calc(100% - var(--node-centre));
-  }
-
-  /* ── The dot rail ──────────────────────────────────────────────────────────────────── */
-  html[data-pv-rail="dot"] #event-info li {
-    /* The dot is 7px tall, 12px down from the row's top. */
-    --node-centre: 15.5px;
-    /* DECLARED PER FAMILY, not as a generous maximum: an unused trailing row still contributes
-       its row-gap, which left the grid area taller than its own content and the tail overshooting
-       the button by 7.5px. Three rows here, four for the icon rail. */
-    grid-template-rows: repeat(3, auto);
-    /* "Same length if possible" AND "off centre to the left such that the button fits" are one
-       declaration: `minmax(min-content, 1fr)` splits evenly when the content allows and shrinks
-       the LEFT exactly when the right column's min-content — set by the unwrappable button —
-       needs more than half. Measured: the right pins at 152.75px while the left takes 71px at
-       360, 88px at 393 and 141px at 430. */
-    grid-template-columns: minmax(min-content, 1fr) var(--spacing-space-md) minmax(
-        min-content,
-        1fr
-      );
-  }
-
-  html[data-pv-rail="dot"] #event-info li::before {
-    content: "";
-    z-index: 1;
-    grid-column: 2;
-    grid-row: 1;
-    align-self: start;
-    justify-self: center;
-    margin-top: 12px;
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: var(--color-accent-gold);
-  }
-
-  html[data-pv-rail="dot"] #event-info li > div:first-child {
-    grid-column: 1;
-    justify-self: end;
-  }
-
-  html[data-pv-rail="dot"] #event-info li > div:last-child > p:nth-of-type(2) {
-    grid-area: 2 / 3;
+  html[data-pv-events="columns"] #event-info li > div:last-child {
+    align-items: flex-start;
     text-align: left;
   }
-
-  html[data-pv-rail="dot"] #event-info li > div:last-child > a {
-    grid-area: 3 / 3;
-    justify-self: start;
-  }
-
-  /* Which label takes the left column; the other leads the right in row 1. */
-  html[data-pv-rail="dot"][data-pv-dot-label="time"]
+  html[data-pv-events="columns"]
     #event-info
     li
     > div:last-child
-    > p:first-of-type
-    > span:first-child {
-    grid-column: 1;
-    text-align: right;
-  }
-
-  html[data-pv-rail="dot"][data-pv-dot-label="time"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child {
-    grid-area: 1 / 3;
-    text-align: left;
-  }
-
-  html[data-pv-rail="dot"][data-pv-dot-label="event"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child {
-    grid-column: 1;
-    text-align: right;
-  }
-
-  html[data-pv-rail="dot"][data-pv-dot-label="event"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:first-child {
-    grid-area: 1 / 3;
-    text-align: left;
-  }
-
-  /* Label above the icon, or below it. ABOVE is what removes the dead row over the venue: with
-     the icon in row 1 that row is sized by the ICON while the label beside it is 28px, so the
-     venue starts lower than it needs to. Above, row 1 is the label's own height. */
-  html[data-pv-rail="dot"][data-pv-dot-place="above"]
-    #event-info
-    li
-    > div:first-child {
-    grid-row: 2;
-  }
-
-  html[data-pv-rail="dot"][data-pv-dot-place="above"][data-pv-dot-label="time"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:first-child,
-  html[data-pv-rail="dot"][data-pv-dot-place="above"][data-pv-dot-label="event"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child {
-    grid-row: 1;
-  }
-
-  html[data-pv-rail="dot"][data-pv-dot-place="below"]
-    #event-info
-    li
-    > div:first-child {
-    grid-row: 1;
-  }
-
-  html[data-pv-rail="dot"][data-pv-dot-place="below"][data-pv-dot-label="time"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:first-child,
-  html[data-pv-rail="dot"][data-pv-dot-place="below"][data-pv-dot-label="event"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child {
-    grid-row: 2;
-  }
-
-  /* ── The icon rail ─────────────────────────────────────────────────────────────────── */
-  html[data-pv-rail="icon"] #event-info li {
-    /* A 40px icon with no block padding of its own, so its centre is 20px down. */
-    --node-centre: 20px;
-    /* Four: the icon takes a row of its own above the text. */
-    grid-template-rows: repeat(4, auto);
-    /* Closer together and further left: the left column is sized to its own content rather than
-       taking a half share, which slides the rail left, and the 16px rail column plus 4px gaps
-       brings the two text columns to 24px apart. The icon overflows the narrow rail column
-       symmetrically, which is harmless because nothing else occupies its row. */
-    grid-template-columns: auto var(--spacing-space-sm) minmax(min-content, 1fr);
-    column-gap: var(--spacing-space-3xs);
-    padding-bottom: var(--spacing-space-md);
-  }
-
-  html[data-pv-rail="icon"] #event-info li > div:first-child {
-    position: relative;
-    z-index: 1;
-    grid-area: 1 / 2;
-    justify-self: center;
-    background: var(--color-surface-elevated);
-  }
-
-  html[data-pv-rail="icon"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:first-child {
-    grid-area: 2 / 1;
-    text-align: right;
-  }
-
-  /* Split "time": the time alone on the left, the event leading the right column. */
-  html[data-pv-rail="icon"][data-pv-icon-split="time"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child {
-    grid-area: 2 / 3;
-    text-align: left;
-  }
-
-  html[data-pv-rail="icon"][data-pv-icon-split="time"]
-    #event-info
-    li
-    > div:last-child
-    > p:nth-of-type(2) {
-    grid-area: 3 / 3;
-    text-align: left;
-  }
-
-  html[data-pv-rail="icon"][data-pv-icon-split="time"]
-    #event-info
-    li
-    > div:last-child
-    > a {
-    grid-area: 4 / 3;
-    justify-self: start;
-  }
-
-  /* Split "both": time and event stacked on the left, the venue spanning BOTH their rows so
-     neither side stretches the other. Without the span the venue's two lines set row 2 to 52px,
-     so the time sat 28px above the event while the venue and button touched — one event reading
-     as two pairs rather than as one group. */
-  html[data-pv-rail="icon"][data-pv-icon-split="both"]
-    #event-info
-    li
-    > div:last-child
-    > p:first-of-type
-    > span:last-child {
-    grid-area: 3 / 1;
-    text-align: right;
-  }
-
-  html[data-pv-rail="icon"][data-pv-icon-split="both"]
-    #event-info
-    li
-    > div:last-child
-    > p:nth-of-type(2) {
-    grid-row: 2 / 4;
-    grid-column: 3;
-    text-align: left;
-  }
-
-  html[data-pv-rail="icon"][data-pv-icon-split="both"]
-    #event-info
-    li
-    > div:last-child
-    > a {
-    grid-area: 4 / 3;
-    justify-self: start;
+    > p.type-body
+    .whitespace-nowrap {
+    white-space: normal;
   }
 }
 
-/* ───────── THE COUPLE'S NAMES — larger on a phone, the block beneath them pushed down ─────────
-   Owner, 2026-10-11. Invite only; Wishes' signature is untouched. Soft brown (`ink-muted`) is settled
-   and ships, so the tone lever is gone.
-
-   THE NAMES GROW DOWNWARD ONLY: a transform from the TOP edge, so the eyebrow above keeps its gap.
-   The h1 then takes a bottom margin that pushes the invitation line, the date and everything under
-   them down by exactly what the names grew — plus the difference that makes the names-to-line INK gap
-   equal the line-to-date ink gap (owner: "keep the space between names and invite line same as line
-   to date"). Measured at six phone viewports, 320x568 to 430x932: line-to-date is 46.5px everywhere
-   (32.5 until the date block dropped by `--date-place-pull`, 14px, on 2026-10-11),
-   names-to-line 10.8-11.8 (11.3 typical), and the names' ink runs 128.5px below the lockup's top. So:
-
-     margin = (46.5 - 11.3) + 128.5 * (scale - 1)
-
-   Constant across phone widths because the lockup is `em` of a role that does not change size within
-   the phone tier. CSS-ONLY: the invite's fit is generated from the shipped layout, so whether the
-   card still holds the longer content is MEASURED, not assumed; landing it is an `em` change plus a
-   `measure:fit` run. */
-@media (width < 48rem) {
-  html[data-pv-name-scale] #invite h1 svg[data-names-layout] {
-    transform-origin: top center;
-    transform: scale(var(--pv-name-scale));
-  }
-  html[data-pv-name-scale] #invite h1 {
-    margin-block-end: calc(35.2px + 128.5px * (var(--pv-name-scale) - 1));
-  }
-  html[data-pv-name-scale="150"] {
-    --pv-name-scale: 1.5;
-  }
+/* "MEET US HERE" — centred under the venue, or right-aligned, at every tier (owner, 2026-10-11). It
+   ships centred on a phone and at the text's start from a laptop up; both alternates hold one rule at
+   every width. */
+html[data-pv-map-action="center"] #event-info li > div:last-child > a {
+  align-self: center;
 }
+
+html[data-pv-map-action="end"] #event-info li > div:last-child > a {
+  align-self: flex-end;
+}
+
+/* THE COUPLE'S NAMES LEFT THE ROUTE (owner, 2026-10-11): 45% larger on a phone, landed as the stacked
+   lockup's 2.68em in `components/ui/couple-names.tsx` and `--invite-names-gap` beneath it. */
 
 /* THE PHOTO VIEWER'S GROUND LEFT THE ROUTE (owner, 2026-10-11): the near-black ink was chosen and ships
    as `--color-scrim` in `app/styles/tokens.css`. */
 
-/* ───────── THE INVITE'S DATE BLOCK — gold on the day, gold on the hairlines ─────────
-   Owner, 2026-10-11: "try variants - gold 9, gold date lines". Two independent levers, every tier.
-   The hairlines ship in `rule-faint` because gold was declined for them on 2026-10-08 (gold belongs to
-   the ornament, and the reference's rules are lighter than its type); this puts it in front of the
-   owner again rather than re-deciding it. Colour only — no geometry moves. */
-html[data-pv-date-day="gold"] #invite [data-invite-date] time {
+/* ───────── THE INVITE'S DATE BLOCK — spacing, the day's weight, colour ─────────
+   Owner, 2026-10-11. The gold hairlines were CONFIRMED and ship (`app/invite-date.module.css`), so
+   that lever left.
+
+   MORE SPACE: SATURDAY stays where it is; the day moves down by the step and Kerala by twice it, so
+   both gaps grow by the step. The header grows by twice the step at every tier — CSS-only, against an
+   invite fit generated from the shipped layout. */
+html[data-pv-date-space] #invite [data-invite-date] {
+  --date-weekday-pull: calc(-5px + var(--pv-date-space));
+}
+
+html[data-pv-date-space] #invite [data-invite-place] {
+  margin-top: calc(
+    var(--spacing-space-3xs) -
+    var(--date-place-pull) +
+    var(--pv-date-space)
+  );
+}
+
+html[data-pv-date-space="4"] {
+  --pv-date-space: var(--spacing-space-3xs);
+}
+
+html[data-pv-date-space="8"] {
+  --pv-date-space: var(--spacing-space-2xs);
+}
+
+html[data-pv-date-space="12"] {
+  --pv-date-space: var(--spacing-space-xs);
+}
+
+html[data-pv-day-weight="400"] #invite [data-invite-date] time {
+  font-weight: 400;
+}
+
+html[data-pv-date-colour="day-gold"] #invite [data-invite-date] time {
   color: var(--color-accent-gold);
 }
 
-html[data-pv-date-rules="gold"] #invite [data-invite-date] [aria-hidden] {
-  background: var(--color-accent-gold);
+html[data-pv-date-colour="day-muted"] #invite [data-invite-date] time {
+  color: var(--color-ink-muted);
+}
+
+html[data-pv-date-colour="all-gold"] #invite [data-invite-date] {
+  color: var(--color-accent-gold);
+}
+
+/* ───────── A GOLD GLOW AROUND THE COUPLE'S OWN PORTRAITS ─────────
+   Owner, 2026-10-11: the bride's and the groom's portraits only. Tailwind's ring is a `box-shadow`
+   chain that ends in `--tw-shadow`, so setting that variable adds a layer UNDER the paper offset and
+   the gold rim — the glow shows only beyond the rim, outward. Selected by the figure's own
+   `data-relationship`. */
+html[data-pv-glow]
+  figure:is([data-relationship="Bride"], [data-relationship="Groom"])
+  > div:first-child {
+  --tw-shadow: 0 0 var(--pv-glow-blur) var(--pv-glow-spread)
+    color-mix(
+      in srgb,
+      var(--color-accent-gold) var(--pv-glow-alpha),
+      transparent
+    );
+}
+
+html[data-pv-glow="soft"] {
+  --pv-glow-blur: 8px;
+  --pv-glow-spread: 2px;
+  --pv-glow-alpha: 45%;
+}
+
+html[data-pv-glow="medium"] {
+  --pv-glow-blur: 14px;
+  --pv-glow-spread: 3px;
+  --pv-glow-alpha: 60%;
+}
+
+html[data-pv-glow="strong"] {
+  --pv-glow-blur: 22px;
+  --pv-glow-spread: 4px;
+  --pv-glow-alpha: 75%;
 }

@@ -27,15 +27,14 @@ const CSS_CODE = code(CSS);
 /* EVERY SURVIVING LEVER IS THE COUPLE'S as of 2026-10-10 — the tuning block is gone with the last
    value it held, which is why there is no second list. */
 const COUPLE_FACING = [
-  "rail",
-  "dot-label",
-  "dot-place",
-  "icon-split",
+  "events",
+  "map-action",
+  "date-space",
+  "day-weight",
+  "date-colour",
+  "glow",
   "ritual-align",
   "side-pad",
-  "name-scale",
-  "date-day",
-  "date-rules",
 ];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
@@ -179,20 +178,37 @@ test("the Event Info alternates are marked preview-only", () => {
   );
 });
 
-test("Event Info's alternates stay inside the phone band", () => {
-  /* Every wider band is settled. The scratch route bounded the whole family in one query and the
-     bound travels with the rules. */
-  assert.match(CSS_CODE, /@media \(width < 48rem\)/);
-  const railRules = (CSS_CODE.match(/html\[data-pv-rail/g) ?? []).length;
+test("Event Info's two-column alternate stays inside the phone band", () => {
+  /* Every wider band already shows two columns; the alternate brings them to the phone and must not
+     reach a settled tier. The six earlier candidates left the route on 2026-10-11 (owner). */
+  const rules = (CSS_CODE.match(/html\[data-pv-events/g) ?? []).length;
+  assert.ok(rules >= 3, `only ${rules} two-column rules`);
+  /* The block that holds the first rule, closed by counting braces — a lookalike `}` inside it
+     would otherwise end the slice early. */
+  const first = CSS_CODE.indexOf("html[data-pv-events");
+  const open = CSS_CODE.lastIndexOf("@media", first);
   assert.ok(
-    railRules > 10,
-    `only ${railRules} rail rules — the scratch route carried 39`,
+    CSS_CODE.startsWith("@media (width < 48rem)", open),
+    "the two-column rules are not inside the phone band",
   );
-  const band = CSS_CODE.slice(CSS_CODE.indexOf("@media (width < 48rem)"));
+  let depth = 0;
+  let close = open;
+  for (let i = CSS_CODE.indexOf("{", open); i < CSS_CODE.length; i++) {
+    if (CSS_CODE[i] === "{") depth++;
+    if (CSS_CODE[i] === "}" && --depth === 0) {
+      close = i;
+      break;
+    }
+  }
+  const inBand = CSS_CODE.slice(open, close);
   assert.equal(
-    (band.match(/html\[data-pv-rail/g) ?? []).length,
-    railRules,
-    "a rail rule sits outside the phone band and would reach a settled tier",
+    (inBand.match(/html\[data-pv-events/g) ?? []).length,
+    rules,
+    "a two-column rule sits outside the phone band and would reach a settled tier",
+  );
+  assert.ok(
+    !CSS_CODE.includes("data-pv-rail"),
+    "the six earlier layouts left the route",
   );
 });
 
