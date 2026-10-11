@@ -3,9 +3,9 @@ import { ImagePlaceholder } from "./image-placeholder";
 /* The presentational half of `gallery-modal`, split out because `'use client'` is file-scoped: with
    no hooks it renders from a server page and demos in a plain bounded box.
 
-   `<img>` rather than `next/image`: masonry needs each tile's intrinsic height, and the content
-   schema carries no image dimensions, so neither the sized nor the `fill` form works. A failed image
-   therefore collapses its figure. */
+   `<img>` rather than `next/image`: `next.config.ts` sets `images: { unoptimized: true }`, because a
+   static export has no runtime optimiser, so `next/image` would add nothing here — and this panel
+   takes paths only, not the manifest's dimensions. A failed image therefore collapses its figure. */
 
 /* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the
    array index. */

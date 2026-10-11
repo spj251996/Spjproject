@@ -73,9 +73,10 @@ export function photoFit(
     photos.slice(0, PREVIEW_CAP),
   );
 
-  /* `available` is 0 on the first render, before any layout pass, and an aspect is undefined until
-     its file has decoded. Either way the nominal height is returned unsolved rather than divided
-     into: a loop bounded by a measured value is unbounded before the first measurement. */
+  /* `available` is 0 on the first render, before any layout pass, and an aspect is undefined if a
+     caller hands in a path the manifest does not describe. Either way the nominal height is returned
+     unsolved rather than divided into: a loop bounded by a measured value is unbounded before the
+     first measurement. */
   const ready =
     available > 0 && previews.every((src) => aspects[src] !== undefined);
 
