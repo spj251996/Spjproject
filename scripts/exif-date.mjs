@@ -59,5 +59,19 @@ export function dateTaken(exif) {
   );
   if (match === null) return null;
   const [, y, mo, d, h, mi, s] = match.map(Number);
+  /* A camera whose clock was never set writes all zeros, which `Date.UTC` would happily read as
+     1899 and sort to the head of the strip. Anything outside a real calendar is "no date". */
+  if (
+    y < 1900 ||
+    mo < 1 ||
+    mo > 12 ||
+    d < 1 ||
+    d > 31 ||
+    h > 23 ||
+    mi > 59 ||
+    s > 60
+  ) {
+    return null;
+  }
   return Date.UTC(y, mo - 1, d, h, mi, s);
 }

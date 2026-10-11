@@ -75,3 +75,16 @@ test("a big-endian file is read too", () => {
   const exif = Buffer.concat([Buffer.from("Exif\0\0", "latin1"), tiff]);
   assert.equal(dateTaken(exif), Date.UTC(2027, 0, 9, 10, 15, 30));
 });
+
+test("a camera whose clock was never set has no date, so it sorts with the undated", async () => {
+  /* Such a camera writes all zeros. Read literally that is 1899-11-30, which would put the
+     photograph at the head of the strip, where only two or three of the set are shown. */
+  const unset = await withExif({
+    IFD2: { DateTimeOriginal: "0000:00:00 00:00:00" },
+  });
+  assert.equal(dateTaken(unset), null);
+  const impossible = await withExif({
+    IFD2: { DateTimeOriginal: "2027:13:40 25:61:61" },
+  });
+  assert.equal(dateTaken(impossible), null);
+});
