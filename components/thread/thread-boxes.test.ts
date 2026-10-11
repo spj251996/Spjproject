@@ -54,7 +54,7 @@ test("not-found resolves to the invite's box in every band", () => {
 });
 
 test("the measured heights match the render exactly", () => {
-  assert.deepEqual(sectionBox("invite", "tall"), { width: 393, height: 700 });
+  assert.deepEqual(sectionBox("invite", "tall"), { width: 393, height: 707 });
   assert.deepEqual(sectionBox("event-info", "tall"), {
     width: 393,
     height: 1400,

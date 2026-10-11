@@ -80,7 +80,11 @@ const AMPERSAND_SCALE = 0.65;
    `--text-heading-script`, so those TOKENS outlive the ROLES that are retiring. Phase 9 must not
    sweep them with the classes.
 
-   THE PHONE TIER TAKES SMALLER RATIOS — 1.85em stacked and 3.65em on the line, against the 2.513
+   THE STACKED PHONE LOCKUP IS 2.68em SINCE 2026-10-11 — 45% larger than the 1.85em below, the owner
+   choosing it on /preview knowing it puts the ink past the invite's content box below ~400px wide and
+   past the card itself at 320 (DESIGN.md -> couple-names). The line's 3.65em is unchanged.
+
+   THE PHONE TIER TOOK SMALLER RATIOS — 1.85em stacked and 3.65em on the line, against the 2.513
    and 4.656 every wider tier keeps (owner, 2026-10-10, choosing this over accepting the overflow
    they reported as the names reading cut off). An `em` width is FIXED per tier while the card's
    content box SHRINKS with the window, so both lockups ran off their cards at the narrow end.
@@ -264,8 +268,8 @@ export function CoupleNames({
         <Lockup
           className={
             layout === "orientation"
-              ? "mx-auto block h-auto w-[1.85em] md:w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
-              : "mx-auto block h-auto w-[1.85em] md:w-[2.513em] text-ink-muted"
+              ? "mx-auto block h-auto w-[2.68em] md:w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
+              : "mx-auto block h-auto w-[2.68em] md:w-[2.513em] text-ink-muted"
           }
           layout="stacked"
           strokeUnits={strokeUnits}

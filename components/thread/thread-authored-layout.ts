@@ -30,7 +30,7 @@ export type AuthoredCard = {
 type Sections = Record<Exclude<ThreadId, "not-found">, AuthoredCard>;
 
 const TALL_CARDS: Sections = {
-  invite: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
+  invite: { cardWidth: 361, cardLeft: 16, sectionHeight: 707 },
   "event-info": { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },
   contact: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
   family: { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },

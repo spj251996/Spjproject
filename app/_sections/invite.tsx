@@ -212,7 +212,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 comes out 81px SHORTER, so it frees headroom instead of spending it. The switch is
                 `(orientation: landscape)`, the same condition the role's own rule uses, so the two
                 cannot disagree. */}
-            <h1 className="type-display-name text-ink mt-space-md [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pt-space-xl [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pb-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:pt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:pb-space-lg">
+            <h1 className="type-display-name text-ink mt-space-md [@media(width<48rem)_and_(orientation:portrait)]:mb-(--invite-names-gap) [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pt-space-xl [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pb-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:pt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:pb-space-lg">
               {/* 1.6 units, down from the 2.2 Wishes takes (owner, 2026-10-09: "invite one is too thick").
                   This lockup renders about 1.75x larger relative to its own viewBox, so the same
                   unit count lands that much heavier in pixels — and it only needs 0.54 to clear a

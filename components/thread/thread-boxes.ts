@@ -29,7 +29,10 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
 type SectionHeights = Record<Exclude<ThreadId, "not-found">, number>;
 
 const TALL_HEIGHTS: SectionHeights = {
-  invite: 700,
+  /* 707, not the viewport's 700, since 2026-10-11: the names grew 45% on a phone and the invite's
+     content now overruns one 393x700 screen by 7px (measured 707.06 on `/thread/current`, with
+     `contact` and `wishes` reproducing 700 in the same run). */
+  invite: 707,
   "event-info": 1400,
   contact: 700,
   family: 1400,

@@ -55,7 +55,7 @@ test("tall band's authored cards, measured on the real render at 393x700", () =>
   assert.deepEqual(authoredCard("invite", "tall"), {
     cardWidth: 361,
     cardLeft: 16,
-    sectionHeight: 700,
+    sectionHeight: 707,
   });
   assert.deepEqual(authoredCard("event-info", "tall"), {
     cardWidth: 361,

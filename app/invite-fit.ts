@@ -9,13 +9,11 @@ export const inviteFit: MeasuredFit = {
   regimes: {
     phone: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 549.8125 },
-        { minContentWidth: 135.3125, contentHeight: 527.8125 },
-        { minContentWidth: 198.34375, contentHeight: 505.8125 },
-        { minContentWidth: 207.453125, contentHeight: 485.8125 },
-        { minContentWidth: 234.890625, contentHeight: 459.8125 },
-        { minContentWidth: 260.90625, contentHeight: 437.8125 },
-        { minContentWidth: 492.921875, contentHeight: 415.8125 },
+        { minContentWidth: 120, contentHeight: 597.0625 },
+        { minContentWidth: 135.3125, contentHeight: 575.0625 },
+        { minContentWidth: 198.34375, contentHeight: 553.0625 },
+        { minContentWidth: 260.90625, contentHeight: 531.0625 },
+        { minContentWidth: 492.921875, contentHeight: 509.0625 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 432.71875 },

@@ -15,13 +15,6 @@
   --color-ink-muted: #5a3a2a;
   --color-ink-inverse: #f4f1e8;
   --color-accent-gold: #d29b2f;
-  /* The date block's hairlines, and nothing else. It must read lighter than the type it brackets —
-     a rule as dark as the words reads as a table cell (DESIGN.md → Foundations → Colors). */
-  --color-rule-faint: color-mix(
-    in srgb,
-    var(--color-ink) 22%,
-    var(--color-surface-base)
-  );
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
   --color-thread-core: #ff7900;
@@ -192,6 +185,11 @@
      within half a pixel. The place stays put and the block takes the space above it instead, which is
      why the header's height -- and the invite's measured fit -- does not move. */
   --date-place-pull: 14px;
+  /* Below the invite's stacked phone names, so the ink gap from the names to the invitation's line
+     equals the one from that line to the date block (owner, 2026-10-11). Measured with the 2.68em
+     lockup: the natural gap is 12px at every phone width and line-to-date is 46.5, so 35px lands it
+     within half a pixel. Portrait phones only — the only place the lockup stacks at that size. */
+  --invite-names-gap: 35px;
 
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;

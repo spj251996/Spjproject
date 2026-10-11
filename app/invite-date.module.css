@@ -47,7 +47,7 @@
 }
 
 .hairline {
-  background: var(--color-rule-faint);
+  background: var(--color-accent-gold);
   height: var(--rule-date-bracket);
   left: 0;
   position: absolute;
