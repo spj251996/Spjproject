@@ -45,97 +45,31 @@
    had no clearance figure at all, so the couple would have been choosing between one measured
    arrangement and two unmeasured ones. The owner settled it instead. */
 
-/* ───────── THE RITUALS' LAYOUT, THEIR SIDE PADDING AND THE COUPLE'S GLOW LEFT THE ROUTE ─────────
-   Owner, 2026-10-11: left-aligned (`app/_sections/celebrations.tsx`), 36px on a phone
-   (`components/layout/mounted-sheet-frame.ts`), and the medium glow (`components/ui/portrait.tsx`).
-
-   THE RITUAL'S LEADING SPRIG — with it (ships) or without. The header line's other two items close
-   up to the start; nothing else moves. */
-html[data-pv-ritual-leaf="none"] #celebrations [data-ritual-header] > svg {
-  display: none;
-}
-
-/* ───────── EVENT INFO — the six phone layouts LEFT THE ROUTE (owner, 2026-10-11) ─────────
-   Replaced by one: the same two columns a laptop shows — the mark in its own column, the time, venue
-   and action left-aligned beside it — with the venue free to wrap. PREVIEW ONLY: `app/event-info-fit.ts`
-   is generated from the shipped layout and a CSS override cannot re-derive it, so the build may sit a
-   few pixels off what this renders. */
-@media (width < 48rem) {
-  html[data-pv-events="columns"] #event-info ol[role="list"] {
-    grid-template-columns: auto 1fr;
-  }
-  html[data-pv-events="columns"] #event-info li > div:first-child {
-    padding-top: var(--spacing-space-xs);
-  }
-  html[data-pv-events="columns"] #event-info li > div:last-child {
-    align-items: flex-start;
-    text-align: left;
-  }
-  html[data-pv-events="columns"]
-    #event-info
-    li
-    > div:last-child
-    [data-venue-block]
-    > p.type-body
-    .whitespace-nowrap {
-    white-space: normal;
-  }
-}
-
-/* "MEET US HERE" LEFT-ALIGNED TO THE VENUE, at every tier (owner, 2026-10-11): the disc's left edge
-   on the venue's first letter. The venue and its action share `[data-venue-block]`, which is
-   `display: contents` on the published page; here it becomes a box the venue's own width, so its
-   start IS the venue's start, and the box keeps its place in the column — centred on a phone, at the
-   text's start from a laptop up. The venue's lines start-align inside it, which only shows where it
-   wraps. The button's mark sits `space-sm` inside its target, so the target is pulled back by it. */
-html[data-pv-map-action="start"] #event-info [data-venue-block] {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: fit-content;
-  max-width: 100%;
-  text-align: start;
-}
-
-html[data-pv-map-action="start"] #event-info [data-venue-block] > a {
-  margin-inline-start: calc(-1 * var(--spacing-space-sm));
-}
-
-/* THE COUPLE'S NAMES LEFT THE ROUTE (owner, 2026-10-11): 45% larger on a phone, landed as the stacked
-   lockup's 2.68em in `components/ui/couple-names.tsx` and `--invite-names-gap` beneath it. */
-
-/* THE PHOTO VIEWER'S GROUND LEFT THE ROUTE (owner, 2026-10-11): the near-black ink was chosen and ships
-   as `--color-scrim` in `app/styles/tokens.css`. */
-
-/* ───────── THE INVITE'S DATE — its colour ─────────
-   Owner, 2026-10-11. The block's inner spacing (8px) and the day's weight (400) left the route and
-   ship from `app/styles/tokens.css` and `app/_sections/invite.tsx`. */
-html[data-pv-date-colour="day-gold"] #invite [data-invite-date] time {
-  color: var(--color-accent-gold);
-}
-
-html[data-pv-date-colour="day-muted"] #invite [data-invite-date] time {
-  color: var(--color-ink-muted);
-}
-
-html[data-pv-date-colour="all-gold"] #invite [data-invite-date] {
-  color: var(--color-accent-gold);
-}
+/* EVERY OTHER LEVER LEFT THE ROUTE (owner, 2026-10-11) and ships from the section files: two-column
+   Event Info at every tier with the map action under the venue, the ritual leaf from 64rem only, the
+   Malayalam right-aligned on a phone, and the day in gold. */
 
 /* ───────── THE GOLD, DARKENED TOWARD BRONZE ─────────
    Owner, 2026-10-11: one value per option, everywhere gold reads. Replacing the token at the root
    reaches every consumer at once — text, marks, rules, rims, the glow — because each reads it as a
-   variable. The selector out-specifies the token's own `:root`. Contrast on `surface-elevated`, where
-   gold measures 2.42:1: light 3.35, mid 4.29, deep 5.53 (the first to clear AA for body text). Each
-   steps OKLCH lightness down 0.06 and turns the hue a few degrees toward orange, 66 → 58. */
+   variable. The selector out-specifies the token's own `:root`. Darker and less yellow than today's
+   gold, between it, light bronze and #CD7F32. */
+html[data-pv-gold="dark"] {
+  --color-accent-gold: #c58c36;
+}
+
+html[data-pv-gold="gold-bronze"] {
+  --color-accent-gold: #cf8d30;
+}
+
 html[data-pv-gold="light"] {
   --color-accent-gold: #b97e3c;
 }
 
-html[data-pv-gold="mid"] {
-  --color-accent-gold: #a46c36;
+html[data-pv-gold="deep-gold"] {
+  --color-accent-gold: #b88528;
 }
 
-html[data-pv-gold="deep"] {
-  --color-accent-gold: #8f5b30;
+html[data-pv-gold="bronze"] {
+  --color-accent-gold: #cd7f32;
 }

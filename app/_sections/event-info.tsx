@@ -232,8 +232,10 @@ function mapLabel(segment: EventSegment): string {
    `EventSheet` — see the note there for why it has to be a trade. BETWEEN the two entries the gap
    went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
    two read as two clusters; `eventInfoFit` is re-measured for it. */
+/* Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
+   left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group. */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-space-sm grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-sm text-left md:mt-0 md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
+  "mx-auto mt-space-sm grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-space-sm text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
@@ -246,14 +248,15 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
           className="col-span-full grid grid-cols-subgrid items-start gap-y-space-2xs md:gap-y-space-sm"
           key={segment.id}
         >
-          <div className="flex shrink-0 justify-center text-accent-gold [@media(width>=64rem)_and_(orientation:landscape)]:pt-space-xs">
+          <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold">
             <PlateMark segmentId={segment.id} />
           </div>
-          <div className="flex min-w-0 flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:text-left">
+          <div className="flex min-w-0 flex-col items-start text-left">
             <SegmentLine segment={segment} />
-            {/* `contents`, so it lays out as nothing here. It exists for `/preview`'s left-aligned
-                map action, which needs the venue and its action in one box of the venue's width. */}
-            <div className="contents" data-venue-block>
+            {/* The action sits under the venue with its disc's left edge on the venue's first letter
+                (owner, 2026-10-11): the mark sits `space-sm` inside its target, so the target is
+                pulled back by it. */}
+            <div className="flex flex-col items-start">
               {segment.venue !== null && (
                 <p className="type-body text-ink text-pretty">
                   <VenueName venue={segment.venue} />
@@ -262,7 +265,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
               {segment.mapUrl !== null && (
                 <ButtonAction
                   aria-label={mapLabel(segment)}
-                  className="mt-space-2xs"
+                  className="mt-space-2xs -ms-space-sm"
                   href={segment.mapUrl}
                   mark={<MapIcon size={24} />}
                 >

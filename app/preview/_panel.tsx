@@ -28,13 +28,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    read `:root:not([data-opening-skipped])`. A panel that cleared or rewrote the root's attribute
    set would re-arm the invite's 1600ms opening in the middle of a scroll. One prefix makes the
    gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive. */
-const ATTRIBUTES = [
-  "data-pv-events",
-  "data-pv-map-action",
-  "data-pv-date-colour",
-  "data-pv-ritual-leaf",
-  "data-pv-gold",
-] as const;
+const ATTRIBUTES = ["data-pv-gold"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -85,72 +79,19 @@ interface Lever {
    destinations. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
-    id: "events",
-    title: "The event details on a phone",
-    /* PREVIEW ONLY, and the mark is not politeness. `app/event-info-fit.ts` is GENERATED from the
-       shipped layout and a CSS override cannot re-derive it, so the alternate can render a
-       composition the production build will not produce. */
-    note: "Preview only — the spacing is derived in code, so the final build may sit a few pixels off.",
-    options: [
-      { label: "As now", attrs: {} },
-      {
-        label: "Two columns, as on a laptop",
-        note: "The venue may wrap.",
-        attrs: { "data-pv-events": "columns" },
-      },
-    ],
-  },
-  {
-    id: "map-action",
-    title: "The “Meet us here” button",
-    options: [
-      { label: "As now", attrs: {} },
-      {
-        label: "Left, in line with the venue",
-        note: "The button's circle starts where the venue's first letter does.",
-        attrs: { "data-pv-map-action": "start" },
-      },
-    ],
-  },
-  {
-    id: "date-colour",
-    title: "The date's colour",
-    options: [
-      { label: "As now", attrs: {} },
-      {
-        label: "The day in gold",
-        attrs: { "data-pv-date-colour": "day-gold" },
-      },
-      {
-        label: "The day in soft brown",
-        attrs: { "data-pv-date-colour": "day-muted" },
-      },
-      {
-        label: "The whole date in gold",
-        attrs: { "data-pv-date-colour": "all-gold" },
-      },
-    ],
-  },
-  {
-    id: "ritual-leaf",
-    title: "The leaf before each ritual's name",
-    options: [
-      { label: "With the leaf", attrs: {} },
-      { label: "Without", attrs: { "data-pv-ritual-leaf": "none" } },
-    ],
-  },
-  {
     id: "gold",
-    title: "The gold, darkened toward bronze",
-    /* ONE VALUE PER OPTION, everywhere gold reads (owner, 2026-10-11: "singular option change across
-       text and marks/rules") — the eyebrows, the marks, the rules, the rims, the Malayalam, the
-       buttons. Each is `--color-accent-gold` replaced at the root, so nothing gold can be missed. */
+    title: "The gold, darkened",
+    /* ONE VALUE PER OPTION, everywhere gold reads (owner, 2026-10-11), each `--color-accent-gold`
+       replaced at the root. Shades between today's gold, light bronze and #CD7F32 — darker, less
+       yellow; the browner bronzes were dropped. */
     note: "Changes every gold on the page at once — words, leaves and lines.",
     options: [
       { label: "Gold, as now", attrs: {} },
+      { label: "Dark gold", attrs: { "data-pv-gold": "dark" } },
+      { label: "Gold–bronze", attrs: { "data-pv-gold": "gold-bronze" } },
       { label: "Light bronze", attrs: { "data-pv-gold": "light" } },
-      { label: "Bronze", attrs: { "data-pv-gold": "mid" } },
-      { label: "Deep bronze", attrs: { "data-pv-gold": "deep" } },
+      { label: "Deep gold", attrs: { "data-pv-gold": "deep-gold" } },
+      { label: "Bronze #CD7F32", attrs: { "data-pv-gold": "bronze" } },
     ],
   },
 ];

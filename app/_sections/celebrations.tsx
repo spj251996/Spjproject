@@ -98,7 +98,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                         Malayalam's ascenders and pre-base signs otherwise grow the line box. */}
                     <div className={celebrations.header} data-ritual-header>
                       <SprigIcon
-                        className="shrink-0 self-center text-accent-gold"
+                        className="shrink-0 self-center text-accent-gold max-lg:hidden"
                         size={FLOOR_DIAGONAL}
                       />
                       <h3
@@ -106,7 +106,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                       >
                         {ritual.title}
                       </h3>
-                      <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight">
+                      <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight max-md:ms-auto">
                         {ritual.malayalam}
                       </span>
                     </div>

@@ -44,7 +44,7 @@ function InviteDate({ date }: { date: FormattedDate }) {
       {/* The `<time>` carries the ISO value, so a date split across five elements is still readable
           as one date. */}
       <time
-        className="type-date-day col-start-3 row-start-2 justify-self-center"
+        className="type-date-day col-start-3 row-start-2 justify-self-center text-accent-gold"
         dateTime={date.iso}
       >
         {date.day}
