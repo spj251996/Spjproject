@@ -218,7 +218,7 @@ const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-date-label",
     family: "Playfair Display",
-    weight: 400,
+    weight: 700,
     sample: "Saturday · Jan · 2027",
     phone: { size: 12, lh: 12 },
     tablet: { size: 13, lh: 13 },
@@ -228,7 +228,7 @@ const TYPE_TOKENS: TypeToken[] = [
   {
     token: "type-date-day",
     family: "Playfair Display",
-    weight: 400,
+    weight: 700,
     sample: "9",
     phone: { size: 44, lh: 44 },
     tablet: { size: 48, lh: 48 },
