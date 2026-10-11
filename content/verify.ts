@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { familyGroups, rituals } from "./index.ts";
 import type { FamilyGroup, FamilyMember, Ritual } from "./types.ts";
@@ -14,6 +14,13 @@ export class MissingAssetError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "MissingAssetError";
+  }
+}
+
+export class UnknownRitualDirectoryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnknownRitualDirectoryError";
   }
 }
 
@@ -59,6 +66,34 @@ export function collectAssetPaths(content: {
   return found;
 }
 
+/** Directory names under `assets/rituals/` that match no ritual id. Pure. */
+export function unknownRitualDirectories(
+  directories: string[],
+  ids: string[],
+): string[] {
+  const known = new Set(ids);
+  return directories.filter((directory) => !known.has(directory));
+}
+
+/* THE FAILURE THE UPLOAD CHANNEL MAKES. Photographs reach this project by phone — github.com's web
+   upload into `assets/rituals/<ritual-id>/` — so a mistyped directory (`wedding_eve`) produces a
+   manifest key no ritual reads, and that ritual silently shows nothing with tsc, the suite and the
+   build all green. The build fails loudly instead, naming the directory and every id it could have
+   meant, because the reader is looking at a deploy log on a phone.
+
+   The reverse is NOT an error: a ritual with no directory is the shipping state, since a ritual
+   shows its photographs when it has files and by nothing else. */
+export function verifyRitualDirectories(
+  directories: string[],
+  ids: string[],
+): void {
+  const unknown = unknownRitualDirectories(directories, ids);
+  if (unknown.length === 0) return;
+  throw new UnknownRitualDirectoryError(
+    `Ritual photograph directories that match no ritual id (${unknown.length}): ${unknown.join(", ")}. Expected one of: ${ids.join(", ")}. Rename the directory under assets/rituals/ to the ritual's id exactly.`,
+  );
+}
+
 /** `exists` is injected so the check itself is testable without touching a filesystem. */
 export function verifyAssetPaths(
   references: AssetReference[],
@@ -84,4 +119,16 @@ const fileExists = (assetPath: string): boolean =>
    side-effect free. */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   verifyAssetPaths(collectAssetPaths({ familyGroups, rituals }), fileExists);
+  /* `assets/`, not `public/`: this checks the SOURCES the couple upload, which is where a typo is
+     made. The deliveries under `public/rituals/` are generated from these directories a moment
+     later in `prebuild`, so they cannot disagree. */
+  const ritualSources = new URL("../assets/rituals", import.meta.url);
+  verifyRitualDirectories(
+    existsSync(ritualSources)
+      ? readdirSync(ritualSources, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+          .map((entry) => entry.name)
+      : [],
+    rituals.map((ritual) => ritual.id),
+  );
 }

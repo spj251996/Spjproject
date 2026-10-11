@@ -5,7 +5,10 @@ import {
   type AssetReference,
   collectAssetPaths,
   MissingAssetError,
+  UnknownRitualDirectoryError,
+  unknownRitualDirectories,
   verifyAssetPaths,
+  verifyRitualDirectories,
 } from "./verify.ts";
 
 const member = (over: Partial<FamilyMember> = {}): FamilyMember => ({
@@ -187,6 +190,46 @@ test("names every missing path in a single message", () => {
           `${missing} missing from the message`,
         );
       }
+      return true;
+    },
+  );
+});
+
+test("a ritual directory whose name matches no ritual id is reported", () => {
+  assert.deepEqual(
+    unknownRitualDirectories(
+      ["wedding-eve", "wedding_eve"],
+      ["wedding-eve", "betrothal"],
+    ),
+    ["wedding_eve"],
+  );
+});
+
+test("every directory matching a ritual id is accepted", () => {
+  assert.deepEqual(
+    unknownRitualDirectories(
+      ["betrothal", "wedding-eve"],
+      ["wedding-eve", "betrothal"],
+    ),
+    [],
+  );
+});
+
+test("a ritual with no directory is not an error", () => {
+  /* The absence of photographs is the shipping state: a ritual shows its strip when it has files
+     and by nothing else. Only the reverse — a directory nothing reads — is a mistake. */
+  assert.deepEqual(unknownRitualDirectories([], ["wedding-eve"]), []);
+});
+
+test("an unknown ritual directory throws naming it and the ids it could have meant", () => {
+  assert.throws(
+    () =>
+      verifyRitualDirectories(["wedding_eve"], ["wedding-eve", "betrothal"]),
+    (error: unknown) => {
+      assert.ok(error instanceof UnknownRitualDirectoryError);
+      assert.match(error.message, /wedding_eve/);
+      assert.match(error.message, /wedding-eve/);
+      assert.match(error.message, /betrothal/);
       return true;
     },
   );
