@@ -383,7 +383,7 @@ test("every placement's scale is the owner's authored value, never derived from 
 
    CORRECTED 2026-10-07: an earlier version of this comment said `wide`'s source was GONE and that any
    regeneration must merge. All of that was false. The generator reads `wide` from
-   `tmp/thread-draw/figma/` (`build-thread-paths.mjs`'s `DIRS`), not from `tmp/thread-draw/wide/` —
+   `assets/thread/wide/` (`build-thread-paths.mjs`'s `DIRS`), not from `tmp/thread-draw/wide/` —
    which does not exist — and that directory holds `geometry.json`, `attachments.json` and
    `connectors.json` intact. Proven by neutralising `MAX_SPAN` and reproducing this file
    byte-identically for all three bands. So there is no merge mechanism and this file is not an

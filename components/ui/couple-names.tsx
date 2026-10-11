@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
    invite and `type-heading-script` at Wishes; both roles stay in the tree as `/preview`'s lever-2
    alternate until the couple choose.
 
-   MEASURED INK OF EACH GROUP, in the source file's own viewBox units (tmp/half2/names-bbox.mjs, a
+   MEASURED INK OF EACH GROUP, in the source file's own viewBox units (scripts/measure-couple-names-bbox.mjs, a
    real engine). `x`/`y` are where the group sits in the SOURCE box, which is what makes the stacked
    layout free: the drawn lockup IS those positions, so stacking is a re-origin and nothing else. */
 const SEBASTIAN = { w: 599.68, h: 190.11, x: 0.32, y: 0.19 };
