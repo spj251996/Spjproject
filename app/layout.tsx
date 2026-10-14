@@ -95,7 +95,7 @@ const SKIP_OPENING_WHEN_SCROLLED = `addEventListener("DOMContentLoaded",function
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Sebastian & Flemy",
-  description: "You’re invited — 9th January 2027, Koothattukulam, Kerala",
+  description: "You’re invited — 4th & 9th January 2027, Kerala",
   robots: { index: false, follow: false },
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
      export carries them. Left alone rather than suppressed: they are free, they agree with the og:
@@ -106,17 +106,17 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: SITE_URL,
     /* Split from the document title deliberately: "…are getting married" is a good preview headline
-       and a clumsy browser-tab label. The card above it already carries the couple's drawn names, so the title carries the occasion and the description carries the date and the town —
-       together the pair holds names, date and city (PROJECT.md → Link Sharing) with nothing said
-       twice. The card shows the state; this says the town the card omits. */
+       and a clumsy browser-tab label. The card above it already carries the couple's drawn names, so the title carries the occasion and the description carries the dates and the place —
+       together the pair holds the names, both dates and the place (PROJECT.md → Link Sharing). The
+       card shows the names and the dates; this adds the place (owner, 2026-10-14). */
     title: "Sebastian & Flemy are getting married",
-    description: "You’re invited — 9th January 2027, Koothattukulam, Kerala",
+    description: "You’re invited — 4th & 9th January 2027, Kerala",
     images: [
       {
         url: "/og-card.jpg",
         width: 1200,
         height: 630,
-        alt: "Sebastian and Flemy, 9th January 2027, Kerala",
+        alt: "Sebastian and Flemy, 4th and 9th January 2027",
       },
     ],
   },
