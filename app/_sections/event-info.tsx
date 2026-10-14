@@ -1,5 +1,4 @@
 import type { ComponentType } from "react";
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import "@/app/event-info.css";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
@@ -308,11 +307,11 @@ function EventSheet({ event }: { event: WeddingEvent }) {
 }
 
 /* The id scopes `measure:fit`'s selector, so a later section's `h2`s cannot leak into this fit. */
-export function EventInfoSection({ paint }: { paint?: FramePaint }) {
+export function EventInfoSection() {
   return (
     <section className="relative" id="event-info">
       <Botanical fit={eventInfoFit} pieces={SECTION_PLACEMENT["event-info"]} />
-      <MountedPair fit={eventInfoFit} paint={paint}>
+      <MountedPair fit={eventInfoFit}>
         <EventSheet event={eventById("engagement")} />
         <EventSheet event={eventById("wedding")} />
       </MountedPair>

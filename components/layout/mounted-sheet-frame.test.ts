@@ -1497,3 +1497,16 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
     [16, 12, 16, 24],
   );
 });
+
+/* The built page carries these exact strings in two inlined stylesheets (the frame's and the botanical layer's), so
+   changing them moves `/`'s bytes. The suffix names the card's fixed paint for its role. */
+test("the tall scope class keeps its shipped strings and separates hero from section", () => {
+  assert.strictEqual(
+    tallScopeClass(false),
+    "mounted-sheet-frame--tall-section-mount",
+  );
+  assert.strictEqual(
+    tallScopeClass(true),
+    "mounted-sheet-frame--tall-hero-none",
+  );
+});

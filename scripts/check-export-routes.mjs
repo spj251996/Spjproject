@@ -26,7 +26,6 @@ const EXPECTED = [
     roots: 0,
     label: "/ (published)",
     sections: true,
-    stockPaint: false,
     progress: 1,
   },
   {
@@ -36,7 +35,6 @@ const EXPECTED = [
     path: "out/thread.html",
     roots: LAB_ROOTS,
     label: "/thread (lab)",
-    stockPaint: false,
     progress: 0,
   },
   {
@@ -52,7 +50,6 @@ const EXPECTED = [
     path: "out/preview.html",
     roots: 0,
     label: "/preview (the couple's review)",
-    stockPaint: false,
     progress: 1,
   },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
@@ -118,38 +115,27 @@ if (!EXPECTED.some((route) => route.sections)) {
   failed = true;
 }
 
-/* THE `stock` PAINT REACHES THE BUILT CSS, AND ONLY THE ROUTE THAT ASKS FOR IT. Both halves need the
- * built artifact and neither is visible in the source: a `var()` that resolves to nothing builds green,
- * and the frame's stylesheet is inlined PER SECTION, so what each page ships is decided by the argument
- * its call sites pass rather than by anything a grep of the component would show.
- *
- * `--shadow-mounted-stock` is a comma list of two `var()`s, which Tailwind inlines into the utility's
- * own `--tw-shadow`. The inner names are asserted, not just the token's presence: a token that resolved
- * to nothing would still appear here. */
+/* The stock paint is retired (2026-10-14): no built stylesheet may still carry its composed shadow. A missing
+ * chunk directory fails rather than passing on an empty listing. */
 const CSS_DIR = "out/_next/static/chunks";
-const STOCK_CLASS = "shadow-mounted-stock";
 if (existsSync(CSS_DIR)) {
-  const css = readdirSync(CSS_DIR)
-    .filter((name) => name.endsWith(".css"))
-    .map((name) => readFileSync(join(CSS_DIR, name), "utf8"))
-    .join("\n");
-  const rule = css.match(/\.shadow-mounted-stock\{[^}]*\}/)?.[0] ?? "";
-  const composed =
-    rule.includes("var(--shadow-mount)") &&
-    rule.includes("var(--shadow-stock)");
-  console.log(
-    `${composed ? "ok  " : "FAIL"} built CSS: .${STOCK_CLASS} composes both shadow recipes`,
+  const stockLeft = readdirSync(CSS_DIR).filter(
+    (name) =>
+      name.endsWith(".css") &&
+      readFileSync(join(CSS_DIR, name), "utf8").includes(
+        "shadow-mounted-stock",
+      ),
   );
-  if (!composed) {
-    console.error(`     rule found: ${rule || "(none)"}`);
-    failed = true;
-  }
+  console.log(
+    `${stockLeft.length === 0 ? "ok  " : "FAIL"} built CSS: no retired stock shadow${stockLeft.length ? ` -- in [${stockLeft}]` : ""}`,
+  );
+  if (stockLeft.length > 0) failed = true;
 } else {
   console.error(`FAIL: ${CSS_DIR} is missing -- no built CSS to check`);
   failed = true;
 }
 
-for (const { path, roots, label, sections, stockPaint, progress } of EXPECTED) {
+for (const { path, roots, label, sections, progress } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -162,15 +148,6 @@ for (const { path, roots, label, sections, stockPaint, progress } of EXPECTED) {
     `${ok ? "ok  " : "FAIL"} ${label}: ${found} thread roots, expected ${roots}`,
   );
   if (!ok) failed = true;
-
-  if (stockPaint !== undefined) {
-    const uses = (html.match(new RegExp(STOCK_CLASS, "g")) ?? []).length;
-    const ok = stockPaint ? uses > 0 : uses === 0;
-    console.log(
-      `${ok ? "ok  " : "FAIL"} ${label}: ${uses} ${STOCK_CLASS} uses, expected ${stockPaint ? "some" : "none"}`,
-    );
-    if (!ok) failed = true;
-  }
 
   if (progress !== undefined) {
     const bars = (html.match(/data-scroll-progress/g) ?? []).length;

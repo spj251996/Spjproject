@@ -5,7 +5,6 @@ import {
   SECTION_PLACEMENT,
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { CardThread } from "@/components/thread/page-thread";
 import { CoupleNames } from "@/components/ui/couple-names";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
@@ -15,17 +14,11 @@ import { wishes } from "@/content";
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
    illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
    the thread. */
-export function WishesSection({
-  paint,
-  thread = false,
-}: {
-  paint?: FramePaint;
-  thread?: boolean;
-}) {
+export function WishesSection({ thread = false }: { thread?: boolean }) {
   return (
     <section className="relative" id="wishes">
       <Botanical fit={wishesFit} pieces={SECTION_PLACEMENT.wishes} />
-      <MountedSheet fit={wishesFit} paint={paint}>
+      <MountedSheet fit={wishesFit}>
         <div
           className={`${wishesStyles.stack} wishes-stack flex w-full flex-col items-center`}
           style={{

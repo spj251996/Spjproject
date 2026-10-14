@@ -5,7 +5,6 @@ import {
 } from "@/components/background/botanical";
 import { Family } from "@/components/family/family";
 import { MountedPair } from "@/components/layout/mounted-pair";
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { type FamilyGroup, familyGroups } from "@/content";
 
 const FAMILY_EYEBROWS: Readonly<Record<FamilyGroup["side"], string>> = {
@@ -25,11 +24,11 @@ function familyGroupBySide(side: FamilyGroup["side"]) {
 
 /* The id scopes `measure:fit`'s selector. Measured by `familyFit`: any content or type change
    re-runs `npm run measure:fit`. */
-export function FamilySection({ paint }: { paint?: FramePaint }) {
+export function FamilySection() {
   return (
     <section className="relative" id="family">
       <Botanical fit={familyFit} pieces={SECTION_PLACEMENT.family} />
-      <MountedPair fit={familyFit} paint={paint}>
+      <MountedPair fit={familyFit}>
         <Family
           eyebrow={FAMILY_EYEBROWS.bride}
           group={familyGroupBySide("bride")}

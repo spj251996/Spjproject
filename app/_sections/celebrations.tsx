@@ -6,7 +6,6 @@ import {
 } from "@/components/background/botanical";
 import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { PhotoStrip } from "@/components/ui/photo-strip";
 import { FLOOR_DIAGONAL, SprigOrnament } from "@/components/ui/sprig-ornament";
 import { rituals } from "@/content";
@@ -28,7 +27,7 @@ const CELEBRATIONS_PROMISE =
    module instead (celebrations.module.css), through `--celebrations-intro-gap`. */
 const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
-export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
+export function CelebrationsSection() {
   /* Known at module load, so `photoFit` waits on nothing but the strip's own width measurement —
      never on an image decoding. The derivation and its reasons live in the helper. */
   const {
@@ -41,7 +40,7 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
   return (
     <section className="relative" id="celebrations">
       <Botanical pieces={SECTION_PLACEMENT.celebrations} />
-      <MountedSheet paint={paint} tall>
+      <MountedSheet tall>
         <div
           className="flex w-full flex-col items-center"
           style={{

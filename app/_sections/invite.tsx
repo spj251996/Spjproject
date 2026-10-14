@@ -1,4 +1,3 @@
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import type { FormattedDate } from "@/content/types";
 import "@/app/invite.css";
 import { eventById } from "@/app/_sections/shared";
@@ -141,19 +140,13 @@ function InvitePassage() {
    against the window's own width. The stack uses per-child margins rather than `gap-*` because only
    the names-to-date gap varies.
 
-   Takes the hero card's UNPAINTED option (owner, 2026-10-05): the type sits on the page's ground,
+   The hero is UNPAINTED (owner, 2026-10-05; final 2026-10-14): the type sits on the page's ground,
    with no mount, stock, shadow or cut corner at any width. The frame is KEPT rather than removed,
    because it carries the height contract that makes this section exactly one screen, and because the
    thread measures `.mounted-sheet-frame__box` for its per-card draw window and falls back to the
    whole section without it — which would re-place the invite's stretch across the full window width
-   and move the page's height. Dropping the paint costs neither.
-
-   The painted option returns by dropping the `?? "none"` from the paint prop below, so the hero takes
-   the component's `"mount"` default like every other section. NOT by deleting the prop: that would also
-   sever the lab routes' override — `/thread/stock` would render a mount-painted hero over five stock
-   cards — and would leave `paint` destructured and unused. The sequence it needs back is recorded in
-   `DESIGN.md` → Foundations → Layout → `mounted-sheet` → The card's three paints. */
-export function InviteSection({ paint }: { paint?: FramePaint }) {
+   and move the page's height. Dropping the paint costs neither. */
+export function InviteSection() {
   const wedding = eventById("wedding");
   const weddingDate = formatEventDate(wedding.date);
 
@@ -161,12 +154,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
     <section className="relative" id="invite">
       {/* `corners`: the opening grows these pieces from their own corners (`app/invite.css`). */}
       <Botanical corners fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
-      <MountedSheet
-        className="invite-settle"
-        fit={inviteFit}
-        hero
-        paint={paint ?? "none"}
-      >
+      <MountedSheet className="invite-settle" fit={inviteFit} hero>
         {/* The stack fills the card so the passage can settle against its bottom edge. Growth
             shares rather than `1fr` grid rows: a share with no free space collapses to 0 in
             `measure:fit`'s detached clone, so the measured height stays the content's own, while
