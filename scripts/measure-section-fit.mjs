@@ -184,6 +184,12 @@ function sweepScript(cssSelector, mutateContent) {
     const clone = source.cloneNode(true);
     clone.style.width = "100%";
     clone.style.maxWidth = "none";
+    /* A wrapped venue's narrowed width is the LIVE window's answer; the sweep re-wraps the clone
+       at every width, so the clone must start from the unnarrowed paragraph or it measures a venue
+       capped at the wrong width. */
+    for (const shrunk of clone.querySelectorAll("[data-shrink-to-line]")) {
+      shrunk.style.removeProperty("max-width");
+    }
     host.appendChild(clone);
     document.body.appendChild(host);
     return { host, clone };

@@ -18,6 +18,7 @@ import {
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { ButtonAction } from "@/components/ui/button-action";
+import { ShrinkToWidestLine } from "@/components/ui/shrink-to-widest-line";
 import {
   type EventSegment,
   formatEventDate,
@@ -232,7 +233,8 @@ function mapLabel(segment: EventSegment): string {
    went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
    two read as two clusters; `eventInfoFit` is re-measured for it. */
 /* Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
-   left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group. */
+   left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group, and a
+   wrapped venue narrows to its widest line so that group centres on its ink (DESIGN.md → Event Info). */
 const PLATE_LIST_CLASS =
   "mx-auto mt-space-sm grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-space-sm text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
 
@@ -257,9 +259,9 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
                 pulled back by it. */}
             <div className="flex flex-col items-start">
               {segment.venue !== null && (
-                <p className="type-body text-ink text-pretty">
+                <ShrinkToWidestLine className="type-body text-ink text-pretty">
                   <VenueName venue={segment.venue} />
-                </p>
+                </ShrinkToWidestLine>
               )}
               {segment.mapUrl !== null && (
                 <ButtonAction
