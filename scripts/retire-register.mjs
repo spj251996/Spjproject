@@ -44,11 +44,6 @@
  * elements carrying the `em` the drawn lockup's width resolves against. */
 export const RETIRE_REGISTER = Object.freeze([
   {
-    path: "assets/rituals",
-    kind: "temporary",
-    why: "Every photograph here is a test stand-in — the first two rituals' for the couple's Ship 1 review, plus the owner's two Wedding test uploads (`ad075ea`) — and ALL of them come out after the couple's preview (owner, 2026-10-11). Removing them is TWO steps since Phase 8: delete the photographs in `assets/rituals/wedding-eve/`, `assets/rituals/betrothal/` AND `assets/rituals/wedding/` but KEEP each folder's `.gitkeep` — the folders are where the owner uploads, and github.com cannot upload into one that does not exist — then re-measure Celebrations' height back to the photo-free base. `public/rituals/` needs no step — it is generated from these directories and gitignored.",
-  },
-  {
     path: "app/preview",
     kind: "temporary",
     why: "The couple's review route and everything that serves it — the route, the panel, the alternates' stylesheet and its gate. REGISTERED 2026-10-10 after a whole-branch review found it tagged `[retire]` in `DESIGN.md` while appearing in no machine-readable list, which falsified that doc's own statement that this file is where the members live. ITS WINDOW IS THE NARROWEST HERE AND IT IS NOT PHASE 9: it goes BEFORE THE BRANCH MERGES, once the couple have answered. THE REMOVAL IS NOT ONE ROW IN THE EXPORT GATE — deleting `preview.css` empties that gate's `variantSheets`, whose claim reads `variantSheets.length > 0 && ...`, so the gate fails on the removal commit unless the `EXPECTED` row is REPLACED by a `FORBIDDEN` entry and both `data-pv-` blocks go with it.",

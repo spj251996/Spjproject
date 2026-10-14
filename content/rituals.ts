@@ -17,12 +17,10 @@ import { validateRituals } from "./validate.ts";
    `images` array here would be a second hand-maintained copy of it. Strip order is the files'
    name order there, so renaming one to `01-...` makes it lead.
 
-   THE FIRST TWO RITUALS' PHOTOGRAPHS ARE TEMPORARY AND ARE DROPPED BEFORE SHIP 2 (owner,
-   2026-10-07). Removing them is now TWO steps, not three: delete the photographs in
-   `assets/rituals/wedding-eve/` and `assets/rituals/betrothal/` — KEEPING each folder's `.gitkeep`,
-   since every ritual's folder must exist for the owner to upload into it from a phone — then
-   re-measure Celebrations' height back to the photo-free base.
-   `public/rituals/` needs no step — it is generated and gitignored. `tasks.md` holds the gate.
+   EVERY RITUAL GAINS ITS REAL PHOTOGRAPHS IN STAGES AFTER THE EVENTS (owner, 2026-10-14); the test
+   photographs came out the same day. Each folder keeps its `.gitkeep`, since every ritual's folder
+   must exist for the owner to upload into it from a phone. `public/rituals/` is generated and
+   gitignored.
 
    The Malayalam is in logical codepoint order. Two of these arrived from the PDF in VISUAL order
    (the `െ` sign before its consonant) and are reordered here; `validateRituals` now refuses that

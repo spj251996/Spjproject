@@ -44,12 +44,11 @@ const TALL_HEIGHTS: SectionHeights = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
-     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
-     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
-     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
-     photographed ritual closes by from 64rem, 2026-10-11) — so removing
-     them means subtracting two increments, not re-deriving the height.
+     THIS IS THE PHOTO-FREE BASE — the test photographs came out on 2026-10-14. Every ritual gains
+     its real photographs in stages after the events (owner, 2026-10-14), and each ritual that gains
+     photographs adds a CONSTANT +184 / +184 / +190 at tall / upright / wide (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — so a ritual's first upload means adding
+     one increment, not re-deriving the height.
      RE-MEASURED 2026-10-10 on two changes at once, and the BASE moved while the INCREMENT did not:
      the ritual restructure put each Malayalam on its own line, and the alternating band above
      1024px was removed in favour of one full-width column at every tier with a single 48px gap
@@ -61,7 +60,7 @@ const TALL_HEIGHTS: SectionHeights = {
      1666 -> 2173 / 2262 / 1513. The phone INCREMENT moved too, 180 -> 184 — the wider measure lets
      the strip hold its nominal 120px row — measured per ritual as the strip's box plus its margin.
      Instrument validated on `contact` and `wishes` first, both reproducing 700 / 1180 / 695. */
-  celebrations: 2541,
+  celebrations: 2173,
   wishes: 700,
 };
 
@@ -76,14 +75,13 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
-     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
-     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
-     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
-     photographed ritual closes by from 64rem, 2026-10-11) — measured to
-     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
-     them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 2630,
+     THIS IS THE PHOTO-FREE BASE — the test photographs came out on 2026-10-14. Every ritual gains
+     its real photographs in stages after the events (owner, 2026-10-14), and each ritual that gains
+     photographs adds a CONSTANT +184 / +184 / +190 at tall / upright / wide (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to the pixel across 0, 1, 2 and
+     3 rituals, and independent of how many photographs any one of them carries. So a ritual's first
+     upload means adding one increment, not re-deriving the height. */
+  celebrations: 2262,
   wishes: 1180,
 };
 
@@ -98,14 +96,13 @@ const WIDE_HEIGHTS: SectionHeights = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
-     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
-     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
-     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
-     photographed ritual closes by from 64rem, 2026-10-11) — measured to
-     the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
-     them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 1893,
+     THIS IS THE PHOTO-FREE BASE — the test photographs came out on 2026-10-14. Every ritual gains
+     its real photographs in stages after the events (owner, 2026-10-14), and each ritual that gains
+     photographs adds a CONSTANT +184 / +184 / +190 at tall / upright / wide (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to the pixel across 0, 1, 2 and
+     3 rituals, and independent of how many photographs any one of them carries. So a ritual's first
+     upload means adding one increment, not re-deriving the height. */
+  celebrations: 1513,
   wishes: 695,
 };
 
