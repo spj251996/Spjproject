@@ -5,6 +5,7 @@ import {
 } from "@/components/background/botanical";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { ButtonAction } from "@/components/ui/button-action";
+import { SprigOrnament } from "@/components/ui/sprig-ornament";
 
 /* The screen an unmatched path reaches. It takes the section frame so a wrong turn still reads as
    part of the invitation, and it carries botanical at the invite's own placement — it is a
@@ -35,7 +36,9 @@ export default function NotFound() {
             className="flex w-full flex-col items-center text-center"
             data-not-found-stack
           >
-            <p className="type-eyebrow">A Small Detour</p>
+            <p className="type-eyebrow">
+              <SprigOrnament>A Small Detour</SprigOrnament>
+            </p>
             <h1 className="type-heading-xl text-ink-muted mt-space-2xs">
               This page isn&apos;t part of the invitation.
             </h1>

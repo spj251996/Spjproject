@@ -11,13 +11,12 @@ import type { ThreadId } from "./thread-geometry.ts";
 const SECTIONS: readonly ThreadId[] = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
 ];
 
-test("every band carries an authored card for all six sections", () => {
+test("every band carries an authored card for all five sections", () => {
   for (const band of THREAD_BANDS) {
     for (const id of SECTIONS) {
       const card = authoredCard(id, band.id);
@@ -62,11 +61,6 @@ test("tall band's authored cards, measured on the real render at 393x700", () =>
     cardLeft: 16,
     sectionHeight: 1400,
   });
-  assert.deepEqual(authoredCard("contact", "tall"), {
-    cardWidth: 361,
-    cardLeft: 16,
-    sectionHeight: 700,
-  });
   assert.deepEqual(authoredCard("family", "tall"), {
     cardWidth: 361,
     cardLeft: 16,
@@ -76,7 +70,7 @@ test("tall band's authored cards, measured on the real render at 393x700", () =>
   assert.deepEqual(authoredCard("celebrations", "tall"), {
     cardWidth: 345,
     cardLeft: 24,
-    sectionHeight: 2668,
+    sectionHeight: 2173,
   });
   assert.deepEqual(authoredCard("wishes", "tall"), {
     cardWidth: 361,
@@ -92,7 +86,7 @@ test("upright band's authored cards, measured on the real render at 820x1180", (
     assert.equal(card.cardLeft, 128, id);
   }
   assert.equal(authoredCard("event-info", "upright").sectionHeight, 2360);
-  assert.equal(authoredCard("celebrations", "upright").sectionHeight, 2676);
+  assert.equal(authoredCard("celebrations", "upright").sectionHeight, 2262);
 });
 
 test("wide band's authored cards, measured on the real render at 1536x695", () => {
@@ -101,7 +95,7 @@ test("wide band's authored cards, measured on the real render at 1536x695", () =
     assert.equal(card.cardWidth, 960, id);
     assert.equal(card.cardLeft, 288, id);
   }
-  assert.equal(authoredCard("celebrations", "wide").sectionHeight, 1948);
+  assert.equal(authoredCard("celebrations", "wide").sectionHeight, 1513);
 });
 
 test("Flemy's and Sebastian's portrait centres are recorded for every band, as a fraction of the family card", () => {

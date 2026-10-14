@@ -164,8 +164,8 @@ const FALLBACKS = PAGE_FALLBACKS;
    equal specificity over an earlier one. Splitting these across a CSS-module class and this inline
    `<style>` would let the module rule's higher specificity always win regardless of `@media`; see
    `thread.module.css`'s own comment for why both halves live here instead. */
-/* THE MAIN TRUNK'S OWN PIECE COUNT -- 19, per `task-1-brief.md`'s own reproduction (22 total pieces
-   across the six sections, minus `wishes`' own 3, which `CardThread` draws separately below). Fixed
+/* THE MAIN TRUNK'S OWN PIECE COUNT -- every section's pieces but `wishes`' own, which `CardThread`
+   draws separately below. Fixed
    at every band: `THREAD_PATHS`/`MOTIF_PLACEMENTS` carry the same connector/motif COUNTS per section
    in all three bands (only the coordinates differ per band) -- confirmed directly against the data,
    not assumed, so this can be a plain module constant, letting `PageThread` render a FIXED number of
@@ -421,18 +421,14 @@ function clearDash(path: SVGPathElement) {
   path.style.strokeDashoffset = "";
 }
 
-/* The opening sequence hands off at 1600ms -- ground present, then the invite's two botanical pieces
-   200-600, type 800-1200, the thread's own fade 1200-1600 (`DESIGN.md` -> Motion -> The opening
-   sequence). The draw begins as that fade completes, so this is the sequence's own end, not a value
-   of its own. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a
-   token multiple rather than a coined number, since a fresh design value is the owner's to set.
-   The thread's own fade no longer waits a beat after the type: the owner asked for less dead air
-   between the names appearing and the line starting, so the fade begins as the type lands.
-   **1600, not 2200, since 2026-10-05**: the invitation took the hero card's unpainted option, so the
-   mount and stock settles that opened the sequence animate nothing and were replaced by one beat on
-   the flowers. Two beats became one, and every later step moved up by 600ms. DESIGN.md carries the
-   painted option's values for restoring it. */
-const OPENING_DRAW_DELAY = 1600;
+/* The opening sequence hands off at 2200ms -- ground present, the invite's flowers unfurling, the
+   type rising line by line until it lands at `--opening-type-end` (1800ms under Bloom, owner
+   2026-10-14), then the thread's own fade for one `--duration-base` (`DESIGN.md` -> Motion -> The
+   opening sequence). The draw begins as that fade completes, so this is the sequence's own end, not a
+   value of its own: `opening-draw.test.ts` derives it from `app/invite.css` and fails if the two
+   part. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
+   multiple rather than a coined number, since a fresh design value is the owner's to set. */
+const OPENING_DRAW_DELAY = 2200;
 const OPENING_DRAW_DURATION = 1200;
 
 /* THE DRAW'S CATCH-UP — the owner's finding, 2026-10-05, in their own words: "i want the thread on

@@ -6,7 +6,6 @@ import {
   type CardRectangle,
   type FitRegime,
   type FrameLayout,
-  type FramePaint,
   fitPadding,
   fitRectangles,
   formatPx,
@@ -18,6 +17,7 @@ import {
   regimesFor,
   revealFor,
   SIDE_GROUND_MULTIPLE,
+  smallestPadding,
   tallWindowClasses,
   type WindowClass,
   windowClasses,
@@ -188,10 +188,16 @@ function windowFits(
   pressed: boolean,
   landscape: boolean,
 ): Condition {
+  /* The rescue padding answers the PRESSED question alone. The full-ground card is asked at the floor
+     it will actually show (owner, 2026-10-14): asked at the rescue value, a window just short of the
+     full-ground fit kept the full ground and ran past one screen where pressing would have fitted. */
+  const padding = pressed
+    ? fitPadding(windowClass.groundTier)
+    : smallestPadding(windowClass.groundTier);
   const rectangles = fitRectangles(
     regimesFor(windowClass.regimes, orientationName(landscape)),
     revealFor(windowClass, hero, landscape),
-    fitPadding(windowClass.groundTier),
+    padding,
     pairsSideBySide(layout, windowClass, landscape),
   );
   if (!landscape) {
@@ -294,19 +300,14 @@ function mountRules(
   windowClass: WindowClass,
   hero: boolean,
   scope: string,
-  paint: FramePaint,
 ): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   return orientationsOf(windowClass)
     .map((landscape) => {
-      /* Under `"stock"` the mount element IS the card's painted surface at every width, so it is
-         never stripped: stripping it would leave a card below `{breakpoints.md}` painting nothing at
-         all, the sheet having given up its own fill. Under `"mount"` and `"none"` this is exactly as
-         before -- `"none"` gates its paint at the component, not here. */
-      const fill =
-        paint === "stock" || mountShows(windowClass, hero, landscape)
-          ? ""
-          : " background-color: transparent; background-image: none;";
+      /* The unpainted hero gates its paint at the component, not here. */
+      const fill = mountShows(windowClass, hero, landscape)
+        ? ""
+        : " background-color: transparent; background-image: none;";
       return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero, landscape))};${fill} }\n}`;
     })
     .join("\n");
@@ -327,42 +328,28 @@ function sheetSelector(scope: string, layout: FrameLayout): string {
    Stacked, the mount stops being a surface and its gap is the ground below one card plus the
    ground above the next. The leaf rule strips fill and grain but never `box-shadow`, so each
    stacked card keeps `shadow-mount`: a single section is bare in the same windows. */
-function pairLayoutRules(
-  windowClass: WindowClass,
-  scope: string,
-  paint: FramePaint,
-): string {
+function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   const leaf = `${mount} > .${FRAME_CLASS.leaf}`;
   const sheet = sheetSelector(scope, "pair");
   const crease = `${mount} > .${FRAME_CLASS.crease}`;
   const strip = "background-color: transparent; background-image: none;";
-  /* The leaf is the painted plate under `"stock"`, so the strip that clears a mount which does not
-     show would clear the card's own surface. The MOUNT's own strip in the stacked branch stays: there
-     the shared mount genuinely shows nothing, spanning both cards plus the ground between them. */
-  const leafStrip = paint === "stock" ? "" : ` ${strip}`;
 
   return orientationsOf(windowClass)
     .map((landscape) => {
       const prelude = `@media ${windowClass.media} and ${orientationQuery(landscape)}`;
       if (pairsSideBySide("pair", windowClass, landscape)) {
         const reveal = revealFor(windowClass, false, landscape);
-        /* The owner's stock form, 2026-10-08: the plates reach the card's outer edges, so the mount
-           pads nothing -- but the GAP is unchanged, because the space between the two stocks must stay
-           the same. The mount also stops PAINTING: the band between the plates shows the page's own
-           ground rather than the mat, which is what "the gutter disappears" means now that the gap
-           stays, and the crease goes with the mat it was a fold in. The plates carry the cast, so the
-           mount keeps none. `paddingRules` gives the reveal back on each plate's three outer sides. */
-        const stock = paint === "stock";
         return `${prelude} {
-${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${stock ? spacing(0) : spacing(reveal)};${stock ? ` ${strip} box-shadow: none;` : ""} }
-${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)};${leafStrip}${stock ? "" : " box-shadow: none;"} }
-${sheet} { justify-content: flex-start; }${stock ? "" : `\n${crease} { display: block; }`}
+${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
+${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)}; ${strip} box-shadow: none; }
+${sheet} { justify-content: flex-start; }
+${crease} { display: block; }
 }`;
       }
       return `${prelude} {
 ${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)};${leafStrip} }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; ${strip} }
 }`;
     })
     .join("\n");
@@ -390,35 +377,9 @@ function paddingRules(
   hero: boolean,
   layout: FrameLayout,
   scope: string,
-  paint: FramePaint,
 ): string {
   const sheet = sheetSelector(scope, layout);
   const ascending = [...windowClass.groundTier.paddingSteps].reverse();
-  /* The stock pair's trade. The plates reach the card's outer edges, and each plate's sheet takes the
-     reveal back: the full reveal top and bottom, and HALF of it on each horizontal side, so the padding
-     is symmetric and the text sits centred in its own plate (owner, 2026-10-08).
-
-     That keeps the content's exact SIZE and moves it `reveal / 2` outward — the one place a paint moves
-     content, and the owner's instruction. The earlier form put the whole reveal on the outer side,
-     which held the content exactly where the painted pair puts it but left the text off-centre by a
-     whole reveal, 16px at the laptop tier.
-
-     Two consequences worth knowing. The two plates are IDENTICAL, so one rule covers both and the
-     stylesheet stays the size of the painted pair's — the mirrored version needed two rules per rung
-     and grew the inlined CSS by 62%. And `reveal / 2` is 8 / 6 / 8 / 12 by tier, of which 6 is NOT on
-     the spacing scale, so it is a division inside `calc` rather than a token lookup — the same shape as
-     the gap's `spacing(2 * reveal)`, halved.
-
-     `revealFor` returns 0 where the mount does not show and `--spacing-0` is `0px` rather than a bare
-     `0` (which CSS rejects inside `calc`), so both terms collapse to the step. That is why this is ONE
-     code path: a stacked stock pair takes it and comes out identical to today. */
-  const stockPairPadding = (padding: number, reveal: number): string => {
-    const step = spacing(padding);
-    const gap = spacing(reveal);
-    return `calc(${step} + ${gap}) calc(${step} + ${gap} / 2)`;
-  };
-  const stockPair = layout === "pair" && paint === "stock";
-
   /* One block per chain, so its condition is stated once and each rectangle nests inside it. A
      landscape chain skips a rectangle taller than the height cap: the box's landscape height is
      capped (frameRules), so no window is tall enough to actually hand the sheet that much room even
@@ -433,7 +394,7 @@ function paddingRules(
     reveal: number,
   ): string => {
     const declare = (padding: number): string =>
-      `${sheet} { padding: ${stockPair ? stockPairPadding(padding, reveal) : spacing(padding)}; }`;
+      `${sheet} { padding: ${spacing(padding)}; }`;
     const rules = [declare(ascending[0])];
     for (const padding of ascending.slice(1)) {
       for (const rectangle of fitRectangles(
@@ -568,7 +529,6 @@ export function mountedSheetFrameCss(
   fit: MeasuredFit,
   hero: boolean,
   layout: FrameLayout = "single",
-  paint: FramePaint = "mount",
 ): string {
   /* Validates the fit, so it runs before anything reads the fit's section name — including the
      hero-pair guard below, which needs a valid fit to report one. */
@@ -584,37 +544,29 @@ export function mountedSheetFrameCss(
     ...classes.flatMap((windowClass) => [
       groundRules(windowClass, hero, layout, scope),
       layout === "pair"
-        ? pairLayoutRules(windowClass, scope, paint)
-        : mountRules(windowClass, hero, scope, paint),
-      paddingRules(windowClass, hero, layout, scope, paint),
+        ? pairLayoutRules(windowClass, scope)
+        : mountRules(windowClass, hero, scope),
+      paddingRules(windowClass, hero, layout, scope),
     ]),
   ].join("\n");
 }
 
-/* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets — but
-   `hero` and `paint` are both PER-SECTION, and two tall cards differing in either would otherwise
-   collide on one class at identical specificity, with the later one in document order winning for both.
-   Keying the scope class on both keeps them apart.
-   `paint` joined the key when the stock paint landed: `tallFrameCss` emits a different fill-strip per
-   paint, so without it a page holding two tall cards at different paints would hand both whichever
-   `<style>` came last. One tall section ships today and the routes are separate documents, so this is a
-   hazard closed before it is reachable rather than a defect fixed. */
-export function tallScopeClass(
-  hero: boolean,
-  paint: FramePaint = "mount",
-): string {
-  return `mounted-sheet-frame--tall-${hero ? "hero" : "section"}-${paint}`;
+/* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets. A tall card
+   is never the hero (`mounted-sheet` throws on both), so there is one tall form and one class.
+
+   The built page carries this exact string in two inlined stylesheets (the frame's and the botanical
+   layer's), so changing it moves `/`'s bytes. Its `-section-mount` suffix is the role and paint the key
+   once carried, kept so the bytes do not move. */
+export function tallScopeClass(): string {
+  return "mounted-sheet-frame--tall-section-mount";
 }
 
 /* A section that scrolls rather than fitting one window. No height query, no container query and no
    minimum card height: the card is its content's height, and the page scrolls past it. The landscape
    side ground is a flat double, with none of the fitted frame's leftover-from-the-height-cap term,
    because a tall card has no height cap to leave anything over. */
-export function tallFrameCss(
-  hero: boolean,
-  paint: FramePaint = "mount",
-): string {
-  const scope = `.${tallScopeClass(hero, paint)}`;
+export function tallFrameCss(): string {
+  const scope = `.${tallScopeClass()}`;
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
@@ -664,21 +616,17 @@ ${sheet} {
   align-items: safe center;
 }`;
 
-  const perClass = tallWindowClasses(hero).map((windowClass) => {
+  const perClass = tallWindowClasses(false).map((windowClass) => {
     const mountRule = (orientation: Orientation) => {
-      /* The same rule as `mountRules`, in this branch's own copy of the ternary: under `"stock"` the
-         mount is the card's painted surface at every width and is never stripped. Celebrations is the
-         page's one tall section, so a route painting every card stock reaches exactly here. */
-      const fill =
-        paint === "stock" || windowClass.mountShows[orientation]
-          ? ""
-          : " background-color: transparent; background-image: none;";
+      const fill = windowClass.mountShows[orientation]
+        ? ""
+        : " background-color: transparent; background-image: none;";
       return `${mount} { padding: ${spacing(windowClass.reveal[orientation])};${fill} }`;
     };
     const ground = spacing(windowClass.ground);
     return `@media ${windowClass.media} {
 ${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
-${sheet} { padding: ${spacing(windowClass.padding)}; }
+${sheet} { padding: ${spacing(windowClass.padding)};${windowClass.paddingInline === null ? "" : ` padding-inline: var(${windowClass.paddingInline});`} }
 }
 @media ${windowClass.media} and (orientation: portrait) {
 ${scope} { ${GROUND_BLOCK}: ${spacing(windowClass.portrait.block)}; ${GROUND_INLINE}: ${spacing(windowClass.portrait.inline)}; }

@@ -1,14 +1,6 @@
 import type { FamilyMember } from "@/content/types";
 
-/* `family` carries no role field: the order is the contract (PROJECT.md → FamilyMember), spouse
-   first, then the children in birth order. */
-
-export interface MemberCluster {
-  row: FamilyMember[];
-  children: FamilyMember[];
-}
-
-/* Members carry no role either: mother, then father, then the children in birth order
+/* Members carry no role field: mother, then father, then the children in birth order
    (PROJECT.md → Naming and Ordering). */
 
 export interface FamilyRoster {
@@ -26,10 +18,27 @@ export function splitRoster(members: FamilyMember[]): FamilyRoster {
   return { parents: [mother, father], children };
 }
 
-export function splitCluster(member: FamilyMember): MemberCluster {
-  const [spouse, ...children] = member.family;
+/* A cluster child's whole family stands on ONE row, sister then her spouse then their children, and
+   the children who have no family of their own take the row after it (owner, 2026-10-08; the groom
+   asked for his sister's family to read as one line).
+
+   This replaces a nested arrangement where the nephews sat in a row of their own beneath their
+   parents. The nesting in `content/family.ts` is unchanged and still expresses the relationships; only
+   how it is laid out changed. `family` carries no role field, so its order is the contract
+   (PROJECT.md → FamilyMember): spouse first, then the children in birth order. */
+
+export function flattenCluster(member: FamilyMember): FamilyMember[] {
+  return [member, ...member.family];
+}
+
+export interface ChildRows {
+  clusters: FamilyMember[];
+  plain: FamilyMember[];
+}
+
+export function splitChildren(children: FamilyMember[]): ChildRows {
   return {
-    row: spouse === undefined ? [member] : [member, spouse],
-    children,
+    clusters: children.filter((child) => child.family.length > 0),
+    plain: children.filter((child) => child.family.length === 0),
   };
 }

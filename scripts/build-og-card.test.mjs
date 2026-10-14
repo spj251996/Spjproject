@@ -1,140 +1,183 @@
 /* Synthetic fixtures only — no dev server, no tmp/, no gitignored path, so the suite runs the same
- * in every clone (see efef5c8). The fixture reproduces the shapes the extractors anchor on, not the
- * whole page: React renders a boolean data attribute as `data-invite-place="true"`, and the four
- * invite rows are emitted as one contiguous run inside a centring wrapper. */
+ * in every clone. The fixture reproduces the shapes the extractors anchor on, not the whole page:
+ * the root layout's hidden symbol sheets, the invite's `<h1>` with both name layouts, its passage's
+ * divider, and Event Info's two sheet dates with their ordinal in its own element. */
 
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CARD,
   cardHtml,
+  extractDates,
+  extractDivider,
   extractFontVars,
-  extractInvite,
-  extractSprigSymbol,
+  extractNames,
+  extractSymbols,
+  mediaFiles,
+  PIECES,
+  parseOverrides,
 } from "./build-og-card.mjs";
 
-const SYMBOL =
+const SPRIG =
   '<svg aria-hidden="true" height="0" role="presentation" width="0" style="position:absolute">' +
   '<defs><symbol id="sprig-mark" viewBox="0 0 174.6 169.8"><path d="M 1 1"/></symbol></defs></svg>';
+const NAMES =
+  '<svg aria-hidden="true" height="0" role="presentation" style="position:absolute" width="0"><defs>' +
+  '<symbol id="names-sebastian" viewBox="0 0 1 1"></symbol><symbol id="names-ampersand" viewBox="0 0 1 1"></symbol>' +
+  '<symbol id="names-flemy" viewBox="0 0 1 1"></symbol></defs></svg>';
 
-const INVITE_RUN =
-  '<p class="type-eyebrow">We are getting married</p>' +
-  '<h1 class="type-display-name text-ink mt-space-lg"><span>Flemy</span>' +
-  '<span class="type-display-name__joiner"> &amp; </span><span>Sebastian</span></h1>' +
-  '<p class="type-date-primary text-ink mt-space-lg">' +
-  '<time dateTime="2027-01-09">9<span class="type-caption type-date-ordinal align-super">th</span> January 2027</time></p>' +
-  '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Keralam</p>';
+const H1 =
+  '<h1 class="text-(length:--text-display-name) text-ink"><span class="sr-only">Sebastian &amp; Flemy</span>' +
+  '<svg data-names-layout="stacked"><use href="#names-sebastian"></use></svg>' +
+  '<svg data-names-layout="line"><use href="#names-sebastian"></use></svg></h1>';
+
+const DIVIDER =
+  '<div aria-hidden="true" class="ornamental-divider-module__x__rule " role="presentation">' +
+  '<span class="hairline"></span><span><svg viewBox="0 0 174.6 169.8"><use href="#sprig-mark"></use></svg></span>' +
+  '<span class="hairline"></span></div>';
+
+const sheet = (id, weekday, day) =>
+  `<h2 class="type-heading-xl" data-event="${id}">${id}</h2><div><p class="type-date-primary text-ink">` +
+  `<time>${weekday}, ${day}<span class="type-date-ordinal">th</span> <span class="md:hidden">Jan</span>` +
+  '<span class="hidden md:inline">January</span> 2027</time></p></div>';
 
 const PAGE =
-  '<html lang="en" class="corinthia_x__variable playfair_y__variable h-full antialiased">' +
-  `<body>${SYMBOL}<main><section><div class="flex flex-col items-center">${INVITE_RUN}</div>` +
-  '<div data-invite-passage="true">passage</div></section></main></body></html>';
+  '<html lang="en" class="libre_x__variable playfair_y__variable h-full antialiased">' +
+  `<body>${SPRIG}${NAMES}<main><section id="invite">${H1}` +
+  `<div data-invite-passage="true"><div class="grow"></div>${DIVIDER}<p>verse</p></div></section>` +
+  `<section id="event-info">${sheet("engagement", "Monday", 4)}${sheet("wedding", "Saturday", 9)}</section>` +
+  "</main></body></html>";
+
+test("extractFontVars keeps only the next/font variable classes", () => {
+  assert.equal(extractFontVars(PAGE), "libre_x__variable playfair_y__variable");
+});
+
+test("extractNames lifts the invite's whole <h1>, both layouts", () => {
+  assert.equal(extractNames(PAGE), H1);
+});
+
+test("extractNames fails loudly when the drawn names are gone", () => {
+  assert.throws(
+    () => extractNames(PAGE.replace(H1, "<h1>Sebastian</h1>")),
+    /no drawn names/,
+  );
+});
+
+test("extractDivider lifts the passage's divider and nothing after it", () => {
+  assert.equal(extractDivider(PAGE), DIVIDER);
+});
+
+test("extractDivider fails loudly when the passage carries none", () => {
+  assert.throws(
+    () => extractDivider(PAGE.replace(DIVIDER, "")),
+    /divider was not found/,
+  );
+});
+
+/* The names render through `<use>`, which resolves against ITS OWN document — the card's. The
+   previous generator lifted only the sprig, and its card shipped with no names at all. */
+test("extractSymbols carries the names' symbols as well as the sprig", () => {
+  const symbols = extractSymbols(PAGE);
+  for (const id of [
+    "sprig-mark",
+    "names-sebastian",
+    "names-ampersand",
+    "names-flemy",
+  ]) {
+    assert.ok(symbols.includes(`id="${id}"`), id);
+  }
+  assert.throws(
+    () => extractSymbols(PAGE.replace(NAMES, "")),
+    /#names-sebastian/,
+  );
+});
+
+test("extractDates reads both days off the event sheets, month and year once", () => {
+  assert.equal(extractDates(PAGE), "4th &amp; 9th January 2027");
+});
+
+test("extractDates refuses two dates that do not share a month", () => {
+  const moved = PAGE.replace(
+    '9<span class="type-date-ordinal">th</span> <span class="md:hidden">Jan</span><span class="hidden md:inline">January</span>',
+    '9<span class="type-date-ordinal">th</span> <span class="md:hidden">Feb</span><span class="hidden md:inline">February</span>',
+  );
+  assert.throws(() => extractDates(moved), /do not share a month/);
+});
 
 const html = () =>
   cardHtml({
     fontVars: "a__variable",
-    invite: INVITE_RUN,
-    sprigSymbol: SYMBOL,
+    names: H1,
+    divider: DIVIDER,
+    symbols: SPRIG + NAMES,
+    dates: "4th &amp; 9th January 2027",
     card: CARD,
   });
 
-test("extractFontVars keeps only the next/font variable classes", () => {
-  assert.equal(
-    extractFontVars(PAGE),
-    "corinthia_x__variable playfair_y__variable",
+test("the card is the invite's ground, 1200x630", () => {
+  assert.match(html(), /class="og-card bg-surface-base"/);
+  assert.match(
+    html(),
+    new RegExp(`width: ${CARD.width}px;\\s*height: ${CARD.height}px;`),
   );
 });
 
-test("extractFontVars throws when the page carries none", () => {
-  assert.throws(
-    () => extractFontVars('<html lang="en" class="h-full"></html>'),
-    /no next\/font variable classes/,
-  );
-});
-
-test("extractInvite returns the contiguous eyebrow-to-place run", () => {
-  assert.equal(extractInvite(PAGE), INVITE_RUN);
-});
-
-test("extractInvite throws when the place hook is gone", () => {
-  assert.throws(
-    () => extractInvite(PAGE.replace('data-invite-place="true"', "")),
-    /invite markup incomplete/,
-  );
-});
-
-test("extractInvite throws when the eyebrow is gone", () => {
-  assert.throws(
-    () =>
-      extractInvite(PAGE.replace("We are getting married", "Save the date")),
-    /invite markup incomplete/,
-  );
-});
-
-test("extractSprigSymbol returns a zero-size svg wrapping the symbol", () => {
-  const svg = extractSprigSymbol(PAGE);
-  assert.match(svg, /^<svg /);
-  assert.match(svg, /<symbol id="sprig-mark" viewBox="0 0 174\.6 169\.8">/);
-  assert.match(svg, /<\/symbol><\/defs><\/svg>$/);
-});
-
-test("extractSprigSymbol throws when the symbol is absent", () => {
-  assert.throws(
-    () => extractSprigSymbol(PAGE.replace(SYMBOL, "")),
-    /sprig symbol not found/,
-  );
-});
-
-test("cardHtml emits the agreed geometry, derived from CARD", () => {
+test("both invite flowers sit in their corners, each blended on its own element", () => {
   const out = html();
-  assert.match(out, /\.og-card\s*\{[^}]*padding:\s*96px/);
-  assert.match(out, /grid-template-columns:\s*58fr 42fr/);
-  assert.match(out, /width:\s*1200px/);
-  assert.match(out, /height:\s*630px/);
-});
-
-test("cardHtml carries one surface and the invite's own rows", () => {
-  const out = html();
-  assert.ok(
-    out.includes("bg-surface-elevated"),
-    "the card is the invite's stock",
+  for (const { piece } of PIECES)
+    assert.ok(out.includes(`botanical/${piece}-desktop.webp`), piece);
+  assert.match(out, /\.og-flower \{[^}]*mix-blend-mode: multiply/);
+  assert.doesNotMatch(
+    out,
+    /\.og-card \{[^}]*(?:opacity|filter|transform|isolation)/,
   );
-  /* Rejected on a render as cramped: the card is ONE surface, so a band creeping back in is a
-     regression, not a refinement. */
-  for (const gone of [
-    "bg-surface-base",
-    "bg-surface-mount",
-    "shadow-mount",
-    "rounded-card",
-  ]) {
-    assert.ok(
-      !out.includes(gone),
-      `${gone} was dropped with the mount and ground`,
-    );
-  }
-  assert.ok(out.includes("We are getting married"));
-  assert.ok(out.includes("Keralam"));
-  assert.match(out, /<use href="#sprig-mark">/);
 });
 
-test("cardHtml holds the names while every other role comes down", () => {
-  const out = html();
-  /* Inline, the mark sits on a line box and renders 55.8px when asked for 48. */
-  assert.match(out, /\.og-sprig svg\s*\{[^}]*display:\s*block/);
-  /* The card's own box, 1.164 — the page's ratio is about 1.51 and overflows. */
-  assert.match(out, /--text-display-name--line-height:\s*135px/);
-  assert.match(out, /--text-display-name:\s*116px/);
-  /* The names are the one role that did NOT come down: "reduce size all text except couples
-     names". A sweep that lowered them with the rest would pass every other assertion here. */
-  assert.match(out, /--text-eyebrow:\s*21px/);
-  assert.match(out, /--text-date-primary:\s*32px/);
-});
-
-test("cardHtml depends on no CSS module and no retired stock", () => {
-  const out = html();
-  assert.ok(
-    !out.includes("wishes-module"),
-    "the card must not borrow Wishes' hashed grid",
+test("the dates take date-label's role, and its size is the card's", () => {
+  assert.match(
+    html(),
+    /<p class="og-dates type-date-label text-ink">4th &amp; 9th January 2027<\/p>/,
   );
-  assert.ok(!out.includes("bg-surface-contrast"), "the green stock is retired");
+  assert.match(html(), new RegExp(`--text-date-label: ${CARD.dates}px`));
+  assert.match(html(), new RegExp(`--text-display-name: ${CARD.names}px`));
+});
+
+test("the card carries the symbols its names and sprig resolve against", () => {
+  assert.ok(html().includes('id="names-flemy"'));
+  assert.ok(html().includes('id="sprig-mark"'));
+});
+
+test("no eyebrow, illustration, place or passage", () => {
+  assert.doesNotMatch(html(), /type-eyebrow|couple\/|data-invite-place|verse/);
+});
+
+/* Values the owner picked by eye on renders (2026-10-14) — pinned, so a later run cannot drift them. */
+test("the card's sizes are the owner's picks", () => {
+  assert.equal(CARD.names, 124);
+  assert.equal(CARD.dates, 24);
+  assert.equal(CARD.flowers, 1.65);
+  assert.equal(CARD.sprayDrop, 60);
+});
+
+/* A typo in a size flag must stop the run, not draw a card with `width: NaNpx` flowers. */
+test("parseOverrides takes finite sizes and refuses anything else", () => {
+  assert.deepEqual(parseOverrides(["--names", "120", "--sprayDrop", "0"]), {
+    names: 120,
+    sprayDrop: 0,
+  });
+  assert.throws(() => parseOverrides(["--flowers", "abc"]), /--flowers/);
+  assert.throws(() => parseOverrides(["--names", "0"]), /--names/);
+  assert.throws(() => parseOverrides(["--sprayDrop", "-5"]), /--sprayDrop/);
+});
+
+/* No font file fetched means the dates render in a fallback face, and nothing else would notice:
+   the names are SVG, and `document.fonts.ready` resolves on a failed face too. */
+test("mediaFiles lists the font files the CSS points at, and refuses none", () => {
+  const css =
+    '@font-face{src:url(../media/a.woff2)}@font-face{src:url("../media/b.woff2")}';
+  assert.deepEqual([...mediaFiles(css)].sort(), ["a.woff2", "b.woff2"]);
+  assert.throws(
+    () => mediaFiles("@font-face{src:url(/_next/static/media/a.woff2)}"),
+    /no font files/,
+  );
 });

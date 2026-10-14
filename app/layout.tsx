@@ -1,24 +1,15 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import {
-  Corinthia,
   Libre_Baskerville,
   Noto_Serif_Malayalam,
   Playfair_Display,
 } from "next/font/google";
-import { SprigSymbol } from "@/components/icons";
+import { CoupleNamesSymbol, SprigSymbol } from "@/components/icons";
 import "./globals.css";
 
-/* Corinthia and Libre Baskerville ship as static faces and need explicit weights; Playfair Display
-   is variable, so omitting `weight` loads the whole axis. */
-
-const script = Corinthia({
-  variable: "--font-script",
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-  fallback: ["cursive"],
-});
+/* Libre Baskerville ships as static faces and needs explicit weights; Playfair Display is variable,
+   so omitting `weight` loads the whole axis. */
 
 const serif = Playfair_Display({
   variable: "--font-serif",
@@ -45,14 +36,28 @@ const sans = Libre_Baskerville({
 /* The three Latin faces carry no Malayalam glyphs, so the ritual titles' second script needs a
    family of its own.
 
-   Weight 400 only — 20KB, Malayalam subset. The design uses one weight, and loading 400+600
-   would be 42KB for nothing. Subsetting to the ~19 codepoints the five titles use would reach
-   3-6KB and was REJECTED: it breaks silently the day a title changes or a sixth ritual lands,
-   and a missing glyph renders as a box on a title nobody re-checked. */
+   ONE WEIGHT, AND IT IS 600 — settled by the owner on a render, 2026-10-10. The design still uses
+   exactly one weight; which one changed. "400 only" was right while the Malayalam shared a line
+   with the English title; Phase 7 moves it above the title, where it carries the line, and at that
+   job it wanted the heavier cut.
+
+   WHY BOTH WERE EVER LOADED, and why the cost is back to one cut's: judging 400 against a
+   SYNTHETIC bold is not a fair comparison — synthesis smears a conjunct rather than thickening it
+   — so a real 600 had to ship through the review. Asking for TWO weights made the loader fetch the
+   VARIABLE face, the whole `wght` axis, rather than two static instances: the three subset files
+   went 41,172 → 105,256 bytes, +64KB with +36KB of it on every route's critical path. Asking for
+   one again returns a single static instance, so that whole cost comes back off: the three subset
+   files now measure 23,056 + 8,036 + 12,988 = **44,080 bytes**, against 105,256 with both weights
+   and 41,172 when the one cut was 400. So the settled weight costs 2,908 bytes more than the cut
+   it replaces and 61,176 bytes LESS than the review did. Measured by building all three ways.
+
+   Subsetting to the ~19 codepoints the five titles use would reach 3-6KB and was REJECTED: it
+   breaks silently the day a title changes or a sixth ritual lands, and a missing glyph renders as
+   a box on a title nobody re-checked. */
 const malayalam = Noto_Serif_Malayalam({
   variable: "--font-malayalam",
   subsets: ["malayalam"],
-  weight: "400",
+  weight: "600",
   display: "swap",
 });
 
@@ -89,8 +94,8 @@ const SKIP_OPENING_WHEN_SCROLLED = `addEventListener("DOMContentLoaded",function
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Flemy & Sebastian",
-  description: "You’re invited — 9th January 2027, Koothattukulam, Keralam",
+  title: "Sebastian & Flemy",
+  description: "You’re invited — 4th & 9th January 2027, Kerala",
   robots: { index: false, follow: false },
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
      export carries them. Left alone rather than suppressed: they are free, they agree with the og:
@@ -101,18 +106,17 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: SITE_URL,
     /* Split from the document title deliberately: "…are getting married" is a good preview headline
-       and a clumsy browser-tab label. The card above it already carries the names in the script
-       face, so the title carries the occasion and the description carries the date and the town —
-       together the pair holds names, date and city (PROJECT.md → Link Sharing) with nothing said
-       twice. The card shows the state; this says the town the card omits. */
-    title: "Flemy & Sebastian are getting married",
-    description: "You’re invited — 9th January 2027, Koothattukulam, Keralam",
+       and a clumsy browser-tab label. The card above it already carries the couple's drawn names, so the title carries the occasion and the description carries the dates and the place —
+       together the pair holds the names, both dates and the place (PROJECT.md → Link Sharing). The
+       card shows the names and the dates; this adds the place (owner, 2026-10-14). */
+    title: "Sebastian & Flemy are getting married",
+    description: "You’re invited — 4th & 9th January 2027, Kerala",
     images: [
       {
         url: "/og-card.jpg",
         width: 1200,
         height: 630,
-        alt: "Flemy and Sebastian, 9th January 2027, Keralam",
+        alt: "Sebastian and Flemy, 4th and 9th January 2027",
       },
     ],
   },
@@ -122,7 +126,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${script.variable} ${serif.variable} ${sans.variable} ${malayalam.variable} h-full antialiased`}
+      className={`${serif.variable} ${sans.variable} ${malayalam.variable} h-full antialiased`}
       /* `SKIP_OPENING_WHEN_SCROLLED` above sets `data-opening-skipped` on this element before React
          hydrates, so the server's markup and the client's differ by that one attribute and React's
          development build reports a mismatch on every scrolled reload. Production is silent — React
@@ -141,6 +145,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <script>{SKIP_OPENING_WHEN_SCROLLED}</script>
         <SprigSymbol />
+        <CoupleNamesSymbol />
         {children}
         <Analytics />
       </body>

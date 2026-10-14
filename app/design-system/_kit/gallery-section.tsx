@@ -29,7 +29,7 @@ export function GallerySection({
       id={`ds-${id}`}
     >
       <div className="flex flex-col gap-space-2xs">
-        <h2 className="type-heading-lg text-ink">{title}</h2>
+        <h2 className="type-heading-sm text-ink">{title}</h2>
         <p className="type-caption text-ink">→ DESIGN.md → {mapsTo}</p>
         {source === undefined ? null : (
           <p className="type-caption text-ink">{source}</p>
@@ -89,7 +89,7 @@ export function Specimen({
 
   return (
     <div className="flex scroll-mt-space-3xl flex-col gap-space-2xs" id={id}>
-      <Heading className="type-heading-lg text-ink">{name}</Heading>
+      <Heading className="type-heading-sm text-ink">{name}</Heading>
 
       {source === undefined ? null : (
         <p className="type-caption text-ink">{source}</p>

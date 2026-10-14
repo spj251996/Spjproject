@@ -48,10 +48,13 @@ export type SplineOptions = {
      curve is the same one, written in the other space. */
   project?: (point: Point) => Point;
 
-  /* The widest span the fitter may see, defaulting to `MAX_SPAN`. Applied inside `splinePath` rather
-     than by the generator on purpose: the generator (`tmp/thread-draw/build-thread-paths.mjs`) is
-     gitignored, so a rule applied there would not survive to the coming full redraw — and the redraw
-     is exactly what this rule has to govern. Pass `Infinity` to opt out. */
+  /* The widest span the fitter may see, defaulting to `MAX_SPAN`. Applied inside `splinePath`
+     rather than by the generator (`scripts/build-thread-paths.mjs`), and the ORIGINAL REASON FOR
+     THAT IS NOW VOID: the generator was gitignored when this was written, so a rule applied there
+     would not have survived the coming redraw. It is committed as of 2026-10-11. The placement
+     still stands on its own ground — the fitter is where a span rule belongs, since it is the
+     fitter's own invariant and every caller gets it — but do not repeat the gitignored reasoning.
+     Pass `Infinity` to opt out. */
   maxSpan?: number;
 };
 

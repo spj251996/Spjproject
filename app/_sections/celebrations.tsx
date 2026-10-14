@@ -1,3 +1,4 @@
+import { ritualPhotoProps } from "@/app/_sections/ritual-photo-props";
 import celebrations from "@/app/celebrations.module.css";
 import {
   Botanical,
@@ -5,9 +6,10 @@ import {
 } from "@/components/background/botanical";
 import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import { PhotoStrip } from "@/components/ui/photo-strip";
+import { FLOOR_DIAGONAL, SprigOrnament } from "@/components/ui/sprig-ornament";
 import { rituals } from "@/content";
+import { ritualPhotos } from "@/content/ritual-photos.generated";
 
 /* The timeline card. The section is tall (`mounted-sheet`'s tall mode), so it takes no measured
    fit — it grows to its content and the page scrolls past it, which is why it is the one section
@@ -25,17 +27,20 @@ const CELEBRATIONS_PROMISE =
    module instead (celebrations.module.css), through `--celebrations-intro-gap`. */
 const CELEBRATIONS_LIST_CLASS = `${celebrations.list} flex flex-col`;
 
-export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
-  /* Every ritual's set, keyed by id, handed WHOLE to each strip: `photoFit` must be solved across
-     all of them or the section's height stops being a constant (`components/ui/photo-fit.ts`). */
-  const photoSets = Object.fromEntries(
-    rituals.map((ritual) => [ritual.id, ritual.images]),
-  );
+export function CelebrationsSection() {
+  /* Known at module load, so `photoFit` waits on nothing but the strip's own width measurement —
+     never on an image decoding. The derivation and its reasons live in the helper. */
+  const {
+    sets: photoSets,
+    aspects: photoAspects,
+    thumbs: photoThumbs,
+    fulls: photoFulls,
+  } = ritualPhotoProps(rituals, ritualPhotos);
 
   return (
     <section className="relative" id="celebrations">
       <Botanical pieces={SECTION_PLACEMENT.celebrations} />
-      <MountedSheet paint={paint} tall>
+      <MountedSheet tall>
         <div
           className="flex w-full flex-col items-center"
           style={{
@@ -48,7 +53,9 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
               reason the block width was chosen (owner, 2026-10-07). */}
           <div className="flex w-full max-w-(--celebrations-measure) flex-col items-center text-center">
             {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-            <p className="type-eyebrow">Our traditions</p>
+            <p className="type-eyebrow">
+              <SprigOrnament>Our traditions</SprigOrnament>
+            </p>
             <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
               The Celebrations
             </h2>
@@ -73,36 +80,32 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
               <li className={celebrations.row} data-thread-row key={ritual.id}>
                 <div className={celebrations.block}>
                   <div className={celebrations.text}>
-                    {/* The leaf sits on the title's own line so a wrapping description cannot
-                        orphan it, and it is ALWAYS the row's first child -- a mirrored row is
-                        pushed and aligned by its parent, never reversed, which would render
-                        the Malayalam before the English (owner). `items-baseline` rather than
-                        `items-center`: the leaf reads as punctuation opening the title, and
-                        punctuation sits on the text's baseline. */}
-                    {/* `flex-wrap` rather than a media query, and it is self-adjusting: a flex
-                        item moves to the next line on its MAX-CONTENT hypothetical size, so the
-                        Malayalam drops below the title exactly when the three cannot share a line,
-                        and the English then has the full width and stops wrapping itself. At 320px
-                        that is what happens; from 360px up all three still fit on one line and
-                        nothing moves (owner, 2026-10-07). No width is hardcoded, so a longer title
-                        or a wider Malayalam is handled the day it arrives. */}
-                    <div className="flex flex-wrap items-baseline gap-space-2xs">
+                    {/* THE HEADER LINE: sprig · English title · Malayalam, on one baseline at every
+                        tier (owner, 2026-10-11). Where the line cannot hold all three the Malayalam
+                        wraps under the title — a flex wrap, keyed to no width. `items-baseline`
+                        aligns the title and the Malayalam; the sprig has no baseline of its own, so
+                        it centres on the line instead, or the flex row would synthesise one from its
+                        box and drop the title below the Malayalam's.
+
+                        The sprig is the mark as drawn, ONCE — not `SprigOrnament`, whose outward pair
+                        between rules belongs to the section eyebrows alone.
+
+                        The Malayalam takes `heading-sm`'s SIZE at weight 600, never the role: the
+                        role is weight 700 and Noto Serif Malayalam's heaviest cut loaded is 600, so
+                        the role would render SYNTHETIC bold on the conjuncts. Not `.type-eyebrow`
+                        either — its 0.2em tracking breaks conjuncts. `leading-tight` because
+                        Malayalam's ascenders and pre-base signs otherwise grow the line box. */}
+                    <div className={celebrations.header} data-ritual-header>
                       <SprigIcon
-                        className="shrink-0 text-accent-gold"
-                        size={32}
+                        className="shrink-0 self-center text-accent-gold max-lg:hidden"
+                        size={FLOOR_DIAGONAL}
                       />
-                      <h3 className="type-heading-lg text-ink">
+                      <h3
+                        className={`type-heading-md text-ink ${celebrations.title}`}
+                      >
                         {ritual.title}
                       </h3>
-                      {/* Beside the English title at every band (owner), never stacked under it.
-                          `leading-tight` because Malayalam's own ascenders and the pre-base signs
-                          otherwise grow the shared line box past the title's line height.
-                          `type-caption`, NOT the `type-heading-lg` of the title beside it: Malayalam
-                          carries more apparent height than Latin at the same point size, so at
-                          heading-lg it out-weighed the English it accompanies -- and it is what
-                          makes the title row fit the phone band (owner, 2026-10-07; the width
-                          arithmetic is in DESIGN.md -> Timeline). */}
-                      <span className="type-caption font-(family-name:--font-malayalam) text-accent-gold leading-tight">
+                      <span className="font-(family-name:--font-malayalam) text-(length:--text-heading-sm) text-accent-gold font-semibold leading-tight max-md:ms-auto">
                         {ritual.malayalam}
                       </span>
                     </div>
@@ -115,13 +118,20 @@ export function CelebrationsSection({ paint }: { paint?: FramePaint }) {
                     <p className="type-body text-ink mt-space-2xs text-pretty">
                       {ritual.description}
                     </p>
-                    {/* The only trigger. A ritual with no photographs renders no strip, no
-                        gallery action and no client boundary at all, which is what ships today. */}
-                    {ritual.images.length > 0 && (
-                      <div className="mt-space-sm w-full">
+                    {/* The only trigger, and it is the LIST'S LENGTH, never the manifest key's
+                        presence: an uploaded-then-emptied directory leaves an empty list behind.
+                        A ritual with no photographs renders no strip, no gallery action and no
+                        client boundary at all. */}
+                    {/* `text-end` places the shrink-wrapped strip at the block's right edge (owner,
+                        2026-10-11); its action follows the strip's end inside `photo-row`. */}
+                    {photoSets[ritual.id].length > 0 && (
+                      <div className="mt-space-sm w-full text-end">
                         <PhotoStrip
+                          aspects={photoAspects}
+                          fulls={photoFulls}
                           id={ritual.id}
                           sets={photoSets}
+                          thumbs={photoThumbs}
                           title={ritual.title}
                         />
                       </div>

@@ -1,55 +1,144 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { cssTimeMs } from "./css-time";
 import { GalleryModalPanel } from "./gallery-modal-panel";
+import motion from "./gallery-motion.module.css";
+import {
+  containedRect,
+  insideRect,
+  isDeliberateTap,
+  type Point,
+} from "./gallery-pointer";
+import {
+  back,
+  type GalleryState,
+  openGallery,
+  showGrid,
+  stepViewer,
+  tapTile,
+} from "./gallery-state";
+import { PhotoViewerPanel } from "./photo-viewer";
 
 /* Not a native `<dialog>`: its top layer sits outside the z-index scale, so the dialog role and its
    attributes are declared by hand.
 
-   The scroll lock captures and replays the offset rather than using `overflow: hidden`, which
-   discards the offset on some platforms.
+   Two layers — the grid and the full-screen viewer — and the history contract between them is
+   `gallery-state.ts`'s: every forward step is one history entry, so the phone's back button pops one
+   layer. Every close therefore goes THROUGH `history.back()` and is finished by the `popstate`
+   listener, never by calling `onClose` directly — a direct close would strand the entry, and the next
+   back press would land on the page doing nothing. The entries are pushed without a URL, and Next's
+   router patches `pushState` to copy its own state into them, so popping between them re-renders
+   nothing.
 
-   `onClose` is read through a ref because an inline arrow is a fresh reference on every parent
-   render. Focus and scroll lock are mount-scoped, so they never share an effect with the key
-   listener, which re-creates when `step` changes. */
+   The scroll lock captures and replays the offset rather than using `overflow: hidden`, which
+   discards the offset on some platforms. The browser's own scroll restoration is held off while the
+   modal is open, or a back press would restore its remembered offset on top of the captured one.
+
+   Swipe and the arrow keys belong to the viewer; in the grid, scrolling is the only gesture.
+
+   `onClose` and the state are read through refs because the history listener is mount-scoped.
+   Focus and scroll lock are mount-scoped too, so they never share an effect with the key listener.
+
+   Motion (`gallery-motion.module.css`): the pop that empties the history does not unmount at once —
+   it starts the closing fade, and `onClose` runs when that fade ends, so the scroll lock and focus are
+   released only once the gallery has gone. A timeout one beat past the fade stands in case
+   `animationend` never arrives (a hidden tab), and under reduced motion there is no fade to wait
+   for. While closing, every input is ignored and a further pop is not ours to handle.
+
+   A tap on empty space goes back one layer, like Close. It must be deliberate: down AND up both on
+   empty space, less than 10px apart, so a swipe that ends in the dark never closes. It is decided on
+   the CLICK, not on pointerup: on touch the browser hit-tests its click after the finger lifts, so a
+   close started on pointerup would let that click land on whatever is now beneath it. And while the
+   gallery fades out, the root still catches every tap — only the layer inside it stops taking them —
+   so a second tap during the fade cannot reach the invitation underneath. The photograph is
+   where it is DRAWN — `object-contain` letterboxes it inside a box the save cover fills, so the box
+   cannot answer "is this the photograph". The listener sits here rather than on the grid panel so
+   that panel still renders from a server page. */
 
 const SWIPE_THRESHOLD_PX = 40;
+
+/* The swipe hint plays on the first full-screen photograph of a visit, then never again until the
+   page reloads — a module flag rather than state, so closing and reopening the gallery keeps it. */
+let swipeHintShown = false;
+
+/* Closing leaves the gallery's entries ahead of the page in the history, so the browser's Forward can
+   land on one with no gallery open — a dead step. One listener, installed by the first strip to
+   mount, steps straight back past such an entry; the modal keeps the open count it reads. */
+let openGalleries = 0;
+let forwardGuardInstalled = false;
+
+export function ensureForwardGuard() {
+  if (forwardGuardInstalled) return;
+  forwardGuardInstalled = true;
+  window.addEventListener("popstate", () => {
+    if (history.state?.gallery && openGalleries === 0) {
+      history.back();
+    }
+  });
+}
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 interface GalleryModalProps {
   title: string;
+  /** Display paths, in strip order. */
   images: string[];
+  /** Display path to its viewer copy (bounded 2000×2000). */
+  fulls: Record<string, string>;
+  /** Display path to its 600px strip copy, which stands in while the viewer copy loads. */
+  thumbs: Record<string, string>;
+  /** The photograph to open full screen, or `null` for the grid. */
+  start: number | null;
   onClose: () => void;
 }
 
-export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
+export function GalleryModal({
+  title,
+  images,
+  fulls,
+  thumbs,
+  start,
+  onClose,
+}: GalleryModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const touchStartXRef = useRef<number | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  /* Where a press began, kept only when it began on empty space. */
+  const pressRef = useRef<Point | null>(null);
+  const [state, setState] = useState<GalleryState>(() => openGallery(start));
+  const stateRef = useRef(state);
+  /* Survives React's development-only double mount, which would otherwise push a second entry. */
+  const pushedRef = useRef(false);
+  /* `history.back()` lands asynchronously, so a double tap on Close would otherwise go back twice
+     and take the guest off the invitation. Cleared when the pop arrives. */
+  const closingRef = useRef(false);
+  /* The fade-out in progress: `closing` drives the class, the ref gates the listeners, and
+     `closedRef` makes the animation end and the fallback timeout finish the close only once. */
+  const [closing, setClosing] = useState(false);
+  const closingPhaseRef = useRef(false);
+  const closedRef = useRef(false);
+  const closeTimerRef = useRef<number | undefined>(undefined);
+  const finishCloseRef = useRef<() => void>(() => {});
+  /* The first layer rises with the gallery; every later one only fades. */
+  const [swapped, setSwapped] = useState(false);
+  const [direction, setDirection] = useState<1 | -1 | 0>(0);
+  const [hint, setHint] = useState(false);
+  const shownIndex = state.layer === "viewer" ? state.index : -1;
   const titleId = useId();
   const count = images.length;
 
   useEffect(() => {
     onCloseRef.current = onClose;
+    stateRef.current = state;
   });
 
-  const step = useCallback(
-    (delta: number) => {
-      if (count === 0) {
-        return;
-      }
-      setActiveIndex((current) =>
-        Math.min(count - 1, Math.max(0, current + delta)),
-      );
-    },
-    [count],
-  );
-
-  /* Mount-scoped: focus acquisition, scroll capture, and their exact inverses on release. */
+  /* Mount-scoped: focus acquisition, scroll capture, the first history entry, and their exact
+     inverses on release. */
   useEffect(() => {
+    openGalleries += 1;
     const previouslyFocused = document.activeElement;
     containerRef.current?.focus();
 
@@ -63,31 +152,156 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
     body.style.width = "100%";
+    const previousRestoration = history.scrollRestoration;
+    history.scrollRestoration = "manual";
+
+    if (!pushedRef.current) {
+      pushedRef.current = true;
+      history.pushState({ gallery: 1 }, "");
+    }
+    const finishClose = () => {
+      if (closedRef.current) return;
+      closedRef.current = true;
+      onCloseRef.current();
+    };
+    finishCloseRef.current = finishClose;
+    const onPopState = () => {
+      if (closingPhaseRef.current) return;
+      closingRef.current = false;
+      const next = back(stateRef.current);
+      if (next === null) {
+        closingPhaseRef.current = true;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          finishClose();
+          return;
+        }
+        setClosing(true);
+        const fade = cssTimeMs(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--duration-base",
+          ),
+          400,
+        );
+        closeTimerRef.current = window.setTimeout(finishClose, fade + 100);
+        return;
+      }
+      /* `showLayer`, inlined: this listener is mount-scoped and the setters are all it needs. */
+      setSwapped(true);
+      setDirection(0);
+      setState(next);
+    };
+    window.addEventListener("popstate", onPopState);
 
     return () => {
+      window.clearTimeout(closeTimerRef.current);
+      window.removeEventListener("popstate", onPopState);
       body.style.position = previous.position;
       body.style.top = previous.top;
       body.style.width = previous.width;
       window.scrollTo(0, scrollY);
+      history.scrollRestoration = previousRestoration;
+      openGalleries -= 1;
       if (previouslyFocused instanceof HTMLElement) {
         previouslyFocused.focus();
       }
     };
   }, []);
 
+  /* Every layer change goes through here: the new layer fades rather than rises, and a photograph
+     opened fresh shows without a slide. */
+  const showLayer = (next: GalleryState) => {
+    setHint(false);
+    setSwapped(true);
+    setDirection(0);
+    setState(next);
+  };
+
+  const isEmptySpace = (event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (target.closest("button, h2, p") !== null) return false;
+    /* A press in a scrolling element's scrollbar gutter lands outside its client box. */
+    const { offsetX, offsetY } = event.nativeEvent;
+    if (
+      target.scrollHeight > target.clientHeight &&
+      (offsetX >= target.clientWidth || offsetY >= target.clientHeight)
+    ) {
+      return false;
+    }
+    const stage = containerRef.current?.querySelector<HTMLElement>(
+      "[data-viewer-stage]",
+    );
+    if (stage == null) return true;
+    /* Whichever copy has loaded — the small one stands in until the large one arrives. */
+    const photo = [
+      ...stage.querySelectorAll<HTMLImageElement>(
+        "img[data-viewer-photo], img[data-viewer-underlay]",
+      ),
+    ].find((image) => image.naturalWidth > 0);
+    if (photo === undefined) return true;
+    const drawn = containedRect(stage.getBoundingClientRect(), {
+      width: photo.naturalWidth,
+      height: photo.naturalHeight,
+    });
+    return !insideRect({ x: event.clientX, y: event.clientY }, drawn);
+  };
+
+  const goBack = () => {
+    if (closingRef.current || closingPhaseRef.current) return;
+    closingRef.current = true;
+    history.back();
+  };
+  const close = goBack;
+  /* Only a step that actually moves sets the side to slide from: at either end the photograph stays,
+     and a changed class on it would replay the slide in place. */
+  const step = useCallback(
+    (delta: number) => {
+      const current = stateRef.current;
+      const next = stepViewer(current, delta, count);
+      if (
+        next.layer !== "viewer" ||
+        current.layer !== "viewer" ||
+        next.index === current.index
+      ) {
+        return;
+      }
+      setHint(false);
+      setDirection(delta > 0 ? 1 : -1);
+      setState(next);
+    },
+    [count],
+  );
+  const openPhoto = (index: number) => {
+    if (closingPhaseRef.current) return;
+    history.pushState({ gallery: 2 }, "");
+    showLayer(tapTile(index));
+  };
+  /* From a grid-opened viewer the grid is one entry back, so going there consumes it; from a
+     strip-opened viewer there is no grid entry, so the layer swaps in place and adds none. */
+  const toGrid = () => {
+    if (state.layer === "viewer" && state.fromGrid) {
+      goBack();
+      return;
+    }
+    showLayer(showGrid(state));
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (closingPhaseRef.current) {
+        event.preventDefault();
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        if (closingRef.current) return;
+        closingRef.current = true;
+        history.back();
         return;
       }
-      if (event.key === "ArrowRight") {
-        step(1);
-        return;
-      }
-      if (event.key === "ArrowLeft") {
-        step(-1);
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        if (state.layer === "viewer") {
+          step(event.key === "ArrowRight" ? 1 : -1);
+        }
         return;
       }
       if (event.key !== "Tab") {
@@ -121,24 +335,55 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [step]);
+  }, [state.layer, step]);
 
+  /* Only on touch, where the swipe is the gesture to learn; the CSS gate keeps it still under
+     reduced motion. */
+  const hintable =
+    state.layer === "viewer" && state.index < count - 1 && !swipeHintShown;
   useEffect(() => {
-    containerRef.current
-      ?.querySelector(`[data-gallery-index="${activeIndex}"]`)
-      ?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
+    if (hintable && window.matchMedia("(pointer: coarse)").matches) {
+      swipeHintShown = true;
+      setHint(true);
+    }
+  }, [hintable]);
 
-  return (
+  /* A layer swap unmounts the control that had focus — the tapped tile, "All photos", or Next on
+     reaching the last photograph — and focus falls to <body>, where the next Tab reaches the page
+     behind the modal. Put it back on the dialog whenever the shown layer or photograph changes. */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the layer and photograph are the TRIGGER, read from the DOM rather than the closure.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container !== null && !container.contains(document.activeElement)) {
+      container.focus();
+    }
+  }, [state.layer, shownIndex]);
+
+  /* Portalled to `<body>`: rendered inline it sat inside Celebrations' card, a stacking context at
+     `--z-content`, where its own `--z-modal` counted only locally — the scroll progress bar at the root
+     painted over the open viewer. In the root context 50 is above the bar's 45. React keeps the tree's
+     events and context through a portal. */
+  return createPortal(
+    // biome-ignore lint/a11y/useKeyWithClickEvents: the click only decides a tap on empty space; the keyboard's way back is Escape, handled on the document above.
     <div
       aria-labelledby={titleId}
       aria-modal="true"
-      className="fixed inset-0 z-(--z-modal)"
+      className={`fixed inset-0 z-(--z-modal) ${closing ? motion.closing : motion.open}`}
+      onAnimationEnd={(event) => {
+        if (closing && event.target === event.currentTarget) {
+          finishCloseRef.current();
+        }
+      }}
       onTouchEnd={(event) => {
         const startX = touchStartXRef.current;
         touchStartXRef.current = null;
         const endX = event.changedTouches[0]?.clientX;
-        if (startX === null || endX === undefined) {
+        if (
+          closingPhaseRef.current ||
+          state.layer !== "viewer" ||
+          startX === null ||
+          endX === undefined
+        ) {
           return;
         }
         const delta = endX - startX;
@@ -147,6 +392,27 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
         }
         step(delta < 0 ? 1 : -1);
       }}
+      onPointerCancel={() => {
+        pressRef.current = null;
+      }}
+      onPointerDown={(event) => {
+        pressRef.current =
+          event.isPrimary && event.button === 0 && isEmptySpace(event)
+            ? { x: event.clientX, y: event.clientY }
+            : null;
+      }}
+      onClick={(event) => {
+        const down = pressRef.current;
+        pressRef.current = null;
+        if (
+          down !== null &&
+          !closingPhaseRef.current &&
+          isDeliberateTap(down, { x: event.clientX, y: event.clientY }) &&
+          isEmptySpace(event)
+        ) {
+          goBack();
+        }
+      }}
       onTouchStart={(event) => {
         touchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
       }}
@@ -154,13 +420,35 @@ export function GalleryModal({ title, images, onClose }: GalleryModalProps) {
       role="dialog"
       tabIndex={-1}
     >
-      <GalleryModalPanel
-        activeIndex={activeIndex}
-        images={images}
-        onClose={onClose}
-        title={title}
-        titleId={titleId}
-      />
-    </div>
+      <div
+        className={`absolute inset-0 ${swapped ? motion.fade : motion.rise} ${closing ? "pointer-events-none" : ""}`}
+        key={state.layer}
+      >
+        {state.layer === "viewer" ? (
+          <PhotoViewerPanel
+            direction={direction}
+            hint={hint}
+            count={count}
+            index={state.index}
+            onClose={close}
+            onShowGrid={toGrid}
+            onStep={step}
+            src={fulls[images[state.index]] ?? images[state.index]}
+            thumb={thumbs[images[state.index]]}
+            title={title}
+            titleId={titleId}
+          />
+        ) : (
+          <GalleryModalPanel
+            images={images}
+            onClose={close}
+            onOpenPhoto={openPhoto}
+            title={title}
+            titleId={titleId}
+          />
+        )}
+      </div>
+    </div>,
+    document.body,
   );
 }

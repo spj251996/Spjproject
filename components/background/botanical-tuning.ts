@@ -16,14 +16,13 @@
    moving. */
 
 export type BotanicalPiece =
-  | "falling-spray"
+  | "corner-trail"
   | "tied-bouquet"
   | "crossing-stems"
   | "drooping-stem"
   | "corner-spray"
   | "horizontal-garland"
   | "poppy-spread"
-  | "cosmos-arc"
   | "sprig-cross-left"
   | "sprig-cross-right"
   | "tall-column-a"
@@ -93,39 +92,11 @@ export interface PieceTuning {
 export const TUNING: Readonly<
   Record<BotanicalPiece, Readonly<Record<Tier, PieceTuning>>>
 > = {
-  "falling-spray": {
-    phone: {
-      anchor: "top-right",
-      x: 2.380952,
-      y: -6,
-      size: 76.6,
-      rotation: 0,
-      flip: true,
-    },
-    tablet: {
-      anchor: "top-right",
-      x: 4,
-      y: 0,
-      size: 60,
-      rotation: 0,
-      flip: true,
-    },
-    laptop: {
-      anchor: "top-right",
-      x: 2.380952,
-      y: 0,
-      size: 35.6,
-      rotation: 0,
-      flip: true,
-    },
-    desktop: {
-      anchor: "top-right",
-      x: 2.380952,
-      y: 0,
-      size: 31.026636,
-      rotation: 0,
-      flip: true,
-    },
+  "corner-trail": {
+    phone: { anchor: "top-right", x: 0, y: 0, size: 90.2, rotation: 0 },
+    tablet: { anchor: "top-right", x: 0, y: 0, size: 52, rotation: 0 },
+    laptop: { anchor: "top-right", x: 0, y: 0, size: 40, rotation: 0 },
+    desktop: { anchor: "top-right", x: 0, y: 0, size: 40, rotation: 0 },
   },
   "corner-spray": {
     phone: {
@@ -224,6 +195,9 @@ export const TUNING: Readonly<
       flip: true,
     },
   },
+  /* A phone-only seam piece. From the tablet tier up it sat on Family's top-right corner with
+     `cascade-sprigs`, and at 1536x695 two of their cosmos blooms stacked into one flower with two
+     centres; the owner dropped it there rather than re-tune either piece (2026-10-14). */
   "poppy-spread": {
     phone: { anchor: "top-right", x: 4.6, y: -24, size: 48, rotation: -14 },
     tablet: {
@@ -232,6 +206,7 @@ export const TUNING: Readonly<
       y: -20.299315,
       size: 40,
       rotation: -8,
+      drop: true,
     },
     laptop: {
       anchor: "top-right",
@@ -239,6 +214,7 @@ export const TUNING: Readonly<
       y: -0.116949,
       size: 19.7,
       rotation: -6,
+      drop: true,
     },
     desktop: {
       anchor: "top-right",
@@ -246,40 +222,7 @@ export const TUNING: Readonly<
       y: -0.100479,
       size: 19.7,
       rotation: -6,
-    },
-  },
-  "cosmos-arc": {
-    phone: {
-      anchor: "bottom-left",
-      x: -3.2,
-      y: 52.2,
-      size: 70,
-      rotation: -1.5,
-      flip: true,
-    },
-    tablet: {
-      anchor: "bottom-left",
-      x: 0,
-      y: 28.699315,
-      size: 40,
-      rotation: 0,
-      flip: true,
-    },
-    laptop: {
-      anchor: "middle-left",
-      x: -3.2,
-      y: 0.246977,
-      size: 23,
-      rotation: -1.5,
-      flip: true,
-    },
-    desktop: {
-      anchor: "middle-left",
-      x: -3.2,
-      y: 0.246977,
-      size: 23,
-      rotation: -1.5,
-      flip: true,
+      drop: true,
     },
   },
   "crossing-stems": {

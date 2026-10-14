@@ -8,9 +8,9 @@ const buttonAction = readFileSync(
   "components/ui/button-action.tsx",
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
-/* Actions appear in four sections, so the one read became a concatenation when the sections moved
+/* Actions are read across the sections, so the one read became a concatenation when the sections moved
    out of `app/page.tsx` -- reading one file would have narrowed the coverage silently. */
-const page = ["event-info", "contact", "family", "celebrations"]
+const page = ["event-info", "family", "celebrations"]
   .map((name) => readFileSync(`app/_sections/${name}.tsx`, "utf8"))
   .join("\n");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
@@ -107,12 +107,6 @@ test("the map action reads Meet us here", () => {
     page,
     /mark=\{<MapIcon size=\{24\} \/>\}\s*>\s*Meet us here\s*<\/ButtonAction>/,
   );
-});
-
-test("Contact prints no phone number and keeps no selection exception", () => {
-  assert.doesNotMatch(page, /readableNumber/);
-  assert.doesNotMatch(page, /data-contact-number/);
-  assert.doesNotMatch(page, /contact\.css/);
 });
 
 // Bold is a deliberate departure from type-body-italic's 400, giving an action presence beside its disc.

@@ -20,7 +20,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     home: "components/thread/page-thread.tsx",
     composes:
       "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s), --retrace-settle (1500ms), --retrace-loops (4) and --retrace-speed (845), Foundations · Motion",
-    note: "Live at /thread/current, not on the published page -- the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+    note: "Live at /thread, not on the published page — the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
 ];
 
@@ -29,8 +29,15 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/_sections/invite.tsx",
     composes:
-      "mounted-sheet with the hero setting, taking its unpainted option — the type sits on the page's ground with no mount, stock, shadow or cut corner · eyebrow · couple names in display-name · date line in date-primary, month spelled out · place line beneath it · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at space-lg (32px) instead · passage in caption · citation in caption-italic",
-    note: "Live at /. The thread is NOT: the published invitation carries none, so this section currently has no scroll cue (Technical Conventions → Variant Routes). At /thread/current the thread is that cue — its resting tip sits at the lower edge, and loops five times once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening sequence is three beats under the unpainted option — ground, then the invite's own botanical pieces, then the type — ending at 1600ms. The thread's own beat is a fourth step in thread.module.css and runs on the lab route alone.",
+      "mounted-sheet with the hero setting, unpainted — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone held upright the names, the sentence, the date and the gold rule sit one 22px ink gap apart, the rule's spacer fixed so the card's slack goes to its top and bottom, and the invite still fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where from 1024px up the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 takes --text-display-name as its font size and nothing else, the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at a flat 32px instead — a floor derived from the split, not a step on the spacing scale; on a phone the split's floors are 17.345px above and 7.845px below, a 47.5px block · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
+    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — its resting tip sits at the lower edge and loops for --retrace-loops (4) once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
+  },
+  {
+    name: "date-block",
+    home: "app/_sections/invite.tsx",
+    composes:
+      "a two-row grid, 1fr | hairline | auto | hairline | 1fr · the weekday, month and year in date-label, the day in date-day in accent-gold, the labels at weight 700 and the day at 400, with lining figures · hairlines --rule-date-bracket (42px) tall at --stroke-divider (1px) in accent-gold, ending space-3xs (4px) below the day's baseline · labels lifted --date-label-lift (13px) off that baseline · both inner gaps opened by --date-open (4px) on a phone — 8px from the tablet, 7px at laptop (owner, 2026-10-11 and 10-14) — the weekday's row pulled to 5px less than it and the place's margin taking the rest · space-sm (16px) either side of a hairline · the block dropped --date-place-pull (14px) toward the place, which takes it back off a space-3xs + --date-open margin (8px on a phone), so the day-to-place ink gap matches the weekday-to-day one",
+    note: "Live at /, inside the invite. NOT rendered here: it is composed inside the invite section rather than exported, and the gallery does not reach into production code to extract a component for a specimen — so its gold hairline is visible nowhere in this gallery. Every value above is the phone tier: the bracket, the lift, both type roles, --date-open and the weekday pull derived from it step at each breakpoint, and only the overshoot and --date-place-pull hold at one value. The proportions are ratios to the label's cap height rather than steps on the spacing scale — the figure's parts hold a fixed relation to each other, so resizing it means moving date-label and letting the rest follow (Cross-Cutting Rules states the exception).",
   },
 ];
 
@@ -39,18 +46,8 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     name: "Event Info",
     home: "app/_sections/event-info.tsx",
     composes:
-      "mounted-pair · per sheet: eyebrow, heading-xl heading, date line, address, a divider rule after the heading block (tablet band only), segment plates · per plate: mark, segment line, venue, button-action with map",
-    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI.",
-  },
-];
-
-const CONTACT_ENTRIES: InlineEntry[] = [
-  {
-    name: "Contact",
-    home: "app/_sections/contact.tsx",
-    composes:
-      "mounted-sheet · eyebrow, heading-xl heading, the sprig mark sized as an ornament (48px on the diagonal, side by side only) · two plates: side eyebrow, name, relationship, two button-actions stacked",
-    note: "Live at /. Things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one condition serves both; the mark shows only from the landscape-lg switch, the opposite band from Event Info's rule, which is a tablet-band-only ornament and hides again at that same switch; the two actions always stack, never side by side, at every width; no number is printed, so nothing on the page is selectable — the number is copyable only from the Call action's own iOS long-press sheet, which comes from the link rather than a selection, and WhatsApp offers none since its `wa.me` href would put the number inside a copied link; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
+      "mounted-pair · per sheet: eyebrow bracketed by the sprig ornament, heading-xl heading, date line, address, a divider rule after the heading block (tablet band only), segment plates · per plate, two columns at every tier: the mark beside its details, the details left-aligned so both entries start at one edge, the pair of columns centred as one group · segment line, venue, then button-action with map space-2xs below the venue, its disc's left edge on the venue's first letter · on a phone, four clusters in a natural rhythm — eyebrow and title, date and place, the first event, the second — ink gaps header → date 30, date → events 48, event → event 48 · a venue that wraps narrows to its widest line + 1px, so the group centres on its ink; its line count never changes, a venue that fits one line is untouched (so it acts on phones in practice), and it is measured once the fonts load",
+    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI. The phone layout is decided (owner and couple, 2026-10-11): the two columns above at every tier, chosen on /preview, its fit re-measured.",
   },
 ];
 
@@ -59,8 +56,8 @@ const TIMELINE_ENTRIES: InlineEntry[] = [
     name: "Timeline",
     home: "app/_sections/celebrations.tsx",
     composes:
-      "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, each opened by the sprig mark on the title's own line, a heading-lg title and a body description",
-    note: "Live at /.",
+      "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, one left-aligned full-width column at every tier with space-xl (48px) between them, closing to space-md (24px) after a ritual that carries photographs from lg, each opened by one header line — the sprig from lg only, a heading-md English title and its Malayalam on one baseline, the Malayalam at the line's right end on a phone — then a body-italic tagline and a body description, and a photo-row at the block's right edge only when the ritual has photographs · the card's sides 36px (--tall-inline-phone) on a phone",
+    note: "Live at /. The rituals are LEFT-ALIGNED at every width, the owner's and the couple's pick on /preview over justified (2026-10-11); the centred column of 2026-10-10 and the alternating band before it are both retired. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Timeline).",
   },
 ];
 
@@ -69,8 +66,8 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/_sections/wishes.tsx",
     composes:
-      "eyebrow · passage in body · citation in caption-italic · couple illustration · couple names in heading-script · sign-off lead in caption-italic · sign-off names in caption",
-    note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
+      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p taking --text-heading-script as its font size for the same em reason · sign-off lead in caption-italic · sign-off names in caption",
+    note: "Live at /. The couple illustration is a lazy <picture> — AVIF, then WebP, at 1x and 2x — fetched only as Wishes nears the screen, under the portraits' save cover.",
   },
 ];
 
@@ -79,7 +76,7 @@ const NOT_FOUND_ENTRIES: InlineEntry[] = [
     name: "Not found",
     home: "app/not-found.tsx",
     composes:
-      "mounted-sheet, the invite's own botanical placement · eyebrow · the page's h1 in heading-xl · button-action with no mark",
+      "mounted-sheet, the invite's own botanical placement · eyebrow bracketed by the sprig ornament · the page's h1 in heading-xl · button-action with no mark",
     note: "Live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit.",
   },
 ];
@@ -199,29 +196,20 @@ export function DomainSections() {
       </GallerySection>
 
       <GallerySection
-        id="contact"
-        intro="One framed mounted-sheet holding a heading block and two plates, bride's side first."
-        mapsTo="Domain Components → Contact"
-        title="Domain · Contact"
-      >
-        <InlineList entries={CONTACT_ENTRIES} />
-      </GallerySection>
-
-      <GallerySection
         id="family"
         intro="Two family groups in one framed mounted-pair, bride sheet first."
         mapsTo="Domain Components → Family"
         title="Domain · Family"
       >
         <Specimen
-          description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, the children, and a child's own children beneath that child and their spouse."
+          description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, then one row for each child who has a family of their own carrying that whole family, then a last row for the children with none."
           id="domain-family"
           name="family"
-          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child — the gallery's only view of the third row — beside a second sibling. Resize across md, lg and xl: diameters and gaps step with the type."
+          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
-            "eyebrow · heading-xl family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
-            "portrait uniform · name and relationship each on one line, wrapping within the column where that cannot hold",
+            "eyebrow bracketed by the sprig ornament · heading-xl family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
+            "portrait uniform, the bride's and the groom's alone adding the couple glow · name and relationship each on one line, wrapping within the column where that cannot hold",
             "no line drawn between people — grouping and the labels alone carry every relationship",
           ]}
         >

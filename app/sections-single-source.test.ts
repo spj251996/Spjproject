@@ -1,17 +1,16 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const SECTION_NAMES = [
   "InviteSection",
   "EventInfoSection",
-  "ContactSection",
   "FamilySection",
   "CelebrationsSection",
   "WishesSection",
 ];
 
-const ROUTES = ["app/page.tsx", "app/thread/[variant]/page.tsx"];
+const ROUTES = ["app/page.tsx", "app/thread/page.tsx"];
 
 /* `app/_sections/index.tsx` is the ONE list of sections. A route that names a section instead of
    composing `Sections` is how the published page and the lab drift the first time a seventh section
@@ -50,7 +49,7 @@ test("the published route neither imports the thread nor sets the flag", () => {
 });
 
 test("the lab route sets the thread", () => {
-  const source = readFileSync("app/thread/[variant]/page.tsx", "utf8");
+  const source = readFileSync("app/thread/page.tsx", "utf8");
   /* The CLAIM — `thread` is among the props the lab route hands `Sections` — rather than the spelling
      `<Sections thread`, which also required it to be the FIRST prop. It was, until the route gained a
      `paint` prop that sorts before it, and this gate then failed correct code: the third time on this
@@ -63,5 +62,30 @@ test("the lab route sets the thread", () => {
     props,
     /\bthread\b/,
     `the lab route does not set the thread on Sections: <Sections${props}>`,
+  );
+});
+
+/* Two routes since `/preview` retired (owner, 2026-10-14: "only three routes /, /preview, /thread"). The lab is ONE static route painted
+   like `/`, so a variant directory coming back is the regression. */
+test("the thread lab is one static route, painted as / is", () => {
+  assert.ok(
+    existsSync("app/thread/page.tsx"),
+    "app/thread/page.tsx is missing",
+  );
+  assert.ok(!existsSync("app/thread/[variant]"), "the variant routes are back");
+  /* Comments stripped: the page's own header comment talks ABOUT paint. */
+  const lab = readFileSync("app/thread/page.tsx", "utf8").replace(
+    /\/\*[\s\S]*?\*\//g,
+    "",
+  );
+  assert.match(
+    lab,
+    /<Sections\s+thread\s*\/>/,
+    "/thread must compose Sections with the thread and nothing else",
+  );
+  assert.doesNotMatch(
+    lab,
+    /\bpaint=/,
+    "/thread passes a paint, so it no longer shows what / ships",
   );
 });

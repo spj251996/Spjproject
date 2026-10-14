@@ -1,3 +1,21 @@
+/** One ritual photograph's three deliveries and the display copy's post-rotation dimensions.
+    Written by `scripts/generate-images.mjs` into `content/ritual-photos.generated.ts`, which is
+    gitignored — this type is committed so a fresh clone still typechecks the shape.
+
+    The dimensions are the EMITTED file's own, straight off sharp's `toFile`, so they are
+    post-rotation by construction. The aspect is scale-invariant, which is all `photoFit` needs. */
+export interface RitualPhoto {
+  /** Web path to the copy bounded 600×600 that the preview strip renders. */
+  thumb: string;
+  /** Web path to the 1000px-wide copy the grid renders. Also the photograph's identity. */
+  display: string;
+  /** Web path to the copy bounded 2000×2000 that the full-screen viewer shows. Fetched only for the
+      photograph on screen. */
+  full: string;
+  width: number;
+  height: number;
+}
+
 export interface Ritual {
   id: string;
   title: string;
@@ -6,10 +24,6 @@ export interface Ritual {
   /** One line, set in italic beneath the title. */
   tagline: string;
   description: string;
-  /** A ritual shows its photographs when this is non-empty, and by nothing else. There is
-      deliberately no `status`: it existed, was read nowhere, and would have become a second
-      source of truth able to contradict this one. */
-  images: string[];
 }
 
 export interface EventSegment {
@@ -31,16 +45,6 @@ export interface WeddingEvent {
   segments: EventSegment[];
 }
 
-/** Someone a guest can reach on the day. One per side; see PROJECT.md → Sections → Contact. */
-export interface ContactPerson {
-  id: string;
-  side: "bride" | "groom";
-  name: string;
-  relationship: string;
-  /** E.164. Both the telephone and WhatsApp targets derive from it; neither is authored. */
-  phone: string;
-}
-
 export interface FamilyMember {
   id: string;
   name: string;
@@ -58,14 +62,21 @@ export interface FamilyGroup {
 
 export interface InviteContent {
   coupleNames: string;
-  /** The passage set off from the rest of the invite by the ornamental divider. */
+  /** The passage set off from the rest of the invite by the ornamental divider — laptops and desktops. */
   passage: string;
   passageAttribution: string;
+  /** The passage phones and tablets read instead (owner, 2026-10-14). */
+  handheldPassage: string;
+  handheldPassageAttribution: string;
 }
 
 export interface WishesContent {
+  /** Laptops and desktops. */
   passage: string;
   passageAttribution: string;
+  /** The passage phones and tablets read instead (owner, 2026-10-14). */
+  handheldPassage: string;
+  handheldPassageAttribution: string;
   coupleNames: string;
   /** The sign-off's opening line; its names follow in `wishesLine`. */
   wishesLead: string;

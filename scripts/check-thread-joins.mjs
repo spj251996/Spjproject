@@ -52,14 +52,7 @@ const ORIGIN = "http://localhost:3000";
 const NAV = 20000;
 const SETTLE = 350;
 
-const SECTIONS = [
-  "invite",
-  "event-info",
-  "contact",
-  "family",
-  "celebrations",
-  "wishes",
-];
+const SECTIONS = ["invite", "event-info", "family", "celebrations", "wishes"];
 /* `not-found` was a member here until 2026-10-08 and is deliberately gone. It is a separate ROUTE, not a
    section on this page, and its own thread was retired (DESIGN.md -> Domain Components -> Not found), so
    this gate spent every run reporting `MISSING #not-found` for an element removed on purpose -- 48 lines
@@ -109,7 +102,7 @@ const flag = (name, fallback = null) => {
 /* The thread is not on the published page -- `/` carries none since the lab split, so the default is
  * the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). It was `/thread-lab`, a scratch
  * route that has since been deleted. */
-const route = flag("route", "/thread/current");
+const route = flag("route", "/thread");
 const falsify = process.argv.includes("--falsify");
 const only = flag("section");
 const onlyViewport = flag("viewport");

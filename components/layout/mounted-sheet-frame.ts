@@ -14,17 +14,6 @@ export type Orientation = "portrait" | "landscape";
 
 export type FrameLayout = "single" | "pair";
 
-/* Three mutually exclusive paints, so one enum rather than a boolean beside one: a boolean next to an
-   enum is one constant answering two questions, which this codebase has shipped as a defect twice --
-   the frame's padding floor, and `MOUNT_REVEAL` carrying a fill and a padding in one string.
-
-   `"mount"` is today's painted card and the default every framed section takes. `"none"` is the hero's
-   unpainted option, which the invitation takes. `"stock"` is the thread lab's mountless stock, where
-   the mount element carries the stock surface and both shadows (DESIGN.md -> Foundations -> Layout ->
-   `mounted-sheet`). The GEOMETRY is identical in all three, which is what makes this an option rather
-   than a fork and what licenses one set of fit files across every route. */
-export type FramePaint = "mount" | "stock" | "none";
-
 type GroundTierName = "phone" | "tablet" | "laptop" | "desktop";
 
 /* From this content width upward, the section's content stands this tall. Content width is the
@@ -703,6 +692,9 @@ export interface TallWindowClass {
   /* Tall mode has no give-way, so the pressed pair is not part of a tall class. */
   portrait: Pick<PortraitGround, "block" | "inline">;
   padding: number;
+  /* A side padding that overrides `padding`'s inline sides, as the custom property that carries it, or
+     null where the sides take `padding` too. */
+  paddingInline: string | null;
   /* Per orientation, because one width tier holds both: a non-hero card's mount shows only in a
      landscape window at the laptop or desktop tier. */
   reveal: Readonly<Record<Orientation, number>>;
@@ -716,6 +708,13 @@ const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   tablet: 96,
   laptop: 96,
   desktop: 128,
+};
+
+/* The phone's sides are the one exception (owner, 2026-10-11): 36px, off the spacing scale, so a
+   ritual's measure gains 24px where it is shortest. A token rather than a number because `spacing()`
+   admits only the scale. */
+const TALL_INLINE: Readonly<Partial<Record<WidthTier, string>>> = {
+  phone: "--tall-inline-phone",
 };
 
 export function tallWindowClasses(hero: boolean): TallWindowClass[] {
@@ -737,6 +736,7 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
       ground: groundTier.ground,
       portrait: groundTier.portrait,
       padding: TALL_PADDING[groundTier.name],
+      paddingInline: TALL_INLINE[widthTier] ?? null,
       reveal: {
         portrait: showsPortrait ? REVEAL[widthTier] : 0,
         landscape: showsLandscape ? REVEAL[widthTier] : 0,

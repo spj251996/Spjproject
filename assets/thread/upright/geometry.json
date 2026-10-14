@@ -1,0 +1,35 @@
+{
+  "band": "upright",
+  "width": 820,
+  "height": 9992,
+  "viewport": {
+    "width": 820,
+    "height": 1180
+  },
+  "sections": [
+    {
+      "top": 0,
+      "height": 1180
+    },
+    {
+      "top": 1180,
+      "height": 2360
+    },
+    {
+      "top": 3540,
+      "height": 1180
+    },
+    {
+      "top": 4720,
+      "height": 2360
+    },
+    {
+      "top": 7080,
+      "height": 1731.78125
+    },
+    {
+      "top": 8811.78125,
+      "height": 1180
+    }
+  ]
+}

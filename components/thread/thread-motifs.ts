@@ -2,7 +2,7 @@ import type { Motif, MotifId } from "./thread-geometry.ts";
 
 /* Each motif is drawn in a unit square and uniformly scaled at composition time, so a heart is a
    heart at every tier. Tangent angles are degrees, measured as the direction of travel: 0 is
-   left-to-right. Source drawings: tmp/aaa/thread paths/.
+   left-to-right. Source drawings: the owner's, held outside the repo in `tmp/aaa/source/thread paths/`.
 
    Every lead-in and lead-out is held SHORT, close to the drawing's own body. A connector is
    composed to arrive at the motif's declared terminal on its declared tangent, so a long tail puts

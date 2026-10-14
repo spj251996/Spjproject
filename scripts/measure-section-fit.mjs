@@ -15,7 +15,7 @@
    the page in one `page.evaluate` call per tier and orientation, with no per-pixel round trip.
 
    Usage:
-     node scripts/measure-section-fit.mjs --route=/ --selector="div:has(> h1.type-display-name)" \
+     node scripts/measure-section-fit.mjs --route=/ --selector="[data-invite-stack]" \
        --section=invite --out=app/invite-fit.ts
 
    `--out` stays in `app/`, beside the other fits and next to the section CSS that reads them, e.g.
@@ -151,8 +151,20 @@ async function ensureDevServer() {
    the round trip to the CLI happens once per tier rather than once per width. */
 function sweepScript(cssSelector, mutateContent) {
   const selectorLiteral = JSON.stringify(cssSelector);
+  /* THE FALSIFICATION MOVED OFF THE COUPLE'S NAMES, and what it was measuring is the reason.
+     It used to lengthen the invite `<h1>`'s text behind an `if (heading)` guard (the selector
+     named the script role, retired 2026-10-14). That check still reported a difference, which is exactly why it had to be looked at rather than
+     trusted: it reports one by REPLACING the asset with text, since `textContent +=` rewrites the
+     heading's children, and not by lengthening a name.
+     MEASURED, with the asset in place: lengthening the names changes the emitted fit by NOTHING.
+     The asset's width is `em` of the heading's own size token, so the string's length cannot reach the
+     layout at all. So the property the old mutation claimed — "the sweep notices longer names" —
+     is gone, while the mutation kept passing for an unrelated reason.
+     The invitation's own sentence is real text whose length genuinely drives wrapping and so the
+     card's height, which is what this check exists to prove the sweep sees. An empty read THROWS
+     rather than passing quietly: a zero-match mutation is indistinguishable from success. */
   const mutate = mutateContent
-    ? `const heading = document.querySelector("h1.type-display-name"); if (heading) heading.textContent += " — a much longer rendering of the couple names, added only to falsify the measuring script";`
+    ? `const line = document.querySelector("[data-invite-line]"); if (!line) throw new Error("--falsify found no [data-invite-line] to mutate; the sweep would have passed while changing nothing"); line.textContent += " — and a much longer rendering of this sentence, added only to falsify the measuring script";`
     : "";
   return `async () => await page.evaluate(async () => {
   const SELECTOR = ${selectorLiteral};
@@ -172,6 +184,12 @@ function sweepScript(cssSelector, mutateContent) {
     const clone = source.cloneNode(true);
     clone.style.width = "100%";
     clone.style.maxWidth = "none";
+    /* A wrapped venue's narrowed width is the LIVE window's answer; the sweep re-wraps the clone
+       at every width, so the clone must start from the unnarrowed paragraph or it measures a venue
+       capped at the wrong width. */
+    for (const shrunk of clone.querySelectorAll("[data-shrink-to-line]")) {
+      shrunk.style.removeProperty("max-width");
+    }
     host.appendChild(clone);
     document.body.appendChild(host);
     return { host, clone };

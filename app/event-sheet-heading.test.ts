@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-/* `date-primary` and `heading-lg` share a size at every tier (DESIGN.md → Foundations →
+/* `date-primary` and `heading-sm` share a size at every tier (DESIGN.md → Foundations →
    Typography), so WEIGHT is the only thing telling the event sheet's date and address apart. That
    makes the pair a silent failure mode: either utility can be moved, added or dropped and the
    layout, the build, the types and every other test stay green while the two lines swap meaning.
@@ -23,10 +23,20 @@ function eventSheetHeading(): string {
   );
   const rest = source.slice(start + 1);
   const end = rest.indexOf("\nfunction ");
-  const body = end === -1 ? rest : rest.slice(0, end);
+  /* THE RUNAWAY CASE IS `end === -1`: with no following declaration the slice takes the rest of the
+     file, and every assertion below then passes against the wrong text. That is the structural
+     question, so it is the one asked. A character ceiling stood here instead and went stale the
+     first time this function legitimately grew — it failed with "the slice is wrong, not the code"
+     when neither was wrong, which is a gate accusing its own subject. */
+  assert.notStrictEqual(
+    end,
+    -1,
+    "EventSheetHeading is not followed by another top-level function — the slice would run to EOF",
+  );
+  const body = rest.slice(0, end);
   assert.ok(
-    body.length > 200 && body.length < 2000,
-    `EventSheetHeading slice is ${body.length} chars — the slice is wrong, not the code`,
+    body.length > 200,
+    `EventSheetHeading slice is ${body.length} chars — empty or near it`,
   );
   return body;
 }
@@ -56,11 +66,11 @@ test("the event sheet's date carries the weight, with no utility stepping it dow
 test("the event sheet's address steps back to 500", () => {
   const body = eventSheetHeading();
   const address = classOf(body, "<address");
-  assert.match(address, /\btype-heading-lg\b/);
+  assert.match(address, /\btype-heading-sm\b/);
   assert.match(
     address,
     /\bfont-medium\b/,
-    `the address must step back from heading-lg's 700: "${address}"`,
+    `the address must step back from heading-sm's 700: "${address}"`,
   );
 });
 
@@ -71,7 +81,7 @@ test("the event sheet's address steps back to 500", () => {
    asserted too. */
 test("the two lines are set in the variable serif, where 500 is a real cut", () => {
   const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
-  for (const role of ["type-date-primary", "type-heading-lg"]) {
+  for (const role of ["type-date-primary", "type-heading-sm"]) {
     const at = typeScale.indexOf(`.${role} {`);
     assert.notStrictEqual(at, -1, `no .${role} in type-scale.css`);
     const rule = typeScale.slice(at, typeScale.indexOf("}", at));

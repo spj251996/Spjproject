@@ -78,8 +78,10 @@ test("every botanical clip rule clips by overflow alone and creates no stacking 
 /* 85, raised from 60 once the phone tier was tuned (owner, 2026-09-24): a phone is narrow enough
    that a piece reading as a corner spray there is a large fraction of the window — `horizontal-
    garland` is tuned to 84.2vw. The number is a tripwire, not a design value: it exists to catch the
-   failure that started this pass, a piece rendering at 181% of a phone screen. */
-const SIZE_CEILING = 85;
+   failure that started this pass, a piece rendering at 181% of a phone screen. Raised to 95 when
+   `corner-trail` was tuned to 90.2vw on a phone (owner, 2026-10-14): a corner frame whose empty
+   interior holds the eyebrow is meant to span most of a phone's width. */
+const SIZE_CEILING = 95;
 const BAND_SIZE_CEILING = 100;
 const BAND_PIECES: readonly BotanicalPiece[] = [
   "meadow-band-left",
@@ -90,7 +92,7 @@ test("every piece carries a complete, well-formed record at every tier", () => {
   const pieces = Object.keys(TUNING);
   assert.equal(
     pieces.length,
-    20,
+    19,
     "the table must carry one record set per piece — a piece added to the union without a row renders at no size",
   );
   for (const piece of pieces) {
@@ -189,14 +191,14 @@ test("a positive nudge moves a piece right and down by exactly that many vw, at 
   const expected = (nudge / 100) * box.width;
 
   for (const anchor of ANCHORS) {
-    const base = pieceOverrideCss("falling-spray", {
+    const base = pieceOverrideCss("corner-trail", {
       anchor,
       x: 0,
       y: 0,
       size: 20,
       rotation: 0,
     });
-    const moved = pieceOverrideCss("falling-spray", {
+    const moved = pieceOverrideCss("corner-trail", {
       anchor,
       x: nudge,
       y: nudge,
@@ -262,8 +264,8 @@ test("the generated stylesheet carries no blend-isolating property", () => {
 });
 
 test("every piece the section carries gets a rule at every tier, and no other piece does", () => {
-  const css = botanicalCss(["falling-spray", "corner-spray"]);
-  for (const piece of ["falling-spray", "corner-spray"]) {
+  const css = botanicalCss(["corner-trail", "corner-spray"]);
+  for (const piece of ["corner-trail", "corner-spray"]) {
     const rules = css.match(
       new RegExp(`\\.botanical-piece\\.botanical-piece--${piece}\\b`, "g"),
     )?.length;
@@ -277,4 +279,74 @@ test("every piece the section carries gets a rule at every tier, and no other pi
     !css.includes("tied-bouquet"),
     "a section's stylesheet must carry only its own pieces",
   );
+});
+
+/* The invite and the not-found screen share one botanical layout (DESIGN.md → Botanical Edge), so
+   both keys must name the SAME list — a copy would let the two drift apart one swap at a time. Read
+   from source because `botanical.tsx` imports a CSS module, which `node --test` cannot load. */
+test("not-found reuses the invite's own piece list, and that list is corner-trail then corner-spray", () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, "botanical.tsx"),
+    "utf8",
+  );
+  const invite = source.match(/^\s*invite: (\w+),$/m)?.[1];
+  const notFound = source.match(/^\s*"not-found": (\w+),$/m)?.[1];
+  assert.ok(
+    invite,
+    "invite's placement must be a named list, not an inline copy",
+  );
+  assert.equal(notFound, invite, "not-found must reuse the invite's list");
+  const declaration = source.match(
+    new RegExp(`const ${invite} = \\[([\\s\\S]*?)\\] as const`),
+  )?.[1];
+  assert.ok(declaration, `no declaration found for ${invite}`);
+  assert.deepEqual(
+    [...declaration.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]),
+    ["corner-trail", "corner-spray"],
+  );
+});
+
+/* `corner-trail`'s placement is the owner's, settled on /preview's tuning panel (2026-10-14), and
+   is the shape this project pins: a later conversion or tidy-up could overwrite it and nothing else
+   would notice. Its clearance comes from the drawing's empty interior, not from an offset, so every
+   tier sits flush in the corner (x 0, y 0); only the size was tuned. Measured against the invite's
+   eyebrow at these values, nearest ink 24px at 390x664 and wider everywhere else. */
+test("corner-trail's placement is the value settled on a render", () => {
+  const record = (size: number) => ({
+    anchor: "top-right",
+    x: 0,
+    y: 0,
+    size,
+    rotation: 0,
+  });
+  assert.deepEqual(TUNING["corner-trail"], {
+    phone: record(90.2),
+    tablet: record(52),
+    laptop: record(40),
+    desktop: record(40),
+  });
+});
+
+test("the set is nineteen pieces and falling-spray and cosmos-arc are retired from it", () => {
+  assert.equal(Object.keys(TUNING).length, 19);
+  assert.ok(!("falling-spray" in TUNING));
+  assert.ok(!("cosmos-arc" in TUNING));
+});
+
+test("poppy-spread is a phone-only piece, dropped from the tablet tier up", () => {
+  const record = TUNING["poppy-spread"];
+  assert.deepEqual(record.phone, {
+    anchor: "top-right",
+    x: 4.6,
+    y: -24,
+    size: 48,
+    rotation: -14,
+  });
+  for (const tier of ["tablet", "laptop", "desktop"] as const) {
+    assert.equal(
+      record[tier].drop,
+      true,
+      `poppy-spread must be dropped at ${tier}`,
+    );
+  }
 });

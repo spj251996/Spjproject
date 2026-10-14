@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type {
-  ContactPerson,
   EventSegment,
   FamilyGroup,
   InviteContent,
@@ -11,7 +10,6 @@ import type {
   WishesContent,
 } from "./types.ts";
 import {
-  validateContacts,
   validateEvents,
   validateFamilyGroups,
   validateInvite,
@@ -25,7 +23,6 @@ const ritual = (over: Partial<Ritual> = {}): Ritual => ({
   malayalam: "വിവാഹം",
   tagline: "What it is about.",
   description: "What happens.",
-  images: [],
   ...over,
 });
 
@@ -74,11 +71,15 @@ const invite: InviteContent = {
   coupleNames: "A & B",
   passage: "Text.",
   passageAttribution: "Book 1:1",
+  handheldPassage: "Short.",
+  handheldPassageAttribution: "Book 2:2",
 };
 
 const wishes: WishesContent = {
   passage: "Text.",
   passageAttribution: "Book 1:1",
+  handheldPassage: "Short.",
+  handheldPassageAttribution: "Book 2:2",
   coupleNames: "A & B",
   wishesLead: "With love",
   wishesLine: "Best compliments from C.",
@@ -110,13 +111,6 @@ test("rejects a whitespace-only id", () => {
   assert.throws(
     () => validateRituals([ritual({ id: "  " })]),
     /rituals\[0\]\.id/,
-  );
-});
-
-test("rejects an empty image entry", () => {
-  assert.throws(
-    () => validateRituals([ritual({ images: [""] })]),
-    /rituals\[0\]\.images\[0\]/,
   );
 });
 
@@ -346,6 +340,8 @@ test("validateWishes rejects a missing sign-off lead", () => {
       validateWishes({
         passage: "Charity suffereth long.",
         passageAttribution: "1 Corinthians 13:4",
+        handheldPassage: "Two are better than one.",
+        handheldPassageAttribution: "Ecclesiastes 4:9",
         coupleNames: "Flemy & Sebastian",
         wishesLead: "",
         wishesLine: "Marietta Joseph, Harry William & Amal Roy",
@@ -354,88 +350,21 @@ test("validateWishes rejects a missing sign-off lead", () => {
   );
 });
 
-const contact = (over: Partial<ContactPerson> = {}): ContactPerson => ({
-  id: "bride-contact",
-  side: "bride",
-  name: "Amal",
-  relationship: "Brother",
-  phone: "+919354187793",
-  ...over,
-});
-
-const contactPair = (): ContactPerson[] => [
-  contact(),
-  contact({
-    id: "groom-contact",
-    side: "groom",
-    name: "Christopher",
-    relationship: "Cousin",
-    phone: "+919048054495",
-  }),
-];
-
-test("accepts a well-formed contact pair", () => {
-  assert.deepEqual(validateContacts(contactPair()), contactPair());
-});
-
-test("rejects a contact list without one of each side", () => {
+test("each section's handheld passage is required, and so is its attribution", () => {
   assert.throws(
-    () => validateContacts([contact()]),
-    /contacts must hold exactly one "bride"/,
+    () => validateInvite({ ...invite, handheldPassage: " " }),
+    /invite\.handheldPassage must not be empty/,
   );
   assert.throws(
-    () => validateContacts([contact(), contact({ id: "second" })]),
-    /contacts must hold exactly one "bride"/,
-  );
-});
-
-test("rejects a duplicate contact id, naming the path", () => {
-  const pair = contactPair();
-  pair[1].id = pair[0].id;
-  assert.throws(
-    () => validateContacts(pair),
-    /contacts\[1\]\.id duplicates an earlier id/,
-  );
-});
-
-test("rejects an empty contact name or relationship, naming the path", () => {
-  assert.throws(
-    () => validateContacts([contact({ name: "" }), contactPair()[1]]),
-    /contacts\[0\]\.name/,
+    () => validateInvite({ ...invite, handheldPassageAttribution: "" }),
+    /invite\.handheldPassageAttribution must not be empty/,
   );
   assert.throws(
-    () => validateContacts([contact({ relationship: "" }), contactPair()[1]]),
-    /contacts\[0\]\.relationship/,
+    () => validateWishes({ ...wishes, handheldPassage: "" }),
+    /wishes\.handheldPassage must not be empty/,
   );
-});
-
-test("rejects a phone number that is not E.164", () => {
-  for (const bad of [
-    "9354187793",
-    "+0 9354187793",
-    /* No space, so this one fails on the leading zero alone — the case above it fails on the
-       space and leaves the country-code rule unproven. */
-    "+09354187793",
-    "+91 93541 87793",
-    "+91935418779312345",
-    "+9135",
-  ]) {
-    assert.throws(
-      () => validateContacts([contact({ phone: bad }), contactPair()[1]]),
-      /contacts\[0\]\.phone must be an E\.164 number/,
-      `expected "${bad}" to be rejected`,
-    );
-  }
-});
-
-test("accepts an E.164 number at both length bounds", () => {
-  assert.doesNotThrow(() =>
-    validateContacts([contact({ phone: "+12345678" }), contactPair()[1]]),
-  );
-  assert.doesNotThrow(() =>
-    validateContacts([
-      contact({ phone: "+123456789012345" }),
-      contactPair()[1],
-    ]),
+  assert.throws(
+    () => validateWishes({ ...wishes, handheldPassageAttribution: " " }),
+    /wishes\.handheldPassageAttribution must not be empty/,
   );
 });

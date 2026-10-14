@@ -9,9 +9,18 @@ import {
   type SpanZone,
 } from "@/app/design-system/_kit";
 
+/* The published route and the lab in one list. /thread carries [lab] in the doc — built and verified
+   but not on the published page. */
+const VARIANT_ROUTES = [
+  "/ · five sections · no thread · the hero unpainted, the other four mounted",
+  "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
+  "/preview, the review route, is retired (2026-10-14): every lever on it was decided and landed in the section files → DESIGN.md → Iteration Notes → Open Decisions",
+];
+
 const TRY_IT = [
   "Focus and hover · tab to or hover the map action under Components · UI",
   "Text selection · try selecting any text on this page — nothing selects",
+  "Scrollbar · on a desktop with classic scrollbars, this page's own is thin with a muted-ink thumb on a transparent track; a phone's overlay bar is the browser's own",
   "Scroll, section entry, modal and loading act on the page itself; no specimen",
   "Tap targets → Accessibility Rules",
 ];
@@ -34,7 +43,10 @@ const ZONES: SpanZone[] = [
     name: "Desktop",
     width: "≥ 64rem (1024px)",
     changes: [
-      "Parallel splits; timeline nodes alternate sides",
+      /* The timeline's alternation was RETIRED 2026-10-10 — one full-width column at every tier
+         now — and `timeline-node` itself went in Phase 5b, so this row named a component that had
+         not existed for days and a layout that no longer exists either. Both halves were wrong. */
+      "Parallel splits",
       "Compact type step from lg, desktop type step from xl",
     ],
   },
@@ -95,7 +107,7 @@ const RESPONSIVE_POINTERS = [
   "Narrowest supported width → Accessibility Rules",
 ];
 
-/* Three layers, not five: the ivory ground and the mounted sheets sit in document order with no
+/* Four layers, not six: the ivory ground and the mounted sheets sit in document order with no
    z-index of their own, so their tokens were defined and never read, and were retired 2026-10-03
    (DESIGN.md → Technical Conventions → Z-Index Scale). */
 const Z_LAYERS: LayerItem[] = [
@@ -108,6 +120,11 @@ const Z_LAYERS: LayerItem[] = [
     token: "--z-thread",
     value: "40",
     role: "Thread · the page-length thread and its head, re-trace and tapered ends",
+  },
+  {
+    token: "--z-progress",
+    value: "45",
+    role: "Progress · the scroll progress bar on /, over every section and under the scrim",
   },
   { token: "--z-modal", value: "50", role: "Modal · the gallery modal" },
 ];
@@ -134,6 +151,16 @@ export function TechnicalSections() {
         <SpanTable zones={ZONES} />
         <DeviceRuler stops={ZONE_BARS} />
         <RuleList rules={RESPONSIVE_POINTERS} />
+      </GallerySection>
+
+      <GallerySection
+        id="variant-routes"
+        intro="Two routes compose from one section module. What differs between them is whether the thread mounts — never the card paint, which follows each card's role, and never the geometry, which is identical for every section the two share."
+        mapsTo="Technical Conventions → Variant Routes"
+        source="app/_sections/index.tsx · app/thread/page.tsx"
+        title="Technical · Variant Routes"
+      >
+        <RuleList rules={VARIANT_ROUTES} />
       </GallerySection>
 
       <GallerySection

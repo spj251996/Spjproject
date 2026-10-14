@@ -1,6 +1,5 @@
 import { parseIsoDate } from "./format.ts";
 import type {
-  ContactPerson,
   EventSegment,
   FamilyGroup,
   FamilyMember,
@@ -68,21 +67,6 @@ function assetPath(value: string | null, path: string): void {
   }
 }
 
-/* E.164: a leading "+", a country code that cannot start at zero, then up to fifteen digits in
-   total. Stricter than the `tel:` scheme, which permits spaces and punctuation — one canonical
-   stored form is what lets both the telephone and the WhatsApp target derive from this field. */
-const E164 = /^\+[1-9]\d{7,14}$/;
-
-function phoneNumber(value: string, path: string): void {
-  required(value, path);
-  if (!E164.test(value)) {
-    throw new ContentValidationError(
-      path,
-      `must be an E.164 number — a leading "+", then 8 to 15 digits, no spaces or punctuation ("${value}")`,
-    );
-  }
-}
-
 function isoDate(value: string, path: string): void {
   if (parseIsoDate(value) === null) {
     throw new ContentValidationError(
@@ -136,7 +120,7 @@ function malayalamLogicalOrder(value: string, path: string): void {
    page immediately. What is checked here is what types cannot see. */
 /* A COLLECTION-level guard, which no per-member check can stand in for: an emptied content file
    satisfies every per-member rule trivially, builds green, and ships the section with no entries.
-   `familyGroups` and `contacts` already get this for free from their bride/groom pair checks. */
+   `familyGroups` already gets this for free from its bride/groom pair check. */
 function notEmpty(items: unknown[], path: string): void {
   if (items.length === 0)
     throw new ContentValidationError(path, "must hold at least one entry");
@@ -149,10 +133,6 @@ export function validateRituals(rituals: Ritual[]): Ritual[] {
     const at = `rituals[${index}]`;
     claimId(ritual.id, `${at}.id`, seen);
     malayalamLogicalOrder(ritual.malayalam, `${at}.malayalam`);
-    ritual.images.forEach((image, i) => {
-      required(image, `${at}.images[${i}]`);
-      assetPath(image, `${at}.images[${i}]`);
-    });
   });
   return rituals;
 }
@@ -234,39 +214,26 @@ export function validateFamilyGroups(groups: FamilyGroup[]): FamilyGroup[] {
   return groups;
 }
 
-export function validateContacts(contacts: ContactPerson[]): ContactPerson[] {
-  const sides = contacts.map((c) => c.side);
-  if (
-    sides.length !== 2 ||
-    !sides.includes("bride") ||
-    !sides.includes("groom")
-  ) {
-    throw new ContentValidationError(
-      "contacts",
-      `must hold exactly one "bride" contact and one "groom" contact (got: ${sides.join(", ") || "none"})`,
-    );
-  }
-  const seen = new Set<string>();
-  contacts.forEach((person, index) => {
-    const at = `contacts[${index}]`;
-    claimId(person.id, `${at}.id`, seen);
-    required(person.name, `${at}.name`);
-    required(person.relationship, `${at}.relationship`);
-    phoneNumber(person.phone, `${at}.phone`);
-  });
-  return contacts;
-}
-
 export function validateInvite(invite: InviteContent): InviteContent {
   required(invite.coupleNames, "invite.coupleNames");
   required(invite.passage, "invite.passage");
   required(invite.passageAttribution, "invite.passageAttribution");
+  required(invite.handheldPassage, "invite.handheldPassage");
+  required(
+    invite.handheldPassageAttribution,
+    "invite.handheldPassageAttribution",
+  );
   return invite;
 }
 
 export function validateWishes(wishes: WishesContent): WishesContent {
   required(wishes.passage, "wishes.passage");
   required(wishes.passageAttribution, "wishes.passageAttribution");
+  required(wishes.handheldPassage, "wishes.handheldPassage");
+  required(
+    wishes.handheldPassageAttribution,
+    "wishes.handheldPassageAttribution",
+  );
   required(wishes.coupleNames, "wishes.coupleNames");
   required(wishes.wishesLead, "wishes.wishesLead");
   required(wishes.wishesLine, "wishes.wishesLine");

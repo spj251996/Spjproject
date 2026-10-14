@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { FamilyGroup, FamilyMember, Ritual } from "./types.ts";
+import type { FamilyGroup, FamilyMember } from "./types.ts";
 import {
   type AssetReference,
   collectAssetPaths,
   MissingAssetError,
+  UnknownRitualDirectoryError,
+  unknownRitualDirectories,
   verifyAssetPaths,
+  verifyRitualDirectories,
+  verifyRitualRootFiles,
 } from "./verify.ts";
 
 const member = (over: Partial<FamilyMember> = {}): FamilyMember => ({
@@ -25,19 +29,10 @@ const group = (over: Partial<FamilyGroup> = {}): FamilyGroup => ({
   ...over,
 });
 
-const ritual = (over: Partial<Ritual> = {}): Ritual => ({
-  id: "r",
-  title: "A Ritual",
-  malayalam: "വിവാഹം",
-  tagline: "What it is about.",
-  description: "What happens.",
-  images: [],
+const content = (over: Partial<{ familyGroups: FamilyGroup[] }> = {}) => ({
+  familyGroups: [],
   ...over,
 });
-
-const content = (
-  over: Partial<{ familyGroups: FamilyGroup[]; rituals: Ritual[] }> = {},
-) => ({ familyGroups: [], rituals: [], ...over });
 
 const pathsOf = (references: AssetReference[]) =>
   references.map((reference) => reference.path);
@@ -81,21 +76,6 @@ test("collects every portrait, including ones nested inside family[]", () => {
   );
 });
 
-test("collects every images[] entry, naming its index", () => {
-  const references = collectAssetPaths(
-    content({
-      rituals: [
-        ritual({ images: ["/rituals/a.jpg", "/rituals/b.jpg"] }),
-        ritual({ id: "r2" }),
-      ],
-    }),
-  );
-  assert.deepEqual(references, [
-    { at: "rituals[0].images[0]", path: "/rituals/a.jpg" },
-    { at: "rituals[0].images[1]", path: "/rituals/b.jpg" },
-  ]);
-});
-
 /* A null portrait is a member with no photo, not a broken path — nothing to look for on disk. */
 test("collects nothing from a null portrait", () => {
   assert.deepEqual(collectAssetPaths(content({ familyGroups: [group()] })), []);
@@ -107,13 +87,12 @@ test("passes when every path exists", () => {
       familyGroups: [
         group({ members: [member({ portrait: "/family/a.jpg" })] }),
       ],
-      rituals: [ritual({ images: ["/rituals/b.jpg"] })],
     }),
   );
   assert.doesNotThrow(() =>
     verifyAssetPaths(
       references,
-      onDisk(["/family/a.jpg", "/rituals/b.jpg", "/family/unused.jpg"]),
+      onDisk(["/family/a.jpg", "/family/unused.jpg"]),
     ),
   );
 });
@@ -127,9 +106,9 @@ test("throws naming the missing path and where it was expected on disk", () => {
     verifyAssetPaths(
       [
         { at: "familyGroups[0].members[0].portrait", path: "/family/nope.jpg" },
-        { at: "rituals[0].images[0]", path: "/rituals/here.jpg" },
+        { at: "familyGroups[0].members[1].portrait", path: "/family/here.jpg" },
       ],
-      onDisk(["/rituals/here.jpg"]),
+      onDisk(["/family/here.jpg"]),
     );
   assert.throws(check, MissingAssetError);
   assert.throws(
@@ -143,10 +122,16 @@ test("leaves an existing path out of the message", () => {
     () =>
       verifyAssetPaths(
         [
-          { at: "rituals[0].images[0]", path: "/rituals/here.jpg" },
-          { at: "rituals[0].images[1]", path: "/rituals/nope.jpg" },
+          {
+            at: "familyGroups[0].members[1].portrait",
+            path: "/family/here.jpg",
+          },
+          {
+            at: "familyGroups[0].members[2].portrait",
+            path: "/family/nope.jpg",
+          },
         ],
-        onDisk(["/rituals/here.jpg"]),
+        onDisk(["/family/here.jpg"]),
       ),
     (error: unknown) => {
       assert.ok(error instanceof MissingAssetError);
@@ -170,7 +155,10 @@ test("names every missing path in a single message", () => {
             at: "familyGroups[1].members[2].portrait",
             path: "/family/two.jpg",
           },
-          { at: "rituals[3].images[1]", path: "/rituals/three.jpg" },
+          {
+            at: "familyGroups[2].members[0].portrait",
+            path: "/family/three.jpg",
+          },
         ],
         onDisk([]),
       ),
@@ -180,7 +168,7 @@ test("names every missing path in a single message", () => {
       for (const missing of [
         "public/family/one.jpg",
         "public/family/two.jpg",
-        "public/rituals/three.jpg",
+        "public/family/three.jpg",
       ]) {
         assert.ok(
           error.message.includes(missing),
@@ -190,4 +178,60 @@ test("names every missing path in a single message", () => {
       return true;
     },
   );
+});
+
+test("a ritual directory whose name matches no ritual id is reported", () => {
+  assert.deepEqual(
+    unknownRitualDirectories(
+      ["wedding-eve", "wedding_eve"],
+      ["wedding-eve", "betrothal"],
+    ),
+    ["wedding_eve"],
+  );
+});
+
+test("every directory matching a ritual id is accepted", () => {
+  assert.deepEqual(
+    unknownRitualDirectories(
+      ["betrothal", "wedding-eve"],
+      ["wedding-eve", "betrothal"],
+    ),
+    [],
+  );
+});
+
+test("a ritual with no directory is not an error", () => {
+  /* The absence of photographs is the shipping state: a ritual shows its strip when it has files
+     and by nothing else. Only the reverse — a directory nothing reads — is a mistake. */
+  assert.deepEqual(unknownRitualDirectories([], ["wedding-eve"]), []);
+});
+
+test("an unknown ritual directory throws naming it and the ids it could have meant", () => {
+  assert.throws(
+    () =>
+      verifyRitualDirectories(["wedding_eve"], ["wedding-eve", "betrothal"]),
+    (error: unknown) => {
+      assert.ok(error instanceof UnknownRitualDirectoryError);
+      assert.match(error.message, /wedding_eve/);
+      assert.match(error.message, /wedding-eve/);
+      assert.match(error.message, /betrothal/);
+      return true;
+    },
+  );
+});
+
+test("a photograph uploaded beside the ritual folders, not into one, fails naming it", () => {
+  /* github.com's upload lands in the directory being viewed, so a photo dropped at
+     `assets/rituals/` itself belongs to no ritual and would otherwise vanish with every gate green. */
+  assert.throws(
+    () => verifyRitualRootFiles(["IMG_4821.JPG", ".gitkeep"], ["wedding"]),
+    (error: unknown) => {
+      assert.ok(error instanceof UnknownRitualDirectoryError);
+      assert.match(error.message, /IMG_4821\.JPG/);
+      assert.match(error.message, /wedding/);
+      assert.doesNotMatch(error.message, /gitkeep/);
+      return true;
+    },
+  );
+  assert.doesNotThrow(() => verifyRitualRootFiles([".gitkeep"], ["wedding"]));
 });

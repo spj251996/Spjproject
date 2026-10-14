@@ -28,13 +28,20 @@ export { ANCHORS, TIERS, TUNING } from "./botanical-tuning";
    layer's own stylesheet. The wrapper still carries the section's frame-scope class, because the
    frame's own rule is what gives this layer the section's box to position against. */
 
+/* The invite's pieces, shared with the not-found screen — one layout, so a change to one is a change
+   to both. */
+const INVITE_PIECES = [
+  { piece: "corner-trail" },
+  { piece: "corner-spray" },
+] as const satisfies readonly BotanicalPlacement[];
+
 /* Which pieces each section carries. This is the ONE place the assignment lives: `app/_sections/`
    renders from it and the dev tuning panel reads it to group its controls. A second copy has twice
    drifted out of step with a swap and sent nudges along an axis the piece was no longer anchored
    on, which moves it nowhere and reads as a dead slider. Where each piece sits is per tier and
    lives in `botanical-tuning.ts`. */
 export const SECTION_PLACEMENT = {
-  invite: [{ piece: "falling-spray" }, { piece: "corner-spray" }],
+  invite: INVITE_PIECES,
   /* `tall-column-a` carries the left rail and `blush-stem` the right one, both of which run bare
      for the height of two stacked cards at the tiers that stack them. The column is dropped at
      every other tier, where the cards sit side by side and there is no rail to carry. */
@@ -44,8 +51,8 @@ export const SECTION_PLACEMENT = {
     { piece: "tall-column-a" },
     { piece: "blush-stem" },
   ],
-  contact: [{ piece: "poppy-spread" }, { piece: "cosmos-arc" }],
   family: [
+    { piece: "poppy-spread" },
     { piece: "tall-column-b" },
     { piece: "meadow-tuft" },
     { piece: "arching-branch" },
@@ -67,9 +74,9 @@ export const SECTION_PLACEMENT = {
     { piece: "sprig-cross-right" },
   ],
   /* The not-found screen is a standalone single-screen composition like the invite, not a closing
-     section, so it takes the invite's own pieces rather than a section's gap-straddling ones —
+     section, so it reuses the invite's own list rather than a section's gap-straddling pieces —
      DESIGN.md → Not found. It stands outside the scroll, so nothing repeats in one reading. */
-  "not-found": [{ piece: "falling-spray" }, { piece: "corner-spray" }],
+  "not-found": INVITE_PIECES,
 } as const satisfies Readonly<Record<string, readonly BotanicalPlacement[]>>;
 
 export interface BotanicalPlacement {
@@ -81,14 +88,13 @@ export interface BotanicalPlacement {
    `background-size: contain` then fills it exactly. Unlike the meadow band's crop, a mismatch here
    only wastes canvas inside the box; it never breaks a crop, so no test asserts it. */
 export const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
-  "falling-spray": "998 / 748",
+  "corner-trail": "1536 / 1024",
   "tied-bouquet": "387 / 623",
   "crossing-stems": "1312 / 1199",
   "drooping-stem": "1312 / 1199",
   "corner-spray": "715 / 689",
   "horizontal-garland": "1536 / 1024",
   "poppy-spread": "1024 / 1536",
-  "cosmos-arc": "1024 / 1536",
   "sprig-cross-left": "635 / 400",
   "sprig-cross-right": "491 / 578",
   "tall-column-a": "827 / 1902",
@@ -105,7 +111,7 @@ export const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
   "blush-stem": "1024 / 1536",
 };
 
-/* `"998 / 748"` -> `1.3342`. Kept beside the table it reads so the two cannot drift. */
+/* `"1536 / 1024"` -> `1.5`. Kept beside the table it reads so the two cannot drift. */
 function aspectNumber(ratio: string): number {
   const [w, h] = ratio.split("/").map((n) => Number(n.trim()));
   return w / h;
@@ -133,14 +139,22 @@ interface BotanicalProps {
      Wishes. Omit it for Celebrations, the page's one `tall` section, which has no measured fit. */
   fit?: MeasuredFit;
   pieces: readonly BotanicalPlacement[];
+  /* Emit each piece's growth corner for the invite's opening (`app/invite.css`). The invite alone
+     asks, so every other section's stylesheet is byte-identical without it. */
+  corners?: boolean;
 }
 
-export function Botanical({ fit, pieces }: BotanicalProps) {
+export function Botanical({ fit, pieces, corners = false }: BotanicalProps) {
   const scopeClass =
-    fit !== undefined ? frameScopeClass(fit) : tallScopeClass(false);
+    fit !== undefined ? frameScopeClass(fit) : tallScopeClass();
   return (
     <div className={`${scopeClass} ${styles.layer}`}>
-      <style>{botanicalCss(pieces.map((placement) => placement.piece))}</style>
+      <style>
+        {botanicalCss(
+          pieces.map((placement) => placement.piece),
+          { corners },
+        )}
+      </style>
       <div className={styles.clip}>
         {pieces.map((placement) => (
           <Bloom key={placement.piece} {...placement} />

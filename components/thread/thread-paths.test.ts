@@ -11,7 +11,6 @@ import { MOTIF_PLACEMENTS, THREAD_PATHS } from "./thread-paths.ts";
 const SECTION_MOTIF_COUNT: Record<Exclude<ThreadId, "not-found">, number> = {
   invite: 1,
   "event-info": 2,
-  contact: 1,
   family: 2,
   celebrations: 1,
   wishes: 1,
@@ -208,25 +207,26 @@ function flatten(d: string): { x: number; y: number }[] {
    alone, which can be a few pixels of curve noise this close to a join.
 
    10px, not the 20-45px this project's drawn-thread tooling samples a MOTIF join over. That reach
-   assumes both sides are free to carry a generous, evenly-spaced arm; a few of these 15 boundaries
+   assumes both sides are free to carry a generous, evenly-spaced arm; a few of these 12 boundaries
    sit right after a genuinely short polyline span (one measured 1.37px), and `splinePath`'s own
    arm-length rule (`thread-spline.ts`, a THIRD of a span's own length at most) then holds a forced
    direction only a few px before the curve resumes bending toward its own next point — a property
    of point spacing, not of which direction was forced. Measured empirically: at reach 10 the WORST
-   of these 15 boundaries is 6.8 degrees once the boundary is left unforced (see the test below);
-   at reach 20 it is 19.9. A smaller reach stays inside more boundaries' own short arms. */
+   boundary was 6.8 degrees once left unforced (2026-10-07, fifteen boundaries with Contact; 5.6 on
+   today's twelve); at reach 20 it was 19.9. A smaller reach stays inside more boundaries' own short arms. */
 const REACH = 10;
 /* 10, not the 1 degree a perfectly continuous join would read as measured AT the exact point
    (confirmed separately, by reading each side's own control-point tangent directly: under this
-   fix the worst of the 15 is 0.09 degrees). Widened here to absorb the arm-length noise above
+   fix the worst of the fifteen was 0.09 degrees, 2026-10-07). Widened here to absorb the arm-length noise above
    without losing the separation that matters: forcing `TERMINAL_TANGENT` measured 13-80 degrees
    off at this SAME reach on at least one boundary in every band, comfortably outside this floor.
 
-   HEADROOM, MEASURED 2026-10-07. On the authored routes as they stand the worst join is **7.4
-   degrees at `tall` contact/family and 6.2 at `upright`**, so this bound has a little under 3
-   degrees of room.
+   HEADROOM, MEASURED 2026-10-14, after Contact was removed and Event Info joined to Family in code:
+   the worst join is **5.6 degrees at `tall` family/celebrations**, and the machine-made join reads
+   2.3 / 1.4 / 0.3 at `tall` / `upright` / `wide` (`build-thread-paths.mjs` → `SEAM_MARGIN`). On
+   2026-10-07 it was 7.4 at `tall` contact/family, a join that no longer exists.
    Worth knowing if span bounding is ever tried again (`boundSpans`, off by default — the owner
-   rejected its look): turning it on at 40 moved those two to **8.8 and 8.3** while improving every
+   rejected its look): turning it on at 40 moved the two worst joins of 2026-10-07 to **8.8 and 8.3** while improving every
    other join, because a curve bounded to even spans hugs the drawn polyline instead of bowing past
    it, so a corner drawn near that boundary turns inside this test's 10px reach. That is the fit
    working, not a defect — but it leaves about 1 degree of room, so re-record these figures rather
@@ -258,7 +258,6 @@ function angleDiff(a: number, b: number): number {
 const SECTION_ORDER: Exclude<ThreadId, "not-found">[] = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
@@ -383,7 +382,7 @@ test("every placement's scale is the owner's authored value, never derived from 
 
    CORRECTED 2026-10-07: an earlier version of this comment said `wide`'s source was GONE and that any
    regeneration must merge. All of that was false. The generator reads `wide` from
-   `tmp/thread-draw/figma/` (`build-thread-paths.mjs`'s `DIRS`), not from `tmp/thread-draw/wide/` —
+   `assets/thread/wide/` (`build-thread-paths.mjs`'s `DIRS`), not from `tmp/thread-draw/wide/` —
    which does not exist — and that directory holds `geometry.json`, `attachments.json` and
    `connectors.json` intact. Proven by neutralising `MAX_SPAN` and reproducing this file
    byte-identically for all three bands. So there is no merge mechanism and this file is not an

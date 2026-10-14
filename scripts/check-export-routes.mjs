@@ -17,7 +17,7 @@ const LAB_ROOTS = 3;
 
 /* `sections: true` marks a route that composes `app/_sections/index.tsx`. The not-found rows below do
  * NOT: that screen is its own route with its own frame, botanical, eyebrow, heading and action, and it
- * composes none of the six sections. The flag lives on the row rather than in a parallel list so that
+ * composes none of the five sections. The flag lives on the row rather than in a parallel list so that
  * adding a route sets it in the same object literal -- and it is a flag rather than a filter on the
  * path, because a filter would silently re-include the next not-found-shaped route. */
 const EXPECTED = [
@@ -26,31 +26,16 @@ const EXPECTED = [
     roots: 0,
     label: "/ (published)",
     sections: true,
-    stockPaint: false,
+    progress: 1,
   },
   {
     sections: true,
-    /* MEASURED, not assumed: under `output: "export"` this version emits a dynamic route as
-     * `out/thread/<variant>.html`, NOT `out/thread/<variant>/index.html`. The sibling
-     * `out/thread/<variant>/` directory it also writes holds only RSC payload `.txt` files. */
-    path: "out/thread/current.html",
+    /* One static route since 2026-10-14. MEASURED on this export before writing: a static route emits
+     * `out/thread.html` with a sibling `out/thread/` directory of RSC payload `.txt` files only. */
+    path: "out/thread.html",
     roots: LAB_ROOTS,
-    label: "/thread/current (lab)",
-    stockPaint: false,
-  },
-  {
-    sections: true,
-    path: "out/thread/mount.html",
-    roots: LAB_ROOTS,
-    label: "/thread/mount (lab)",
-    stockPaint: false,
-  },
-  {
-    sections: true,
-    path: "out/thread/stock.html",
-    roots: LAB_ROOTS,
-    label: "/thread/stock (lab)",
-    stockPaint: true,
+    label: "/thread (lab)",
+    progress: 0,
   },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
    * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
@@ -65,10 +50,16 @@ const EXPECTED = [
   { path: "out/404.html", roots: 0, label: "/404 (not found, served)" },
   { path: "out/_not-found.html", roots: 0, label: "/_not-found (route-named)" },
 ];
-const FORBIDDEN = ["out/design-system/index.html", "out/lab-scratch"];
-/* The exact SET of lab routes, so an extra one cannot appear unnoticed. Asserting the set rather than
- * listing forbidden paths means Plan 2 updates one line instead of remembering to delete a guard. */
-const LAB_ROUTES = ["current", "mount", "stock"];
+const FORBIDDEN = [
+  "out/design-system/index.html",
+  "out/lab-scratch",
+  "out/thread/current.html",
+  "out/thread/mount.html",
+  "out/thread/stock.html",
+  /* `/preview`, retired 2026-10-14 once every lever was decided (owner). A stray copy left by a
+     half-done removal would otherwise fail nothing: nothing here enumerates `out/`'s root. */
+  "out/preview.html",
+];
 
 /* THE OTHER HALF OF THE DOC PARITY GATE. Its first half -- every `[lab]` entry's subject absent from
  * the published page -- is the thread assertion above. Its second half, "every non-`[lab]` one is
@@ -85,23 +76,23 @@ const SECTION_COMPONENTS = [
   ),
 ].map((m) => m[1]);
 
-/* Five, not six: `invite` carries no `id` attribute, which `tasks.md` already records as a known gap
- * in `check:thread-joins` -- the gate that walks sections has never checked it either. Listing five
- * where the component count says six is deliberate, and the two numbers are asserted separately so a
- * sixth id appearing is a prompt to add it here rather than a silent pass. */
+/* Five, one per section every route composes. `invite` joined when `29b2c52` gave it an `id`, which
+ * widened this gate to a section it had never checked; `contact` left when the section was retired
+ * from every route (2026-10-14) and is asserted ABSENT below instead. */
 const SECTION_IDS = [
+  "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
 ];
+const RETIRED_SECTION_IDS = ["contact"];
 
 let failed = false;
 
-if (SECTION_COMPONENTS.length !== 6) {
+if (SECTION_COMPONENTS.length !== 5) {
   console.error(
-    `FAIL: expected six sections in app/_sections/index.tsx, found ${SECTION_COMPONENTS.length} [${SECTION_COMPONENTS}] -- re-anchor this gate`,
+    `FAIL: expected five sections in app/_sections/index.tsx, found ${SECTION_COMPONENTS.length} [${SECTION_COMPONENTS}] -- re-anchor this gate`,
   );
   failed = true;
 }
@@ -112,38 +103,27 @@ if (!EXPECTED.some((route) => route.sections)) {
   failed = true;
 }
 
-/* THE `stock` PAINT REACHES THE BUILT CSS, AND ONLY THE ROUTE THAT ASKS FOR IT. Both halves need the
- * built artifact and neither is visible in the source: a `var()` that resolves to nothing builds green,
- * and the frame's stylesheet is inlined PER SECTION, so what each page ships is decided by the argument
- * its call sites pass rather than by anything a grep of the component would show.
- *
- * `--shadow-mounted-stock` is a comma list of two `var()`s, which Tailwind inlines into the utility's
- * own `--tw-shadow`. The inner names are asserted, not just the token's presence: a token that resolved
- * to nothing would still appear here. */
+/* The stock paint is retired (2026-10-14): no built stylesheet may still carry its composed shadow. A missing
+ * chunk directory fails rather than passing on an empty listing. */
 const CSS_DIR = "out/_next/static/chunks";
-const STOCK_CLASS = "shadow-mounted-stock";
 if (existsSync(CSS_DIR)) {
-  const css = readdirSync(CSS_DIR)
-    .filter((name) => name.endsWith(".css"))
-    .map((name) => readFileSync(join(CSS_DIR, name), "utf8"))
-    .join("\n");
-  const rule = css.match(/\.shadow-mounted-stock\{[^}]*\}/)?.[0] ?? "";
-  const composed =
-    rule.includes("var(--shadow-mount)") &&
-    rule.includes("var(--shadow-stock)");
-  console.log(
-    `${composed ? "ok  " : "FAIL"} built CSS: .${STOCK_CLASS} composes both shadow recipes`,
+  const stockLeft = readdirSync(CSS_DIR).filter(
+    (name) =>
+      name.endsWith(".css") &&
+      readFileSync(join(CSS_DIR, name), "utf8").includes(
+        "shadow-mounted-stock",
+      ),
   );
-  if (!composed) {
-    console.error(`     rule found: ${rule || "(none)"}`);
-    failed = true;
-  }
+  console.log(
+    `${stockLeft.length === 0 ? "ok  " : "FAIL"} built CSS: no retired stock shadow${stockLeft.length ? ` -- in [${stockLeft}]` : ""}`,
+  );
+  if (stockLeft.length > 0) failed = true;
 } else {
   console.error(`FAIL: ${CSS_DIR} is missing -- no built CSS to check`);
   failed = true;
 }
 
-for (const { path, roots, label, sections, stockPaint } of EXPECTED) {
+for (const { path, roots, label, sections, progress } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -157,23 +137,34 @@ for (const { path, roots, label, sections, stockPaint } of EXPECTED) {
   );
   if (!ok) failed = true;
 
-  if (stockPaint !== undefined) {
-    const uses = (html.match(new RegExp(STOCK_CLASS, "g")) ?? []).length;
-    const ok = stockPaint ? uses > 0 : uses === 0;
+  if (progress !== undefined) {
+    const bars = (html.match(/data-scroll-progress/g) ?? []).length;
+    const ok = bars === progress;
     console.log(
-      `${ok ? "ok  " : "FAIL"} ${label}: ${uses} ${STOCK_CLASS} uses, expected ${stockPaint ? "some" : "none"}`,
+      `${ok ? "ok  " : "FAIL"} ${label}: ${bars} scroll progress bar(s), expected ${progress}`,
     );
     if (!ok) failed = true;
   }
 
   if (!sections) continue;
-  const missing = SECTION_IDS.filter((id) => !html.includes(`id="${id}"`));
-  const present = SECTION_IDS.length - missing.length;
+  const expectedIds = SECTION_IDS;
+  const missing = expectedIds.filter((id) => !html.includes(`id="${id}"`));
+  const present = expectedIds.length - missing.length;
   const allThere = missing.length === 0;
   console.log(
-    `${allThere ? "ok  " : "FAIL"} ${label}: ${present}/${SECTION_IDS.length} documented sections present${allThere ? "" : ` -- missing ${missing}`}`,
+    `${allThere ? "ok  " : "FAIL"} ${label}: ${present}/${expectedIds.length} documented sections present${allThere ? "" : ` -- missing ${missing}`}`,
   );
   if (!allThere) failed = true;
+
+  /* A retired section must be ABSENT, not merely unchecked — a stray render of one would otherwise
+   * read the same as its removal. */
+  const strays = RETIRED_SECTION_IDS.filter((id) =>
+    html.includes(`id="${id}"`),
+  );
+  if (strays.length > 0) {
+    console.error(`FAIL ${label}: retired [${strays}] is still in the export`);
+    failed = true;
+  }
 }
 for (const path of FORBIDDEN) {
   if (existsSync(path)) {
@@ -181,56 +172,15 @@ for (const path of FORBIDDEN) {
     failed = true;
   }
 }
-/* `/thread/mount` DIFFERS FROM `/thread/current` IN ONE THING ONLY: it overrides the hero's `"none"`,
- * so it paints one more mount than `/` does. Nothing gated that — set its variant's paint to `undefined`
- * and the route becomes byte-equivalent to `current` with the suite, `tsc` and every row above still
- * green, because `stockPaint: false` is satisfied by an unpainted hero just as well as by a painted one.
- * The owner's whole reason for that route is a uniform comparison, so a silently-unpainted hero would
- * invalidate the look it exists for.
- *
- * Asserted as a STRICT INEQUALITY against `current` rather than as a count, because the absolute number
- * moves whenever a card's paint utilities change and a pinned figure would then fail correct work. */
-const MOUNT_FILL = "bg-surface-mount";
-const paintedMounts = (path) =>
-  existsSync(path)
-    ? (readFileSync(path, "utf8").match(new RegExp(MOUNT_FILL, "g")) ?? [])
-        .length
-    : null;
-const currentMounts = paintedMounts("out/thread/current.html");
-const mountMounts = paintedMounts("out/thread/mount.html");
-if (currentMounts === null || mountMounts === null) {
-  console.error(
-    "FAIL: cannot compare the lab's paint routes -- one of them is missing",
-  );
-  failed = true;
-} else {
-  const ok = mountMounts > currentMounts;
-  console.log(
-    `${ok ? "ok  " : "FAIL"} /thread/mount paints more mounts than /thread/current: ${mountMounts} against ${currentMounts}`,
-  );
-  if (!ok) failed = true;
-}
 
-if (existsSync("out/thread")) {
-  /* The variant names are read off the emitted HTML documents alone -- the same directory also holds
-   * each route's RSC payload directory and `.txt` files, which are not routes. */
-  const actual = readdirSync("out/thread")
-    .filter((name) => name.endsWith(".html"))
-    .map((name) => name.replace(/\.html$/, ""))
-    .sort();
-  const expected = [...LAB_ROUTES].sort();
-  const ok =
-    actual.length === expected.length &&
-    actual.every((name, i) => name === expected[i]);
-  console.log(
-    `${ok ? "ok  " : "FAIL"} lab routes: [${actual}], expected [${expected}]`,
-  );
-  if (!ok) failed = true;
-} else {
-  console.error(
-    "FAIL: out/thread is missing -- the lab route was not exported",
-  );
-  failed = true;
-}
+/* The lab is ONE route. Its sibling directory holds RSC payloads only, so any `.html` in it is a retired variant
+ * route left behind -- which `next build` should never leave, since it rewrites `out/` whole. */
+const strayLab = existsSync("out/thread")
+  ? readdirSync("out/thread").filter((name) => name.endsWith(".html"))
+  : [];
+console.log(
+  `${strayLab.length === 0 ? "ok  " : "FAIL"} no variant lab route in out/thread${strayLab.length ? ` -- found [${strayLab}]` : ""}`,
+);
+if (strayLab.length > 0) failed = true;
 console.log(failed ? "VERDICT: FAIL" : "VERDICT: PASS");
 process.exit(failed ? 1 : 0);

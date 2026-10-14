@@ -42,7 +42,7 @@ import { THREAD_PATHS } from "@/components/thread/thread-paths";
    and the re-trace show on a line that is not tapered. The two tapered ends are the pieces the page
    itself tapers (`page-thread.tsx`): the invite's first, at its start, and Wishes' last, at its end. */
 const WIDE = THREAD_PATHS.wide;
-const MID_PAGE = WIDE.contact[1].d;
+const MID_PAGE = WIDE.family[1].d;
 const INVITE_START = WIDE.invite[0].d;
 const WISHES_CLOSE = WIDE.wishes[WIDE.wishes.length - 1].d;
 

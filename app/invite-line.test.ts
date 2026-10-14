@@ -1,0 +1,50 @@
+/* Document ORDER is the claim, not the spelling. The owner settled the sequence
+   eyebrow -> names -> line -> date -> place, and the failure mode is the line landing on the wrong
+   side of the date, which renders perfectly and is simply wrong. */
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+
+const source = readFileSync("app/_sections/invite.tsx", "utf8");
+
+const AT = {
+  eyebrow: source.indexOf("type-eyebrow"),
+  /* `<CoupleNames` and not the role's class: the drawn asset is what renders the names now, and
+     the class is scheduled for removal — anchoring on it would make this ordering test fail in
+     Phase 9 for a reason that has nothing to do with the order. */
+  names: source.indexOf("<CoupleNames"),
+  line: source.indexOf("data-invite-line"),
+  /* The COMPOSITION site, not the definition: `<InviteDate` matches only the JSX usage, where
+     `function InviteDate(` sits above the eyebrow and would invert the order this test checks. The
+     anchor moved from `<PrimaryDate` when the date became a block that composes its own parts. */
+  date: source.indexOf("<InviteDate"),
+  place: source.indexOf("data-invite-place"),
+};
+
+test("every anchor is present, so the ordering below is not comparing -1s", () => {
+  const missing = Object.entries(AT)
+    .filter(([, at]) => at === -1)
+    .map(([name]) => name);
+  assert.deepEqual(missing, []);
+});
+
+test("the card reads eyebrow, names, line, date, place", () => {
+  assert.deepEqual(
+    Object.entries(AT)
+      .sort((a, b) => a[1] - b[1])
+      .map(([name]) => name),
+    ["eyebrow", "names", "line", "date", "place"],
+  );
+});
+
+test("the line is the invitation's own voice, not a content field", () => {
+  assert.match(
+    source,
+    /joyfully invite you to share in the celebration of their wedding/,
+  );
+  assert.doesNotMatch(
+    source,
+    /invite\.(invitationLine|line)\b/,
+    "the line moved into content — update this test and PROJECT.md together, or move it back",
+  );
+});

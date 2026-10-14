@@ -30,6 +30,18 @@
       "quoteStyle": "double"
     }
   },
+  "overrides": [
+    {
+      "includes": ["app/preview/preview.css"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {

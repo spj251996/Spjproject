@@ -7,7 +7,7 @@
 
    CONNECTION ORDER is read from the data, not assumed: `thread-paths.ts`'s `THREAD_IDS` is the
    section order down the page — confirmed against `app/_sections/index.tsx`, whose `<InviteSection />
-   <EventInfoSection /> <ContactSection /> <FamilySection /> <CelebrationsSection />
+   <EventInfoSection /> <FamilySection /> <CelebrationsSection />
    <WishesSection />` renders in exactly that order. Within a section, N motifs give N+1 connectors
    (`thread-paths.ts`'s own per-section arrays are already sized this way): connector 0 runs from the
    section's own top (or the page's free start, for invite's very first connector) to motif 0's
@@ -47,7 +47,7 @@ export type ThreadLine = {
      groups `d` is built from, never re-derived by sampling the finished path. A section with no
      measured subdivision is exactly one group covering its own whole rect (every section, before
      this file supported subdivision at all, and still every section this page never measures a
-     card/row split for — `invite`/`contact`/`wishes`); a section whose caller hands in two or more
+     card/row split for — `invite`/`wishes`); a section whose caller hands in two or more
      real card/row rects (`subdivisions` below) can split into MORE than one entry here, one per
      card or ritual row its own pieces' geometry actually sits in (`assignRectIndex`'s own header).
      `id` still names the OWNING SECTION, not a group identity of its own — nothing downstream needs

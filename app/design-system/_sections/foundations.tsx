@@ -21,9 +21,6 @@ import {
 } from "@/app/design-system/_kit";
 import {
   BetrothalIcon,
-  CallIcon,
-  ChatIcon,
-  LoveIcon,
   LunchIcon,
   MapIcon,
   ReceptionIcon,
@@ -64,7 +61,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink",
         name: "ink",
         usage:
-          "Body text, names, dates, venues and addresses; the focus ring on light surfaces.",
+          "Body text, names, dates (the invite's day numeral is gold), venues and addresses; the focus ring on light surfaces.",
       },
       {
         token: "--color-ink-muted",
@@ -76,19 +73,19 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink-inverse",
         name: "ink-inverse",
         usage:
-          "Light text on a dark scrim — the design-system gallery's own preview modal (dev-only).",
+          "Light text and marks on the scrim — the photo grid and viewer's title, counter, failure message and every control, and the design-system gallery's own preview modal.",
       },
     ],
   },
   {
     label: "Accent",
-    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, an action's label and the marks only.",
+    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam and the marks only. It falls below 3:1 on the mount (2.56:1), so the focus ring and a mark that carries meaning without a label stay ink on light surfaces; on the scrim the ring takes the inverse ring colour.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "Eyebrows, dividers, an action's label and mark, portrait rims, active states.",
+          "Eyebrows, dividers, an action's label and mark, portrait rims and the couple's glow, the invite's date hairlines and day numeral, a ritual's Malayalam.",
       },
     ],
   },
@@ -126,6 +123,12 @@ const COLOR_GROUPS: SwatchGroup[] = [
           "The tint of every shadow that lands on paper, and of the stock's edge hairline.",
       },
       {
+        token: "--color-scrim",
+        name: "scrim",
+        usage:
+          "The ground behind the ritual photographs at full screen — the grid and the viewer — at 92%. Its own token so it moves without the cast shadows.",
+      },
+      {
         token: "--color-paper-light",
         name: "paper-light",
         usage: "The light a surface catches: the stock's lit top edge alone.",
@@ -135,26 +138,6 @@ const COLOR_GROUPS: SwatchGroup[] = [
 ];
 
 const TYPE_TOKENS: TypeToken[] = [
-  {
-    token: "type-display-name",
-    family: "Corinthia",
-    weight: 400,
-    sample: "Bride & Groom",
-    phone: { size: 94, lh: 141 },
-    tablet: { size: 135, lh: 203 },
-    laptop: { size: 125, lh: 188 },
-    desktop: { size: 156, lh: 234 },
-  },
-  {
-    token: "type-heading-script",
-    family: "Corinthia",
-    weight: 400,
-    sample: "Betrothal",
-    phone: { size: 56, lh: 56 },
-    tablet: { size: 72, lh: 72 },
-    laptop: { size: 64, lh: 64 },
-    desktop: { size: 80, lh: 80 },
-  },
   {
     token: "type-heading-xl",
     family: "Playfair Display",
@@ -166,7 +149,17 @@ const TYPE_TOKENS: TypeToken[] = [
     desktop: { size: 38, lh: 56 },
   },
   {
-    token: "type-heading-lg",
+    token: "type-heading-md",
+    family: "Playfair Display",
+    weight: 700,
+    sample: "Each ritual's English title.",
+    phone: { size: 18, lh: 32 },
+    tablet: { size: 20, lh: 34 },
+    laptop: { size: 18, lh: 32 },
+    desktop: { size: 21, lh: 36 },
+  },
+  {
+    token: "type-heading-sm",
     family: "Playfair Display",
     weight: 700,
     sample:
@@ -180,11 +173,32 @@ const TYPE_TOKENS: TypeToken[] = [
     token: "type-date-primary",
     family: "Playfair Display",
     weight: 700,
-    sample: "The major date line on the invite and the event sheets.",
+    sample:
+      "The event sheets' date line, and the invite's place beneath its date block.",
     phone: { size: 14, lh: 28 },
     tablet: { size: 15, lh: 30 },
     laptop: { size: 14, lh: 28 },
     desktop: { size: 17, lh: 32 },
+  },
+  {
+    token: "type-date-label",
+    family: "Playfair Display",
+    weight: 700,
+    sample: "Saturday · Jan · 2027",
+    phone: { size: 12, lh: 12 },
+    tablet: { size: 13, lh: 13 },
+    laptop: { size: 12, lh: 12 },
+    desktop: { size: 14, lh: 14 },
+  },
+  {
+    token: "type-date-day",
+    family: "Playfair Display",
+    weight: 400,
+    sample: "9",
+    phone: { size: 44, lh: 44 },
+    tablet: { size: 48, lh: 48 },
+    laptop: { size: 44, lh: 44 },
+    desktop: { size: 51, lh: 51 },
   },
   {
     token: "type-body",
@@ -200,8 +214,7 @@ const TYPE_TOKENS: TypeToken[] = [
     token: "type-body-italic",
     family: "Libre Baskerville",
     weight: 400,
-    sample:
-      "The closing sign-off's lead line, the timeline's promise line, and a ritual's tagline.",
+    sample: "The timeline's promise line and a ritual's tagline.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
     laptop: { size: 13, lh: 26 },
@@ -213,7 +226,7 @@ const TYPE_TOKENS: TypeToken[] = [
     weight: 400,
     sample:
       "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
-    phone: { size: 12, lh: 22 },
+    phone: { size: 11, lh: 22 },
     tablet: { size: 13, lh: 24 },
     laptop: { size: 12, lh: 22 },
     desktop: { size: 14, lh: 24 },
@@ -224,7 +237,7 @@ const TYPE_TOKENS: TypeToken[] = [
     weight: 400,
     sample:
       "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
-    phone: { size: 12, lh: 22 },
+    phone: { size: 11, lh: 22 },
     tablet: { size: 13, lh: 24 },
     laptop: { size: 12, lh: 22 },
     desktop: { size: 14, lh: 24 },
@@ -272,7 +285,7 @@ const SPACING_USES = [
   "space-sm to space-md · component padding",
   "space-md · viewport edge for sections without a frame",
   "space-2xl to space-3xl · between two unframed sections back to back",
-  "space-4xl · between the bride's siblings in Family",
+  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame) — a tall card's sides below md take --tall-inline-phone (36px) instead",
 ];
 
 const LAYOUT_CAPS = [
@@ -284,7 +297,7 @@ const LAYOUT_CAPS = [
 ];
 
 const FRAME_GROUND_TIERS = [
-  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground, landscape space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md (32 · 24px) — the floor is 24 because every step above it needs a window taller than a phone",
+  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground, landscape space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md (32 · 24px) — the floor is 24 because every step above it needs a window taller than a phone. 16px survives as a rescue value: the frame asks whether a halved-ground card fits at 16, and whether a full-ground card fits at the 24 it shows",
   "Tablet · md to lg; touchscreen-first from lg · ground, landscape space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
   "Laptop · lg to xl, primary pointer not coarse · ground, landscape space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
   "Desktop · xl and up, primary pointer not coarse · ground, landscape space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
@@ -299,7 +312,7 @@ const FRAME_PORTRAIT_BAND = [
 const IMAGERY_POINTERS = [
   "Family portraits · circular crops → Components · UI → portrait",
   "A delivered portrait · at least 3× its rendered diameter, never upscaled",
-  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal",
+  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal; one photograph full screen → photo-viewer",
   "Couple illustration · held back behind the closing text → Domain · Wishes",
 ];
 
@@ -311,6 +324,7 @@ const DURATION_TOKENS: DurationToken[] = [
 const DURATION_USES = [
   "fast · the action press and hover, and the opening sequence beat",
   "base · section and sheet reveals, the modal",
+  "--opening-type-end · 9 × fast (1800ms) · when the Bloom opening's last row of type has landed — the scroll progress bar's track arrives here and the lab thread fades in from here; a new sequence changes this one value",
 ];
 
 const EASING_TOKENS: EasingToken[] = [
@@ -335,13 +349,13 @@ const SHAPE_ITEMS: ShapeItem[] = [
     radius: "var(--radius-card)",
     value: "3px",
     usage:
-      "Every rectangular surface: mount and paper stock, gallery-modal's tiles and close control, photo-row's frames, image-placeholder.",
+      "Every rectangular surface: mount and paper stock, gallery-modal's tiles, photo-row's frames, image-placeholder. The gallery's controls are round, and photo-viewer's photograph takes no radius.",
   },
   {
     token: "circle",
     radius: "9999px",
     value: "—",
-    usage: "portrait's crop; button-action's disc; the Timeline's ritual mark.",
+    usage: "portrait's crop; button-action's disc.",
   },
 ];
 
@@ -366,6 +380,13 @@ const DEPTH_LEVELS: DepthLevel[] = [
     className: "bg-surface-elevated shadow-stock rounded-card",
     usage:
       "The stock composes three recipes into one value — its edge hairline and its lit top edge, both inset, then two drops cast by the card itself — setting how close the stock sits to its mount.",
+  },
+  {
+    name: "The couple's glow · the bride's and the groom's portraits",
+    spec: "surface-elevated · shadow-glow-couple",
+    className: "bg-surface-elevated shadow-glow-couple rounded-full",
+    usage:
+      "A soft gold light, 14px blur and 3px spread at 60%, laid under a portrait's paper ring and rim so it shows only outward of the rim. The couple's two portraits alone.",
   },
 ];
 
@@ -399,32 +420,11 @@ const ICONS = [
     Icon: LunchIcon,
   },
   {
-    name: "love",
-    marks: "Contact",
-    nudge: "1.03",
-    stroke: "",
-    Icon: LoveIcon,
-  },
-  {
     name: "map",
     marks: "a venue's map link",
     nudge: "0.83",
     stroke: "stroke-drawn, not an added stroke",
     Icon: MapIcon,
-  },
-  {
-    name: "call",
-    marks: "a contact's telephone action",
-    nudge: "0.84",
-    stroke: "stroke-drawn, not an added stroke",
-    Icon: CallIcon,
-  },
-  {
-    name: "chat",
-    marks: "a contact's WhatsApp action",
-    nudge: "0.85",
-    stroke: "stroke-drawn, not an added stroke",
-    Icon: ChatIcon,
   },
 ];
 
@@ -462,38 +462,28 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families, nine roles, each stepping at phone, tablet, laptop and desktop."
+        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
       >
         <Specimen
-          description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
+          description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. The two script rows: display-name is the invite's couple names; heading-script is Wishes' couple names, the script face's only other section-level use."
+          note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role: the script face and its two roles were retired on 2026-10-14, and only their two SIZE tokens remain — --text-display-name and --text-heading-script — as the em the drawn lockups are measured in."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
 
         <Specimen
-          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows display-name's portrait split and the ordinal's zero-height superscript."
+          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows the ordinal's zero-height superscript."
           id="typography-names-and-date"
-          name="Names and date line"
-          note="Rotate or resize to portrait to see display-name split onto three lines — the split belongs to that role alone. The date line's raised ordinal takes no line height, visible only against a real baseline."
-          spec="display-name · heading-script · joiner at 0.5em · date-primary · caption ordinal"
+          name="Date line"
+          note="The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
+          spec="date-primary · caption ordinal"
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
-            <p className="type-display-name text-ink">
-              <span>Bride</span>
-              <span className="type-display-name__joiner">{" & "}</span>
-              <span>Groom</span>
-            </p>
-            <p className="type-heading-script text-ink">
-              <span>Bride</span>
-              <span className="type-heading-script__joiner">{" & "}</span>
-              <span>Groom</span>
-            </p>
             <p className="type-date-primary text-ink">
               Saturday, 1
               <span className="type-caption type-date-ordinal align-super">
@@ -537,34 +527,23 @@ export function FoundationsSections() {
           description="The card every section is built on: a backing mount with an inner sheet laid onto it — or, for the hero, no backing at all."
           id="layout-mounted-sheet"
           name="mounted-sheet"
-          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card also chooses WHICH of three paints to apply, and the three specimens below are those paints: mount (the component default, which the five non-hero framed sections on / take), none (the hero's unpainted option, which the invitation takes), and stock (the thread lab's, live at /thread/stock only and nowhere on the published page). Their geometry is identical in all three — same reveal, same padding, same box — so only the paint differs, which is what licenses one set of fit files for every route."
+          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps its reveal (and paints none of it), which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card's paint follows its role: the hero paints no backing (the invitation's opening screen), every other framed card is mounted. Geometry is identical either way — same reveal, same padding, same box — which is what licenses one set of fit files across every route."
           source="@/components/layout/mounted-sheet"
           spec={[
             "mount · surface-mount · shadow-mount · carries no text, ever",
             "stock · surface-elevated · shadow-stock",
             "corners · radius-card on both layers",
-            'paint="none" · the hero\'s unpainted option · no fill, no shadow, no corners, geometry unchanged',
-            'paint="stock" · the thread lab\'s mountless stock · the MOUNT carries surface-elevated, radius-card and shadow-mounted-stock while the stock keeps its padding and paints nothing · live at /thread/stock only',
             "reveal · 16px below md · 12px md to lg · 16px lg to xl · 24px from xl — the tablet rung is the narrowest deliberately, the invite's landscape card at that width having no height left to give",
           ]}
         >
           <div className="flex flex-col gap-space-lg">
+            {/* The hero keeps its reveal and padding and paints none of it, so on the ground it reads
+                as type with no card — which is why this specimen looks like bare text rather than a box. */}
             <MountedSheet hero>
               <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Hero · painted</p>
+                <p className="type-eyebrow">Hero</p>
                 <p className="type-body text-ink">
-                  Paper stock with the hero setting.
-                </p>
-              </div>
-            </MountedSheet>
-            {/* The unpainted option, which the invitation takes. It keeps the hero's reveal and
-                padding and paints none of it, so on the ground it reads as type with no card —
-                which is why this specimen looks like bare text rather than a box. */}
-            <MountedSheet hero paint="none">
-              <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Hero · unpainted</p>
-                <p className="type-body text-ink">
-                  The same card, painting no backing. The invitation takes this.
+                  The hero card, painting no backing. The invitation takes this.
                 </p>
               </div>
             </MountedSheet>
@@ -572,20 +551,6 @@ export function FoundationsSections() {
               <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">Paper stock</p>
                 <p className="type-body text-ink">An ordinary section.</p>
-              </div>
-            </MountedSheet>
-            {/* The lab's third paint. One surface instead of two: the mount element takes the stock's
-                fill, grain, corners and both shadows composed, and the sheet inside it keeps its
-                padding and paints nothing — so the content lands exactly where the other two put it
-                while the painted silhouette is the larger mount+stock box. Live at /thread/stock
-                only. */}
-            <MountedSheet paint="stock">
-              <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Stock only · lab</p>
-                <p className="type-body text-ink">
-                  One surface at the mount and stock footprint, carrying both
-                  shadows.
-                </p>
               </div>
             </MountedSheet>
           </div>
@@ -631,7 +596,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are Contact, the Celebrations rows and the link preview card, each set inline rather than through this component."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows, through sprig-ornament (Components · UI), each ritual's header line from lg up, set once as drawn, plus the link preview card, which sets it inline."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -676,7 +641,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="shapes"
-        intro="One radius, on everything with corners: 3px, small enough to read as a trimmed paper corner rather than a web dialog. Circles serve three named uses and are a shape, not a step on the scale."
+        intro="One radius, on everything with corners: 3px, small enough to read as a trimmed paper corner rather than a web dialog. Circles serve two named uses and are a shape, not a step on the scale."
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"
@@ -686,7 +651,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="elevation"
-        intro="Depth from paper edge, subtle shadow and tone. The outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other. Four recipes in all; every shadow is tinted warm, and the stock's inset highlight alone stays untinted."
+        intro="Depth from paper edge, subtle shadow and tone. The outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other. Four recipes in all, plus the couple's portrait glow, which is light rather than depth; every shadow is tinted warm, the glow is gold, and the stock's inset highlight alone stays untinted."
         mapsTo="Foundations → Elevation & Depth"
         source="--shadow-*"
         title="Foundations · Elevation & Depth"
@@ -705,7 +670,7 @@ export function FoundationsSections() {
           description="Each tile is painted with the real surface class, so it carries that surface's grain."
           id="paper-grain-surfaces"
           name="The three surfaces"
-          note="One full tile each, so the tooth shows at its real scale. View at full size — downscaling averages the grain away. The ground tile matches this page's own ground."
+          note="One full tile each, so the tooth shows at its real scale. View at full size — downscaling averages the grain away. The ground tile matches this page's own ground. Below 48rem the paper stock takes half its tooth, the same tile with its mean colour held — narrow this window to see it."
           spec="tile 300px · drawn at 3x its tile and rasterised once, then tiled — never a live filter on an element · the tile resolves at the screen's own density"
         >
           <div className="flex flex-wrap gap-space-md">
@@ -730,7 +695,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of nine marks, plus the seal mark that serves as the site's icon. Seven are traced from drawings made for this invitation; call and chat are adapted stock line drawings, squared at the ends and matched on line weight."
+        intro="A closed set of six marks, plus the seal mark that serves as the site's icon, all traced from drawings made for this invitation."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -740,7 +705,7 @@ export function FoundationsSections() {
           id="iconography-set"
           name="The set"
           source="@/components/icons"
-          spec="filled outline, except map, call and chat, which are stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
+          spec="filled outline, except map, which is stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
             {ICONS.map(({ name, Icon }) => (
@@ -788,7 +753,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, marks Contact, opens each Celebrations ritual row, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

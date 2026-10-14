@@ -309,7 +309,7 @@ test("boundSpans caps the longest span at the threshold", () => {
 });
 
 test("boundSpans cuts tall's connector 0 span ratio from 20x to under 6x", () => {
-  // The measured authored route, read from tmp/thread-draw/tall/connectors.json.
+  // The measured authored route, read from assets/thread/tall/connectors.json.
   const connector0 = [
     { x: 12, y: 189 },
     { x: 32, y: 159 },

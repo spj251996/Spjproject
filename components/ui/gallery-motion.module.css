@@ -1,0 +1,92 @@
+/* The ritual gallery's motion — DESIGN.md → Components → `gallery-modal` and `photo-viewer`.
+
+   Every rule is inside the no-preference gate, so reduced motion gets none and the modal's JS closes
+   without waiting. The panels paint their own scrim and it never animates on a layer change: only a
+   panel's CHILDREN (its header and its content) move, so the page never shows through between the
+   grid and the full-screen photograph. Opening and closing are the one exception — there the whole
+   dialog fades, scrim included, because the page IS what it fades from and to.
+
+   Structure the selectors rely on: dialog root (`.open` / `.closing`) > layer wrapper (`.rise` /
+   `.fade`) > panel > header and content. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .open {
+    animation: fade var(--duration-base) var(--ease-entrance);
+  }
+
+  .rise > * > * {
+    animation: rise var(--duration-base) var(--ease-entrance);
+  }
+
+  .fade > * > * {
+    animation: fade var(--duration-fast) var(--ease-entrance);
+  }
+
+  .slide-next {
+    animation: slide-next var(--duration-fast) var(--ease-entrance);
+  }
+
+  .slide-previous {
+    animation: slide-previous var(--duration-fast) var(--ease-entrance);
+  }
+
+  /* The one-time swipe hint: toward the next photograph and back, once the gallery has risen. */
+  .nudge {
+    animation: nudge var(--duration-base) var(--ease-settle)
+      var(--duration-base);
+  }
+
+  /* After the layer rules, so a closing panel's children sink rather than replay their entrance. */
+  .closing {
+    animation: close var(--duration-base) var(--ease-entrance) forwards;
+  }
+
+  .closing > * > * > * {
+    animation: sink var(--duration-base) var(--ease-entrance) forwards;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+
+  @keyframes sink {
+    to {
+      transform: translateY(24px);
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes close {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes nudge {
+    50% {
+      transform: translateX(-16px);
+    }
+  }
+
+  @keyframes slide-next {
+    from {
+      opacity: 0;
+      transform: translateX(32px);
+    }
+  }
+
+  @keyframes slide-previous {
+    from {
+      opacity: 0;
+      transform: translateX(-32px);
+    }
+  }
+}

@@ -1,7 +1,6 @@
 @theme static {
   /* Overriding the framework's own `--font-sans` lets preflight carry the body family instead of
      restating it on `body`. */
-  --font-script: "Corinthia", cursive;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Libre Baskerville", Georgia, serif;
   /* Ritual titles in Malayalam, and nothing else. No Latin fallback is listed: a Latin face has no
@@ -14,37 +13,52 @@
   --color-ink: #2d1100;
   --color-ink-muted: #5a3a2a;
   --color-ink-inverse: #f4f1e8;
-  --color-accent-gold: #d29b2f;
+  /* Deep gold, the owner's pick on `/preview` (2026-10-11) over today's #d29b2f and four bronzes:
+     darker and less yellow. */
+  --color-accent-gold: #b88528;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
   --color-thread-core: #ff7900;
   --color-shadow-warm: #3a301e;
+  /* The photo grid's and viewer's ground, at 92% (DESIGN.md -> Colors). Its own token so it can move
+     without every cast shadow that reads `shadow-warm`. */
+  --color-scrim: #140904;
   --color-paper-light: #ffffff;
 
   /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
      type-scale.css. These are the phone values; the tablet and laptop steps override them on
      `:root` below. */
+  /* Sizes only, with no role behind them: the couple's drawn names set their width in `em` of these
+     at the invite and at Wishes (DESIGN.md -> Typography). */
   --text-display-name: 94px;
-  --text-display-name--font-weight: 400;
-  --text-display-name--line-height: 141px;
   --text-heading-script: 56px;
-  --text-heading-script--font-weight: 400;
-  --text-heading-script--line-height: 56px;
   --text-heading-xl: 26px;
   --text-heading-xl--font-weight: 700;
   --text-heading-xl--line-height: 40px;
-  --text-heading-lg: 14px;
-  --text-heading-lg--font-weight: 700;
-  --text-heading-lg--line-height: 28px;
+  --text-heading-md: 18px;
+  --text-heading-md--font-weight: 700;
+  --text-heading-md--line-height: 32px;
+  --text-heading-sm: 14px;
+  --text-heading-sm--font-weight: 700;
+  --text-heading-sm--line-height: 28px;
   --text-date-primary: 14px;
   --text-date-primary--font-weight: 700;
   --text-date-primary--line-height: 28px;
+  /* The invite's date block. Both roles set line height to their own size: the block's geometry is
+     stated against baselines, and leading inside a row would offset every one of them. */
+  --text-date-label: 12px;
+  --text-date-label--font-weight: 700;
+  --text-date-label--letter-spacing: 0.14em;
+  --text-date-label--line-height: 12px;
+  --text-date-day: 44px;
+  --text-date-day--font-weight: 400;
+  --text-date-day--line-height: 44px;
   --text-body: 13px;
   --text-body--font-weight: 400;
   --text-body--line-height: 26px;
   --text-action: 13px;
   --text-action--line-height: 26px;
-  --text-caption: 12px;
+  --text-caption: 11px;
   --text-caption--font-weight: 400;
   --text-caption--line-height: 22px;
   --text-eyebrow: 10px;
@@ -107,15 +121,11 @@
     color-mix(in srgb, var(--color-shadow-warm) 16%, transparent);
   --shadow-stock:
     var(--shadow-sheet-edge), var(--shadow-sheet-highlight), var(--shadow-sheet);
-  /* The mountless stock's cast, for the thread lab's `stock` paint, where ONE element is both the
-     mount and the stock: the mount's three drops under the stock's two insets and two drops. SIX
-     layers on a box the size of mount + stock, which is fill-rate work and is measured against a
-     static control rather than assumed.
-     It has to be a token rather than two utilities because `shadow-mount` and `shadow-stock` both set
-     `box-shadow` and the second would overwrite the first — the same reason `--shadow-stock` is itself
-     a composition. `@theme static` above is what emits the inner `var()`s to `:root` whether or not a
-     utility reads them, so the composition resolves. */
-  --shadow-mounted-stock: var(--shadow-mount), var(--shadow-stock);
+  /* The bride's and the groom's portraits (DESIGN.md -> Components -> `portrait`). The ring utilities
+     compose their box-shadow chain over `--tw-shadow`, so this lands UNDER the paper ring and the rim
+     and shows only outward of it. The owner's "medium" of three, chosen on `/preview` (2026-10-11). */
+  --shadow-glow-couple: 0 0 14px 3px
+    color-mix(in srgb, var(--color-accent-gold) 60%, transparent);
 
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
@@ -154,9 +164,42 @@
      a media query cannot read this variable — change both together. */
   --card-height-cap: 720px;
   --card-height-cap-compact: 576px;
+  /* A tall card's side padding below 48rem (DESIGN.md -> mounted-sheet -> Tall mode). Off the spacing
+     scale by the owner's choice (2026-10-11): 48 left a ritual's measure short and 24 was "too extra".
+     `mounted-sheet-frame.ts` holds it as a number, because the frame emits plain pixel rules. */
+  --tall-inline-phone: 36px;
+
+  /* The invite date block's bracket geometry — off the spacing scale by the exception in DESIGN.md ->
+     Cross-Cutting Rules, because the figure's parts hold a fixed relation to each other rather than
+     to the system. Each is the reference's ratio against the label's cap height, resolved to whole
+     pixels per tier: the bracket is 5.00 caps, the labels' baseline sits 1.56 above the day's, and
+     the weekday's pull is one value at every tier; the other two step with `--text-date-label`.
+     The pull was -5px, landing the weekday's baseline 1.44 caps above the day's cap; the owner opened
+     both inner gaps by `space-2xs` (2026-10-11), so it is +3 and the place takes the same 8px below. */
+  --rule-date-bracket: 42px;
+  --date-label-lift: 13px;
+  /* Both inner gaps of the date block open by this (owner, 2026-10-11): 8px from the tablet up, 7px on
+     a laptop, where 8 left the invite 2px past its compact-touchscreen tier line — and 4px on a phone
+     (owner, 2026-10-14), part of what brings the invite back inside one phone screen. */
+  --date-open: 4px;
+  --date-weekday-pull: calc(var(--date-open) - 5px);
+  /* How far the date block drops toward the place beneath it, so the day-to-place INK gap equals the
+     weekday-to-day one (owner, 2026-10-11). Measured at weight 700: the two gaps were 17.5-19.5px and
+     4-6px at the four tier nominals, a difference of 13.5-14px, so one whole value holds every tier
+     within half a pixel. The place stays put and the block takes the space above it instead, which is
+     why the header's height -- and the invite's measured fit -- does not move. */
+  --date-place-pull: 14px;
+  /* Below the invite's stacked phone names. It was 35px so the names-to-line ink gap matched the
+     line-to-date one (owner, 2026-10-11); it is 4px — `space-3xs`, the within-a-beat gap every other
+     tier uses — since the owner traded that match for the invite fitting one phone screen
+     (2026-10-14). Portrait phones only — the only place the lockup stacks at that size. */
+  --invite-names-gap: 4px;
 
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
+  /* Half the divider, for the eyebrow ornament's rules (DESIGN.md -> Components -> UI ->
+     `sprig-ornament`). At dpr 1 it paints as a fainter full pixel rather than a thinner one. */
+  --stroke-hairline: 0.5px;
   --stroke-thread: 1.6px;
   --stroke-thread-head: 3.2px;
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
@@ -301,6 +344,10 @@
   /* The stock and the mount are the same material at two tones, so they share one texture. */
   --grain-stock-paper-blend: multiply;
   --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0825' intercept='0.9300'/><feFuncG type='linear' slope='0.1073' intercept='0.9090'/><feFuncB type='linear' slope='0.1486' intercept='0.8740'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  /* The same tile at half its tooth for phones: each channel's final slope halved and its intercept
+     raised so the paper's mean colour holds (owner, 2026-10-14, picked on an iPhone). Read only by
+     the `max-md` rule below — DESIGN.md → Paper Grain. */
+  --grain-stock-paper-phone: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0413' intercept='0.9612'/><feFuncG type='linear' slope='0.0537' intercept='0.9496'/><feFuncB type='linear' slope='0.0743' intercept='0.9302'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
 
   /* The crease is a bend in the stock, not a rule: 22px, centred on the mount, and the one
      treatment lit from the side rather than from overhead — a fold reads only under side light, so
@@ -331,11 +378,38 @@
   --focus-ring-color: var(--color-ink);
   --focus-ring-color-inverse: var(--color-accent-gold);
 
+  /* DESIGN.md → Components → UI → `scroll-progress`. The fill reads as the thread: its red, then
+     vermilion, brightening to the core at the leading edge the way the drawing head does. Height
+     and glow are the owner's picks (2026-10-14); the phone's 2px is the `max-md` rule below. */
+  --progress-height: 3px;
+  --progress-track: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  --progress-fill: linear-gradient(
+    90deg,
+    var(--color-thread-red),
+    var(--color-thread-vermilion) 82%,
+    var(--color-thread-core)
+  );
+  --progress-glow: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color-thread-vermilion) 55%, transparent)
+  );
+
   /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
      off-scale `z-999` still compiles; only review enforces this scale. */
   --z-content: 20;
   --z-thread: 40;
+  /* The scroll progress bar: over every section, under the gallery's scrim. */
+  --z-progress: 45;
   --z-modal: 50;
+}
+
+/* Two phone-only values, both the owner's picks on a phone (2026-10-14): the progress line is 2px
+   (3px from the tablet up — DESIGN.md → Components → UI → `scroll-progress`), and the card paper takes
+   half its tooth (DESIGN.md → Paper Grain). */
+:root {
+  @variant max-md {
+    --progress-height: 2px;
+    --grain-stock-paper: var(--grain-stock-paper-phone);
+  }
 }
 
 /* `@theme` accepts only bare custom properties, so the type steps live here. `@variant` resolves the
@@ -343,16 +417,23 @@
    Biome reads sibling `@variant` blocks as one block and flags the repeated names. */
 :root {
   @variant md {
-    --text-display-name: 135px;
-    --text-display-name--line-height: 203px;
+    --date-open: 8px;
+    --text-display-name: 110px;
     --text-heading-script: 72px;
-    --text-heading-script--line-height: 72px;
     --text-heading-xl: 32px;
     --text-heading-xl--line-height: 48px;
-    --text-heading-lg: 15px;
-    --text-heading-lg--line-height: 30px;
+    --text-heading-md: 20px;
+    --text-heading-md--line-height: 34px;
+    --text-heading-sm: 15px;
+    --text-heading-sm--line-height: 30px;
     --text-date-primary: 15px;
     --text-date-primary--line-height: 30px;
+    --text-date-label: 13px;
+    --text-date-label--line-height: 13px;
+    --text-date-day: 48px;
+    --text-date-day--line-height: 48px;
+    --rule-date-bracket: 46px;
+    --date-label-lift: 14px;
     --text-body: 14px;
     --text-body--line-height: 28px;
     --text-action: 14px;
@@ -366,16 +447,23 @@
 
 :root {
   @variant lg {
-    --text-display-name: 125px;
-    --text-display-name--line-height: 188px;
+    --text-display-name: 110px;
     --text-heading-script: 64px;
-    --text-heading-script--line-height: 64px;
     --text-heading-xl: 30px;
     --text-heading-xl--line-height: 44px;
-    --text-heading-lg: 14px;
-    --text-heading-lg--line-height: 28px;
+    --text-heading-md: 18px;
+    --text-heading-md--line-height: 32px;
+    --text-heading-sm: 14px;
+    --text-heading-sm--line-height: 28px;
     --text-date-primary: 14px;
     --text-date-primary--line-height: 28px;
+    --text-date-label: 12px;
+    --text-date-label--line-height: 12px;
+    --text-date-day: 44px;
+    --text-date-day--line-height: 44px;
+    --rule-date-bracket: 42px;
+    --date-label-lift: 13px;
+    --date-open: 7px;
     --text-body: 13px;
     --text-body--line-height: 26px;
     --text-action: 13px;
@@ -390,15 +478,22 @@
 :root {
   @variant xl {
     --text-display-name: 156px;
-    --text-display-name--line-height: 234px;
     --text-heading-script: 80px;
-    --text-heading-script--line-height: 80px;
     --text-heading-xl: 38px;
     --text-heading-xl--line-height: 56px;
-    --text-heading-lg: 17px;
-    --text-heading-lg--line-height: 32px;
+    --text-heading-md: 21px;
+    --text-heading-md--line-height: 36px;
+    --text-heading-sm: 17px;
+    --text-heading-sm--line-height: 32px;
     --text-date-primary: 17px;
     --text-date-primary--line-height: 32px;
+    --text-date-label: 14px;
+    --text-date-label--line-height: 14px;
+    --text-date-day: 51px;
+    --text-date-day--line-height: 51px;
+    --rule-date-bracket: 49px;
+    --date-label-lift: 15px;
+    --date-open: 8px;
     --text-body: 16px;
     --text-body--line-height: 32px;
     --text-action: 16px;

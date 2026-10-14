@@ -1,11 +1,25 @@
+import { CloseIcon } from "@/components/icons";
+import { CONTROL_CIRCLE, gridColumns } from "./gallery-control";
 import { ImagePlaceholder } from "./image-placeholder";
 
 /* The presentational half of `gallery-modal`, split out because `'use client'` is file-scoped: with
-   no hooks it renders from a server page and demos in a plain bounded box.
+   no hooks it renders from a server page and demos in a plain bounded box. That holds only while it
+   CREATES no function of its own: a server render cannot hand one to a `<button>`, so a tile's
+   handler exists only when the caller passes `onOpenPhoto` — the live modal does, a specimen does
+   not.
 
-   `<img>` rather than `next/image`: masonry needs each tile's intrinsic height, and the content
-   schema carries no image dimensions, so neither the sized nor the `fill` form works. A failed image
-   therefore collapses its figure. */
+   `<img>` rather than `next/image`: `next.config.ts` sets `images: { unoptimized: true }`, because a
+   static export has no runtime optimiser, so `next/image` would add nothing here — and this panel
+   takes paths only, not the manifest's dimensions. A failed image therefore collapses its figure —
+   and that is kept deliberately: a grey box among photographs reads as broken, and the masonry
+   closes over the gap.
+
+   Each tile is a button that opens the viewer on its photograph, and carries the save cover: a
+   transparent `aria-hidden` layer over a non-draggable image, so a right-click, a long-press or a
+   drag lands on the cover while a tap still reaches the button.
+
+   On a device that can hover, a tile shows it opens bigger: the zoom-in cursor, and the photograph
+   growing 3% inside the figure's rounded clip. */
 
 /* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the
    array index. */
@@ -21,57 +35,66 @@ function withKeys(images: string[]) {
 interface GalleryModalPanelProps {
   title: string;
   images: string[];
-  /** Index the wrapper's swipe/arrow navigation currently points at. */
-  activeIndex?: number;
   titleId?: string;
   onClose?: () => void;
+  /** Opens the viewer on the tapped photograph. Absent in a static specimen. */
+  onOpenPhoto?: (index: number) => void;
   className?: string;
 }
 
 export function GalleryModalPanel({
   title,
   images,
-  activeIndex,
   titleId,
   onClose,
+  onOpenPhoto,
   className,
 }: GalleryModalPanelProps) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-shadow-warm/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)] ${className ?? ""}`}
+      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-scrim/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)] [scrollbar-color:auto] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-space-md">
-        <h2 className="type-heading-lg text-ink-inverse" id={titleId}>
+        <h2 className="type-heading-sm text-ink-inverse" id={titleId}>
           {title}
         </h2>
         <button
-          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse"
+          aria-label="Close"
+          className={CONTROL_CIRCLE}
           onClick={onClose}
           type="button"
         >
-          Close
+          <CloseIcon size={20} />
         </button>
       </header>
 
-      <div className="columns-2 gap-space-2xs lg:columns-3">
+      <div className={`gap-space-2xs ${gridColumns(images.length)}`}>
         {withKeys(images).map(({ src, key }, index) => (
           <figure
-            aria-current={index === activeIndex ? "true" : undefined}
             className="relative mb-space-2xs block break-inside-avoid overflow-hidden rounded-card"
             data-gallery-index={index}
             key={key}
           >
-            <ImagePlaceholder
-              className="absolute inset-0 h-full"
-              height={5}
-              width={4}
-            />
-            <img
-              alt=""
-              className="relative block w-full"
-              loading="lazy"
-              src={src}
-            />
+            <button
+              aria-label={`Photo ${index + 1}`}
+              className="group relative block w-full cursor-zoom-in"
+              onClick={onOpenPhoto && (() => onOpenPhoto(index))}
+              type="button"
+            >
+              <ImagePlaceholder
+                className="absolute inset-0 h-full"
+                height={5}
+                width={4}
+              />
+              <img
+                alt=""
+                className="relative block w-full motion-safe:transition-transform motion-safe:duration-(--duration-fast) motion-safe:ease-settle motion-safe:group-hover:scale-[1.03]"
+                draggable={false}
+                loading="lazy"
+                src={src}
+              />
+              <span aria-hidden="true" className="absolute inset-0" />
+            </button>
           </figure>
         ))}
       </div>

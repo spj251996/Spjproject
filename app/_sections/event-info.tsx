@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
+import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import "@/app/event-info.css";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
 import { eventInfoFit } from "@/app/event-info-fit";
@@ -17,6 +17,7 @@ import {
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { ButtonAction } from "@/components/ui/button-action";
+import { ShrinkToWidestLine } from "@/components/ui/shrink-to-widest-line";
 import {
   type EventSegment,
   formatEventDate,
@@ -109,21 +110,23 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
   return (
     <>
       {/* A colour utility here would override the colour `.type-eyebrow` owns. */}
-      <p className="type-eyebrow">{eyebrowFor(event.id)}</p>
+      <p className="type-eyebrow">
+        <SprigOrnament>{eyebrowFor(event.id)}</SprigOrnament>
+      </p>
       <h2
         className="type-heading-xl text-ink-muted mt-space-2xs"
         data-event={event.id}
       >
         {headingFor(event.id)}
       </h2>
-      <div className="flex flex-col items-center gap-space-3xs mt-space-sm">
+      <div className="flex flex-col items-center gap-space-3xs mt-space-sm [@media(width<48rem)]:mt-[calc(var(--spacing-space-sm)+2.5px)]">
         {/* The date carries the weight and the address steps back, the way the invite sets the same
-            two lines (owner, 2026-10-07). `date-primary` and `heading-lg` share a size at every
+            two lines (owner, 2026-10-07). `date-primary` and `heading-sm` share a size at every
             tier, so weight is the only thing telling these two apart. */}
         <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
-        <address className="type-heading-lg font-medium text-ink not-italic">
+        <address className="type-heading-sm font-medium text-ink not-italic">
           <AddressLine address={sharedAddress(event)} />
         </address>
       </div>
@@ -135,7 +138,7 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
    Tailwind emits the landscape variant after `md:` and `xl:`, so it overrides them; each class is
    written out whole because Tailwind finds classes by scanning source.
 
-   Size 72 covers both the phone stack and the compact-laptop side-by-side plate, in one entry
+   Size 72 covers both the phone plate and the compact-laptop side-by-side plate, in one entry
    because a size may render only once per `PlateMark` (the array is keyed by size). */
 const PLATE_MARKS = [
   {
@@ -185,7 +188,7 @@ function Diamond() {
    what a screen reader hears in the diamond's place. */
 function SegmentLine({ segment }: { segment: EventSegment }) {
   return (
-    <p className="type-heading-lg text-ink text-balance">
+    <p className="type-heading-sm text-ink text-balance">
       <span className="me-space-2xs whitespace-nowrap">{segment.time}</span>
       <wbr />
       <span className="whitespace-nowrap">
@@ -224,12 +227,20 @@ function mapLabel(segment: EventSegment): string {
 /* Centred in the space left below the heading block instead, the list closes to a few pixels of the
    place line as soon as the venue takes a second line.
 
-   The phone band's gaps are half the rest's (owner, 2026-10-07): `space-sm` above the first mark
-   and `space-2xs` between rows, against `space-lg` and `space-sm` from `md` up. What they give up
-   is handed straight back as the card's own block padding in `EventSheet` — see the note there for
-   why it has to be a trade. */
+   Above the list: `space-sm` on a phone, none in the tablet band, `space-lg` on a landscape laptop
+   or wider. BETWEEN the two entries the gap
+   went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
+   two read as two clusters; `eventInfoFit` is re-measured for it. */
+/* ON A PHONE THE SHEET READS IN A NATURAL RHYTHM (owner, 2026-10-14): header → date 30, date → the
+   events 48, event → event 48, ink to ink. Each margin is the scale step plus the few px that land the
+   INK there — measured, not derived, because a line box carries air its glyphs never use: 2.5 above
+   the date (on the date group below), 2 above the list and 2 between the events.
+
+   Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
+   left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group, and a
+   wrapped venue narrows to its widest line so that group centres on its ink (DESIGN.md → Event Info). */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-space-sm grid w-fit max-w-full list-none grid-cols-1 gap-x-space-md gap-y-space-2xs text-left md:mt-0 md:gap-y-space-sm [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=64rem)_and_(orientation:landscape)]:grid-cols-[auto_1fr] [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
+  "mx-auto mt-[calc(var(--spacing-space-lg)+2px)] grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-[calc(var(--spacing-space-md)+2px)] text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
@@ -239,29 +250,34 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
     <ol className={PLATE_LIST_CLASS} role="list">
       {segments.map((segment) => (
         <li
-          className="col-span-full grid grid-cols-subgrid items-start gap-y-space-2xs md:gap-y-space-sm"
+          className="col-span-full grid grid-cols-subgrid items-start"
           key={segment.id}
         >
-          <div className="flex shrink-0 justify-center text-accent-gold [@media(width>=64rem)_and_(orientation:landscape)]:pt-space-xs">
+          <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold">
             <PlateMark segmentId={segment.id} />
           </div>
-          <div className="flex min-w-0 flex-col items-center text-center [@media(width>=64rem)_and_(orientation:landscape)]:items-start [@media(width>=64rem)_and_(orientation:landscape)]:text-left">
+          <div className="flex min-w-0 flex-col items-start text-left">
             <SegmentLine segment={segment} />
-            {segment.venue !== null && (
-              <p className="type-body text-ink text-pretty">
-                <VenueName venue={segment.venue} />
-              </p>
-            )}
-            {segment.mapUrl !== null && (
-              <ButtonAction
-                aria-label={mapLabel(segment)}
-                className="mt-space-2xs"
-                href={segment.mapUrl}
-                mark={<MapIcon size={24} />}
-              >
-                Meet us here
-              </ButtonAction>
-            )}
+            {/* The action sits under the venue with its disc's left edge on the venue's first letter
+                (owner, 2026-10-11): the mark sits `space-sm` inside its target, so the target is
+                pulled back by it. */}
+            <div className="flex flex-col items-start">
+              {segment.venue !== null && (
+                <ShrinkToWidestLine className="type-body text-ink text-pretty">
+                  <VenueName venue={segment.venue} />
+                </ShrinkToWidestLine>
+              )}
+              {segment.mapUrl !== null && (
+                <ButtonAction
+                  aria-label={mapLabel(segment)}
+                  className="mt-space-2xs -ms-space-sm"
+                  href={segment.mapUrl}
+                  mark={<MapIcon size={24} />}
+                >
+                  Meet us here
+                </ButtonAction>
+              )}
+            </div>
           </div>
         </li>
       ))}
@@ -272,11 +288,11 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
 /* `measure:fit` finds each sheet by an `h2` that is a direct child of this root `div`. Measured by
    `eventInfoFit`: any content or type change re-runs `npm run measure:fit`.
 
-   THE PHONE PADDING IS A COUNTERWEIGHT, NOT A STYLE, and removing it does not simply tighten the
-   card. The tighter plate gaps above and the smaller `--action-disc` take 56px out of a phone card;
-   this hands the same 56px back, so the card's MEASURED HEIGHT does not move and `eventInfoFit`
-   stays as it is.
-   It has to balance because the band decides where a reduction goes. A sheet is at least
+   THE PHONE PADDING WAS SET AS A COUNTERWEIGHT (owner, 2026-10-07): it handed back the 56px the
+   then-stacked layout's tighter mark gaps and smaller `--action-disc` took out of a phone card. That
+   layout is gone — the mark sits beside its details at every tier since 2026-10-11 — and
+   `eventInfoFit` has been re-measured since, so the padding now stands as the card's own phone
+   white. The reasoning that set it still describes where a phone saving goes. A sheet is at least
    `100svh - 2 * ground-block` tall: above roughly 844px of viewport the content sits inside that
    and slack would absorb a reduction as white, but below roughly 667px the content already
    overruns it, so the sheet follows the content and the saving comes off the PAGE while the white
@@ -287,8 +303,8 @@ function EventSheet({ event }: { event: WeddingEvent }) {
     <div className="flex w-full flex-col items-center py-space-md text-center md:py-0 [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
       <EventSheetHeading event={event} />
       {/* Shows only in the tablet band, Event Info's tightest — DESIGN.md → Components →
-          `divider` carries the reasoning and the revert record. Conditions written out literally:
-          see ContactSection's Tailwind-content-scanner note below. */}
+          `divider` carries the reasoning and the revert record. Conditions written out literally,
+          because Tailwind finds classes by scanning source and cannot see a composed one. */}
       <Divider className="my-space-lg hidden w-space-2xl md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden" />
       <PlateSegments segments={event.segments} />
     </div>
@@ -296,11 +312,11 @@ function EventSheet({ event }: { event: WeddingEvent }) {
 }
 
 /* The id scopes `measure:fit`'s selector, so a later section's `h2`s cannot leak into this fit. */
-export function EventInfoSection({ paint }: { paint?: FramePaint }) {
+export function EventInfoSection() {
   return (
     <section className="relative" id="event-info">
       <Botanical fit={eventInfoFit} pieces={SECTION_PLACEMENT["event-info"]} />
-      <MountedPair fit={eventInfoFit} paint={paint}>
+      <MountedPair fit={eventInfoFit}>
         <EventSheet event={eventById("engagement")} />
         <EventSheet event={eventById("wedding")} />
       </MountedPair>

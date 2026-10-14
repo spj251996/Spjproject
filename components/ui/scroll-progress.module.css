@@ -1,0 +1,39 @@
+/* DESIGN.md → Components → UI → `scroll-progress`. Fixed, so it takes no space in any section's
+   layout and no fit can move; under the gallery's scrim by `--z-progress`. */
+.track {
+  background: var(--progress-track);
+  height: var(--progress-height);
+  inset-inline: 0;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  z-index: var(--z-progress);
+}
+
+/* Scaled, never resized: a transform is the one change that triggers no layout. No transition —
+   the fill IS the scroll position, which is state and must be right on the frame it paints. */
+.fill {
+  background: var(--progress-fill);
+  filter: var(--progress-glow);
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+/* The track is the opening's last beat. Gated like every opening step: a scrolled reload and
+   reduced motion both show it from the first frame. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes progress-track-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  :root:not([data-opening-skipped]) .track {
+    animation: progress-track-in var(--duration-fast) var(--ease-entrance)
+      var(--opening-type-end) backwards;
+  }
+}

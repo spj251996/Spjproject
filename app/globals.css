@@ -20,21 +20,12 @@ html {
   -webkit-touch-callout: none;
 }
 
-/* The Call action is the ONE exemption, and it is to the long-press callout alone -- never to
-   selection (owner, 2026-10-03: "only for phone buttons"). Contact prints no number, so the
-   platform's own `tel:` sheet is the only way a guest can copy it. That sheet comes from the LINK
-   rather than from a text selection, so it works while nothing on the page is selectable.
-
-   WhatsApp is deliberately NOT exempt: its href is a `wa.me` web URL, so its sheet would offer
-   "Copy Link" and put the number inside a copied URL. It needs no rule of its own -- the `html`
-   suppression above already covers it.
-
-   The descendant `*` is not defensive breadth. `-webkit-touch-callout` inherits, so the anchor alone
-   would be enough today; naming the descendants keeps the exemption true if any rule ever sets the
-   property on an inner element, which is how the label and the 44px disc came to disagree once. */
-a[href^="tel:"],
-a[href^="tel:"] * {
-  -webkit-touch-callout: default;
+/* THE SCROLLBAR IS THIN AND IN THE SITE'S COLOURS (owner, 2026-10-14) — DESIGN.md → Interaction
+   Rules. Only a desktop's classic scrollbar takes it; a phone's overlay bar ignores both. The colour
+   inherits, so the photo grid on its dark scrim resets it (`gallery-modal-panel.tsx`). */
+html {
+  scrollbar-color: var(--color-ink-muted) transparent;
+  scrollbar-width: thin;
 }
 
 /* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a

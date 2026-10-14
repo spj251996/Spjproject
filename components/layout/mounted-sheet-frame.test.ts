@@ -175,6 +175,63 @@ test("the phone halving condition is computed at the rescue padding, not the flo
   );
 });
 
+/* The rescue value answers whether the PRESSED card fits, and nothing else. Whether the full-ground
+   card fits is asked at the floor the card actually shows (owner, 2026-10-14): asked at 16, the frame
+   believed a window held a full-ground card it did not, kept the full ground there, and the section ran
+   past one screen — 1px at 390x844, 18px at 360x780, 11px at 430x739 — where pressing would have fitted. */
+test("the phone halving condition asks the full-ground fit at the floor the card shows", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  const ground = topLevelBlocks(css).find(
+    (rule) =>
+      rule.startsWith(`@media ${phone.media}`) &&
+      rule.includes("--ground-block: var(--spacing-space-xl)"),
+  );
+  assert.ok(ground, "no pressed-ground rule for the phone class");
+  const [rescue] = fitRectangles(TINY, 0, 16);
+  const [floor] = fitRectangles(TINY, 0, 24);
+  /* The phone tier's own full block band. */
+  const full = 96;
+  assert.ok(
+    ground.includes(`(height >= ${floor.minCardHeight + 2 * full}px)`),
+    `expected the 24-derived full-ground threshold\n${ground}`,
+  );
+  assert.ok(
+    !ground.includes(`(height >= ${rescue.minCardHeight + 2 * full}px)`),
+    `the 16-derived full-ground threshold must not appear\n${ground}`,
+  );
+});
+
+/* The landscape twin: a phone held sideways asks the same two questions through a different branch of
+   the frame (the full 16px ground on every side rather than the portrait bands), so the padding swap
+   has to hold there too. */
+test("a landscape phone asks the full-ground fit at the floor the card shows", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  assert.ok(
+    phone.landscapePossible,
+    "the phone class holds no landscape window",
+  );
+  const ground = topLevelBlocks(css).find(
+    (rule) =>
+      rule.startsWith(`@media ${phone.media} and (orientation: landscape)`) &&
+      rule.includes("--ground-block: var(--spacing-space-2xs)"),
+  );
+  assert.ok(ground, "no pressed-ground rule for the phone class in landscape");
+  const [rescue] = fitRectangles(TINY, 0, 16);
+  const [floor] = fitRectangles(TINY, 0, 24);
+  /* The phone tier's full landscape ground. */
+  const full = 16;
+  assert.ok(
+    ground.includes(`(height >= ${floor.minCardHeight + 2 * full}px)`),
+    `expected the 24-derived full-ground threshold\n${ground}`,
+  );
+  assert.ok(
+    !ground.includes(`(height >= ${rescue.minCardHeight + 2 * full}px)`),
+    `the 16-derived full-ground threshold must not appear\n${ground}`,
+  );
+});
+
 test("a wide window keeps the laptop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
   const wide = classes.find((c) => c.widthTier === "desktop");
@@ -306,8 +363,7 @@ test("the frame scope div creates no stacking context; z-index sits on the box i
   const cases: { css: string; scope: string }[] = [
     { css: mountedSheetFrameCss(fit, false), scope },
     { css: mountedSheetFrameCss(fit, false, "pair"), scope },
-    { css: tallFrameCss(false), scope: `.${tallScopeClass(false)}` },
-    { css: tallFrameCss(true), scope: `.${tallScopeClass(true)}` },
+    { css: tallFrameCss(), scope: `.${tallScopeClass()}` },
   ];
 
   for (const { css, scope } of cases) {
@@ -1027,8 +1083,8 @@ test("a tall card's mount follows the fitted rule, per orientation", () => {
 });
 
 test("tall mode states no height threshold and no container query", () => {
-  const css = tallFrameCss(false);
-  assert.ok(css.includes(tallScopeClass(false)));
+  const css = tallFrameCss();
+  assert.ok(css.includes(tallScopeClass()));
   assert.equal(/\(height/.test(css), false);
   assert.equal(/@container/.test(css), false);
   assert.equal(/min-height:\s*min\(/.test(css), false);
@@ -1051,7 +1107,7 @@ const PADDING_TOKEN: Readonly<Record<number, string>> = {
 };
 
 test("each tall window class's own block binds its ground and sheet padding, never another class's", () => {
-  const css = tallFrameCss(false);
+  const css = tallFrameCss();
   for (const windowClass of tallWindowClasses(false)) {
     const block = tallBlockFor(css, windowClass.media);
     assert.ok(block, `no block for "${windowClass.media}"`);
@@ -1061,53 +1117,63 @@ test("each tall window class's own block binds its ground and sheet padding, nev
       ),
       `${windowClass.media}: ground ${windowClass.ground}`,
     );
+    /* The phone's sides are the one exception (owner, 2026-10-11): 36px through its own token, so
+       a ritual's measure gains 24px where it is shortest. Every other class keeps one padding. */
+    const inline =
+      windowClass.widthTier === "phone"
+        ? " padding-inline: var(--tall-inline-phone);"
+        : "";
+    assert.strictEqual(
+      windowClass.paddingInline === null ? "" : windowClass.paddingInline,
+      windowClass.widthTier === "phone" ? "--tall-inline-phone" : "",
+      `${windowClass.media}: only the phone class overrides the sides`,
+    );
     assert.ok(
       block?.includes(
-        `mounted-sheet-frame__sheet { padding: var(${PADDING_TOKEN[windowClass.padding]}); }`,
+        `mounted-sheet-frame__sheet { padding: var(${PADDING_TOKEN[windowClass.padding]});${inline} }`,
       ),
-      `${windowClass.media}: padding ${windowClass.padding}`,
+      `${windowClass.media}: padding ${windowClass.padding}${inline}`,
     );
   }
+  assert.match(
+    readFileSync("app/styles/tokens.css", "utf8"),
+    /--tall-inline-phone:\s*36px;/,
+    "the phone side padding's token is gone or has moved",
+  );
 });
 
 test("a tall card strips its mount per orientation, exactly where the mount does not show", () => {
-  for (const hero of [false, true]) {
-    const css = tallFrameCss(hero);
-    const blocks = topLevelBlocks(css);
-    for (const windowClass of tallWindowClasses(hero)) {
-      assert.ok(
-        !tallBlockFor(css, windowClass.media)?.includes(
-          "mounted-sheet-frame__mount { padding",
-        ),
-        `${windowClass.media}: a mount rule that ignores orientation`,
-      );
-      for (const orientation of ["portrait", "landscape"] as const) {
-        const mountLines = blocks
-          .filter((block) =>
-            block.startsWith(
-              `@media ${windowClass.media} and (orientation: ${orientation}) {`,
-            ),
-          )
-          .flatMap((block) => block.split("\n"))
-          .filter((line) => line.includes("mounted-sheet-frame__mount { "));
-        assert.equal(
-          mountLines.length,
-          1,
-          `${windowClass.media} ${orientation}`,
-        );
-        const label = `hero=${hero} ${windowClass.media} ${orientation}`;
-        if (mountExpected(hero, windowClass.widthTier, orientation)) {
-          assertMounted(mountLines[0], label);
-        } else {
-          assertBare(mountLines[0], label);
-        }
+  const css = tallFrameCss();
+  const blocks = topLevelBlocks(css);
+  for (const windowClass of tallWindowClasses(false)) {
+    assert.ok(
+      !tallBlockFor(css, windowClass.media)?.includes(
+        "mounted-sheet-frame__mount { padding",
+      ),
+      `${windowClass.media}: a mount rule that ignores orientation`,
+    );
+    for (const orientation of ["portrait", "landscape"] as const) {
+      const mountLines = blocks
+        .filter((block) =>
+          block.startsWith(
+            `@media ${windowClass.media} and (orientation: ${orientation}) {`,
+          ),
+        )
+        .flatMap((block) => block.split("\n"))
+        .filter((line) => line.includes("mounted-sheet-frame__mount { "));
+      assert.equal(mountLines.length, 1, `${windowClass.media} ${orientation}`);
+      const label = `${windowClass.media} ${orientation}`;
+      if (mountExpected(false, windowClass.widthTier, orientation)) {
+        assertMounted(mountLines[0], label);
+      } else {
+        assertBare(mountLines[0], label);
       }
     }
   }
 });
 
 test("the width cap binds only in landscape, and only the compact band takes the compact-cap token", () => {
-  const css = tallFrameCss(false);
+  const css = tallFrameCss();
   const blocks = topLevelBlocks(css);
 
   const baseCap = blocks.find(
@@ -1337,12 +1403,11 @@ test("every emitted ground is on the spacing scale, pressed values included", ()
   assert.doesNotThrow(() => mountedSheetFrameCss(makeFit(), false, "single"));
   assert.doesNotThrow(() => mountedSheetFrameCss(makeFit(), true, "single"));
   assert.doesNotThrow(() => mountedSheetFrameCss(makeFit(), false, "pair"));
-  assert.doesNotThrow(() => tallFrameCss(false));
-  assert.doesNotThrow(() => tallFrameCss(true));
+  assert.doesNotThrow(() => tallFrameCss());
 });
 
 test("a tall portrait window takes its tier's two bands", () => {
-  const css = tallFrameCss(false);
+  const css = tallFrameCss();
   const phone = tallWindowClasses(false)[0];
   const band = bandFor(css, phone.media, "portrait", false);
   assert.equal(band.block, "--spacing-space-3xl");
@@ -1423,4 +1488,30 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
     (["phone", "tablet", "laptop", "desktop"] as const).map(matFor),
     [16, 12, 16, 24],
   );
+});
+
+/* The built page carries this exact string in two inlined stylesheets (the frame's and the botanical layer's), so
+   changing it moves `/`'s bytes. A tall card is never the hero (`mounted-sheet` throws on both), so the tall frame
+   takes no role argument at all -- a hero variant would be CSS nothing can reach. */
+test("the tall scope class keeps its shipped string, and the tall frame has no hero form", () => {
+  assert.strictEqual(
+    tallScopeClass(),
+    "mounted-sheet-frame--tall-section-mount",
+  );
+  assert.strictEqual(
+    tallScopeClass.length,
+    0,
+    "tallScopeClass still takes a hero argument",
+  );
+  assert.strictEqual(
+    tallFrameCss.length,
+    0,
+    "tallFrameCss still takes a hero argument",
+  );
+  /* `.length` stops at the first defaulted parameter, so a `hero = false` coming back would pass the two
+     checks above. Passing a hero must change nothing. */
+  const withHero = tallScopeClass as (hero?: boolean) => string;
+  const frameWithHero = tallFrameCss as (hero?: boolean) => string;
+  assert.strictEqual(withHero(true), tallScopeClass());
+  assert.strictEqual(frameWithHero(true), tallFrameCss());
 });
