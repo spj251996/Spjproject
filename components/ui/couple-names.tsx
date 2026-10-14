@@ -10,7 +10,7 @@ import type { ReactElement } from "react";
    layout free: the drawn lockup IS those positions, so stacking is a re-origin and nothing else. */
 const SEBASTIAN = { w: 599.68, h: 190.11, x: 0.32, y: 0.19 };
 const AMPERSAND = { w: 101.43, h: 84.63, x: 271.35, y: 160.17 };
-const FLEMY = { w: 415.43, h: 183.42, x: 101.36, y: 262.08 };
+const FLEMY = { w: 415.43, h: 183.52, x: 101.36, y: 262.08 };
 
 /* The single line's word gap, in the same units. Measured: at this value the line is 1156.94 x
    190.11, 6.09:1, cleanly spaced; at -400 the ampersand tucks under Sebastian's `n` and at -900 it

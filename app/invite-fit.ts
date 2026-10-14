@@ -9,9 +9,9 @@ export const inviteFit: MeasuredFit = {
   regimes: {
     phone: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 500.25 },
-        { minContentWidth: 234.40625, contentHeight: 478.25 },
-        { minContentWidth: 411.484375, contentHeight: 452.25 },
+        { minContentWidth: 120, contentHeight: 500.28125 },
+        { minContentWidth: 234.40625, contentHeight: 478.28125 },
+        { minContentWidth: 411.484375, contentHeight: 452.28125 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 373.21875 },
@@ -21,11 +21,11 @@ export const inviteFit: MeasuredFit = {
     },
     tablet: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 589.359375 },
-        { minContentWidth: 137.65625, contentHeight: 565.359375 },
-        { minContentWidth: 139.9375, contentHeight: 541.359375 },
-        { minContentWidth: 277.03125, contentHeight: 517.359375 },
-        { minContentWidth: 443.125, contentHeight: 489.359375 },
+        { minContentWidth: 120, contentHeight: 589.40625 },
+        { minContentWidth: 137.65625, contentHeight: 565.40625 },
+        { minContentWidth: 139.9375, contentHeight: 541.40625 },
+        { minContentWidth: 277.03125, contentHeight: 517.40625 },
+        { minContentWidth: 443.125, contentHeight: 489.40625 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 442.65625 },
@@ -36,12 +36,12 @@ export const inviteFit: MeasuredFit = {
     },
     laptop: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 620.359375 },
-        { minContentWidth: 135.3125, contentHeight: 598.359375 },
-        { minContentWidth: 198.34375, contentHeight: 576.359375 },
-        { minContentWidth: 260.90625, contentHeight: 554.359375 },
-        { minContentWidth: 411.484375, contentHeight: 528.359375 },
-        { minContentWidth: 492.921875, contentHeight: 506.359375 },
+        { minContentWidth: 120, contentHeight: 620.40625 },
+        { minContentWidth: 135.3125, contentHeight: 598.40625 },
+        { minContentWidth: 198.34375, contentHeight: 576.40625 },
+        { minContentWidth: 260.90625, contentHeight: 554.40625 },
+        { minContentWidth: 411.484375, contentHeight: 528.40625 },
+        { minContentWidth: 492.921875, contentHeight: 506.40625 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 567.78125 },
@@ -53,13 +53,13 @@ export const inviteFit: MeasuredFit = {
     },
     desktop: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 797.40625 },
-        { minContentWidth: 120.34375, contentHeight: 773.40625 },
-        { minContentWidth: 157.875, contentHeight: 749.40625 },
-        { minContentWidth: 231.390625, contentHeight: 725.40625 },
-        { minContentWidth: 304.390625, contentHeight: 701.40625 },
-        { minContentWidth: 506.4375, contentHeight: 669.40625 },
-        { minContentWidth: 575.0625, contentHeight: 645.40625 },
+        { minContentWidth: 120, contentHeight: 797.46875 },
+        { minContentWidth: 120.34375, contentHeight: 773.46875 },
+        { minContentWidth: 157.875, contentHeight: 749.46875 },
+        { minContentWidth: 231.390625, contentHeight: 725.46875 },
+        { minContentWidth: 304.390625, contentHeight: 701.46875 },
+        { minContentWidth: 506.4375, contentHeight: 669.46875 },
+        { minContentWidth: 575.0625, contentHeight: 645.46875 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 707.609375 },

@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-const src = readFileSync("tmp/aaa/source/Names-svg.svg", "utf8");
+const src = readFileSync("assets/names/Names-svg.svg", "utf8");
 const paths = [...src.matchAll(/<path d="([^"]*)"/g)].map((m) => m[1]);
 if (paths.length !== 5)
   throw new Error(`expected 5 paths, found ${paths.length}`);
