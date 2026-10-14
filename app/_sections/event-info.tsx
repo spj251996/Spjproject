@@ -138,7 +138,7 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
    Tailwind emits the landscape variant after `md:` and `xl:`, so it overrides them; each class is
    written out whole because Tailwind finds classes by scanning source.
 
-   Size 72 covers both the phone stack and the compact-laptop side-by-side plate, in one entry
+   Size 72 covers both the phone plate and the compact-laptop side-by-side plate, in one entry
    because a size may render only once per `PlateMark` (the array is keyed by size). */
 const PLATE_MARKS = [
   {
@@ -227,9 +227,8 @@ function mapLabel(segment: EventSegment): string {
 /* Centred in the space left below the heading block instead, the list closes to a few pixels of the
    place line as soon as the venue takes a second line.
 
-   The phone band's gap above the first mark is half the rest's (owner, 2026-10-07): `space-sm`
-   against `space-lg` from `md` up, handed straight back as the card's own block padding in
-   `EventSheet` — see the note there for why it has to be a trade. BETWEEN the two entries the gap
+   Above the list: `space-sm` on a phone, none in the tablet band, `space-lg` on a landscape laptop
+   or wider. BETWEEN the two entries the gap
    went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
    two read as two clusters; `eventInfoFit` is re-measured for it. */
 /* Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
@@ -245,7 +244,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
     <ol className={PLATE_LIST_CLASS} role="list">
       {segments.map((segment) => (
         <li
-          className="col-span-full grid grid-cols-subgrid items-start gap-y-space-2xs md:gap-y-space-sm"
+          className="col-span-full grid grid-cols-subgrid items-start"
           key={segment.id}
         >
           <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold">
@@ -283,11 +282,11 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
 /* `measure:fit` finds each sheet by an `h2` that is a direct child of this root `div`. Measured by
    `eventInfoFit`: any content or type change re-runs `npm run measure:fit`.
 
-   THE PHONE PADDING IS A COUNTERWEIGHT, NOT A STYLE, and removing it does not simply tighten the
-   card. The tighter plate gaps above and the smaller `--action-disc` take 56px out of a phone card;
-   this hands the same 56px back, so the card's MEASURED HEIGHT does not move and `eventInfoFit`
-   stays as it is.
-   It has to balance because the band decides where a reduction goes. A sheet is at least
+   THE PHONE PADDING WAS SET AS A COUNTERWEIGHT (owner, 2026-10-07): it handed back the 56px the
+   then-stacked layout's tighter mark gaps and smaller `--action-disc` took out of a phone card. That
+   layout is gone — the mark sits beside its details at every tier since 2026-10-11 — and
+   `eventInfoFit` has been re-measured since, so the padding now stands as the card's own phone
+   white. The reasoning that set it still describes where a phone saving goes. A sheet is at least
    `100svh - 2 * ground-block` tall: above roughly 844px of viewport the content sits inside that
    and slack would absorb a reduction as white, but below roughly 667px the content already
    overruns it, so the sheet follows the content and the saving comes off the PAGE while the white

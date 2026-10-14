@@ -21,8 +21,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    corner box: at 360px wide a fixed panel either covers what it is asking about or runs off the
    screen. */
 
-/* THE WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is namespaced, including
-   Event Info's four, which the scratch route carried as bare `data-rail` & co.
+/* THE WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is namespaced.
    WHY THE NAMESPACE IS LOAD-BEARING: `app/layout.tsx` sets `data-opening-skipped` on this SAME
    element before hydration, and `app/invite.css` plus `components/thread/thread.module.css` both
    read `:root:not([data-opening-skipped])`. A panel that cleared or rewrote the root's attribute
@@ -71,12 +70,13 @@ interface Lever {
 /* The open questions. Option 0 of each is what ships today, so an untouched panel shows the
    published page and there is nothing to jump on first paint.
 
-   SIX LEFT ON 2026-10-11 (owner) AND EACH LANDED AS A VALUE: the date block's inner spacing (8px)
+   SIX LEFT ON 2026-10-11 (owner) AND EACH LANDED AS A VALUE: the date block's inner spacing (8px;
+   4px on a phone since 2026-10-14)
    and the day's weight (400) in `app/styles/tokens.css` and `app/_sections/invite.tsx`; the gold
    glow on the couple's portraits (medium) in `components/ui/portrait.tsx`; the rituals left-aligned
    in `app/_sections/celebrations.tsx`; and the timeline card's 36px phone padding in
    `components/layout/mounted-sheet-frame.ts`. `preview-route.test.ts` checks them at their
-   destinations. */
+   destinations; rounds 7–9's picks landed the same way and `app/round7-9.test.ts` pins them. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
     id: "portrait",
@@ -298,8 +298,8 @@ export function LeverPanel() {
         overscrollBehavior: "contain",
       }}
     >
-      {/* THE CLOSE IS ALWAYS REACHABLE (owner, 2026-10-10). The panel scrolls — three groups do
-          not fit 70svh on a phone — and the close button scrolled away with the heading, so
+      {/* THE CLOSE IS ALWAYS REACHABLE (owner, 2026-10-10). The panel scrolls on a short phone,
+          where its group and notes outgrow 70svh, and the close button scrolled away with the heading, so
           getting the panel out of the way meant first scrolling back up inside it. It is sticky
           to the top of the panel's own scroll box now.
           The background is RESTATED rather than inherited: a sticky child paints over the content

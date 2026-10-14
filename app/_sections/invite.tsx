@@ -185,8 +185,8 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
 
           <div className="flex flex-col items-center">
             {/* A colour utility here would override the colour `.type-eyebrow` owns. The copy is a
-                literal, not a content field: it names the occasion rather than carrying any of the
-                couple's data, exactly like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
+                literal, not a content field: a blessing rather than any of the couple's data (owner,
+                2026-10-14), a literal like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
             <p className="type-eyebrow">By God’s Grace</p>
 
             {/* THE DRAWN NAMES, and the role STAYS on the `<h1>` doing two jobs, both
@@ -263,9 +263,9 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
               </span>
             </h1>
 
-            {/* The invitation's own sentence, in the couple's first-person voice — the same voice as
-                the eyebrow above, and a literal here for the same reason: it names the occasion rather
-                than carrying any of the couple's data.
+            {/* The invitation's own sentence, in the families' voice — third person, with the names
+                above as its subject (owner, 2026-10-14) — and a literal here for the same reason as
+                the eyebrow: it carries none of the couple's data.
 
                 WITHIN a beat, so `space-3xs`: the names are this sentence's subject and it does not
                 stand alone. It had been flush from `{breakpoints.md}` up, which the tablet band's

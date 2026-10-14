@@ -33,9 +33,9 @@
    asset's width is `em` of those roles; the register says so in its own `why`. */
 
 /* ───────── LEVER 3 — the leaf marks beside a heading — LEFT THE ROUTE (owner, 2026-10-11) ─────────
-   "Outward with rules" was confirmed for the five section eyebrows ALONE; the ritual Malayalam keeps
-   the plain pair. It lands in `components/ui/sprig-ornament.tsx` as a real form, so there is nothing
-   left here to compare. */
+   "Outward with rules" landed for the five section eyebrows and is `sprig-ornament`'s one form; the
+   ritual header leads with a single sprig from 64rem instead (2026-10-11). Nothing is left here to
+   compare. */
 
 /* WHAT USED TO BE LEVER 3 — the invite's eyebrow against the flowers — IS GONE, and deliberately
    rather than by omission (owner, 2026-10-10). Its default was the one option with a measurement
@@ -63,11 +63,14 @@ html[data-pv-portrait] #family figure > div:first-child > div > :first-child {
   display: none;
 }
 
+/* "No rim" drops the gold ring and its paper offset ONLY — the couple's glow is the same box shadow's
+   last layer (`--tw-shadow`), and it stays in every option (owner, 2026-10-14). */
 html:is([data-pv-portrait="blend"], [data-pv-portrait="fade"])
   #family
   figure
   > div:first-child {
-  box-shadow: none;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
 }
 
 html[data-pv-portrait="fade"] #family figure > div:first-child img {

@@ -194,7 +194,7 @@ function Lockup({
          that. Do not go looking for the CSS rule that keys on it, and do not delete it as unused
          without checking the harnesses in `tmp/`. The two lockups do differ: on the LINE the
          ampersand is centred in the slot the trace gives it, in the STACK on the lockup's own
-         box, and both land it dead centre since 2026-10-10. */
+         box — centred across, and lifted `AMPERSAND_LIFT` units above centre since 2026-10-11. */
       data-names-layout={layout}
       role="presentation"
       /* `round` on both, not the default miter: a trace of handwriting is full of shallow cusps,
