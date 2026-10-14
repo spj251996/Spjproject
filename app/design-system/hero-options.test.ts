@@ -57,7 +57,7 @@ test("the gallery does not claim the hero keeps a fill", () => {
   );
 });
 
-/* The shipped sequence is three beats ending at 1600ms. A gallery string still presenting the retired
+/* The shipped sequence is Bloom, its type landing at 1800ms. A gallery string still presenting the retired
    painted hero's four-beat, 2400ms sequence is the drift this file exists to catch. */
 test("the gallery does not present the retired painted hero's sequence", () => {
   for (const stale of [
@@ -90,8 +90,8 @@ test("the gallery's beat count matches the shipped sequence", () => {
   );
   assert.match(
     domain,
-    /three beats|Bloom/,
-    "the Invite entry must name the shipped sequence",
+    /The opening is Bloom/,
+    "the Invite entry must name the shipped sequence, Bloom",
   );
 });
 

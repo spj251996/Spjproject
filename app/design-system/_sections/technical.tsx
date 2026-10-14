@@ -17,7 +17,7 @@ const VARIANT_ROUTES = [
   "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
   "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
-  'Its panel carries the owner\'s two open questions (2026-10-14): the opening — one button per candidate, which closes the panel and replays it full screen from the top — and the paper on phones. The family-photo lever left the same day, decided "as now" → DESIGN.md → Iteration Notes → Open Decisions',
+  "Its panel carries the owner's two open questions (2026-10-14): the invite's spacing on a phone and Event Info's spacing on a phone. The family photos, the progress line, the opening and the phone paper left the same day, each decided → DESIGN.md → Iteration Notes → Open Decisions",
 ];
 
 const TRY_IT = [
