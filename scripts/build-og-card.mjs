@@ -75,6 +75,42 @@ export const PIECES = Object.freeze([
   },
 ]);
 
+/* The font files the compiled CSS points at, relative to its own `../media/`. NONE is a failure, not a
+   quiet card: the dates would render in a fallback face, the names are SVG and pass every check, and
+   `document.fonts.ready` resolves on a failed face too — so a changed URL form ships a wrong card. */
+export function mediaFiles(css) {
+  const files = new Set(
+    [...css.matchAll(/url\(["']?\.\.\/media\/([^"')]+)["']?\)/g)].map(
+      (m) => m[1],
+    ),
+  );
+  if (files.size === 0) {
+    throw new Error(
+      "no font files referenced as ../media/ in the CSS — the URL form changed",
+    );
+  }
+  return files;
+}
+
+/* The size flags, each a finite number: a typo must stop the run, not draw `width: NaNpx` flowers that
+   still pass the image-loaded wait. Sizes are positive; the spray's drop may be zero. */
+export function parseOverrides(argv) {
+  const out = {};
+  for (const key of ["names", "dates", "flowers", "sprayDrop"]) {
+    const i = argv.indexOf(`--${key}`);
+    if (i === -1) continue;
+    const value = Number(argv[i + 1]);
+    const ok =
+      Number.isFinite(value) && (key === "sprayDrop" ? value >= 0 : value > 0);
+    if (!ok)
+      throw new Error(
+        `--${key} must be a ${key === "sprayDrop" ? "non-negative" : "positive"} number, got "${argv[i + 1]}"`,
+      );
+    out[key] = value;
+  }
+  return out;
+}
+
 const QUALITY_STEPS = [95, 92, 90, 88, 85, 82, 80, 76, 72];
 
 function argValue(flag) {
@@ -263,11 +299,7 @@ async function fetchAssets(origin) {
 
   await rm(join(WORK, "fonts"), { recursive: true, force: true });
   await mkdir(join(WORK, "fonts"), { recursive: true });
-  const mediaRefs = new Set(
-    [...css.matchAll(/url\(["']?\.\.\/media\/([^"')]+)["']?\)/g)].map(
-      (m) => m[1],
-    ),
-  );
+  const mediaRefs = mediaFiles(css);
   for (const file of mediaRefs) {
     const buf = Buffer.from(
       await (await get(`${origin}/_next/static/media/${file}`)).arrayBuffer(),
@@ -311,6 +343,25 @@ async function capture(htmlPath, rawPath) {
     });
     await page.goto(`file://${htmlPath}`, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready.then(() => true));
+    /* `fonts.ready` resolves on a FAILED face too, so read each face's status, and confirm the dates'
+       own face is loaded — the names are SVG and would pass every other check. */
+    const fonts = await page.evaluate(() => {
+      const dates = getComputedStyle(document.querySelector(".og-dates"));
+      return {
+        failed: [...document.fonts]
+          .filter((f) => f.status === "error")
+          .map((f) => f.family),
+        dates: document.fonts.check(
+          `${dates.fontWeight} ${dates.fontSize} ${dates.fontFamily}`,
+        ),
+      };
+    });
+    if (fonts.failed.length > 0)
+      throw new Error(`fonts failed to load: ${fonts.failed.join(", ")}`);
+    if (!fonts.dates)
+      throw new Error(
+        "the dates' face is not loaded — they would render in a fallback",
+      );
     await page.waitForFunction(
       () =>
         [...document.querySelectorAll(".og-flower")].every(
@@ -393,9 +444,7 @@ async function main() {
   const origin = argValue("--origin") ?? "http://localhost:3000";
   const out = resolve(ROOT, argValue("--out") ?? join(WORK, "og-card.jpg"));
   const card = { ...CARD };
-  for (const key of ["names", "dates", "flowers", "sprayDrop"]) {
-    if (argValue(`--${key}`)) card[key] = Number(argValue(`--${key}`));
-  }
+  Object.assign(card, parseOverrides(process.argv));
 
   await mkdir(WORK, { recursive: true });
   const lifted = await fetchAssets(origin);

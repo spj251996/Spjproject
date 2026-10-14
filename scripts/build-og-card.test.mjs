@@ -13,7 +13,9 @@ import {
   extractFontVars,
   extractNames,
   extractSymbols,
+  mediaFiles,
   PIECES,
+  parseOverrides,
 } from "./build-og-card.mjs";
 
 const SPRIG =
@@ -155,4 +157,27 @@ test("the card's sizes are the owner's picks", () => {
   assert.equal(CARD.dates, 24);
   assert.equal(CARD.flowers, 1.65);
   assert.equal(CARD.sprayDrop, 60);
+});
+
+/* A typo in a size flag must stop the run, not draw a card with `width: NaNpx` flowers. */
+test("parseOverrides takes finite sizes and refuses anything else", () => {
+  assert.deepEqual(parseOverrides(["--names", "120", "--sprayDrop", "0"]), {
+    names: 120,
+    sprayDrop: 0,
+  });
+  assert.throws(() => parseOverrides(["--flowers", "abc"]), /--flowers/);
+  assert.throws(() => parseOverrides(["--names", "0"]), /--names/);
+  assert.throws(() => parseOverrides(["--sprayDrop", "-5"]), /--sprayDrop/);
+});
+
+/* No font file fetched means the dates render in a fallback face, and nothing else would notice:
+   the names are SVG, and `document.fonts.ready` resolves on a failed face too. */
+test("mediaFiles lists the font files the CSS points at, and refuses none", () => {
+  const css =
+    '@font-face{src:url(../media/a.woff2)}@font-face{src:url("../media/b.woff2")}';
+  assert.deepEqual([...mediaFiles(css)].sort(), ["a.woff2", "b.woff2"]);
+  assert.throws(
+    () => mediaFiles("@font-face{src:url(/_next/static/media/a.woff2)}"),
+    /no font files/,
+  );
 });
