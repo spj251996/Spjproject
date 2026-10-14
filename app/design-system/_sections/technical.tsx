@@ -17,12 +17,13 @@ const VARIANT_ROUTES = [
   "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
   "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
-  "The one lever it carries, now decided → the family photos blended into the card, where \"as now\" is final (owner, 2026-10-14) and is what / ships; the lever stays until the route is deleted. Its options: as now, blended with no rim, blended with no rim and soft lower edges, or blended with the rim. No rim drops the couple's glow as well, and the soft edge fades the photo's lower half only. DESIGN.md → Iteration Notes → Open Decisions carries its row",
+  'Its panel carries the owner\'s two open questions (2026-10-14): the opening — one button per candidate, which closes the panel and replays it full screen from the top — and the paper on phones. The family-photo lever left the same day, decided "as now" → DESIGN.md → Iteration Notes → Open Decisions',
 ];
 
 const TRY_IT = [
   "Focus and hover · tab to or hover the map action under Components · UI",
   "Text selection · try selecting any text on this page — nothing selects",
+  "Scrollbar · on a desktop with classic scrollbars, this page's own is thin with a muted-ink thumb on a transparent track; a phone's overlay bar is the browser's own",
   "Scroll, section entry, modal and loading act on the page itself; no specimen",
   "Tap targets → Accessibility Rules",
 ];
