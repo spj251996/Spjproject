@@ -80,6 +80,7 @@ export function PhotoViewerPanel({
           <>
             <img
               alt=""
+              data-viewer-photo
               className={`absolute inset-0 size-full object-contain ${SLIDE[direction]}`}
               draggable={false}
               key={src}

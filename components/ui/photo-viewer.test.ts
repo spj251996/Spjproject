@@ -157,3 +157,25 @@ test("a photograph slides in from the side it came from", () => {
   assert.match(viewer, /motion\["slide-next"\]/);
   assert.match(viewer, /motion\["slide-previous"\]/);
 });
+
+test("a deliberate tap on empty space goes back one layer through the same guarded back", () => {
+  assert.match(modal, /onPointerDown=/);
+  assert.match(modal, /onPointerUp=/);
+  assert.match(modal, /isDeliberateTap\(/);
+  const up = modal.slice(modal.indexOf("onPointerUp="));
+  assert.ok(
+    up.slice(0, up.indexOf("}}")).includes("goBack()"),
+    "the tap does not go back through goBack",
+  );
+});
+
+test("the photograph, tiles, buttons and text are never empty space", () => {
+  assert.match(modal, /closest\("button, h2, p"\)/);
+  assert.match(modal, /containedRect\(/);
+  assert.match(modal, /insideRect\(/);
+  assert.match(viewer, /data-viewer-photo/);
+});
+
+test("the tap listener lives on the modal, so the grid panel still renders from a server page", () => {
+  assert.doesNotMatch(panel, /onPointer/);
+});

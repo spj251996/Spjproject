@@ -5,6 +5,12 @@ import { cssTimeMs } from "./css-time";
 import { GalleryModalPanel } from "./gallery-modal-panel";
 import motion from "./gallery-motion.module.css";
 import {
+  containedRect,
+  insideRect,
+  isDeliberateTap,
+  type Point,
+} from "./gallery-pointer";
+import {
   back,
   type GalleryState,
   openGallery,
@@ -38,7 +44,13 @@ import { PhotoViewerPanel } from "./photo-viewer";
    it starts the closing fade, and `onClose` runs when that fade ends, so the scroll lock and focus are
    released only once the gallery has gone. A timeout one beat past the fade stands in case
    `animationend` never arrives (a hidden tab), and under reduced motion there is no fade to wait
-   for. While closing, every input is ignored and a further pop is not ours to handle. */
+   for. While closing, every input is ignored and a further pop is not ours to handle.
+
+   A tap on empty space goes back one layer, like Close. It must be deliberate: down AND up both on
+   empty space, less than 10px apart, so a swipe that ends in the dark never closes. The photograph is
+   where it is DRAWN — `object-contain` letterboxes it inside a box the save cover fills, so the box
+   cannot answer "is this the photograph". The listener sits here rather than on the grid panel so
+   that panel still renders from a server page. */
 
 const SWIPE_THRESHOLD_PX = 40;
 
@@ -66,6 +78,8 @@ export function GalleryModal({
   const containerRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const touchStartXRef = useRef<number | null>(null);
+  /* Where a press began, kept only when it began on empty space. */
+  const pressRef = useRef<Point | null>(null);
   const [state, setState] = useState<GalleryState>(() => openGallery(start));
   const stateRef = useRef(state);
   /* Survives React's development-only double mount, which would otherwise push a second entry. */
@@ -168,6 +182,20 @@ export function GalleryModal({
     setSwapped(true);
     setDirection(0);
     setState(next);
+  };
+
+  const isEmptySpace = (event: React.PointerEvent) => {
+    const target = event.target as Element;
+    if (target.closest("button, h2, p") !== null) return false;
+    const photo = containerRef.current?.querySelector<HTMLImageElement>(
+      "img[data-viewer-photo]",
+    );
+    if (photo == null) return true;
+    const drawn = containedRect(photo.getBoundingClientRect(), {
+      width: photo.naturalWidth,
+      height: photo.naturalHeight,
+    });
+    return !insideRect({ x: event.clientX, y: event.clientY }, drawn);
   };
 
   const goBack = () => {
@@ -298,6 +326,27 @@ export function GalleryModal({
           return;
         }
         step(delta < 0 ? 1 : -1);
+      }}
+      onPointerCancel={() => {
+        pressRef.current = null;
+      }}
+      onPointerDown={(event) => {
+        pressRef.current =
+          event.isPrimary && isEmptySpace(event)
+            ? { x: event.clientX, y: event.clientY }
+            : null;
+      }}
+      onPointerUp={(event) => {
+        const down = pressRef.current;
+        pressRef.current = null;
+        if (
+          down !== null &&
+          !closingPhaseRef.current &&
+          isDeliberateTap(down, { x: event.clientX, y: event.clientY }) &&
+          isEmptySpace(event)
+        ) {
+          goBack();
+        }
       }}
       onTouchStart={(event) => {
         touchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
