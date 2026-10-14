@@ -68,15 +68,15 @@ test("the 2026-10-14 picks: the progress line — 2px on a phone, 3px up, the so
   );
 });
 
-/* One 24px INK gap on a phone held upright: the sentence's margin, the date's, and the rule's fixed,
-   non-growing spacer — each the figure that lands the ink at 24, measured. */
-test("the 2026-10-14 picks: the invite's one 24px phone gap", () => {
+/* One 22px INK gap on a phone held upright: the sentence's margin, the date's, and the rule's fixed,
+   non-growing spacer — each the figure that lands the ink at 22, measured. */
+test("the 2026-10-14 picks: the invite's one 22px phone gap", () => {
   const invite = readFileSync("app/_sections/invite.tsx", "utf8");
   const PHONE = "[@media(width<48rem)_and_(orientation:portrait)]";
   for (const cls of [
-    `${PHONE}:mt-space-xs`,
-    `${PHONE}:mt-[calc(var(--spacing-space-3xs)/2+var(--date-place-pull))]`,
-    `${PHONE}:basis-[15px]`,
+    `${PHONE}:mt-[calc(var(--spacing-space-xs)-2px)]`,
+    `${PHONE}:mt-(--date-place-pull)`,
+    `${PHONE}:basis-[13px]`,
     `${PHONE}:grow-0`,
   ]) {
     assert.ok(invite.includes(cls), `the invite lost ${cls}`);
