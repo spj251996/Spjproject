@@ -112,6 +112,10 @@ const COUPLE_LEVERS: readonly Lever[] = [
         label: "C — line at caption size, names gap 4",
         attrs: { "data-pv-invite": "c" },
       },
+      {
+        label: "D — names gap 4 only",
+        attrs: { "data-pv-invite": "d" },
+      },
     ],
   },
 ];
