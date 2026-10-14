@@ -21,9 +21,6 @@ import {
 } from "@/app/design-system/_kit";
 import {
   BetrothalIcon,
-  CallIcon,
-  ChatIcon,
-  LoveIcon,
   LunchIcon,
   MapIcon,
   ReceptionIcon,
@@ -442,32 +439,11 @@ const ICONS = [
     Icon: LunchIcon,
   },
   {
-    name: "love",
-    marks: "Contact",
-    nudge: "1.03",
-    stroke: "",
-    Icon: LoveIcon,
-  },
-  {
     name: "map",
     marks: "a venue's map link",
     nudge: "0.83",
     stroke: "stroke-drawn, not an added stroke",
     Icon: MapIcon,
-  },
-  {
-    name: "call",
-    marks: "a contact's telephone action",
-    nudge: "0.84",
-    stroke: "stroke-drawn, not an added stroke",
-    Icon: CallIcon,
-  },
-  {
-    name: "chat",
-    marks: "a contact's WhatsApp action",
-    nudge: "0.85",
-    stroke: "stroke-drawn, not an added stroke",
-    Icon: ChatIcon,
   },
 ];
 

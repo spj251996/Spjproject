@@ -1,11 +1,8 @@
 export { BetrothalIcon } from "./betrothal";
-export { CallIcon } from "./call";
-export { ChatIcon } from "./chat";
 export { ChevronIcon } from "./chevron";
 export { CloseIcon } from "./close";
 export { CoupleNamesSymbol } from "./couple-names-symbol";
 export { GridIcon } from "./grid";
-export { LoveIcon } from "./love";
 export { LunchIcon } from "./lunch";
 export { MapIcon } from "./map";
 export { ReceptionIcon } from "./reception";

@@ -297,8 +297,8 @@ function EventSheet({ event }: { event: WeddingEvent }) {
     <div className="flex w-full flex-col items-center py-space-md text-center md:py-0 [@media(width>=100rem)_and_(orientation:landscape)]:flex-1">
       <EventSheetHeading event={event} />
       {/* Shows only in the tablet band, Event Info's tightest — DESIGN.md → Components →
-          `divider` carries the reasoning and the revert record. Conditions written out literally:
-          see ContactSection's Tailwind-content-scanner note below. */}
+          `divider` carries the reasoning and the revert record. Conditions written out literally,
+          because Tailwind finds classes by scanning source and cannot see a composed one. */}
       <Divider className="my-space-lg hidden w-space-2xl md:block [@media(width>=64rem)_and_(orientation:landscape)]:hidden" />
       <PlateSegments segments={event.segments} />
     </div>

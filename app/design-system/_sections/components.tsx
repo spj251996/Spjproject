@@ -15,7 +15,7 @@ import {
   GallerySection,
   Specimen,
 } from "@/app/design-system/_kit";
-import { CallIcon, ChatIcon, MapIcon } from "@/components/icons";
+import { MapIcon } from "@/components/icons";
 import { ButtonAction } from "@/components/ui/button-action";
 import { CoupleNames } from "@/components/ui/couple-names";
 import { GalleryModalPanel } from "@/components/ui/gallery-modal-panel";
@@ -63,7 +63,7 @@ export function ComponentsSections() {
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control: a mark on a small raised disc beside a sentence-case italic label, with no box around it. Used for the map action, a contact's call and WhatsApp actions, and for a ritual's photo-row gallery action."
+          description="The page's one control: a mark on a small raised disc beside a sentence-case italic label, with no box around it. Used for the map action and for a ritual's photo-row gallery action."
           id="ui-button-action"
           name="button-action"
           note="The three states cannot be posed — hover it on a pointer device to see the disc and label grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
@@ -90,29 +90,6 @@ export function ComponentsSections() {
               >
                 Meet us here
               </ButtonAction>
-            </Variant>
-            <Variant
-              className="items-start"
-              label="A contact's actions · call and chat marks · named Call/WhatsApp, <name> · always stacked, never side by side · one shared width and left edge, so the discs line up"
-            >
-              <div className="mx-auto flex w-fit flex-col items-stretch gap-space-2xs">
-                <ButtonAction
-                  align="stretchStart"
-                  aria-label="Call, Name"
-                  href="tel:+10000000000"
-                  mark={<CallIcon size={24} />}
-                >
-                  Call
-                </ButtonAction>
-                <ButtonAction
-                  align="stretchStart"
-                  aria-label="WhatsApp, Name"
-                  href="https://wa.me/10000000000"
-                  mark={<ChatIcon size={24} />}
-                >
-                  WhatsApp
-                </ButtonAction>
-              </div>
             </Variant>
             <Variant className="items-start" label="The gallery action">
               <GalleryButtonActionDemo />

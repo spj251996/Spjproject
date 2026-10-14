@@ -119,15 +119,10 @@ test("every section-head eyebrow takes the ornament", () => {
   }
 });
 
-test("the two deliberate exceptions stay unwrapped", () => {
+test("the deliberate exception stays unwrapped", () => {
   assert.doesNotMatch(
     readFileSync("app/_sections/invite.tsx", "utf8"),
     /SprigOrnament/,
     "the invite's eyebrow leads the hero and takes no ornament",
-  );
-  assert.doesNotMatch(
-    readFileSync("app/_sections/contact.tsx", "utf8"),
-    /SprigOrnament/,
-    "Contact is off the published page and its files go in Phase 9 — do not ornament a file with a deletion date",
   );
 });

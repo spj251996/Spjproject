@@ -51,7 +51,6 @@ export const SECTION_PLACEMENT = {
     { piece: "tall-column-a" },
     { piece: "blush-stem" },
   ],
-  contact: [{ piece: "poppy-spread" }, { piece: "cosmos-arc" }],
   family: [
     { piece: "poppy-spread" },
     { piece: "tall-column-b" },
