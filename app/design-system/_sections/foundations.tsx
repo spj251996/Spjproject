@@ -64,7 +64,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink",
         name: "ink",
         usage:
-          "Body text, names, dates, venues and addresses; the focus ring on light surfaces.",
+          "Body text, names, dates (the invite's day numeral is gold), venues and addresses; the focus ring on light surfaces.",
       },
       {
         token: "--color-ink-muted",
@@ -76,19 +76,19 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink-inverse",
         name: "ink-inverse",
         usage:
-          "Light text on a dark scrim — the design-system gallery's own preview modal (dev-only).",
+          "Light text and marks on the scrim — the photo grid and viewer's title, counter, failure message and every control, and the design-system gallery's own preview modal.",
       },
     ],
   },
   {
     label: "Accent",
-    note: "Recorded AA exception on ivory, 2.39:1 — the eyebrow, an action's label and the marks only.",
+    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam and the marks only. It falls below 3:1 on the mount (2.56:1), so the focus ring and a mark that carries meaning without a label stay ink on light surfaces; on the scrim the ring takes the inverse ring colour.",
     tokens: [
       {
         token: "--color-accent-gold",
         name: "accent-gold",
         usage:
-          "Eyebrows, dividers, an action's label and mark, portrait rims, active states.",
+          "Eyebrows, dividers, an action's label and mark, portrait rims and the couple's glow, the invite's date hairlines and day numeral, a ritual's Malayalam.",
       },
     ],
   },
@@ -237,8 +237,7 @@ const TYPE_TOKENS: TypeToken[] = [
     token: "type-body-italic",
     family: "Libre Baskerville",
     weight: 400,
-    sample:
-      "The closing sign-off's lead line, the timeline's promise line, and a ritual's tagline.",
+    sample: "The timeline's promise line and a ritual's tagline.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
     laptop: { size: 13, lh: 26 },
@@ -309,7 +308,7 @@ const SPACING_USES = [
   "space-sm to space-md · component padding",
   "space-md · viewport edge for sections without a frame",
   "space-2xl to space-3xl · between two unframed sections back to back",
-  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame)",
+  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame) — a tall card's sides below md take --tall-inline-phone (36px) instead",
 ];
 
 const LAYOUT_CAPS = [
@@ -321,7 +320,7 @@ const LAYOUT_CAPS = [
 ];
 
 const FRAME_GROUND_TIERS = [
-  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground, landscape space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md (32 · 24px) — the floor is 24 because every step above it needs a window taller than a phone",
+  "Phone · below md; any wider window below its tier line; a pair's landscape windows lg to 1280px · ground, landscape space-sm (16px), halved space-2xs (8px) · padding space-lg · space-md (32 · 24px) — the floor is 24 because every step above it needs a window taller than a phone. 16px survives as a rescue value: the frame asks whether a halved-ground card fits at 16, and whether a full-ground card fits at the 24 it shows",
   "Tablet · md to lg; touchscreen-first from lg · ground, landscape space-xl (48px), halved space-md (24px) · padding space-2xl · space-xl · space-lg (64 · 48 · 32px)",
   "Laptop · lg to xl, primary pointer not coarse · ground, landscape space-2xl (64px), halved space-lg (32px) · padding space-2xl · space-xl · space-lg · space-md (64 · 48 · 32 · 24px)",
   "Desktop · xl and up, primary pointer not coarse · ground, landscape space-3xl (96px), halved space-xl (48px) · padding space-3xl · space-2xl · space-xl · space-lg (96 · 64 · 48 · 32px)",
@@ -378,7 +377,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     token: "circle",
     radius: "9999px",
     value: "—",
-    usage: "portrait's crop; button-action's disc; the Timeline's ritual mark.",
+    usage: "portrait's crop; button-action's disc.",
   },
 ];
 
@@ -675,7 +674,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows and each ritual's Malayalam, both through sprig-ornament (Components · UI), plus Contact and the link preview card, which set it inline."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows, through sprig-ornament (Components · UI), each ritual's header line from lg up, set once as drawn, plus Contact and the link preview card, which set it inline."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -720,7 +719,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="shapes"
-        intro="One radius, on everything with corners: 3px, small enough to read as a trimmed paper corner rather than a web dialog. Circles serve three named uses and are a shape, not a step on the scale."
+        intro="One radius, on everything with corners: 3px, small enough to read as a trimmed paper corner rather than a web dialog. Circles serve two named uses and are a shape, not a step on the scale."
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"
@@ -832,7 +831,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line (once, as drawn), marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

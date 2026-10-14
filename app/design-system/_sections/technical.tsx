@@ -19,7 +19,7 @@ const VARIANT_ROUTES = [
   "/thread/stock · the same six · every card the mountless stock",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
   "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
-  "The levers it carries → Event Info (two columns on a phone, and the map action left-aligned to the venue), date-block (its colour), Timeline (the ritual's leading sprig), and accent-gold darkened toward bronze across every use at once; DESIGN.md → Iteration Notes → Open Decisions carries one row each",
+  "The one lever it carries → the family photos blended into the card: as now, blended with no rim, blended with no rim and soft lower edges, or blended with the rim. No rim drops the couple's glow as well, and the soft edge fades the photo's lower half only. DESIGN.md → Iteration Notes → Open Decisions carries its row",
 ];
 
 const TRY_IT = [

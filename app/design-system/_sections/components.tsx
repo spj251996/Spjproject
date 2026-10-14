@@ -126,7 +126,7 @@ export function ComponentsSections() {
           name="portrait"
           note="The composing section sets the diameter; the specimen borrows Family's. Set on the paper stock, whose colour fills the ring between photo and rim. The with-image sample is a generated placeholder."
           source="@/components/ui/portrait"
-          spec="circle crop · rim: stroke-divider accent-gold ring off a stroke-rim-offset paper ring · name in body, ink · relationship in caption-italic, ink-muted, drawn space-3xs up · image-placeholder fallback"
+          spec="circle crop · rim: stroke-divider accent-gold ring off a stroke-rim-offset paper ring · name in body, ink · relationship in caption-italic, ink-muted, drawn space-3xs up · glow: shadow-glow-couple outward of the rim, set by the composing section on the bride's and the groom's alone · image-placeholder fallback"
         >
           <div
             className={`flex flex-wrap gap-space-2xl bg-surface-elevated p-space-md ${PORTRAIT_SIZING}`}
@@ -141,7 +141,7 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules, on five eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's. Five call sites; SEVEN ornaments on the published page, since Event Info and Family each render theirs twice."
+          description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules, on five eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's. Five call sites; SIX ornaments on the published page, since Event Info and Family each render theirs twice and the not-found screen is not part of it."
           id="ui-sprig-ornament"
           name="sprig-ornament"
           note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow and Contact's deliberately take none: the invite's leads the hero, and Contact's files are scheduled for removal. The form is the owner's pick from six arrangements on /preview (2026-10-11). Its plain pair, which served the ritual's Malayalam, left when the rituals' header line took one leading sprig instead — see it on the page at Domain · Timeline."
@@ -160,9 +160,9 @@ export function ComponentsSections() {
           note="Each lockup here is sized by the type role it replaces, read from the token rather than copied, which is how the drawing stays on the names scale rather than on a size chosen for it — so the two specimens step at the breakpoints their roles do. The dilation is per call site and has no default (the values above copy the two sections). What a specimen cannot show: the invite switches between these two forms on orientation, and the single line grows to 5.3em at laptop and 5.8em at desktop in landscape. The names are real text to a reader — an sr-only span carries them and the drawing is aria-hidden, so the invite's h1 has an accessible name. It supersedes display-name and heading-script, both tagged [retire] along with the two __joiner selectors that share one declaration between them, and their SIZE TOKENS must outlive them because these em widths resolve against them."
           source="@/components/ui/couple-names"
           spec={[
-            "the invite's stack · 2.68em wide at phone, 2.513em from md up · dilated 1.6 units",
+            "the invite's stack · 2.59em wide at phone (40% larger than the 1.85em it replaced, owner 2026-10-14 — past the 1.872em ceiling that value was chosen inside, so the ink overruns the content box at the narrowest phones), 2.513em from md up · dilated 1.6 units",
             "Wishes' line · 3.65em at phone, 4.656em from md up · dilated 2.2 units · 6.09 : 1",
-            "the ampersand drawn 35% smaller than the trace while keeping its full layout slot — a narrower slot would render the names larger, the width being a fixed em",
+            "the ampersand drawn 35% smaller than the trace while keeping its full layout slot — a narrower slot would render the names larger, the width being a fixed em · in the stack it is lifted 24 source units above centre (AMPERSAND_LIFT)",
             "viewBox padded three stroke widths every side, or the swash tips clip flat at dpr 1 · fill currentColor, set to ink-muted INSIDE the component rather than at either call site — the invite's h1 carries text-ink and this overrides it",
           ]}
         >
@@ -228,7 +228,7 @@ export function ComponentsSections() {
           name="photo-viewer"
           note="Shown through its panel at the second of three sample images, so both previous and next show; the controls here move nothing. Swipe, the arrow keys, the slide, the fades, a tap outside and back popping one layer need the live modal — open a frame in photo-row above."
           source="@/components/ui/photo-viewer"
-          spec="the grid's scrim · one photograph fitted whole (object-contain), never cropped · counter n / N in type-action · every control a drawn mark in a 48px circle of the scrim at 60%, darkening to 85% on hover: All photos (four tiles) and Close (a cross), icon only and named for screen readers, and previous / next chevrons absent at the ends · the viewer copy only for the photograph on screen · a failed copy reads This photo couldn't load · a transparent save cover · the next photograph slides 32px in from the side it came from (duration-fast), after release · the letterbox around the fitted photograph is empty space · on touch, the first full-screen photograph of a visit nudges once toward the next"
+          spec="the grid's scrim · one photograph fitted whole (object-contain), never cropped · counter n / N in type-action · every control a drawn mark in a 48px circle of the scrim at 60%, going fully dark and growing 10% on hover and on press: All photos (four tiles) and Close (a cross), icon only and named for screen readers, and previous / next chevrons absent at the ends · the viewer copy only for the photograph on screen, with its strip copy drawn under the stage while it loads so the stage never goes dark · a failed copy reads This photo couldn't load, and a tap on its dark stage closes the viewer · a transparent save cover · the next photograph slides 32px in from the side it came from (duration-fast), after release · the letterbox around the fitted photograph is empty space · on touch, the first full-screen photograph of a visit nudges once toward the next"
         >
           <ChromeFrame height={320}>
             <PhotoViewerPanel
