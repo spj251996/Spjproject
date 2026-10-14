@@ -73,7 +73,34 @@ export function WishesSection({
               ancestor inside the stacking context. It sits after the illustration, so it paints in
               front of it. */}
           <div className={wishesStyles.figureCol}>
-            <div aria-hidden className={wishesStyles.figure} />
+            <div aria-hidden className={wishesStyles.figure}>
+              {/* A lazy <img> rather than a CSS background: a background is fetched at first paint
+                  wherever it sits, so every guest downloaded the drawing before reaching Wishes.
+                  `<picture>` keeps the AVIF-first choice `image-set` made. The span is the
+                  portraits' save cover, since an <img> offers "Save image" where a background
+                  never did; it takes its pointer events back from `.figure`, which sets none. */}
+              <picture>
+                <source
+                  srcSet="/couple/couple-1x.avif 1x, /couple/couple-2x.avif 2x"
+                  type="image/avif"
+                />
+                <source
+                  srcSet="/couple/couple-1x.webp 1x, /couple/couple-2x.webp 2x"
+                  type="image/webp"
+                />
+                <img
+                  alt=""
+                  className="block size-full object-contain"
+                  decoding="async"
+                  loading="lazy"
+                  src="/couple/couple-1x.webp"
+                />
+              </picture>
+              <span
+                aria-hidden="true"
+                className="pointer-events-auto absolute inset-0"
+              />
+            </div>
           </div>
           {thread ? <CardThread /> : null}
 

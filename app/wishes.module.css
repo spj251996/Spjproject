@@ -1,5 +1,6 @@
-/* The drawing is a background layer, not an `<img>`: it needs no alt text (decorative), and
-   `image-set` picks the right file before any byte downloads. */
+/* The drawing is a lazy `<img>` inside `<picture>` (`wishes.tsx`), not a background layer: a
+   background is fetched at first paint wherever it sits, the `<img>` only as Wishes nears the screen.
+   This box sizes it; the `<img>` fills it at `object-fit: contain`. */
 
 .figureCol {
   display: flex;
@@ -20,22 +21,12 @@
 .figure {
   width: 12.1875rem;
   aspect-ratio: var(--wishes-figure-ratio);
-  /* AVIF first, WebP behind it: the browser takes the first type it supports, so modern engines
-     fetch less than half the bytes and older ones still get a file. Only one is ever downloaded. */
-  background-image: image-set(
-    url("/couple/couple-1x.avif") type("image/avif") 1x,
-    url("/couple/couple-2x.avif") type("image/avif") 2x,
-    url("/couple/couple-1x.webp") type("image/webp") 1x,
-    url("/couple/couple-2x.webp") type("image/webp") 2x
-  );
-  background-position: center;
-  background-size: contain;
-  background-repeat: no-repeat;
   pointer-events: none;
   /* Positioned with no offsets, so it costs no layout and creates no stacking context: it is here
      only so the drawing paints in the positioned layer, where the thread's two woven copies are.
      Stacked, an unpositioned drawing would have both copies in front of it and there would be no
-     weave. Side by side (below) it is `absolute` for its own reasons and this is redundant. */
+     weave. Side by side (below) it is `absolute` for its own reasons and this is redundant. It is
+     also the box the save cover's `inset: 0` resolves against, in both layouts. */
   position: relative;
 }
 
