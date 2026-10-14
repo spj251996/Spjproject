@@ -52,14 +52,7 @@ const ORIGIN = "http://localhost:3000";
 const NAV = 20000;
 const SETTLE = 350;
 
-const SECTIONS = [
-  "invite",
-  "event-info",
-  "contact",
-  "family",
-  "celebrations",
-  "wishes",
-];
+const SECTIONS = ["invite", "event-info", "family", "celebrations", "wishes"];
 /* `not-found` was a member here until 2026-10-08 and is deliberately gone. It is a separate ROUTE, not a
    section on this page, and its own thread was retired (DESIGN.md -> Domain Components -> Not found), so
    this gate spent every run reporting `MISSING #not-found` for an element removed on purpose -- 48 lines

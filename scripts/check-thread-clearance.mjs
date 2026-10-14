@@ -93,7 +93,6 @@ function sectionSelectorFor(sectionId) {
 const SECTION_IDS = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",

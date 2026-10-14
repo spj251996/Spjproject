@@ -5,7 +5,6 @@ import test from "node:test";
 const SECTION_NAMES = [
   "InviteSection",
   "EventInfoSection",
-  "ContactSection",
   "FamilySection",
   "CelebrationsSection",
   "WishesSection",

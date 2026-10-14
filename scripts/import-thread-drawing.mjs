@@ -34,6 +34,9 @@ const VIEWPORT = {
   tall: { width: 393, height: 700 },
   upright: { width: 820, height: 1180 },
 };
+/* The SHEETS' section order, which still carries Contact: the drawn sheets predate its retirement
+ * (2026-10-14), and this indexes their own `geometry.json`. A sheet drawn against the five-section
+ * page drops it here. `build-thread-paths.mjs` removes Contact from the imported data in code. */
 const SECTION_ORDER = [
   "invite",
   "event-info",

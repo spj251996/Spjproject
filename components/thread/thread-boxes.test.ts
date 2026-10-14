@@ -7,7 +7,6 @@ import type { ThreadId } from "./thread-geometry.ts";
 const SECTIONS: readonly ThreadId[] = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
@@ -35,7 +34,7 @@ test("invite keeps the wide band's own nominal height", () => {
   assert.equal(box.height, 695);
 });
 
-test("every band carries a measured box for all six sections", () => {
+test("every band carries a measured box for all five sections", () => {
   for (const band of THREAD_BANDS) {
     for (const id of SECTIONS) {
       const box = sectionBox(id, band.id);
@@ -60,7 +59,6 @@ test("the measured heights match the render exactly", () => {
     width: 393,
     height: 1400,
   });
-  assert.deepEqual(sectionBox("contact", "tall"), { width: 393, height: 700 });
   assert.deepEqual(sectionBox("family", "tall"), { width: 393, height: 1400 });
   assert.deepEqual(sectionBox("celebrations", "tall"), {
     width: 393,
@@ -75,10 +73,6 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("event-info", "upright"), {
     width: 820,
     height: 2360,
-  });
-  assert.deepEqual(sectionBox("contact", "upright"), {
-    width: 820,
-    height: 1180,
   });
   assert.deepEqual(sectionBox("family", "upright"), {
     width: 820,
@@ -98,7 +92,6 @@ test("the measured heights match the render exactly", () => {
     width: 1536,
     height: 695,
   });
-  assert.deepEqual(sectionBox("contact", "wide"), { width: 1536, height: 695 });
   assert.deepEqual(sectionBox("family", "wide"), { width: 1536, height: 695 });
   assert.deepEqual(sectionBox("celebrations", "wide"), {
     width: 1536,

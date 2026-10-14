@@ -11,13 +11,12 @@ import type { ThreadId } from "./thread-geometry.ts";
 const SECTIONS: readonly ThreadId[] = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
 ];
 
-test("every band carries an authored card for all six sections", () => {
+test("every band carries an authored card for all five sections", () => {
   for (const band of THREAD_BANDS) {
     for (const id of SECTIONS) {
       const card = authoredCard(id, band.id);
@@ -61,11 +60,6 @@ test("tall band's authored cards, measured on the real render at 393x700", () =>
     cardWidth: 361,
     cardLeft: 16,
     sectionHeight: 1400,
-  });
-  assert.deepEqual(authoredCard("contact", "tall"), {
-    cardWidth: 361,
-    cardLeft: 16,
-    sectionHeight: 700,
   });
   assert.deepEqual(authoredCard("family", "tall"), {
     cardWidth: 361,

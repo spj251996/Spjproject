@@ -15,7 +15,6 @@ export type MotifId =
 export type ThreadId =
   | "invite"
   | "event-info"
-  | "contact"
   | "family"
   | "celebrations"
   | "wishes"

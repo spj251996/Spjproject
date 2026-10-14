@@ -1,7 +1,8 @@
-/* Re-measures each section's own rect height at the three band nominals, on the LAB route, because
-   `/` no longer carries Contact and `thread-boxes.ts` records its height too.
+/* Re-measures each section's own rect height at the three band nominals, on the LAB route — the
+   route the thread's constants describe. Both routes compose the same five sections since Contact
+   was retired (2026-10-14), so `/` would read the same heights.
 
-   `getBoundingClientRect().height`, never `scrollHeight` — the two disagree by 200px+ on `contact`,
+   `getBoundingClientRect().height`, never `scrollHeight` — the two disagreed by 200px+ on the retired `contact`,
    and the rect is what the committed constants came from.
 
    The URL carries `.html` deliberately: a plain static server serves literal paths, and under
@@ -16,14 +17,7 @@ const BANDS = [
   { id: "upright", width: 820, height: 1180 },
   { id: "wide", width: 1536, height: 695 },
 ];
-const IDS = [
-  "invite",
-  "event-info",
-  "contact",
-  "family",
-  "celebrations",
-  "wishes",
-];
+const IDS = ["invite", "event-info", "family", "celebrations", "wishes"];
 
 const browser = await chromium.launch({ channel: "chromium" });
 const out = {};

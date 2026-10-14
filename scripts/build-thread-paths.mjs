@@ -15,6 +15,9 @@
  * page-end (before the first motif, after the last) is left with no forced tangent at all, which
  * the drawn sheet leaves loose on purpose.
  *
+ * CONTACT IS REMOVED IN CODE, not in the sheets (2026-10-14): `thread-without-section.mjs` drops its
+ * section and joins Event Info's last connector to Family's first, machine-made until the redraw.
+ *
  * RUN ONCE PER DRAWING UPDATE, and committed rather than kept as scratch (2026-10-11). It lived
  * in gitignored `tmp/` until then, alongside the only copy of the authored JSON it reads — which
  * meant `components/thread/thread-paths.ts` was a committed generated file that a fresh clone
@@ -31,8 +34,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { MOTIFS } from "../components/thread/thread-motifs.ts";
 import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
+import { withoutSection } from "./thread-without-section.mjs";
 
-const SECTION_ORDER = [
+/* The sheets' own section order — what the owner drew against, Contact included. */
+const AUTHORED_ORDER = [
   "invite",
   "event-info",
   "contact",
@@ -40,6 +45,18 @@ const SECTION_ORDER = [
   "celebrations",
   "wishes",
 ];
+
+/* Contact was retired from every route (owner, 2026-10-14), so it is removed from each band's data
+   before anything is fitted, and the thread joins Event Info to Family across the gap in code
+   (`thread-without-section.mjs`). The redraw replaces that join with a drawn one. */
+const SECTION_ORDER = AUTHORED_ORDER.filter((id) => id !== "contact");
+
+/* The drawn points within this many px of the seam are dropped on both sides, so the spline crosses
+   it mid-span instead of turning at a vertex. With none dropped, `tall`'s join kinked 12.6 degrees
+   (the drawing hooks left into Contact and right out of it); measured per band at 20 / 40 / 60 / 80px
+   it read 10.0 / 2.3 / 1.5 / 0.1 at `tall`, and 40 is the least that puts every band's join inside
+   the 5.6-degree worst of the DRAWN joins (2.3 / 1.4 / 0.3). */
+const SEAM_MARGIN = 40;
 
 const DIRS = {
   wide: "assets/thread/wide",
@@ -218,11 +235,14 @@ function shiftPathY(d, dy) {
 
 function buildBand(band, dir) {
   const geometry = JSON.parse(readFileSync(`${dir}/geometry.json`, "utf8"));
-  const attachments = JSON.parse(
-    readFileSync(`${dir}/attachments.json`, "utf8"),
-  );
-  const connectors = JSON.parse(readFileSync(`${dir}/connectors.json`, "utf8"));
-  const sections = geometry.sections;
+  const { sections, attachments, connectors } = withoutSection({
+    sections: geometry.sections,
+    attachments: JSON.parse(readFileSync(`${dir}/attachments.json`, "utf8")),
+    connectors: JSON.parse(readFileSync(`${dir}/connectors.json`, "utf8")),
+    order: AUTHORED_ORDER,
+    id: "contact",
+    margin: SEAM_MARGIN,
+  });
   const reach = Math.max(20, Math.round(geometry.width / 34));
 
   /* Each motif INSTANCE, in page order — family's two `portraitLoop`s are two separate instances,

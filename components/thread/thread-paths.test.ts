@@ -11,7 +11,6 @@ import { MOTIF_PLACEMENTS, THREAD_PATHS } from "./thread-paths.ts";
 const SECTION_MOTIF_COUNT: Record<Exclude<ThreadId, "not-found">, number> = {
   invite: 1,
   "event-info": 2,
-  contact: 1,
   family: 2,
   celebrations: 1,
   wishes: 1,
@@ -222,11 +221,12 @@ const REACH = 10;
    without losing the separation that matters: forcing `TERMINAL_TANGENT` measured 13-80 degrees
    off at this SAME reach on at least one boundary in every band, comfortably outside this floor.
 
-   HEADROOM, MEASURED 2026-10-07. On the authored routes as they stand the worst join is **7.4
-   degrees at `tall` contact/family and 6.2 at `upright`**, so this bound has a little under 3
-   degrees of room.
+   HEADROOM, MEASURED 2026-10-14, after Contact was removed and Event Info joined to Family in code:
+   the worst join is **5.6 degrees at `tall` family/celebrations**, and the machine-made join reads
+   2.3 / 1.4 / 0.3 at `tall` / `upright` / `wide` (`build-thread-paths.mjs` → `SEAM_MARGIN`). On
+   2026-10-07 it was 7.4 at `tall` contact/family, a join that no longer exists.
    Worth knowing if span bounding is ever tried again (`boundSpans`, off by default — the owner
-   rejected its look): turning it on at 40 moved those two to **8.8 and 8.3** while improving every
+   rejected its look): turning it on at 40 moved the two worst joins of 2026-10-07 to **8.8 and 8.3** while improving every
    other join, because a curve bounded to even spans hugs the drawn polyline instead of bowing past
    it, so a corner drawn near that boundary turns inside this test's 10px reach. That is the fit
    working, not a defect — but it leaves about 1 degree of room, so re-record these figures rather
@@ -258,7 +258,6 @@ function angleDiff(a: number, b: number): number {
 const SECTION_ORDER: Exclude<ThreadId, "not-found">[] = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",

@@ -17,7 +17,7 @@ const LAB_ROOTS = 3;
 
 /* `sections: true` marks a route that composes `app/_sections/index.tsx`. The not-found rows below do
  * NOT: that screen is its own route with its own frame, botanical, eyebrow, heading and action, and it
- * composes none of the six sections. The flag lives on the row rather than in a parallel list so that
+ * composes none of the five sections. The flag lives on the row rather than in a parallel list so that
  * adding a route sets it in the same object literal -- and it is a flag rather than a filter on the
  * path, because a filter would silently re-include the next not-found-shaped route. */
 const EXPECTED = [
@@ -27,12 +27,6 @@ const EXPECTED = [
     label: "/ (published)",
     sections: true,
     stockPaint: false,
-    /* Contact is off the published page but still on every lab route, because `contact` is in
-     * `THREAD_IDS` and the thread refuses to measure a page whose section count disagrees with it.
-     * The check after the loop below asserts an omitted id is still present SOMEWHERE -- an id
-     * omitted everywhere is the dropped-section failure this half of the gate exists to catch, and
-     * without it adding a name here would be a way to hide one. */
-    omits: ["contact"],
   },
   {
     sections: true,
@@ -72,9 +66,6 @@ const EXPECTED = [
     roots: 0,
     label: "/preview (the couple's review)",
     stockPaint: false,
-    /* It renders `app/page.tsx`, which passes `contact={false}`, so it omits exactly what `/`
-     * omits. */
-    omits: ["contact"],
   },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
    * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
@@ -109,23 +100,23 @@ const SECTION_COMPONENTS = [
   ),
 ].map((m) => m[1]);
 
-/* Six. This list was five under a comment saying `invite` carried no `id`; `29b2c52` gave it one, and
- * that comment's own instruction was that a sixth id appearing is the prompt to add it here. Adding it
- * widens this gate to a section it had never checked. */
+/* Five, one per section every route composes. `invite` joined when `29b2c52` gave it an `id`, which
+ * widened this gate to a section it had never checked; `contact` left when the section was retired
+ * from every route (2026-10-14) and is asserted ABSENT below instead. */
 const SECTION_IDS = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
 ];
+const RETIRED_SECTION_IDS = ["contact"];
 
 let failed = false;
 
-if (SECTION_COMPONENTS.length !== 6) {
+if (SECTION_COMPONENTS.length !== 5) {
   console.error(
-    `FAIL: expected six sections in app/_sections/index.tsx, found ${SECTION_COMPONENTS.length} [${SECTION_COMPONENTS}] -- re-anchor this gate`,
+    `FAIL: expected five sections in app/_sections/index.tsx, found ${SECTION_COMPONENTS.length} [${SECTION_COMPONENTS}] -- re-anchor this gate`,
   );
   failed = true;
 }
@@ -167,7 +158,7 @@ if (existsSync(CSS_DIR)) {
   failed = true;
 }
 
-for (const { path, roots, label, sections, stockPaint, omits } of EXPECTED) {
+for (const { path, roots, label, sections, stockPaint } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -191,7 +182,7 @@ for (const { path, roots, label, sections, stockPaint, omits } of EXPECTED) {
   }
 
   if (!sections) continue;
-  const expectedIds = SECTION_IDS.filter((id) => !(omits ?? []).includes(id));
+  const expectedIds = SECTION_IDS;
   const missing = expectedIds.filter((id) => !html.includes(`id="${id}"`));
   const present = expectedIds.length - missing.length;
   const allThere = missing.length === 0;
@@ -200,28 +191,16 @@ for (const { path, roots, label, sections, stockPaint, omits } of EXPECTED) {
   );
   if (!allThere) failed = true;
 
-  /* An omitted id must be ABSENT, not merely unchecked. Without this, a section that stopped
-   * rendering on the route that omits it would read the same as one deliberately left off. */
-  const strays = (omits ?? []).filter((id) => html.includes(`id="${id}"`));
+  /* A retired section must be ABSENT, not merely unchecked — a stray render of one would otherwise
+   * read the same as its removal. */
+  const strays = RETIRED_SECTION_IDS.filter((id) =>
+    html.includes(`id="${id}"`),
+  );
   if (strays.length > 0) {
-    console.error(
-      `FAIL ${label}: [${strays}] marked omitted but present in the export`,
-    );
+    console.error(`FAIL ${label}: retired [${strays}] is still in the export`);
     failed = true;
   }
 }
-
-/* AN ID OMITTED FROM EVERY ROUTE IS A DROPPED SECTION, NOT AN OMISSION. Without this, adding a name
- * to one route's `omits` and losing it from the build entirely would read as a pass -- which is the
- * exact failure the section-presence half of this gate was added to catch. */
-const sectionRoutes = EXPECTED.filter((route) => route.sections);
-const omittedEverywhere = SECTION_IDS.filter((id) =>
-  sectionRoutes.every((route) => (route.omits ?? []).includes(id)),
-);
-console.log(
-  `${omittedEverywhere.length === 0 ? "ok  " : "FAIL"} every documented section is present on at least one route${omittedEverywhere.length === 0 ? "" : ` -- [${omittedEverywhere}] omitted everywhere`}`,
-);
-if (omittedEverywhere.length > 0) failed = true;
 for (const path of FORBIDDEN) {
   if (existsSync(path)) {
     console.error(`FAIL: ${path} must not be in the export`);

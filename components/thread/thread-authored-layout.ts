@@ -32,7 +32,6 @@ type Sections = Record<Exclude<ThreadId, "not-found">, AuthoredCard>;
 const TALL_CARDS: Sections = {
   invite: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
   "event-info": { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },
-  contact: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
   family: { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },
   // Celebrations takes `mounted-sheet`'s `tall` mode (no measured fit), so its padding chain is
   // its own and its card is narrower than every fitted section's at this band.
@@ -55,7 +54,6 @@ const TALL_CARDS: Sections = {
 const UPRIGHT_CARDS: Sections = {
   invite: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
   "event-info": { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
-  contact: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
   family: { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
      `document.fonts.ready` and every image complete. The real five-ritual section replaced the
@@ -76,7 +74,6 @@ const UPRIGHT_CARDS: Sections = {
 const WIDE_CARDS: Sections = {
   invite: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   "event-info": { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
-  contact: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   family: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
      `document.fonts.ready` and every image complete. The real five-ritual section replaced the

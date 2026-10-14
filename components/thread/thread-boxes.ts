@@ -10,7 +10,8 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
    2026-10-07: at each band's nominal box the rect reproduces the recorded `contact` and `wishes`
    figures (700 / 1180 / 695) exactly, while `scrollHeight` reads 909 / 1415 / 695 for `contact` —
    so these constants were taken from the rect, whatever this comment used to say. Validate any
-   re-measure against those two sections before trusting a new number for a third.
+   re-measure against `wishes` (700 / 1180 / 695) before trusting a new number — `contact` was the
+   second check until it was retired from every route (2026-10-14).
 
    A band-wide box was wrong because a section's height is not the band's: the paired sections
    (Event Info, Family) stack in portrait, so they run roughly 2x a single card's height, and
@@ -36,7 +37,6 @@ const TALL_HEIGHTS: SectionHeights = {
   /* Two screens again since 2026-10-14: the frame now presses a window the full ground cannot hold
      (`mounted-sheet-frame-css.ts` → `windowFits`), where the stacked pair had overrun by 4.5-10.5px. */
   "event-info": 1400,
-  contact: 700,
   family: 1400,
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
      `document.fonts.ready` and every image complete. The real five-ritual section replaced the
@@ -67,7 +67,6 @@ const TALL_HEIGHTS: SectionHeights = {
 const UPRIGHT_HEIGHTS: SectionHeights = {
   invite: 1180,
   "event-info": 2360,
-  contact: 1180,
   family: 2360,
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
      `document.fonts.ready` and every image complete. The real five-ritual section replaced the
@@ -88,7 +87,6 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
 const WIDE_HEIGHTS: SectionHeights = {
   invite: 695,
   "event-info": 695,
-  contact: 695,
   family: 695,
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
      `document.fonts.ready` and every image complete. The real five-ritual section replaced the
