@@ -102,13 +102,31 @@ function InvitePassage() {
         />
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
             hold it, and the card's own content width is the only limit that should apply. */}
-        <p className="type-caption text-ink-muted text-balance">
-          {invite.passage}
-        </p>
-        {/* The dash is chrome, not content — the citation itself is the reference alone. */}
-        <p className="type-caption-italic text-ink-muted mt-space-3xs">
-          {`\u2014 ${invite.passageAttribution}`}
-        </p>
+        {/* Two passages, one per device class (owner, 2026-10-14): phones and tablets read the
+            handheld one, laptops and desktops the other. `display: contents` keeps each pair's two
+            lines as items of this column, and the pair not shown is `display: none`, so it is
+            neither measured by `inviteFit` nor read twice. The swap is width alone, at
+            `{breakpoints.lg}` — the width tier `measure:fit` sweeps on either side of. */}
+        {[
+          {
+            show: "contents lg:hidden",
+            text: invite.handheldPassage,
+            cite: invite.handheldPassageAttribution,
+          },
+          {
+            show: "hidden lg:contents",
+            text: invite.passage,
+            cite: invite.passageAttribution,
+          },
+        ].map(({ show, text, cite }) => (
+          <div className={show} key={cite}>
+            <p className="type-caption text-ink-muted text-balance">{text}</p>
+            {/* The dash is chrome, not content — the citation itself is the reference alone. */}
+            <p className="type-caption-italic text-ink-muted mt-space-3xs">
+              {`\u2014 ${cite}`}
+            </p>
+          </div>
+        ))}
       </div>
     </>
   );

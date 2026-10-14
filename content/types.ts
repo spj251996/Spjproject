@@ -72,14 +72,21 @@ export interface FamilyGroup {
 
 export interface InviteContent {
   coupleNames: string;
-  /** The passage set off from the rest of the invite by the ornamental divider. */
+  /** The passage set off from the rest of the invite by the ornamental divider — laptops and desktops. */
   passage: string;
   passageAttribution: string;
+  /** The passage phones and tablets read instead (owner, 2026-10-14). */
+  handheldPassage: string;
+  handheldPassageAttribution: string;
 }
 
 export interface WishesContent {
+  /** Laptops and desktops. */
   passage: string;
   passageAttribution: string;
+  /** The passage phones and tablets read instead (owner, 2026-10-14). */
+  handheldPassage: string;
+  handheldPassageAttribution: string;
   coupleNames: string;
   /** The sign-off's opening line; its names follow in `wishesLine`. */
   wishesLead: string;

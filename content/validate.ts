@@ -257,12 +257,22 @@ export function validateInvite(invite: InviteContent): InviteContent {
   required(invite.coupleNames, "invite.coupleNames");
   required(invite.passage, "invite.passage");
   required(invite.passageAttribution, "invite.passageAttribution");
+  required(invite.handheldPassage, "invite.handheldPassage");
+  required(
+    invite.handheldPassageAttribution,
+    "invite.handheldPassageAttribution",
+  );
   return invite;
 }
 
 export function validateWishes(wishes: WishesContent): WishesContent {
   required(wishes.passage, "wishes.passage");
   required(wishes.passageAttribution, "wishes.passageAttribution");
+  required(wishes.handheldPassage, "wishes.handheldPassage");
+  required(
+    wishes.handheldPassageAttribution,
+    "wishes.handheldPassageAttribution",
+  );
   required(wishes.coupleNames, "wishes.coupleNames");
   required(wishes.wishesLead, "wishes.wishesLead");
   required(wishes.wishesLine, "wishes.wishesLine");

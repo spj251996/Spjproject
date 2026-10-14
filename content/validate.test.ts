@@ -73,11 +73,15 @@ const invite: InviteContent = {
   coupleNames: "A & B",
   passage: "Text.",
   passageAttribution: "Book 1:1",
+  handheldPassage: "Short.",
+  handheldPassageAttribution: "Book 2:2",
 };
 
 const wishes: WishesContent = {
   passage: "Text.",
   passageAttribution: "Book 1:1",
+  handheldPassage: "Short.",
+  handheldPassageAttribution: "Book 2:2",
   coupleNames: "A & B",
   wishesLead: "With love",
   wishesLine: "Best compliments from C.",
@@ -338,6 +342,8 @@ test("validateWishes rejects a missing sign-off lead", () => {
       validateWishes({
         passage: "Charity suffereth long.",
         passageAttribution: "1 Corinthians 13:4",
+        handheldPassage: "Two are better than one.",
+        handheldPassageAttribution: "Ecclesiastes 4:9",
         coupleNames: "Flemy & Sebastian",
         wishesLead: "",
         wishesLine: "Marietta Joseph, Harry William & Amal Roy",
@@ -429,5 +435,24 @@ test("accepts an E.164 number at both length bounds", () => {
       contact({ phone: "+123456789012345" }),
       contactPair()[1],
     ]),
+  );
+});
+
+test("each section's handheld passage is required, and so is its attribution", () => {
+  assert.throws(
+    () => validateInvite({ ...invite, handheldPassage: " " }),
+    /invite\.handheldPassage must not be empty/,
+  );
+  assert.throws(
+    () => validateInvite({ ...invite, handheldPassageAttribution: "" }),
+    /invite\.handheldPassageAttribution must not be empty/,
+  );
+  assert.throws(
+    () => validateWishes({ ...wishes, handheldPassage: "" }),
+    /wishes\.handheldPassage must not be empty/,
+  );
+  assert.throws(
+    () => validateWishes({ ...wishes, handheldPassageAttribution: " " }),
+    /wishes\.handheldPassageAttribution must not be empty/,
   );
 });

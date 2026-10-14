@@ -44,12 +44,29 @@ export function WishesSection({
           {/* This gap and the two below halve at phone, with `.figureCol`'s in `wishes.module.css`
               — the fourth of the same four, where the reason is written. */}
           <div className="mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-md [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-lg flex w-full flex-col items-center text-center">
-            <p className="type-body text-pretty">{wishes.passage}</p>
-            {/* The dash is chrome, not content — the citation itself is the reference alone, the
-                same treatment the invite's citation gets. */}
-            <p className="type-caption-italic text-ink-muted mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
-              {`— ${wishes.passageAttribution}`}
-            </p>
+            {/* Two passages, one per device class, swapped at `{breakpoints.lg}` exactly as the
+                invite's are — see `InvitePassage` for why each pair is `contents` or `none`. */}
+            {[
+              {
+                show: "contents lg:hidden",
+                text: wishes.handheldPassage,
+                cite: wishes.handheldPassageAttribution,
+              },
+              {
+                show: "hidden lg:contents",
+                text: wishes.passage,
+                cite: wishes.passageAttribution,
+              },
+            ].map(({ show, text, cite }) => (
+              <div className={show} key={cite}>
+                <p className="type-body text-pretty">{text}</p>
+                {/* The dash is chrome, not content — the citation itself is the reference alone,
+                    the same treatment the invite's citation gets. */}
+                <p className="type-caption-italic text-ink-muted mt-space-xs [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-sm [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-md">
+                  {`— ${cite}`}
+                </p>
+              </div>
+            ))}
           </div>
 
           {/* Wishes' own stretch of the thread, and the one reason it is mounted inside a card rather

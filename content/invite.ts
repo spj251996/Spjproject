@@ -6,4 +6,6 @@ export const invite: InviteContent = validateInvite({
   passage:
     "with all humility and gentleness, with patience, bearing with one another in love.",
   passageAttribution: "Ephesians 4:2",
+  handheldPassage: "I have found the one whom my soul loves",
+  handheldPassageAttribution: "Song of Solomon 3:4",
 });
