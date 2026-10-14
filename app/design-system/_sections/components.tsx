@@ -223,9 +223,9 @@ export function ComponentsSections() {
         name="scroll-progress"
         note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab routes carry none and keep the thread as their cue. Height and glow are provisional until the owner's pick on /preview."
         source="@/components/ui/scroll-progress"
-        spec="track --progress-track, ink at 10% · --progress-height (3px) · fill --progress-fill, thread-red → thread-vermilion at 82% → thread-core at the leading edge · glow --progress-glow, the thread's vermilion · fixed at the top, z --z-progress (45), under the gallery's scrim · fill = share of the page scrolled, clamped 0–1, exactly 1 at the last scroll position, a page with nothing to scroll reads as full, no transition · the track is server-rendered, so it shows with no script · the track arrives as the opening's last beat at --opening-type-end · aria-hidden, never focusable, unchanged under reduced motion"
+        spec="track --progress-track, ink at 10% · --progress-height, 2px on a phone and 3px from md up · fill --progress-fill, thread-red → thread-vermilion at 82% → thread-core at the leading edge · glow --progress-glow, the thread's vermilion · fixed at the top, z --z-progress (45), under the gallery's scrim · fill = share of the page scrolled, clamped 0–1, exactly 1 at the last scroll position, a page with nothing to scroll reads as full, no transition · the track is server-rendered, so it shows with no script · the track arrives as the opening's last beat at --opening-type-end · aria-hidden, never focusable, unchanged under reduced motion"
       >
-        {/* 48px: gallery layout constant, a strip tall enough to read the 3px bar against. */}
+        {/* 48px: gallery layout constant, a strip tall enough to read the progress line against. */}
         <ChromeFrame ariaHidden height={48}>
           <ScrollProgress />
         </ChromeFrame>
