@@ -1,7 +1,6 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import {
-  Corinthia,
   Libre_Baskerville,
   Noto_Serif_Malayalam,
   Playfair_Display,
@@ -9,16 +8,8 @@ import {
 import { CoupleNamesSymbol, SprigSymbol } from "@/components/icons";
 import "./globals.css";
 
-/* Corinthia and Libre Baskerville ship as static faces and need explicit weights; Playfair Display
-   is variable, so omitting `weight` loads the whole axis. */
-
-const script = Corinthia({
-  variable: "--font-script",
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-  fallback: ["cursive"],
-});
+/* Libre Baskerville ships as static faces and needs explicit weights; Playfair Display is variable,
+   so omitting `weight` loads the whole axis. */
 
 const serif = Playfair_Display({
   variable: "--font-serif",
@@ -115,8 +106,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: SITE_URL,
     /* Split from the document title deliberately: "…are getting married" is a good preview headline
-       and a clumsy browser-tab label. The card above it already carries the names in the script
-       face, so the title carries the occasion and the description carries the date and the town —
+       and a clumsy browser-tab label. The card above it already carries the couple's drawn names, so the title carries the occasion and the description carries the date and the town —
        together the pair holds names, date and city (PROJECT.md → Link Sharing) with nothing said
        twice. The card shows the state; this says the town the card omits. */
     title: "Sebastian & Flemy are getting married",
@@ -136,7 +126,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${script.variable} ${serif.variable} ${sans.variable} ${malayalam.variable} h-full antialiased`}
+      className={`${serif.variable} ${sans.variable} ${malayalam.variable} h-full antialiased`}
       /* `SKIP_OPENING_WHEN_SCROLLED` above sets `data-opening-skipped` on this element before React
          hydrates, so the server's markup and the client's differ by that one attribute and React's
          development build reports a mismatch on every scrolled reload. Production is silent — React

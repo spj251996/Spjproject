@@ -1,9 +1,8 @@
 import type { ReactElement } from "react";
 
 /* THE COUPLE'S NAMES AS DRAWN GEOMETRY, placing the three word-groups that
-   `components/icons/couple-names-symbol.tsx` defines. It supersedes `type-display-name` at the
-   invite and `type-heading-script` at Wishes; both roles stay in the tree as `/preview`'s lever-2
-   alternate until the couple choose.
+   `components/icons/couple-names-symbol.tsx` defines. It replaced the typeset names at the invite
+   and at Wishes; their two script roles and the script face were retired on 2026-10-14.
 
    MEASURED INK OF EACH GROUP, in the source file's own viewBox units (scripts/measure-couple-names-bbox.mjs, a
    real engine). `x`/`y` are where the group sits in the SOURCE box, which is what makes the stacked
@@ -62,7 +61,7 @@ const AMPERSAND_SCALE = 0.65;
    is here rather than at the call site so the lever stays one figure in the units everything else
    on this component uses. */
 
-/* WIDTHS ARE SET IN `em` OF THE CALL SITE'S OWN TYPE ROLE, in the class literals below — which is
+/* WIDTHS ARE SET IN `em` OF THE CALL SITE'S OWN SIZE TOKEN, in the class literals below — which is
    how the asset inherits the names scale the owner settled rather than taking a size chosen here.
    Both figures are MEASURED, not picked: today's lockup renders 236.2px wide at
    `--text-display-name`'s 94px and 276.4px at its 110px, which is **2.513em** at both, because
@@ -77,8 +76,8 @@ const AMPERSAND_SCALE = 0.65;
    windows here as they do there, and a landscape phone is not caught by either. One change
    reaches BOTH call sites, because both render this same lockup.
    THE CONSEQUENCE TO CARRY: the asset's SIZE still comes from `--text-display-name` and
-   `--text-heading-script`, so those TOKENS outlive the ROLES that are retiring. Phase 9 must not
-   sweep them with the classes.
+   `--text-heading-script`, so those TOKENS outlived the ROLES, and the asset is now their only
+   reader.
 
    THE STACKED PHONE LOCKUP IS 2.59em SINCE 2026-10-14 — 40% larger than the 1.85em below, the owner
    stepping back from the 45% (2.68em) of 2026-10-11 so the invite fits one phone screen. It still

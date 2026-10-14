@@ -10,13 +10,6 @@ export function eventById(id: string) {
   return found;
 }
 
-/* The type role needs the names as separate spans. The split is presentation, so it lives here
-   rather than in content; anything but two parts falls back to the whole string. */
-export function splitCoupleNames(coupleNames: string): [string, string] | null {
-  const parts = coupleNames.split(" & ");
-  return parts.length === 2 ? [parts[0], parts[1]] : null;
-}
-
 /* The event sheets' date line, and now their only one: the invite composes its own date as a block
    (`InviteDate`), which is a bare numeral rather than a line with a raised ordinal.
 

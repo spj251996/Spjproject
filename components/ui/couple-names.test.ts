@@ -84,7 +84,7 @@ test("the single-line layout's box is the sum of its parts", () => {
   );
 });
 
-/* The two widths are `em` of the call site's own role, which is what keeps the asset on the names
+/* The two widths are `em` of the call site's own size token, which is what keeps the asset on the names
    scale the owner settled in Half 1 rather than on a size chosen in this component. Both are
    measured against the lockup being replaced — 236.2px at 94px and 276.4px at 110px for the stack,
    260.8 / 335.2 / 298px at 56 / 72 / 64px for the line — so a drifted literal silently resizes the
@@ -232,34 +232,4 @@ test("the invite's h1 holds the asset and is still the page's only h1", () => {
     asset !== -1 && asset < close,
     "the asset must sit INSIDE the h1, not beside it",
   );
-});
-
-test("the typeset markup is still hidden, and is now dead rather than pending", () => {
-  /* THE NAMES LEVER WAS DROPPED, NOT DECIDED (owner, 2026-10-10: ship only drawn, no options), so
-     this markup has no consumer on any route from that moment. It stays in the tree and stays
-     HIDDEN — `app/couple-names.css`'s `display: none` is now the only thing keeping it off the
-     page, where before `/preview` un-hid it — and `scripts/retire-register.mjs` carries both it
-     and `splitCoupleNames` as `unused`, which is what schedules the deletion rather than leaving
-     it to look like a pending answer.
-     THE HIDE AND THE MARKUP MUST GO TOGETHER. Removing the stylesheet alone would PAINT both the
-     drawn asset and the typeset script at once, which is why neither span is registered
-     separately and why this test asserts the pair rather than either half. */
-  for (const file of ["app/_sections/invite.tsx", "app/_sections/wishes.tsx"]) {
-    const src = readFileSync(file, "utf8");
-    assert.match(src, /data-names-alt/, `${file} lost its alternate's marker`);
-    assert.match(
-      src,
-      /@\/app\/couple-names\.css/,
-      `${file} renders the alternate without importing the rule that hides it`,
-    );
-  }
-  assert.match(
-    readFileSync("app/couple-names.css", "utf8"),
-    /\[data-names-alt\][^{]*\{[^}]*display:\s*none/,
-    "app/couple-names.css must hide the alternate on the published page",
-  );
-  /* That nothing UN-hides it any more is `app/preview/preview.css`'s business and is asserted in
-     `app/preview/preview-route.test.ts`, which owns that file. Reading a route-scoped stylesheet
-     from here would make this test depend on a file that need not exist — and it would throw
-     rather than skip at any commit before the route lands. */
 });

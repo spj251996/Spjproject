@@ -152,13 +152,12 @@ async function ensureDevServer() {
 function sweepScript(cssSelector, mutateContent) {
   const selectorLiteral = JSON.stringify(cssSelector);
   /* THE FALSIFICATION MOVED OFF THE COUPLE'S NAMES, and what it was measuring is the reason.
-     It used to lengthen `h1.type-display-name`'s text behind an `if (heading)` guard. That
-     selector still matches — the role stays on the `<h1>` to carry the drawn asset's `em` — so
-     the check still reports a difference, which is exactly why it had to be looked at rather than
+     It used to lengthen the invite `<h1>`'s text behind an `if (heading)` guard (the selector
+     named the script role, retired 2026-10-14). That check still reported a difference, which is exactly why it had to be looked at rather than
      trusted: it reports one by REPLACING the asset with text, since `textContent +=` rewrites the
      heading's children, and not by lengthening a name.
      MEASURED, with the asset in place: lengthening the names changes the emitted fit by NOTHING.
-     The asset's width is `em` of the heading's own role, so the string's length cannot reach the
+     The asset's width is `em` of the heading's own size token, so the string's length cannot reach the
      layout at all. So the property the old mutation claimed — "the sweep notices longer names" —
      is gone, while the mutation kept passing for an unrelated reason.
      The invitation's own sentence is real text whose length genuinely drives wrapping and so the

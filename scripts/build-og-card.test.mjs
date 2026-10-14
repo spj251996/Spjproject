@@ -19,15 +19,14 @@ const SYMBOL =
 
 const INVITE_RUN =
   '<p class="type-eyebrow">By God’s Grace</p>' +
-  '<h1 class="type-display-name text-ink mt-space-lg"><span>Sebastian</span>' +
-  '<span class="type-display-name__joiner"> &amp; </span><span>Flemy</span></h1>' +
+  '<h1 class="text-(length:--text-display-name) text-ink mt-space-lg"><span class="sr-only">Sebastian &amp; Flemy</span></h1>' +
   '<p class="type-body text-ink-muted mt-space-3xs" data-invite-line="true">joyfully invite you to share in the celebration of their wedding</p>' +
   '<p class="type-date-primary text-ink mt-space-lg md:mt-space-3xs [@media(width&gt;=64rem)_and_(orientation:portrait)]:mt-space-lg [@media(width&gt;=64rem)_and_(orientation:landscape)]:mt-space-sm">' +
   '<time dateTime="2027-01-09">9<span class="type-caption type-date-ordinal align-super">th</span> January 2027</time></p>' +
   '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Kerala</p>';
 
 const PAGE =
-  '<html lang="en" class="corinthia_x__variable playfair_y__variable h-full antialiased">' +
+  '<html lang="en" class="libre_x__variable playfair_y__variable h-full antialiased">' +
   `<body>${SYMBOL}<main><section><div class="flex flex-col items-center">${INVITE_RUN}</div>` +
   '<div data-invite-passage="true">passage</div></section></main></body></html>';
 
@@ -40,10 +39,7 @@ const html = () =>
   });
 
 test("extractFontVars keeps only the next/font variable classes", () => {
-  assert.equal(
-    extractFontVars(PAGE),
-    "corinthia_x__variable playfair_y__variable",
-  );
+  assert.equal(extractFontVars(PAGE), "libre_x__variable playfair_y__variable");
 });
 
 test("extractFontVars throws when the page carries none", () => {
@@ -134,8 +130,7 @@ test("cardHtml holds the names while every other role comes down", () => {
   const out = html();
   /* Inline, the mark sits on a line box and renders 55.8px when asked for 48. */
   assert.match(out, /\.og-sprig svg\s*\{[^}]*display:\s*block/);
-  /* The card's own box, 1.164 — the page's ratio is about 1.51 and overflows. */
-  assert.match(out, /--text-display-name--line-height:\s*135px/);
+  assert.match(out, /\.og-text h1\s*\{\s*margin-top:/);
   assert.match(out, /--text-display-name:\s*116px/);
   /* The names are the one role that did NOT come down: "reduce size all text except couples
      names". A sweep that lowered them with the rest would pass every other assertion here. */

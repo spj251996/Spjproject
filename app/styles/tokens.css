@@ -1,7 +1,6 @@
 @theme static {
   /* Overriding the framework's own `--font-sans` lets preflight carry the body family instead of
      restating it on `body`. */
-  --font-script: "Corinthia", cursive;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Libre Baskerville", Georgia, serif;
   /* Ritual titles in Malayalam, and nothing else. No Latin fallback is listed: a Latin face has no
@@ -29,12 +28,10 @@
   /* Family and text-transform have no `--text-*` modifier, hence the `.type-*` classes in
      type-scale.css. These are the phone values; the tablet and laptop steps override them on
      `:root` below. */
+  /* Sizes only, with no role behind them: the couple's drawn names set their width in `em` of these
+     at the invite and at Wishes (DESIGN.md -> Typography). */
   --text-display-name: 94px;
-  --text-display-name--font-weight: 400;
-  --text-display-name--line-height: 141px;
   --text-heading-script: 56px;
-  --text-heading-script--font-weight: 400;
-  --text-heading-script--line-height: 56px;
   --text-heading-xl: 26px;
   --text-heading-xl--font-weight: 700;
   --text-heading-xl--line-height: 40px;
@@ -400,9 +397,7 @@
   @variant md {
     --date-open: 8px;
     --text-display-name: 110px;
-    --text-display-name--line-height: 165px;
     --text-heading-script: 72px;
-    --text-heading-script--line-height: 72px;
     --text-heading-xl: 32px;
     --text-heading-xl--line-height: 48px;
     --text-heading-md: 20px;
@@ -431,9 +426,7 @@
 :root {
   @variant lg {
     --text-display-name: 110px;
-    --text-display-name--line-height: 165px;
     --text-heading-script: 64px;
-    --text-heading-script--line-height: 64px;
     --text-heading-xl: 30px;
     --text-heading-xl--line-height: 44px;
     --text-heading-md: 18px;
@@ -463,9 +456,7 @@
 :root {
   @variant xl {
     --text-display-name: 156px;
-    --text-display-name--line-height: 234px;
     --text-heading-script: 80px;
-    --text-heading-script--line-height: 80px;
     --text-heading-xl: 38px;
     --text-heading-xl--line-height: 56px;
     --text-heading-md: 21px;

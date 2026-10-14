@@ -5,8 +5,7 @@
    root, and SHIPPED STATE IS THE ABSENCE OF THE ATTRIBUTE. So with every control untouched this
    file matches nothing and `/preview` IS the published page — which is also why a default must
    never be expressed here: this file loads only on `/preview`, so a default written here would
-   leave `/` painting neither state or both. Lever 2's default hide therefore lives in the
-   committed `app/couple-names.css` instead.
+   leave `/` painting neither state or both.
 
    UNLAYERED, deliberately. Tailwind's utilities and the type scale sit in `@layer` blocks, and an
    unlayered rule beats any layered one outright however low its specificity — so these rules do
@@ -25,12 +24,8 @@
 /* WHAT WAS LEVER 2 — the couple's names, drawn against today's typeset script — IS GONE, and
    deliberately rather than by omission (owner, 2026-10-10: "ship only drawn to couple, no need
    options"). The drawn asset is the answer, so there is nothing for the couple to arbitrate.
-   TWO THINGS SURVIVE IT AND NEITHER IS DEAD BY ACCIDENT. The typeset markup is still in the tree
-   behind `[data-names-alt]`, hidden by the committed `app/couple-names.css`, and
-   `scripts/retire-register.mjs` now carries it as `unused` rather than `temporary` — the pick is
-   made, so it goes in the scheduled Phase 9 sweep rather than waiting on an answer. And
-   `.type-display-name` and `.type-heading-script` stay on their elements regardless, because the
-   asset's width is `em` of those roles; the register says so in its own `why`. */
+   The typeset names, their two script roles and the script face were retired with it
+   (2026-10-14); only the roles' two SIZE tokens remain, because the asset's width is `em` of them. */
 
 /* ───────── LEVER 3 — the leaf marks beside a heading — LEFT THE ROUTE (owner, 2026-10-11) ─────────
    "Outward with rules" landed for the five section eyebrows and is `sprig-ornament`'s one form; the

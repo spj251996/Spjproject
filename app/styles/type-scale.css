@@ -3,44 +3,6 @@
    utilities still override them. The variables themselves step at the breakpoints, in tokens.css. */
 
 @layer components {
-  .type-display-name {
-    font-family: var(--font-script);
-    font-size: var(--text-display-name);
-    font-weight: var(--text-display-name--font-weight);
-    line-height: var(--text-display-name--line-height);
-  }
-
-  /* Orientation, not width, because one width tier covers both. This `line-height` beats the base
-     rule's only by source order, so it must stay below it. */
-  @media (orientation: portrait) {
-    .type-display-name {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      line-height: 0.9;
-    }
-  }
-
-  /* The joiner is half the name it sits between, at every size and in both orientations: the
-     invite's one-line landscape form and its three-line portrait form are the same couple.
-
-     `line-height: 1` because the joiner inherits its parent's line-height as a LENGTH, so a
-     half-size inline box carries half-leading it does not need and grows the line box — measured,
-     Wishes' line went 56px to 61px from making the "&" smaller. The invite does not show it only
-     because its portrait form is a flex column, where each span owns its own line. */
-  .type-display-name__joiner,
-  .type-heading-script__joiner {
-    font-size: 0.5em;
-    line-height: 1;
-  }
-
-  .type-heading-script {
-    font-family: var(--font-script);
-    font-size: var(--text-heading-script);
-    font-weight: var(--text-heading-script--font-weight);
-    line-height: var(--text-heading-script--line-height);
-  }
-
   .type-heading-xl {
     font-family: var(--font-serif);
     font-size: var(--text-heading-xl);

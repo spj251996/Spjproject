@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const PAGE = readFileSync("app/preview/page.tsx", "utf8");
@@ -253,47 +253,11 @@ test("the six retired levers are gone from both files", () => {
     /const AMPERSAND_SCALE = 0\.65;/,
     "the ampersand scale was stripped from the route but not landed in the component",
   );
-  /* The dropped lever's own follow-through: its alternate must be REGISTERED as unused, not left
-     looking like a pending answer. A dead alternate with a `temporary` entry would sit in the tree
-     indefinitely, because the sweep that reads this list waits for exactly that word to change. */
-  const register = readFileSync("scripts/retire-register.mjs", "utf8");
-  /* ANCHORED ON THE ENTRY'S OWN FIELD, not on the name. A first version sliced from the first
-     occurrence of each name, which is in the register's HEADER PROSE — so it read a comment that
-     mentions both and fails every `kind` check. That is this project's own comment-matching trap,
-     recorded four times and hit here in the gate written to catch something else. */
-  for (const dead of [
-    'symbol: "splitCoupleNames"',
-    'path: "app/couple-names.css"',
-  ]) {
-    const at = register.indexOf(dead);
-    assert.notStrictEqual(
-      at,
-      -1,
-      `${dead} is not an entry in the retire register`,
-    );
-    const entry = register.slice(at, register.indexOf("},", at));
-    /* THE LABEL IS PER SUBJECT, and getting it wrong is what stalls Phase 9 rather than what
-       breaks the page. `unused` promises zero consumers — follow it and you delete on sight — so
-       only the STYLESHEET earns it: nothing un-hides the alternate any more, so its single rule
-       hides markup nobody can reach. `splitCoupleNames` has two live callers and its output IS
-       rendered, into the span that stylesheet hides, so it is `temporary`: the deletion is a
-       decision, not a confirmation. It was registered `unused` until 2026-10-11, which this
-       assertion required and a whole-branch review caught. */
-    const expected = dead.includes("couple-names.css")
-      ? /kind: "unused"/
-      : /kind: "temporary"/;
-    assert.match(
-      entry,
-      expected,
-      `${dead} carries the wrong kind: \`unused\` promises Phase 9 zero consumers, and splitCoupleNames has two`,
-    );
-  }
-  /* Both go in ONE commit whatever their labels, once the couple confirm the drawn names (owner,
-     2026-10-11) — removing the stylesheet alone paints both forms of the names at once. */
-  assert.match(
-    register,
-    /couple confirm the drawn names|couple confirm the preview/,
-    "the removal window the owner set is not written in the register",
+  /* The dropped lever's alternate — the typeset names — is RETIRED (owner, 2026-10-14), so nothing
+     of it may linger behind a hidden marker. `app/names-retired.test.ts` owns the whole sweep. */
+  assert.ok(
+    !existsSync("app/couple-names.css"),
+    "the typeset alternate's stylesheet is still in the tree",
   );
 });
 

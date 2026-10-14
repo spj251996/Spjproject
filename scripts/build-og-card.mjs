@@ -66,14 +66,10 @@ export const CARD = Object.freeze({
   type: Object.freeze({
     eyebrow: 21,
     eyebrowLine: 29,
-    /* The card's OWN line box, not the page's ratio. Measured: at 110px the names draw 111px of ink
-       inside a 173px line box — 1.56x their own drawing. The page's ratio exists so a script clears
-       its neighbours in a flowing column; here they are known. The ratio below is 1.164.
-
-       The names are the ONE role that did not come down when the rest did — the owner's words were
+    /* The drawn names set their width in `em` of `--text-display-name`, so this is their size.
+       They are the ONE size that did not come down when the rest did — the owner's words were
        "reduce size all text except couples names". */
     names: 116,
-    namesLine: 135,
     date: 32,
     dateLine: 40,
     caption: 21,
@@ -133,8 +129,8 @@ export function extractFontVars(html) {
    The card is PARKED by the owner and travels with the bronze colour in its own plan, so this is
    recorded rather than repaired. The repair is small and belongs there: inline the symbol defs
    into the card document beside the lifted run, the same way the sprig mark is already available
-   to it. What is NOT broken: the type overrides still reach the asset, because the `<h1>` keeps
-   `type-display-name` and the lockup's width is `em` of that role, so `--text-display-name` on
+   to it. What is NOT broken: the size override still reaches the asset, because the `<h1>` takes its
+   font size from `--text-display-name` and the lockup's width is `em` of it, so the token on
    `.og-card` still scales it. */
 export function extractInvite(html) {
   const start = html.indexOf('<p class="type-eyebrow">By God’s Grace</p>');
@@ -186,7 +182,6 @@ export function cardHtml({ fontVars, invite, sprigSymbol, card }) {
     --text-eyebrow: ${card.type.eyebrow}px;
     --text-eyebrow--line-height: ${card.type.eyebrowLine}px;
     --text-display-name: ${card.type.names}px;
-    --text-display-name--line-height: ${card.type.namesLine}px;
     --text-date-primary: ${card.type.date}px;
     --text-date-primary--line-height: ${card.type.dateLine}px;
     --text-caption: ${card.type.caption}px;
@@ -197,7 +192,7 @@ export function cardHtml({ fontVars, invite, sprigSymbol, card }) {
 
   /* The gaps come down with the type. The lifted markup carries the page's own utility classes, so
      these override them by specificity rather than by editing what was lifted. */
-  .og-text .type-display-name { margin-top: ${card.gapNames}px; }
+  .og-text h1 { margin-top: ${card.gapNames}px; }
   .og-text .type-date-primary { margin-top: ${card.gapDate}px; }
   .og-text [data-invite-place] { margin-top: ${card.gapPlace}px; }
 
@@ -396,9 +391,6 @@ async function main() {
   };
   if (argValue("--names")) {
     card.type.names = Number(argValue("--names"));
-    /* The card's own ratio (see CARD.type.names), so a tuned size keeps the tightened line box
-       rather than inheriting the default's absolute one. 116 x 1.164 = 135, CARD's own pair. */
-    card.type.namesLine = Math.round(card.type.names * 1.164);
   }
   if (argValue("--sprig")) card.sprigHeight = Number(argValue("--sprig"));
   if (argValue("--padding")) card.padding = Number(argValue("--padding"));

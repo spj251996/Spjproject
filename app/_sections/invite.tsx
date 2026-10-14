@@ -1,8 +1,7 @@
 import type { FramePaint } from "@/components/layout/mounted-sheet-frame";
 import type { FormattedDate } from "@/content/types";
-import "@/app/couple-names.css";
 import "@/app/invite.css";
-import { eventById, splitCoupleNames } from "@/app/_sections/shared";
+import { eventById } from "@/app/_sections/shared";
 import dateBlock from "@/app/invite-date.module.css";
 import { inviteFit } from "@/app/invite-fit";
 import {
@@ -157,7 +156,6 @@ function InvitePassage() {
 export function InviteSection({ paint }: { paint?: FramePaint }) {
   const wedding = eventById("wedding");
   const weddingDate = formatEventDate(wedding.date);
-  const names = splitCoupleNames(invite.coupleNames);
 
   return (
     <section className="relative" id="invite">
@@ -189,13 +187,11 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 2026-10-14), a literal like Family's and Wishes' eyebrows (owner, 2026-10-03). */}
             <p className="type-eyebrow">By God’s Grace</p>
 
-            {/* THE DRAWN NAMES, and the role STAYS on the `<h1>` doing two jobs, both
-                load-bearing. It is the `em` the asset's width resolves against, so the names scale
+            {/* THE DRAWN NAMES. The `<h1>` takes `--text-display-name` as its font size and
+                nothing else: it is the `em` the asset's width resolves against, so the names scale
                 the owner settled in Half 1 — 94/110/110/156 — still governs the lockup's size
-                rather than a figure chosen in the component. And in portrait it is
-                `display: flex; flex-direction: column`, which is what stacks the ALTERNATE's three
-                spans when `/preview` un-hides them. `[retire]` marks the ROLE, not this use of it:
-                the class goes in Phase 9 and the TOKEN it reads must not go with it.
+                rather than a figure chosen in the component. The typeset names and their script
+                role were retired on 2026-10-14; the size token outlives them for this reason alone.
 
                 THE BLOCK PADDING ON THE TWO LANDSCAPE BANDS MAKES THE DRAWN NAMES SIT IN THE AIR
                 THE TYPESET ONES DID (owner, 2026-10-10), and it is ASYMMETRIC because the gaps it
@@ -233,9 +229,8 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 date-block round left at the desktop tier line, and a shape the owner has never
                 seen. The single line is 6.09:1, reproduces today's landscape width exactly and
                 comes out 81px SHORTER, so it frees headroom instead of spending it. The switch is
-                `(orientation: landscape)`, the same condition the role's own rule uses, so the two
-                cannot disagree. */}
-            <h1 className="type-display-name text-ink mt-space-md [@media(width<48rem)_and_(orientation:portrait)]:mb-(--invite-names-gap) [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pt-space-xl [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pb-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:pt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:pb-space-lg">
+                `(orientation: landscape)`. */}
+            <h1 className="text-(length:--text-display-name) text-ink mt-space-md [@media(width<48rem)_and_(orientation:portrait)]:mb-(--invite-names-gap) [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pt-space-xl [@media(64rem<=width<100rem)_and_(orientation:landscape)]:pb-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:pt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:pb-space-lg">
               {/* 1.6 units, down from the 2.2 Wishes takes (owner, 2026-10-09: "invite one is too thick").
                   This lockup renders about 1.75x larger relative to its own viewBox, so the same
                   unit count lands that much heavier in pixels — and it only needs 0.54 to clear a
@@ -246,21 +241,6 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 names={invite.coupleNames}
                 strokeUnits={1.6}
               />
-              {/* Lever 2's alternate — today's script markup, unchanged, so the couple compare the
-                  two fairly. Hidden on the published page by `app/couple-names.css`; `/preview`
-                  un-hides it. It keeps `text-ink`, the colour it ships in today, while the asset
-                  takes `ink-muted`. */}
-              <span data-names-alt>
-                {names ? (
-                  <>
-                    <span>{names[0]}</span>
-                    <span className="type-display-name__joiner">{" & "}</span>
-                    <span>{names[1]}</span>
-                  </>
-                ) : (
-                  invite.coupleNames
-                )}
-              </span>
             </h1>
 
             {/* The invitation's own sentence, in the families' voice — third person, with the names
