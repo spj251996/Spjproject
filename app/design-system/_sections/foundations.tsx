@@ -529,34 +529,23 @@ export function FoundationsSections() {
           description="The card every section is built on: a backing mount with an inner sheet laid onto it — or, for the hero, no backing at all."
           id="layout-mounted-sheet"
           name="mounted-sheet"
-          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card also chooses WHICH of three paints to apply, and the three specimens below are those paints: mount (the component default, which the four non-hero framed sections on / take), none (the hero's unpainted option, which the invitation takes), and stock (the thread lab's, live at /thread/stock only and nowhere on the published page). The lab's third route, /thread/mount, paints every card its mount including the hero, so it is this same `mount` specimen applied uniformly. Their geometry is identical in all three — same reveal, same padding, same box — so only the paint differs, which is what licenses one set of fit files for every route."
+          note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps both, which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card's paint follows its role: the hero paints no backing (the invitation's opening screen), every other framed card is mounted. Geometry is identical either way — same reveal, same padding, same box — which is what licenses one set of fit files across every route."
           source="@/components/layout/mounted-sheet"
           spec={[
             "mount · surface-mount · shadow-mount · carries no text, ever",
             "stock · surface-elevated · shadow-stock",
             "corners · radius-card on both layers",
-            'paint="none" · the hero\'s unpainted option · no fill, no shadow, no corners, geometry unchanged',
-            'paint="stock" · the thread lab\'s mountless stock · the MOUNT carries surface-elevated, radius-card and shadow-mounted-stock while the stock keeps its padding and paints nothing · live at /thread/stock only',
             "reveal · 16px below md · 12px md to lg · 16px lg to xl · 24px from xl — the tablet rung is the narrowest deliberately, the invite's landscape card at that width having no height left to give",
           ]}
         >
           <div className="flex flex-col gap-space-lg">
+            {/* The hero keeps its reveal and padding and paints none of it, so on the ground it reads
+                as type with no card — which is why this specimen looks like bare text rather than a box. */}
             <MountedSheet hero>
               <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Hero · painted</p>
+                <p className="type-eyebrow">Hero</p>
                 <p className="type-body text-ink">
-                  Paper stock with the hero setting.
-                </p>
-              </div>
-            </MountedSheet>
-            {/* The unpainted option, which the invitation takes. It keeps the hero's reveal and
-                padding and paints none of it, so on the ground it reads as type with no card —
-                which is why this specimen looks like bare text rather than a box. */}
-            <MountedSheet hero paint="none">
-              <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Hero · unpainted</p>
-                <p className="type-body text-ink">
-                  The same card, painting no backing. The invitation takes this.
+                  The hero card, painting no backing. The invitation takes this.
                 </p>
               </div>
             </MountedSheet>
@@ -564,20 +553,6 @@ export function FoundationsSections() {
               <div className="flex flex-col gap-space-2xs">
                 <p className="type-eyebrow">Paper stock</p>
                 <p className="type-body text-ink">An ordinary section.</p>
-              </div>
-            </MountedSheet>
-            {/* The lab's third paint. One surface instead of two: the mount element takes the stock's
-                fill, grain, corners and both shadows composed, and the sheet inside it keeps its
-                padding and paints nothing — so the content lands exactly where the other two put it
-                while the painted silhouette is the larger mount+stock box. Live at /thread/stock
-                only. */}
-            <MountedSheet paint="stock">
-              <div className="flex flex-col gap-space-2xs">
-                <p className="type-eyebrow">Stock only · lab</p>
-                <p className="type-body text-ink">
-                  One surface at the mount and stock footprint, carrying both
-                  shadows.
-                </p>
               </div>
             </MountedSheet>
           </div>

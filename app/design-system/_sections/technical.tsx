@@ -9,14 +9,12 @@ import {
   type SpanZone,
 } from "@/app/design-system/_kit";
 
-/* Published, lab and review routes in one list. /thread/mount and /thread/stock carry [lab] in the doc —
+/* Published, lab and review routes in one list. /thread carries [lab] in the doc —
    built and verified but not on the published page; /preview carries [retire] instead, because it
    IS published and is deleted before the branch merges rather than at Phase 9. */
 const VARIANT_ROUTES = [
   "/ · five sections · no thread · the hero unpainted, the other four mounted",
-  "/thread/current · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
-  "/thread/mount · the same five · every card painted with its mount, the hero included",
-  "/thread/stock · the same five · every card the mountless stock",
+  "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
   "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
   "The one lever it carries, now decided → the family photos blended into the card, where \"as now\" is final (owner, 2026-10-14) and is what / ships; the lever stays until the route is deleted. Its options: as now, blended with no rim, blended with no rim and soft lower edges, or blended with the rim. No rim drops the couple's glow as well, and the soft edge fades the photo's lower half only. DESIGN.md → Iteration Notes → Open Decisions carries its row",
@@ -159,9 +157,9 @@ export function TechnicalSections() {
 
       <GallerySection
         id="variant-routes"
-        intro="Five routes compose from one section module. What differs between them is which sections it is told to render, whether the thread mounts, and which paint the cards take — never the geometry, which is identical for every section two routes share."
+        intro="Three routes compose from one section module. What differs between them is whether the thread mounts and whether the review panel rides along — never the card paint, which follows each card's role, and never the geometry, which is identical for every section two routes share."
         mapsTo="Technical Conventions → Variant Routes"
-        source="app/_sections/index.tsx · app/thread/[variant]/page.tsx · app/preview/page.tsx"
+        source="app/_sections/index.tsx · app/thread/page.tsx · app/preview/page.tsx"
         title="Technical · Variant Routes"
       >
         <RuleList rules={VARIANT_ROUTES} />
