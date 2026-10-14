@@ -95,7 +95,6 @@ export const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
   "corner-spray": "715 / 689",
   "horizontal-garland": "1536 / 1024",
   "poppy-spread": "1024 / 1536",
-  "cosmos-arc": "1024 / 1536",
   "sprig-cross-left": "635 / 400",
   "sprig-cross-right": "491 / 578",
   "tall-column-a": "827 / 1902",

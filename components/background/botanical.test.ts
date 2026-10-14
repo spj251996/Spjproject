@@ -92,7 +92,7 @@ test("every piece carries a complete, well-formed record at every tier", () => {
   const pieces = Object.keys(TUNING);
   assert.equal(
     pieces.length,
-    20,
+    19,
     "the table must carry one record set per piece — a piece added to the union without a row renders at no size",
   );
   for (const piece of pieces) {
@@ -327,7 +327,8 @@ test("corner-trail's placement is the value settled on a render", () => {
   });
 });
 
-test("the set is twenty pieces and falling-spray is retired from it", () => {
-  assert.equal(Object.keys(TUNING).length, 20);
+test("the set is nineteen pieces and falling-spray and cosmos-arc are retired from it", () => {
+  assert.equal(Object.keys(TUNING).length, 19);
   assert.ok(!("falling-spray" in TUNING));
+  assert.ok(!("cosmos-arc" in TUNING));
 });

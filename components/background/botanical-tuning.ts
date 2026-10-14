@@ -23,7 +23,6 @@ export type BotanicalPiece =
   | "corner-spray"
   | "horizontal-garland"
   | "poppy-spread"
-  | "cosmos-arc"
   | "sprig-cross-left"
   | "sprig-cross-right"
   | "tall-column-a"
@@ -218,40 +217,6 @@ export const TUNING: Readonly<
       y: -0.100479,
       size: 19.7,
       rotation: -6,
-    },
-  },
-  "cosmos-arc": {
-    phone: {
-      anchor: "bottom-left",
-      x: -3.2,
-      y: 52.2,
-      size: 70,
-      rotation: -1.5,
-      flip: true,
-    },
-    tablet: {
-      anchor: "bottom-left",
-      x: 0,
-      y: 28.699315,
-      size: 40,
-      rotation: 0,
-      flip: true,
-    },
-    laptop: {
-      anchor: "middle-left",
-      x: -3.2,
-      y: 0.246977,
-      size: 23,
-      rotation: -1.5,
-      flip: true,
-    },
-    desktop: {
-      anchor: "middle-left",
-      x: -3.2,
-      y: 0.246977,
-      size: 23,
-      rotation: -1.5,
-      flip: true,
     },
   },
   "crossing-stems": {
