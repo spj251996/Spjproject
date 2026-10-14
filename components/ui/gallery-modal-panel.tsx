@@ -1,5 +1,5 @@
 import { CloseIcon } from "@/components/icons";
-import { CONTROL_CIRCLE } from "./gallery-control";
+import { CONTROL_CIRCLE, gridColumns } from "./gallery-control";
 import { ImagePlaceholder } from "./image-placeholder";
 
 /* The presentational half of `gallery-modal`, split out because `'use client'` is file-scoped: with
@@ -68,7 +68,7 @@ export function GalleryModalPanel({
         </button>
       </header>
 
-      <div className="columns-2 gap-space-2xs lg:columns-3">
+      <div className={`gap-space-2xs ${gridColumns(images.length)}`}>
         {withKeys(images).map(({ src, key }, index) => (
           <figure
             className="relative mb-space-2xs block break-inside-avoid overflow-hidden rounded-card"
