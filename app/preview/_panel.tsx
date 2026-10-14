@@ -21,10 +21,9 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    corner box: at 360px wide a fixed panel either covers what it is asking about or runs off the
    screen.
 
-   ON 2026-10-14 THE OWNER'S OWN QUESTIONS REPLACED THE COUPLE'S for one round: the opening with its
-   Replay, and the phone paper texture — each picked on a phone, then carried into the page and taken
-   off this route. The family photos (as now) and the progress line (2px on a phone, 3px from the
-   tablet up, soft glow) were settled the same day and left. */
+   ON 2026-10-14 THE OWNER'S OWN QUESTIONS REPLACED THE COUPLE'S: the family photos, the progress
+   line, the opening (Bloom) and the phone paper were each picked on a phone and left the route the
+   same day. What it carries now is the phone spacing of the invite and of Event Info. */
 
 /* THE WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is namespaced.
    WHY THE NAMESPACE IS LOAD-BEARING: `app/layout.tsx` sets `data-opening-skipped` on this SAME
@@ -37,7 +36,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    before first paint so a candidate plays as a true arrival; this list is what the sync effect below
    removes when a control is shipped, so naming it would strip the candidate at mount and cut it
    mid-flight. */
-const ATTRIBUTES = ["data-pv-grain"] as const;
+const ATTRIBUTES = ["data-pv-invite-gap", "data-pv-event-rhythm"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -87,13 +86,22 @@ interface Lever {
    destinations; rounds 7–9's picks landed the same way and `app/round7-9.test.ts` pins them. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
-    id: "grain",
-    title: "Paper on phones",
+    id: "invite-gap",
+    title: "Invite spacing on phones",
     options: [
       { label: "As now", attrs: {} },
-      { label: "75%", attrs: { "data-pv-grain": "75" } },
-      { label: "50%", attrs: { "data-pv-grain": "50" } },
-      { label: "25%", attrs: { "data-pv-grain": "25" } },
+      { label: "Even, 16px", attrs: { "data-pv-invite-gap": "16" } },
+      { label: "Even, 20px", attrs: { "data-pv-invite-gap": "20" } },
+      { label: "Even, 24px", attrs: { "data-pv-invite-gap": "24" } },
+    ],
+  },
+  {
+    id: "event-rhythm",
+    title: "Event spacing on phones",
+    options: [
+      { label: "As now", attrs: {} },
+      { label: "Natural", attrs: { "data-pv-event-rhythm": "natural" } },
+      { label: "Even", attrs: { "data-pv-event-rhythm": "even" } },
     ],
   },
 ];
@@ -102,9 +110,7 @@ const OPEN_KEY = "preview-panel-open";
 
 /* Only the open flag persists. A chosen lever deliberately does not: the couple's answer is what
    they tell the owner, and a remembered selection would make a reload show someone else's pick as
-   if it were the page. ONE EXCEPTION: the opening's replay key, which `page.tsx`'s inline script
-   reads once and deletes — it survives exactly one reload, the one that plays the candidate. Playing
-   an opening also stores the panel as closed, so the candidate plays full screen. */
+   if it were the page. */
 function readOpen(): boolean {
   try {
     return window.localStorage.getItem(OPEN_KEY) !== "0";
@@ -194,77 +200,6 @@ function LeverGroup({
     </fieldset>
   );
 }
-
-const OPENINGS = [
-  { label: "As now", value: "" },
-  { label: "A · Written in", value: "written" },
-  { label: "B · Bloom", value: "bloom" },
-  { label: "C · Curtain", value: "curtain" },
-] as const;
-
-/* The `sessionStorage` key `page.tsx`'s inline script reads once and deletes, so a plain reload
-   afterwards is the published page again. */
-const REPLAY_KEY = "pv-replay-opening";
-
-/* One button per opening (owner, 2026-10-14: "button for each option and close panel and do
-   replay"). A tap stores the pick, closes the panel and reloads from the top, so the candidate plays
-   full screen as a true arrival. The one just played is marked. */
-function OpeningGroup() {
-  const [applied, setApplied] = useState("");
-
-  /* Whatever the inline script set before first paint — and, now that the panel has hydrated
-     closed, unhide it: the script hid it so the server's open panel could not cover the arrival. */
-  useEffect(() => {
-    const root = document.documentElement.dataset;
-    setApplied(root.pvOpening ?? "");
-    delete root.pvReplaying;
-  }, []);
-
-  const play = (value: string) => {
-    try {
-      window.sessionStorage.setItem(REPLAY_KEY, value);
-    } catch {
-      /* Storage blocked: the reload still runs and shows the published opening. */
-    }
-    writeOpen(false);
-    window.scrollTo(0, 0);
-    window.location.reload();
-  };
-
-  return (
-    <fieldset style={{ border: 0, margin: "0 0 14px", padding: 0 }}>
-      <legend style={{ fontWeight: 700, padding: 0, marginBottom: 6 }}>
-        The opening
-      </legend>
-      <div style={{ display: "grid", gap: 6, gridTemplateColumns: "1fr 1fr" }}>
-        {OPENINGS.map((option) => (
-          <button
-            aria-pressed={applied === option.value}
-            key={option.label}
-            onClick={() => play(option.value)}
-            style={{
-              ...BUTTON,
-              fontWeight: applied === option.value ? 700 : 400,
-            }}
-            type="button"
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
-const BUTTON: CSSProperties = {
-  font: "inherit",
-  cursor: "pointer",
-  padding: "6px 10px",
-  borderRadius: 6,
-  border: "1px solid #d1c6b7",
-  background: "#fff",
-  color: "inherit",
-};
 
 export function LeverPanel() {
   const [chosen, setChosen] =
@@ -415,10 +350,8 @@ export function LeverPanel() {
         </div>
       </div>
 
-      {/* The opening first, above the paper; no notes and no reset — each group's "As now" is the
-          reset (owner, 2026-10-14: "keep the panel clean and simple"). */}
-      <OpeningGroup />
-
+      {/* No notes and no reset — each group's "As now" is the reset (owner, 2026-10-14: "keep the
+          panel clean and simple"). */}
       {COUPLE_LEVERS.map((lever) => (
         <LeverGroup
           chosen={chosen[lever.id] ?? 0}
