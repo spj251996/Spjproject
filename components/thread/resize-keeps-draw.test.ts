@@ -6,10 +6,9 @@ import test from "node:test";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
-   -> Variant Routes). The `.html` is explicit because `serveExport` below serves literal paths and a
-   static export emits a dynamic route as `out/thread/<variant>.html`; `/thread/current` would resolve
-   to the sibling RSC-payload DIRECTORY, and `/thread/current/` to a 404. */
-const LAB_ROUTE = "/thread/current.html";
+   -> Variant Routes). The export server serves literal paths, and a static route emits
+   `out/thread.html`, so the URL carries `.html`. */
+const LAB_ROUTE = "/thread.html";
 
 /* THE THREAD MUST NOT UN-DRAW ITSELF WHEN THE VIEWPORT'S HEIGHT CHANGES — the owner reported three
    phone symptoms that were one bug: glitches, the re-trace running where no thread was drawn, and

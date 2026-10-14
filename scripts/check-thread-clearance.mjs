@@ -72,8 +72,8 @@ const ORIGIN = "http://localhost:3000";
 /* The thread is not on the published page -- `/` carries none since the lab split, so this gate points
  * at the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). Against the DEV server the
  * extensionless path routes correctly; a gate reading the static export needs `.html`, because an
- * export emits a dynamic route as `out/thread/<variant>.html`. */
-const LAB_ROUTE = "/thread/current";
+ * export emits the static route as `out/thread.html`. */
+const LAB_ROUTE = "/thread";
 
 const NAV_TIMEOUT_MS = 15_000;
 const FONT_TIMEOUT_MS = 5_000;

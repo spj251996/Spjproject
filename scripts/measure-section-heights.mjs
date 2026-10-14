@@ -1,4 +1,4 @@
-/* Re-measures each section's own rect height at the three band nominals, on the LAB route — the
+/* Re-measures each section's own rect height at the three band nominals, on `/thread` — the
    route the thread's constants describe. Both routes compose the same five sections since Contact
    was retired (2026-10-14), so `/` would read the same heights.
 
@@ -6,12 +6,12 @@
    and the rect is what the committed constants came from.
 
    The URL carries `.html` deliberately: a plain static server serves literal paths, and under
-   `output: "export"` a dynamic route emits `out/thread/<variant>.html`, with the sibling directory
-   holding only RSC payload `.txt` files. */
+   `output: "export"` the static route emits `out/thread.html`, with the sibling directory holding only
+   RSC payload `.txt` files. */
 import { chromium } from "playwright";
 
 const PORT = process.argv[2] ?? "4931";
-const URL = `http://localhost:${PORT}/thread/current.html`;
+const URL = `http://localhost:${PORT}/thread.html`;
 const BANDS = [
   { id: "tall", width: 393, height: 700 },
   { id: "upright", width: 820, height: 1180 },

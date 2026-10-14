@@ -31,36 +31,19 @@ const EXPECTED = [
   },
   {
     sections: true,
-    /* MEASURED, not assumed: under `output: "export"` this version emits a dynamic route as
-     * `out/thread/<variant>.html`, NOT `out/thread/<variant>/index.html`. The sibling
-     * `out/thread/<variant>/` directory it also writes holds only RSC payload `.txt` files. */
-    path: "out/thread/current.html",
+    /* One static route since 2026-10-14. MEASURED on this export before writing: a static route emits
+     * `out/thread.html` with a sibling `out/thread/` directory of RSC payload `.txt` files only. */
+    path: "out/thread.html",
     roots: LAB_ROOTS,
-    label: "/thread/current (lab)",
+    label: "/thread (lab)",
     stockPaint: false,
-    progress: 0,
-  },
-  {
-    sections: true,
-    path: "out/thread/mount.html",
-    roots: LAB_ROOTS,
-    label: "/thread/mount (lab)",
-    stockPaint: false,
-    progress: 0,
-  },
-  {
-    sections: true,
-    path: "out/thread/stock.html",
-    roots: LAB_ROOTS,
-    label: "/thread/stock (lab)",
-    stockPaint: true,
     progress: 0,
   },
   {
     sections: true,
     /* MEASURED on the export, not assumed: a non-dynamic static route emits `out/preview.html`
      * with a sibling `out/preview/` directory holding only RSC payload `.txt` files -- the same
-     * shape the dynamic thread routes take. A gate that listed `out/preview` would find the
+     * shape `/thread` takes. A gate that listed `out/preview` would find the
      * directory and prove nothing.
      *
      * `[retire]`: THIS ROW GOES WITH THE ROUTE, and it has to be REPLACED by a `FORBIDDEN` entry
@@ -85,10 +68,13 @@ const EXPECTED = [
   { path: "out/404.html", roots: 0, label: "/404 (not found, served)" },
   { path: "out/_not-found.html", roots: 0, label: "/_not-found (route-named)" },
 ];
-const FORBIDDEN = ["out/design-system/index.html", "out/lab-scratch"];
-/* The exact SET of lab routes, so an extra one cannot appear unnoticed. Asserting the set rather than
- * listing forbidden paths means Plan 2 updates one line instead of remembering to delete a guard. */
-const LAB_ROUTES = ["current", "mount", "stock"];
+const FORBIDDEN = [
+  "out/design-system/index.html",
+  "out/lab-scratch",
+  "out/thread/current.html",
+  "out/thread/mount.html",
+  "out/thread/stock.html",
+];
 
 /* THE OTHER HALF OF THE DOC PARITY GATE. Its first half -- every `[lab]` entry's subject absent from
  * the published page -- is the thread assertion above. Its second half, "every non-`[lab]` one is
@@ -270,56 +256,14 @@ if (existsSync(CSS_DIR)) {
   );
   if (!ok) failed = true;
 }
-/* `/thread/mount` DIFFERS FROM `/thread/current` IN ONE THING ONLY: it overrides the hero's `"none"`,
- * so it paints one more mount than `/` does. Nothing gated that — set its variant's paint to `undefined`
- * and the route becomes byte-equivalent to `current` with the suite, `tsc` and every row above still
- * green, because `stockPaint: false` is satisfied by an unpainted hero just as well as by a painted one.
- * The owner's whole reason for that route is a uniform comparison, so a silently-unpainted hero would
- * invalidate the look it exists for.
- *
- * Asserted as a STRICT INEQUALITY against `current` rather than as a count, because the absolute number
- * moves whenever a card's paint utilities change and a pinned figure would then fail correct work. */
-const MOUNT_FILL = "bg-surface-mount";
-const paintedMounts = (path) =>
-  existsSync(path)
-    ? (readFileSync(path, "utf8").match(new RegExp(MOUNT_FILL, "g")) ?? [])
-        .length
-    : null;
-const currentMounts = paintedMounts("out/thread/current.html");
-const mountMounts = paintedMounts("out/thread/mount.html");
-if (currentMounts === null || mountMounts === null) {
-  console.error(
-    "FAIL: cannot compare the lab's paint routes -- one of them is missing",
-  );
-  failed = true;
-} else {
-  const ok = mountMounts > currentMounts;
-  console.log(
-    `${ok ? "ok  " : "FAIL"} /thread/mount paints more mounts than /thread/current: ${mountMounts} against ${currentMounts}`,
-  );
-  if (!ok) failed = true;
-}
-
-if (existsSync("out/thread")) {
-  /* The variant names are read off the emitted HTML documents alone -- the same directory also holds
-   * each route's RSC payload directory and `.txt` files, which are not routes. */
-  const actual = readdirSync("out/thread")
-    .filter((name) => name.endsWith(".html"))
-    .map((name) => name.replace(/\.html$/, ""))
-    .sort();
-  const expected = [...LAB_ROUTES].sort();
-  const ok =
-    actual.length === expected.length &&
-    actual.every((name, i) => name === expected[i]);
-  console.log(
-    `${ok ? "ok  " : "FAIL"} lab routes: [${actual}], expected [${expected}]`,
-  );
-  if (!ok) failed = true;
-} else {
-  console.error(
-    "FAIL: out/thread is missing -- the lab route was not exported",
-  );
-  failed = true;
-}
+/* The lab is ONE route. Its sibling directory holds RSC payloads only, so any `.html` in it is a retired variant
+ * route left behind -- which `next build` should never leave, since it rewrites `out/` whole. */
+const strayLab = existsSync("out/thread")
+  ? readdirSync("out/thread").filter((name) => name.endsWith(".html"))
+  : [];
+console.log(
+  `${strayLab.length === 0 ? "ok  " : "FAIL"} no variant lab route in out/thread${strayLab.length ? ` -- found [${strayLab}]` : ""}`,
+);
+if (strayLab.length > 0) failed = true;
 console.log(failed ? "VERDICT: FAIL" : "VERDICT: PASS");
 process.exit(failed ? 1 : 0);

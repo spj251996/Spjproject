@@ -8,7 +8,7 @@ const css = strip(
   readFileSync("components/ui/scroll-progress.module.css", "utf8"),
 );
 const page = readFileSync("app/page.tsx", "utf8");
-const lab = readFileSync("app/thread/[variant]/page.tsx", "utf8");
+const lab = readFileSync("app/thread/page.tsx", "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 const invite = strip(readFileSync("app/invite.css", "utf8"));
 
