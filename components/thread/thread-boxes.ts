@@ -24,7 +24,7 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
    screen does not move the section — the invite's own measured fit grew 10-12px and this did not
    move at all. Family came out height-neutral for a different reason: the nephew moved up a row and
    the groom moved down one, so the sheet kept its row count.
-   Measured on the built export at `/thread/current.html`, at the band nominals below, via each
+   Measured on the built export at `/thread/current.html` (now `/thread.html`), at the band nominals below, via each
    section's own `getBoundingClientRect().height`. Instrument validated first on `contact` and
    `wishes`, which reproduced their recorded 700 / 1180 / 695 exactly (2026-10-08; `wishes` alone
    since Contact was retired — see this file's header). */
@@ -32,7 +32,7 @@ type SectionHeights = Record<Exclude<ThreadId, "not-found">, number>;
 
 const TALL_HEIGHTS: SectionHeights = {
   /* One screen again since 2026-10-14, when the invite's phone content came back inside 393x700; it
-     was 707 from 2026-10-11 and 845 at the audit. Re-measured on `/thread/current` with `contact` (since retired) and
+     was 707 from 2026-10-11 and 845 at the audit. Re-measured on `/thread/current` (now `/thread`) with `contact` (since retired) and
      `wishes` reproducing 700 in the same run. */
   invite: 700,
   /* Two screens again since 2026-10-14: the frame now presses a window the full ground cannot hold
@@ -56,7 +56,7 @@ const TALL_HEIGHTS: SectionHeights = {
      (was a raw 64px below 1024 and 32 above). Base 2308 / 2308 / 1520 -> 2404 / 2423 / 1666; the
      photo increment is unchanged, which is what the separate base and increment are for — the
      strip's height is per tier and the gap is between rituals, so neither reaches the other.
-     RE-MEASURED 2026-10-11 on `/thread/current` after the rituals went left-aligned on one header
+     RE-MEASURED 2026-10-11 on `/thread/current` (now `/thread`) after the rituals went left-aligned on one header
      line, the title went to 18/20/18/21px and the phone card's sides to 36px: base 2404 / 2423 /
      1666 -> 2173 / 2262 / 1513. The phone INCREMENT moved too, 180 -> 184 — the wider measure lets
      the strip hold its nominal 120px row — measured per ritual as the strip's box plus its margin.

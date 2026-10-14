@@ -119,8 +119,8 @@ export function MountedSheet({
        not show, so neither element carries a padding utility. */
     return (
       <>
-        <style>{tallFrameCss(hero)}</style>
-        <div className={tallScopeClass(hero)}>
+        <style>{tallFrameCss()}</style>
+        <div className={tallScopeClass()}>
           <div className={FRAME_CLASS.box}>
             <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}`}>
               <div

@@ -334,7 +334,6 @@ function pairLayoutRules(windowClass: WindowClass, scope: string): string {
   const sheet = sheetSelector(scope, "pair");
   const crease = `${mount} > .${FRAME_CLASS.crease}`;
   const strip = "background-color: transparent; background-image: none;";
-  const leafStrip = ` ${strip}`;
 
   return orientationsOf(windowClass)
     .map((landscape) => {
@@ -343,14 +342,14 @@ function pairLayoutRules(windowClass: WindowClass, scope: string): string {
         const reveal = revealFor(windowClass, false, landscape);
         return `${prelude} {
 ${mount} { flex-direction: row; gap: ${spacing(2 * reveal)}; padding: ${spacing(reveal)}; }
-${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)};${leafStrip} box-shadow: none; }
+${leaf} { flex: 1 1 0; min-width: 0; padding: ${spacing(0)}; ${strip} box-shadow: none; }
 ${sheet} { justify-content: flex-start; }
 ${crease} { display: block; }
 }`;
       }
       return `${prelude} {
 ${mount} { gap: calc(2 * var(${GROUND_BLOCK})); padding: ${spacing(0)}; ${strip} box-shadow: none; }
-${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)};${leafStrip} }
+${leaf} { min-height: ${landscape ? CAPPED_CARD_HEIGHT : CARD_HEIGHT}; padding: ${spacing(0)}; ${strip} }
 }`;
     })
     .join("\n");
@@ -552,23 +551,22 @@ export function mountedSheetFrameCss(
   ].join("\n");
 }
 
-/* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets — but
-   `hero` is PER-SECTION, and two tall cards differing in it would otherwise collide on one class at
-   identical specificity, with the later one in document order winning for both. Keying the scope class
-   on the role keeps them apart.
+/* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets. A tall card
+   is never the hero (`mounted-sheet` throws on both), so there is one tall form and one class.
 
-   The built page carries these exact strings in two inlined stylesheets (the frame's and the botanical
-   layer's), so changing them moves `/`'s bytes. The suffix names the card's fixed paint for its role. */
-export function tallScopeClass(hero: boolean): string {
-  return `mounted-sheet-frame--tall-${hero ? "hero-none" : "section-mount"}`;
+   The built page carries this exact string in two inlined stylesheets (the frame's and the botanical
+   layer's), so changing it moves `/`'s bytes. Its `-section-mount` suffix is the role and paint the key
+   once carried, kept so the bytes do not move. */
+export function tallScopeClass(): string {
+  return "mounted-sheet-frame--tall-section-mount";
 }
 
 /* A section that scrolls rather than fitting one window. No height query, no container query and no
    minimum card height: the card is its content's height, and the page scrolls past it. The landscape
    side ground is a flat double, with none of the fitted frame's leftover-from-the-height-cap term,
    because a tall card has no height cap to leave anything over. */
-export function tallFrameCss(hero: boolean): string {
-  const scope = `.${tallScopeClass(hero)}`;
+export function tallFrameCss(): string {
+  const scope = `.${tallScopeClass()}`;
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = `${mount} > .${FRAME_CLASS.sheet}`;
@@ -618,7 +616,7 @@ ${sheet} {
   align-items: safe center;
 }`;
 
-  const perClass = tallWindowClasses(hero).map((windowClass) => {
+  const perClass = tallWindowClasses(false).map((windowClass) => {
     const mountRule = (orientation: Orientation) => {
       const fill = windowClass.mountShows[orientation]
         ? ""

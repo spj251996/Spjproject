@@ -48,6 +48,15 @@ test("the gallery shows the unpainted hero and a mounted card, and no retired pa
   }
 });
 
+/* The hero paints no backing at ANY width, so a note saying it keeps its mount's fill below md describes the
+   retired painted hero -- and contradicts the specimen rendered beneath it. It keeps its reveal, which is geometry. */
+test("the gallery does not claim the hero keeps a fill", () => {
+  assert.ok(
+    !/hero keeps both/.test(foundations),
+    "foundations.tsx says the hero keeps both fill and reveal -- it keeps only the reveal",
+  );
+});
+
 /* The shipped sequence is three beats ending at 1600ms. A gallery string still presenting the retired
    painted hero's four-beat, 2400ms sequence is the drift this file exists to catch. */
 test("the gallery does not present the retired painted hero's sequence", () => {

@@ -146,7 +146,7 @@ interface BotanicalProps {
 
 export function Botanical({ fit, pieces, corners = false }: BotanicalProps) {
   const scopeClass =
-    fit !== undefined ? frameScopeClass(fit) : tallScopeClass(false);
+    fit !== undefined ? frameScopeClass(fit) : tallScopeClass();
   return (
     <div className={`${scopeClass} ${styles.layer}`}>
       <style>
