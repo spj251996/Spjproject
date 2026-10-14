@@ -190,6 +190,15 @@ test("the 2026-10-14 picks left the route: family photos, progress line, opening
   ]) {
     assert.ok(invite.includes(cls), `the invite lost ${cls}`);
   }
+  /* Event Info's natural rhythm on a phone, checked where it landed (owner, 2026-10-14). */
+  const eventInfo = readFileSync("app/_sections/event-info.tsx", "utf8");
+  for (const cls of [
+    "[@media(width<48rem)]:mt-[calc(var(--spacing-space-sm)+2.5px)]",
+    "mt-[calc(var(--spacing-space-lg)+2px)]",
+    "gap-y-[calc(var(--spacing-space-md)+2px)]",
+  ]) {
+    assert.ok(eventInfo.includes(cls), `Event Info lost ${cls}`);
+  }
   /* The progress line's picks, checked where they landed (owner, 2026-10-14): 2px on a phone,
      3px from the tablet up, the soft glow. */
   const tokens = readFileSync("app/styles/tokens.css", "utf8");

@@ -119,7 +119,7 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
       >
         {headingFor(event.id)}
       </h2>
-      <div className="flex flex-col items-center gap-space-3xs mt-space-sm">
+      <div className="flex flex-col items-center gap-space-3xs mt-space-sm [@media(width<48rem)]:mt-[calc(var(--spacing-space-sm)+2.5px)]">
         {/* The date carries the weight and the address steps back, the way the invite sets the same
             two lines (owner, 2026-10-07). `date-primary` and `heading-sm` share a size at every
             tier, so weight is the only thing telling these two apart. */}
@@ -231,11 +231,16 @@ function mapLabel(segment: EventSegment): string {
    or wider. BETWEEN the two entries the gap
    went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
    two read as two clusters; `eventInfoFit` is re-measured for it. */
-/* Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
+/* ON A PHONE THE SHEET READS IN A NATURAL RHYTHM (owner, 2026-10-14): header → date 30, date → the
+   events 48, event → event 48, ink to ink. Each margin is the scale step plus the few px that land the
+   INK there — measured, not derived, because a line box carries air its glyphs never use: 2.5 above
+   the date (on the date group below), 2 above the list and 2 between the events.
+
+   Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
    left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group, and a
    wrapped venue narrows to its widest line so that group centres on its ink (DESIGN.md → Event Info). */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-space-sm grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-space-sm text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
+  "mx-auto mt-[calc(var(--spacing-space-lg)+2px)] grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-[calc(var(--spacing-space-md)+2px)] text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
