@@ -9,15 +9,12 @@ import {
   type SpanZone,
 } from "@/app/design-system/_kit";
 
-/* Published, lab and review routes in one list. /thread carries [lab] in the doc —
-   built and verified but not on the published page; /preview carries [retire] instead, because it
-   IS published and is deleted before the branch merges rather than at Phase 9. */
+/* The published route and the lab in one list. /thread carries [lab] in the doc — built and verified
+   but not on the published page. */
 const VARIANT_ROUTES = [
   "/ · five sections · no thread · the hero unpainted, the other four mounted",
   "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
-  "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
-  "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
-  "Its panel carries no open question since 2026-10-14: the family photos, the progress line, the opening, the phone paper and the invite's phone spacing left, decided; Event Info's phone spacing is decided too (natural ships) and its lever stays until the route is deleted before the merge → DESIGN.md → Iteration Notes → Open Decisions",
+  "/preview, the review route, is retired (2026-10-14): every lever on it was decided and landed in the section files → DESIGN.md → Iteration Notes → Open Decisions",
 ];
 
 const TRY_IT = [
@@ -158,9 +155,9 @@ export function TechnicalSections() {
 
       <GallerySection
         id="variant-routes"
-        intro="Three routes compose from one section module. What differs between them is whether the thread mounts and whether the review panel rides along — never the card paint, which follows each card's role, and never the geometry, which is identical for every section two routes share."
+        intro="Two routes compose from one section module. What differs between them is whether the thread mounts — never the card paint, which follows each card's role, and never the geometry, which is identical for every section the two share."
         mapsTo="Technical Conventions → Variant Routes"
-        source="app/_sections/index.tsx · app/thread/page.tsx · app/preview/page.tsx"
+        source="app/_sections/index.tsx · app/thread/page.tsx"
         title="Technical · Variant Routes"
       >
         <RuleList rules={VARIANT_ROUTES} />
