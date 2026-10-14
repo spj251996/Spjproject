@@ -1,3 +1,5 @@
+import { CloseIcon } from "@/components/icons";
+import { CONTROL_CIRCLE } from "./gallery-control";
 import { ImagePlaceholder } from "./image-placeholder";
 
 /* The presentational half of `gallery-modal`, split out because `'use client'` is file-scoped: with
@@ -57,11 +59,12 @@ export function GalleryModalPanel({
           {title}
         </h2>
         <button
-          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse hover:[text-shadow:0.35px_0_0_currentColor,-0.35px_0_0_currentColor] active:opacity-80 motion-safe:transition-[text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle"
+          aria-label="Close"
+          className={CONTROL_CIRCLE}
           onClick={onClose}
           type="button"
         >
-          Close
+          <CloseIcon size={20} />
         </button>
       </header>
 

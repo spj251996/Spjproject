@@ -13,7 +13,8 @@
    it and stay clickable. */
 
 import { useState } from "react";
-import { ChevronIcon } from "@/components/icons";
+import { ChevronIcon, CloseIcon, GridIcon } from "@/components/icons";
+import { CONTROL_CIRCLE } from "./gallery-control";
 import motion from "./gallery-motion.module.css";
 
 interface PhotoViewerPanelProps {
@@ -31,15 +32,9 @@ interface PhotoViewerPanelProps {
   hint?: boolean;
 }
 
-/* Hover thickens the label optically, as `button-action` does — a heavier cut would widen it. The
-   `hover:` variant only applies on a device that can hover, and every transition is motion-gated. */
-const CONTROL =
-  "type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse hover:[text-shadow:0.35px_0_0_currentColor,-0.35px_0_0_currentColor] active:opacity-80 motion-safe:transition-[text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle";
-
-/* 48px — past the touch-target floor — so the mark reads at a glance; the dark ground keeps it
-   visible wherever the circle overlaps a photograph. */
-const ARROW =
-  "absolute top-1/2 inline-flex size-space-xl -translate-y-1/2 items-center justify-center rounded-full bg-scrim/60 text-ink-inverse hover:bg-ink-inverse/15 active:opacity-80 motion-safe:transition-[background-color,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle";
+/* The arrows sit on the stage's edges, centred on its height; the header's two controls sit in its
+   row. All four are the same round control. */
+const ARROW = `${CONTROL_CIRCLE} absolute top-1/2 -translate-y-1/2`;
 
 const SLIDE = {
   1: motion["slide-next"],
@@ -74,11 +69,21 @@ export function PhotoViewerPanel({
           {index + 1} / {count}
         </p>
         <div className="flex shrink-0 gap-space-2xs">
-          <button className={CONTROL} onClick={onShowGrid} type="button">
-            All photos
+          <button
+            aria-label="All photos"
+            className={CONTROL_CIRCLE}
+            onClick={onShowGrid}
+            type="button"
+          >
+            <GridIcon size={20} />
           </button>
-          <button className={CONTROL} onClick={onClose} type="button">
-            Close
+          <button
+            aria-label="Close"
+            className={CONTROL_CIRCLE}
+            onClick={onClose}
+            type="button"
+          >
+            <CloseIcon size={20} />
           </button>
         </div>
       </header>

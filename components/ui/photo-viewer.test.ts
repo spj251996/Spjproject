@@ -12,6 +12,7 @@ const viewer = read("photo-viewer.tsx");
 const row = read("photo-row.tsx");
 const panel = read("gallery-modal-panel.tsx");
 const modal = read("gallery-modal.tsx");
+const control = read("gallery-control.ts");
 
 const COVER = '<span aria-hidden="true" className="absolute inset-0" />';
 
@@ -219,20 +220,22 @@ test("while the gallery fades out it still catches every tap, so nothing reaches
 test("previous and next are drawn chevrons in a 48px dark circle, not type marks", () => {
   assert.doesNotMatch(viewer, /[‹›]/);
   assert.match(viewer, /<ChevronIcon/);
-  assert.match(viewer, /size-space-xl/);
-  assert.match(viewer, /bg-scrim\/60/);
-  assert.match(viewer, /hover:bg-ink-inverse\/15/);
+  assert.match(viewer, /CONTROL_CIRCLE/);
+  assert.match(control, /size-space-xl/);
+  assert.match(control, /bg-scrim\/60/);
+  assert.match(control, /hover:bg-scrim\/85/);
 });
 
-test("All photos and Close hover the way button-action does, thickening rather than reweighting", () => {
-  assert.match(
-    viewer,
-    /hover:\[text-shadow:0\.35px_0_0_currentColor,-0\.35px_0_0_currentColor\]/,
-  );
-  assert.match(
-    panel,
-    /hover:\[text-shadow:0\.35px_0_0_currentColor,-0\.35px_0_0_currentColor\]/,
-  );
+test("All photos and Close are drawn icons in the arrows' dark circle, named for screen readers", () => {
+  assert.match(viewer, /aria-label="All photos"/);
+  assert.match(viewer, /aria-label="Close"/);
+  assert.match(viewer, /<GridIcon/);
+  assert.match(viewer, /<CloseIcon/);
+  assert.match(panel, /aria-label="Close"/);
+  assert.match(panel, /<CloseIcon/);
+  assert.match(panel, /className=\{CONTROL_CIRCLE\}/);
+  assert.doesNotMatch(viewer, />\s*(All photos|Close)\s*</);
+  assert.doesNotMatch(panel, />\s*Close\s*</);
 });
 
 test("a grid tile shows it opens bigger, and only where motion is welcome", () => {
