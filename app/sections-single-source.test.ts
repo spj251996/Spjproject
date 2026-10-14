@@ -65,7 +65,7 @@ test("the lab route sets the thread", () => {
   );
 });
 
-/* Three routes (owner, 2026-10-14: "only three routes /, /preview, /thread"). The lab is ONE static route painted
+/* Two routes since `/preview` retired (owner, 2026-10-14: "only three routes /, /preview, /thread"). The lab is ONE static route painted
    like `/`, so a variant directory coming back is the regression. */
 test("the thread lab is one static route, painted as / is", () => {
   assert.ok(
