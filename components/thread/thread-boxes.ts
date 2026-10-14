@@ -29,14 +29,13 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
 type SectionHeights = Record<Exclude<ThreadId, "not-found">, number>;
 
 const TALL_HEIGHTS: SectionHeights = {
-  /* 707, not the viewport's 700, since 2026-10-11: the names grew 45% on a phone and the invite's
-     content now overruns one 393x700 screen by 7px (measured 707.06 on `/thread/current`, with
-     `contact` and `wishes` reproducing 700 in the same run). */
-  invite: 707,
-  /* 1411, not two screens' 1400, since 2026-10-11: the two entries in each sheet moved one step
-     apart and the stacked pair now overruns 393x700 by 10.5px (measured 1410.53 on
-     `/thread/current`, with `contact` and `wishes` reproducing 700 in the same run). */
-  "event-info": 1411,
+  /* One screen again since 2026-10-14, when the invite's phone content came back inside 393x700; it
+     was 707 from 2026-10-11 and 845 at the audit. Re-measured on `/thread/current` with `contact` and
+     `wishes` reproducing 700 in the same run. */
+  invite: 700,
+  /* Two screens again since 2026-10-14: the frame now presses a window the full ground cannot hold
+     (`mounted-sheet-frame-css.ts` → `windowFits`), where the stacked pair had overrun by 4.5-10.5px. */
+  "event-info": 1400,
   contact: 700,
   family: 1400,
   /* RE-MEASURED 2026-10-07 on the BUILT page, at this band's own nominal box, after
@@ -45,9 +44,11 @@ const TALL_HEIGHTS: SectionHeights = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — so removing
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
+     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
+     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
+     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — so removing
      them means subtracting two increments, not re-deriving the height.
      RE-MEASURED 2026-10-10 on two changes at once, and the BASE moved while the INCREMENT did not:
      the ritual restructure put each Malayalam on its own line, and the alternating band above
@@ -75,9 +76,11 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
+     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
+     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
+     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
   celebrations: 2630,
@@ -95,12 +98,14 @@ const WIDE_HEIGHTS: SectionHeights = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
+     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
+     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
+     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: 1941,
+  celebrations: 1893,
   wishes: 695,
 };
 

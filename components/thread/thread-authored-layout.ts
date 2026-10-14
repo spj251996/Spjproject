@@ -30,9 +30,8 @@ export type AuthoredCard = {
 type Sections = Record<Exclude<ThreadId, "not-found">, AuthoredCard>;
 
 const TALL_CARDS: Sections = {
-  invite: { cardWidth: 361, cardLeft: 16, sectionHeight: 707 },
-  /* 1411 since 2026-10-11: see `thread-boxes.ts`. */
-  "event-info": { cardWidth: 361, cardLeft: 16, sectionHeight: 1411 },
+  invite: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
+  "event-info": { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },
   contact: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
   family: { cardWidth: 361, cardLeft: 16, sectionHeight: 1400 },
   // Celebrations takes `mounted-sheet`'s `tall` mode (no measured fit), so its padding chain is
@@ -43,9 +42,11 @@ const TALL_CARDS: Sections = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
+     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
+     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
+     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
   celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 2541 },
@@ -63,9 +64,11 @@ const UPRIGHT_CARDS: Sections = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
+     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
+     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
+     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
   celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 2630 },
@@ -83,12 +86,14 @@ const WIDE_CARDS: Sections = {
      THE THREAD'S ROUTE THROUGH CELEBRATIONS IS STILL COMPOSED FOR THE PLACEHOLDER: this height
      makes the stretch span the right distance, but its SHAPE awaits the owner's drawing on the
      built page (owner's decision, 2026-10-07). That is accepted, not a defect to fix here.
-     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, which are dropped before
-     main (`content/rituals.ts`). The photo-free base is 2173 / 2262 / 1513 at tall / upright /
-     wide, and each ritual that gains photographs adds a CONSTANT +184 / +184 / +214 — measured to
+     THIS FIGURE INCLUDES THE FIRST TWO RITUALS' TEMPORARY PHOTOGRAPHS, uploaded into
+     `assets/rituals/` and removed after the couple's preview — the Wedding folder's test uploads are
+     deliberately NOT counted. The photo-free base is 2173 / 2262 / 1513 at tall / upright / wide,
+     and each ritual that gains photographs adds a CONSTANT +184 / +184 / +190 (+214 less the 24px a
+     photographed ritual closes by from 64rem, 2026-10-11) — measured to
      the pixel across 0, 1, 2 and 3 rituals, and independent of how many photographs any one of
      them carries. So removing them means subtracting two increments, not re-deriving the height. */
-  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1941 },
+  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1893 },
   wishes: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
 };
 
