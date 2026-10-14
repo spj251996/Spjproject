@@ -74,8 +74,8 @@ type CardRole = "hero" | "section";
 /* An EMPTY arm must stay exactly empty, and that is load-bearing rather than tidy: an empty
    interpolation emits the same string the retired `unbacked ? "" : …` ternary did, which is how the
    built markup came back byte-identical across both migrations -- `mounted-sheet-frame__mount ` keeps
-   its trailing space and `mounted-sheet-frame__sheet  invite-settle` its double space. Collapsing that
-   whitespace would be a visual no-op and would break the one proof the migrations rest on. */
+   its trailing space, and so does the hero's `mounted-sheet-frame__sheet`. Collapsing that whitespace
+   would be a visual no-op and would break the byte-for-byte proof a later migration rests on. */
 const MOUNT_PAINT: Record<CardRole, string> = {
   hero: "",
   section: `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`,

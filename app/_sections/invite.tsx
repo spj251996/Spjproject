@@ -154,7 +154,7 @@ export function InviteSection() {
     <section className="relative" id="invite">
       {/* `corners`: the opening grows these pieces from their own corners (`app/invite.css`). */}
       <Botanical corners fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
-      <MountedSheet className="invite-settle" fit={inviteFit} hero>
+      <MountedSheet fit={inviteFit} hero>
         {/* The stack fills the card so the passage can settle against its bottom edge. Growth
             shares rather than `1fr` grid rows: a share with no free space collapses to 0 in
             `measure:fit`'s detached clone, so the measured height stays the content's own, while
