@@ -21,10 +21,12 @@ import "./preview.css";
    context, and a stacking context on any ancestor of a `.botanical-piece` isolates
    `mix-blend-mode: multiply` with no error and every gate green. */
 /* Applies a Replay pick BEFORE the invite's markup is parsed, so the candidate plays as a true
-   arrival. One-shot: it deletes the key, so the next plain reload is the published page. Written
+   arrival, with the panel hidden until it has hydrated closed — the server renders it open, so it
+   would otherwise cover the arrival's first moment. One-shot: it deletes the key, so the next plain
+   reload is the published page. Written
    through `dataset` — the literal attribute name must not appear in the HTML, which
    `check-export-routes.mjs` asserts carries no `data-pv-` string at all. */
-const APPLY_REPLAYED_OPENING = `try{var k="pv-replay-opening",o=sessionStorage.getItem(k);if(o!==null){sessionStorage.removeItem(k);if(o)document.documentElement.dataset.pvOpening=o;}}catch(e){}`;
+const APPLY_REPLAYED_OPENING = `try{var k="pv-replay-opening",o=sessionStorage.getItem(k);if(o!==null){sessionStorage.removeItem(k);var d=document.documentElement.dataset;d.pvReplaying="";if(o)d.pvOpening=o;}}catch(e){}`;
 
 export default function Preview() {
   return (

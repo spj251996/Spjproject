@@ -387,7 +387,7 @@
 
   /* DESIGN.md → Components → UI → `scroll-progress`. The fill reads as the thread: its red, then
      vermilion, brightening to the core at the leading edge the way the drawing head does. Height
-     and glow are provisional until the owner's pick on `/preview`. */
+     and glow are the owner's picks (2026-10-14); the phone's 2px is the `max-md` rule below. */
   --progress-height: 3px;
   --progress-track: color-mix(in srgb, var(--color-ink) 10%, transparent);
   --progress-fill: linear-gradient(
@@ -407,6 +407,14 @@
   /* The scroll progress bar: over every section, under the gallery's scrim. */
   --z-progress: 45;
   --z-modal: 50;
+}
+
+/* The progress line is 2px on a phone, 3px from the tablet up (owner, 2026-10-14, on a phone) —
+   DESIGN.md → Components → UI → `scroll-progress`. */
+:root {
+  @variant max-md {
+    --progress-height: 2px;
+  }
 }
 
 /* `@theme` accepts only bare custom properties, so the type steps live here. `@variant` resolves the

@@ -47,51 +47,13 @@
 /* THE GOLD, THE EVENT ICONS AND THE "&" LEFT THE ROUTE (owner, 2026-10-11): deep gold ships, the
    icons and the soft-brown "&" stay as they are.
 
-   EVERY FAMILY PORTRAIT, BLENDED INTO THE CARD (owner; the groom's side 2026-10-11, all ten since
-   2026-10-14) — `multiply`, as the botanical layer does, so their white grounds take the stock's own colour. The placeholder wash under
-   each photo is hidden, or the photo would multiply onto it instead of onto the card. */
-html[data-pv-portrait] #family figure > div:first-child img {
-  mix-blend-mode: multiply;
-}
+   THE FAMILY PHOTOS LEFT THE ROUTE (owner, 2026-10-14): as now — the rim and the couple's glow as
+   shipped. The lever offered blended with no rim, blended with soft lower edges, and blended with the
+   rim. */
 
-html[data-pv-portrait] #family figure > div:first-child > div > :first-child {
-  display: none;
-}
-
-/* "No rim" drops the ring, its paper offset AND the couple's glow — the whole box shadow (owner,
-   2026-10-14, reversing the same day's call to keep the glow). */
-html:is([data-pv-portrait="blend"], [data-pv-portrait="fade"])
-  #family
-  figure
-  > div:first-child {
-  box-shadow: none;
-}
-
-/* Soft edges on the BOTTOM HALF only (owner, 2026-10-14): the two mask layers add, so the solid top
-   half shows whole and only the lower half takes the radial fade. */
-html[data-pv-portrait="fade"] #family figure > div:first-child img {
-  mask-image:
-    linear-gradient(#000 50%, transparent 50%),
-    radial-gradient(circle closest-side, #000 72%, transparent 100%);
-}
-
-/* ───────── THE PROGRESS BAR — height and glow (owner picks on a phone, 2026-10-14) ─────────
-   Shipped: 3px, a soft vermilion glow. */
-html[data-pv-progress-height="2"] {
-  --progress-height: 2px;
-}
-
-html[data-pv-progress-height="4"] {
-  --progress-height: 4px;
-}
-
-html[data-pv-progress-glow="none"] {
-  --progress-glow: none;
-}
-
-html[data-pv-progress-glow="bleed"] {
-  --progress-glow: var(--bleed-thread);
-}
+/* ───────── THE PROGRESS BAR LEFT THE ROUTE (owner, 2026-10-14) ─────────
+   2px on a phone and 3px from the tablet up, with the soft vermilion glow — in `tokens.css`. The
+   lever offered 2 / 3 / 4px, and no glow, soft, or the thread's own bleed. */
 
 /* ───────── THE STOCK GRAIN ON PHONES — the same texture at less contrast ─────────
    Each scales the tile's final transfer slopes by k and raises each intercept so the paper's mean
@@ -111,6 +73,12 @@ html[data-pv-progress-glow="bleed"] {
   }
 }
 
+/* A replay plays full screen: the one-shot script in `page.tsx` hides the panel before first paint,
+   and the panel removes the attribute once it has hydrated closed. */
+html[data-pv-replaying] aside[aria-label="Preview options"] {
+  visibility: hidden;
+}
+
 /* ───────── THE OPENING — three candidates against Today (owner, 2026-10-14) ─────────
    Applied by the Replay button through a one-shot inline script, never by the synced levers.
    Each animates transform, opacity or clip-path only, on each element itself — never a flower's
@@ -119,7 +87,7 @@ html[data-pv-progress-glow="bleed"] {
    individual `scale` and `rotate` properties. The date's `.label`s carry a static lift transform,
    so they fade only. */
 html[data-pv-opening="written"] {
-  --opening-type-end: calc(var(--duration-fast) * 13.5);
+  --opening-type-end: calc(var(--duration-fast) * 14);
 }
 
 html[data-pv-opening="bloom"] {
@@ -191,37 +159,12 @@ html[data-pv-opening="curtain"] {
     }
   }
 
-  @keyframes pv-settle-down {
-    from {
-      opacity: 0;
-      transform: scale(1.06);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
   @keyframes pv-write {
     from {
       clip-path: inset(-10% 110% -10% -10%);
     }
     to {
       clip-path: inset(-10% -10% -10% -10%);
-    }
-  }
-
-  @keyframes pv-pop {
-    from {
-      opacity: 0;
-      transform: scale(0.6);
-    }
-    70% {
-      opacity: 1;
-      transform: scale(1.12);
-    }
-    to {
-      transform: none;
     }
   }
 
@@ -241,29 +184,6 @@ html[data-pv-opening="curtain"] {
     }
     to {
       opacity: 1;
-      transform: none;
-    }
-  }
-
-  @keyframes pv-draw-up {
-    from {
-      transform: scaleY(0);
-    }
-    to {
-      transform: none;
-    }
-  }
-
-  @keyframes pv-drop {
-    from {
-      opacity: 0;
-      transform: translateY(-12px);
-    }
-    70% {
-      opacity: 1;
-      transform: translateY(2px);
-    }
-    to {
       transform: none;
     }
   }
@@ -300,7 +220,10 @@ html[data-pv-opening="curtain"] {
     animation: none;
   }
 
-  /* ── A. Written in ── */
+  /* ── A. Written in — three beats (owner, 2026-10-14: "too many things happening, cut things or
+     merge"; then "after god-grace slow down, do couples names in clean shot"). The flowers grow in
+     with the eyebrow; a pause; the names write in as ONE stroke, the whole lockup left to right
+     over five beats; then everything below the names rises together. ── */
   html[data-pv-opening="written"]:not([data-opening-skipped])
     .mounted-sheet-frame--invite
     .botanical-piece {
@@ -312,80 +235,28 @@ html[data-pv-opening="curtain"] {
     .mounted-sheet-frame--invite
     [data-invite-stack]
     .type-eyebrow {
-    animation: pv-settle-down var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 2.5) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-stack]
-    use[href="#names-sebastian"] {
-    animation: pv-write calc(var(--duration-fast) * 2.5) var(--ease-settle)
-      calc(var(--duration-fast) * 3.5) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-stack]
-    use[href="#names-ampersand"] {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: pv-pop var(--duration-base) var(--ease-overshoot)
-      calc(var(--duration-fast) * 5.75) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-stack]
-    use[href="#names-flemy"] {
-    animation: pv-write calc(var(--duration-fast) * 2.5) var(--ease-settle)
-      calc(var(--duration-fast) * 6.75) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-line] {
-    animation: pv-fade-up var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 9) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-date]
-    p {
     animation: pv-fade var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 9.5) backwards;
+      var(--duration-base) backwards;
   }
 
   html[data-pv-opening="written"]:not([data-opening-skipped])
     .mounted-sheet-frame--invite
-    [data-invite-date]
-    span[aria-hidden] {
-    transform-origin: bottom;
-    animation: pv-draw-up var(--duration-base) var(--ease-settle)
-      calc(var(--duration-fast) * 9.5) backwards;
+    [data-invite-stack]
+    h1 {
+    animation: pv-write calc(var(--duration-fast) * 5) var(--ease-settle)
+      calc(var(--duration-fast) * 6) backwards;
   }
 
   html[data-pv-opening="written"]:not([data-opening-skipped])
     .mounted-sheet-frame--invite
-    [data-invite-date]
-    time {
-    animation: pv-drop var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 10.25) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-place] {
+    :is(
+      [data-invite-line],
+      [data-invite-date],
+      [data-invite-place],
+      [data-invite-passage]
+    ) {
     animation: pv-fade-up var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 11) backwards;
-  }
-
-  html[data-pv-opening="written"]:not([data-opening-skipped])
-    .mounted-sheet-frame--invite
-    [data-invite-passage] {
-    animation: pv-fade var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 11.5) backwards;
+      calc(var(--duration-fast) * 12) backwards;
   }
 
   /* ── B. Bloom ── */

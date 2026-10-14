@@ -21,9 +21,10 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    corner box: at 360px wide a fixed panel either covers what it is asking about or runs off the
    screen.
 
-   ON 2026-10-14 THE OWNER'S OWN QUESTIONS JOINED THE COUPLE'S for one round: the progress line's
-   thickness and glow, the phone paper texture, and the opening with its Replay — all picked on a
-   phone, then carried into the page and taken off this route. */
+   ON 2026-10-14 THE OWNER'S OWN QUESTIONS REPLACED THE COUPLE'S for one round: the opening with its
+   Replay, and the phone paper texture — each picked on a phone, then carried into the page and taken
+   off this route. The family photos (as now) and the progress line (2px on a phone, 3px from the
+   tablet up, soft glow) were settled the same day and left. */
 
 /* THE WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is namespaced.
    WHY THE NAMESPACE IS LOAD-BEARING: `app/layout.tsx` sets `data-opening-skipped` on this SAME
@@ -36,12 +37,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    before first paint so a candidate plays as a true arrival; this list is what the sync effect below
    removes when a control is shipped, so naming it would strip the candidate at mount and cut it
    mid-flight. */
-const ATTRIBUTES = [
-  "data-pv-portrait",
-  "data-pv-progress-height",
-  "data-pv-progress-glow",
-  "data-pv-grain",
-] as const;
+const ATTRIBUTES = ["data-pv-grain"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -69,7 +65,6 @@ const ATTRIBUTES = [
 
 interface Option {
   label: string;
-  note?: string;
   /* Empty IS the shipped state — see the contract above. */
   attrs: Readonly<Record<string, string>>;
 }
@@ -77,7 +72,6 @@ interface Option {
 interface Lever {
   id: string;
   title: string;
-  note?: string;
   options: readonly Option[];
 }
 
@@ -93,49 +87,13 @@ interface Lever {
    destinations; rounds 7–9's picks landed the same way and `app/round7-9.test.ts` pins them. */
 const COUPLE_LEVERS: readonly Lever[] = [
   {
-    id: "portrait",
-    title: "The family photos",
-    note: "Every family photo. Their white backgrounds melt into the card, the way the flowers do.",
-    options: [
-      { label: "As now", attrs: {} },
-      { label: "Blended, no rim", attrs: { "data-pv-portrait": "blend" } },
-      {
-        label: "Blended, no rim, soft edges",
-        attrs: { "data-pv-portrait": "fade" },
-      },
-      { label: "Blended, with the rim", attrs: { "data-pv-portrait": "rim" } },
-    ],
-  },
-  {
-    id: "progress-height",
-    title: "The progress line at the top — thickness",
-    options: [
-      { label: "As now (3px)", attrs: {} },
-      { label: "Thinner (2px)", attrs: { "data-pv-progress-height": "2" } },
-      { label: "Thicker (4px)", attrs: { "data-pv-progress-height": "4" } },
-    ],
-  },
-  {
-    id: "progress-glow",
-    title: "The progress line — glow",
-    options: [
-      { label: "As now (soft)", attrs: {} },
-      { label: "No glow", attrs: { "data-pv-progress-glow": "none" } },
-      {
-        label: "The thread's glow",
-        attrs: { "data-pv-progress-glow": "bleed" },
-      },
-    ],
-  },
-  {
     id: "grain",
-    title: "Paper texture on phones",
-    note: "Phones only — tablets and computers keep today's paper.",
+    title: "Paper on phones",
     options: [
       { label: "As now", attrs: {} },
-      { label: "Lighter (75%)", attrs: { "data-pv-grain": "75" } },
-      { label: "Half (50%)", attrs: { "data-pv-grain": "50" } },
-      { label: "Faint (25%)", attrs: { "data-pv-grain": "25" } },
+      { label: "75%", attrs: { "data-pv-grain": "75" } },
+      { label: "50%", attrs: { "data-pv-grain": "50" } },
+      { label: "25%", attrs: { "data-pv-grain": "25" } },
     ],
   },
 ];
@@ -144,8 +102,9 @@ const OPEN_KEY = "preview-panel-open";
 
 /* Only the open flag persists. A chosen lever deliberately does not: the couple's answer is what
    they tell the owner, and a remembered selection would make a reload show someone else's pick as
-   if it were the page. ONE EXCEPTION: the opening's Replay key, which `page.tsx`'s inline script
-   reads once and deletes — it survives exactly one reload, the one that plays the candidate. */
+   if it were the page. ONE EXCEPTION: the opening's replay key, which `page.tsx`'s inline script
+   reads once and deletes — it survives exactly one reload, the one that plays the candidate. Playing
+   an opening also stores the panel as closed, so the candidate plays full screen. */
 function readOpen(): boolean {
   try {
     return window.localStorage.getItem(OPEN_KEY) !== "0";
@@ -210,11 +169,6 @@ function LeverGroup({
   return (
     <fieldset style={{ border: 0, margin: "0 0 14px", padding: 0 }}>
       <legend style={{ fontWeight: 700, padding: 0 }}>{lever.title}</legend>
-      {lever.note === undefined ? null : (
-        <p style={{ margin: "2px 0 4px", opacity: 0.75, fontSize: 12 }}>
-          {lever.note}
-        </p>
-      )}
       {lever.options.map((option, index) => (
         <label key={option.label} style={CHOICE}>
           {/* `onClick` AS WELL AS `onChange`, and it is the couple's first tap that needs it.
@@ -234,14 +188,7 @@ function LeverGroup({
             onClick={() => onChoose(index)}
             type="radio"
           />
-          <span>
-            {option.label}
-            {option.note === undefined ? null : (
-              <span style={{ display: "block", opacity: 0.75, fontSize: 12 }}>
-                {option.note}
-              </span>
-            )}
-          </span>
+          <span>{option.label}</span>
         </label>
       ))}
     </fieldset>
@@ -250,57 +197,61 @@ function LeverGroup({
 
 const OPENINGS = [
   { label: "As now", value: "" },
-  { label: "A — Written in", value: "written" },
-  { label: "B — Bloom", value: "bloom" },
-  { label: "C — Curtain", value: "curtain" },
+  { label: "A · Written in", value: "written" },
+  { label: "B · Bloom", value: "bloom" },
+  { label: "C · Curtain", value: "curtain" },
 ] as const;
 
 /* The `sessionStorage` key `page.tsx`'s inline script reads once and deletes, so a plain reload
    afterwards is the published page again. */
 const REPLAY_KEY = "pv-replay-opening";
 
+/* One button per opening (owner, 2026-10-14: "button for each option and close panel and do
+   replay"). A tap stores the pick, closes the panel and reloads from the top, so the candidate plays
+   full screen as a true arrival. The one just played is marked. */
 function OpeningGroup() {
-  const [chosen, setChosen] = useState(0);
+  const [applied, setApplied] = useState("");
 
-  /* The applied candidate is whatever the inline script set before first paint; reflect it. */
+  /* Whatever the inline script set before first paint — and, now that the panel has hydrated
+     closed, unhide it: the script hid it so the server's open panel could not cover the arrival. */
   useEffect(() => {
-    const applied = document.documentElement.dataset.pvOpening ?? "";
-    const index = OPENINGS.findIndex((o) => o.value === applied);
-    setChosen(index === -1 ? 0 : index);
+    const root = document.documentElement.dataset;
+    setApplied(root.pvOpening ?? "");
+    delete root.pvReplaying;
   }, []);
 
-  const replay = () => {
+  const play = (value: string) => {
     try {
-      window.sessionStorage.setItem(REPLAY_KEY, OPENINGS[chosen]?.value ?? "");
+      window.sessionStorage.setItem(REPLAY_KEY, value);
     } catch {
       /* Storage blocked: the reload still runs and shows the published opening. */
     }
+    writeOpen(false);
     window.scrollTo(0, 0);
     window.location.reload();
   };
 
   return (
     <fieldset style={{ border: 0, margin: "0 0 14px", padding: 0 }}>
-      <legend style={{ fontWeight: 700, padding: 0 }}>The opening</legend>
-      <p style={{ margin: "2px 0 4px", opacity: 0.75, fontSize: 12 }}>
-        Pick one, then Replay to watch it from the top.
-      </p>
-      {OPENINGS.map((option, index) => (
-        <label key={option.label} style={CHOICE}>
-          {/* `onClick` as well as `onChange` — the pre-hydration tap, as in `LeverGroup`. */}
-          <input
-            checked={chosen === index}
-            name="pv-opening"
-            onChange={() => setChosen(index)}
-            onClick={() => setChosen(index)}
-            type="radio"
-          />
-          <span>{option.label}</span>
-        </label>
-      ))}
-      <button onClick={replay} style={BUTTON} type="button">
-        Replay
-      </button>
+      <legend style={{ fontWeight: 700, padding: 0, marginBottom: 6 }}>
+        The opening
+      </legend>
+      <div style={{ display: "grid", gap: 6, gridTemplateColumns: "1fr 1fr" }}>
+        {OPENINGS.map((option) => (
+          <button
+            aria-pressed={applied === option.value}
+            key={option.label}
+            onClick={() => play(option.value)}
+            style={{
+              ...BUTTON,
+              fontWeight: applied === option.value ? 700 : 400,
+            }}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </fieldset>
   );
 }
@@ -437,7 +388,7 @@ export function LeverPanel() {
         <div
           style={{ display: "flex", justifyContent: "space-between", gap: 8 }}
         >
-          <strong>A few things to choose</strong>
+          <strong>Options</strong>
           <button
             aria-label="Close the options panel"
             onClick={() => {
@@ -462,11 +413,11 @@ export function LeverPanel() {
             ✕
           </button>
         </div>
-        <p style={{ margin: "2px 0 0", opacity: 0.75, fontSize: 12 }}>
-          The first choice in each group is what the invitation shows now. Tell
-          us which you prefer — nothing here saves.
-        </p>
       </div>
+
+      {/* The opening first, above the paper; no notes and no reset — each group's "As now" is the
+          reset (owner, 2026-10-14: "keep the panel clean and simple"). */}
+      <OpeningGroup />
 
       {COUPLE_LEVERS.map((lever) => (
         <LeverGroup
@@ -476,12 +427,6 @@ export function LeverPanel() {
           onChoose={(index) => choose(lever.id, index)}
         />
       ))}
-
-      <OpeningGroup />
-
-      <button onClick={() => setChosen(SHIPPED)} style={BUTTON} type="button">
-        Back to how it is now
-      </button>
     </aside>
   );
 }

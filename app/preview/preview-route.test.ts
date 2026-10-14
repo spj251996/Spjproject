@@ -25,11 +25,11 @@ const CSS_CODE = code(CSS);
    exceptions. ONE LEVER REMAINS (2026-10-14): the family photos blended into the card. Every other
    lever landed in the section files and is checked where it landed, below and in
    `app/round7-9.test.ts`. */
-const COUPLE_FACING = ["portrait", "progress-height", "progress-glow", "grain"];
+const COUPLE_FACING = ["grain"];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 /* Styled in the alternates but set by `page.tsx`'s one-shot Replay script, never by the panel —
    the panel's sync would remove it at mount and cut the candidate mid-flight. */
-const REPLAY_OWNED = ["data-pv-opening"];
+const REPLAY_OWNED = ["data-pv-opening", "data-pv-replaying"];
 
 test("the route mounts the real page rather than re-composing it", () => {
   assert.match(
@@ -158,29 +158,27 @@ test("the panel never reads the viewport the wrong way", () => {
   );
 });
 
-test("every portrait option the panel offers has a rule; no rim drops the glow; soft edges only below", () => {
-  const values = [
-    ...PANEL_CODE.matchAll(/"data-pv-portrait": "([a-z]+)"/g),
-  ].map((m) => m[1]);
-  assert.deepStrictEqual(
-    values,
-    ["blend", "fade", "rim"],
-    "the portrait options changed — update this list and the rules together",
-  );
-  /* Every option blends: the bare attribute carries the blend, the named values only what differs. */
-  assert.match(CSS_CODE, /html\[data-pv-portrait\] #family figure/);
-  for (const value of ["blend", "fade"]) {
-    assert.ok(
-      CSS_CODE.includes(`[data-pv-portrait="${value}"]`),
-      `the "${value}" option has no rule of its own`,
-    );
+test("the 2026-10-14 picks left the route: the family photos as now, the progress line landed", () => {
+  for (const gone of [
+    "data-pv-portrait",
+    "data-pv-progress-height",
+    "data-pv-progress-glow",
+  ]) {
+    assert.equal(PANEL_CODE.includes(gone), false, `${gone} is still a lever`);
+    assert.equal(CSS_CODE.includes(gone), false, `${gone} still has a rule`);
   }
-  /* Owner, 2026-10-14: "no rim" drops the couple's glow with the rim — the whole box shadow. */
-  assert.match(CSS_CODE, /box-shadow\s*:\s*none/);
-  /* Soft edges on the bottom half only: a solid top half added over the radial fade. */
+  /* The progress line's picks, checked where they landed (owner, 2026-10-14): 2px on a phone,
+     3px from the tablet up, the soft glow. */
+  const tokens = readFileSync("app/styles/tokens.css", "utf8");
+  assert.match(tokens, /--progress-height: 3px;/);
   assert.match(
-    CSS_CODE,
-    /mask-image:\s*linear-gradient\(#000 50%, transparent 50%\),\s*radial-gradient/,
+    tokens,
+    /@variant max-md \{\s*--progress-height: 2px;\s*\}/,
+    "the phone's 2px line is not in tokens.css",
+  );
+  assert.match(
+    tokens,
+    /--progress-glow: drop-shadow\(\s*0 0 2px color-mix\(in srgb, var\(--color-thread-vermilion\) 55%, transparent\)\s*\);/,
   );
 });
 
@@ -459,7 +457,9 @@ test("every storage access in the panel and the replay script is inside a try", 
 
 test("the replay script never spells the attribute it sets", () => {
   const script = PAGE.match(/APPLY_REPLAYED_OPENING = `([^`]*)`/)?.[1] ?? "";
-  assert.ok(script.includes("dataset.pvOpening"));
+  assert.match(script, /\.dataset\b/);
+  assert.match(script, /\.pvOpening=/);
+  assert.match(script, /\.pvReplaying=/);
   assert.equal(script.includes("data-pv-"), false);
 });
 
