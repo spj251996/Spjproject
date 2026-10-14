@@ -19,7 +19,7 @@ const VARIANT_ROUTES = [
   "/thread/stock · the same six · every card the mountless stock",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
   "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
-  "The one lever it carries → the family photos blended into the card: as now, blended with no rim, blended with no rim and soft lower edges, or blended with the rim. No rim drops the couple's glow as well, and the soft edge fades the photo's lower half only. DESIGN.md → Iteration Notes → Open Decisions carries its row",
+  "The one lever it carries, now decided → the family photos blended into the card, where \"as now\" is final (owner, 2026-10-14) and is what / ships; the lever stays until the route is deleted. Its options: as now, blended with no rim, blended with no rim and soft lower edges, or blended with the rim. No rim drops the couple's glow as well, and the soft edge fades the photo's lower half only. DESIGN.md → Iteration Notes → Open Decisions carries its row",
 ];
 
 const TRY_IT = [
