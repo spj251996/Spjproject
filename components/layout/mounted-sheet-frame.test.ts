@@ -202,6 +202,36 @@ test("the phone halving condition asks the full-ground fit at the floor the card
   );
 });
 
+/* The landscape twin: a phone held sideways asks the same two questions through a different branch of
+   the frame (the full 16px ground on every side rather than the portrait bands), so the padding swap
+   has to hold there too. */
+test("a landscape phone asks the full-ground fit at the floor the card shows", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  assert.ok(
+    phone.landscapePossible,
+    "the phone class holds no landscape window",
+  );
+  const ground = topLevelBlocks(css).find(
+    (rule) =>
+      rule.startsWith(`@media ${phone.media} and (orientation: landscape)`) &&
+      rule.includes("--ground-block: var(--spacing-space-2xs)"),
+  );
+  assert.ok(ground, "no pressed-ground rule for the phone class in landscape");
+  const [rescue] = fitRectangles(TINY, 0, 16);
+  const [floor] = fitRectangles(TINY, 0, 24);
+  /* The phone tier's full landscape ground. */
+  const full = 16;
+  assert.ok(
+    ground.includes(`(height >= ${floor.minCardHeight + 2 * full}px)`),
+    `expected the 24-derived full-ground threshold\n${ground}`,
+  );
+  assert.ok(
+    !ground.includes(`(height >= ${rescue.minCardHeight + 2 * full}px)`),
+    `the 16-derived full-ground threshold must not appear\n${ground}`,
+  );
+});
+
 test("a wide window keeps the laptop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
   const wide = classes.find((c) => c.widthTier === "desktop");
