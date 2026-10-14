@@ -25,8 +25,11 @@ const CSS_CODE = code(CSS);
    exceptions. ONE LEVER REMAINS (2026-10-14): the family photos blended into the card. Every other
    lever landed in the section files and is checked where it landed, below and in
    `app/round7-9.test.ts`. */
-const COUPLE_FACING = ["portrait"];
+const COUPLE_FACING = ["portrait", "progress-height", "progress-glow", "grain"];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
+/* Styled in the alternates but set by `page.tsx`'s one-shot Replay script, never by the panel —
+   the panel's sync would remove it at mount and cut the candidate mid-flight. */
+const REPLAY_OWNED = ["data-pv-opening"];
 
 test("the route mounts the real page rather than re-composing it", () => {
   assert.match(
@@ -62,17 +65,17 @@ test("the panel is a sibling of the page, never a wrapper", () => {
   assert.match(PAGE_CODE, /<Home\s*\/>[\s\S]*<LeverPanel\s*\/>/);
 });
 
-test("every localStorage access is guarded", () => {
+test("every storage access is guarded", () => {
   /* It throws outright in a private window and with site data blocked, and an unguarded read
      inside a client component blanks its whole subtree — which would leave the couple looking at
      the page with no panel and no lever at all. */
-  const accesses = PANEL_CODE.match(/localStorage/g) ?? [];
+  const accesses = PANEL_CODE.match(/(local|session)Storage/g) ?? [];
   assert.ok(accesses.length > 0, "the panel reads no storage at all");
   const tries = PANEL_CODE.match(/try\s*\{/g) ?? [];
   assert.equal(
     tries.length,
     accesses.length,
-    `${accesses.length} localStorage accesses against ${tries.length} try blocks`,
+    `${accesses.length} storage accesses against ${tries.length} try blocks`,
   );
 });
 
@@ -135,7 +138,7 @@ test("every attribute the panel sets is a rule in the alternates, and vice versa
   const inCss = new Set(CSS_CODE.match(/data-pv-[a-z-]+/g) ?? []);
   for (const name of inCss) {
     assert.ok(
-      VOCABULARY.includes(name),
+      VOCABULARY.includes(name) || REPLAY_OWNED.includes(name),
       `${name} is styled but is not in the vocabulary`,
     );
   }
@@ -181,7 +184,7 @@ test("every portrait option the panel offers has a rule; no rim drops the glow; 
   );
 });
 
-test("the alternates do not touch the botanical layer at all", () => {
+test("the alternates touch the botanical layer only through the opening's own transform", () => {
   /* THIS TEST'S PREMISE CHANGED WITH THE FLOWERS LEVER (owner, 2026-10-10), and the stronger
      claim replaced the weaker one rather than being deleted with it. While that lever existed the
      claim was "no botanical rule here isolates the blend" — a `z-index`, `isolation`, `contain`,
@@ -192,9 +195,45 @@ test("the alternates do not touch the botanical layer at all", () => {
      lever on any ancestor would reach the pieces too. */
   assert.doesNotMatch(
     CSS_CODE,
-    /botanical|falling-spray|arching-branch/,
-    "the alternates name the botanical layer — the flowers lever is off the couple's review",
+    /falling-spray|arching-branch/,
+    "the alternates name a piece — the flowers lever is off the couple's review",
   );
+  /* ONE EXCEPTION SINCE 2026-10-14: the opening's candidates move the invite's pieces themselves —
+     a transform on the piece ITSELF does not isolate its blend, where any ancestor's would. So a
+     rule here may name `.botanical-piece` only as an opening candidate's, may set nothing but its
+     animation, and every keyframe it can run moves `transform` alone. */
+  const pieceRules =
+    CSS_CODE.match(/[^{}]*\.botanical-piece[^{}]*\{[^{}]*\}/g) ?? [];
+  assert.ok(pieceRules.length >= 3, `${pieceRules.length} piece rules parsed`);
+  const pieceFrames = new Set<string>();
+  for (const rule of pieceRules) {
+    assert.match(
+      rule,
+      /data-pv-opening/,
+      `a non-opening rule names the pieces: ${rule.trim().slice(0, 80)}`,
+    );
+    const body = rule.slice(rule.indexOf("{") + 1, rule.lastIndexOf("}"));
+    for (const declaration of body.split(";").filter((d) => d.trim() !== "")) {
+      assert.match(
+        declaration.trim(),
+        /^animation:/,
+        `a piece rule sets ${declaration.trim()}`,
+      );
+    }
+    pieceFrames.add(body.match(/animation:\s*([a-z-]+)/)?.[1] ?? "");
+  }
+  for (const name of pieceFrames) {
+    const frames = CSS_CODE.match(
+      new RegExp(`@keyframes ${name}\\s*\\{([\\s\\S]*?)\\n {2}\\}`),
+    )?.[1];
+    assert.ok(frames, `@keyframes ${name} not found`);
+    const properties = new Set(frames.match(/[a-z-]+(?=\s*:)/g) ?? []);
+    assert.deepEqual(
+      [...properties],
+      ["transform"],
+      `${name} animates ${[...properties]}`,
+    );
+  }
   const rules = CSS_CODE.split("}");
   /* The one lever's own rules; a lower count means the parse broke, not that the file shrank. */
   assert.ok(
@@ -389,4 +428,46 @@ test("a tap that lands before hydration cannot leave a lever dead or the panel l
     /\}, \[\]\);$/,
     "the reconcile must run once, or it fights a real selection",
   );
+});
+
+test("the opening's attribute is never synced by the panel", () => {
+  const attributes = PANEL.match(/const ATTRIBUTES = \[([^\]]*)\]/)?.[1] ?? "";
+  assert.ok(attributes.length > 0, "ATTRIBUTES not found");
+  assert.equal(attributes.includes("data-pv-opening"), false);
+});
+
+test("every storage access in the panel and the replay script is inside a try", () => {
+  for (const [name, src] of [
+    ["_panel.tsx", PANEL],
+    ["page.tsx", PAGE],
+  ] as const) {
+    const lines = src.split("\n");
+    let found = 0;
+    lines.forEach((line, i) => {
+      if (!/(local|session)Storage\./.test(line)) return;
+      found += 1;
+      const before = lines.slice(Math.max(0, i - 3), i + 1).join("\n");
+      assert.match(
+        before,
+        /try/,
+        `${name}:${i + 1} touches storage outside a try`,
+      );
+    });
+    assert.ok(found > 0, `${name} touches no storage`);
+  }
+});
+
+test("the replay script never spells the attribute it sets", () => {
+  const script = PAGE.match(/APPLY_REPLAYED_OPENING = `([^`]*)`/)?.[1] ?? "";
+  assert.ok(script.includes("dataset.pvOpening"));
+  assert.equal(script.includes("data-pv-"), false);
+});
+
+test("every opening candidate is gated like Today's sequence", () => {
+  const rules = CSS_CODE.match(/[^{}]+{[^{}]*animation[^{}]*}/g) ?? [];
+  const opening = rules.filter((r) => r.includes("data-pv-opening"));
+  assert.ok(opening.length >= 10, `${opening.length} opening rules`);
+  for (const rule of opening)
+    assert.match(rule, /:not\(\[data-opening-skipped\]\)/);
+  assert.match(CSS, /@media \(prefers-reduced-motion: no-preference\)/);
 });

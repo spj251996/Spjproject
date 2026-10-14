@@ -74,3 +74,388 @@ html[data-pv-portrait="fade"] #family figure > div:first-child img {
     linear-gradient(#000 50%, transparent 50%),
     radial-gradient(circle closest-side, #000 72%, transparent 100%);
 }
+
+/* ───────── THE PROGRESS BAR — height and glow (owner picks on a phone, 2026-10-14) ─────────
+   Shipped: 3px, a soft vermilion glow. */
+html[data-pv-progress-height="2"] {
+  --progress-height: 2px;
+}
+
+html[data-pv-progress-height="4"] {
+  --progress-height: 4px;
+}
+
+html[data-pv-progress-glow="none"] {
+  --progress-glow: none;
+}
+
+html[data-pv-progress-glow="bleed"] {
+  --progress-glow: var(--bleed-thread);
+}
+
+/* ───────── THE STOCK GRAIN ON PHONES — the same texture at less contrast ─────────
+   Each scales the tile's final transfer slopes by k and raises each intercept so the paper's mean
+   colour holds: measured within 0.25/255 of today's per channel, the texture's spread at 0.82 /
+   0.60 / 0.31 of today's. Phones only: every wider tier keeps today's tile. */
+@media (width < 48rem) {
+  html[data-pv-grain="75"] {
+    --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0619' intercept='0.9456'/><feFuncG type='linear' slope='0.0805' intercept='0.9293'/><feFuncB type='linear' slope='0.1115' intercept='0.9021'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  }
+
+  html[data-pv-grain="50"] {
+    --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0413' intercept='0.9612'/><feFuncG type='linear' slope='0.0537' intercept='0.9496'/><feFuncB type='linear' slope='0.0743' intercept='0.9302'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  }
+
+  html[data-pv-grain="25"] {
+    --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0206' intercept='0.9768'/><feFuncG type='linear' slope='0.0268' intercept='0.9699'/><feFuncB type='linear' slope='0.0372' intercept='0.9583'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  }
+}
+
+/* ───────── THE OPENING — three candidates against Today (owner, 2026-10-14) ─────────
+   Applied by the Replay button through a one-shot inline script, never by the synced levers.
+   Each animates transform, opacity or clip-path only, on each element itself — never a flower's
+   ancestor — and ends at the element's own base state, so `backwards` and no held fill. A
+   `.botanical-piece` is animated through `transform` alone: its mirror and rotation live in the
+   individual `scale` and `rotate` properties. The date's `.label`s carry a static lift transform,
+   so they fade only. */
+html[data-pv-opening="written"] {
+  --opening-type-end: calc(var(--duration-fast) * 13.5);
+}
+
+html[data-pv-opening="bloom"] {
+  --opening-type-end: calc(var(--duration-fast) * 9);
+}
+
+html[data-pv-opening="curtain"] {
+  --opening-type-end: calc(var(--duration-fast) * 6);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pv-grow-sway {
+    from {
+      transform: translate(
+          calc(var(--piece-corner-x) * 9%),
+          calc(var(--piece-corner-y) * 9%)
+        )
+        scale(0.82) rotate(-3deg);
+    }
+    60% {
+      transform: translate(
+          calc(var(--piece-corner-x) * -1.5%),
+          calc(var(--piece-corner-y) * -1.5%)
+        )
+        scale(1.03) rotate(1deg);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-unfurl {
+    from {
+      transform: translate(
+          calc(var(--piece-corner-x) * 15%),
+          calc(var(--piece-corner-y) * 15%)
+        )
+        scale(0.7) rotate(-8deg);
+    }
+    70% {
+      transform: translate(
+          calc(var(--piece-corner-x) * -2%),
+          calc(var(--piece-corner-y) * -2%)
+        )
+        scale(1.04) rotate(2deg);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-curtain {
+    from {
+      transform: translate(
+          calc(var(--piece-corner-x) * -30%),
+          calc(var(--piece-corner-y) * -30%)
+        )
+        scale(1.12);
+    }
+    75% {
+      transform: translate(
+          calc(var(--piece-corner-x) * 1.5%),
+          calc(var(--piece-corner-y) * 1.5%)
+        )
+        scale(0.99);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-settle-down {
+    from {
+      opacity: 0;
+      transform: scale(1.06);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pv-write {
+    from {
+      clip-path: inset(-10% 110% -10% -10%);
+    }
+    to {
+      clip-path: inset(-10% -10% -10% -10%);
+    }
+  }
+
+  @keyframes pv-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    70% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes pv-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pv-draw-up {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+    70% {
+      opacity: 1;
+      transform: translateY(2px);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-rise-bounce {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    65% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pv-reveal {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Every candidate replaces Today's one-stack fade with its own per-element beats. */
+  html[data-pv-opening]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack] {
+    animation: none;
+  }
+
+  /* ── A. Written in ── */
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    .botanical-piece {
+    animation: pv-grow-sway calc(var(--duration-fast) * 3) var(--ease-settle)
+      var(--duration-fast) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    .type-eyebrow {
+    animation: pv-settle-down var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 2.5) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    use[href="#names-sebastian"] {
+    animation: pv-write calc(var(--duration-fast) * 2.5) var(--ease-settle)
+      calc(var(--duration-fast) * 3.5) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    use[href="#names-ampersand"] {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pv-pop var(--duration-base) var(--ease-overshoot)
+      calc(var(--duration-fast) * 5.75) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    use[href="#names-flemy"] {
+    animation: pv-write calc(var(--duration-fast) * 2.5) var(--ease-settle)
+      calc(var(--duration-fast) * 6.75) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-line] {
+    animation: pv-fade-up var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 9) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-date]
+    p {
+    animation: pv-fade var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 9.5) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-date]
+    span[aria-hidden] {
+    transform-origin: bottom;
+    animation: pv-draw-up var(--duration-base) var(--ease-settle)
+      calc(var(--duration-fast) * 9.5) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-date]
+    time {
+    animation: pv-drop var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 10.25) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-place] {
+    animation: pv-fade-up var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 11) backwards;
+  }
+
+  html[data-pv-opening="written"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-passage] {
+    animation: pv-fade var(--duration-base) var(--ease-entrance)
+      calc(var(--duration-fast) * 11.5) backwards;
+  }
+
+  /* ── B. Bloom ── */
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    .botanical-piece {
+    animation: pv-unfurl calc(var(--duration-fast) * 4) var(--ease-settle)
+      var(--duration-fast) backwards;
+  }
+
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    :is(
+      .type-eyebrow,
+      h1,
+      [data-invite-line],
+      [data-invite-date],
+      [data-invite-place],
+      [data-invite-passage]
+    ) {
+    animation: pv-rise-bounce calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) backwards;
+  }
+
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    .type-eyebrow {
+    animation-delay: calc(var(--duration-fast) * 3.5);
+  }
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    h1 {
+    animation-delay: calc(var(--duration-fast) * 4.1);
+  }
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-line] {
+    animation-delay: calc(var(--duration-fast) * 4.7);
+  }
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-date] {
+    animation-delay: calc(var(--duration-fast) * 5.3);
+  }
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-place] {
+    animation-delay: calc(var(--duration-fast) * 5.9);
+  }
+  html[data-pv-opening="bloom"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-passage] {
+    animation-delay: calc(var(--duration-fast) * 6.5);
+  }
+
+  /* ── C. Curtain ── after the cancel rule above, at equal specificity, so it wins by order. */
+  html[data-pv-opening="curtain"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    .botanical-piece {
+    animation: pv-curtain calc(var(--duration-fast) * 4.5) var(--ease-settle)
+      calc(var(--duration-fast) * 0.5) backwards;
+  }
+
+  html[data-pv-opening="curtain"]:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack] {
+    animation: pv-reveal calc(var(--duration-fast) * 3) var(--ease-entrance)
+      calc(var(--duration-fast) * 3) backwards;
+  }
+}

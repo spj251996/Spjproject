@@ -19,15 +19,29 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    rough as it likes", which assumes a route nobody but the author opens. The couple open this one
    on their own handsets, which is also why it is a bottom sheet that scrolls rather than a
    corner box: at 360px wide a fixed panel either covers what it is asking about or runs off the
-   screen. */
+   screen.
+
+   ON 2026-10-14 THE OWNER'S OWN QUESTIONS JOINED THE COUPLE'S for one round: the progress line's
+   thickness and glow, the phone paper texture, and the opening with its Replay — all picked on a
+   phone, then carried into the page and taken off this route. */
 
 /* THE WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is namespaced.
    WHY THE NAMESPACE IS LOAD-BEARING: `app/layout.tsx` sets `data-opening-skipped` on this SAME
    element before hydration, and `app/invite.css` plus `components/thread/thread.module.css` both
    read `:root:not([data-opening-skipped])`. A panel that cleared or rewrote the root's attribute
    set would re-arm the invite's 1600ms opening in the middle of a scroll. One prefix makes the
-   gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive. */
-const ATTRIBUTES = ["data-pv-portrait"] as const;
+   gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive.
+
+   THE OPENING'S ATTRIBUTE IS NOT HERE, deliberately. `page.tsx`'s one-shot inline script applies it
+   before first paint so a candidate plays as a true arrival; this list is what the sync effect below
+   removes when a control is shipped, so naming it would strip the candidate at mount and cut it
+   mid-flight. */
+const ATTRIBUTES = [
+  "data-pv-portrait",
+  "data-pv-progress-height",
+  "data-pv-progress-glow",
+  "data-pv-grain",
+] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -92,13 +106,46 @@ const COUPLE_LEVERS: readonly Lever[] = [
       { label: "Blended, with the rim", attrs: { "data-pv-portrait": "rim" } },
     ],
   },
+  {
+    id: "progress-height",
+    title: "The progress line at the top — thickness",
+    options: [
+      { label: "As now (3px)", attrs: {} },
+      { label: "Thinner (2px)", attrs: { "data-pv-progress-height": "2" } },
+      { label: "Thicker (4px)", attrs: { "data-pv-progress-height": "4" } },
+    ],
+  },
+  {
+    id: "progress-glow",
+    title: "The progress line — glow",
+    options: [
+      { label: "As now (soft)", attrs: {} },
+      { label: "No glow", attrs: { "data-pv-progress-glow": "none" } },
+      {
+        label: "The thread's glow",
+        attrs: { "data-pv-progress-glow": "bleed" },
+      },
+    ],
+  },
+  {
+    id: "grain",
+    title: "Paper texture on phones",
+    note: "Phones only — tablets and computers keep today's paper.",
+    options: [
+      { label: "As now", attrs: {} },
+      { label: "Lighter (75%)", attrs: { "data-pv-grain": "75" } },
+      { label: "Half (50%)", attrs: { "data-pv-grain": "50" } },
+      { label: "Faint (25%)", attrs: { "data-pv-grain": "25" } },
+    ],
+  },
 ];
 
 const OPEN_KEY = "preview-panel-open";
 
 /* Only the open flag persists. A chosen lever deliberately does not: the couple's answer is what
    they tell the owner, and a remembered selection would make a reload show someone else's pick as
-   if it were the page. */
+   if it were the page. ONE EXCEPTION: the opening's Replay key, which `page.tsx`'s inline script
+   reads once and deletes — it survives exactly one reload, the one that plays the candidate. */
 function readOpen(): boolean {
   try {
     return window.localStorage.getItem(OPEN_KEY) !== "0";
@@ -200,6 +247,73 @@ function LeverGroup({
     </fieldset>
   );
 }
+
+const OPENINGS = [
+  { label: "As now", value: "" },
+  { label: "A — Written in", value: "written" },
+  { label: "B — Bloom", value: "bloom" },
+  { label: "C — Curtain", value: "curtain" },
+] as const;
+
+/* The `sessionStorage` key `page.tsx`'s inline script reads once and deletes, so a plain reload
+   afterwards is the published page again. */
+const REPLAY_KEY = "pv-replay-opening";
+
+function OpeningGroup() {
+  const [chosen, setChosen] = useState(0);
+
+  /* The applied candidate is whatever the inline script set before first paint; reflect it. */
+  useEffect(() => {
+    const applied = document.documentElement.dataset.pvOpening ?? "";
+    const index = OPENINGS.findIndex((o) => o.value === applied);
+    setChosen(index === -1 ? 0 : index);
+  }, []);
+
+  const replay = () => {
+    try {
+      window.sessionStorage.setItem(REPLAY_KEY, OPENINGS[chosen]?.value ?? "");
+    } catch {
+      /* Storage blocked: the reload still runs and shows the published opening. */
+    }
+    window.scrollTo(0, 0);
+    window.location.reload();
+  };
+
+  return (
+    <fieldset style={{ border: 0, margin: "0 0 14px", padding: 0 }}>
+      <legend style={{ fontWeight: 700, padding: 0 }}>The opening</legend>
+      <p style={{ margin: "2px 0 4px", opacity: 0.75, fontSize: 12 }}>
+        Pick one, then Replay to watch it from the top.
+      </p>
+      {OPENINGS.map((option, index) => (
+        <label key={option.label} style={CHOICE}>
+          {/* `onClick` as well as `onChange` — the pre-hydration tap, as in `LeverGroup`. */}
+          <input
+            checked={chosen === index}
+            name="pv-opening"
+            onChange={() => setChosen(index)}
+            onClick={() => setChosen(index)}
+            type="radio"
+          />
+          <span>{option.label}</span>
+        </label>
+      ))}
+      <button onClick={replay} style={BUTTON} type="button">
+        Replay
+      </button>
+    </fieldset>
+  );
+}
+
+const BUTTON: CSSProperties = {
+  font: "inherit",
+  cursor: "pointer",
+  padding: "6px 10px",
+  borderRadius: 6,
+  border: "1px solid #d1c6b7",
+  background: "#fff",
+  color: "inherit",
+};
 
 export function LeverPanel() {
   const [chosen, setChosen] =
@@ -363,19 +477,9 @@ export function LeverPanel() {
         />
       ))}
 
-      <button
-        onClick={() => setChosen(SHIPPED)}
-        style={{
-          font: "inherit",
-          cursor: "pointer",
-          padding: "6px 10px",
-          borderRadius: 6,
-          border: "1px solid #d1c6b7",
-          background: "#fff",
-          color: "inherit",
-        }}
-        type="button"
-      >
+      <OpeningGroup />
+
+      <button onClick={() => setChosen(SHIPPED)} style={BUTTON} type="button">
         Back to how it is now
       </button>
     </aside>

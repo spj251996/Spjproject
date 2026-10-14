@@ -20,9 +20,16 @@ import "./preview.css";
    The panel is a SIBLING, never a wrapper: a wrapping client boundary can establish a stacking
    context, and a stacking context on any ancestor of a `.botanical-piece` isolates
    `mix-blend-mode: multiply` with no error and every gate green. */
+/* Applies a Replay pick BEFORE the invite's markup is parsed, so the candidate plays as a true
+   arrival. One-shot: it deletes the key, so the next plain reload is the published page. Written
+   through `dataset` — the literal attribute name must not appear in the HTML, which
+   `check-export-routes.mjs` asserts carries no `data-pv-` string at all. */
+const APPLY_REPLAYED_OPENING = `try{var k="pv-replay-opening",o=sessionStorage.getItem(k);if(o!==null){sessionStorage.removeItem(k);if(o)document.documentElement.dataset.pvOpening=o;}}catch(e){}`;
+
 export default function Preview() {
   return (
     <>
+      <script>{APPLY_REPLAYED_OPENING}</script>
       <Home />
       <LeverPanel />
     </>
