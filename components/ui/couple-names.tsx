@@ -80,9 +80,10 @@ const AMPERSAND_SCALE = 0.65;
    `--text-heading-script`, so those TOKENS outlive the ROLES that are retiring. Phase 9 must not
    sweep them with the classes.
 
-   THE STACKED PHONE LOCKUP IS 2.68em SINCE 2026-10-11 — 45% larger than the 1.85em below, the owner
-   choosing it on /preview knowing it puts the ink past the invite's content box below ~400px wide and
-   past the card itself at 320 (DESIGN.md -> couple-names). The line's 3.65em is unchanged.
+   THE STACKED PHONE LOCKUP IS 2.59em SINCE 2026-10-14 — 40% larger than the 1.85em below, the owner
+   stepping back from the 45% (2.68em) of 2026-10-11 so the invite fits one phone screen. It still
+   puts the ink past the invite's content box at the narrowest phones (DESIGN.md -> couple-names).
+   The line's 3.65em is unchanged.
 
    THE PHONE TIER TOOK SMALLER RATIOS — 1.85em stacked and 3.65em on the line, against the 2.513
    and 4.656 every wider tier keeps (owner, 2026-10-10, choosing this over accepting the overflow
@@ -142,7 +143,7 @@ const LINE = {
    is small. Centring it on the lockup both ways is what the owner approved on the render, and it
    reproduces that exactly — the preview lever got there with a translate of the same two
    figures. */
-/* In source units: about 10px at the phone's 2.68em lockup. */
+/* In source units: about 10px at the phone's 2.59em lockup. */
 const AMPERSAND_LIFT = 24;
 
 const STACK_W = SEBASTIAN.w;
@@ -273,8 +274,8 @@ export function CoupleNames({
         <Lockup
           className={
             layout === "orientation"
-              ? "mx-auto block h-auto w-[2.68em] md:w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
-              : "mx-auto block h-auto w-[2.68em] md:w-[2.513em] text-ink-muted"
+              ? "mx-auto block h-auto w-[2.59em] md:w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
+              : "mx-auto block h-auto w-[2.59em] md:w-[2.513em] text-ink-muted"
           }
           layout="stacked"
           strokeUnits={strokeUnits}

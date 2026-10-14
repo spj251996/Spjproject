@@ -9,14 +9,14 @@ export const inviteFit: MeasuredFit = {
   regimes: {
     phone: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 526.0625 },
-        { minContentWidth: 234.40625, contentHeight: 504.0625 },
-        { minContentWidth: 411.484375, contentHeight: 478.0625 },
+        { minContentWidth: 120, contentHeight: 500.25 },
+        { minContentWidth: 234.40625, contentHeight: 478.25 },
+        { minContentWidth: 411.484375, contentHeight: 452.25 },
       ],
       landscape: [
-        { minContentWidth: 120, contentHeight: 392.71875 },
-        { minContentWidth: 234.40625, contentHeight: 370.71875 },
-        { minContentWidth: 411.484375, contentHeight: 344.71875 },
+        { minContentWidth: 120, contentHeight: 373.21875 },
+        { minContentWidth: 234.40625, contentHeight: 351.21875 },
+        { minContentWidth: 411.484375, contentHeight: 325.21875 },
       ],
     },
     tablet: {

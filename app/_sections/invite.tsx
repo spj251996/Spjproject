@@ -69,7 +69,7 @@ function InvitePassage() {
           its tier's MEASURED mark height — 22px on phone, 16px in the tablet band, 33px from
           `{breakpoints.lg}`:
 
-            phone  21.845 + 22.310 + 10.845 = 55, and (21.845 + 11.155) / 55 = 60 %
+            phone  17.345 + 22.310 +  7.845 = 47.5, and (17.345 + 11.155) / 47.5 = 60 %
             tablet  5.782 + 16.035 +  1.182 = 23, and ( 5.782 +  8.018) / 23 = 60 %
             laptop 16.268 + 33.465 +  5.268 = 55, and (16.268 + 16.733) / 55 = 60 %
 
@@ -87,10 +87,15 @@ function InvitePassage() {
 
           The tablet band's block is 23px rather than 55px, and its mark is the one that does not
           grow: its landscape card already stands 717px against a 720px cap, so a 55px block leaves
-          the frame no tier line and the build refuses. */}
+          the frame no tier line and the build refuses.
+
+          The phone block is 47.5px rather than 55px (owner, 2026-10-14): the place-to-mark ink gap
+          was 31px against a line-to-date gap of 38.5, and both came down to about 26px so the two
+          read as one rhythm and the invite fits a phone screen with the browser bars showing. The
+          7.5px came off the floors in the 60 : 40 proportion, so the split still holds. */}
       <div
         aria-hidden
-        className="shrink-0 grow-3 basis-[21.845px] md:basis-[5.782px] lg:basis-[16.268px]"
+        className="shrink-0 grow-3 basis-[17.345px] md:basis-[5.782px] lg:basis-[16.268px]"
       />
 
       <OrnamentalDivider />
@@ -98,7 +103,7 @@ function InvitePassage() {
       <div className="flex grow-2 flex-col items-center">
         <div
           aria-hidden
-          className="shrink-0 grow basis-[10.845px] md:basis-[1.182px] lg:basis-[5.268px] xl:basis-[32px]"
+          className="shrink-0 grow basis-[7.845px] md:basis-[1.182px] lg:basis-[5.268px] xl:basis-[32px]"
         />
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
             hold it, and the card's own content width is the only limit that should apply. */}
@@ -273,8 +278,8 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
               joyfully invite you to share in the celebration of their wedding
             </p>
 
-            {/* BETWEEN beats, so `space-md` from `{breakpoints.md}` up and `space-sm` on a phone (owner,
-                2026-10-14, to bring the invite inside one phone screen) — where this gap was once five
+            {/* BETWEEN beats, so `space-md` from `{breakpoints.md}` up and `space-3xs` on a phone (owner,
+                2026-10-14, to bring the invite inside one phone screen and match the place-to-mark gap) — where this gap was once five
                 values across five tiers and no two bands read the card the same way. The
                 orientation-qualified rules it replaced are gone with it; the block absorbs the
                 weekday, so the header runs four elements where it ran five. Plus
@@ -283,7 +288,7 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
                 `space-xs` rather than `space-3xs` because both of the block's inner gaps were opened
                 by `--date-open` (owner, 2026-10-11; 4px on a phone since 2026-10-14) — the weekday's half
                 lives in `--date-weekday-pull`. */}
-            <div className="mt-[calc(var(--spacing-space-sm)+var(--date-place-pull))] md:mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
+            <div className="mt-[calc(var(--spacing-space-3xs)+var(--date-place-pull))] md:mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
               <InviteDate date={weddingDate} />
             </div>
 

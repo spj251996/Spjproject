@@ -70,7 +70,8 @@ const TIERS: Array<{
 ];
 
 const EXPECTED_BLOCK: Record<string, number> = {
-  phone: 55,
+  /* 55 until the owner took 7.5px off the phone floors, 60 : 40 kept (2026-10-14). */
+  phone: 47.5,
   tablet: 23,
   laptop: 55,
 };
