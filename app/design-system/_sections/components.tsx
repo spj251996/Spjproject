@@ -23,6 +23,7 @@ import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { PhotoStrip } from "@/components/ui/photo-strip";
 import { PhotoViewerPanel } from "@/components/ui/photo-viewer";
 import { Portrait } from "@/components/ui/portrait";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { invite, wishes } from "@/content";
 import { GalleryButtonActionDemo } from "./gallery-action-demos";
@@ -213,6 +214,20 @@ export function ComponentsSections() {
             src={sampleRitualImages[1]}
             title="Placeholder Ritual Gallery"
           />
+        </ChromeFrame>
+      </Specimen>
+
+      <Specimen
+        description="A hairline across the top of the screen on / that fills as the guest scrolls. Its track is /'s scroll cue: present from the first screen, it says the page continues before anything has moved."
+        id="ui-scroll-progress"
+        name="scroll-progress"
+        note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab routes carry none and keep the thread as their cue. Height and glow are provisional until the owner's pick on /preview."
+        source="@/components/ui/scroll-progress"
+        spec="track --progress-track, ink at 10% · --progress-height (3px) · fill --progress-fill, thread-red → thread-vermilion at 82% → thread-core at the leading edge · glow --progress-glow, the thread's vermilion · fixed at the top, z --z-progress (45), under the gallery's scrim · fill = share of the page scrolled, clamped 0–1, exactly 1 at the last scroll position, a page with nothing to scroll reads as full, no transition · the track is server-rendered, so it shows with no script · the track arrives as the opening's last beat at --opening-type-end · aria-hidden, never focusable, unchanged under reduced motion"
+      >
+        {/* 48px: gallery layout constant, a strip tall enough to read the 3px bar against. */}
+        <ChromeFrame ariaHidden height={48}>
+          <ScrollProgress />
         </ChromeFrame>
       </Specimen>
 

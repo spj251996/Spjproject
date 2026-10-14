@@ -324,16 +324,19 @@ const DURATION_TOKENS: DurationToken[] = [
 const DURATION_USES = [
   "fast · the action press and hover, and the opening sequence beat",
   "base · section and sheet reveals, the modal",
+  "--opening-type-end · 2 × fast + 2 × base (1200ms) · when the opening's type has landed — the scroll progress bar's track arrives here and the lab thread fades in from here; a new sequence changes this one value",
 ];
 
 const EASING_TOKENS: EasingToken[] = [
   { token: "--ease-entrance", curve: [0, 0, 0.2, 1] },
   { token: "--ease-settle", curve: [0.4, 0, 0.2, 1] },
+  { token: "--ease-overshoot", curve: [0.34, 1.56, 0.64, 1] },
 ];
 
 const EASING_USES = [
   "entrance · anything appearing",
   "settle · the action button's press and hover transition",
+  "overshoot · passes its rest and settles back — the invite opening's candidates on /preview; nothing on / reads it until the owner picks",
 ];
 
 const LOOP_CADENCE_USES = [

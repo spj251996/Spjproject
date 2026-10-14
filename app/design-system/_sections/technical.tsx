@@ -111,7 +111,7 @@ const RESPONSIVE_POINTERS = [
   "Narrowest supported width → Accessibility Rules",
 ];
 
-/* Three layers, not five: the ivory ground and the mounted sheets sit in document order with no
+/* Four layers, not six: the ivory ground and the mounted sheets sit in document order with no
    z-index of their own, so their tokens were defined and never read, and were retired 2026-10-03
    (DESIGN.md → Technical Conventions → Z-Index Scale). */
 const Z_LAYERS: LayerItem[] = [
@@ -124,6 +124,11 @@ const Z_LAYERS: LayerItem[] = [
     token: "--z-thread",
     value: "40",
     role: "Thread · the page-length thread and its head, re-trace and tapered ends",
+  },
+  {
+    token: "--z-progress",
+    value: "45",
+    role: "Progress · the scroll progress bar on /, over every section and under the scrim",
   },
   { token: "--z-modal", value: "50", role: "Modal · the gallery modal" },
 ];
