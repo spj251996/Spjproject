@@ -195,6 +195,9 @@ export const TUNING: Readonly<
       flip: true,
     },
   },
+  /* A phone-only seam piece. From the tablet tier up it sat on Family's top-right corner with
+     `cascade-sprigs`, and at 1536x695 two of their cosmos blooms stacked into one flower with two
+     centres; the owner dropped it there rather than re-tune either piece (2026-10-14). */
   "poppy-spread": {
     phone: { anchor: "top-right", x: 4.6, y: -24, size: 48, rotation: -14 },
     tablet: {
@@ -203,6 +206,7 @@ export const TUNING: Readonly<
       y: -20.299315,
       size: 40,
       rotation: -8,
+      drop: true,
     },
     laptop: {
       anchor: "top-right",
@@ -210,6 +214,7 @@ export const TUNING: Readonly<
       y: -0.116949,
       size: 19.7,
       rotation: -6,
+      drop: true,
     },
     desktop: {
       anchor: "top-right",
@@ -217,6 +222,7 @@ export const TUNING: Readonly<
       y: -0.100479,
       size: 19.7,
       rotation: -6,
+      drop: true,
     },
   },
   "crossing-stems": {

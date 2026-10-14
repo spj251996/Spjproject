@@ -332,3 +332,21 @@ test("the set is nineteen pieces and falling-spray and cosmos-arc are retired fr
   assert.ok(!("falling-spray" in TUNING));
   assert.ok(!("cosmos-arc" in TUNING));
 });
+
+test("poppy-spread is a phone-only piece, dropped from the tablet tier up", () => {
+  const record = TUNING["poppy-spread"];
+  assert.deepEqual(record.phone, {
+    anchor: "top-right",
+    x: 4.6,
+    y: -24,
+    size: 48,
+    rotation: -14,
+  });
+  for (const tier of ["tablet", "laptop", "desktop"] as const) {
+    assert.equal(
+      record[tier].drop,
+      true,
+      `poppy-spread must be dropped at ${tier}`,
+    );
+  }
+});
