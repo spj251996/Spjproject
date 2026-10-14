@@ -150,8 +150,8 @@ test("an empty manifest is still a valid module", () => {
 test("an EXIF-rotated photograph is emitted and measured upright", async () => {
   /* The one fact that moves the section's height: a phone portrait is STORED landscape and tagged
      orientation 6. Without the rotation it is emitted sideways AND its manifest dimensions come out
-     swapped, and `photoFit` solves one row height across every ritual from them. The stand-in
-     photographs carry no orientation tag, so nothing else on the branch can see this. */
+     swapped, and `photoFit` solves one row height across every ritual from them. The repository
+     carries no photographs, so nothing else on the branch can see this. */
   const stored = await sharp({
     create: { width: 200, height: 100, channels: 3, background: "#808080" },
   })

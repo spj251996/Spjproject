@@ -421,8 +421,8 @@ async function prune({ dryRun }) {
    row height across every ritual, so a single sideways portrait moves the whole section's height —
    and the thread's measured constants derive from that height.
 
-   Exported so the rotation is tested on a tagged fixture: the stand-in photographs carry no
-   orientation tag, so removing `.rotate()` changes nothing they produce. */
+   Exported so the rotation is tested on a tagged fixture: the repository carries no photographs,
+   so nothing else exercises it before a real upload does. */
 export function uprightRitualImage(input) {
   return sharp(input).rotate();
 }
