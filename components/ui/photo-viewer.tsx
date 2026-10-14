@@ -13,6 +13,7 @@
    it and stay clickable. */
 
 import { useState } from "react";
+import motion from "./gallery-motion.module.css";
 
 interface PhotoViewerPanelProps {
   title: string;
@@ -23,10 +24,18 @@ interface PhotoViewerPanelProps {
   onClose?: () => void;
   onShowGrid?: () => void;
   onStep?: (delta: number) => void;
+  /** The side the photograph came from: 1 after Next, -1 after Previous, 0 when first shown. */
+  direction?: 1 | -1 | 0;
 }
 
 const CONTROL =
   "type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse";
+
+const SLIDE = {
+  1: motion["slide-next"],
+  [-1]: motion["slide-previous"],
+  0: "",
+} as const;
 
 export function PhotoViewerPanel({
   title,
@@ -37,6 +46,7 @@ export function PhotoViewerPanel({
   onClose,
   onShowGrid,
   onStep,
+  direction = 0,
 }: PhotoViewerPanelProps) {
   /* Keyed by the source so stepping to the next photograph clears a previous failure. */
   const [failed, setFailed] = useState<string | null>(null);
@@ -70,7 +80,7 @@ export function PhotoViewerPanel({
           <>
             <img
               alt=""
-              className="absolute inset-0 size-full object-contain"
+              className={`absolute inset-0 size-full object-contain ${SLIDE[direction]}`}
               draggable={false}
               key={src}
               onError={() => setFailed(src)}

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { cssTimeMs } from "./css-time";
 import { GalleryModalPanel } from "./gallery-modal-panel";
+import motion from "./gallery-motion.module.css";
 import {
   back,
   type GalleryState,
@@ -30,7 +32,13 @@ import { PhotoViewerPanel } from "./photo-viewer";
    Swipe and the arrow keys belong to the viewer; in the grid, scrolling is the only gesture.
 
    `onClose` and the state are read through refs because the history listener is mount-scoped.
-   Focus and scroll lock are mount-scoped too, so they never share an effect with the key listener. */
+   Focus and scroll lock are mount-scoped too, so they never share an effect with the key listener.
+
+   Motion (`gallery-motion.module.css`): the pop that empties the history does not unmount at once —
+   it starts the closing fade, and `onClose` runs when that fade ends, so the scroll lock and focus are
+   released only once the gallery has gone. A timeout one beat past the fade stands in case
+   `animationend` never arrives (a hidden tab), and under reduced motion there is no fade to wait
+   for. While closing, every input is ignored and a further pop is not ours to handle. */
 
 const SWIPE_THRESHOLD_PX = 40;
 
@@ -65,6 +73,16 @@ export function GalleryModal({
   /* `history.back()` lands asynchronously, so a double tap on Close would otherwise go back twice
      and take the guest off the invitation. Cleared when the pop arrives. */
   const closingRef = useRef(false);
+  /* The fade-out in progress: `closing` drives the class, the ref gates the listeners, and
+     `closedRef` makes the animation end and the fallback timeout finish the close only once. */
+  const [closing, setClosing] = useState(false);
+  const closingPhaseRef = useRef(false);
+  const closedRef = useRef(false);
+  const closeTimerRef = useRef<number | undefined>(undefined);
+  const finishCloseRef = useRef<() => void>(() => {});
+  /* The first layer rises with the gallery; every later one only fades. */
+  const [swapped, setSwapped] = useState(false);
+  const [direction, setDirection] = useState<1 | -1 | 0>(0);
   const shownIndex = state.layer === "viewer" ? state.index : -1;
   const titleId = useId();
   const count = images.length;
@@ -97,18 +115,41 @@ export function GalleryModal({
       pushedRef.current = true;
       history.pushState({ gallery: 1 }, "");
     }
+    const finishClose = () => {
+      if (closedRef.current) return;
+      closedRef.current = true;
+      onCloseRef.current();
+    };
+    finishCloseRef.current = finishClose;
     const onPopState = () => {
+      if (closingPhaseRef.current) return;
       closingRef.current = false;
       const next = back(stateRef.current);
       if (next === null) {
-        onCloseRef.current();
+        closingPhaseRef.current = true;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          finishClose();
+          return;
+        }
+        setClosing(true);
+        const fade = cssTimeMs(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--duration-base",
+          ),
+          400,
+        );
+        closeTimerRef.current = window.setTimeout(finishClose, fade + 100);
         return;
       }
+      /* `showLayer`, inlined: this listener is mount-scoped and the setters are all it needs. */
+      setSwapped(true);
+      setDirection(0);
       setState(next);
     };
     window.addEventListener("popstate", onPopState);
 
     return () => {
+      window.clearTimeout(closeTimerRef.current);
       window.removeEventListener("popstate", onPopState);
       body.style.position = previous.position;
       body.style.top = previous.top;
@@ -121,17 +162,41 @@ export function GalleryModal({
     };
   }, []);
 
+  /* Every layer change goes through here: the new layer fades rather than rises, and a photograph
+     opened fresh shows without a slide. */
+  const showLayer = (next: GalleryState) => {
+    setSwapped(true);
+    setDirection(0);
+    setState(next);
+  };
+
   const goBack = () => {
     if (closingRef.current) return;
     closingRef.current = true;
     history.back();
   };
   const close = goBack;
-  const step = (delta: number) =>
-    setState((current) => stepViewer(current, delta, count));
+  /* Only a step that actually moves sets the side to slide from: at either end the photograph stays,
+     and a changed class on it would replay the slide in place. */
+  const step = useCallback(
+    (delta: number) => {
+      const current = stateRef.current;
+      const next = stepViewer(current, delta, count);
+      if (
+        next.layer !== "viewer" ||
+        current.layer !== "viewer" ||
+        next.index === current.index
+      ) {
+        return;
+      }
+      setDirection(delta > 0 ? 1 : -1);
+      setState(next);
+    },
+    [count],
+  );
   const openPhoto = (index: number) => {
     history.pushState({ gallery: 2 }, "");
-    setState(tapTile(index));
+    showLayer(tapTile(index));
   };
   /* From a grid-opened viewer the grid is one entry back, so going there consumes it; from a
      strip-opened viewer there is no grid entry, so the layer swaps in place and adds none. */
@@ -140,11 +205,15 @@ export function GalleryModal({
       goBack();
       return;
     }
-    setState(showGrid);
+    showLayer(showGrid(state));
   };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (closingPhaseRef.current) {
+        event.preventDefault();
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         if (closingRef.current) return;
@@ -154,9 +223,7 @@ export function GalleryModal({
       }
       if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
         if (state.layer === "viewer") {
-          setState((current) =>
-            stepViewer(current, event.key === "ArrowRight" ? 1 : -1, count),
-          );
+          step(event.key === "ArrowRight" ? 1 : -1);
         }
         return;
       }
@@ -191,7 +258,7 @@ export function GalleryModal({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [state.layer, count]);
+  }, [state.layer, step]);
 
   /* A layer swap unmounts the control that had focus — the tapped tile, "All photos", or Next on
      reaching the last photograph — and focus falls to <body>, where the next Tab reaches the page
@@ -208,12 +275,22 @@ export function GalleryModal({
     <div
       aria-labelledby={titleId}
       aria-modal="true"
-      className="fixed inset-0 z-(--z-modal)"
+      className={`fixed inset-0 z-(--z-modal) ${closing ? `pointer-events-none ${motion.closing}` : motion.open}`}
+      onAnimationEnd={(event) => {
+        if (closing && event.target === event.currentTarget) {
+          finishCloseRef.current();
+        }
+      }}
       onTouchEnd={(event) => {
         const startX = touchStartXRef.current;
         touchStartXRef.current = null;
         const endX = event.changedTouches[0]?.clientX;
-        if (state.layer !== "viewer" || startX === null || endX === undefined) {
+        if (
+          closingPhaseRef.current ||
+          state.layer !== "viewer" ||
+          startX === null ||
+          endX === undefined
+        ) {
           return;
         }
         const delta = endX - startX;
@@ -229,26 +306,32 @@ export function GalleryModal({
       role="dialog"
       tabIndex={-1}
     >
-      {state.layer === "viewer" ? (
-        <PhotoViewerPanel
-          count={count}
-          index={state.index}
-          onClose={close}
-          onShowGrid={toGrid}
-          onStep={step}
-          src={fulls[images[state.index]] ?? images[state.index]}
-          title={title}
-          titleId={titleId}
-        />
-      ) : (
-        <GalleryModalPanel
-          images={images}
-          onClose={close}
-          onOpenPhoto={openPhoto}
-          title={title}
-          titleId={titleId}
-        />
-      )}
+      <div
+        className={`absolute inset-0 ${swapped ? motion.fade : motion.rise}`}
+        key={state.layer}
+      >
+        {state.layer === "viewer" ? (
+          <PhotoViewerPanel
+            direction={direction}
+            count={count}
+            index={state.index}
+            onClose={close}
+            onShowGrid={toGrid}
+            onStep={step}
+            src={fulls[images[state.index]] ?? images[state.index]}
+            title={title}
+            titleId={titleId}
+          />
+        ) : (
+          <GalleryModalPanel
+            images={images}
+            onClose={close}
+            onOpenPhoto={openPhoto}
+            title={title}
+            titleId={titleId}
+          />
+        )}
+      </div>
     </div>
   );
 }

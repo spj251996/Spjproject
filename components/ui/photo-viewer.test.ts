@@ -104,3 +104,56 @@ test("a second close before the first has landed does not go back again", () => 
      Escape. */
   assert.equal(modal.match(/if \(closingRef\.current\) return;/g)?.length, 2);
 });
+
+const motionCss = () => read("gallery-motion.module.css");
+
+test("the gallery's motion lives entirely behind a no-preference gate, so reduced motion gets none", () => {
+  const css = motionCss();
+  const gate = css.indexOf("@media (prefers-reduced-motion: no-preference)");
+  assert.ok(gate >= 0, "no reduced-motion gate");
+  for (const name of [
+    "rise",
+    "fade",
+    "slide-next",
+    "slide-previous",
+    "close",
+  ]) {
+    const at = css.indexOf(`@keyframes ${name}`);
+    assert.ok(at > gate, `@keyframes ${name} missing or outside the gate`);
+  }
+  assert.equal(
+    css.slice(0, gate).match(/animation\s*:/g),
+    null,
+    "an animation is declared outside the gate",
+  );
+});
+
+test("the gallery's motion reads its durations and easing from the tokens", () => {
+  const css = motionCss();
+  assert.ok(css.includes("var(--duration-base)"));
+  assert.ok(css.includes("var(--duration-fast)"));
+  assert.ok(css.includes("var(--ease-entrance)"));
+  assert.equal(
+    css.match(/\d+m?s\b/g),
+    null,
+    "a raw duration in the motion CSS",
+  );
+});
+
+test("closing waits for the fade before the modal unmounts, and not at all under reduced motion", () => {
+  const popIndex = modal.indexOf("const onPopState");
+  const handler = modal.slice(popIndex, modal.indexOf("};", popIndex));
+  assert.ok(
+    !handler.includes("onCloseRef.current()"),
+    "the pop handler closes immediately instead of fading first",
+  );
+  assert.match(modal, /prefers-reduced-motion: reduce/);
+  assert.match(modal, /onAnimationEnd=/);
+  assert.match(modal, /setTimeout\(/);
+});
+
+test("a photograph slides in from the side it came from", () => {
+  assert.match(viewer, /direction\?: 1 \| -1 \| 0;/);
+  assert.match(viewer, /motion\["slide-next"\]/);
+  assert.match(viewer, /motion\["slide-previous"\]/);
+});
