@@ -63,16 +63,19 @@ html[data-pv-portrait] #family figure > div:first-child > div > :first-child {
   display: none;
 }
 
-/* "No rim" drops the gold ring and its paper offset ONLY — the couple's glow is the same box shadow's
-   last layer (`--tw-shadow`), and it stays in every option (owner, 2026-10-14). */
+/* "No rim" drops the ring, its paper offset AND the couple's glow — the whole box shadow (owner,
+   2026-10-14, reversing the same day's call to keep the glow). */
 html:is([data-pv-portrait="blend"], [data-pv-portrait="fade"])
   #family
   figure
   > div:first-child {
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-ring-offset-shadow: 0 0 #0000;
+  box-shadow: none;
 }
 
+/* Soft edges on the BOTTOM HALF only (owner, 2026-10-14): the two mask layers add, so the solid top
+   half shows whole and only the lower half takes the radial fade. */
 html[data-pv-portrait="fade"] #family figure > div:first-child img {
-  mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
+  mask-image:
+    linear-gradient(#000 50%, transparent 50%),
+    radial-gradient(circle closest-side, #000 72%, transparent 100%);
 }

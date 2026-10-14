@@ -156,7 +156,7 @@ test("the panel never reads the viewport the wrong way", () => {
   );
 });
 
-test("every portrait option the panel offers has a rule, and no rim keeps the couple's glow", () => {
+test("every portrait option the panel offers has a rule; no rim drops the glow; soft edges only below", () => {
   const values = [
     ...PANEL_CODE.matchAll(/"data-pv-portrait": "([a-z]+)"/g),
   ].map((m) => m[1]);
@@ -173,11 +173,13 @@ test("every portrait option the panel offers has a rule, and no rim keeps the co
       `the "${value}" option has no rule of its own`,
     );
   }
-  /* T0-5 (owner, 2026-10-14): dropping the rim must not drop the glow, which is the same box
-     shadow's last layer. Blanking `box-shadow` would take both. */
-  assert.doesNotMatch(CSS_CODE, /box-shadow\s*:\s*none/);
-  assert.match(CSS_CODE, /--tw-ring-shadow:\s*0 0 #0000/);
-  assert.match(CSS_CODE, /--tw-ring-offset-shadow:\s*0 0 #0000/);
+  /* Owner, 2026-10-14: "no rim" drops the couple's glow with the rim — the whole box shadow. */
+  assert.match(CSS_CODE, /box-shadow\s*:\s*none/);
+  /* Soft edges on the bottom half only: a solid top half added over the radial fade. */
+  assert.match(
+    CSS_CODE,
+    /mask-image:\s*linear-gradient\(#000 50%, transparent 50%\),\s*radial-gradient/,
+  );
 });
 
 test("the alternates do not touch the botanical layer at all", () => {
