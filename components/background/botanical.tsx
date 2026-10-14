@@ -139,14 +139,22 @@ interface BotanicalProps {
      Wishes. Omit it for Celebrations, the page's one `tall` section, which has no measured fit. */
   fit?: MeasuredFit;
   pieces: readonly BotanicalPlacement[];
+  /* Emit each piece's growth corner for the invite's opening (`app/invite.css`). The invite alone
+     asks, so every other section's stylesheet is byte-identical without it. */
+  corners?: boolean;
 }
 
-export function Botanical({ fit, pieces }: BotanicalProps) {
+export function Botanical({ fit, pieces, corners = false }: BotanicalProps) {
   const scopeClass =
     fit !== undefined ? frameScopeClass(fit) : tallScopeClass(false);
   return (
     <div className={`${scopeClass} ${styles.layer}`}>
-      <style>{botanicalCss(pieces.map((placement) => placement.piece))}</style>
+      <style>
+        {botanicalCss(
+          pieces.map((placement) => placement.piece),
+          { corners },
+        )}
+      </style>
       <div className={styles.clip}>
         {pieces.map((placement) => (
           <Bloom key={placement.piece} {...placement} />

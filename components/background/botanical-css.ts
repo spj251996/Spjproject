@@ -112,6 +112,28 @@ function flipDeclaration(flip: true | undefined): string {
   return flip === true ? "scale: -1 1;" : "scale: none;";
 }
 
+/* Which corner of its own box a piece grows from in the invite's opening — inert at rest, read only
+   by the opening's keyframes, and emitted only for the invite section (`botanicalCss`'s `corners`).
+   In the piece's LOCAL frame: the opening animates `transform`, which applies INSIDE the piece's own
+   `scale` (the mirror) and `rotate`, so a mirrored piece's visual right is its local left. Per tier,
+   because the anchor is per tier. */
+const CORNER: Record<Anchor, readonly [x: number, y: number]> = {
+  "top-left": [-1, -1],
+  "top-right": [1, -1],
+  "bottom-left": [-1, 1],
+  "bottom-right": [1, 1],
+  "above-bottom-right": [1, 1],
+  "above-bottom-left": [-1, 1],
+  "middle-left": [-1, 0],
+  "middle-right": [1, 0],
+};
+
+function cornerDeclarations(anchor: Anchor, flip: true | undefined): string {
+  const [x, y] = CORNER[anchor];
+  const local = flip === true ? -x : x;
+  return `--piece-corner-x: ${local}; --piece-corner-y: ${y};`;
+}
+
 /* Delivery is a CSS background, not an `<img>`: a non-matching media query fetches nothing, so a
    phone never learns the desktop file exists, and the layer needs no alt text — it is decorative by
    construction. The ladder lives here rather than in the stylesheet because only this module knows
@@ -129,6 +151,7 @@ function pieceRule(
   tuning: PieceTuning,
   at = selector(piece),
   tier?: Tier,
+  corners = false,
 ): string {
   if (tuning.drop === true) {
     return `${at} { display: none; }`;
@@ -142,6 +165,7 @@ function pieceRule(
     `--piece-size: ${vw(tuning.size)};`,
     rotationDeclaration(tuning.rotation),
     flipDeclaration(tuning.flip),
+    ...(corners ? [cornerDeclarations(tuning.anchor, tuning.flip)] : []),
     ...(tier === undefined ? [] : [imageDeclaration(piece, tier)]),
   ].join(" ");
   return `${at} { ${declarations} }`;
@@ -163,10 +187,15 @@ export function pieceOverrideCss(
 
 /* Only the pieces the section carries, so five sections' stylesheets stay small and none restates
    another's rows. */
-export function botanicalCss(pieces: readonly BotanicalPiece[]): string {
+export function botanicalCss(
+  pieces: readonly BotanicalPiece[],
+  { corners = false }: { corners?: boolean } = {},
+): string {
   return TIERS.map((tier) => {
     const rules = pieces
-      .map((piece) => pieceRule(piece, TUNING[piece][tier], undefined, tier))
+      .map((piece) =>
+        pieceRule(piece, TUNING[piece][tier], undefined, tier, corners),
+      )
       .join("\n");
     const query = TIER_QUERY[tier];
     return query === null ? rules : `@media ${query} {\n${rules}\n}`;

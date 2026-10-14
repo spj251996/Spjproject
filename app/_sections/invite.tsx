@@ -159,7 +159,8 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
 
   return (
     <section className="relative" id="invite">
-      <Botanical fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
+      {/* `corners`: the opening grows these pieces from their own corners (`app/invite.css`). */}
+      <Botanical corners fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
       <MountedSheet
         className="invite-settle"
         fit={inviteFit}
