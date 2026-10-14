@@ -16,7 +16,7 @@
    moving. */
 
 export type BotanicalPiece =
-  | "falling-spray"
+  | "corner-trail"
   | "tied-bouquet"
   | "crossing-stems"
   | "drooping-stem"
@@ -93,39 +93,11 @@ export interface PieceTuning {
 export const TUNING: Readonly<
   Record<BotanicalPiece, Readonly<Record<Tier, PieceTuning>>>
 > = {
-  "falling-spray": {
-    phone: {
-      anchor: "top-right",
-      x: 2.380952,
-      y: -18.4,
-      size: 76.6,
-      rotation: 0,
-      flip: true,
-    },
-    tablet: {
-      anchor: "top-right",
-      x: 4,
-      y: 0,
-      size: 60,
-      rotation: 0,
-      flip: true,
-    },
-    laptop: {
-      anchor: "top-right",
-      x: 2.380952,
-      y: 0,
-      size: 35.6,
-      rotation: 0,
-      flip: true,
-    },
-    desktop: {
-      anchor: "top-right",
-      x: 2.380952,
-      y: 0,
-      size: 31.026636,
-      rotation: 0,
-      flip: true,
-    },
+  "corner-trail": {
+    phone: { anchor: "top-right", x: 0, y: 0, size: 50, rotation: 0 },
+    tablet: { anchor: "top-right", x: 0, y: 0, size: 34, rotation: 0 },
+    laptop: { anchor: "top-right", x: 0, y: 0, size: 24, rotation: 0 },
+    desktop: { anchor: "top-right", x: 0, y: 0, size: 24, rotation: 0 },
   },
   "corner-spray": {
     phone: {

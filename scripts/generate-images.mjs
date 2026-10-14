@@ -16,7 +16,8 @@
    longer writes would keep shipping. Only the directories in `PRUNED_DIRS` are swept.
 
    Usage: npm run images  ·  npm run images -- --dry-run (lists orphans, deletes nothing)
-          npm run images -- --only=rituals  (the ritual photographs and their manifest only) */
+          npm run images -- --only=rituals  (the ritual photographs and their manifest only)
+          npm run images -- --only=botanical  (the botanical pieces only; prunes public/botanical alone) */
 
 import { existsSync } from "node:fs";
 import {
@@ -390,10 +391,10 @@ export function orphansIn(dir, names, expected) {
 /* `public/` is copied wholesale into `out/`, so a delivery the generator no longer writes still
    ships. Pruning runs AFTER every recipe, never before: a failed generation must not take the
    current deliveries with it. */
-async function prune({ dryRun }) {
+async function prune({ dryRun, dirs = PRUNED_DIRS }) {
   const expected = await expectedOutputs();
   let removed = 0;
-  for (const dir of PRUNED_DIRS) {
+  for (const dir of dirs) {
     const absolute = join(ROOT, dir);
     if (!existsSync(absolute)) continue;
     for (const name of orphansIn(dir, await readdir(absolute), expected)) {
@@ -679,8 +680,24 @@ export async function writeRitualPhotos({
 /* `--only=<family>` runs one family. `prebuild` uses `--only=rituals`, so a deploy regenerates the
    photographs and nothing else — the alternative, running the whole script, would re-encode 152
    botanical files on every build. A filtered run SKIPS the global prune: it has not written the
-   other families, and the rituals family wipes its own directory instead. */
-const ONLY_FAMILIES = new Set(["rituals"]);
+   other families, and the rituals family wipes its own directory instead. `--only=botanical` exists so
+   a changed piece can be regenerated without re-copying the family and couple sources, and it prunes
+   its own directory alone for the same reason. */
+const ONLY_FAMILIES = new Set(["rituals", "botanical"]);
+
+/* What one run touches, by family. Exported so the scope is tested without generating anything. */
+export function runScope(only) {
+  if (only === "botanical") {
+    return {
+      rituals: false,
+      recipes: RECIPES.filter((entry) =>
+        entry.out?.startsWith("public/botanical/"),
+      ),
+      prunedDirs: ["public/botanical"],
+    };
+  }
+  return { rituals: true, recipes: RECIPES, prunedDirs: PRUNED_DIRS };
+}
 
 /* A typo here must FAIL rather than fall through: `--only rituals` (a space) or `--dryrun` used to
    run every recipe — 152 botanical files re-encoded, or a "dry" run that wrote. */
@@ -710,17 +727,18 @@ export function parseGeneratorArgs(argv) {
 }
 
 async function run({ dryRun, only }) {
-  await writeRitualPhotos({ dryRun });
-  if (only !== null) return;
+  const scope = runScope(only);
+  if (scope.rituals) await writeRitualPhotos({ dryRun });
+  if (only === "rituals") return;
   /* A dry run reports orphans and generates nothing. The expected set is read from `RECIPES`, never
      from the filesystem, so it needs no generation to be computed -- and rewriting 150 deliveries to
      answer "what would you delete?" would be a surprising thing for the flag's name to mean,
      especially while someone is rendering against the dev server. */
   if (dryRun) {
-    await prune({ dryRun });
+    await prune({ dryRun, dirs: scope.prunedDirs });
     return;
   }
-  for (const entry of RECIPES) {
+  for (const entry of scope.recipes) {
     if (entry.recipe === "pass-through") {
       const dir = join(ROOT, entry.sourceDir);
       const outDir = join(ROOT, entry.outDir);
@@ -742,7 +760,7 @@ async function run({ dryRun, only }) {
       `wrote   ${entry.out}  ${(info.size / 1024).toFixed(0)} KB  ${info.width}x${info.height}`,
     );
   }
-  await prune({ dryRun });
+  await prune({ dryRun, dirs: scope.prunedDirs });
 }
 
 /* Guarded so the module can be imported by its test without generating anything. */

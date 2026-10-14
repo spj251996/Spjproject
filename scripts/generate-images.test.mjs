@@ -21,6 +21,7 @@ import {
   parseGeneratorArgs,
   planRitualPhotos,
   ritualManifestSource,
+  runScope,
   uprightRitualImage,
   writeRitualPhotos,
 } from "./generate-images.mjs";
@@ -401,6 +402,45 @@ test("the generator's flags parse in either order", () => {
     only: "rituals",
   });
   assert.deepEqual(parseGeneratorArgs([]), { dryRun: false, only: null });
+});
+
+test("--only=botanical is a known family", () => {
+  assert.deepEqual(parseGeneratorArgs(["--only=botanical"]), {
+    dryRun: false,
+    only: "botanical",
+  });
+  assert.deepEqual(parseGeneratorArgs(["--only=botanical", "--dry-run"]), {
+    dryRun: true,
+    only: "botanical",
+  });
+});
+
+/* A botanical-only run must write and prune `public/botanical` and nothing else: the family and
+   couple recipes copy whatever sits in `assets/`, so a run that reached them could ship an
+   unprocessed upload, and a prune that reached their directories would judge them against recipes
+   this run never wrote. */
+test("a botanical-only run writes and prunes public/botanical alone, and skips the rituals", () => {
+  const scope = runScope("botanical");
+  assert.ok(
+    scope.recipes.length > 0,
+    "the scope must carry the botanical recipes",
+  );
+  for (const entry of scope.recipes) {
+    assert.match(
+      entry.out ?? "",
+      /^public\/botanical\//,
+      "a non-botanical recipe leaked in",
+    );
+  }
+  assert.deepEqual(scope.prunedDirs, ["public/botanical"]);
+  assert.equal(scope.rituals, false);
+});
+
+test("an unfiltered run keeps every recipe, every pruned directory and the rituals", () => {
+  const scope = runScope(null);
+  assert.deepEqual(scope.prunedDirs, PRUNED_DIRS);
+  assert.equal(scope.rituals, true);
+  assert.ok(scope.recipes.some((entry) => entry.recipe === "pass-through"));
 });
 
 test("an unknown --only family throws rather than silently selecting nothing", () => {

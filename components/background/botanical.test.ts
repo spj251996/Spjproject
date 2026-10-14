@@ -189,14 +189,14 @@ test("a positive nudge moves a piece right and down by exactly that many vw, at 
   const expected = (nudge / 100) * box.width;
 
   for (const anchor of ANCHORS) {
-    const base = pieceOverrideCss("falling-spray", {
+    const base = pieceOverrideCss("corner-trail", {
       anchor,
       x: 0,
       y: 0,
       size: 20,
       rotation: 0,
     });
-    const moved = pieceOverrideCss("falling-spray", {
+    const moved = pieceOverrideCss("corner-trail", {
       anchor,
       x: nudge,
       y: nudge,
@@ -262,8 +262,8 @@ test("the generated stylesheet carries no blend-isolating property", () => {
 });
 
 test("every piece the section carries gets a rule at every tier, and no other piece does", () => {
-  const css = botanicalCss(["falling-spray", "corner-spray"]);
-  for (const piece of ["falling-spray", "corner-spray"]) {
+  const css = botanicalCss(["corner-trail", "corner-spray"]);
+  for (const piece of ["corner-trail", "corner-spray"]) {
     const rules = css.match(
       new RegExp(`\\.botanical-piece\\.botanical-piece--${piece}\\b`, "g"),
     )?.length;
@@ -279,39 +279,32 @@ test("every piece the section carries gets a rule at every tier, and no other pi
   );
 });
 
-/* `falling-spray`'s PHONE record is an eye-settled value with a measured reason behind it, which
-   is exactly the shape this project pins: a later re-tune, a conversion pass or a tidy-up can
-   overwrite it and nothing else in the build would notice.
-
-   `y: -18.4` was chosen on a render on 2026-10-10 to lift the piece off the invite's eyebrow. It
-   took the crossing from 1224 overlapping ink pixels across the phone band to 147, and it is the
-   LAST value before the cost starts showing: the two bands that still carry a bud on the line need
-   `-22` and `-26`, both far enough to thin the cascade. `size` stays 76.6 deliberately — the owner
-   kept the full cascade and paid for it in lift alone.
-
-   WHAT THIS TEST CANNOT SEE, stated so nobody reads a green run as clearance: a bud still sits on
-   the eyebrow on the largest phones with the URL bar showing. That is an accepted Known Gap, not a
-   regression, and it is measured by a bud metric no unit test can run — DESIGN.md → Known Gaps
-   carries the figures and the devices. */
-test("falling-spray's phone placement is the value settled on a render", () => {
-  assert.deepEqual(TUNING["falling-spray"].phone, {
-    anchor: "top-right",
-    x: 2.380952,
-    y: -18.4,
-    size: 76.6,
-    rotation: 0,
-    flip: true,
-  });
+/* The invite and the not-found screen share one botanical layout (DESIGN.md → Botanical Edge), so
+   both keys must name the SAME list — a copy would let the two drift apart one swap at a time. Read
+   from source because `botanical.tsx` imports a CSS module, which `node --test` cannot load. */
+test("not-found reuses the invite's own piece list, and that list is corner-trail then corner-spray", () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, "botanical.tsx"),
+    "utf8",
+  );
+  const invite = source.match(/^\s*invite: (\w+),$/m)?.[1];
+  const notFound = source.match(/^\s*"not-found": (\w+),$/m)?.[1];
+  assert.ok(
+    invite,
+    "invite's placement must be a named list, not an inline copy",
+  );
+  assert.equal(notFound, invite, "not-found must reuse the invite's list");
+  const declaration = source.match(
+    new RegExp(`const ${invite} = \\[([\\s\\S]*?)\\] as const`),
+  )?.[1];
+  assert.ok(declaration, `no declaration found for ${invite}`);
+  assert.deepEqual(
+    [...declaration.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]),
+    ["corner-trail", "corner-spray"],
+  );
 });
 
-/* The other three tiers were NOT part of that decision and must not drift with it: the owner's
-   record changed one line. A re-tune that moves a wider tier is a different decision and needs its
-   own render. */
-test("the re-tune touched the phone tier alone", () => {
-  assert.equal(TUNING["falling-spray"].tablet.y, 0);
-  assert.equal(TUNING["falling-spray"].tablet.size, 60);
-  assert.equal(TUNING["falling-spray"].laptop.y, 0);
-  assert.equal(TUNING["falling-spray"].laptop.size, 35.6);
-  assert.equal(TUNING["falling-spray"].desktop.y, 0);
-  assert.equal(TUNING["falling-spray"].desktop.size, 31.026636);
+test("the set is twenty pieces and falling-spray is retired from it", () => {
+  assert.equal(Object.keys(TUNING).length, 20);
+  assert.ok(!("falling-spray" in TUNING));
 });

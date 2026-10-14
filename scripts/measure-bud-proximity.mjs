@@ -24,7 +24,10 @@ const VIEWPORTS = [
   [430, 568],
   [430, 844],
 ];
-const VALUES = [-18.4, -18.5, -18.6, -18.7, -18.8];
+/* The invite's top-right piece and the `top` values (vw) swept for it. `falling-spray` was swept at
+   -18.4..-18.8 before it retired (2026-10-14); `corner-trail` is seeded at 0. */
+const PIECE = "corner-trail";
+const VALUES = [0];
 const DIFF = 6;
 const PAD = 40;
 const BUD_R = 3; // inscribed radius in px: >= 3 means >= ~6px of solid ink across
@@ -154,7 +157,7 @@ for (const [vw, vh] of VIEWPORTS) {
   for (const y of VALUES) {
     await probe(
       `[data-invite-stack] .type-eyebrow{visibility:hidden!important}` +
-        `#invite .botanical-piece--falling-spray{top:${y}vw !important}`,
+        `#invite .botanical-piece--${PIECE}{top:${y}vw !important}`,
     );
     const blooms = await raw(clip);
     const bloom = new Uint8Array(W * H);
