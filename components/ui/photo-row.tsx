@@ -120,6 +120,7 @@ export function PhotoRow({
         <GalleryModal
           fulls={fulls}
           images={photos}
+          thumbs={thumbs}
           onClose={() => setStart(undefined)}
           start={start}
           title={title}

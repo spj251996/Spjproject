@@ -255,3 +255,38 @@ test("the swipe hint plays once a visit, on touch, when there is a next photogra
   assert.match(modal, /\(pointer: coarse\)/);
   assert.match(viewer, /motion\.nudge/);
 });
+
+test("while the full copy loads, the strip's small copy holds the stage, then gives way", () => {
+  assert.match(viewer, /thumb\?: string;/);
+  assert.match(viewer, /data-viewer-underlay/);
+  assert.match(viewer, /onLoad=\{\(\) => setLoaded\(src\)\}/);
+  assert.match(viewer, /loaded !== src/);
+  assert.match(row, /thumbs=\{thumbs\}/);
+  assert.match(modal, /thumb=\{thumbs\[/);
+});
+
+test("a failed photograph's message is sized to its text, so the dark stage around it is empty space", () => {
+  const at = viewer.indexOf("This photo couldn&apos;t load");
+  const before = viewer.slice(viewer.lastIndexOf("<p", at), at);
+  assert.doesNotMatch(before, /inset-0/, "the message still spans the stage");
+});
+
+test("taps are judged against the stage's box, which the slide never moves, and the photo that has loaded", () => {
+  const fn = modal.slice(
+    modal.indexOf("const isEmptySpace"),
+    modal.indexOf("const goBack"),
+  );
+  assert.match(fn, /\[data-viewer-stage\]/);
+  assert.match(fn, /stage\.getBoundingClientRect\(\)/);
+  assert.doesNotMatch(fn, /photo\.getBoundingClientRect\(\)/);
+  assert.match(viewer, /data-viewer-stage/);
+});
+
+test("a press in a scrolling element's scrollbar gutter is never empty space", () => {
+  const fn = modal.slice(
+    modal.indexOf("const isEmptySpace"),
+    modal.indexOf("const goBack"),
+  );
+  assert.match(fn, /scrollHeight > .*clientHeight/);
+  assert.match(fn, /offsetX >= .*clientWidth/);
+});

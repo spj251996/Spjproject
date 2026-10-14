@@ -71,6 +71,8 @@ interface GalleryModalProps {
   images: string[];
   /** Display path to its viewer copy (bounded 2000×2000). */
   fulls: Record<string, string>;
+  /** Display path to its 600px strip copy, which stands in while the viewer copy loads. */
+  thumbs: Record<string, string>;
   /** The photograph to open full screen, or `null` for the grid. */
   start: number | null;
   onClose: () => void;
@@ -80,6 +82,7 @@ export function GalleryModal({
   title,
   images,
   fulls,
+  thumbs,
   start,
   onClose,
 }: GalleryModalProps) {
@@ -195,13 +198,28 @@ export function GalleryModal({
   };
 
   const isEmptySpace = (event: React.MouseEvent) => {
-    const target = event.target as Element;
+    const target = event.target as HTMLElement;
     if (target.closest("button, h2, p") !== null) return false;
-    const photo = containerRef.current?.querySelector<HTMLImageElement>(
-      "img[data-viewer-photo]",
+    /* A press in a scrolling element's scrollbar gutter lands outside its client box. */
+    const { offsetX, offsetY } = event.nativeEvent;
+    if (
+      target.scrollHeight > target.clientHeight &&
+      (offsetX >= target.clientWidth || offsetY >= target.clientHeight)
+    ) {
+      return false;
+    }
+    const stage = containerRef.current?.querySelector<HTMLElement>(
+      "[data-viewer-stage]",
     );
-    if (photo == null) return true;
-    const drawn = containedRect(photo.getBoundingClientRect(), {
+    if (stage == null) return true;
+    /* Whichever copy has loaded — the small one stands in until the large one arrives. */
+    const photo = [
+      ...stage.querySelectorAll<HTMLImageElement>(
+        "img[data-viewer-photo], img[data-viewer-underlay]",
+      ),
+    ].find((image) => image.naturalWidth > 0);
+    if (photo === undefined) return true;
+    const drawn = containedRect(stage.getBoundingClientRect(), {
       width: photo.naturalWidth,
       height: photo.naturalHeight,
     });
@@ -393,6 +411,7 @@ export function GalleryModal({
             onShowGrid={toGrid}
             onStep={step}
             src={fulls[images[state.index]] ?? images[state.index]}
+            thumb={thumbs[images[state.index]]}
             title={title}
             titleId={titleId}
           />

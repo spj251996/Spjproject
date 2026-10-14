@@ -30,6 +30,8 @@ interface PhotoViewerPanelProps {
   direction?: 1 | -1 | 0;
   /** Play the one-time swipe nudge on this photograph. */
   hint?: boolean;
+  /** The strip's small copy, shown under the viewer copy until that has loaded. */
+  thumb?: string;
 }
 
 /* The arrows sit on the stage's edges, centred on its height; the header's two controls sit in its
@@ -53,9 +55,11 @@ export function PhotoViewerPanel({
   onStep,
   direction = 0,
   hint = false,
+  thumb,
 }: PhotoViewerPanelProps) {
   /* Keyed by the source so stepping to the next photograph clears a previous failure. */
   const [failed, setFailed] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<string | null>(null);
   return (
     <div className="absolute inset-0 flex flex-col gap-space-md bg-scrim/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)]">
       <header className="flex items-start justify-between gap-space-md">
@@ -87,13 +91,28 @@ export function PhotoViewerPanel({
           </button>
         </div>
       </header>
-      <div className="relative min-h-0 flex-1">
+      {/* The stage's box is the photograph's untransformed box (the image fills it), which is what
+          a tap is judged against while the image slides. */}
+      <div className="relative min-h-0 flex-1" data-viewer-stage>
         {failed === src ? (
-          <p className="type-body absolute inset-0 flex items-center justify-center text-ink-inverse">
-            This photo couldn&apos;t load
-          </p>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="type-body text-ink-inverse">
+              This photo couldn&apos;t load
+            </p>
+          </div>
         ) : (
           <>
+            {/* The strip's copy is usually cached already, so the stage is never dark while the
+                large copy arrives. */}
+            {thumb !== undefined && loaded !== src && (
+              <img
+                alt=""
+                className="absolute inset-0 size-full object-contain"
+                data-viewer-underlay
+                draggable={false}
+                src={thumb}
+              />
+            )}
             <img
               alt=""
               data-viewer-photo
@@ -101,6 +120,7 @@ export function PhotoViewerPanel({
               draggable={false}
               key={src}
               onError={() => setFailed(src)}
+              onLoad={() => setLoaded(src)}
               src={src}
             />
             <span aria-hidden="true" className="absolute inset-0" />
