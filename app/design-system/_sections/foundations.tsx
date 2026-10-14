@@ -336,7 +336,7 @@ const FRAME_PORTRAIT_BAND = [
 const IMAGERY_POINTERS = [
   "Family portraits · circular crops → Components · UI → portrait",
   "A delivered portrait · at least 3× its rendered diameter, never upscaled",
-  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal",
+  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal; one photograph full screen → photo-viewer",
   "Couple illustration · held back behind the closing text → Domain · Wishes",
 ];
 
@@ -372,7 +372,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     radius: "var(--radius-card)",
     value: "3px",
     usage:
-      "Every rectangular surface: mount and paper stock, gallery-modal's tiles and close control, photo-row's frames, image-placeholder.",
+      "Every rectangular surface: mount and paper stock, gallery-modal's tiles, photo-row's frames, image-placeholder. The gallery's controls are round, and photo-viewer's photograph takes no radius.",
   },
   {
     token: "circle",
