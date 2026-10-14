@@ -421,18 +421,14 @@ function clearDash(path: SVGPathElement) {
   path.style.strokeDashoffset = "";
 }
 
-/* The opening sequence hands off at 1600ms -- ground present, then the invite's two botanical pieces
-   200-600, type 800-1200, the thread's own fade 1200-1600 (`DESIGN.md` -> Motion -> The opening
-   sequence). The draw begins as that fade completes, so this is the sequence's own end, not a value
-   of its own. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a
-   token multiple rather than a coined number, since a fresh design value is the owner's to set.
-   The thread's own fade no longer waits a beat after the type: the owner asked for less dead air
-   between the names appearing and the line starting, so the fade begins as the type lands.
-   **1600, not 2200, since 2026-10-05**: the invitation took the hero card's unpainted option, so the
-   mount and stock settles that opened the sequence animate nothing and were replaced by one beat on
-   the flowers. Two beats became one, and every later step moved up by 600ms. DESIGN.md carries the
-   painted option's values for restoring it. */
-const OPENING_DRAW_DELAY = 1600;
+/* The opening sequence hands off at 2200ms -- ground present, the invite's flowers unfurling, the
+   type rising line by line until it lands at `--opening-type-end` (1800ms under Bloom, owner
+   2026-10-14), then the thread's own fade for one `--duration-base` (`DESIGN.md` -> Motion -> The
+   opening sequence). The draw begins as that fade completes, so this is the sequence's own end, not a
+   value of its own: `opening-draw.test.ts` derives it from `app/invite.css` and fails if the two
+   part. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
+   multiple rather than a coined number, since a fresh design value is the owner's to set. */
+const OPENING_DRAW_DELAY = 2200;
 const OPENING_DRAW_DURATION = 1200;
 
 /* THE DRAW'S CATCH-UP — the owner's finding, 2026-10-05, in their own words: "i want the thread on

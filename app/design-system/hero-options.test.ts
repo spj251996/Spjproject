@@ -85,13 +85,13 @@ test("the gallery's beat count matches the shipped sequence", () => {
   const inFileSteps = (inviteCss.match(/^\s*animation:/gm) ?? []).length;
   assert.strictEqual(
     inFileSteps,
-    2,
-    "app/invite.css should carry two steps — the flowers and the type; the thread's is in thread.module.css",
+    7,
+    "app/invite.css should carry seven steps under Bloom — the flowers and six rows of type; the thread's is in thread.module.css",
   );
   assert.match(
     domain,
-    /three beats/,
-    "the Invite entry must name the sequence's beat count, and it is three",
+    /three beats|Bloom/,
+    "the Invite entry must name the shipped sequence",
   );
 });
 

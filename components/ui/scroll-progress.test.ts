@@ -30,7 +30,7 @@ test("the bar sits beside <main>, never inside it, so no section's box can move"
   assert.equal(page.slice(main).includes("<ScrollProgress"), false);
 });
 
-test("the lab routes carry no bar", () => {
+test("the lab route carries no bar", () => {
   assert.equal(lab.includes("ScrollProgress"), false);
 });
 
@@ -63,9 +63,8 @@ test("the track arrives as the opening's last beat, gated like every opening ste
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/);
 });
 
-test("--opening-type-end is when Today's type has landed", () => {
-  assert.match(
-    invite,
-    /--opening-type-end:\s*calc\(var\(--duration-fast\) \* 2 \+ var\(--duration-base\) \* 2\)/,
-  );
+/* Its value is the opening's, derived from the shipped type rows in `opening-draw.test.ts`; here it
+   only has to exist where the track reads it. */
+test("--opening-type-end is declared on the root by the opening", () => {
+  assert.match(invite, /:root\s*\{\s*--opening-type-end:\s*calc\(/);
 });

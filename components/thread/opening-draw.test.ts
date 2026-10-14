@@ -20,63 +20,63 @@ function tokenMs(name: string) {
   return Number(match[1]);
 }
 
-// The draw must start exactly as the fade ends, or the sequence's last beat is a fade over an empty
-// stroke (draw late) or a line drawing before it is visible (draw early).
-test("the timed draw begins as the thread's fade completes", () => {
-  const delay = moduleCss.match(
-    /animation:\s*pageThreadFadeIn[^;]*?calc\(var\(--duration-fast\) \* (\d+) \+ var\(--duration-base\) \* (\d+)\)/,
-  );
-  assert.ok(delay, "fade delay expression not found");
-  const fadeStart =
-    Number(delay[1]) * tokenMs("duration-fast") +
-    Number(delay[2]) * tokenMs("duration-base");
-  assert.equal(
-    constant("OPENING_DRAW_DELAY"),
-    fadeStart + tokenMs("duration-base"),
-  );
-});
+function stripComments(css: string) {
+  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
 
-/* The type is the sequence's SECOND beat under the hero card's unpainted option, which the
-   invitation takes: the mount and stock settles are gone, because they animated layers that option
-   does not paint, and the flowers took the first beat in their place (owner, 2026-10-05 — DESIGN.md
-   → Motion → The opening sequence). The painted option's four-beat ladder, with the type third, is
-   documented there as the alternative. */
-/* Reads BOTH delays out of the stylesheets that ship them. The earlier version computed each side
-   from the tokens and compared the results -- `3 x fast + 2 x base + base` against
-   `3 x fast + 3 x base` -- so it asserted 1800 === 1800 and would have passed whatever the CSS said.
-   It was vacuous before this change and vacuous after it; a check that runs and passes reads as
-   evidence whatever it asserts, so it now parses the shipped expressions instead. */
-/* The base multiplier is optional because `n = 2` writes `+ var(--duration-base)` with no `* 1`,
-   which is how the shipped stylesheet spells it. An absent multiplier is one, not zero. */
-function delayMs(rawCss: string, anchor: string, what: string) {
-  /* Comments stripped before anchoring. `app/invite.css`'s header names `[data-invite-stack]` in
-     prose, ~85 lines above the rule, so a lazy search from the first occurrence starts inside a
-     comment and only reaches the right `calc()` because nothing between them happens to be one.
-     Any `calc(…)` written into a comment in between would silently redirect this assertion. */
-  const css = rawCss.replace(/\/\*[\s\S]*?\*\//g, "");
-  const match = css.match(
-    new RegExp(
-      `${anchor}[\\s\\S]*?calc\\(var\\(--duration-fast\\) \\* (\\d+) \\+ var\\(--duration-base\\)(?: \\* (\\d+))?\\)`,
-    ),
-  );
-  assert.ok(match, `${what} delay expression not found`);
+/* `calc(var(--duration-fast) * a [+ var(--duration-base) * b])`, either term optional, in ms. */
+function calcMs(expression: string, what: string) {
+  const fast = expression.match(/var\(--duration-fast\)(?: \* ([\d.]+))?/);
+  const base = expression.match(/var\(--duration-base\)(?: \* ([\d.]+))?/);
+  assert.ok(fast || base, `${what}: no duration token in ${expression}`);
   return (
-    Number(match[1]) * tokenMs("duration-fast") +
-    Number(match[2] ?? 1) * tokenMs("duration-base")
+    (fast ? Number(fast[1] ?? 1) * tokenMs("duration-fast") : 0) +
+    (base ? Number(base[1] ?? 1) * tokenMs("duration-base") : 0)
   );
 }
 
-test("the fade begins as the type lands, not a beat after it", () => {
-  const typeDelay = delayMs(inviteCss, "\\[data-invite-stack\\]", "the type's");
-  const fadeStart = delayMs(
-    moduleCss,
-    "animation:\\s*pageThreadFadeIn",
-    "the thread fade's",
+/* THE ONE SOURCE. `--opening-type-end` in `app/invite.css` says when the type has landed; the
+   thread's fade and the progress bar's track read it, and the timed draw is derived from it. */
+function typeEndMs() {
+  const match = stripComments(inviteCss).match(
+    /--opening-type-end:\s*(calc\([^;]*\));/,
   );
+  assert.ok(match, "--opening-type-end not found in app/invite.css");
+  return calcMs(match[1], "--opening-type-end");
+}
+
+test("--opening-type-end is when the last row of type lands", () => {
+  /* Every type step's start + duration, read off the shipped rules; the latest is the landing. */
+  const css = stripComments(inviteCss);
+  const rises = [
+    ...css.matchAll(
+      /animation:\s*opening-rise\s+(calc\(var\(--duration-[a-z]+\)(?: \* [\d.]+)?\))\s+var\(--ease-entrance\)\s+(calc\(var\(--duration-[a-z]+\)(?: \* [\d.]+)?\))\s+backwards/g,
+    ),
+  ];
   assert.equal(
-    fadeStart,
-    typeDelay + tokenMs("duration-base"),
-    "the thread's fade must begin exactly as the type's own fade completes",
+    rises.length,
+    6,
+    `expected six type rows, found ${rises.length}`,
+  );
+  const landing = Math.max(
+    ...rises.map((m) => calcMs(m[2], "delay") + calcMs(m[1], "duration")),
+  );
+  assert.equal(typeEndMs(), landing);
+});
+
+test("the thread's fade starts at --opening-type-end rather than restating it", () => {
+  assert.match(
+    stripComments(moduleCss),
+    /animation:\s*pageThreadFadeIn var\(--duration-base\) var\(--ease-entrance\)\s+var\(--opening-type-end\) both/,
+  );
+});
+
+// The draw must start exactly as the fade ends, or the sequence's last beat is a fade over an empty
+// stroke (draw late) or a line drawing before it is visible (draw early).
+test("the timed draw begins as the thread's fade completes", () => {
+  assert.equal(
+    constant("OPENING_DRAW_DELAY"),
+    typeEndMs() + tokenMs("duration-base"),
   );
 });
 
@@ -115,16 +115,14 @@ function animatedSelectors(css: string): string[] {
   return selectors;
 }
 
-/* TWO steps live in this file, not three: the flowers and the type. The thread's own fade is the
-   third and lives in `thread.module.css`, asserted separately below. Under the painted option this
-   file carried three — the mount's settle, the stock's settle and the type — and dropping two while
-   gaining one is what makes the number move. */
+/* SEVEN steps live in this file under Bloom: the flowers and six rows of type. The thread's own fade
+   lives in `thread.module.css`, asserted separately below. */
 test("no step of the invite's sequence animates without the gate", () => {
   const selectors = animatedSelectors(inviteCss);
   assert.equal(
     selectors.length,
-    2,
-    `expected the sequence's two in-file steps, found ${selectors.length}`,
+    7,
+    `expected the sequence's seven in-file steps, found ${selectors.length}`,
   );
   for (const selector of selectors) {
     assert.ok(
@@ -165,43 +163,26 @@ test("the gate and the thread's timed draw share one threshold", () => {
   assert.match(source, /window\.scrollY\s*>\s*0/);
 });
 
-/* ---------------------------------------------------------------------------------------------
-   The hero card's unpainted option, 2026-10-05. The invitation paints no mount and no stock, so the
-   two settle beats animated nothing and the invite's own botanical pieces took the first beat in
-   their place. DESIGN.md → Foundations → Layout → mounted-sheet → The hero card's two options holds
-   both sequences and the one-word restoration.
-   --------------------------------------------------------------------------------------------- */
-
-test("the vacated mount and stock steps are gone", () => {
+test("no mount or stock step remains", () => {
   assert.doesNotMatch(inviteCss, /mounted-sheet-frame__mount/);
   assert.doesNotMatch(inviteCss, /\.invite-settle\s*\{/);
 });
 
-/* The settle keyframe is now the flowers' own gesture, and it is also what the painted option's
-   restoration recipe in DESIGN.md points at for the mount and the stock. Either way, deleting it as
-   "dead" would break something. */
-test("the settle keyframe survives for the painted option's restoration", () => {
-  assert.match(inviteCss, /@keyframes invite-settle/);
-});
-
-/* THE FLOWERS SETTLE RATHER THAN FADE, AND THAT IS WORTH A GUARD BECAUSE IT IS A MEASURED CHOICE.
-   With no mount painting, the flowers are the largest painted element on the opening screen, so
-   starting them at opacity 0 delays the largest paint: measured on the static export at 390x844,
-   three runs each, same build, **fade 808ms (784-836) against settle 248ms (228-264)**. Swapping the
-   keyframe back would cost ~560ms of LCP against PROJECT.md's own success metric, and no other gate
-   in this repo would see it. The settle is also the gesture the owner already chose for the mount
-   for exactly this reason, and it never takes opacity below 1, so it cannot isolate the multiply
-   blend even in principle. */
-test("the flowers settle rather than fade, which is what keeps the largest paint early", () => {
-  const beat = inviteCss.match(
-    /\.botanical-piece\s*\{\s*animation:\s*([\w-]+)/,
-  );
+/* THE FLOWERS NEVER FADE, AND THAT IS WORTH A GUARD BECAUSE IT IS A MEASURED CHOICE. They are the
+   largest painted element on the opening screen, so starting them at opacity 0 delays the largest
+   paint: measured on the static export at 390x844, **a fade 808ms (784-836) against a translate's
+   248ms (228-264)**. No other gate in this repo would see the swap. Transform only also means the
+   gesture can never isolate the multiply blend. */
+test("the flowers' gesture is transform only, which keeps the largest paint early", () => {
+  const css = stripComments(inviteCss);
+  const beat = css.match(/\.botanical-piece\s*\{\s*animation:\s*([\w-]+)/);
   assert.ok(beat, "the botanical beat's animation declaration was not found");
-  assert.strictEqual(
-    beat[1],
-    "invite-settle",
-    "the flowers must settle, not fade: a fade costs ~560ms of LCP because they are the largest painted element on the opening screen",
+  const frames = css.match(
+    new RegExp(`@keyframes ${beat[1]}\\s*\\{([\\s\\S]*?)\\n  \\}`),
   );
+  assert.ok(frames, `@keyframes ${beat[1]} not found`);
+  const properties = new Set(frames[1].match(/[a-z-]+(?=\s*:)/g) ?? []);
+  assert.deepEqual([...properties], ["transform"]);
 });
 
 /* `not-found` ships the SAME two pieces (`SECTION_PLACEMENT["not-found"]` is the invite's pair) and
@@ -253,13 +234,32 @@ test("every beat animates a descendant, never the scope class a bloom hangs from
   }
 });
 
-/* Asserted as the EXPRESSION rather than a literal 800ms: the formula is the rule the owner set, and
-   a literal would pass a retime that broke the formula while still landing on the same number. */
-test("the type is the sequence's second beat", () => {
-  assert.match(
-    inviteCss,
-    /\[data-invite-stack\][\s\S]{0,240}calc\(var\(--duration-fast\) \* 2 \+ var\(--duration-base\)\)/,
+/* The rows rise top to bottom, each after the one above — read off the shipped delays. */
+test("the type rises top to bottom, after the flowers have begun", () => {
+  const css = stripComments(inviteCss);
+  const order = [
+    "\\.type-eyebrow",
+    "h1",
+    "\\[data-invite-line\\]",
+    "\\[data-invite-date\\]",
+    "\\[data-invite-place\\]",
+    "\\[data-invite-passage\\]",
+  ].map((anchor) => {
+    const m = css.match(
+      new RegExp(
+        `${anchor}\\s*\\{\\s*animation:\\s*opening-rise\\s+calc\\(var\\(--duration-fast\\) \\* [\\d.]+\\)\\s+var\\(--ease-entrance\\)\\s+(calc\\(var\\(--duration-fast\\) \\* [\\d.]+\\))`,
+      ),
+    );
+    assert.ok(m, `${anchor}'s rise not found`);
+    return calcMs(m[1], anchor);
+  });
+  assert.ok(
+    order[0] > tokenMs("duration-fast"),
+    "the type starts before the flowers",
   );
+  for (let i = 1; i < order.length; i++) {
+    assert.ok(order[i] > order[i - 1], `row ${i} does not follow row ${i - 1}`);
+  }
 });
 
 /* The flowers are the first beat: `n = 1` is `1 x fast + 0 x base`, which is the bare token. */

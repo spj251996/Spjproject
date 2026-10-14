@@ -7,8 +7,8 @@ import { ScrollProgress } from "@/components/ui/scroll-progress";
    route, which is what keeps the two pages geometrically identical.
 
    The scroll progress bar is `<main>`'s SIBLING, never its child: it is fixed and takes no space,
-   and keeping it out of `<main>` keeps that block byte-identical to the lab routes' and to every
-   section fit. It is `/`'s scroll cue (PROJECT.md); the lab routes keep the thread's own. */
+   and keeping it out of `<main>` keeps that block byte-identical to the lab route's and to every
+   section fit. It is `/`'s scroll cue (PROJECT.md); the lab route keeps the thread's own. */
 export default function Home() {
   return (
     <>

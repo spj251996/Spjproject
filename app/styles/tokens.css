@@ -130,8 +130,6 @@
   /* Durations sit in :root below: the framework has no duration namespace. */
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
   --ease-settle: cubic-bezier(0.4, 0, 0.2, 1);
-  /* Passes its rest and settles back — the opening's candidates (DESIGN.md → Motion). */
-  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* components/layout/mounted-sheet-frame.ts holds these as numbers, because a media query cannot
      read a custom property — change both together. */
@@ -346,6 +344,10 @@
   /* The stock and the mount are the same material at two tones, so they share one texture. */
   --grain-stock-paper-blend: multiply;
   --grain-stock-paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0825' intercept='0.9300'/><feFuncG type='linear' slope='0.1073' intercept='0.9090'/><feFuncB type='linear' slope='0.1486' intercept='0.8740'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
+  /* The same tile at half its tooth for phones: each channel's final slope halved and its intercept
+     raised so the paper's mean colour holds (owner, 2026-10-14, picked on an iPhone). Read only by
+     the `max-md` rule below — DESIGN.md → Paper Grain. */
+  --grain-stock-paper-phone: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='t' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.08333' numOctaves='3' seed='41' stitchTiles='stitch' result='h'/><feTurbulence type='fractalNoise' baseFrequency='0.01389' numOctaves='2' seed='43' stitchTiles='stitch' result='m'/><feComposite in='h' in2='m' operator='arithmetic' k2='0.78' k3='0.22' result='height'/><feColorMatrix in='height' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0' result='alphaHeight'/><feDiffuseLighting in='alphaHeight' surfaceScale='4.8' diffuseConstant='1' lighting-color='white'><feDistantLight azimuth='270' elevation='58'/></feDiffuseLighting><feComponentTransfer><feFuncR type='linear' slope='0.0413' intercept='0.9612'/><feFuncG type='linear' slope='0.0537' intercept='0.9496'/><feFuncB type='linear' slope='0.0743' intercept='0.9302'/><feFuncA type='linear' slope='0' intercept='1'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23t)'/></svg>");
 
   /* The crease is a bend in the stock, not a rule: 22px, centred on the mount, and the one
      treatment lit from the side rather than from overhead — a fold reads only under side light, so
@@ -400,11 +402,13 @@
   --z-modal: 50;
 }
 
-/* The progress line is 2px on a phone, 3px from the tablet up (owner, 2026-10-14, on a phone) —
-   DESIGN.md → Components → UI → `scroll-progress`. */
+/* Two phone-only values, both the owner's picks on a phone (2026-10-14): the progress line is 2px
+   (3px from the tablet up — DESIGN.md → Components → UI → `scroll-progress`), and the card paper takes
+   half its tooth (DESIGN.md → Paper Grain). */
 :root {
   @variant max-md {
     --progress-height: 2px;
+    --grain-stock-paper: var(--grain-stock-paper-phone);
   }
 }
 

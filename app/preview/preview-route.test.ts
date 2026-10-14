@@ -173,7 +173,7 @@ test("the 2026-10-14 picks left the route: the family photos as now, the progres
   assert.match(tokens, /--progress-height: 3px;/);
   assert.match(
     tokens,
-    /@variant max-md \{\s*--progress-height: 2px;\s*\}/,
+    /@variant max-md \{[^}]*--progress-height: 2px;[^}]*\}/,
     "the phone's 2px line is not in tokens.css",
   );
   assert.match(

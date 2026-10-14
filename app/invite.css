@@ -1,56 +1,35 @@
 /* THE OPENING SEQUENCE — DESIGN.md → Motion → "The opening sequence", a declared exception to
-   `rules/web-frontend/motion.md` → Prohibited (owner decision, 2026-09-27, in chat). The owner
-   restated the sequence after watching Task 5's continuous stagger live, on two counts: the ground
-   is ALREADY PRESENT and carries no animation at all (not merely a zero delay), and the remaining
-   steps run as DISCRETE beats — each one completes before the next begins — rather than overlapping.
+   `rules/web-frontend/motion.md` → Prohibited (owner decision, 2026-09-27, in chat).
 
-   THE SEQUENCE IS KEYED TO THE HERO CARD'S OPTION, and the invitation takes the UNPAINTED one
-   (owner, 2026-10-05 — DESIGN.md → Foundations → Layout → `mounted-sheet` → The hero card's two
-   options). This file carries the unpainted option's THREE beats, two of them here:
+   BLOOM (owner, 2026-10-14, picked on a phone on `/preview` from Today, Written in, Bloom and
+   Curtain): the ground is present on the first frame and carries no rule; the invite's two
+   botanical pieces unfurl from their own corners; then each line of type rises with a slight bounce,
+   top to bottom, each starting 0.6 × fast after the one above, so the stack reads as one movement.
+   Every value is a multiple of `--duration-fast`, the sequence's beat.
 
-     ground (no rule at all) → flowers 200ms → type 800ms → thread 1200ms, ending 1600ms.
-
-   The painted option's four — ground, mount settles, stock settles, type, thread, ending 2400ms —
-   are documented in DESIGN.md with every value needed to restore them, and `@keyframes
-   invite-settle` below is kept for that purpose rather than deleted as dead.
-
-   THE GROUND STILL CARRIES NO RULE. What changed on 2026-10-05 is that the blooms are no longer part
-   of "already present": with no mount and no stock, the ground is all that precedes the type, so the
-   two named botanical pieces (`corner-trail`/`corner-spray`) took the vacated first beat. That
-   REVERSES their removal on 2026-09-27 — deliberately, and by the same reasoning applied to a
-   different composition, not as drift.
-
-   ONE FORMULA, BOTH TOKENS ALREADY ON THE SCALE. Every step runs for `{motion.duration.base}` on
-   `{motion.easing.entrance}`; step *n* (flowers=1, type=2) is delayed
-   `n × {motion.duration.fast} + (n − 1) × {motion.duration.base}` — the beat sits on top of every
-   step's own duration rather than overlapping it, which is what makes the sequence discrete. The
-   thread's fade is the one step OFF that ladder: it drops the beat and begins as the type lands
-   (1200ms), ending at 1600ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. Its own completion
-   is what the scroll-driven draw hands off from.
-
-   `@keyframes invite-settle` CARRIES TWO JOBS. It is the flowers' own gesture below, and it is what
-   the painted option's mount and stock both restore to (DESIGN.md records their delays). A test pins
-   its survival so a later pass does not delete it as dead on either count.
+     flowers 200–1000ms · eyebrow 700 · names 820 · line 940 · date 1060 · place 1180 ·
+     passage 1300–1800ms · the type has landed at 1800ms (`--opening-type-end`)
 
    ANY GESTURE ON A BLOOM GOES ON THE PIECE ITSELF, NEVER ON A WRAPPING ANCESTOR.
    `botanical.module.css`'s header forbids sub-1 opacity and blend-isolating properties anywhere in a
-   bloom's ANCESTOR chain — they would isolate `mix-blend-mode: multiply` from the ivory ground and
-   paint each piece's opaque backing rectangle instead of blending it. **The flowers' beat below is
-   the first rule in this project to animate a bloom at all**, so it targets `.botanical-piece` — the
-   piece itself, where a transform is safe — and never `.layer` or `.clip`, which are its ancestors.
-   It settles rather than fades, so it never takes opacity below 1 and cannot isolate the blend even
-   in principle; the step's own comment carries the measurement behind that choice. The type step
-   targets `[data-invite-stack]`, a sibling of the botanical layer rather than its ancestor, so it
-   never reached the blooms in the first place.
+   bloom's ancestor chain — they would isolate `mix-blend-mode: multiply` from the ivory ground and
+   paint each piece's opaque backing rectangle instead of blending it. So the flowers' rule targets
+   `.botanical-piece`, and animates `transform` alone: the piece's own `scale` and `rotate` carry its
+   mirror and turn, and `transform` composes inside them. The type's rules target the stack's children,
+   which are siblings of the botanical layer rather than its ancestors.
 
-   SCOPED TO THE INVITE'S OWN FRAME, NOT EVERY SECTION. `mounted-sheet-frame--invite` is the literal
-   class both `Botanical` and `MountedSheet` stamp on their own wrapper for this section
-   (`frameScopeClass`), so it reaches exactly the invite's mount and stock and nothing downstream —
-   every other section keeps its scroll-linked reveal (Interaction Rules → Section entry), which
-   this file does not touch.
+   THE FLOWERS NEVER FADE, AND THAT IS MEASURED, NOT TASTE. They are the largest painted element on
+   the opening screen, so a gesture that starts them at opacity 0 delays the largest paint — a fade
+   measured 808ms against a translate's 248ms on the static export at 390×844. The unfurl is transform
+   only, so they are opaque on the first frame (Bloom's own LCP is in DESIGN.md).
 
-   `both` on the type's fade HOLDS the finished opacity after the animation ends, so it never
-   depends on some other rule's opacity to stay visible once its keyframe has run its course.
+   SCOPED TO THE INVITE'S OWN FRAME. `mounted-sheet-frame--invite` is the class both `Botanical` and
+   `MountedSheet` stamp on their own wrapper for this section (`frameScopeClass`), so these rules
+   reach nothing downstream, and not `not-found`, which ships the same two pieces.
+
+   `backwards`, not `both`: every step ends on its element's un-animated base state, so nothing needs
+   holding afterwards — and a held fill would keep the type composited and render it differently from
+   the finished page (measured: 2,727px at max Δ26 on a phone).
 
    EVERY STEP IS GATED ON `:root:not([data-opening-skipped])` — a page that loads already scrolled is
    not an arrival, and the sequence does not run (`app/layout.tsx`'s own header carries the mechanism
@@ -59,84 +38,100 @@
    leaves it. Any step added here needs the same prefix, and `opening-draw.test.ts` asserts that no
    rule in this file animates without it. */
 
-/* WHEN THE OPENING'S TYPE HAS LANDED — the one place that says so. The scroll progress bar's track
-   arrives here, and the lab thread fades in from here. Today's type starts at 2 × fast + 1 × base
-   and fades for one base, so it lands at 2 × fast + 2 × base. A new sequence changes THIS value,
-   never a copy of it. */
+/* WHEN THE OPENING'S TYPE HAS LANDED — the one place that says so: the passage, the last row, starts
+   at 6.5 × fast and rises for 2.5 × fast. The scroll progress bar's track arrives here, and the lab
+   thread fades in from here. A new sequence changes THIS value, never a copy of it. */
 :root {
-  --opening-type-end: calc(var(--duration-fast) * 2 + var(--duration-base) * 2);
+  --opening-type-end: calc(var(--duration-fast) * 9);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes opening-fade {
+  /* From the piece's own corner (`--piece-corner-x/-y`, emitted for the invite's pieces alone),
+     past full size and back. */
+  @keyframes opening-unfurl {
+    from {
+      transform: translate(
+          calc(var(--piece-corner-x) * 15%),
+          calc(var(--piece-corner-y) * 15%)
+        )
+        scale(0.7) rotate(-8deg);
+    }
+    70% {
+      transform: translate(
+          calc(var(--piece-corner-x) * -2%),
+          calc(var(--piece-corner-y) * -2%)
+        )
+        scale(1.04) rotate(2deg);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes opening-rise {
     from {
       opacity: 0;
+      transform: translateY(16px);
     }
-    to {
+    65% {
       opacity: 1;
-    }
-  }
-
-  @keyframes invite-settle {
-    from {
-      transform: translateY(-8px);
+      transform: translateY(-3px);
     }
     to {
-      transform: translateY(0);
+      transform: none;
     }
   }
 
-  /* Step 1 — the invite's own two botanical pieces arrive. Delay = 1 × fast + 0 × base = 200ms.
-
-     This beat belongs to the hero card's UNPAINTED option, which the invitation takes (DESIGN.md →
-     Foundations → Layout → `mounted-sheet` → The hero card's two options). The painted option's four
-     beats — mount settles, stock settles, then type, then thread — stay documented there with the
-     values to restore, and `@keyframes invite-settle` above is KEPT for exactly that.
-
-     It REVERSES the 2026-09-27 removal of a botanical step, by the owner's decision of 2026-10-05.
-     That removal was right for the painted option: the ground, blooms included, was already present
-     behind an arriving card, and a layer that is not animated should not appear in an animation
-     rule. With no mount and no stock the ground is ALL that precedes the type, so the flowers now
-     read as a layer that arrives. Same reasoning, different composition — not drift.
-
-     THE FLOWERS SETTLE, THEY DO NOT FADE — AND THAT IS A MEASURED CHOICE, NOT A TASTE ONE.
-     Measured on the static export at 390×844, three runs each, same build, only this gesture
-     differing: **fading them puts LCP at 808ms (784–836); settling them puts it at 248ms (228–264)**.
-     The flowers are the largest painted element on the opening screen now that no mount paints, so a
-     gesture that starts them at opacity 0 delays the largest paint by more than half a second. That
-     is the same reasoning the owner already settled for the mount — "it only translates, so it is
-     fully opaque on the very first frame" (DESIGN.md → Motion) — applied to whatever has taken over
-     as the LCP candidate. **The fade is one word away** if the owner prefers its look with the cost
-     in hand.
-
-     It is also the structurally safer gesture. Sub-1 opacity anywhere in a bloom's ancestor chain
-     isolates `mix-blend-mode: multiply` and paints each piece's opaque white backing rectangle, with
-     no error and every gate green (`botanical.module.css`'s header). The settle never takes opacity
-     below 1 at all, so it cannot isolate the blend even in principle; the fade was measured not to
-     (0 near-white pixels mid-fade), but it relied on a property of the element rather than avoiding
-     the question. A transform on the piece ITSELF is safe — only an ancestor's isolates the blend.
-
-     `.botanical-piece` is the global class each bloom carries (`botanical-css.ts`'s `PIECE_CLASS`) —
-     NOT `bloom`, which is the hashed CSS-module class and would match nothing here. The invite's own
-     frame scope is what keeps this off `not-found`, which ships the same two pieces and keeps a
-     painted card.
-
-     `backwards`, not `both`: the finished state is `transform: none`, which is also the un-animated
-     value, so nothing needs holding afterwards. */
   :root:not([data-opening-skipped])
     .mounted-sheet-frame--invite
     .botanical-piece {
-    animation: invite-settle var(--duration-base) var(--ease-entrance)
+    animation: opening-unfurl calc(var(--duration-fast) * 4) var(--ease-settle)
       var(--duration-fast) backwards;
   }
 
-  /* Step 2 — the type: the eyebrow, the couple's names, the date and place, the passage — one
-     stack, one fade, matching the granularity DESIGN.md states the sequence at. Delay = 2 × fast +
-     1 × base = 800ms. */
+  /* The type, top to bottom. The date block rises as one: its labels carry a static lift transform
+     of their own, so they are never animated separately. */
   :root:not([data-opening-skipped])
     .mounted-sheet-frame--invite
-    [data-invite-stack] {
-    animation: opening-fade var(--duration-base) var(--ease-entrance)
-      calc(var(--duration-fast) * 2 + var(--duration-base)) both;
+    [data-invite-stack]
+    .type-eyebrow {
+    animation: opening-rise calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) calc(var(--duration-fast) * 3.5) backwards;
+  }
+
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-stack]
+    h1 {
+    animation: opening-rise calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) calc(var(--duration-fast) * 4.1) backwards;
+  }
+
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-line] {
+    animation: opening-rise calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) calc(var(--duration-fast) * 4.7) backwards;
+  }
+
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-date] {
+    animation: opening-rise calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) calc(var(--duration-fast) * 5.3) backwards;
+  }
+
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-place] {
+    animation: opening-rise calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) calc(var(--duration-fast) * 5.9) backwards;
+  }
+
+  :root:not([data-opening-skipped])
+    .mounted-sheet-frame--invite
+    [data-invite-passage] {
+    animation: opening-rise calc(var(--duration-fast) * 2.5)
+      var(--ease-entrance) calc(var(--duration-fast) * 6.5) backwards;
   }
 }
