@@ -139,26 +139,6 @@ const COLOR_GROUPS: SwatchGroup[] = [
 
 const TYPE_TOKENS: TypeToken[] = [
   {
-    token: "type-display-name",
-    family: "Corinthia",
-    weight: 400,
-    sample: "Bride & Groom",
-    phone: { size: 94, lh: 141 },
-    tablet: { size: 110, lh: 165 },
-    laptop: { size: 110, lh: 165 },
-    desktop: { size: 156, lh: 234 },
-  },
-  {
-    token: "type-heading-script",
-    family: "Corinthia",
-    weight: 400,
-    sample: "Betrothal",
-    phone: { size: 56, lh: 56 },
-    tablet: { size: 72, lh: 72 },
-    laptop: { size: 64, lh: 64 },
-    desktop: { size: 80, lh: 80 },
-  },
-  {
     token: "type-heading-xl",
     family: "Playfair Display",
     weight: 700,
@@ -481,38 +461,28 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Four families and fourteen roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
+        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
       >
         <Specimen
-          description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use. display-name's portrait three-line form, at a 0.9 line height, is shown below."
+          description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. The two script rows are SUPERSEDED and tagged [retire]: the invite's couple names and Wishes' signature are drawn geometry now (Components · UI · couple-names), and the script markup these styled is hidden on every published route. They keep their rows because the classes are still on those elements, carrying the em the drawn lockup's width resolves against — which is why their SIZE TOKENS have to outlive the roles themselves."
+          note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role: the script face and its two roles were retired on 2026-10-14, and only their two SIZE tokens remain — --text-display-name and --text-heading-script — as the em the drawn lockups are measured in."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
 
         <Specimen
-          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows display-name's portrait split and the ordinal's zero-height superscript."
+          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows the ordinal's zero-height superscript."
           id="typography-names-and-date"
-          name="Names and date line"
-          note="Rotate or resize to portrait to see display-name split onto three lines — the split belongs to that role alone. The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
-          spec="display-name · heading-script · joiner at 0.5em · date-primary · caption ordinal"
+          name="Date line"
+          note="The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
+          spec="date-primary · caption ordinal"
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
-            <p className="type-display-name text-ink">
-              <span>Bride</span>
-              <span className="type-display-name__joiner">{" & "}</span>
-              <span>Groom</span>
-            </p>
-            <p className="type-heading-script text-ink">
-              <span>Bride</span>
-              <span className="type-heading-script__joiner">{" & "}</span>
-              <span>Groom</span>
-            </p>
             <p className="type-date-primary text-ink">
               Saturday, 1
               <span className="type-caption type-date-ordinal align-super">
@@ -650,7 +620,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows, through sprig-ornament (Components · UI), each ritual's header line from lg up, set once as drawn, plus Contact and the link preview card, which set it inline."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows, through sprig-ornament (Components · UI), each ritual's header line from lg up, set once as drawn, plus the link preview card, which sets it inline."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -749,7 +719,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of nine marks, plus the seal mark that serves as the site's icon. Seven are traced from drawings made for this invitation; call and chat are adapted stock line drawings, squared at the ends and matched on line weight."
+        intro="A closed set of six marks, plus the seal mark that serves as the site's icon, all traced from drawings made for this invitation."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -759,7 +729,7 @@ export function FoundationsSections() {
           id="iconography-set"
           name="The set"
           source="@/components/icons"
-          spec="filled outline, except map, call and chat, which are stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
+          spec="filled outline, except map, which is stroked instead · accent-gold taken from the surface · sized on the diagonal, with the nudge scaling the mark on top of that span"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
             {ICONS.map(({ name, Icon }) => (
@@ -807,7 +777,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), marks Contact, closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

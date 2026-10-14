@@ -29,7 +29,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/_sections/invite.tsx",
     composes:
-      "mounted-sheet with the hero setting, taking its unpainted option — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone the line-to-date gap closes to space-3xs too, so the invite fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where from 1024px up the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 keeps display-name, which no longer paints anything and is there to carry the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at a flat 32px instead — a floor derived from the split, not a step on the spacing scale; on a phone the split's floors are 17.345px above and 7.845px below, a 47.5px block · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
+      "mounted-sheet with the hero setting, taking its unpainted option — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone the line-to-date gap closes to space-3xs too, so the invite fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where from 1024px up the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 takes --text-display-name as its font size and nothing else, the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at a flat 32px instead — a floor derived from the split, not a step on the spacing scale; on a phone the split's floors are 17.345px above and 7.845px below, a 47.5px block · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
     note: "Live at /. The thread is NOT: the published invitation carries none, so this section currently has no scroll cue (Technical Conventions → Variant Routes). At /thread/current the thread is that cue — its resting tip sits at the lower edge and loops for --retrace-loops (4) once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening sequence is three beats under the unpainted option — ground, then the invite's own botanical pieces, then the type — ending at 1600ms. The thread's own beat is a fourth step in thread.module.css and runs on the lab route alone.",
   },
   {
@@ -51,16 +51,6 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
   },
 ];
 
-const CONTACT_ENTRIES: InlineEntry[] = [
-  {
-    name: "Contact",
-    home: "app/_sections/contact.tsx",
-    composes:
-      "mounted-sheet · eyebrow, heading-xl heading, the sprig mark sized as an ornament (48px on the diagonal, side by side only) · two plates: side eyebrow, name, relationship, two button-actions stacked",
-    note: "NOT live at / — the couple asked Contact off the invitation, so the published page composes five sections and this one is reached only at the variant routes (Technical Conventions → Variant Routes). It stays there deliberately: the thread refuses to measure a page whose section count disagrees with its own, so a variant route without Contact would draw no thread at all and report nothing. Things an unframed specimen cannot show: the plates go side by side on the same window condition mounted-pair does, so one condition serves both; the mark shows only from the landscape-lg switch, the opposite band from Event Info's rule, which is a tablet-band-only ornament and hides again at that same switch; the two actions always stack, never side by side, at every width; no number is printed, so nothing on the page is selectable — the number is copyable only from the Call action's own iOS long-press sheet, which comes from the link rather than a selection, and WhatsApp offers none since its `wa.me` href would put the number inside a copied link; and the side eyebrow is load-bearing rather than a label, since the relationship below it is a bare noun. Marks → Foundations · Iconography; the two actions → Components · UI.",
-  },
-];
-
 const TIMELINE_ENTRIES: InlineEntry[] = [
   {
     name: "Timeline",
@@ -76,8 +66,8 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/_sections/wishes.tsx",
     composes:
-      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p keeping heading-script for the same em reason the invite's h1 keeps display-name · sign-off lead in caption-italic · sign-off names in caption",
-    note: "Live at /. The couple illustration ships (AVIF, WebP fallback).",
+      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p taking --text-heading-script as its font size for the same em reason · sign-off lead in caption-italic · sign-off names in caption",
+    note: "Live at /. The couple illustration is a lazy <picture> — AVIF, then WebP, at 1x and 2x — fetched only as Wishes nears the screen, under the portraits' save cover.",
   },
 ];
 
@@ -203,15 +193,6 @@ export function DomainSections() {
         title="Domain · Event Info"
       >
         <InlineList entries={EVENT_INFO_ENTRIES} />
-      </GallerySection>
-
-      <GallerySection
-        id="contact"
-        intro="One framed mounted-sheet holding a heading block and two plates, bride's side first."
-        mapsTo="Domain Components → Contact"
-        title="Domain · Contact"
-      >
-        <InlineList entries={CONTACT_ENTRIES} />
       </GallerySection>
 
       <GallerySection

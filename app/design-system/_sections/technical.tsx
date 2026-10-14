@@ -9,14 +9,14 @@ import {
   type SpanZone,
 } from "@/app/design-system/_kit";
 
-/* Published, lab and review routes in one list. The three lab routes carry [lab] in the doc —
+/* Published, lab and review routes in one list. /thread/mount and /thread/stock carry [lab] in the doc —
    built and verified but not on the published page; /preview carries [retire] instead, because it
    IS published and is deleted before the branch merges rather than at Phase 9. */
 const VARIANT_ROUTES = [
-  "/ · five sections, Contact off it · no thread · the hero unpainted, the other four mounted",
-  "/thread/current · six sections, Contact included · the thread · card paint identical to /",
-  "/thread/mount · the same six · every card painted with its mount, the hero included",
-  "/thread/stock · the same six · every card the mountless stock",
+  "/ · five sections · no thread · the hero unpainted, the other four mounted",
+  "/thread/current · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
+  "/thread/mount · the same five · every card painted with its mount, the hero included",
+  "/thread/stock · the same five · every card the mountless stock",
   "/preview · the published page plus a floating panel of look alternates, for the couple to judge on their own handsets — published rather than dev-only because a dev route cannot be opened on a phone, unlisted by the same robots.txt and noindex as /, and deleted before merge",
   "/preview server-renders the published page: each lever's default ships in the section files and the route carries only the alternates, keyed on data-pv-* attributes the panel sets on the document root, so its <main> is byte-identical to /'s. Shipped state removes the attribute, so an untouched panel is the published page",
   "The one lever it carries, now decided → the family photos blended into the card, where \"as now\" is final (owner, 2026-10-14) and is what / ships; the lever stays until the route is deleted. Its options: as now, blended with no rim, blended with no rim and soft lower edges, or blended with the rim. No rim drops the couple's glow as well, and the soft edge fades the photo's lower half only. DESIGN.md → Iteration Notes → Open Decisions carries its row",

@@ -51,15 +51,17 @@ test("no rule takes the long-press callout back", () => {
 });
 
 /* The gallery is the visual companion to `DESIGN.md`, so a pointer or note that states the opposite
-   of what ships is worse than none. These two strings were edited to describe selectable content
-   during the round that briefly shipped it; this pins them back to what the site actually does. */
-test("the gallery states that nothing selects", () => {
+   of what ships is worse than none. Two strings were edited to describe selectable content during
+   the round that briefly shipped it; the one in `technical.tsx` is pinned back to what the site does.
+   The other lived in the Contact entry, which left the gallery with the section (2026-10-14), so
+   `domain.tsx` is held to the negative instead: nothing there may claim content selects. */
+test("the gallery states that nothing selects, and the domain sections claim no content does", () => {
   assert.match(
     readFileSync("app/design-system/_sections/technical.tsx", "utf8"),
     /nothing selects/,
   );
-  assert.match(
+  assert.doesNotMatch(
     readFileSync("app/design-system/_sections/domain.tsx", "utf8"),
-    /nothing on the page is selectable/,
+    /\b(is|are) (now )?selectable|can be (selected|copied)/,
   );
 });
