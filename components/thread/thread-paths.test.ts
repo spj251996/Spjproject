@@ -207,17 +207,17 @@ function flatten(d: string): { x: number; y: number }[] {
    alone, which can be a few pixels of curve noise this close to a join.
 
    10px, not the 20-45px this project's drawn-thread tooling samples a MOTIF join over. That reach
-   assumes both sides are free to carry a generous, evenly-spaced arm; a few of these 15 boundaries
+   assumes both sides are free to carry a generous, evenly-spaced arm; a few of these 12 boundaries
    sit right after a genuinely short polyline span (one measured 1.37px), and `splinePath`'s own
    arm-length rule (`thread-spline.ts`, a THIRD of a span's own length at most) then holds a forced
    direction only a few px before the curve resumes bending toward its own next point — a property
    of point spacing, not of which direction was forced. Measured empirically: at reach 10 the WORST
-   of these 15 boundaries is 6.8 degrees once the boundary is left unforced (see the test below);
-   at reach 20 it is 19.9. A smaller reach stays inside more boundaries' own short arms. */
+   boundary was 6.8 degrees once left unforced (2026-10-07, fifteen boundaries with Contact; 5.6 on
+   today's twelve); at reach 20 it was 19.9. A smaller reach stays inside more boundaries' own short arms. */
 const REACH = 10;
 /* 10, not the 1 degree a perfectly continuous join would read as measured AT the exact point
    (confirmed separately, by reading each side's own control-point tangent directly: under this
-   fix the worst of the 15 is 0.09 degrees). Widened here to absorb the arm-length noise above
+   fix the worst of the fifteen was 0.09 degrees, 2026-10-07). Widened here to absorb the arm-length noise above
    without losing the separation that matters: forcing `TERMINAL_TANGENT` measured 13-80 degrees
    off at this SAME reach on at least one boundary in every band, comfortably outside this floor.
 

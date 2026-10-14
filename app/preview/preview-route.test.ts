@@ -37,7 +37,6 @@ test("the route mounts the real page rather than re-composing it", () => {
   for (const section of [
     "InviteSection",
     "EventInfoSection",
-    "ContactSection",
     "FamilySection",
     "CelebrationsSection",
     "WishesSection",

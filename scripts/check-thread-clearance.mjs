@@ -12,7 +12,7 @@
    `<section>`, not a descendant of any one of them (`components/thread/page-thread.tsx`'s own
    header comment states this is deliberate: a section-scoped SVG could only paint in front of
    Wishes' illustration, never behind it). So `section#<id> svg[data-thread-svg] path` — this gate's
-   original selector — matches nothing for five of six sections; only Wishes ever had a descendant
+   original selector — matches nothing for every section but Wishes, the only one with a descendant
    match, because `CardThread` mounts inside `#wishes` itself (in the card, so the stretch paints behind
    the type, for that same z-index reason). The fix: search the WHOLE DOCUMENT for
    `data-thread-svg` paths, then CLIP each one's geometry to the section's own rect before
@@ -58,7 +58,7 @@
    spawning its own.
 
    USAGE:
-     node scripts/check-thread-clearance.mjs                 # full sweep, all six sections
+     node scripts/check-thread-clearance.mjs                 # full sweep, all five sections
      node scripts/check-thread-clearance.mjs --section=family
      node scripts/check-thread-clearance.mjs --validate      # Step 2: harness self-check
      node scripts/check-thread-clearance.mjs --falsify       # Step 3: harness self-check

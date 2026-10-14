@@ -33,10 +33,10 @@
 import type { BandId } from "./thread-bands.ts";
 import type { MotifId, ThreadId } from "./thread-geometry.ts";
 
-/* The six real sections, in page order — `not-found` is excluded here for the same reason it is
-   excluded from `BySection`: it draws the invite's own paths rather than owning a row. Composition
-   (`thread-css.ts`) resolves `not-found` -> `invite` and reads this list for section adjacency
-   (which id hands the thread to which). */
+/* The five real sections, in page order — `not-found` is excluded here for the same reason it is
+   excluded from `BySection`: it draws the invite's own paths rather than owning a row.
+   `thread-line.ts` composes in this order and `page-thread.tsx` measures one section per entry,
+   so a route rendering a different count draws no thread. */
 export const THREAD_IDS: readonly Exclude<ThreadId, "not-found">[] = [
   "invite",
   "event-info",

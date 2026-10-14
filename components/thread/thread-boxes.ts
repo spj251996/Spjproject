@@ -26,12 +26,13 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
    the groom moved down one, so the sheet kept its row count.
    Measured on the built export at `/thread/current.html`, at the band nominals below, via each
    section's own `getBoundingClientRect().height`. Instrument validated first on `contact` and
-   `wishes`, which reproduced their recorded 700 / 1180 / 695 exactly. */
+   `wishes`, which reproduced their recorded 700 / 1180 / 695 exactly (2026-10-08; `wishes` alone
+   since Contact was retired — see this file's header). */
 type SectionHeights = Record<Exclude<ThreadId, "not-found">, number>;
 
 const TALL_HEIGHTS: SectionHeights = {
   /* One screen again since 2026-10-14, when the invite's phone content came back inside 393x700; it
-     was 707 from 2026-10-11 and 845 at the audit. Re-measured on `/thread/current` with `contact` and
+     was 707 from 2026-10-11 and 845 at the audit. Re-measured on `/thread/current` with `contact` (since retired) and
      `wishes` reproducing 700 in the same run. */
   invite: 700,
   /* Two screens again since 2026-10-14: the frame now presses a window the full ground cannot hold
@@ -59,7 +60,8 @@ const TALL_HEIGHTS: SectionHeights = {
      line, the title went to 18/20/18/21px and the phone card's sides to 36px: base 2404 / 2423 /
      1666 -> 2173 / 2262 / 1513. The phone INCREMENT moved too, 180 -> 184 — the wider measure lets
      the strip hold its nominal 120px row — measured per ritual as the strip's box plus its margin.
-     Instrument validated on `contact` and `wishes` first, both reproducing 700 / 1180 / 695. */
+     Instrument validated on `contact` (since retired) and `wishes` first, both reproducing
+     700 / 1180 / 695. */
   celebrations: 2173,
   wishes: 700,
 };

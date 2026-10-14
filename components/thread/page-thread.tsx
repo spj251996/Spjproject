@@ -164,8 +164,8 @@ const FALLBACKS = PAGE_FALLBACKS;
    equal specificity over an earlier one. Splitting these across a CSS-module class and this inline
    `<style>` would let the module rule's higher specificity always win regardless of `@media`; see
    `thread.module.css`'s own comment for why both halves live here instead. */
-/* THE MAIN TRUNK'S OWN PIECE COUNT -- 19, per `task-1-brief.md`'s own reproduction (22 total pieces
-   across the six sections, minus `wishes`' own 3, which `CardThread` draws separately below). Fixed
+/* THE MAIN TRUNK'S OWN PIECE COUNT -- every section's pieces but `wishes`' own, which `CardThread`
+   draws separately below. Fixed
    at every band: `THREAD_PATHS`/`MOTIF_PLACEMENTS` carry the same connector/motif COUNTS per section
    in all three bands (only the coordinates differ per band) -- confirmed directly against the data,
    not assumed, so this can be a plain module constant, letting `PageThread` render a FIXED number of
