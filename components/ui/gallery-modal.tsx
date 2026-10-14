@@ -47,7 +47,11 @@ import { PhotoViewerPanel } from "./photo-viewer";
    for. While closing, every input is ignored and a further pop is not ours to handle.
 
    A tap on empty space goes back one layer, like Close. It must be deliberate: down AND up both on
-   empty space, less than 10px apart, so a swipe that ends in the dark never closes. The photograph is
+   empty space, less than 10px apart, so a swipe that ends in the dark never closes. It is decided on
+   the CLICK, not on pointerup: on touch the browser hit-tests its click after the finger lifts, so a
+   close started on pointerup would let that click land on whatever is now beneath it. And while the
+   gallery fades out, the root still catches every tap — only the layer inside it stops taking them —
+   so a second tap during the fade cannot reach the invitation underneath. The photograph is
    where it is DRAWN — `object-contain` letterboxes it inside a box the save cover fills, so the box
    cannot answer "is this the photograph". The listener sits here rather than on the grid panel so
    that panel still renders from a server page. */
@@ -184,7 +188,7 @@ export function GalleryModal({
     setState(next);
   };
 
-  const isEmptySpace = (event: React.PointerEvent) => {
+  const isEmptySpace = (event: React.MouseEvent) => {
     const target = event.target as Element;
     if (target.closest("button, h2, p") !== null) return false;
     const photo = containerRef.current?.querySelector<HTMLImageElement>(
@@ -199,7 +203,7 @@ export function GalleryModal({
   };
 
   const goBack = () => {
-    if (closingRef.current) return;
+    if (closingRef.current || closingPhaseRef.current) return;
     closingRef.current = true;
     history.back();
   };
@@ -223,6 +227,7 @@ export function GalleryModal({
     [count],
   );
   const openPhoto = (index: number) => {
+    if (closingPhaseRef.current) return;
     history.pushState({ gallery: 2 }, "");
     showLayer(tapTile(index));
   };
@@ -300,10 +305,11 @@ export function GalleryModal({
   }, [state.layer, shownIndex]);
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: the click only decides a tap on empty space; the keyboard's way back is Escape, handled on the document above.
     <div
       aria-labelledby={titleId}
       aria-modal="true"
-      className={`fixed inset-0 z-(--z-modal) ${closing ? `pointer-events-none ${motion.closing}` : motion.open}`}
+      className={`fixed inset-0 z-(--z-modal) ${closing ? motion.closing : motion.open}`}
       onAnimationEnd={(event) => {
         if (closing && event.target === event.currentTarget) {
           finishCloseRef.current();
@@ -332,11 +338,11 @@ export function GalleryModal({
       }}
       onPointerDown={(event) => {
         pressRef.current =
-          event.isPrimary && isEmptySpace(event)
+          event.isPrimary && event.button === 0 && isEmptySpace(event)
             ? { x: event.clientX, y: event.clientY }
             : null;
       }}
-      onPointerUp={(event) => {
+      onClick={(event) => {
         const down = pressRef.current;
         pressRef.current = null;
         if (
@@ -356,7 +362,7 @@ export function GalleryModal({
       tabIndex={-1}
     >
       <div
-        className={`absolute inset-0 ${swapped ? motion.fade : motion.rise}`}
+        className={`absolute inset-0 ${swapped ? motion.fade : motion.rise} ${closing ? "pointer-events-none" : ""}`}
         key={state.layer}
       >
         {state.layer === "viewer" ? (

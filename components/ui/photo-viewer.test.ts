@@ -102,7 +102,12 @@ test("a second close before the first has landed does not go back again", () => 
      the guest off the invitation. */
   /* Both ways back are guarded: the close control (and "All photos" from a grid-opened viewer), and
      Escape. */
-  assert.equal(modal.match(/if \(closingRef\.current\) return;/g)?.length, 2);
+  assert.equal(
+    modal.match(
+      /if \(closingRef\.current(?: \|\| closingPhaseRef\.current)?\) return;/g,
+    )?.length,
+    2,
+  );
 });
 
 const motionCss = () => read("gallery-motion.module.css");
@@ -160,12 +165,12 @@ test("a photograph slides in from the side it came from", () => {
 
 test("a deliberate tap on empty space goes back one layer through the same guarded back", () => {
   assert.match(modal, /onPointerDown=/);
-  assert.match(modal, /onPointerUp=/);
   assert.match(modal, /isDeliberateTap\(/);
-  const up = modal.slice(modal.indexOf("onPointerUp="));
+  const click = modal.slice(modal.indexOf("onClick={(event)"));
   assert.ok(
-    up.slice(0, up.indexOf("}}")).includes("goBack()"),
-    "the tap does not go back through goBack",
+    modal.includes("onClick={(event)") &&
+      click.slice(0, click.indexOf("}}")).includes("goBack()"),
+    "the tap does not go back through goBack on the click",
   );
 });
 
@@ -178,4 +183,35 @@ test("the photograph, tiles, buttons and text are never empty space", () => {
 
 test("the tap listener lives on the modal, so the grid panel still renders from a server page", () => {
   assert.doesNotMatch(panel, /onPointer/);
+});
+
+test("the close is decided on the click, not on pointerup, so a touch's click cannot land on the page beneath", () => {
+  assert.doesNotMatch(modal, /onPointerUp=/);
+});
+
+test("only a primary-button press counts as a tap", () => {
+  assert.match(modal, /event\.button === 0/);
+});
+
+test("while the gallery fades out it still catches every tap, so nothing reaches the invitation beneath", () => {
+  const root = modal.slice(
+    modal.indexOf('role="dialog"') - 2000,
+    modal.indexOf('role="dialog"'),
+  );
+  const rootClass = root.slice(root.lastIndexOf("className="));
+  assert.doesNotMatch(
+    rootClass.slice(0, rootClass.indexOf("\n")),
+    /pointer-events-none/,
+    "the dialog root lets taps through while closing",
+  );
+  const goBack = modal.slice(modal.indexOf("const goBack = () => {"));
+  assert.match(
+    goBack.slice(0, goBack.indexOf("};")),
+    /closingPhaseRef\.current/,
+  );
+  const openPhoto = modal.slice(modal.indexOf("const openPhoto = "));
+  assert.match(
+    openPhoto.slice(0, openPhoto.indexOf("};")),
+    /closingPhaseRef\.current/,
+  );
 });
