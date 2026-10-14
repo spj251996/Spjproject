@@ -35,6 +35,3 @@ export const showGrid = (_state: GalleryState): GalleryState => ({
 export function back(state: GalleryState): GalleryState | null {
   return state.layer === "viewer" && state.fromGrid ? { layer: "grid" } : null;
 }
-
-export const historyDepth = (state: GalleryState): number =>
-  state.layer === "viewer" && state.fromGrid ? 2 : 1;

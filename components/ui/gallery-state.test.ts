@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   back,
-  historyDepth,
   openGallery,
   showGrid,
   stepViewer,
@@ -25,12 +24,6 @@ test("back pops one layer: viewer from the grid → grid → closed; viewer from
   assert.equal(back(openGallery(1)), null);
 });
 
-test("history depth matches the layers back can pop", () => {
-  assert.equal(historyDepth({ layer: "grid" }), 1);
-  assert.equal(historyDepth(openGallery(0)), 1);
-  assert.equal(historyDepth(tapTile(0)), 2);
-});
-
 test("stepping stops at both ends, and a single photograph cannot step", () => {
   assert.deepEqual(stepViewer(openGallery(0), -1, 4), openGallery(0));
   assert.deepEqual(stepViewer(openGallery(3), 1, 4), openGallery(3));
@@ -41,8 +34,6 @@ test("stepping stops at both ends, and a single photograph cannot step", () => {
 
 test("the grid button shows the grid without growing the history", () => {
   assert.deepEqual(showGrid(openGallery(2)), { layer: "grid" });
-  assert.equal(
-    historyDepth(showGrid(openGallery(2))),
-    historyDepth(openGallery(2)),
-  );
+  /* Shown in place, so one back still closes: no grid entry was pushed to pop. */
+  assert.equal(back(showGrid(openGallery(2))), null);
 });
