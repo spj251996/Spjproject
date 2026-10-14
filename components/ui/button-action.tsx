@@ -30,23 +30,6 @@ const markClassName = [
   "motion-safe:transition-[transform,text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle",
 ].join(" ");
 
-/* Justification is a lookup rather than a class the caller appends, because two utilities setting
-   the same property resolve by stylesheet order, not by the order they are written — so an appended
-   `justify-start` would win or lose unpredictably. Exactly one is ever emitted.
-
-   `stretchStart` exists for a STACK of actions: two centred rows whose labels differ in width put
-   their discs at different x, which reads as a ragged bulleted list (couple, 2026-10-02). Centred is
-   the default, and every other caller takes it. */
-const ALIGN = {
-  center: "justify-center",
-  /* `w-full` as well as the justification: the target itself is `justify-center`, so without it this
-     span is sized to its own content and centred inside a stretched target — the justification then
-     has no room to act and the discs stay apart. Measured: 19.65px apart with `justify-start` alone.
-     Hence the name: this member only does anything inside a stretched parent (`items-stretch`), and a
-     caller who passes it without one gets the ragged pair back with nothing warning them. */
-  stretchStart: "w-full justify-start",
-} as const;
-
 /* The mark sits on its own raised disc (owner, 2026-09-28), replacing the pair of hairline rules
    that used to flank the label. The disc is the stock's own surface and shadow, so it reads as a
    small piece of paper laid on the card rather than as a control borrowed from an application. */
@@ -73,8 +56,6 @@ const discClassName = [
 type ButtonActionProps = {
   children: ReactNode;
   className?: string;
-  /** Where the mark and label sit within the target. `stretchStart` requires a stretched parent. */
-  align?: keyof typeof ALIGN;
   /* Marks are already hidden from assistive technology (icons/icon-base.tsx), so the accessible
      name stays the label. */
   mark?: ReactNode;
@@ -84,7 +65,6 @@ type ButtonActionProps = {
 export function ButtonAction({
   children,
   className,
-  align = "center",
   mark,
   "aria-label": accessibleName,
   href,
@@ -92,7 +72,7 @@ export function ButtonAction({
 }: ButtonActionProps) {
   const composed = `${targetClassName} ${className ?? ""}`;
   const label = (
-    <span className={`${markClassName} ${ALIGN[align]}`}>
+    <span className={`${markClassName} justify-center`}>
       {mark !== undefined && <span className={discClassName}>{mark}</span>}
       {children}
     </span>
