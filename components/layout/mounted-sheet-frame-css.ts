@@ -18,6 +18,7 @@ import {
   regimesFor,
   revealFor,
   SIDE_GROUND_MULTIPLE,
+  smallestPadding,
   tallWindowClasses,
   type WindowClass,
   windowClasses,
@@ -188,10 +189,16 @@ function windowFits(
   pressed: boolean,
   landscape: boolean,
 ): Condition {
+  /* The rescue padding answers the PRESSED question alone. The full-ground card is asked at the floor
+     it will actually show (owner, 2026-10-14): asked at the rescue value, a window just short of the
+     full-ground fit kept the full ground and ran past one screen where pressing would have fitted. */
+  const padding = pressed
+    ? fitPadding(windowClass.groundTier)
+    : smallestPadding(windowClass.groundTier);
   const rectangles = fitRectangles(
     regimesFor(windowClass.regimes, orientationName(landscape)),
     revealFor(windowClass, hero, landscape),
-    fitPadding(windowClass.groundTier),
+    padding,
     pairsSideBySide(layout, windowClass, landscape),
   );
   if (!landscape) {

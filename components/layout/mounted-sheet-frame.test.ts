@@ -175,6 +175,33 @@ test("the phone halving condition is computed at the rescue padding, not the flo
   );
 });
 
+/* The rescue value answers whether the PRESSED card fits, and nothing else. Whether the full-ground
+   card fits is asked at the floor the card actually shows (owner, 2026-10-14): asked at 16, the frame
+   believed a window held a full-ground card it did not, kept the full ground there, and the section ran
+   past one screen — 1px at 390x844, 18px at 360x780, 11px at 430x739 — where pressing would have fitted. */
+test("the phone halving condition asks the full-ground fit at the floor the card shows", () => {
+  const css = mountedSheetFrameCss(makeFit(), false, "single");
+  const phone = windowClasses(makeFit(), "single")[0];
+  const ground = topLevelBlocks(css).find(
+    (rule) =>
+      rule.startsWith(`@media ${phone.media}`) &&
+      rule.includes("--ground-block: var(--spacing-space-xl)"),
+  );
+  assert.ok(ground, "no pressed-ground rule for the phone class");
+  const [rescue] = fitRectangles(TINY, 0, 16);
+  const [floor] = fitRectangles(TINY, 0, 24);
+  /* The phone tier's own full block band. */
+  const full = 96;
+  assert.ok(
+    ground.includes(`(height >= ${floor.minCardHeight + 2 * full}px)`),
+    `expected the 24-derived full-ground threshold\n${ground}`,
+  );
+  assert.ok(
+    !ground.includes(`(height >= ${rescue.minCardHeight + 2 * full}px)`),
+    `the 16-derived full-ground threshold must not appear\n${ground}`,
+  );
+});
+
 test("a wide window keeps the laptop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
   const wide = classes.find((c) => c.widthTier === "desktop");
