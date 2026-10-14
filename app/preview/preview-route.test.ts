@@ -25,7 +25,7 @@ const CSS_CODE = code(CSS);
    exceptions. ONE LEVER REMAINS (2026-10-14): the family photos blended into the card. Every other
    lever landed in the section files and is checked where it landed, below and in
    `app/round7-9.test.ts`. */
-const COUPLE_FACING = ["invite-gap", "event-rhythm"];
+const COUPLE_FACING = ["event-rhythm"];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
 test("the route mounts the real page rather than re-composing it", () => {
@@ -163,6 +163,7 @@ test("the 2026-10-14 picks left the route: family photos, progress line, opening
     "data-pv-opening",
     "data-pv-replaying",
     "data-pv-grain",
+    "data-pv-invite-gap",
   ]) {
     assert.equal(PANEL_CODE.includes(gone), false, `${gone} is still a lever`);
     assert.equal(CSS_CODE.includes(gone), false, `${gone} still has a rule`);
@@ -177,6 +178,18 @@ test("the 2026-10-14 picks left the route: family photos, progress line, opening
     /<script|sessionStorage/,
     "the replay script is still on the route",
   );
+  /* The invite's phone spacing, checked where it landed: one 24px ink gap on a phone held upright —
+     the sentence's margin, the date's, and the rule's fixed, non-growing spacer. */
+  const invite = readFileSync("app/_sections/invite.tsx", "utf8");
+  const PHONE = "[@media(width<48rem)_and_(orientation:portrait)]";
+  for (const cls of [
+    `${PHONE}:mt-space-xs`,
+    `${PHONE}:mt-[calc(var(--spacing-space-3xs)/2+var(--date-place-pull))]`,
+    `${PHONE}:basis-[15px]`,
+    `${PHONE}:grow-0`,
+  ]) {
+    assert.ok(invite.includes(cls), `the invite lost ${cls}`);
+  }
   /* The progress line's picks, checked where they landed (owner, 2026-10-14): 2px on a phone,
      3px from the tablet up, the soft glow. */
   const tokens = readFileSync("app/styles/tokens.css", "utf8");

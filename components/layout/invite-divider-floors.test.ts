@@ -36,10 +36,14 @@ function markSize(mediaFragment: string): number {
   return Number((match as RegExpMatchArray)[1]);
 }
 
-/** Pulls every `[prefix:]basis-[Npx]` pair out of one className string. */
+/** Pulls every plain `[prefix:]basis-[Npx]` pair out of one className string. An arbitrary-variant
+    class (`[@media(...)]:basis-[…]`) is a different question and is skipped: the upright phone sets
+    its own fixed spacer, outside the 60 : 40 split (owner, 2026-10-14 — DESIGN.md → Invite). */
 function basisValues(className: string): Map<string, number> {
   const values = new Map<string, number>();
-  for (const match of className.matchAll(/(?:(\w+):)?basis-\[([\d.]+)px\]/g)) {
+  for (const match of className.matchAll(
+    /(?:^|\s)(?:(\w+):)?basis-\[([\d.]+)px\]/g,
+  )) {
     values.set(match[1] ?? "", Number(match[2]));
   }
   return values;

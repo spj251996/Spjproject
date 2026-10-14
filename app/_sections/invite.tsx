@@ -90,10 +90,16 @@ function InvitePassage() {
           The phone block is 47.5px rather than 55px (owner, 2026-10-14): the place-to-mark ink gap
           was 31px against a line-to-date gap of 38.5, and both came down to about 26px so the two
           read as one rhythm and the invite fits a phone screen with the browser bars showing. The
-          7.5px came off the floors in the 60 : 40 proportion, so the split still holds. */}
+          7.5px came off the floors in the 60 : 40 proportion, so the split still holds.
+
+          ON A PHONE HELD UPRIGHT NEITHER SPACER GROWS (owner, 2026-10-14): the names, the sentence,
+          the date and this rule sit one 24px INK gap apart, so the rule keeps to the place and the
+          passage keeps to the rule, and the card's slack goes to its top and bottom. 15px is the
+          figure that lands the rule's ink 24px below the place's — measured, not derived: the mark's
+          own box adds 9px of air above its ink. DESIGN.md → Domain Components → Invite. */}
       <div
         aria-hidden
-        className="shrink-0 grow-3 basis-[17.345px] md:basis-[5.782px] lg:basis-[16.268px]"
+        className="shrink-0 grow-3 basis-[17.345px] md:basis-[5.782px] lg:basis-[16.268px] [@media(width<48rem)_and_(orientation:portrait)]:grow-0 [@media(width<48rem)_and_(orientation:portrait)]:basis-[15px]"
       />
 
       <OrnamentalDivider />
@@ -101,7 +107,7 @@ function InvitePassage() {
       <div className="flex grow-2 flex-col items-center">
         <div
           aria-hidden
-          className="shrink-0 grow basis-[7.845px] md:basis-[1.182px] lg:basis-[5.268px] xl:basis-[32px]"
+          className="shrink-0 grow basis-[7.845px] md:basis-[1.182px] lg:basis-[5.268px] xl:basis-[32px] [@media(width<48rem)_and_(orientation:portrait)]:grow-0"
         />
         {/* No reading-column cap: the passage is one line wherever the card is wide enough to
             hold it, and the card's own content width is the only limit that should apply. */}
@@ -241,7 +247,7 @@ export function InviteSection() {
                 arithmetic forced; the names stepping down at that tier is what pays for the 4px now,
                 so the rule is one value at every width. */}
             <p
-              className="type-body text-ink-muted mt-space-3xs"
+              className="type-body text-ink-muted mt-space-3xs [@media(width<48rem)_and_(orientation:portrait)]:mt-space-xs"
               data-invite-line
             >
               joyfully invite you to share in the celebration of their wedding
@@ -257,7 +263,7 @@ export function InviteSection() {
                 `space-3xs` plus `--date-open` (8 / 12 / 11 / 12px by tier) because both of the block's
                 inner gaps were opened by `--date-open` (owner, 2026-10-11; 4px on a phone since 2026-10-14) — the weekday's half
                 lives in `--date-weekday-pull`. */}
-            <div className="mt-[calc(var(--spacing-space-3xs)+var(--date-place-pull))] md:mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
+            <div className="mt-[calc(var(--spacing-space-3xs)+var(--date-place-pull))] md:mt-[calc(var(--spacing-space-md)+var(--date-place-pull))] [@media(width<48rem)_and_(orientation:portrait)]:mt-[calc(var(--spacing-space-3xs)/2+var(--date-place-pull))]">
               <InviteDate date={weddingDate} />
             </div>
 

@@ -59,75 +59,32 @@
    Bloom ships in `app/invite.css`, from Today, Written in, Bloom and Curtain; the paper on phones
    takes half its tooth in `tokens.css`, from today, 75, 50 and 25%. */
 
-/* ───────── THE INVITE ON A PHONE — one gap, names → line → date → divider (owner, 2026-10-14) ─────────
-   Every gap is INK to ink, which is what a reader sees: today they measure 16 / 26 / 29–47px, the last
-   riding the passage's share of the card's slack. Each option sets all three to one value: the line's
-   and the date's margins move by the difference from today's ink gap, and the spacer above the
-   divider stops growing, so its slack goes to the card's top and bottom instead. Phones in portrait
-   only — every wider window keeps today's. */
-@media (width < 48rem) and (orientation: portrait) {
-  html[data-pv-invite-gap="16"] {
-    --pv-invite-gap: 16px;
-  }
-
-  html[data-pv-invite-gap="20"] {
-    --pv-invite-gap: 20px;
-  }
-
-  html[data-pv-invite-gap="24"] {
-    --pv-invite-gap: 24px;
-  }
-
-  html[data-pv-invite-gap] [data-invite-line] {
-    margin-top: calc(var(--spacing-space-3xs) + var(--pv-invite-gap) - 16px);
-  }
-
-  html[data-pv-invite-gap] [data-invite-stack] div:has(> [data-invite-date]) {
-    margin-top: calc(
-      var(--spacing-space-3xs) +
-      var(--date-place-pull) +
-      var(--pv-invite-gap) -
-      26px
-    );
-  }
-
-  /* −9px: the spacer's own height lands the divider's ink 9px further down than the gap it sets —
-     measured, the same at every phone. The verse's spacer stops growing too, so the verse keeps to
-     its divider and the slack goes to the card's top and bottom. */
-  html[data-pv-invite-gap] [data-invite-passage] > :first-child {
-    flex-grow: 0;
-    flex-basis: calc(var(--pv-invite-gap) - 9px);
-  }
-
-  html[data-pv-invite-gap]
-    [data-invite-passage]
-    > div:last-child
-    > :first-child {
-    flex-grow: 0;
-  }
-}
+/* ───────── THE INVITE'S PHONE SPACING LEFT THE ROUTE (owner, 2026-10-14) ─────────
+   One 24px ink gap between the names, the sentence, the date and the gold rule ships in
+   `app/_sections/invite.tsx`, from 16, 20 and 24. */
 
 /* ───────── EVENT INFO ON A PHONE — four clusters (owner, 2026-10-14) ─────────
    Eyebrow + title, then date + place, then the first event, then the second. Today the gaps inside a
-   cluster nearly match the gaps between them (ink: 19 · 25–30 · 17 · 29–31 · 37). Both options pull
-   each cluster tight — eyebrow to title 12, date to place 6 — and then:
+   cluster nearly match the gaps between them (ink: 19 · 25–30 · 17 · 29–31 · 37). Natural keeps
+   today's two pairs (eyebrow to title 19, date to place 17, owner 2026-10-14); even pulls them tight
+   (12 and 6). Then:
    - natural: header to date 30, date to the events 48, event to event 30;
    - even: 36 between every cluster.
    Margins move by the difference from today's ink gap. Both total within a few px of today's card
    (more space asked for, owner 2026-10-14), so the measured fit still holds and neither can overflow;
    the fit is regenerated when one lands. Phones only. */
 @media (width < 48rem) {
-  html[data-pv-event-rhythm] #event-info h2[data-event] {
+  html[data-pv-event-rhythm="even"] #event-info h2[data-event] {
     margin-top: calc(var(--spacing-space-2xs) + 12px - 19px);
   }
 
   /* A gap cannot go negative, so the place is pulled up by its own margin: at a zero gap the two
      line boxes still leave 13px of ink between them. */
-  html[data-pv-event-rhythm] #event-info h2[data-event] + div {
+  html[data-pv-event-rhythm="even"] #event-info h2[data-event] + div {
     row-gap: 0;
   }
 
-  html[data-pv-event-rhythm] #event-info h2[data-event] + div > address {
+  html[data-pv-event-rhythm="even"] #event-info h2[data-event] + div > address {
     margin-top: calc(6px - 13px);
   }
 

@@ -9,9 +9,9 @@ export const inviteFit: MeasuredFit = {
   regimes: {
     phone: {
       portrait: [
-        { minContentWidth: 120, contentHeight: 500.28125 },
-        { minContentWidth: 234.40625, contentHeight: 478.28125 },
-        { minContentWidth: 411.484375, contentHeight: 452.28125 },
+        { minContentWidth: 120, contentHeight: 503.9375 },
+        { minContentWidth: 234.40625, contentHeight: 481.9375 },
+        { minContentWidth: 411.484375, contentHeight: 455.9375 },
       ],
       landscape: [
         { minContentWidth: 120, contentHeight: 373.21875 },

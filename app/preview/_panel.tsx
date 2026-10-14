@@ -23,7 +23,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
 
    ON 2026-10-14 THE OWNER'S OWN QUESTIONS REPLACED THE COUPLE'S: the family photos, the progress
    line, the opening (Bloom) and the phone paper were each picked on a phone and left the route the
-   same day. What it carries now is the phone spacing of the invite and of Event Info. */
+   same day. The invite's phone spacing (one 24px gap) left too. What it carries now is Event Info's phone spacing. */
 
 /* THE WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is namespaced.
    WHY THE NAMESPACE IS LOAD-BEARING: `app/layout.tsx` sets `data-opening-skipped` on this SAME
@@ -36,7 +36,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    before first paint so a candidate plays as a true arrival; this list is what the sync effect below
    removes when a control is shipped, so naming it would strip the candidate at mount and cut it
    mid-flight. */
-const ATTRIBUTES = ["data-pv-invite-gap", "data-pv-event-rhythm"] as const;
+const ATTRIBUTES = ["data-pv-event-rhythm"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -85,16 +85,6 @@ interface Lever {
    `components/layout/mounted-sheet-frame.ts`. `preview-route.test.ts` checks them at their
    destinations; rounds 7–9's picks landed the same way and `app/round7-9.test.ts` pins them. */
 const COUPLE_LEVERS: readonly Lever[] = [
-  {
-    id: "invite-gap",
-    title: "Invite spacing on phones",
-    options: [
-      { label: "As now", attrs: {} },
-      { label: "Even, 16px", attrs: { "data-pv-invite-gap": "16" } },
-      { label: "Even, 20px", attrs: { "data-pv-invite-gap": "20" } },
-      { label: "Even, 24px", attrs: { "data-pv-invite-gap": "24" } },
-    ],
-  },
   {
     id: "event-rhythm",
     title: "Event spacing on phones",
