@@ -68,7 +68,8 @@
    cluster nearly match the gaps between them (ink: 19 · 25–30 · 17 · 29–31 · 37). Natural keeps
    today's two pairs (eyebrow to title 19, date to place 17, owner 2026-10-14); even pulls them tight
    (12 and 6). Then:
-   - natural: header to date 30, date to the events 48, event to event 30;
+   - natural: header to date 30, date to the events 48, and event to event 48 — the same (owner,
+     2026-10-14);
    - even: 36 between every cluster.
    Margins move by the difference from today's ink gap. Both total within a few px of today's card
    (more space asked for, owner 2026-10-14), so the measured fit still holds and neither can overflow;
@@ -94,7 +95,7 @@
 
   html[data-pv-event-rhythm="natural"] #event-info ol {
     margin-top: calc(var(--spacing-space-sm) + 48px - 30px);
-    row-gap: calc(var(--spacing-space-sm) + 30px - 38px);
+    row-gap: calc(var(--spacing-space-sm) + 48px - 38px);
   }
 
   html[data-pv-event-rhythm="even"] #event-info h2[data-event] + div {
