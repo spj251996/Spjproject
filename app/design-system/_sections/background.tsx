@@ -11,6 +11,7 @@ const BOTANICAL_POINTERS = [
   "Each piece's width and placement are tuned per width tier and read from the viewport, never from the frame's ring bands.",
   "A portrait window takes the tablet tier's placement at any width, because a portrait window stacks its cards however wide it is.",
   "Composites with mix-blend-mode: multiply, so it never carries its own z-index — DOM order alone keeps it below content.",
+  "The invite and the not-found screen share one layout: not-found reuses the invite's own list.",
 ];
 
 /* Which drawing lives where — the one thing this gallery can show that DESIGN.md must not, since
