@@ -215,3 +215,38 @@ test("while the gallery fades out it still catches every tap, so nothing reaches
     /closingPhaseRef\.current/,
   );
 });
+
+test("previous and next are drawn chevrons in a 48px dark circle, not type marks", () => {
+  assert.doesNotMatch(viewer, /[‹›]/);
+  assert.match(viewer, /<ChevronIcon/);
+  assert.match(viewer, /size-space-xl/);
+  assert.match(viewer, /bg-scrim\/60/);
+  assert.match(viewer, /hover:bg-ink-inverse\/15/);
+});
+
+test("All photos and Close hover the way button-action does, thickening rather than reweighting", () => {
+  assert.match(
+    viewer,
+    /hover:\[text-shadow:0\.35px_0_0_currentColor,-0\.35px_0_0_currentColor\]/,
+  );
+  assert.match(
+    panel,
+    /hover:\[text-shadow:0\.35px_0_0_currentColor,-0\.35px_0_0_currentColor\]/,
+  );
+});
+
+test("a grid tile shows it opens bigger, and only where motion is welcome", () => {
+  assert.match(panel, /cursor-zoom-in/);
+  assert.match(panel, /motion-safe:group-hover:scale-\[1\.03\]/);
+});
+
+test("the swipe hint plays once a visit, on touch, when there is a next photograph", () => {
+  const css = motionCss();
+  assert.ok(
+    css.indexOf("@keyframes nudge") >
+      css.indexOf("@media (prefers-reduced-motion: no-preference)"),
+  );
+  assert.match(modal, /let swipeHintShown = false/);
+  assert.match(modal, /\(pointer: coarse\)/);
+  assert.match(viewer, /motion\.nudge/);
+});

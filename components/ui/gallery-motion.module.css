@@ -30,6 +30,12 @@
     animation: slide-previous var(--duration-fast) var(--ease-entrance);
   }
 
+  /* The one-time swipe hint: toward the next photograph and back, once the gallery has risen. */
+  .nudge {
+    animation: nudge var(--duration-base) var(--ease-settle)
+      var(--duration-base);
+  }
+
   /* After the layer rules, so a closing panel's children sink rather than replay their entrance. */
   .closing {
     animation: close var(--duration-base) var(--ease-entrance) forwards;
@@ -61,6 +67,12 @@
   @keyframes close {
     to {
       opacity: 0;
+    }
+  }
+
+  @keyframes nudge {
+    50% {
+      transform: translateX(-16px);
     }
   }
 

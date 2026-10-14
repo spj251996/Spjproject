@@ -14,7 +14,10 @@ import { ImagePlaceholder } from "./image-placeholder";
 
    Each tile is a button that opens the viewer on its photograph, and carries the save cover: a
    transparent `aria-hidden` layer over a non-draggable image, so a right-click, a long-press or a
-   drag lands on the cover while a tap still reaches the button. */
+   drag lands on the cover while a tap still reaches the button.
+
+   On a device that can hover, a tile shows it opens bigger: the zoom-in cursor, and the photograph
+   growing 3% inside the figure's rounded clip. */
 
 /* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the
    array index. */
@@ -54,7 +57,7 @@ export function GalleryModalPanel({
           {title}
         </h2>
         <button
-          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse"
+          className="type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse hover:[text-shadow:0.35px_0_0_currentColor,-0.35px_0_0_currentColor] active:opacity-80 motion-safe:transition-[text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle"
           onClick={onClose}
           type="button"
         >
@@ -71,7 +74,7 @@ export function GalleryModalPanel({
           >
             <button
               aria-label={`Photo ${index + 1}`}
-              className="relative block w-full"
+              className="group relative block w-full cursor-zoom-in"
               onClick={onOpenPhoto && (() => onOpenPhoto(index))}
               type="button"
             >
@@ -82,7 +85,7 @@ export function GalleryModalPanel({
               />
               <img
                 alt=""
-                className="relative block w-full"
+                className="relative block w-full motion-safe:transition-transform motion-safe:duration-(--duration-fast) motion-safe:ease-settle motion-safe:group-hover:scale-[1.03]"
                 draggable={false}
                 loading="lazy"
                 src={src}

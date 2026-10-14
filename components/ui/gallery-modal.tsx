@@ -58,6 +58,10 @@ import { PhotoViewerPanel } from "./photo-viewer";
 
 const SWIPE_THRESHOLD_PX = 40;
 
+/* The swipe hint plays on the first full-screen photograph of a visit, then never again until the
+   page reloads — a module flag rather than state, so closing and reopening the gallery keeps it. */
+let swipeHintShown = false;
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -101,6 +105,7 @@ export function GalleryModal({
   /* The first layer rises with the gallery; every later one only fades. */
   const [swapped, setSwapped] = useState(false);
   const [direction, setDirection] = useState<1 | -1 | 0>(0);
+  const [hint, setHint] = useState(false);
   const shownIndex = state.layer === "viewer" ? state.index : -1;
   const titleId = useId();
   const count = images.length;
@@ -183,6 +188,7 @@ export function GalleryModal({
   /* Every layer change goes through here: the new layer fades rather than rises, and a photograph
      opened fresh shows without a slide. */
   const showLayer = (next: GalleryState) => {
+    setHint(false);
     setSwapped(true);
     setDirection(0);
     setState(next);
@@ -221,6 +227,7 @@ export function GalleryModal({
       ) {
         return;
       }
+      setHint(false);
       setDirection(delta > 0 ? 1 : -1);
       setState(next);
     },
@@ -292,6 +299,17 @@ export function GalleryModal({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [state.layer, step]);
+
+  /* Only on touch, where the swipe is the gesture to learn; the CSS gate keeps it still under
+     reduced motion. */
+  const hintable =
+    state.layer === "viewer" && state.index < count - 1 && !swipeHintShown;
+  useEffect(() => {
+    if (hintable && window.matchMedia("(pointer: coarse)").matches) {
+      swipeHintShown = true;
+      setHint(true);
+    }
+  }, [hintable]);
 
   /* A layer swap unmounts the control that had focus — the tapped tile, "All photos", or Next on
      reaching the last photograph — and focus falls to <body>, where the next Tab reaches the page
@@ -368,6 +386,7 @@ export function GalleryModal({
         {state.layer === "viewer" ? (
           <PhotoViewerPanel
             direction={direction}
+            hint={hint}
             count={count}
             index={state.index}
             onClose={close}

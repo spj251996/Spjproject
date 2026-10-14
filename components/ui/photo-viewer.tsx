@@ -13,6 +13,7 @@
    it and stay clickable. */
 
 import { useState } from "react";
+import { ChevronIcon } from "@/components/icons";
 import motion from "./gallery-motion.module.css";
 
 interface PhotoViewerPanelProps {
@@ -26,10 +27,19 @@ interface PhotoViewerPanelProps {
   onStep?: (delta: number) => void;
   /** The side the photograph came from: 1 after Next, -1 after Previous, 0 when first shown. */
   direction?: 1 | -1 | 0;
+  /** Play the one-time swipe nudge on this photograph. */
+  hint?: boolean;
 }
 
+/* Hover thickens the label optically, as `button-action` does — a heavier cut would widen it. The
+   `hover:` variant only applies on a device that can hover, and every transition is motion-gated. */
 const CONTROL =
-  "type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse";
+  "type-action inline-flex min-h-(--touch-target) min-w-(--touch-target) shrink-0 items-center justify-center rounded-card text-ink-inverse hover:[text-shadow:0.35px_0_0_currentColor,-0.35px_0_0_currentColor] active:opacity-80 motion-safe:transition-[text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle";
+
+/* 48px — past the touch-target floor — so the mark reads at a glance; the dark ground keeps it
+   visible wherever the circle overlaps a photograph. */
+const ARROW =
+  "absolute top-1/2 inline-flex size-space-xl -translate-y-1/2 items-center justify-center rounded-full bg-scrim/60 text-ink-inverse hover:bg-ink-inverse/15 active:opacity-80 motion-safe:transition-[background-color,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle";
 
 const SLIDE = {
   1: motion["slide-next"],
@@ -47,6 +57,7 @@ export function PhotoViewerPanel({
   onShowGrid,
   onStep,
   direction = 0,
+  hint = false,
 }: PhotoViewerPanelProps) {
   /* Keyed by the source so stepping to the next photograph clears a previous failure. */
   const [failed, setFailed] = useState<string | null>(null);
@@ -81,7 +92,7 @@ export function PhotoViewerPanel({
             <img
               alt=""
               data-viewer-photo
-              className={`absolute inset-0 size-full object-contain ${SLIDE[direction]}`}
+              className={`absolute inset-0 size-full object-contain ${hint && direction === 0 ? motion.nudge : SLIDE[direction]}`}
               draggable={false}
               key={src}
               onError={() => setFailed(src)}
@@ -93,21 +104,21 @@ export function PhotoViewerPanel({
         {index > 0 && (
           <button
             aria-label="Previous photo"
-            className={`${CONTROL} absolute top-1/2 left-0 -translate-y-1/2`}
+            className={`${ARROW} left-0`}
             onClick={() => onStep?.(-1)}
             type="button"
           >
-            ‹
+            <ChevronIcon flip size={28} />
           </button>
         )}
         {index < count - 1 && (
           <button
             aria-label="Next photo"
-            className={`${CONTROL} absolute top-1/2 right-0 -translate-y-1/2`}
+            className={`${ARROW} right-0`}
             onClick={() => onStep?.(1)}
             type="button"
           >
-            ›
+            <ChevronIcon size={28} />
           </button>
         )}
       </div>
