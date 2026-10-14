@@ -383,10 +383,27 @@
   --focus-ring-color: var(--color-ink);
   --focus-ring-color-inverse: var(--color-accent-gold);
 
+  /* DESIGN.md → Components → UI → `scroll-progress`. The fill reads as the thread: its red, then
+     vermilion, brightening to the core at the leading edge the way the drawing head does. Height
+     and glow are provisional until the owner's pick on `/preview`. */
+  --progress-height: 3px;
+  --progress-track: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  --progress-fill: linear-gradient(
+    90deg,
+    var(--color-thread-red),
+    var(--color-thread-vermilion) 82%,
+    var(--color-thread-core)
+  );
+  --progress-glow: drop-shadow(
+    0 0 2px color-mix(in srgb, var(--color-thread-vermilion) 55%, transparent)
+  );
+
   /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
      off-scale `z-999` still compiles; only review enforces this scale. */
   --z-content: 20;
   --z-thread: 40;
+  /* The scroll progress bar: over every section, under the gallery's scrim. */
+  --z-progress: 45;
   --z-modal: 50;
 }
 

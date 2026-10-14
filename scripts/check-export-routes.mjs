@@ -27,6 +27,7 @@ const EXPECTED = [
     label: "/ (published)",
     sections: true,
     stockPaint: false,
+    progress: 1,
   },
   {
     sections: true,
@@ -37,6 +38,7 @@ const EXPECTED = [
     roots: LAB_ROOTS,
     label: "/thread/current (lab)",
     stockPaint: false,
+    progress: 0,
   },
   {
     sections: true,
@@ -44,6 +46,7 @@ const EXPECTED = [
     roots: LAB_ROOTS,
     label: "/thread/mount (lab)",
     stockPaint: false,
+    progress: 0,
   },
   {
     sections: true,
@@ -51,6 +54,7 @@ const EXPECTED = [
     roots: LAB_ROOTS,
     label: "/thread/stock (lab)",
     stockPaint: true,
+    progress: 0,
   },
   {
     sections: true,
@@ -66,6 +70,7 @@ const EXPECTED = [
     roots: 0,
     label: "/preview (the couple's review)",
     stockPaint: false,
+    progress: 1,
   },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
    * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
@@ -158,7 +163,7 @@ if (existsSync(CSS_DIR)) {
   failed = true;
 }
 
-for (const { path, roots, label, sections, stockPaint } of EXPECTED) {
+for (const { path, roots, label, sections, stockPaint, progress } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -177,6 +182,15 @@ for (const { path, roots, label, sections, stockPaint } of EXPECTED) {
     const ok = stockPaint ? uses > 0 : uses === 0;
     console.log(
       `${ok ? "ok  " : "FAIL"} ${label}: ${uses} ${STOCK_CLASS} uses, expected ${stockPaint ? "some" : "none"}`,
+    );
+    if (!ok) failed = true;
+  }
+
+  if (progress !== undefined) {
+    const bars = (html.match(/data-scroll-progress/g) ?? []).length;
+    const ok = bars === progress;
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${label}: ${bars} scroll progress bar(s), expected ${progress}`,
     );
     if (!ok) failed = true;
   }

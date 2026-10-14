@@ -58,6 +58,15 @@
    sits in its own un-animated base state — the same place reduced motion's missing `@media` block
    leaves it. Any step added here needs the same prefix, and `opening-draw.test.ts` asserts that no
    rule in this file animates without it. */
+
+/* WHEN THE OPENING'S TYPE HAS LANDED — the one place that says so. The scroll progress bar's track
+   arrives here, and the lab thread fades in from here. Today's type starts at 2 × fast + 1 × base
+   and fades for one base, so it lands at 2 × fast + 2 × base. A new sequence changes THIS value,
+   never a copy of it. */
+:root {
+  --opening-type-end: calc(var(--duration-fast) * 2 + var(--duration-base) * 2);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @keyframes opening-fade {
     from {
