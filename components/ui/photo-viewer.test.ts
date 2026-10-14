@@ -290,3 +290,17 @@ test("a press in a scrolling element's scrollbar gutter is never empty space", (
   assert.match(fn, /scrollHeight > .*clientHeight/);
   assert.match(fn, /offsetX >= .*clientWidth/);
 });
+
+test("Forward onto a closed gallery's entry steps straight back past it", () => {
+  assert.match(modal, /export function ensureForwardGuard\(\)/);
+  const guard = modal.slice(
+    modal.indexOf("export function ensureForwardGuard"),
+  );
+  const body = guard.slice(0, guard.indexOf("\n}\n"));
+  assert.match(body, /history\.state\?\.gallery/);
+  assert.match(body, /openGalleries === 0/);
+  assert.match(body, /history\.back\(\)/);
+  assert.match(modal, /openGalleries \+= 1/);
+  assert.match(modal, /openGalleries -= 1/);
+  assert.match(row, /useEffect\(ensureForwardGuard, \[\]\)/);
+});

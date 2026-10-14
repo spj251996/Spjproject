@@ -11,9 +11,9 @@
 
    Flat props rather than `Ritual`: a portable component may not name a domain type. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ButtonAction } from "./button-action";
-import { GalleryModal } from "./gallery-modal";
+import { ensureForwardGuard, GalleryModal } from "./gallery-modal";
 import { ImagePlaceholder } from "./image-placeholder";
 import { cappedAspect } from "./photo-fit";
 
@@ -58,6 +58,7 @@ export function PhotoRow({
 }: PhotoRowProps) {
   /* `undefined` is closed, `null` the grid, a number the viewer on that photograph. */
   const [start, setStart] = useState<number | null | undefined>(undefined);
+  useEffect(ensureForwardGuard, []);
   const remaining = photos.length - shown;
   const frames = withKeys(photos.slice(0, shown));
 

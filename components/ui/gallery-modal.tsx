@@ -62,6 +62,22 @@ const SWIPE_THRESHOLD_PX = 40;
    page reloads — a module flag rather than state, so closing and reopening the gallery keeps it. */
 let swipeHintShown = false;
 
+/* Closing leaves the gallery's entries ahead of the page in the history, so the browser's Forward can
+   land on one with no gallery open — a dead step. One listener, installed by the first strip to
+   mount, steps straight back past such an entry; the modal keeps the open count it reads. */
+let openGalleries = 0;
+let forwardGuardInstalled = false;
+
+export function ensureForwardGuard() {
+  if (forwardGuardInstalled) return;
+  forwardGuardInstalled = true;
+  window.addEventListener("popstate", () => {
+    if (history.state?.gallery && openGalleries === 0) {
+      history.back();
+    }
+  });
+}
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -121,6 +137,7 @@ export function GalleryModal({
   /* Mount-scoped: focus acquisition, scroll capture, the first history entry, and their exact
      inverses on release. */
   useEffect(() => {
+    openGalleries += 1;
     const previouslyFocused = document.activeElement;
     containerRef.current?.focus();
 
@@ -182,6 +199,7 @@ export function GalleryModal({
       body.style.width = previous.width;
       window.scrollTo(0, scrollY);
       history.scrollRestoration = previousRestoration;
+      openGalleries -= 1;
       if (previouslyFocused instanceof HTMLElement) {
         previouslyFocused.focus();
       }
