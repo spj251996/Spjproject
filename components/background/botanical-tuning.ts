@@ -94,10 +94,10 @@ export const TUNING: Readonly<
   Record<BotanicalPiece, Readonly<Record<Tier, PieceTuning>>>
 > = {
   "corner-trail": {
-    phone: { anchor: "top-right", x: 0, y: 0, size: 50, rotation: 0 },
-    tablet: { anchor: "top-right", x: 0, y: 0, size: 34, rotation: 0 },
-    laptop: { anchor: "top-right", x: 0, y: 0, size: 24, rotation: 0 },
-    desktop: { anchor: "top-right", x: 0, y: 0, size: 24, rotation: 0 },
+    phone: { anchor: "top-right", x: 0, y: 0, size: 90.2, rotation: 0 },
+    tablet: { anchor: "top-right", x: 0, y: 0, size: 52, rotation: 0 },
+    laptop: { anchor: "top-right", x: 0, y: 0, size: 40, rotation: 0 },
+    desktop: { anchor: "top-right", x: 0, y: 0, size: 40, rotation: 0 },
   },
   "corner-spray": {
     phone: {

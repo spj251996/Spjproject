@@ -78,8 +78,10 @@ test("every botanical clip rule clips by overflow alone and creates no stacking 
 /* 85, raised from 60 once the phone tier was tuned (owner, 2026-09-24): a phone is narrow enough
    that a piece reading as a corner spray there is a large fraction of the window — `horizontal-
    garland` is tuned to 84.2vw. The number is a tripwire, not a design value: it exists to catch the
-   failure that started this pass, a piece rendering at 181% of a phone screen. */
-const SIZE_CEILING = 85;
+   failure that started this pass, a piece rendering at 181% of a phone screen. Raised to 95 when
+   `corner-trail` was tuned to 90.2vw on a phone (owner, 2026-10-14): a corner frame whose empty
+   interior holds the eyebrow is meant to span most of a phone's width. */
+const SIZE_CEILING = 95;
 const BAND_SIZE_CEILING = 100;
 const BAND_PIECES: readonly BotanicalPiece[] = [
   "meadow-band-left",
@@ -302,6 +304,27 @@ test("not-found reuses the invite's own piece list, and that list is corner-trai
     [...declaration.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]),
     ["corner-trail", "corner-spray"],
   );
+});
+
+/* `corner-trail`'s placement is the owner's, settled on /preview's tuning panel (2026-10-14), and
+   is the shape this project pins: a later conversion or tidy-up could overwrite it and nothing else
+   would notice. Its clearance comes from the drawing's empty interior, not from an offset, so every
+   tier sits flush in the corner (x 0, y 0); only the size was tuned. Measured against the invite's
+   eyebrow at these values, nearest ink 24px at 390x664 and wider everywhere else. */
+test("corner-trail's placement is the value settled on a render", () => {
+  const record = (size: number) => ({
+    anchor: "top-right",
+    x: 0,
+    y: 0,
+    size,
+    rotation: 0,
+  });
+  assert.deepEqual(TUNING["corner-trail"], {
+    phone: record(90.2),
+    tablet: record(52),
+    laptop: record(40),
+    desktop: record(40),
+  });
 });
 
 test("the set is twenty pieces and falling-spray is retired from it", () => {
