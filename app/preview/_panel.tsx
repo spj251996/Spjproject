@@ -28,7 +28,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
    read `:root:not([data-opening-skipped])`. A panel that cleared or rewrote the root's attribute
    set would re-arm the invite's 1600ms opening in the middle of a scroll. One prefix makes the
    gate in `preview-route.test.ts` a guard rather than a list of names it has to forgive. */
-const ATTRIBUTES = ["data-pv-portrait"] as const;
+const ATTRIBUTES = ["data-pv-portrait", "data-pv-invite"] as const;
 
 /* FIVE LEVERS HAVE LEFT SINCE THE FIRST CUT (owner, 2026-10-10), and each is named so none reads
    as having been dropped by accident.
@@ -90,6 +90,28 @@ const COUPLE_LEVERS: readonly Lever[] = [
         attrs: { "data-pv-portrait": "fade" },
       },
       { label: "Blended, with the rim", attrs: { "data-pv-portrait": "rim" } },
+    ],
+  },
+  /* TEMPORARY — the owner's own check, not the couple's (2026-10-14). The invite back inside one
+     phone screen; `preview.css` carries the reasoning. Removed when the owner picks. */
+  {
+    id: "invite",
+    title: "Invite on one phone screen (owner)",
+    note: "Phone, upright. Each option pulls the first screen back inside the window.",
+    options: [
+      { label: "As now", attrs: {} },
+      {
+        label: "A — names smaller, gap 16",
+        attrs: { "data-pv-invite": "a" },
+      },
+      {
+        label: "B — names gap 4, date closed",
+        attrs: { "data-pv-invite": "b" },
+      },
+      {
+        label: "C — line at caption size, names gap 4",
+        attrs: { "data-pv-invite": "c" },
+      },
     ],
   },
 ];
