@@ -52,66 +52,24 @@
 /* THE GOLD, THE EVENT ICONS AND THE "&" LEFT THE ROUTE (owner, 2026-10-11): deep gold ships, the
    icons and the soft-brown "&" stay as they are.
 
-   THE GROOM'S FAMILY'S NEW PHOTOGRAPHS, BLENDED INTO THE CARD (owner, 2026-10-11) — `multiply`, as the
-   botanical layer does, so their white grounds take the stock's own colour. The placeholder wash under
-   each photo is hidden, or the photo would multiply onto it instead of onto the card. Keyed on the five
-   new files. */
-html[data-pv-portrait]
-  figure:has(
-    img:is(
-        [src*="rani-joseph"],
-        [src*="p-d-joseph"],
-        [src*="marietta-joseph"],
-        [src*="harry-william"],
-        [src*="oliver-harry"]
-      )
-  )
-  > div:first-child
-  img {
+   EVERY FAMILY PORTRAIT, BLENDED INTO THE CARD (owner; the groom's side 2026-10-11, all ten since
+   2026-10-14) — `multiply`, as the botanical layer does, so their white grounds take the stock's own colour. The placeholder wash under
+   each photo is hidden, or the photo would multiply onto it instead of onto the card. */
+html[data-pv-portrait] #family figure > div:first-child img {
   mix-blend-mode: multiply;
 }
 
-html[data-pv-portrait]
-  figure:has(
-    img:is(
-        [src*="rani-joseph"],
-        [src*="p-d-joseph"],
-        [src*="marietta-joseph"],
-        [src*="harry-william"],
-        [src*="oliver-harry"]
-      )
-  )
-  > div:first-child
-  > div
-  > :first-child {
+html[data-pv-portrait] #family figure > div:first-child > div > :first-child {
   display: none;
 }
 
 html:is([data-pv-portrait="blend"], [data-pv-portrait="fade"])
-  figure:has(
-    img:is(
-        [src*="rani-joseph"],
-        [src*="p-d-joseph"],
-        [src*="marietta-joseph"],
-        [src*="harry-william"],
-        [src*="oliver-harry"]
-      )
-  )
+  #family
+  figure
   > div:first-child {
   box-shadow: none;
 }
 
-html[data-pv-portrait="fade"]
-  figure:has(
-    img:is(
-        [src*="rani-joseph"],
-        [src*="p-d-joseph"],
-        [src*="marietta-joseph"],
-        [src*="harry-william"],
-        [src*="oliver-harry"]
-      )
-  )
-  > div:first-child
-  img {
+html[data-pv-portrait="fade"] #family figure > div:first-child img {
   mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
 }

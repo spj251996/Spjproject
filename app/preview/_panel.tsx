@@ -80,8 +80,8 @@ interface Lever {
 const COUPLE_LEVERS: readonly Lever[] = [
   {
     id: "portrait",
-    title: "The new family photos",
-    note: "The groom's family. Their white backgrounds melt into the card, the way the flowers do.",
+    title: "The family photos",
+    note: "Every family photo. Their white backgrounds melt into the card, the way the flowers do.",
     options: [
       { label: "As now", attrs: {} },
       { label: "Blended, no rim", attrs: { "data-pv-portrait": "blend" } },
