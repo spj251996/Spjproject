@@ -111,10 +111,11 @@
    Eyebrow + title, then date + place, then the first event, then the second. Today the gaps inside a
    cluster nearly match the gaps between them (ink: 19 · 25–30 · 17 · 29–31 · 37). Both options pull
    each cluster tight — eyebrow to title 12, date to place 6 — and then:
-   - natural: header to date 20, date to the events 32, event to event 20;
-   - even: 24 between every cluster.
-   Margins move by the difference from today's ink gap. Both shorten the card, so neither can overflow;
-   the section's measured fit is regenerated when one lands. Phones only. */
+   - natural: header to date 30, date to the events 48, event to event 30;
+   - even: 36 between every cluster.
+   Margins move by the difference from today's ink gap. Both total within a few px of today's card
+   (more space asked for, owner 2026-10-14), so the measured fit still holds and neither can overflow;
+   the fit is regenerated when one lands. Phones only. */
 @media (width < 48rem) {
   html[data-pv-event-rhythm] #event-info h2[data-event] {
     margin-top: calc(var(--spacing-space-2xs) + 12px - 19px);
@@ -131,25 +132,20 @@
   }
 
   html[data-pv-event-rhythm="natural"] #event-info h2[data-event] + div {
-    margin-top: calc(var(--spacing-space-sm) + 20px - 27.5px);
+    margin-top: calc(var(--spacing-space-sm) + 30px - 27.5px);
   }
 
   html[data-pv-event-rhythm="natural"] #event-info ol {
-    margin-top: calc(var(--spacing-space-sm) + 32px - 30px);
-    row-gap: 0;
-  }
-
-  /* At a zero gap the two events' ink still sits 22px apart, so the second is pulled up the rest. */
-  html[data-pv-event-rhythm="natural"] #event-info ol > li + li {
-    margin-top: -2px;
+    margin-top: calc(var(--spacing-space-sm) + 48px - 30px);
+    row-gap: calc(var(--spacing-space-sm) + 30px - 38px);
   }
 
   html[data-pv-event-rhythm="even"] #event-info h2[data-event] + div {
-    margin-top: calc(var(--spacing-space-sm) + 24px - 27.5px);
+    margin-top: calc(var(--spacing-space-sm) + 36px - 27.5px);
   }
 
   html[data-pv-event-rhythm="even"] #event-info ol {
-    margin-top: calc(var(--spacing-space-sm) + 24px - 30px);
-    row-gap: calc(var(--spacing-space-sm) + 24px - 38px);
+    margin-top: calc(var(--spacing-space-sm) + 36px - 30px);
+    row-gap: calc(var(--spacing-space-sm) + 36px - 38px);
   }
 }
