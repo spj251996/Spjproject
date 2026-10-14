@@ -223,7 +223,9 @@ test("previous and next are drawn chevrons in a 48px dark circle, not type marks
   assert.match(viewer, /CONTROL_CIRCLE/);
   assert.match(control, /size-space-xl/);
   assert.match(control, /bg-scrim\/60/);
-  assert.match(control, /hover:bg-scrim\/85/);
+  assert.match(control, /hover:bg-scrim hover:scale-110/);
+  assert.match(control, /active:bg-scrim active:scale-110/);
+  assert.doesNotMatch(control, /active:opacity-80/);
 });
 
 test("All photos and Close are drawn icons in the arrows' dark circle, named for screen readers", () => {
