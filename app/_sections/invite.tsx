@@ -273,15 +273,17 @@ export function InviteSection({ paint }: { paint?: FramePaint }) {
               joyfully invite you to share in the celebration of their wedding
             </p>
 
-            {/* BETWEEN beats, so `space-md` — one value at every width, where this gap was five
+            {/* BETWEEN beats, so `space-md` from `{breakpoints.md}` up and `space-sm` on a phone (owner,
+                2026-10-14, to bring the invite inside one phone screen) — where this gap was once five
                 values across five tiers and no two bands read the card the same way. The
                 orientation-qualified rules it replaced are gone with it; the block absorbs the
                 weekday, so the header runs four elements where it ran five. Plus
                 `--date-place-pull`, which the place beneath takes back off its own margin: the block
                 sits as close to the place as its weekday sits to its day. The place's own margin is
                 `space-xs` rather than `space-3xs` because both of the block's inner gaps were opened
-                by `space-2xs` (owner, 2026-10-11) — the weekday's half lives in `--date-weekday-pull`. */}
-            <div className="mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
+                by `--date-open` (owner, 2026-10-11; 4px on a phone since 2026-10-14) — the weekday's half
+                lives in `--date-weekday-pull`. */}
+            <div className="mt-[calc(var(--spacing-space-sm)+var(--date-place-pull))] md:mt-[calc(var(--spacing-space-md)+var(--date-place-pull))]">
               <InviteDate date={weddingDate} />
             </div>
 

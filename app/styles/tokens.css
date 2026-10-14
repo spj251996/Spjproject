@@ -190,9 +190,10 @@
      both inner gaps by `space-2xs` (2026-10-11), so it is +3 and the place takes the same 8px below. */
   --rule-date-bracket: 42px;
   --date-label-lift: 13px;
-  /* Both inner gaps of the date block open by this (owner, 2026-10-11): 8px, 7px on a laptop, where
-     8 left the invite 2px past its compact-touchscreen tier line. */
-  --date-open: 8px;
+  /* Both inner gaps of the date block open by this (owner, 2026-10-11): 8px from the tablet up, 7px on
+     a laptop, where 8 left the invite 2px past its compact-touchscreen tier line — and 4px on a phone
+     (owner, 2026-10-14), part of what brings the invite back inside one phone screen. */
+  --date-open: 4px;
   --date-weekday-pull: calc(var(--date-open) - 5px);
   /* How far the date block drops toward the place beneath it, so the day-to-place INK gap equals the
      weekday-to-day one (owner, 2026-10-11). Measured at weight 700: the two gaps were 17.5-19.5px and
@@ -200,11 +201,11 @@
      within half a pixel. The place stays put and the block takes the space above it instead, which is
      why the header's height -- and the invite's measured fit -- does not move. */
   --date-place-pull: 14px;
-  /* Below the invite's stacked phone names, so the ink gap from the names to the invitation's line
-     equals the one from that line to the date block (owner, 2026-10-11). Measured with the 2.68em
-     lockup: the natural gap is 12px at every phone width and line-to-date is 46.5, so 35px lands it
-     within half a pixel. Portrait phones only — the only place the lockup stacks at that size. */
-  --invite-names-gap: 35px;
+  /* Below the invite's stacked phone names. It was 35px so the names-to-line ink gap matched the
+     line-to-date one (owner, 2026-10-11); it is 4px — `space-3xs`, the within-a-beat gap every other
+     tier uses — since the owner traded that match for the invite fitting one phone screen
+     (2026-10-14). Portrait phones only — the only place the lockup stacks at that size. */
+  --invite-names-gap: 4px;
 
   /* Not in `--border-width-*`: its `border-*` utilities would misdescribe the SVG thread strokes. */
   --stroke-divider: 1px;
@@ -397,6 +398,7 @@
    Biome reads sibling `@variant` blocks as one block and flags the repeated names. */
 :root {
   @variant md {
+    --date-open: 8px;
     --text-display-name: 110px;
     --text-display-name--line-height: 165px;
     --text-heading-script: 72px;
