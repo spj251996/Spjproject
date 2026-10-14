@@ -68,3 +68,12 @@ test("the track arrives as the opening's last beat, gated like every opening ste
 test("--opening-type-end is declared on the root by the opening", () => {
   assert.match(invite, /:root\s*\{\s*--opening-type-end:\s*calc\(/);
 });
+
+/* The page can grow with no scroll and no window resize — the lazy illustration, a photo strip laying
+   out — and the fill must follow it. Measured before this: the page grew 3000px and the fill held at
+   0.35 where it should read 0.23, until the next scroll. */
+test("the fill re-reads when the page's own height changes", () => {
+  assert.match(component, /new ResizeObserver\(schedule\)/);
+  assert.match(component, /\.observe\(document\.body\)/);
+  assert.match(component, /\.disconnect\(\)/);
+});

@@ -27,7 +27,13 @@ export function ScrollProgress() {
     paint();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
+    /* The page can grow with no scroll and no resize — the lazy illustration, a photo strip laying
+       out — so the fill also follows the page's height. `<body>`, not `<html>`: the root is `h-full`,
+       pinned to the viewport, while the body is `min-h-full` and grows with what it holds. */
+    const pageHeight = new ResizeObserver(schedule);
+    pageHeight.observe(document.body);
     return () => {
+      pageHeight.disconnect();
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       cancelAnimationFrame(frame);
