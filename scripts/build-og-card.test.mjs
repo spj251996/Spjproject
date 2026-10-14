@@ -18,10 +18,10 @@ const SYMBOL =
   '<defs><symbol id="sprig-mark" viewBox="0 0 174.6 169.8"><path d="M 1 1"/></symbol></defs></svg>';
 
 const INVITE_RUN =
-  '<p class="type-eyebrow">We are getting married</p>' +
+  '<p class="type-eyebrow">By God’s Grace</p>' +
   '<h1 class="type-display-name text-ink mt-space-lg"><span>Sebastian</span>' +
   '<span class="type-display-name__joiner"> &amp; </span><span>Flemy</span></h1>' +
-  '<p class="type-caption text-ink-muted mt-space-3xs" data-invite-line="true">invite you to celebrate our wedding</p>' +
+  '<p class="type-body text-ink-muted mt-space-3xs" data-invite-line="true">joyfully invite you to share in the celebration of their wedding</p>' +
   '<p class="type-date-primary text-ink mt-space-lg md:mt-space-3xs [@media(width&gt;=64rem)_and_(orientation:portrait)]:mt-space-lg [@media(width&gt;=64rem)_and_(orientation:landscape)]:mt-space-sm">' +
   '<time dateTime="2027-01-09">9<span class="type-caption type-date-ordinal align-super">th</span> January 2027</time></p>' +
   '<p class="type-date-primary font-medium text-ink mt-space-3xs" data-invite-place="true">Kerala</p>';
@@ -64,7 +64,10 @@ test("extractInvite returns the contiguous eyebrow-to-place run", () => {
 test("extractInvite carries the invitation's own line", () => {
   const run = extractInvite(PAGE);
   assert.match(run, /data-invite-line/);
-  assert.match(run, /invite you to celebrate our wedding/);
+  assert.match(
+    run,
+    /joyfully invite you to share in the celebration of their wedding/,
+  );
 });
 
 test("extractInvite throws when the place hook is gone", () => {
@@ -76,8 +79,7 @@ test("extractInvite throws when the place hook is gone", () => {
 
 test("extractInvite throws when the eyebrow is gone", () => {
   assert.throws(
-    () =>
-      extractInvite(PAGE.replace("We are getting married", "Save the date")),
+    () => extractInvite(PAGE.replace("By God’s Grace", "Save the date")),
     /invite markup incomplete/,
   );
 });
@@ -123,7 +125,7 @@ test("cardHtml carries one surface and the invite's own rows", () => {
       `${gone} was dropped with the mount and ground`,
     );
   }
-  assert.ok(out.includes("We are getting married"));
+  assert.ok(out.includes("By God’s Grace"));
   assert.ok(out.includes("Kerala"));
   assert.match(out, /<use href="#sprig-mark">/);
 });

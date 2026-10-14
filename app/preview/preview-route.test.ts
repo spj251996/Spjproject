@@ -20,19 +20,12 @@ const PAGE_CODE = code(PAGE);
 const PANEL_CODE = code(PANEL);
 const CSS_CODE = code(CSS);
 
-/* THE PANEL'S WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is `data-pv-*`,
-   including Event Info's four — which the scratch route carried as bare `data-rail` &c. One
-   namespace is what makes the root-attribute guard below a guard rather than a list of
-   exceptions: a guard carrying four names it must forgive cannot see a fifth it should not. */
-/* EVERY SURVIVING LEVER IS THE COUPLE'S as of 2026-10-10 — the tuning block is gone with the last
-   value it held, which is why there is no second list. */
-const COUPLE_FACING = [
-  "events",
-  "map-action",
-  "date-colour",
-  "ritual-leaf",
-  "gold",
-];
+/* THE PANEL'S WHOLE ATTRIBUTE VOCABULARY, and the only list of it. Every name is `data-pv-*`, and
+   one namespace is what makes the root-attribute guard below a guard rather than a list of
+   exceptions. ONE LEVER REMAINS (2026-10-14): the family photos blended into the card. Every other
+   lever landed in the section files and is checked where it landed, below and in
+   `app/round7-9.test.ts`. */
+const COUPLE_FACING = ["portrait"];
 const VOCABULARY = COUPLE_FACING.map((name) => `data-pv-${name}`);
 
 test("the route mounts the real page rather than re-composing it", () => {
@@ -163,50 +156,28 @@ test("the panel never reads the viewport the wrong way", () => {
   );
 });
 
-test("the Event Info alternates are marked preview-only", () => {
-  /* `app/event-info-fit.ts` is GENERATED from the shipped layout. A CSS override cannot re-derive
-     it, so an alternate can render a composition the production build will not produce — all six
-     happen to measure 1704px today, which is why `/` needs no new fit, but an approval given to a
-     render nobody can build is wasted either way. */
-  assert.match(
-    PANEL_CODE,
-    /preview only/i,
-    "the six Event Info candidates carry no preview-only mark",
+test("every portrait option the panel offers has a rule, and no rim keeps the couple's glow", () => {
+  const values = [
+    ...PANEL_CODE.matchAll(/"data-pv-portrait": "([a-z]+)"/g),
+  ].map((m) => m[1]);
+  assert.deepStrictEqual(
+    values,
+    ["blend", "fade", "rim"],
+    "the portrait options changed — update this list and the rules together",
   );
-});
-
-test("Event Info's two-column alternate stays inside the phone band", () => {
-  /* Every wider band already shows two columns; the alternate brings them to the phone and must not
-     reach a settled tier. The six earlier candidates left the route on 2026-10-11 (owner). */
-  const rules = (CSS_CODE.match(/html\[data-pv-events/g) ?? []).length;
-  assert.ok(rules >= 3, `only ${rules} two-column rules`);
-  /* The block that holds the first rule, closed by counting braces — a lookalike `}` inside it
-     would otherwise end the slice early. */
-  const first = CSS_CODE.indexOf("html[data-pv-events");
-  const open = CSS_CODE.lastIndexOf("@media", first);
-  assert.ok(
-    CSS_CODE.startsWith("@media (width < 48rem)", open),
-    "the two-column rules are not inside the phone band",
-  );
-  let depth = 0;
-  let close = open;
-  for (let i = CSS_CODE.indexOf("{", open); i < CSS_CODE.length; i++) {
-    if (CSS_CODE[i] === "{") depth++;
-    if (CSS_CODE[i] === "}" && --depth === 0) {
-      close = i;
-      break;
-    }
+  /* Every option blends: the bare attribute carries the blend, the named values only what differs. */
+  assert.match(CSS_CODE, /html\[data-pv-portrait\] #family figure/);
+  for (const value of ["blend", "fade"]) {
+    assert.ok(
+      CSS_CODE.includes(`[data-pv-portrait="${value}"]`),
+      `the "${value}" option has no rule of its own`,
+    );
   }
-  const inBand = CSS_CODE.slice(open, close);
-  assert.equal(
-    (inBand.match(/html\[data-pv-events/g) ?? []).length,
-    rules,
-    "a two-column rule sits outside the phone band and would reach a settled tier",
-  );
-  assert.ok(
-    !CSS_CODE.includes("data-pv-rail"),
-    "the six earlier layouts left the route",
-  );
+  /* T0-5 (owner, 2026-10-14): dropping the rim must not drop the glow, which is the same box
+     shadow's last layer. Blanking `box-shadow` would take both. */
+  assert.doesNotMatch(CSS_CODE, /box-shadow\s*:\s*none/);
+  assert.match(CSS_CODE, /--tw-ring-shadow:\s*0 0 #0000/);
+  assert.match(CSS_CODE, /--tw-ring-offset-shadow:\s*0 0 #0000/);
 });
 
 test("the alternates do not touch the botanical layer at all", () => {
@@ -224,8 +195,9 @@ test("the alternates do not touch the botanical layer at all", () => {
     "the alternates name the botanical layer — the flowers lever is off the couple's review",
   );
   const rules = CSS_CODE.split("}");
+  /* The one lever's own rules; a lower count means the parse broke, not that the file shrank. */
   assert.ok(
-    rules.length > 10,
+    rules.length > 3,
     `only ${rules.length} rules parsed from preview.css`,
   );
   for (const rule of rules) {
@@ -243,7 +215,7 @@ test("the six retired levers are gone from both files", () => {
      - `data-pv-eyebrow`, the flowers over the invite's eyebrow — the owner settled that clearance
        themselves, and its two alternates were the only options on the route with no measurement;
      - `data-pv-malayalam` — SETTLED at 600, and `app/layout.tsx` loads that cut alone;
-     - `data-pv-heading-md` — SETTLED at 21/23/21/25px, in `tokens.css`;
+     - `data-pv-heading-md` — SETTLED, in `tokens.css`; 18/20/18/21px since 2026-10-11;
      - `data-pv-amp` — SETTLED at 35% smaller, in `couple-names.tsx`;
      - `data-pv-names` — DROPPED rather than decided: the drawn asset ships and the couple are not
        asked, so the typeset alternate it showed is dead and `scripts/retire-register.mjs` carries
@@ -337,15 +309,22 @@ test("the 2026-10-11 picks left the route and landed in code", () => {
     assert.ok(!CSS_CODE.includes(retired), `${retired} still has a rule`);
   }
   const tokens = readFileSync("app/styles/tokens.css", "utf8");
+  /* The opening is one token now: 8px from the tablet, 7px at laptop (8 refused the compact-touchscreen
+     tier line by 2px), and 4px on a phone since the invite came back inside one screen (2026-10-14). */
   assert.match(
     tokens,
-    /--date-weekday-pull:\s*3px;/,
-    "the date's 8px opening above the day",
+    /--date-weekday-pull:\s*calc\(var\(--date-open\) - 5px\);/,
+    "the weekday's row is no longer pulled off the opening",
+  );
+  assert.deepStrictEqual(
+    [...tokens.matchAll(/--date-open:\s*(\d+)px;/g)].map((m) => m[1]),
+    ["4", "8", "7", "8"],
+    "the date's opening by tier — phone, tablet, laptop, desktop",
   );
   assert.match(
     readFileSync("app/_sections/invite.tsx", "utf8"),
-    /mt-\[calc\(var\(--spacing-space-xs\)-var\(--date-place-pull\)\)\]/,
-    "the date's 8px opening below the day",
+    /mt-\[calc\(var\(--spacing-space-3xs\)\+var\(--date-open\)-var\(--date-place-pull\)\)\]/,
+    "the date's opening below the day",
   );
   assert.match(
     tokens,
@@ -381,7 +360,7 @@ test("the 2026-10-11 picks left the route and landed in code", () => {
 });
 
 test("the close control cannot scroll out of reach", () => {
-  /* The panel scrolls — three groups do not fit 70svh on a phone —
+  /* The panel scrolls on a short phone, where its group and notes outgrow 70svh —
      so a close button in normal flow leaves the couple scrolling back up inside the panel to get
      it out of the way (owner, 2026-10-10). It is sticky, and its background is restated because
      a sticky child paints over what slides under it while the shell's own background sits on the

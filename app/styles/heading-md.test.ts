@@ -5,15 +5,11 @@ import test from "node:test";
 
 /* `heading-md` exists because nothing sat between `heading-sm` (14px) and `heading-xl` (26px), and
    `heading-sm` could not be grown to reach it.
-   SETTLED AT 21/23/21/25 (owner, 2026-10-10), up 8% from the 19/21/19/23 it was first built at and
-   LANDED AS WHOLE PIXELS rather than a factor, per this project's own rule. The step below it was
-   dropped on measurement rather than taste: +5% is a ONE-pixel change on a 19px title, which is
-   below the threshold at which anyone sees it without the two side by side — so the real choice
-   was +8% or nothing. At 21px the title is 1.62x body against 1.46x before, and it has to lead a
-   block holding a 14px gold Malayalam, a 13px italic tagline and 13px body. The ceiling is +37%,
-   where it would equal its own section heading.
-   The LINE HEIGHTS deliberately did NOT move: 32/34/32/36 against the new sizes is 1.52 at phone,
-   and holding them is what keeps the ritual row — and so Celebrations' recorded section height —
+   SETTLED AT 18/20/18/21 (owner, 2026-10-11), when the ritual title moved onto one left-aligned
+   header line with its Malayalam. It was 21/23/21/25 from 2026-10-10 — +8% on the 19/21/19/23 it was
+   first built at — and both steps LANDED AS WHOLE PIXELS rather than a factor, per this project's
+   own rule.
+   The LINE HEIGHTS deliberately did NOT move with either change: 32/34/32/36, and holding them is what keeps the ritual row — and so Celebrations' recorded section height —
    where it is. Measured, not assumed — it carries four jobs at one size. The ritual title
    had to leave the role rather than move it (DESIGN.md → Foundations → Typography).
 

@@ -38,7 +38,10 @@ test("the card reads eyebrow, names, line, date, place", () => {
 });
 
 test("the line is the invitation's own voice, not a content field", () => {
-  assert.match(source, /invite you to celebrate our wedding/);
+  assert.match(
+    source,
+    /joyfully invite you to share in the celebration of their wedding/,
+  );
   assert.doesNotMatch(
     source,
     /invite\.(invitationLine|line)\b/,
