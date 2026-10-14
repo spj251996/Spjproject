@@ -20,6 +20,14 @@ html {
   -webkit-touch-callout: none;
 }
 
+/* THE SCROLLBAR IS THIN AND IN THE SITE'S COLOURS (owner, 2026-10-14) — DESIGN.md → Interaction
+   Rules. Only a desktop's classic scrollbar takes it; a phone's overlay bar ignores both. The colour
+   inherits, so the photo grid on its dark scrim resets it (`gallery-modal-panel.tsx`). */
+html {
+  scrollbar-color: var(--color-ink-muted) transparent;
+  scrollbar-width: thin;
+}
+
 /* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
    second ring rule. */
 :focus-visible {
