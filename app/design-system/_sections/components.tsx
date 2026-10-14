@@ -215,7 +215,7 @@ export function ComponentsSections() {
           name="gallery-modal"
           note="Shown through its grid panel with generated sample images; tiles here open nothing. The history that lets back pop one layer, focus handling and the scroll restore on close need the live modal — open it from photo-row above."
           source="@/components/ui/gallery-modal"
-          spec="z-modal · scrim at 0.92 · masonry · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover"
+          spec="z-modal · scrim at 0.92 · masonry · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover · opens and closes with a fade and a 24px rise (duration-base) · a layer change fades the new layer's content (duration-fast), the scrim never moving · a deliberate tap on empty space (down and up, under 10px) goes back one layer · reduced motion: instant"
         >
           <ChromeFrame height={320}>
             <GalleryModalPanel {...sampleGalleryPanel} />
@@ -226,9 +226,9 @@ export function ComponentsSections() {
           description="One ritual photograph, full screen — the layer a photo-row frame or a gallery-modal tile opens."
           id="ui-photo-viewer"
           name="photo-viewer"
-          note="Shown through its panel at the second of three sample images, so both previous and next show; the controls here move nothing. Swipe, the arrow keys and back popping one layer need the live modal — open a frame in photo-row above."
+          note="Shown through its panel at the second of three sample images, so both previous and next show; the controls here move nothing. Swipe, the arrow keys, the slide, the fades, a tap outside and back popping one layer need the live modal — open a frame in photo-row above."
           source="@/components/ui/photo-viewer"
-          spec="the grid's scrim · one photograph fitted whole (object-contain), never cropped · counter n / N in type-action · All photos · Close · previous / next, absent at the ends · the viewer copy only for the photograph on screen · a failed copy reads This photo couldn't load · a transparent save cover"
+          spec="the grid's scrim · one photograph fitted whole (object-contain), never cropped · counter n / N in type-action · All photos · Close · previous / next, absent at the ends · the viewer copy only for the photograph on screen · a failed copy reads This photo couldn't load · a transparent save cover · the next photograph slides 32px in from the side it came from (duration-fast), after release · the letterbox around the fitted photograph is empty space"
         >
           <ChromeFrame height={320}>
             <PhotoViewerPanel
