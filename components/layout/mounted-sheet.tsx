@@ -33,7 +33,8 @@ const MOUNT_SHADOW = "shadow-mount";
 
 /* Unmounted is the base, so a non-hero section never paints a mount and then loses it. The reveal
    ladder's four rungs, in `{spacing.*}` utilities: `{reveal.base}` · `{reveal.md}` · `{reveal.lg}` ·
-   `{reveal.xl}`. Only the hero reaches the first — an ordinary section has no mount below
+   `{reveal.xl}`. Only the hero reaches the first — and on a fitted card the hero's rungs come from
+   here rather than from the generated stylesheet — an ordinary section has no mount below
    `{breakpoints.md}` to reveal one on. */
 const MOUNT_REVEAL = {
   hero: "p-space-sm md:p-space-xs lg:p-space-sm xl:p-space-md",
@@ -63,9 +64,9 @@ const SHEET = "bg-surface-elevated shadow-stock";
 
    Only the PAINT differs: the frame's geometry is identical either way, because the invite's height
    contract and the thread's measured card box (`page-thread.tsx`'s `measureSections`) both ride on
-   the box staying exactly where it was measured. The generated stylesheet needs no matching change —
-   `mountRules` only ever strips a fill where the mount does not show, so with the utility absent that
-   rule is a no-op.
+   the box staying exactly where it was measured. The hero's reveal is the one piece of
+   geometry this file carries for a fitted card: the generator emits no mount rule for the hero, so the
+   fitted branch gives its mount `MOUNT_REVEAL.hero`, held equal to `revealFor` by a test.
 
    Hoisted into constants so a framed branch never names a paint utility inline, where the role could
    not gate it. */
@@ -143,7 +144,9 @@ export function MountedSheet({
         <style>{mountedSheetFrameCss(fit, hero, "single")}</style>
         <div className={frameScopeClass(fit)}>
           <div className={FRAME_CLASS.box}>
-            <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}`}>
+            <div
+              className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}${hero ? ` ${MOUNT_REVEAL.hero}` : ""}`}
+            >
               <div
                 className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[role]} ${className ?? ""}`}
               >

@@ -662,21 +662,21 @@ function mountExpected(
   );
 }
 
-/* Every (width tier, orientation) a fitted single's stylesheet can put a window in, with the one
+/* Every (width tier, orientation) a fitted non-hero single's stylesheet can put a window in, with the one
    mount rule that window gets. Fails on a class-wide mount rule, which would paint both
    orientations alike, and on a class and orientation with no mount rule or with two. */
-function fittedMountRules(hero: boolean): {
+function fittedMountRules(): {
   windowClass: ReturnType<typeof windowClasses>[number];
   orientation: Orientation;
   rule: string;
 }[] {
   const fit = makeFit();
-  const css = mountedSheetFrameCss(fit, hero);
+  const css = mountedSheetFrameCss(fit, false);
   const blocks = topLevelBlocks(css);
   const mountRule = (block: string) =>
     block.match(/mounted-sheet-frame__mount \{ padding:[^}]*\}/)?.[0];
   const found = [];
-  for (const windowClass of windowClasses(fit, "single", hero)) {
+  for (const windowClass of windowClasses(fit, "single", false)) {
     assert.equal(
       blocks.filter(
         (block) =>
@@ -727,7 +727,7 @@ function assertMounted(rule: string, label: string): void {
 
 test("a non-hero single has no mount in any portrait window, at every width tier", () => {
   const tiers = new Set<WidthTier>();
-  for (const { windowClass, orientation, rule } of fittedMountRules(false)) {
+  for (const { windowClass, orientation, rule } of fittedMountRules()) {
     if (orientation !== "portrait") continue;
     tiers.add(windowClass.widthTier);
     assertBare(rule, `${windowClass.media} portrait`);
@@ -741,7 +741,7 @@ test("a non-hero single has no mount in any portrait window, at every width tier
 
 test("a non-hero single shows its mount in landscape at the laptop and desktop tiers alone", () => {
   const mounted = new Set<string>();
-  for (const { windowClass, orientation, rule } of fittedMountRules(false)) {
+  for (const { windowClass, orientation, rule } of fittedMountRules()) {
     if (orientation !== "landscape") continue;
     const label = `${windowClass.media} landscape`;
     if (mountExpected(false, windowClass.widthTier, orientation)) {
@@ -765,11 +765,29 @@ test("a non-hero single shows its mount in landscape at the laptop and desktop t
 });
 
 test("the hero shows its mount in every window and orientation", () => {
-  const rules = fittedMountRules(true);
-  assert.ok(rules.length > 0);
-  for (const { windowClass, orientation, rule } of rules) {
-    assertMounted(rule, `${windowClass.media} ${orientation}`);
+  let checked = 0;
+  for (const windowClass of windowClasses(makeFit(), "single", true)) {
+    const orientations: boolean[] = [];
+    if (windowClass.portraitPossible) orientations.push(false);
+    if (windowClass.landscapePossible) orientations.push(true);
+    for (const landscape of orientations) {
+      assert.ok(
+        revealFor(windowClass, true, landscape) > 0,
+        `${windowClass.media} landscape=${landscape}: the hero lost its reveal`,
+      );
+      checked += 1;
+    }
   }
+  assert.ok(checked > 0, "no hero window class walked");
+});
+
+/* The hero's reveal is geometry and rides on `MountedSheet`'s utility ladder (owner, 2026-10-14), so the
+   frame emits no mount rule for it — the stylesheet is unlayered, and any rule left here would beat the
+   ladder. A non-hero card still needs its rules, to strip the fill where its mount does not show. */
+test("the hero's stylesheet emits no mount rule; a section's still does", () => {
+  const mountRule = /mounted-sheet-frame__mount \{ padding:[^}]*\}/;
+  assert.doesNotMatch(mountedSheetFrameCss(makeFit(), true), mountRule);
+  assert.match(mountedSheetFrameCss(makeFit(), false), mountRule);
 });
 
 test("the tier line and padding chain read the reveal the mount shows", () => {

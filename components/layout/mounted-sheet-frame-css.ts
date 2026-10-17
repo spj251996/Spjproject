@@ -295,20 +295,16 @@ function groundRules(
    `background-image` removes it; a grain drawn any other way would need a matching change here.
 
    One rule per orientation, because a class above its tier line holds both and a non-hero card
-   shows its mount in landscape alone. */
-function mountRules(
-  windowClass: WindowClass,
-  hero: boolean,
-  scope: string,
-): string {
+   shows its mount in landscape alone. The hero takes none: its reveal rides on `MountedSheet`'s
+   utility ladder, which a test holds equal to `revealFor`, and an unlayered rule here would beat it. */
+function mountRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   return orientationsOf(windowClass)
     .map((landscape) => {
-      /* The unpainted hero gates its paint at the component, not here. */
-      const fill = mountShows(windowClass, hero, landscape)
+      const fill = mountShows(windowClass, false, landscape)
         ? ""
         : " background-color: transparent; background-image: none;";
-      return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero, landscape))};${fill} }\n}`;
+      return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, false, landscape))};${fill} }\n}`;
     })
     .join("\n");
 }
@@ -545,10 +541,14 @@ export function mountedSheetFrameCss(
       groundRules(windowClass, hero, layout, scope),
       layout === "pair"
         ? pairLayoutRules(windowClass, scope)
-        : mountRules(windowClass, hero, scope),
+        : hero
+          ? ""
+          : mountRules(windowClass, scope),
       paddingRules(windowClass, hero, layout, scope),
     ]),
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets. A tall card
