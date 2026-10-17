@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
+    "frames": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-frame-css.ts",
     "images": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-images.mjs",
     "og:card": "node scripts/build-og-card.mjs",
     "trace:motif": "node scripts/trace-motif.mjs",
