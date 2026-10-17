@@ -218,9 +218,17 @@ test("the hero's reveal ladder equals revealFor in every window the hero can be 
    above pins the values; this pins the wiring against a later edit. */
 test("the fitted hero's mount carries the reveal ladder, and a section's does not", () => {
   const fitted = source.slice(source.indexOf("\n  if (fit !== undefined)"));
-  const mountLine = fitted
-    .split("\n")
-    .find((line) => line.includes("FRAME_CLASS.mount"));
-  assert.ok(mountLine, "no mount in the fitted branch");
-  assert.match(mountLine, /hero \?[^:]*MOUNT_REVEAL\.hero[^:]*:\s*""/);
+  const list = fitted.match(
+    /className=\{\[([\s\S]*?FRAME_CLASS\.mount[\s\S]*?)\]\s*\.filter\(Boolean\)\s*\.join\(" "\)\}/,
+  );
+  assert.ok(list, "no joined mount class list in the fitted branch");
+  const parts = list[1]
+    .split(",")
+    .map((part) => part.trim().replace(/\s+/g, " "))
+    .filter((part) => part !== "");
+  assert.deepStrictEqual(parts, [
+    "FRAME_CLASS.mount",
+    "MOUNT_PAINT[role]",
+    'hero ? MOUNT_REVEAL.hero : ""',
+  ]);
 });

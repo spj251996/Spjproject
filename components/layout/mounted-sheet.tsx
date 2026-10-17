@@ -70,11 +70,7 @@ const SHEET = "bg-surface-elevated shadow-stock";
    not gate it. */
 type CardRole = "hero" | "section";
 
-/* An EMPTY arm must stay exactly empty, and that is load-bearing rather than tidy: an empty
-   interpolation emits the same string the retired `unbacked ? "" : …` ternary did, which is how the
-   built markup came back byte-identical across both migrations -- `mounted-sheet-frame__mount ` keeps
-   its trailing space, and so does the hero's `mounted-sheet-frame__sheet`. Collapsing that whitespace
-   would be a visual no-op and would break the byte-for-byte proof a later migration rests on. */
+/* The hero is unpainted, so its arm is empty. */
 const MOUNT_PAINT: Record<CardRole, string> = {
   hero: "",
   section: `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`,
@@ -141,7 +137,13 @@ export function MountedSheet({
       <div className={frameScopeClass(fit)}>
         <div className={FRAME_CLASS.box}>
           <div
-            className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}${hero ? ` ${MOUNT_REVEAL.hero}` : ""}`}
+            className={[
+              FRAME_CLASS.mount,
+              MOUNT_PAINT[role],
+              hero ? MOUNT_REVEAL.hero : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
           >
             <div
               className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[role]} ${className ?? ""}`}
