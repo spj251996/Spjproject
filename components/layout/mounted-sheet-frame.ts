@@ -203,15 +203,17 @@ export function formatPx(value: number): string {
   return `${Number(value.toFixed(6))}px`;
 }
 
-/* Next's CSS minifier keeps six significant digits (Lightning CSS), so a value from 1000 up keeps two
-   decimals and one from 100 keeps three. The generator emits boundaries already at that precision, capped
-   at three decimals, so the minifier has nothing left to round. The rounding is directed, because layout
-   lands on a 1/64px grid: flooring a `>=` or `<` bound, or ceiling a `<=` or `>` bound, keeps every
-   grid value's verdict when the bound is itself on the grid. A media bound faces viewports that need not
-   be on the grid, so an off-grid one moves by less than 0.001px below 1000px and less than 0.01px from
-   1000px; a container bound is snapped first (`containerLowerBoundPx`), so it is exact. The 6dp
-   normalisation first strips float noise, so a value already at the target precision comes back
-   unchanged. */
+/* Next's CSS minifier keeps six significant digits (Lightning CSS), so a value from 1000 up keeps
+   two decimals and one from 100 keeps three. The generator emits boundaries already at that
+   precision, capped at three decimals, so the minifier has nothing left to round. The rounding is
+   directed, because layout lands on a 1/64px grid: flooring a `>=` or `<` bound, or ceiling a `<=`
+   or `>` bound, keeps every grid value's verdict when the bound is itself on the grid. A media
+   bound faces viewports that need not be on the grid, so an off-grid one moves by less than 0.001px
+   below 1000px and less than 0.01px from 1000px; a container bound is snapped first
+   (`containerLowerBoundPx`), so it is exact in engines that lay out on the 1/64px grid (Blink,
+   WebKit); Gecko lays out in 1/60px units, where a width inside the snap takes the next-smaller
+   padding step, a safe miss with no overflow. The 6dp normalisation first strips float noise, so a
+   value already at the target precision comes back unchanged. */
 function roundBoundPx(value: number, direction: "down" | "up"): string {
   const decimals =
     value > 0 ? Math.max(0, Math.min(3, 5 - Math.floor(Math.log10(value)))) : 3;
@@ -228,10 +230,13 @@ export function lowerBoundPx(value: number): string {
 
 const LAYOUT_GRID_STEPS_PER_PX = 64;
 
-/* A container's size is a layout value, so it lands on the 1/64px grid; a viewport on a fractional-dpr
-   device need not. A container bound is first raised to the next grid step -- a `>=` against grid values
-   is unchanged by that -- and only then rounded down for the minifier, so its verdict is exact for every
-   container width. A bound within float noise (1e-6 of a step) of a grid step is taken as on it. */
+/* A container's size is a layout value, so it lands on the 1/64px grid; a viewport on a
+   fractional-dpr device need not. A container bound is first raised to the next grid step -- a `>=`
+   against grid values is unchanged by that -- and only then rounded down for the minifier, so its
+   verdict is exact for every container width in a 1/64px engine (Blink, WebKit). Gecko's 1/60px
+   units can land a width inside the snap, which takes the next-smaller padding step: a safe miss,
+   never an overflow. A bound within float noise (1e-6 of a step) of a grid step is
+   taken as on it. */
 export function containerLowerBoundPx(value: number): string {
   return lowerBoundPx(
     Math.ceil(value * LAYOUT_GRID_STEPS_PER_PX - 1e-6) /

@@ -70,7 +70,6 @@ const SHEET = "bg-surface-elevated shadow-stock";
    not gate it. */
 type CardRole = "hero" | "section";
 
-/* The hero is unpainted, so its arm is empty. */
 const MOUNT_PAINT: Record<CardRole, string> = {
   hero: "",
   section: `${MOUNT_SHADOW} ${CARD_CORNERS} bg-surface-mount`,

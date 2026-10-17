@@ -269,7 +269,7 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
       if (entry === undefined) {
         console.error(`FAIL: frame "${name}" has no entry in FRAME_SHEETS`);
         failed = true;
-        return [];
+        return [`${name} (no FRAME_SHEETS entry)`];
       }
       const scope = `.${frameScope(name)}`;
       const mount = `${scope}>.mounted-sheet-frame__box>.mounted-sheet-frame__mount`;

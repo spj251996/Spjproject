@@ -94,7 +94,8 @@ test("the `<=` band is ceiled, never floored", () => {
 });
 
 /* A viewport on a fractional-dpr device need not sit on the layout grid, but a container's width does.
-   Snapping a container bound to the grid first makes its verdict exact for every container width. */
+   Snapping a container bound to the grid first makes its verdict exact for every container width in a
+   1/64px engine (Blink, WebKit); Gecko's 1/60px units take the next-smaller step, a safe miss. */
 test("a container bound gives every grid width the exact verdict, on or off the grid", () => {
   for (let k = 0; k <= GRID * 3000; k++) {
     for (const delta of [0, 1 / 1024, 1 / 256, 1 / 128, 3 / 256, 63 / 4096]) {
