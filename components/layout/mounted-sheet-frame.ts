@@ -203,6 +203,31 @@ export function formatPx(value: number): string {
   return `${Number(value.toFixed(6))}px`;
 }
 
+/* Next's CSS minifier keeps six significant digits (Lightning CSS), so a value from 1000 up keeps two
+   decimals and one from 100 keeps three. The generator emits boundaries already at that precision, capped
+   at three decimals, so the minifier has nothing left to round. The rounding is directed, because layout
+   lands on a 1/64px grid: flooring a `>=` or `<` bound, or ceiling a `<=` or `>` bound, keeps every
+   grid value's verdict when the bound is itself on the grid, and an off-grid bound moves by less than
+   0.01px. The 6dp normalisation first strips float noise, so a value already at the target precision
+   comes back unchanged. */
+function roundBoundPx(value: number, direction: "down" | "up"): string {
+  const decimals =
+    value > 0 ? Math.max(0, Math.min(3, 5 - Math.floor(Math.log10(value)))) : 3;
+  const unit = 10 ** decimals;
+  const scaled = (Math.round(value * 1e6) / 1e6) * unit;
+  const rounded =
+    direction === "down" ? Math.floor(scaled + 1e-6) : Math.ceil(scaled - 1e-6);
+  return `${rounded / unit}px`;
+}
+
+export function lowerBoundPx(value: number): string {
+  return roundBoundPx(value, "down");
+}
+
+export function upperBoundPx(value: number): string {
+  return roundBoundPx(value, "up");
+}
+
 export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
@@ -566,8 +591,8 @@ export function windowClasses(
       : `(${lg} <= width < ${xl})`;
   const wideWidth = `(width >= ${xl})`;
   const pointer = `(not ${TOUCHSCREEN_QUERY})`;
-  const atOrAbove = (line: number) => `(height >= ${formatPx(line)})`;
-  const below = (line: number) => `(height < ${formatPx(line)})`;
+  const atOrAbove = (line: number) => `(height >= ${lowerBoundPx(line)})`;
+  const below = (line: number) => `(height < ${lowerBoundPx(line)})`;
 
   /* One width tier's classes, from its own width query and tier line. `narrowBand` supplies the
      pair's orientation-split classes under `PAIR_TIER_LINE_WIDTH_REM`, and is passed only for the

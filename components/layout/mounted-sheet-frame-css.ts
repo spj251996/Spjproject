@@ -10,6 +10,7 @@ import {
   fitRectangles,
   formatPx,
   GROUND_HALVING,
+  lowerBoundPx,
   type MeasuredFit,
   mountShows,
   type Orientation,
@@ -19,6 +20,7 @@ import {
   SIDE_GROUND_MULTIPLE,
   smallestPadding,
   tallWindowClasses,
+  upperBoundPx,
   type WindowClass,
   windowClasses,
 } from "./mounted-sheet-frame.ts";
@@ -144,7 +146,7 @@ function clears(
   return any(
     ...rectangles.map(
       (rectangle) =>
-        `((width >= ${formatPx(rectangle.minCardWidth + widthOffset)}) and (height >= ${formatPx(rectangle.minCardHeight + heightOffset)}))`,
+        `((width >= ${lowerBoundPx(rectangle.minCardWidth + widthOffset)}) and (height >= ${lowerBoundPx(rectangle.minCardHeight + heightOffset)}))`,
     ),
   );
 }
@@ -215,7 +217,7 @@ function windowFits(
     ? windowClass.groundTier.ground * GROUND_HALVING
     : windowClass.groundTier.ground;
   const cap = CAPS[windowClass.widthTier];
-  const band = `(height <= ${formatPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
+  const band = `(height <= ${upperBoundPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
   return any(
     ...rectangles
       .filter(
@@ -225,8 +227,8 @@ function windowFits(
       )
       .map((rectangle) =>
         all(
-          `(width >= ${formatPx(rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * ground)})`,
-          `(height >= ${formatPx(rectangle.minCardHeight + 2 * ground)})`,
+          `(width >= ${lowerBoundPx(rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * ground)})`,
+          `(height >= ${lowerBoundPx(rectangle.minCardHeight + 2 * ground)})`,
           rectangle.minCardWidth > cap.height ? band : true,
         ),
       ),
@@ -405,7 +407,7 @@ function paddingRules(
         )
           continue;
         rules.push(
-          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
+          `@media (height >= ${lowerBoundPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${lowerBoundPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
         );
       }
     }
