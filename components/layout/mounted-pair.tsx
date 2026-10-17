@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 import type { MeasuredFit } from "./mounted-sheet-frame";
-import {
-  FRAME_CLASS,
-  frameScopeClass,
-  mountedSheetFrameCss,
-} from "./mounted-sheet-frame-css";
+import { FRAME_CLASS, frameScopeClass } from "./mounted-sheet-frame-css";
 
 /* With a fit, the generated stylesheet sets every layout step. The leaves and the mount carry both
    surface utilities because the stylesheet strips whichever one a layout does not show. The frame
@@ -62,27 +58,22 @@ export function MountedPair({ children, fit }: MountedPairProps) {
     const leaf = `${FRAME_CLASS.leaf} relative ${PAIR_LEAF_PAINT}`;
     const sheet = `${FRAME_CLASS.sheet} ${PAIR_SHEET_PAINT}`;
     return (
-      <>
-        <style>{mountedSheetFrameCss(fit, false, "pair")}</style>
-        <div className={frameScopeClass(fit)}>
-          <div className={FRAME_CLASS.box}>
+      <div className={frameScopeClass(fit)}>
+        <div className={FRAME_CLASS.box}>
+          <div className={`${FRAME_CLASS.mount} relative ${PAIR_MOUNT_PAINT}`}>
             <div
-              className={`${FRAME_CLASS.mount} relative ${PAIR_MOUNT_PAINT}`}
-            >
-              <div
-                aria-hidden
-                className={`${FRAME_CLASS.crease} ${CREASE_GEOMETRY}`}
-              />
-              <div className={leaf}>
-                <div className={sheet}>{first}</div>
-              </div>
-              <div className={leaf}>
-                <div className={sheet}>{second}</div>
-              </div>
+              aria-hidden
+              className={`${FRAME_CLASS.crease} ${CREASE_GEOMETRY}`}
+            />
+            <div className={leaf}>
+              <div className={sheet}>{first}</div>
+            </div>
+            <div className={leaf}>
+              <div className={sheet}>{second}</div>
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 

@@ -1,3 +1,4 @@
+import "@/app/frames/family.css";
 import { familyFit } from "@/app/family-fit";
 import {
   Botanical,

@@ -9,8 +9,8 @@
    carries the frame's own class names — a module would have to reach them through `:global`, which
    the linter reads as an unknown pseudo-class. The section's id scopes it instead, the same handle
    `measure:fit` selects the section by, and it also carries the rule over the frame's five classes:
-   the frame's stylesheet is unlayered and rendered after this one, and the step it sets is the
-   `padding` shorthand, so only greater specificity wins. */
+   the frame's sheet is unlayered and may be ordered either side of this one in the bundle, and the
+   step it sets is the `padding` shorthand, so only greater specificity wins, never order. */
 @media (width >= 100rem) and (orientation: landscape) {
   #event-info .mounted-sheet-frame__sheet {
     padding-inline: var(--spacing-space-2xl);

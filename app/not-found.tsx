@@ -1,3 +1,4 @@
+import "@/app/frames/not-found.css";
 import { notFoundFit } from "@/app/not-found-fit";
 import {
   Botanical,

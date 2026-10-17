@@ -3,8 +3,6 @@ import type { MeasuredFit } from "./mounted-sheet-frame";
 import {
   FRAME_CLASS,
   frameScopeClass,
-  mountedSheetFrameCss,
-  tallFrameCss,
   tallScopeClass,
 } from "./mounted-sheet-frame-css";
 
@@ -116,47 +114,43 @@ export function MountedSheet({
         "mounted-sheet: a tall card takes no measured fit. The fitted frame is defined only for a card that fits its tier's height cap; a tall section is taller than every window.",
       );
     }
-    /* The frame's stylesheet sets the reveal and padding and removes the mount's fill where it does
-       not show, so neither element carries a padding utility. */
+    /* The section's generated sheet (`app/frames/`, imported by the section) sets the reveal and
+       padding and removes the mount's fill where it does not show, so neither element carries a
+       padding utility. */
     return (
-      <>
-        <style>{tallFrameCss()}</style>
-        <div className={tallScopeClass()}>
-          <div className={FRAME_CLASS.box}>
-            <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}`}>
-              <div
-                className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[role]} ${className ?? ""}`}
-              >
-                {children}
-              </div>
+      <div className={tallScopeClass()}>
+        <div className={FRAME_CLASS.box}>
+          <div className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}`}>
+            <div
+              className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[role]} ${className ?? ""}`}
+            >
+              {children}
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (fit !== undefined) {
-    /* The frame's stylesheet sets the sheet's padding and a section's reveal, stripping its fill
-       where it does not show. The hero's reveal is the ladder on its mount instead: the stylesheet
-       is unlayered, so a rule there would beat the ladder's utilities. */
+    /* The section's generated sheet (`app/frames/`, imported by the section) sets the sheet's
+       padding and a section's reveal, stripping its fill where it does not show. The hero's reveal
+       is the ladder on its mount instead: the sheet is unlayered, so a rule there would beat the
+       ladder's utilities. */
     return (
-      <>
-        <style>{mountedSheetFrameCss(fit, hero, "single")}</style>
-        <div className={frameScopeClass(fit)}>
-          <div className={FRAME_CLASS.box}>
+      <div className={frameScopeClass(fit)}>
+        <div className={FRAME_CLASS.box}>
+          <div
+            className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}${hero ? ` ${MOUNT_REVEAL.hero}` : ""}`}
+          >
             <div
-              className={`${FRAME_CLASS.mount} ${MOUNT_PAINT[role]}${hero ? ` ${MOUNT_REVEAL.hero}` : ""}`}
+              className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[role]} ${className ?? ""}`}
             >
-              <div
-                className={`${FRAME_CLASS.sheet} ${SHEET_PAINT[role]} ${className ?? ""}`}
-              >
-                {children}
-              </div>
+              {children}
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 

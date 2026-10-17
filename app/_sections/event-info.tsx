@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import "@/app/event-info.css";
+import "@/app/frames/event-info.css";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
 import { eventInfoFit } from "@/app/event-info-fit";
 import {

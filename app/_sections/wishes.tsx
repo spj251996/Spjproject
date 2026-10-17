@@ -1,4 +1,5 @@
 import wishesStyles from "@/app/wishes.module.css";
+import "@/app/frames/wishes.css";
 import { wishesFit } from "@/app/wishes-fit";
 import {
   Botanical,

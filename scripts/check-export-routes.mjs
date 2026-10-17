@@ -15,6 +15,8 @@ import { join } from "node:path";
  * root, and the card thread's. Not a remembered figure. */
 const LAB_ROOTS = 3;
 
+const FIVE_FRAMES = ["invite", "event-info", "family", "wishes", "tall"];
+
 /* `sections: true` marks a route that composes `app/_sections/index.tsx`. The not-found rows below do
  * NOT: that screen is its own route with its own frame, botanical, eyebrow, heading and action, and it
  * composes none of the five sections. The flag lives on the row rather than in a parallel list so that
@@ -27,6 +29,7 @@ const EXPECTED = [
     label: "/ (published)",
     sections: true,
     progress: 1,
+    frames: FIVE_FRAMES,
   },
   {
     sections: true,
@@ -36,6 +39,7 @@ const EXPECTED = [
     roots: LAB_ROOTS,
     label: "/thread (lab)",
     progress: 0,
+    frames: FIVE_FRAMES,
   },
   /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
    * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
@@ -47,8 +51,18 @@ const EXPECTED = [
    *
    * Asserted against the built file, never a served URL: an SPA-fallback rewrite returns the index
    * document for any unknown path, which has already made a check of `/404` measure the HOME page. */
-  { path: "out/404.html", roots: 0, label: "/404 (not found, served)" },
-  { path: "out/_not-found.html", roots: 0, label: "/_not-found (route-named)" },
+  {
+    path: "out/404.html",
+    roots: 0,
+    label: "/404 (not found, served)",
+    frames: ["not-found"],
+  },
+  {
+    path: "out/_not-found.html",
+    roots: 0,
+    label: "/_not-found (route-named)",
+    frames: ["not-found"],
+  },
 ];
 const FORBIDDEN = [
   "out/design-system/index.html",
@@ -123,7 +137,14 @@ if (existsSync(CSS_DIR)) {
   failed = true;
 }
 
-for (const { path, roots, label, sections, progress } of EXPECTED) {
+/* The frame sheets are imported files, so a route links them and its HTML carries none. The scope
+ * class is what a sheet's rules are keyed on; `tall` is the one sheet whose scope is not its name. */
+const frameScope = (name) =>
+  name === "tall"
+    ? "mounted-sheet-frame--tall-section-mount"
+    : `mounted-sheet-frame--${name}`;
+
+for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -144,6 +165,48 @@ for (const { path, roots, label, sections, progress } of EXPECTED) {
       `${ok ? "ok  " : "FAIL"} ${label}: ${bars} scroll progress bar(s), expected ${progress}`,
     );
     if (!ok) failed = true;
+  }
+
+  /* `.mounted-sheet-frame__box` after a child combinator appears only inside frame CSS, never in a class
+   * attribute, in its literal or its JSON-escaped (`\u003e`) form. */
+  const inlineFrameCss = (
+    html.match(/(>|\\u003e) ?\.mounted-sheet-frame__box/g) ?? []
+  ).length;
+  console.log(
+    `${inlineFrameCss === 0 ? "ok  " : "FAIL"} ${label}: no inline or payload frame CSS${inlineFrameCss ? ` (${inlineFrameCss} occurrences)` : ""}`,
+  );
+  if (inlineFrameCss > 0) failed = true;
+
+  /* Only the stylesheets this route links: concatenating every built chunk would read another route's
+   * override first. */
+  const hrefs = [
+    ...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g),
+    ...html.matchAll(/<link[^>]*href="([^"]+)"[^>]*rel="stylesheet"/g),
+  ].map((m) => m[1]);
+  const linkedHrefs = [...new Set(hrefs)];
+  const linkedCss = linkedHrefs
+    .map((href) => {
+      const file = join("out", href.replace(/^\//, ""));
+      return existsSync(file) ? readFileSync(file, "utf8") : "";
+    })
+    .join("\n");
+  if (linkedHrefs.length === 0 || linkedCss === "") {
+    console.error(`FAIL ${label}: links no readable stylesheet`);
+    failed = true;
+  } else {
+    const missingScopes = frames.filter(
+      (name) => !linkedCss.includes(frameScope(name)),
+    );
+    console.log(
+      `${missingScopes.length === 0 ? "ok  " : "FAIL"} ${label}: linked CSS (${linkedHrefs.length} sheets) carries ${frames.length - missingScopes.length}/${frames.length} frame scopes${missingScopes.length ? ` -- missing ${missingScopes}` : ""}`,
+    );
+    if (missingScopes.length > 0) failed = true;
+
+    const safeCenter = (linkedCss.match(/safe center/g) ?? []).length;
+    console.log(
+      `${safeCenter > 0 ? "ok  " : "FAIL"} ${label}: ${safeCenter} \`safe center\` fallback(s) survived minification`,
+    );
+    if (safeCenter === 0) failed = true;
   }
 
   if (!sections) continue;

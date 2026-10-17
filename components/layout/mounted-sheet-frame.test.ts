@@ -1508,9 +1508,10 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
   );
 });
 
-/* The built page carries this exact string in two inlined stylesheets (the frame's and the botanical layer's), so
-   changing it moves `/`'s bytes. A tall card is never the hero (`mounted-sheet` throws on both), so the tall frame
-   takes no role argument at all -- a hero variant would be CSS nothing can reach. */
+/* The string is carried by the generated tall sheet (`app/frames/tall.css`) and by the botanical layer's
+   inline stylesheet, so changing it moves both. A tall card is never the hero (`mounted-sheet` throws on
+   both), so the tall frame takes no role argument at all -- a hero variant would be CSS nothing can
+   reach. */
 test("the tall scope class keeps its shipped string, and the tall frame has no hero form", () => {
   assert.strictEqual(
     tallScopeClass(),

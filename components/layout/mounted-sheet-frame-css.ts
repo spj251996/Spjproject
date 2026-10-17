@@ -556,9 +556,9 @@ export function mountedSheetFrameCss(
 /* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets. A tall card
    is never the hero (`mounted-sheet` throws on both), so there is one tall form and one class.
 
-   The built page carries this exact string in two inlined stylesheets (the frame's and the botanical
-   layer's), so changing it moves `/`'s bytes. Its `-section-mount` suffix is the role and paint the key
-   once carried, kept so the bytes do not move. */
+   The string is carried by the generated tall sheet (`app/frames/tall.css`) and by the botanical
+   layer's inline stylesheet, so changing it moves both. Its `-section-mount` suffix is the role and
+   paint the key once carried, kept so the bytes do not move. */
 export function tallScopeClass(): string {
   return "mounted-sheet-frame--tall-section-mount";
 }

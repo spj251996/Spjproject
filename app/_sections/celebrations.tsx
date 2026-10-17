@@ -1,5 +1,6 @@
 import { ritualPhotoProps } from "@/app/_sections/ritual-photo-props";
 import celebrations from "@/app/celebrations.module.css";
+import "@/app/frames/tall.css";
 import {
   Botanical,
   SECTION_PLACEMENT,

@@ -2,6 +2,7 @@ import type { FormattedDate } from "@/content/types";
 import "@/app/invite.css";
 import { eventById } from "@/app/_sections/shared";
 import dateBlock from "@/app/invite-date.module.css";
+import "@/app/frames/invite.css";
 import { inviteFit } from "@/app/invite-fit";
 import {
   Botanical,
