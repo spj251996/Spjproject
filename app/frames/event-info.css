@@ -393,7 +393,7 @@
 }
 }
 @media (height >= 1094.5px) {
-@container (width >= 326.485px) {
+@container (width >= 326.5px) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-xl); }
 }
 }
@@ -468,7 +468,7 @@
 }
 }
 @media (height >= 1126.5px) {
-@container (width >= 358.485px) {
+@container (width >= 358.5px) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-2xl); }
 }
 }
@@ -546,7 +546,7 @@
 }
 }
 @media (height >= 942.5px) {
-@container (width >= 326.485px) {
+@container (width >= 326.5px) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-xl); }
 }
 }
@@ -621,7 +621,7 @@
 }
 }
 @media (height >= 974.5px) {
-@container (width >= 358.485px) {
+@container (width >= 358.5px) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-2xl); }
 }
 }
@@ -790,7 +790,7 @@
 @media (48rem <= width < 64rem) and (height < 580.5px) and (orientation: landscape) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-md); }
 @media (height >= 750.5px) {
-@container (width >= 294.485px) {
+@container (width >= 294.5px) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-lg); }
 }
 }
@@ -833,7 +833,7 @@
 @media (48rem <= width < 64rem) and (height < 580.5px) and (orientation: landscape) and ((not (((width >= 342.485px) and (height >= 734.5px)) or ((width >= 343.046px) and (height >= 732.5px)) or ((width >= 348.75px) and (height >= 692.5px)) or ((width >= 358.781px) and (height >= 662.5px)) or ((width >= 361.968px) and (height >= 632.5px)) or ((width >= 362.281px) and (height >= 604.5px)) or ((width >= 430.328px) and (height >= 576.5px)) or ((width >= 463.984px) and (height >= 548.5px)))) and (((width >= 288.984px) and (height >= 730.5px)) or ((width >= 294.156px) and (height >= 728.5px)) or ((width >= 294.485px) and (height >= 702.5px)) or ((width >= 295.046px) and (height >= 700.5px)) or ((width >= 300.75px) and (height >= 660.5px)) or ((width >= 310.781px) and (height >= 630.5px)) or ((width >= 313.968px) and (height >= 600.5px)) or ((width >= 314.281px) and (height >= 572.5px)) or ((width >= 382.328px) and (height >= 544.5px)) or ((width >= 415.984px) and (height >= 516.5px)))) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-md); }
 @media (height >= 734.5px) {
-@container (width >= 294.485px) {
+@container (width >= 294.5px) {
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet { padding: var(--spacing-space-lg); }
 }
 }

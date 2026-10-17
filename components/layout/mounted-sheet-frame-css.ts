@@ -4,6 +4,7 @@ import {
   BREAKPOINT_REM,
   CAPS,
   type CardRectangle,
+  containerLowerBoundPx,
   type FitRegime,
   type FrameLayout,
   fitPadding,
@@ -407,7 +408,7 @@ function paddingRules(
         )
           continue;
         rules.push(
-          `@media (height >= ${lowerBoundPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${lowerBoundPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
+          `@media (height >= ${lowerBoundPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${containerLowerBoundPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
         );
       }
     }

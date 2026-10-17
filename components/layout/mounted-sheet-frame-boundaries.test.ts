@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { lowerBoundPx, upperBoundPx } from "./mounted-sheet-frame.ts";
+import {
+  containerLowerBoundPx,
+  lowerBoundPx,
+  type MeasuredFit,
+  upperBoundPx,
+} from "./mounted-sheet-frame.ts";
+import { mountedSheetFrameCss } from "./mounted-sheet-frame-css.ts";
 
 const GRID = 64;
 const px = (formatted: string) => Number.parseFloat(formatted);
@@ -85,4 +91,41 @@ test("the `<=` band is ceiled, never floored", () => {
   );
   assert.match(sheet, /\(height <= \$\{upperBoundPx\(/);
   assert.doesNotMatch(sheet, /\(height <= \$\{lowerBoundPx\(/);
+});
+
+/* A viewport on a fractional-dpr device need not sit on the layout grid, but a container's width does.
+   Snapping a container bound to the grid first makes its verdict exact for every container width. */
+test("a container bound gives every grid width the exact verdict, on or off the grid", () => {
+  for (let k = 0; k <= GRID * 3000; k++) {
+    for (const delta of [0, 1 / 1024, 1 / 256, 1 / 128, 3 / 256, 63 / 4096]) {
+      const t = k / GRID + delta;
+      const bound = px(containerLowerBoundPx(t));
+      for (let offset = -3; offset <= 3; offset++) {
+        const g = Math.round(t * GRID + offset) / GRID;
+        assert.equal(g >= bound, g >= t, `>= at ${t}, grid ${g}`);
+      }
+    }
+  }
+});
+
+test("the padding chain's container bound is the grid-snapped one", () => {
+  const regime = [{ minContentWidth: 120.3, contentHeight: 100 }];
+  const tier = { portrait: regime, landscape: regime };
+  const fit: MeasuredFit = {
+    section: "test-section",
+    regimes: { phone: tier, tablet: tier, laptop: tier, desktop: tier },
+  };
+  /* Every card width is the regime's 120.3 plus whole-pixel padding and reveal steps, so each bound
+     sits at .3 of a pixel -- off the 1/64 grid -- whichever padding the chain emits. */
+  const bounds = [
+    ...mountedSheetFrameCss(fit, false, "single").matchAll(
+      /@container \(width >= ([\d.]+px)\)/g,
+    ),
+  ].map((match) => match[1]);
+  assert.ok(bounds.length > 0, "no container bound emitted");
+  for (const bound of bounds) {
+    const unsnapped = 120.3 + Math.round(px(bound) - 120.3);
+    assert.notEqual(lowerBoundPx(unsnapped), containerLowerBoundPx(unsnapped));
+    assert.equal(bound, containerLowerBoundPx(unsnapped));
+  }
 });
