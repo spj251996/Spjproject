@@ -552,16 +552,14 @@ export function mountedSheetFrameCss(
     frameRules(scope, layout),
     ...classes.flatMap((windowClass) => [
       groundRules(windowClass, hero, layout, scope),
-      layout === "pair"
-        ? pairLayoutRules(windowClass, scope)
+      ...(layout === "pair"
+        ? [pairLayoutRules(windowClass, scope)]
         : hero
-          ? ""
-          : mountRules(windowClass, scope),
+          ? []
+          : [mountRules(windowClass, scope)]),
       paddingRules(windowClass, hero, layout, scope),
     ]),
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ].join("\n");
 }
 
 /* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets. A tall card

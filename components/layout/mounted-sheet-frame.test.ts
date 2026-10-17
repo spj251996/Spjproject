@@ -764,7 +764,7 @@ test("a non-hero single shows its mount in landscape at the laptop and desktop t
   ]);
 });
 
-test("the hero shows its mount in every window and orientation", () => {
+test("the hero keeps a reveal in every window and orientation", () => {
   let checked = 0;
   for (const windowClass of windowClasses(makeFit(), "single", true)) {
     const orientations: boolean[] = [];
@@ -785,9 +785,23 @@ test("the hero shows its mount in every window and orientation", () => {
    frame emits no mount rule for it — the stylesheet is unlayered, and any rule left here would beat the
    ladder. A non-hero card still needs its rules, to strip the fill where its mount does not show. */
 test("the hero's stylesheet emits no mount rule; a section's still does", () => {
-  const mountRule = /mounted-sheet-frame__mount \{ padding:[^}]*\}/;
-  assert.doesNotMatch(mountedSheetFrameCss(makeFit(), true), mountRule);
-  assert.match(mountedSheetFrameCss(makeFit(), false), mountRule);
+  const mountPaddingRules = (css: string) =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(
+      ([, selectors, body]) =>
+        selectors
+          .split(",")
+          .some((selector) =>
+            selector.trim().endsWith(".mounted-sheet-frame__mount"),
+          ) && /(^|;)\s*padding(-[a-z]+)?\s*:/.test(body),
+    );
+  assert.equal(
+    mountPaddingRules(mountedSheetFrameCss(makeFit(), true)).length,
+    0,
+  );
+  assert.ok(
+    mountPaddingRules(mountedSheetFrameCss(makeFit(), false)).length > 0,
+    "no mount rule parsed from the section's stylesheet",
+  );
 });
 
 test("the tier line and padding chain read the reveal the mount shows", () => {
