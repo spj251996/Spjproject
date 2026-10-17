@@ -439,17 +439,27 @@ function paddingRules(
   return rules.join("\n");
 }
 
+/* Centring is written as plain `center` in the rule, with `safe center` in a separate `@supports`
+   block after it. `safe` keeps content that outgrows its box on the side the page can scroll to, and an
+   engine without it in flex alignment drops the declaration, so plain `center` must stay in force there.
+   The pair cannot live in one rule: the CSS minifier merges `center; safe center` into `safe center`
+   alone, discarding the fallback. */
+const PLAIN_CENTRE = `justify-content: center;
+  align-items: center;`;
+
+function safeCentreBlock(...selectors: string[]): string {
+  return `@supports (justify-content: safe center) {
+${selectors.join(",\n")} {
+  justify-content: safe center;
+  align-items: safe center;
+}
+}`;
+}
+
 function frameRules(scope: string, layout: FrameLayout): string {
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = sheetSelector(scope, layout);
-
-  /* Plain `center` first is the fallback for an engine that drops the `safe` declaration. `safe`
-     keeps content that outgrows its box on the side the page can scroll to. */
-  const safeCentre = `justify-content: center;
-  justify-content: safe center;
-  align-items: center;
-  align-items: safe center;`;
 
   const pairBase =
     layout === "pair"
@@ -477,7 +487,7 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
   ${RING_SIDE}: var(${GROUND_INLINE});
   padding-block: var(${RING_BLOCK});
   padding-inline: var(${RING_SIDE});
-  ${safeCentre}
+  ${PLAIN_CENTRE}
 }
 @media (orientation: landscape) {
 ${scope} { ${RING_CAP}: var(--card-height-cap); ${RING_SIDE}: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(${RING_CAP})) / 2)); }
@@ -516,8 +526,9 @@ ${sheet} {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  ${safeCentre}
-}${pairBase}`;
+  ${PLAIN_CENTRE}
+}${pairBase}
+${safeCentreBlock(scope, sheet)}`;
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
@@ -581,10 +592,7 @@ export function tallFrameCss(): string {
   ${RING_SIDE}: var(${GROUND_INLINE});
   padding-block: var(${RING_BLOCK});
   padding-inline: var(${RING_SIDE});
-  justify-content: center;
-  justify-content: safe center;
-  align-items: center;
-  align-items: safe center;
+  ${PLAIN_CENTRE}
 }
 @media (orientation: landscape) {
 ${scope} { ${RING_SIDE}: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
@@ -612,11 +620,9 @@ ${sheet} {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  justify-content: safe center;
-  align-items: center;
-  align-items: safe center;
-}`;
+  ${PLAIN_CENTRE}
+}
+${safeCentreBlock(scope, sheet)}`;
 
   const perClass = tallWindowClasses(false).map((windowClass) => {
     const mountRule = (orientation: Orientation) => {

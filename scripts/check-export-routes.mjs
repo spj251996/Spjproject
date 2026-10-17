@@ -102,6 +102,31 @@ const SECTION_IDS = [
 ];
 const RETIRED_SECTION_IDS = ["contact"];
 
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/* Separates a stylesheet into the text outside every `@supports (justify-content: safe center)` block
+ * and the blocks themselves, matching the minifier's spacing and parentheses tolerantly. */
+function splitSupports(css) {
+  const opener =
+    /@supports\s*\(?\s*\(?\s*justify-content\s*:\s*safe center\s*\)?\s*\)?\s*\{/g;
+  const blocks = [];
+  let outside = "";
+  let cursor = 0;
+  for (const match of css.matchAll(opener)) {
+    if (match.index < cursor) continue;
+    outside += css.slice(cursor, match.index);
+    let depth = 0;
+    let end = match.index;
+    for (; end < css.length; end++) {
+      if (css[end] === "{") depth++;
+      if (css[end] === "}" && --depth === 0) break;
+    }
+    blocks.push(css.slice(match.index, end + 1));
+    cursor = end + 1;
+  }
+  return { outside: outside + css.slice(cursor), blocks };
+}
+
 let failed = false;
 
 if (SECTION_COMPONENTS.length !== 5) {
@@ -194,19 +219,50 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
     console.error(`FAIL ${label}: links no readable stylesheet`);
     failed = true;
   } else {
+    /* The scope alone is not frame-only (`app/invite.css` names the invite's), but a child combinator
+     * onto the frame's box is, in any spacing the minifier leaves. */
     const missingScopes = frames.filter(
-      (name) => !linkedCss.includes(frameScope(name)),
+      (name) =>
+        !new RegExp(
+          `\\.${escapeRegExp(frameScope(name))}\\s*>\\s*\\.mounted-sheet-frame__box`,
+        ).test(linkedCss),
     );
     console.log(
       `${missingScopes.length === 0 ? "ok  " : "FAIL"} ${label}: linked CSS (${linkedHrefs.length} sheets) carries ${frames.length - missingScopes.length}/${frames.length} frame scopes${missingScopes.length ? ` -- missing ${missingScopes}` : ""}`,
     );
     if (missingScopes.length > 0) failed = true;
 
-    const safeCenter = (linkedCss.match(/safe center/g) ?? []).length;
+    /* The minifier merges `center; safe center` in one rule into `safe center` alone, which strips the
+     * fallback an engine without `safe` needs. The form that ships is a plain `center` rule per scope
+     * plus `safe center` inside `@supports` only. */
+    const { outside, blocks } = splitSupports(linkedCss);
     console.log(
-      `${safeCenter > 0 ? "ok  " : "FAIL"} ${label}: ${safeCenter} \`safe center\` fallback(s) survived minification`,
+      `${blocks.length > 0 ? "ok  " : "FAIL"} ${label}: ${blocks.length} \`@supports (justify-content: safe center)\` block(s)`,
     );
-    if (safeCenter === 0) failed = true;
+    if (blocks.length === 0) failed = true;
+
+    const baseRules = [...outside.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+    const lackPlain = frames.filter((name) => {
+      const scope = `.${frameScope(name)}`;
+      return !baseRules.some(
+        ([, selectors, body]) =>
+          selectors.split(",").some((selector) => selector.trim() === scope) &&
+          /justify-content:\s*center\b/.test(body) &&
+          /align-items:\s*center\b/.test(body),
+      );
+    });
+    console.log(
+      `${lackPlain.length === 0 ? "ok  " : "FAIL"} ${label}: ${frames.length - lackPlain.length}/${frames.length} frame scopes carry a plain center base rule${lackPlain.length ? ` -- missing ${lackPlain}` : ""}`,
+    );
+    if (lackPlain.length > 0) failed = true;
+
+    const strayCount = (
+      outside.match(/(justify-content|align-items):\s*safe center/g) ?? []
+    ).length;
+    console.log(
+      `${strayCount === 0 ? "ok  " : "FAIL"} ${label}: no \`safe center\` outside @supports${strayCount ? ` (${strayCount} occurrences)` : ""}`,
+    );
+    if (strayCount > 0) failed = true;
   }
 
   if (!sections) continue;

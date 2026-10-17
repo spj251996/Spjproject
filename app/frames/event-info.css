@@ -8,9 +8,7 @@
   padding-block: var(--ring-block);
   padding-inline: var(--ring-side);
   justify-content: center;
-  justify-content: safe center;
   align-items: center;
-  align-items: safe center;
 }
 @media (orientation: landscape) {
 .mounted-sheet-frame--event-info { --ring-cap: var(--card-height-cap); --ring-side: max(calc(2 * var(--mounted-sheet-ground)), calc((100svh - var(--ring-cap)) / 2)); }
@@ -50,9 +48,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  justify-content: safe center;
   align-items: center;
-  align-items: safe center;
 }
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf {
   flex: none;
@@ -60,6 +56,13 @@
   flex-direction: column;
 }
 .mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__crease { display: none; }
+@supports (justify-content: safe center) {
+.mounted-sheet-frame--event-info,
+.mounted-sheet-frame--event-info > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__leaf > .mounted-sheet-frame__sheet {
+  justify-content: safe center;
+  align-items: safe center;
+}
+}
 @media (width < 48rem) {
 .mounted-sheet-frame--event-info { --mounted-sheet-ground: var(--spacing-space-sm); --ground-block: var(--spacing-space-sm); --ground-inline: var(--spacing-space-sm); }
 }
