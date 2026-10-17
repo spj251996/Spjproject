@@ -33,9 +33,9 @@ const MOUNT_SHADOW = "shadow-mount";
 
 /* Unmounted is the base, so a non-hero section never paints a mount and then loses it. The reveal
    ladder's four rungs, in `{spacing.*}` utilities: `{reveal.base}` · `{reveal.md}` · `{reveal.lg}` ·
-   `{reveal.xl}`. Only the hero reaches the first — and on a fitted card the hero's rungs come from
-   here rather than from the generated stylesheet — an ordinary section has no mount below
-   `{breakpoints.md}` to reveal one on. */
+   `{reveal.xl}`. Only the hero reaches the first — an ordinary section has no mount below
+   `{breakpoints.md}` to reveal one on. On a fitted card the hero's rungs come from here rather than
+   from the generated stylesheet. */
 const MOUNT_REVEAL = {
   hero: "p-space-sm md:p-space-xs lg:p-space-sm xl:p-space-md",
   section: "p-0 md:p-space-xs lg:p-space-sm xl:p-space-md",
@@ -137,8 +137,9 @@ export function MountedSheet({
   }
 
   if (fit !== undefined) {
-    /* The frame's stylesheet sets the reveal and padding and removes the mount's fill where it does
-       not show, so neither element carries a padding utility. */
+    /* The frame's stylesheet sets the sheet's padding and a section's reveal, stripping its fill
+       where it does not show. The hero's reveal is the ladder on its mount instead: the stylesheet
+       is unlayered, so a rule there would beat the ladder's utilities. */
     return (
       <>
         <style>{mountedSheetFrameCss(fit, hero, "single")}</style>

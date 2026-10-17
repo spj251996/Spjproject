@@ -17,11 +17,12 @@ const source = readFileSync(
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
 
-/* A card's paint follows its role (DESIGN.md -> Foundations -> Layout -> mounted-sheet -> The card's two
-   states), and the paint lives in THIS file's utility strings rather than in the generated frame
-   stylesheet: the generated stylesheet only ever STRIPS a section's fill where its mount does not show, and emits nothing for the hero's mount. So the role selects
-   the paint here, and a framed branch that named a paint utility INLINE would go on painting the hero
-   while every other assertion below still passed.
+/* A card's paint follows its role (DESIGN.md -> Foundations -> Layout -> mounted-sheet -> The card's
+   two states), and the paint lives in THIS file's utility strings rather than in the generated frame
+   stylesheet: the generated stylesheet only ever STRIPS a section's fill where its mount does not
+   show, and emits nothing for the hero's mount. So the role selects the paint here, and a framed
+   branch that named a paint utility INLINE would go on painting the hero while every other
+   assertion below still passed.
 
    Asserted on the framed branches rather than by counting occurrences file-wide: `MOUNT_REVEAL_FILL`
    legitimately names `bg-surface-mount` of its own, for the unfitted specimen path's reveal ladder, and
@@ -213,8 +214,8 @@ test("the hero's reveal ladder equals revealFor in every window the hero can be 
 });
 
 /* The fitted branch must actually USE the ladder for the hero, and only for the hero: a section's
-   reveal stays the generator's, which strips its fill where its mount does not show. The box diff in
-   the H1 plan is the behavioural proof; this pins the wiring against a later edit. */
+   reveal stays the generator's, which strips its fill where its mount does not show. The ladder test
+   above pins the values; this pins the wiring against a later edit. */
 test("the fitted hero's mount carries the reveal ladder, and a section's does not", () => {
   const fitted = source.slice(source.indexOf("\n  if (fit !== undefined)"));
   const mountLine = fitted
