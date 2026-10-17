@@ -19,7 +19,7 @@
     "validate:content": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON content/verify.ts",
     "verify:section": "node scripts/verify-section.mjs",
     "measure:fit": "node scripts/measure-section-fit.mjs",
-    "check:export": "node scripts/check-export-routes.mjs",
+    "check:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-export-routes.mjs",
     "check:retire": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/retire-register.test.mjs",
     "check:thread": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-thread-clearance.mjs",
     "check:thread-joins": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-thread-joins.mjs",

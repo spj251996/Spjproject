@@ -10,6 +10,8 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { FRAME_SHEETS } from "../app/frame-sheets.ts";
+import { topLevelRules } from "./css-top-level-rules.mjs";
 
 /* Measured on the export before this gate was written: the trunk's no-JS fallback, the trunk's live
  * root, and the card thread's. Not a remembered figure. */
@@ -236,23 +238,52 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
      * fallback an engine without `safe` needs. The form that ships is a plain `center` rule per scope
      * plus `safe center` inside `@supports` only. */
     const { outside, blocks } = splitSupports(linkedCss);
-    console.log(
-      `${blocks.length > 0 ? "ok  " : "FAIL"} ${label}: ${blocks.length} \`@supports (justify-content: safe center)\` block(s)`,
+    const safeSelectors = blocks.flatMap((block) =>
+      topLevelRules(block.slice(block.indexOf("{") + 1, -1)).flatMap(
+        ({ selectors }) => selectors,
+      ),
     );
-    if (blocks.length === 0) failed = true;
+    const lackSafe = frames.filter(
+      (name) => !safeSelectors.includes(`.${frameScope(name)}`),
+    );
+    console.log(
+      `${lackSafe.length === 0 ? "ok  " : "FAIL"} ${label}: ${frames.length - lackSafe.length}/${frames.length} frame scopes sit in a \`@supports (justify-content: safe center)\` block${lackSafe.length ? ` -- missing ${lackSafe}` : ""}`,
+    );
+    if (lackSafe.length > 0) failed = true;
 
-    const baseRules = [...outside.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
-    const lackPlain = frames.filter((name) => {
-      const scope = `.${frameScope(name)}`;
-      return !baseRules.some(
-        ([, selectors, body]) =>
-          selectors.split(",").some((selector) => selector.trim() === scope) &&
+    /* Each frame's own scope rule and its sheet rule centre in plain form. Only an unconditional,
+     * top-level rule whose selector list holds the exact selector counts: a descendant form
+     * (`.scope .piece`) or a rule inside an at-rule is not the frame's own. The sheet's selector is
+     * the one `sheetSelector` emits for the frame's layout, so a pair's leaf form on a single frame
+     * (or the reverse) fails. */
+    const baseRules = topLevelRules(outside);
+    const centresPlain = (selector) =>
+      baseRules.some(
+        ({ selectors, body }) =>
+          selectors.includes(selector) &&
           /justify-content:\s*center\b/.test(body) &&
           /align-items:\s*center\b/.test(body),
       );
+    const lackPlain = frames.flatMap((name) => {
+      const entry = FRAME_SHEETS.find((sheet) => sheet.name === name);
+      if (entry === undefined) {
+        console.error(`FAIL: frame "${name}" has no entry in FRAME_SHEETS`);
+        failed = true;
+        return [];
+      }
+      const scope = `.${frameScope(name)}`;
+      const mount = `${scope}>.mounted-sheet-frame__box>.mounted-sheet-frame__mount`;
+      const sheet =
+        entry.layout === "pair"
+          ? `${mount}>.mounted-sheet-frame__leaf>.mounted-sheet-frame__sheet`
+          : `${mount}>.mounted-sheet-frame__sheet`;
+      const missing = [];
+      if (!centresPlain(scope)) missing.push(`${name} scope`);
+      if (!centresPlain(sheet)) missing.push(`${name} sheet`);
+      return missing;
     });
     console.log(
-      `${lackPlain.length === 0 ? "ok  " : "FAIL"} ${label}: ${frames.length - lackPlain.length}/${frames.length} frame scopes carry a plain center base rule${lackPlain.length ? ` -- missing ${lackPlain}` : ""}`,
+      `${lackPlain.length === 0 ? "ok  " : "FAIL"} ${label}: every frame scope and sheet carries a plain center base rule${lackPlain.length ? ` -- missing ${lackPlain}` : ""}`,
     );
     if (lackPlain.length > 0) failed = true;
 
