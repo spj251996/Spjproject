@@ -121,6 +121,21 @@ export function verifyAssetPaths(
   );
 }
 
+/** A ritual-source listing split into the root-level files and the ritual directories. A dot-directory
+    (`.git`, an editor's cache) is neither: it is skipped rather than reported as an unknown ritual. */
+export function splitRitualEntries(
+  entries: { name: string; isDirectory(): boolean }[],
+): { rootFiles: string[]; directories: string[] } {
+  return {
+    rootFiles: entries
+      .filter((entry) => !entry.isDirectory())
+      .map((entry) => entry.name),
+    directories: entries
+      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+      .map((entry) => entry.name),
+  };
+}
+
 const fileExists = (assetPath: string): boolean =>
   existsSync(new URL(`../${diskPath(assetPath)}`, import.meta.url));
 
@@ -136,16 +151,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ? readdirSync(ritualSources, { withFileTypes: true })
     : [];
   const ritualIds = rituals.map((ritual) => ritual.id);
-  verifyRitualRootFiles(
-    ritualEntries
-      .filter((entry) => !entry.isDirectory())
-      .map((entry) => entry.name),
-    ritualIds,
-  );
-  verifyRitualDirectories(
-    ritualEntries
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-      .map((entry) => entry.name),
-    ritualIds,
-  );
+  const { rootFiles, directories } = splitRitualEntries(ritualEntries);
+  verifyRitualRootFiles(rootFiles, ritualIds);
+  verifyRitualDirectories(directories, ritualIds);
 }

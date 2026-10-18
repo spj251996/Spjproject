@@ -367,3 +367,60 @@ test("each section's handheld passage is required, and so is its attribution", (
     /wishes\.handheldPassageAttribution must not be empty/,
   );
 });
+
+/* One case per `required()` and `claimId()` guard that no other test reaches, so deleting any one of
+   them turns this file red. */
+test("rejects every other empty required field, naming it", () => {
+  const cases: [string, () => unknown, RegExp][] = [
+    [
+      "segment label",
+      () => validateEvents([event({ segments: [segment({ label: "" })] })]),
+      /events\[0\]\.segments\[0\]\.label must not be empty/,
+    ],
+    [
+      "member relationship",
+      () =>
+        validateFamilyGroups(
+          pair({ members: [member({ relationship: " " })] }),
+        ),
+      /familyGroups\[0\]\.members\[0\]\.relationship must not be empty/,
+    ],
+    [
+      "group family name",
+      () => validateFamilyGroups(pair({ familyName: "" })),
+      /familyGroups\[0\]\.familyName must not be empty/,
+    ],
+    [
+      "invite passage attribution",
+      () => validateInvite({ ...invite, passageAttribution: "" }),
+      /invite\.passageAttribution must not be empty/,
+    ],
+    [
+      "wishes passage attribution",
+      () => validateWishes({ ...wishes, passageAttribution: " " }),
+      /wishes\.passageAttribution must not be empty/,
+    ],
+    [
+      "wishes couple names",
+      () => validateWishes({ ...wishes, coupleNames: "" }),
+      /wishes\.coupleNames must not be empty/,
+    ],
+  ];
+  for (const [name, validate, message] of cases) {
+    assert.throws(validate, message, `${name} accepted an empty string`);
+  }
+});
+
+test("rejects a duplicate event id", () => {
+  assert.throws(
+    () => validateEvents([event(), event()]),
+    /events\[1\]\.id duplicates an earlier id \("e"\)/,
+  );
+});
+
+test("rejects a duplicate family group id", () => {
+  assert.throws(
+    () => validateFamilyGroups([group(), group({ side: "groom" })]),
+    /familyGroups\[1\]\.id duplicates an earlier id \("g"\)/,
+  );
+});
