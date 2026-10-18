@@ -22,8 +22,8 @@ const serif = Playfair_Display({
    citation are set in italic, and a browser-obliqued normal face reads as a slanted regular at that
    size. Libre Baskerville ships 400, 700 and 400 italic and nothing between, so a role set in it
    has two weights and no middle: CSS resolves an unavailable 500 down to 400 and a 600 up to 700
-   rather than synthesising either. That is why the eyebrow's step to 700 (owner, 2026-10-07) was
-   the whole step, and why a later "soften it slightly" has nothing here to land on. */
+   rather than synthesising either. That is why the eyebrow's step to 700 was the whole step, and
+   why a later "soften it slightly" has nothing here to land on. */
 const sans = Libre_Baskerville({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -36,20 +36,10 @@ const sans = Libre_Baskerville({
 /* The three Latin faces carry no Malayalam glyphs, so the ritual titles' second script needs a
    family of its own.
 
-   ONE WEIGHT, AND IT IS 600 — settled by the owner on a render, 2026-10-10. The design still uses
-   exactly one weight; which one changed. "400 only" was right while the Malayalam shared a line
-   with the English title; Phase 7 moves it above the title, where it carries the line, and at that
-   job it wanted the heavier cut.
-
-   WHY BOTH WERE EVER LOADED, and why the cost is back to one cut's: judging 400 against a
-   SYNTHETIC bold is not a fair comparison — synthesis smears a conjunct rather than thickening it
-   — so a real 600 had to ship through the review. Asking for TWO weights made the loader fetch the
-   VARIABLE face, the whole `wght` axis, rather than two static instances: the three subset files
-   went 41,172 → 105,256 bytes, +64KB with +36KB of it on every route's critical path. Asking for
-   one again returns a single static instance, so that whole cost comes back off: the three subset
-   files now measure 23,056 + 8,036 + 12,988 = **44,080 bytes**, against 105,256 with both weights
-   and 41,172 when the one cut was 400. So the settled weight costs 2,908 bytes more than the cut
-   it replaces and 61,176 bytes LESS than the review did. Measured by building all three ways.
+   600 only: the Malayalam shares the title's line, after the English, and carries it at that
+   weight. ONE WEIGHT, NEVER TWO: asking `next/font` for two weights fetches the VARIABLE face (the
+   whole `wght` axis) rather than two static instances, which more than doubles the bytes on every
+   route's critical path. One weight returns a single static cut.
 
    Subsetting to the ~19 codepoints the five titles use would reach 3-6KB and was REJECTED: it
    breaks silently the day a title changes or a sixth ritual lands, and a missing glyph renders as
@@ -68,9 +58,8 @@ const malayalam = Noto_Serif_Malayalam({
 const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
 
 /* THE OPENING SEQUENCE'S GATE. The sequence is an ENTRANCE to the invite; a reader who reloads
-   part-way down the page is not arriving, and re-running it hides the thread they are actually
-   looking at for the whole 1600ms (`.pageRoot` covers all of `<main>`, so its fade blanks the
-   thread in every section at once, not just the invite's).
+   part-way down the page is not arriving, so the sequence does not run for them (its type lands at
+   `--opening-type-end`).
 
    WHY AN INLINE SCRIPT RATHER THAN AN EFFECT, and why it waits for `DOMContentLoaded`: the browser
    restores a reloaded page's scroll position ASYNCHRONOUSLY, so a check that runs as this script is
@@ -88,8 +77,7 @@ const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
    The attribute SUBTRACTS the animation rather than adding an override: every rule it gates stops
    matching, so each layer sits in its own un-animated base state — which is already the finished
    state, and is exactly where reduced motion and a no-JS reader land. One code path, three ways in.
-   A reader with JS disabled never sets it and keeps today's CSS-only sequence, which is the only
-   thing that ever animates their static fallback thread. */
+   A reader with JS disabled never sets it and keeps today's CSS-only sequence. */
 const SKIP_OPENING_WHEN_SCROLLED = `addEventListener("DOMContentLoaded",function(){if(window.scrollY>0){document.documentElement.dataset.openingSkipped="";}});`;
 
 export const metadata: Metadata = {
@@ -108,7 +96,7 @@ export const metadata: Metadata = {
     /* Split from the document title deliberately: "…are getting married" is a good preview headline
        and a clumsy browser-tab label. The card above it already carries the couple's drawn names, so the title carries the occasion and the description carries the dates and the place —
        together the pair holds the names, both dates and the place (PROJECT.md → Link Sharing). The
-       card shows the names and the dates; this adds the place (owner, 2026-10-14). */
+       card shows the names and the dates; this adds the place. */
     title: "Sebastian & Flemy are getting married",
     description: "You’re invited — 4th & 9th January 2027, Kerala",
     images: [

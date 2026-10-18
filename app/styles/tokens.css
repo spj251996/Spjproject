@@ -172,10 +172,10 @@
   /* The invite date block's bracket geometry — off the spacing scale by the exception in DESIGN.md ->
      Cross-Cutting Rules, because the figure's parts hold a fixed relation to each other rather than
      to the system. Each is the reference's ratio against the label's cap height, resolved to whole
-     pixels per tier: the bracket is 5.00 caps, the labels' baseline sits 1.56 above the day's, and
-     the weekday's pull is one value at every tier; the other two step with `--text-date-label`.
-     The pull was -5px, landing the weekday's baseline 1.44 caps above the day's cap; the owner opened
-     both inner gaps by `space-2xs` (2026-10-11), so it is +3 and the place takes the same 8px below. */
+     pixels per tier: the bracket is 5.00 caps and the labels' baseline sits 1.56 above the day's, both
+     stepping with `--text-date-label`. The weekday's pull is `--date-open` minus 5px, so it is
+     -1 / +3 / +2 / +3 across the phone and three larger tiers (`--date-open` 4 / 8 / 7 / 8), and the
+     place takes `--date-open` below. */
   --rule-date-bracket: 42px;
   --date-label-lift: 13px;
   /* Both inner gaps of the date block open by this (owner, 2026-10-11): 8px from the tablet up, 7px on
@@ -205,79 +205,33 @@
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
      ends). */
   --length-thread-taper: 24px;
-  /* THE RE-TRACE'S CADENCE (DESIGN.md -> Thread -> The re-trace): how long one loop of the lit segment
-     takes, and how long the thread must have been still before its cue loops. Both are exceptions to
-     the motion scale, set against the thread. Read by name from script, not by a CSS animation,
-     because the segment's length and gradient change every frame. The owner's picks (2026-10-02). */
+  /* THE RE-TRACE'S CADENCE (DESIGN.md -> Thread -> The re-trace): how long one loop of the lit
+     segment takes when no speed is set, and how long the thread must have been still before its cue
+     loops. Exceptions to the motion scale, read by name from script because the segment's length and
+     gradient change every frame. */
   --retrace-duration: 3.2s;
   --retrace-settle: 1500ms;
-  /* How many whole loops the LONGEST stretch on the page runs once the page has been still for the
-     settle interval, before everything stops until the next scroll. A count and not a time, so the
-     pace can change without changing how long the page stays busy.
-
-     THE OWNER'S PICK, 2026-10-05: "max looping duration as 4 loops on biggest thread section", so
-     this is the budget for the longest stretch and every shorter one fits WHOLE loops into the same
-     window (`page-thread.tsx` -> `periodFor`). It supersedes their 2026-10-02 "at least 5 times
-     before stopping" only for that single longest stretch: every other stretch now runs MORE than
-     five, 7 to 41 of them at `wide` and 6 to 11 at `tall`, because its loop is shorter. */
+  /* How many whole loops the LONGEST stretch runs once the page has been still for the settle
+     interval, before everything stops until the next scroll. A count, not a time, so the pace can
+     change without changing how long the page stays busy; every shorter stretch fits whole loops into
+     the same window (`page-thread.tsx` -> `periodFor`). */
   --retrace-loops: 4;
-  /* THE RE-TRACE'S SPEED, in px of thread per second. A loop of fixed duration makes the light's
-     speed depend on how long the stretch is -- every stretch finishes in the same 3.2s, so a long one
-     travels several times faster than a short one. The owner judged that on a render, 2026-10-05:
-     "lets decouple speed and length, its not calm retrace but jarring effect". With a speed set, each
-     stretch's loop lasts as long as its own length needs and every lit stretch moves at one rate.
-     The budget stays a COUNT of whole loops, so the longest stretch on the page now bounds how long
-     it can stay busy. 0 keeps the fixed-duration behaviour exactly.
-
-     845 IS THE INVITE'S OWN SPEED TODAY, which is the one the owner picked by eye: its stretch is
-     1487px at `wide` and a 3.2s loop covers it in 1.76s, so 845px/s is what they have been watching
-     all along -- now every stretch moves at it instead of only that one. (At `tall` the invite is
-     1154px, so the same loop reads 656px/s there; 845 is the `wide` figure they judged.) */
+  /* THE RE-TRACE'S SPEED, in px of thread per second, so every lit stretch moves at one rate: a
+     fixed-duration loop makes a long stretch travel several times faster than a short one. 0 keeps
+     the fixed-duration behaviour. 845 is the invite's speed at `wide` under a 3.2s loop, the pace the
+     owner judged by eye. */
   --retrace-speed: 845;
-  /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. Measured 2026-10-05: `wishes.top` EQUALS the page's own
-     maximum scroll at every band (4100 at `wide`, 6780 at `tall`), because wishes occupies exactly the
-     final viewport — so its card is never scrolled THROUGH and the draw chain handed it only what the
-     previous section left over (100px of 4100 at `wide`, 524px of 6780 at `tall`). That is why it drew
-     too fast to read as a draw, and why the drawing head stayed lit over the closing taper at any
-     resting position short of the exact last pixel.
-
-     BOTH ARE FRACTIONS OF THE VIEWPORT'S HEIGHT, not px, so one value holds at every band — the scroll
-     available between wishes' card entering the viewport and the page's end is exactly one viewport
-     height, which is also this span's natural ceiling. `span` is how much of that the stretch draws
-     across; `finish` is how far before the page's end it completes, so the head retires while the
-     reader is still at the bottom and the taper is visible at rest.
-
-     The scroll they claim comes out of the earlier sections' shared budget — the page's total is
-     fixed — so raising `span` paces the closing stretch by compressing everything above it.
-     0 restores the pre-2026-10-05 behaviour. Read by name from script, never by a CSS rule.
-
-     THE OWNER'S PICKS, SET ON A RENDER 2026-10-05. `span` 0.2 roughly doubles the closing stretch's
-     window (68px to 139px at `wide`). `finish` 0.08 is the one that actually retires the drawing
-     head: it buys ~56px at `wide` and ~68px at `tall` of tolerance for coming to rest SHORT of the
-     page's last pixel, which is what a reader normally does and what left the head sitting on the
-     taper in the owner's own screenshot. Measured at both bands — stopping within that distance
-     leaves the stretch 100% drawn, the head retired and all 16 taper runs visible; outside it the
-     head is correctly still drawing, because there genuinely is thread left. */
-  /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL. The owner, 2026-10-05: "i want the thread
-     on section to draw a bit more slowly so that when page is scrolled fast to end it doesnt appear
-     like thread just popped."
-
-     The drawn length is a pure function of scroll position, so a fling to the bottom paints the
-     finished thread on the very next frame — there is no time in the mapping at all. This is the time
-     constant of the follower that eases toward that target instead of snapping to it (`page-thread.tsx`
-     -> `createCatchUp`), so a fast scroll still shows the line travelling. It is a FOLLOWER, not a
-     delay: the thread always ends at the length the scroll position means.
-
-     An exception to the motion scale, like the re-trace's own two values, because it is a response
-     rate rather than a transition. 0 paints immediately and starts no loop, which is the
-     pre-2026-10-05 behaviour exactly.
-
-     THE OWNER'S PICK, SET ON A RENDER 2026-10-05: 0.4s. It is a DURATION, not a time constant — the
-     follower is a fixed-duration ease precisely because an exponential never arrives, and the first
-     attempt at one left the weave 99.69% drawn 2.5s after the scroll stopped, with the head still
-     lit over the taper (`page-thread.tsx` -> `createCatchUp` carries that measurement). Measured at
-     0.4s: a fling to the page bottom takes the trunk 10% -> 100% over ~400ms instead of in a single
-     frame, and the weave follows once the trunk is done, so the page draws in reading order. */
+  /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. `wishes.top` equals the page's maximum scroll, so
+     Wishes' card is never scrolled through and would otherwise draw only what the previous section
+     left over. Both values are fractions of the viewport's height, so one value holds at every band:
+     `span` is how much of the final viewport the stretch draws across, and `finish` is how far before
+     the page's end it completes, so the head retires while a reader resting just short of the bottom
+     still sees the taper. Their scroll comes out of the earlier sections' shared budget. Read by name
+     from script. */
+  /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL, so a fling shows the line travelling
+     rather than popping in. A follower, not a delay: the thread always ends at the length the scroll
+     position means. A fixed DURATION, not a time constant, because an exponential never arrives and
+     the head would never retire. 0 paints immediately. */
   --thread-catchup: 0.4s;
   --thread-terminal-span: 0.2;
   --thread-terminal-finish: 0.08;

@@ -6,7 +6,9 @@
   display: flex;
   justify-content: center;
   /* Phone only: the 96px block band leaves the card 160px less height. This gap and the three in
-     `page.tsx` halve together to give 64px of it back — the drawing's smaller width gives the rest.
+     `app/_sections/wishes.tsx` (above the passage, the names and the sign-off: `mt-space-sm` on a
+     phone, `md:mt-space-lg` up) halve together to give 64px of it back — the drawing's smaller width
+     gives the rest.
      Restored at the tablet step, where the 172px band still fits. */
   margin-top: var(--spacing-space-sm);
 }
@@ -22,11 +24,9 @@
   width: 12.1875rem;
   aspect-ratio: var(--wishes-figure-ratio);
   pointer-events: none;
-  /* Positioned with no offsets, so it costs no layout and creates no stacking context: it is here
-     only so the drawing paints in the positioned layer, where the thread's two woven copies are.
-     Stacked, an unpositioned drawing would have both copies in front of it and there would be no
-     weave. Side by side (below) it is `absolute` for its own reasons and this is redundant. It is
-     also the box the save cover's `inset: 0` resolves against, in both layouts. */
+  /* Positioned with no offsets, so it costs no layout and creates no stacking context: it is the
+     box the save cover's `inset: 0` resolves against, in both layouts. Side by side (below) it is
+     `absolute` for its own reasons. */
   position: relative;
 }
 
@@ -67,13 +67,10 @@
     align-items: center;
   }
 
-  /* Text only. `[aria-hidden]` excludes the thread's two woven copies: this rule's `position` and
-     `z-index` would take them out of `absolute` into the flow and put both on the same side of the
-     illustration, which is the whole mechanism. Leaving them at `auto` is also what keeps the
-     thread behind the type here. `style` excludes each copy's own generated sheet, which sits
-     between them — inert while it is `display: none`, a stacking context across the weave if it
-     ever is not. */
-  .stack > *:not(.figureCol):not([aria-hidden]):not(style) {
+  /* Text only. `[aria-hidden]` excludes the card thread: this rule's `position` and `z-index` would
+     take it out of `absolute` into the flow. Leaving it at `auto` while the text takes `z-index: 1`
+     keeps the thread behind the type here. */
+  .stack > *:not(.figureCol):not([aria-hidden]) {
     grid-column: 1;
     justify-self: center;
     position: relative;

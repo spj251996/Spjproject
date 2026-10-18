@@ -9,23 +9,11 @@
   padding: 0;
   width: 100%;
 
-  /* ONE COLUMN, FULL WIDTH, AT EVERY TIER (owner, 2026-10-10). This REPLACES the alternating band
-     above 1024px, where blocks took 80% of the track and odd and even rows leaned to opposite
-     sides — the hug. Both go: every ritual's block is now the full measure and every ritual's text
-     starts at the same edge, at every width.
-
-     WHAT THE ALTERNATION WAS BUYING, so nobody reinstates it by accident: offset rows are already
-     separated horizontally, which is why they needed less vertical room than stacked ones and why
-     the gap was two values. With one column at every tier that reason is gone, so the gap is ONE
-     value too.
-
-     `space-xl` (48px) is a REDUCTION at the phone tier, which is what the owner asked for — it
-     was a raw 64px, off the spacing scale — and a small increase above 1024px, where it was 32.
-     Identical at every tier is the point: the rhythm between rituals reads the same whatever the
-     window.
-
-     The photo height stays per tier and is read back out by `photo-strip`, so this is still the
-     single place the 1024px threshold is written and no JavaScript restates it. */
+  /* ONE COLUMN, FULL WIDTH, AT EVERY TIER, so the gap between rituals is one value: offset rows
+     needed less vertical room than stacked ones, which is the only reason the gap was ever two
+     values, so do not reinstate one without the other. The photo height stays per tier and is read
+     back out by `photo-strip`, so this is the single place the 1024px threshold is written and no
+     JavaScript restates it. */
   --celebrations-block-width: 100%;
   --celebrations-photo-height: 120px;
   gap: var(--spacing-space-xl);
@@ -37,10 +25,7 @@
   }
 }
 
-/* Each ritual's block takes the full measure. `justify-content` stays declared rather than being
-   dropped with the alternation: a flex row with one full-width child has nothing to justify, so
-   this is the statement that there is no longer a side to lean to — and the row is still never
-   REVERSED, which would reverse the sprig too and render `മധുരംവെപ്പ് Wedding Eve 🌿` (owner). */
+/* The row is never REVERSED: that would reverse the sprig too and render `മധുരംവെപ്പ് Wedding Eve 🌿`. */
 .row {
   display: flex;
   justify-content: flex-start;
@@ -50,11 +35,8 @@
   width: var(--celebrations-block-width);
 }
 
-/* EVERY RITUAL IS LEFT-ALIGNED, AT EVERY TIER (owner and couple, 2026-10-11, on `/preview`, over
-   justified). It replaces the centred column of 2026-10-10, whose case — the ritual was the page's
-   only eyebrow-led block not centring its ornament — went when the ornament became one leading sprig
-   on the title's own line. The photographs lean the other way on purpose: their wrapper is `text-end`
-   in the section file.
+/* Every ritual is left-aligned at every tier; the photographs lean the other way on purpose (their
+   wrapper is `text-end` in the section file).
 
    JUSTIFIED WAS OFFERED AGAIN AND NOT CHOSEN. Its measured cost stands: at 24-37 characters a line
    and a 3.23-3.75px natural word space, the widest gap stretched to 14.75px on two of nine lines. */

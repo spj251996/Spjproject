@@ -19,14 +19,7 @@ import { SprigOrnament } from "@/components/ui/sprig-ornament";
    Nothing redirects. A timed redirect is a time limit, and none of the exceptions in the site's
    conformance target cover a courtesy one — the guest leaves by the action.
 
-   THIS SCREEN CARRIES NO THREAD, and that is deliberate (2026-10-07). It briefly carried a closed
-   replay of the invite's route drawn on a timer, which could not work in the normalised 0-1 box it
-   was drawn in: a `1.6px` stroke is read as 1.6 USER-SPACE units there, so the screen painted solid
-   red, and fixing that moved the dash into screen space where it collapsed to a pixel. Drawing it
-   properly needs the page thread's own measured machinery on a screen almost nobody reaches, so the
-   thread was retired instead — DESIGN.md → Not found carries the full reasoning. If one is ever
-   wanted back, it has to measure this section and draw in real pixels; a normalised box is what
-   caused every one of those failures. */
+   This screen carries no thread; DESIGN.md → Not found has the reasoning. */
 export default function NotFound() {
   return (
     <main className="flex flex-1 flex-col overflow-y-clip">

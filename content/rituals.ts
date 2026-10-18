@@ -14,8 +14,9 @@ import { validateRituals } from "./validate.ts";
    THE PHOTOGRAPHS ARE NOT LISTED HERE. Since Phase 8 a ritual gains its photographs by dropping
    files into `assets/rituals/<this ritual's id>/`; the build derives the deliveries and the
    dimensions into `content/ritual-photos.generated.ts`, and that module is the only list. An
-   `images` array here would be a second hand-maintained copy of it. Strip order is the files'
-   name order there, so renaming one to `01-...` makes it lead.
+   `images` array here would be a second hand-maintained copy of it. Strip order is by date and time
+   taken, with the file name as the tiebreak and for undated files, so renaming a file does not move
+   it.
 
    EVERY RITUAL GAINS ITS REAL PHOTOGRAPHS IN STAGES AFTER THE EVENTS (owner, 2026-10-14); the test
    photographs came out the same day. Each folder keeps its `.gitkeep`, since every ritual's folder

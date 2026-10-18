@@ -214,13 +214,11 @@ function VenueName({ venue }: { venue: string }) {
   );
 }
 
-/* Centred in the space left below the heading block instead, the list closes to a few pixels of the
-   place line as soon as the venue takes a second line.
-
-   Above the list: `space-sm` on a phone, none in the tablet band, `space-lg` on a landscape laptop
-   or wider. BETWEEN the two entries the gap
-   went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
-   two read as two clusters; `eventInfoFit` is re-measured for it. */
+/* Above the list: `space-lg` + 2px on a phone, none in the tablet band, `space-lg` on a landscape
+   window from 64rem. Between the two entries: `space-md` + 2px on a phone and `space-md` from `md`
+   up, so the two read as two clusters. The list sits a fixed gap below the heading block rather than
+   centred in the space left over: centred, it closes to a few pixels of the place line as soon as
+   the venue takes a second line. */
 /* ON A PHONE THE SHEET READS IN A NATURAL RHYTHM (owner, 2026-10-14): header → date 30, date → the
    events 48, event → event 48, ink to ink. Each margin is the scale step plus the few px that land the
    INK there — measured, not derived, because a line box carries air its glyphs never use: 2.5 above

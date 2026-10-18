@@ -1,8 +1,7 @@
-/* THE OPENING SEQUENCE — DESIGN.md → Motion → "The opening sequence", a declared exception to
-   `rules/web-frontend/motion.md` → Prohibited (owner decision, 2026-09-27, in chat).
+/* THE OPENING SEQUENCE — DESIGN.md → Motion → "The opening sequence", a declared exception to the
+   no-page-load-reveal motion rule.
 
-   BLOOM (owner, 2026-10-14, picked on a phone on `/preview` from Today, Written in, Bloom and
-   Curtain): the ground is present on the first frame and carries no rule; the invite's two
+   BLOOM: the ground is present on the first frame and carries no rule; the invite's two
    botanical pieces unfurl from their own corners; then each line of type rises with a slight bounce,
    top to bottom, each starting 0.6 × fast after the one above, so the stack reads as one movement.
    Every value is a multiple of `--duration-fast`, the sequence's beat.
@@ -20,7 +19,7 @@
 
    THE FLOWERS NEVER FADE, AND THAT IS MEASURED, NOT TASTE. They are the largest painted element on
    the opening screen, so a gesture that starts them at opacity 0 delays the largest paint — a fade
-   measured 808ms against a translate's 248ms on the static export at 390×844. The unfurl is transform
+   measured 808ms against the unfurl's ~218ms on the static export at 390×844. The unfurl is transform
    only, so they are opaque on the first frame (Bloom's own LCP is in DESIGN.md).
 
    SCOPED TO THE INVITE'S OWN FRAME. `mounted-sheet-frame--invite` is the class both `Botanical` and

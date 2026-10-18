@@ -12,8 +12,8 @@ body {
    opting in, and so a component added later cannot become selectable by omission. iOS Safari needs
    the prefixed property, and the long-press menu needs the callout suppression as well.
 
-   A round on 2026-10-03 briefly scoped this to chrome and let content select; the owner restated the
-   rule and it was reverted. Do not re-scope it without them saying so. */
+   This overrides the usual rule that content stays selectable, by the owner's decision; do not
+   re-scope it without them. */
 html {
   user-select: none;
   -webkit-user-select: none;

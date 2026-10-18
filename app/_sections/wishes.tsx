@@ -13,8 +13,7 @@ import { wishes } from "@/content";
 
 /* The page's close. The illustration's size and bleed
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
-   illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
-   the thread. */
+   illustration is static and takes no entrance. */
 export function WishesSection({ thread = false }: { thread?: boolean }) {
   return (
     <section className="relative" id="wishes">
@@ -59,13 +58,6 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
             ))}
           </div>
 
-          {/* Wishes' own stretch of the thread, and the one reason it is mounted inside a card rather
-              than drawn by the page's trunk: the card's `mounted-sheet-frame__box` is a stacking
-              context at `{z.content}` and the thread's trunk is at `{z.thread}`, so a trunk-level
-              stretch would paint over Wishes' type, where this one, carrying no z-index of its own,
-              paints behind it. Its containing block is that same `__box`, the nearest positioned
-              ancestor inside the stacking context. It sits after the illustration, so it paints in
-              front of it. */}
           <div className={wishesStyles.figureCol}>
             <div aria-hidden className={wishesStyles.figure}>
               {/* A lazy <img> rather than a CSS background: a background is fetched at first paint
@@ -96,6 +88,12 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
               />
             </div>
           </div>
+          {/* Wishes' own stretch of the thread (lab only), mounted inside the card rather than drawn
+              by the page's trunk: the card's `mounted-sheet-frame__box` is a stacking context at
+              `{z.content}` and the trunk is at `{z.thread}`, so a trunk-level stretch would paint
+              over Wishes' type. Its containing block is that same `__box`. It mounts after the
+              figure and before the names, so by document order it paints over the illustration
+              and, at `tall`, over the type above it. */}
           {thread ? <CardThread /> : null}
 
           {/* The same drawn names on ONE line — one source, two layouts, placement arithmetic

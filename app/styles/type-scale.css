@@ -101,7 +101,7 @@
     color: var(--color-accent-gold);
   }
 
-  /* Sentence-case italic, not the small-caps this role carried before (owner, 2026-09-28): an
+  /* Sentence-case italic: an
      action now reads in the card's own written voice beside a marked disc, rather than as chrome.
      The tracking goes with the uppercase it was tuned for — italic lowercase needs none, and the
      size is `type-body-italic`'s, so an action reads at the weight of the card's own prose. */
