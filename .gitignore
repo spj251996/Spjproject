@@ -17,7 +17,8 @@ next-env.d.ts
 .vercel
 
 # Env
-.env*.local
+.env*
+!.env.example
 
 # Claude / project tooling
 .claude/
