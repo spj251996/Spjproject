@@ -110,7 +110,7 @@ const BOTANICAL_DENSITY = 2;
 const ROOT_FONT_SIZE = 16;
 const bandEdge = (rem) => rem * ROOT_FONT_SIZE - 1;
 
-const FILE_TIER = {
+export const FILE_TIER = {
   phone: { widest: bandEdge(BREAKPOINT_REM.md), tuning: "phone" },
   /* 1366, not the 1023 that tops the tablet BAND: a portrait window keeps the tablet record at any
      width (`botanical-css.ts`), and the widest portrait screen this has to serve is a 13" tablet
