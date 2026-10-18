@@ -38,7 +38,6 @@ export interface EventSegment {
 /** Named WeddingEvent because `Event` collides with the DOM global. */
 export interface WeddingEvent {
   id: string;
-  cityTown: string;
   /** The state the event is held in. Read by the invite, printed beneath the date. */
   state: string;
   date: string;

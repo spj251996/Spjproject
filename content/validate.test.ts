@@ -38,7 +38,6 @@ const segment = (over: Partial<EventSegment> = {}): EventSegment => ({
 
 const event = (over: Partial<WeddingEvent> = {}): WeddingEvent => ({
   id: "e",
-  cityTown: "A Town",
   state: "A State",
   date: "2027-01-09",
   segments: [segment()],

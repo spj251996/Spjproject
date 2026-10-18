@@ -151,7 +151,6 @@ export function validateEvents(events: WeddingEvent[]): WeddingEvent[] {
   events.forEach((event, index) => {
     const at = `events[${index}]`;
     claimId(event.id, `${at}.id`, seen);
-    required(event.cityTown, `${at}.cityTown`);
     required(event.state, `${at}.state`);
     isoDate(event.date, `${at}.date`);
     if (event.segments.length === 0) {

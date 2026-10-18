@@ -4,7 +4,6 @@ import { validateEvents } from "./validate.ts";
 export const events: WeddingEvent[] = validateEvents([
   {
     id: "engagement",
-    cityTown: "Kozhikode",
     state: "Kerala",
     date: "2027-01-04",
     segments: [
@@ -28,7 +27,6 @@ export const events: WeddingEvent[] = validateEvents([
   },
   {
     id: "wedding",
-    cityTown: "Koothattukulam",
     state: "Kerala",
     date: "2027-01-09",
     segments: [
