@@ -96,3 +96,12 @@ test("accepts a real leap day and rejects a false one", () => {
     message: /"2027-02-29"/,
   });
 });
+
+/* `Intl` could in principle return no part of a requested type; the formatter must fail then rather
+   than hand a component an empty string to render. */
+test("returns every date part non-empty for a known date", () => {
+  const { weekday, day, month, year } = formatEventDate("2027-01-09");
+  for (const [name, value] of Object.entries({ weekday, day, month, year })) {
+    assert.ok(value.length > 0, `${name} is empty`);
+  }
+});

@@ -49,8 +49,15 @@ export function formatEventDate(iso: string): FormattedDate {
     );
   }
   const parts = DATE_PARTS.formatToParts(date);
-  const part = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((p) => p.type === type)?.value ?? "";
+  const part = (type: Intl.DateTimeFormatPartTypes): string => {
+    const found = parts.find((p) => p.type === type);
+    if (found === undefined) {
+      throw new Error(
+        `formatEventDate: Intl returned no ${type} part for "${iso}"`,
+      );
+    }
+    return found.value;
+  };
   const day = part("day");
   return {
     weekday: part("weekday"),
