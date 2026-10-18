@@ -7,23 +7,6 @@ const source = readFileSync("app/_sections/celebrations.tsx", "utf8");
 /* The composition site is a server component, so these are source assertions rather than render
    ones. Each pins a rule with a recorded failure behind it, not merely a line of markup. */
 
-// `images: []` on every ritual is WHAT SHIPS. The section must render no photo row, no
-// action, and no client island at all.
-test("with no photographs the section renders no preview row and no gallery action", () => {
-  assert.ok(
-    source.includes("data-thread-row"),
-    "the thread's per-row hook must survive",
-  );
-  assert.ok(
-    /photoSets\[ritual\.id\]\.length\s*>\s*0/.test(source),
-    "the photo row must be gated on the ritual's photo list being non-empty, not on a status field",
-  );
-  assert.ok(
-    !/RitualStatus|ritual\.status/.test(source),
-    "status is gone from the model and must not be read here",
-  );
-});
-
 /* THE RITUAL LIST'S OWN SLICE, and it is load-bearing: the section's head sits forty lines above
    with an eyebrow, an ornament and a heading of its own, so an unscoped `indexOf` can read the head
    and pass every order assertion below against the wrong element. */

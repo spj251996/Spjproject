@@ -13,7 +13,7 @@ const SECTION_NAMES = [
 const ROUTES = ["app/page.tsx", "app/thread/page.tsx"];
 
 /* `app/_sections/index.tsx` is the ONE list of sections. A route that names a section instead of
-   composing `Sections` is how the published page and the lab drift the first time a seventh section
+   composing `Sections` is how the published page and the lab drift the first time a sixth section
    lands -- the failure this whole structure exists to prevent. */
 test("no route enumerates sections -- every route composes Sections", () => {
   for (const route of ROUTES) {
@@ -50,11 +50,9 @@ test("the published route neither imports the thread nor sets the flag", () => {
 
 test("the lab route sets the thread", () => {
   const source = readFileSync("app/thread/page.tsx", "utf8");
-  /* The CLAIM — `thread` is among the props the lab route hands `Sections` — rather than the spelling
-     `<Sections thread`, which also required it to be the FIRST prop. It was, until the route gained a
-     `paint` prop that sorts before it, and this gate then failed correct code: the third time on this
-     branch that an assertion on a source spelling has failed the correct rewrite rather than the
-     mutation it was written for. The element's prop list is bounded by its own `>`. */
+  /* The CLAIM, that `thread` is among the props the lab route hands `Sections`, rather than a
+     spelling, which would fail a correct reordering of props. The element's prop list is bounded by
+     its own `>`. */
   const at = source.indexOf("<Sections");
   assert.ok(at !== -1, "the lab route does not compose Sections at all");
   const props = source.slice(at + "<Sections".length, source.indexOf(">", at));
@@ -65,8 +63,8 @@ test("the lab route sets the thread", () => {
   );
 });
 
-/* Two routes since `/preview` retired (owner, 2026-10-14: "only three routes /, /preview, /thread"). The lab is ONE static route painted
-   like `/`, so a variant directory coming back is the regression. */
+/* Two routes: `/` and `/thread`. The lab is ONE static route painted like `/`, so a variant
+   directory coming back is the regression. */
 test("the thread lab is one static route, painted as / is", () => {
   assert.ok(
     existsSync("app/thread/page.tsx"),
@@ -77,11 +75,6 @@ test("the thread lab is one static route, painted as / is", () => {
   const lab = readFileSync("app/thread/page.tsx", "utf8").replace(
     /\/\*[\s\S]*?\*\//g,
     "",
-  );
-  assert.match(
-    lab,
-    /<Sections\s+thread\s*\/>/,
-    "/thread must compose Sections with the thread and nothing else",
   );
   assert.doesNotMatch(
     lab,

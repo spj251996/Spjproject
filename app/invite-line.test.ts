@@ -9,14 +9,12 @@ const source = readFileSync("app/_sections/invite.tsx", "utf8");
 
 const AT = {
   eyebrow: source.indexOf("type-eyebrow"),
-  /* `<CoupleNames` and not the role's class: the drawn asset is what renders the names now, and
-     the class is scheduled for removal — anchoring on it would make this ordering test fail in
-     Phase 9 for a reason that has nothing to do with the order. */
+  /* The anchor is `<CoupleNames`; the typeset-names class was retired and is no longer a stable
+     anchor. */
   names: source.indexOf("<CoupleNames"),
   line: source.indexOf("data-invite-line"),
   /* The COMPOSITION site, not the definition: `<InviteDate` matches only the JSX usage, where
-     `function InviteDate(` sits above the eyebrow and would invert the order this test checks. The
-     anchor moved from `<PrimaryDate` when the date became a block that composes its own parts. */
+     `function InviteDate(` sits above the eyebrow and would invert the order this test checks. */
   date: source.indexOf("<InviteDate"),
   place: source.indexOf("data-invite-place"),
 };
