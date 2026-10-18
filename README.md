@@ -1,11 +1,11 @@
 # SF Wedding
 
-A single-page, red-thread wedding invitation for Flemy and Sebastian, covering a betrothal and a
+A single-page wedding invitation for Flemy and Sebastian, covering a betrothal and a
 wedding. Venues, dates and times live in the content modules, not here.
 
 Guests get event facts up front, with zero interaction cost, plus a growing photo record of the
-celebration as each ritual completes. A single continuous scroll-driven thread ties the page together as
-one narrative rather than stacked sections.
+celebration as each ritual completes. The red thread is an exploration at `/thread`, not part of the
+invitation.
 
 ## Stack
 
@@ -14,25 +14,22 @@ one narrative rather than stacked sections.
 | Language | TypeScript |
 | Framework | Next.js, App Router, static export |
 | Styling | Tailwind CSS |
-| Animation | CSS only — scroll-driven animations and transitions; no animation library is installed |
+| Animation | CSS and plain scripts, no animation library |
 | Content | Typed TypeScript modules under `content/`, each exported through its validator |
 | Lint and format | Biome, which fully replaces ESLint and Prettier |
 | Hosting | Vercel |
-| Images | Generated from `assets/` by `npm run images`; AVIF with a WebP fallback |
+| Images | Generated from `assets/` by a committed script (`npm run images`; AVIF + WebP); `next/image` (unoptimized) for portraits, bare `<img>` for the ritual photographs |
 
 ## Requirements
 
-Node **22.x**, as pinned in `package.json` — a pin, not a floor: 23 and 24 are excluded deliberately,
-so that a new major cannot arrive unannounced on a deploy nobody is watching. The lower bound inside
-that range is 22.18, because the `prebuild` step runs a TypeScript file directly and earlier 22.x
-releases reject it with `ERR_UNKNOWN_FILE_EXTENSION`. A local Node outside 22.x warns on install
-(`EBADENGINE`) and otherwise works; the warning is accepted rather than fixed, because any range wide
-enough to admit it would also let the host pick an unannounced major.
+Node **>=22.18 <23**, as in `package.json` `engines` (22.18 is the floor the type-stripped scripts
+need). A local Node outside that range warns on install (`EBADENGINE`) and otherwise works.
 
 ## Getting started
 
 ```bash
 npm install
+npm run images -- --only=rituals  # one-time: writes the gitignored ritual photo manifest
 npm run dev
 ```
 
@@ -40,7 +37,7 @@ The dev server serves http://localhost:3000.
 
 ```bash
 npm run build     # static export to out/, after validating content
-npm run test      # content model and validator tests
+npm run test      # node --test suite: content, components, app and scripts
 npm run lint      # Biome
 npm run format    # Biome, writing in place
 ```
@@ -58,9 +55,14 @@ Run that check alone with `npm run validate:content`.
 app/                    Next.js App Router routes, layout and global styles
 components/             React components, grouped by layer
 content/                Typed content modules and their validators
+assets/                 Source art the generators read
+scripts/                Generators and gates (fits, frames, images, export checks)
 public/                 Static assets served as-is
 legacy-html/            Archived pre-Next.js static-HTML build — reference-only, not served
 ```
+
+Generated files (the fits, the frame sheets, the thread paths, the image deliveries) are never
+hand-edited — re-run their generator.
 
 ## Deployment
 
