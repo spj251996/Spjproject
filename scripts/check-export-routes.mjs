@@ -11,7 +11,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { FRAME_SHEETS } from "../app/frame-sheets.ts";
-import { topLevelRules } from "./css-top-level-rules.mjs";
+import { splitAtRuleBlocks, topLevelRules } from "./css-top-level-rules.mjs";
 
 /* Measured on the export before this gate was written: the trunk's no-JS fallback, the trunk's live
  * root, and the card thread's. Not a remembered figure. */
@@ -108,26 +108,10 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /* Separates a stylesheet into the text outside every `@supports (justify-content: safe center)` block
  * and the blocks themselves, matching the minifier's spacing and parentheses tolerantly. */
-function splitSupports(css) {
-  const opener =
-    /@supports\s*\(?\s*\(?\s*justify-content\s*:\s*safe center\s*\)?\s*\)?\s*\{/g;
-  const blocks = [];
-  let outside = "";
-  let cursor = 0;
-  for (const match of css.matchAll(opener)) {
-    if (match.index < cursor) continue;
-    outside += css.slice(cursor, match.index);
-    let depth = 0;
-    let end = match.index;
-    for (; end < css.length; end++) {
-      if (css[end] === "{") depth++;
-      if (css[end] === "}" && --depth === 0) break;
-    }
-    blocks.push(css.slice(match.index, end + 1));
-    cursor = end + 1;
-  }
-  return { outside: outside + css.slice(cursor), blocks };
-}
+const SUPPORTS_PRELUDE =
+  /^@supports\s*\(?\s*\(?\s*justify-content\s*:\s*safe center\s*\)?\s*\)?$/;
+
+const splitSupports = (css) => splitAtRuleBlocks(css, SUPPORTS_PRELUDE);
 
 let failed = false;
 

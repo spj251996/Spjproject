@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { topLevelRules } from "./css-top-level-rules.mjs";
+import { splitAtRuleBlocks, topLevelRules } from "./css-top-level-rules.mjs";
 
 const rule = (selectors, body) => ({ selectors, body });
 
@@ -76,4 +76,29 @@ test("a minified frame chunk yields its scope rule, sheet rule and @supports blo
       "justify-content:safe center;align-items:safe center",
     ),
   ]);
+});
+
+test("splitAtRuleBlocks separates the matching blocks from the rest", () => {
+  const css = ".a{k:v}@supports (x:y){.b{k:v}}.c{k:v}@media (m){.d{k:v}}";
+  assert.deepEqual(splitAtRuleBlocks(css, /^@supports/), {
+    outside: ".a{k:v}.c{k:v}@media (m){.d{k:v}}",
+    blocks: ["@supports (x:y){.b{k:v}}"],
+  });
+});
+
+test("splitAtRuleBlocks ignores a brace in a string and a comment inside the block", () => {
+  const css =
+    '.a{k:v}@supports (x:y){.b{content:"}";k:v}/* } */.e{k:v}}.c{k:v}';
+  assert.deepEqual(splitAtRuleBlocks(css, /^@supports/), {
+    outside: ".a{k:v}.c{k:v}",
+    blocks: ['@supports (x:y){.b{content:"}";k:v}/* } */.e{k:v}}'],
+  });
+});
+
+test("splitAtRuleBlocks leaves the text untouched when nothing matches", () => {
+  const css = ".a{k:v}@media (m){.d{k:v}}";
+  assert.deepEqual(splitAtRuleBlocks(css, /^@supports/), {
+    outside: css,
+    blocks: [],
+  });
 });

@@ -4,17 +4,46 @@
  * backslash. A statement at-rule (`@layer a,b;`, `@import ...;`) ends at its `;`, so it never joins
  * the next rule's selector. */
 export function topLevelRules(css) {
-  const rules = [];
+  return topLevelBlocks(css)
+    .filter(({ prelude, nested }) => !prelude.startsWith("@") && !nested)
+    .map(({ prelude, body }) => ({
+      selectors: prelude.split(",").map((part) => part.replace(/\s+/g, "")),
+      body,
+    }));
+}
+
+/* The stylesheet outside every top-level at-rule block whose prelude matches `preludePattern`, and
+ * those blocks as source text. Walks the same structure as `topLevelRules`, so a brace inside a string
+ * or a comment never ends a block early. */
+export function splitAtRuleBlocks(css, preludePattern) {
+  const blocks = [];
+  let outside = "";
+  let cursor = 0;
+  for (const block of topLevelBlocks(css)) {
+    if (!preludePattern.test(block.prelude)) continue;
+    outside += css.slice(cursor, block.start);
+    blocks.push(css.slice(block.start, block.end));
+    cursor = block.end;
+  }
+  return { outside: outside + css.slice(cursor), blocks };
+}
+
+function topLevelBlocks(css) {
+  const found = [];
+  let start = 0;
   let depth = 0;
   let prelude = "";
   let body = "";
   let quote = null;
   let nested = false;
+  let index = 0;
   const append = (text) => {
-    if (depth === 0) prelude += text;
-    else body += text;
+    if (depth === 0) {
+      if (prelude.trim() === "" && text.trim() !== "") start = index;
+      prelude += text;
+    } else body += text;
   };
-  for (let index = 0; index < css.length; index++) {
+  for (index = 0; index < css.length; index++) {
     const char = css[index];
     if (quote === null && char === "/" && css[index + 1] === "*") {
       const end = css.indexOf("*/", index + 2);
@@ -45,13 +74,13 @@ export function topLevelRules(css) {
     } else if (char === "}") {
       depth--;
       if (depth === 0) {
-        const text = prelude.trim();
-        if (!text.startsWith("@") && !nested) {
-          rules.push({
-            selectors: text.split(",").map((part) => part.replace(/\s+/g, "")),
-            body,
-          });
-        }
+        found.push({
+          prelude: prelude.trim(),
+          body,
+          nested,
+          start,
+          end: index + 1,
+        });
         prelude = "";
         body = "";
         nested = false;
@@ -63,5 +92,5 @@ export function topLevelRules(css) {
     }
     append(char);
   }
-  return rules;
+  return found;
 }
