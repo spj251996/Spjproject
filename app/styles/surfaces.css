@@ -9,10 +9,7 @@
 @utility bg-surface-base {
   background-color: var(--color-surface-base);
   background-image: var(--grain-ground);
-  background-size: var(
-    --grain-ground-size,
-    var(--grain-tile) var(--grain-tile)
-  );
+  background-size: var(--grain-tile) var(--grain-tile);
   background-blend-mode: var(--grain-ground-blend);
 }
 
@@ -30,16 +27,11 @@
   background-blend-mode: var(--grain-stock-paper-blend);
 }
 
-/* `body` paints the ground without the utility class, so it takes the same ground grain directly,
-   sized from its own token: a noise tile needs the shared tile size, a repeating gradient carries
-   its own period and must not be rescaled. */
+/* `body` paints the ground without the utility class, so it takes the same ground grain directly. */
 @layer components {
   body {
     background-image: var(--grain-ground);
-    background-size: var(
-      --grain-ground-size,
-      var(--grain-tile) var(--grain-tile)
-    );
+    background-size: var(--grain-tile) var(--grain-tile);
     background-blend-mode: var(--grain-ground-blend);
   }
 }
