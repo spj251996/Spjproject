@@ -2,6 +2,13 @@ import type { ComponentType } from "react";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import "@/app/event-info.css";
 import "@/app/frames/event-info.css";
+import {
+  mapLabel,
+  segmentLineParts,
+  sharedAddress,
+  splitAddress,
+  venueRuns,
+} from "@/app/_sections/event-info-text";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
 import { eventInfoFit } from "@/app/event-info-fit";
 import {
@@ -77,31 +84,15 @@ function markFor(segmentId: string) {
   return mark;
 }
 
-function sharedAddress(event: WeddingEvent): string {
-  const addresses = new Set(event.segments.map((segment) => segment.address));
-  if (addresses.size !== 1) {
-    throw new Error(
-      `sections: event "${event.id}" has segments at different addresses; the sheet header can only name one.`,
-    );
-  }
-  const [address] = addresses;
-  if (address === undefined || address === null) {
-    throw new Error(
-      `sections: event "${event.id}" has no address; the sheet header needs one.`,
-    );
-  }
-  return address;
-}
-
 /* Everything after the first comma is unbreakable, so a wrap falls after the locality and the
    state is never alone on a line. */
 function AddressLine({ address }: { address: string }) {
-  const comma = address.indexOf(", ");
-  if (comma === -1) return address;
+  const { head, tail } = splitAddress(address);
+  if (tail === null) return head;
   return (
     <>
-      {address.slice(0, comma + 2)}
-      <span className="whitespace-nowrap">{address.slice(comma + 2)}</span>
+      {head}
+      <span className="whitespace-nowrap">{tail}</span>
     </>
   );
 }
@@ -127,9 +118,9 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
         <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
-        <address className="type-heading-sm font-medium text-ink not-italic">
+        <p className="type-heading-sm font-medium text-ink">
           <AddressLine address={sharedAddress(event)} />
-        </address>
+        </p>
       </div>
     </>
   );
@@ -188,14 +179,21 @@ function Diamond() {
    its own trailing margin, so a wrapped line starts flush with the diamond. The hidden comma is
    what a screen reader hears in the diamond's place. */
 function SegmentLine({ segment }: { segment: EventSegment }) {
+  const { time, spokenSeparator, label } = segmentLineParts(segment);
   return (
     <p className="type-heading-sm text-ink text-balance">
-      <span className="me-space-2xs whitespace-nowrap">{segment.time}</span>
-      <wbr />
+      {time !== null && (
+        <>
+          <span className="me-space-2xs whitespace-nowrap">{time}</span>
+          <wbr />
+        </>
+      )}
       <span className="whitespace-nowrap">
-        <span className="sr-only">, </span>
+        {spokenSeparator !== null && (
+          <span className="sr-only">{spokenSeparator}</span>
+        )}
         <Diamond />
-        {segment.label}
+        {label}
       </span>
     </p>
   );
@@ -204,25 +202,16 @@ function SegmentLine({ segment }: { segment: EventSegment }) {
 /* Keeps hyphenated words whole. The venue line is `text-pretty`, not balanced, because balancing
    broke them. */
 function VenueName({ venue }: { venue: string }) {
-  const hyphenated = venue.match(/\S+-\S+/);
-  if (hyphenated?.index === undefined) return venue;
-  const end = hyphenated.index + hyphenated[0].length;
-  return (
-    <>
-      {venue.slice(0, hyphenated.index)}
-      <span className="whitespace-nowrap">{hyphenated[0]}</span>
-      <VenueName venue={venue.slice(end)} />
-    </>
+  return venueRuns(venue).map(({ text, nowrap }, index) =>
+    nowrap ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: the runs are derived from one fixed string
+      <span className="whitespace-nowrap" key={index}>
+        {text}
+      </span>
+    ) : (
+      text
+    ),
   );
-}
-
-function mapLabel(segment: EventSegment): string {
-  if (segment.venue === null) {
-    throw new Error(
-      `sections: segment "${segment.id}" has a map link but no venue; its map action is named for the venue.`,
-    );
-  }
-  return `Map, ${segment.venue}`;
 }
 
 /* Centred in the space left below the heading block instead, the list closes to a few pixels of the

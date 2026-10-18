@@ -65,7 +65,7 @@ test("the event sheet's date carries the weight, with no utility stepping it dow
 
 test("the event sheet's address steps back to 500", () => {
   const body = eventSheetHeading();
-  const address = classOf(body, "<address");
+  const address = classOf(body, '<p className="type-heading-sm');
   assert.match(address, /\btype-heading-sm\b/);
   assert.match(
     address,
