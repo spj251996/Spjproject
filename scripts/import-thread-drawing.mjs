@@ -19,7 +19,7 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { chromium } from "playwright-core";
+import { chromium } from "playwright";
 import sharp from "sharp";
 import { pruneSpurs, thin, walk } from "./trace-motif.mjs";
 
