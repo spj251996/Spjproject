@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { freshExport } from "../../scripts/built-export.ts";
 
 /* `heading-md` exists because nothing sat between `heading-sm` (14px) and `heading-xl` (26px), and
    `heading-sm` could not be grown to reach it.
@@ -99,10 +100,7 @@ test("the class reads the tokens rather than literals", () => {
 });
 
 test("the role survives into the built CSS with a size that resolves", (t) => {
-  if (!existsSync(CSS_DIR) || !existsSync(PUBLISHED)) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const css = publishedCss();
   const rule = /\.type-heading-md\{[^}]*\}/.exec(css);
   assert.notStrictEqual(
@@ -152,7 +150,8 @@ test("the gallery's specimen carries the token file's own figures", () => {
    longer exists compiles to nothing and the element silently paints at its inherited size. One
    missed consumer is invisible to `tsc`, to lint and to every source test — including the source
    tests renamed alongside it, which is exactly why this reads the BUILT stylesheet instead. */
-test("the renamed role resolves on the published page, and the old name is gone from it", () => {
+test("the renamed role resolves on the published page, and the old name is gone from it", (t) => {
+  if (!freshExport(t)) return;
   const css = publishedCss();
   assert.match(
     css,

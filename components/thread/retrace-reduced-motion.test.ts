@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
+import { freshExport } from "../../scripts/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -76,10 +77,7 @@ const READ = `(() => {
 })()`;
 
 test("reduced motion builds no re-trace, stops a running one, and leaves the thread undashed; with motion it builds both", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   /* Not wrapped: with an export present, a missing browser or a launch error must fail this test,
      not skip it, or the only protection reduced motion has would disappear without a sound. */
   const { chromium } = await import("playwright");
@@ -215,10 +213,7 @@ const LIFECYCLE = `(() => {
 })()`;
 
 test("the re-trace stops when its budget of loops is spent, suspends in a hidden tab without spending any, and a scroll starts it again", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -310,10 +305,7 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
 });
 
 test("Wishes' closing stretch loops, painted by the one card thread and nowhere else", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -364,10 +356,7 @@ test("Wishes' closing stretch loops, painted by the one card thread and nowhere 
 });
 
 test("on a finished thread a scroll clears the loop at once, and it lights again once the page is still", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();

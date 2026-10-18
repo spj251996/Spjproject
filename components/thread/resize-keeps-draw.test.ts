@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
+import { freshExport } from "../../scripts/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -152,10 +153,7 @@ const TALLER = { width: 393, height: 912 };
 const SETTLE = 1200;
 
 test("a height-only resize does not un-draw the thread", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   /* Not wrapped: with an export present, a missing browser must fail rather than quietly skip, or
      the only guard this behaviour has would disappear without a sound. */
   const { chromium } = await import("playwright");
@@ -251,10 +249,7 @@ test("a height-only resize does not un-draw the thread", async (t) => {
    evidently does not reach. So read this as a guard on the cheap path not erasing the opening draw by
    ANY mechanism, not as proof that the floor is what holds it. */
 test("a height-only resize at the top does not erase what the opening draw drew", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -308,10 +303,7 @@ test("a height-only resize at the top does not erase what the opening draw drew"
    A dash-length assertion cannot see that: the drawn LENGTH is correct, it is the box that is wrong.
    So this asserts the box. */
 test("a resize that reflows the page re-measures rather than taking the cheap path", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();

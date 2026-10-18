@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { freshExport } from "../scripts/built-export.ts";
 
 /* The card paper on phones takes half its tooth (owner, 2026-10-14, picked on an iPhone) —
    DESIGN.md → Foundations → Paper Grain. The same tile, each channel's final transfer slope halved
@@ -61,10 +62,7 @@ function publishedCss(): string {
 }
 
 test("the built CSS swaps the stock grain below 48rem, exactly once", (t) => {
-  if (!existsSync(CSS_DIR) || !existsSync(PUBLISHED)) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!freshExport(t)) return;
   const css = publishedCss();
   const swaps =
     css.match(/--grain-stock-paper:var\(--grain-stock-paper-phone\)/g) ?? [];
