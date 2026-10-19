@@ -17,9 +17,10 @@ const DEFAULT_WIDTHS = [320, 768, 1440];
 
 const args = process.argv.slice(2);
 
-/* A missing "Errors: N" line means playwright-cli's console format changed, not that the page is
+/** A missing "Errors: N" line means playwright-cli's console format changed, not that the page is
    clean, so it throws rather than reading as zero. The pattern is a regex literal, so a single
-   backslash; PROBE doubles it only because it is template-literal text evaluated elsewhere. */
+   backslash; PROBE doubles it only because it is template-literal text evaluated elsewhere.
+ * @param {string} consoleOut */
 function errorCount(consoleOut) {
   const match = consoleOut.match(/Errors: (\d+)/);
   if (!match) {
@@ -39,18 +40,23 @@ const widths = widthsArg
    that `cli()` reports through `result.error`. */
 const CLI_TIMEOUT_MS = 120_000;
 
-/* ESRCH means the group is already gone, the expected case on a failing run; any other error is a
-   real cleanup failure. */
+/** ESRCH means the group is already gone, the expected case on a failing run; any other error is a
+   real cleanup failure.
+ * @param {number} pid
+ * @param {string} label */
 function safeKill(pid, label) {
   try {
     process.kill(-pid);
   } catch (error) {
-    if (error.code !== "ESRCH") {
-      console.error(`cleanup: ${label} kill failed — ${error.message}`);
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "ESRCH") {
+      console.error(
+        `cleanup: ${label} kill failed — ${/** @type {Error} */ (error).message}`,
+      );
     }
   }
 }
 
+/** @param {string[]} cliArgs */
 function cli(...cliArgs) {
   const result = spawnSync(
     "npx",
@@ -95,7 +101,7 @@ async function ensureDevServer() {
       return child;
     }
   }
-  safeKill(child.pid, "startup dev server");
+  safeKill(/** @type {number} */ (child.pid), "startup dev server");
   throw new Error("dev server did not answer within 60s");
 }
 
@@ -215,10 +221,12 @@ try {
   try {
     cli("close");
   } catch (error) {
-    console.error(`cleanup: close failed — ${error.message}`);
+    console.error(
+      `cleanup: close failed — ${/** @type {Error} */ (error).message}`,
+    );
   }
   if (server !== null) {
-    safeKill(server.pid, "dev server");
+    safeKill(/** @type {number} */ (server.pid), "dev server");
   }
 }
 

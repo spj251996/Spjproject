@@ -8,7 +8,13 @@ import { isAbsolute, join, relative } from "node:path";
 import { test } from "node:test";
 import { RETIRE_REGISTER } from "./retire-register.mjs";
 
-/* One label per entry, whichever shape it takes, so every failure below names its subject. */
+/**
+ * @typedef {{ path: string, symbol?: undefined, in?: undefined, kind?: string, why?: string }
+ *   | { path?: undefined, symbol: string, in: string, kind?: string, why?: string }} RegisterEntry
+ */
+
+/** One label per entry, whichever shape it takes, so every failure below names its subject.
+ * @param {RegisterEntry} entry */
 function subjectOf(entry) {
   return entry.path ?? `${entry.in}::${entry.symbol}`;
 }
@@ -24,6 +30,7 @@ test("every entry takes exactly one shape — a path or a symbol, never both", (
   /* Both at once is the shape that would pass vacuously: the checks below branch on `path`, so a
      symbol smuggled alongside one would never be read. */
   const bad = RETIRE_REGISTER.filter(
+    /** @param {RegisterEntry} entry */
     (entry) =>
       (entry.path === undefined) === (entry.symbol === undefined) ||
       (entry.symbol !== undefined && typeof entry.in !== "string"),
@@ -35,10 +42,13 @@ test("every entry takes exactly one shape — a path or a symbol, never both", (
   );
 });
 
-/* Whether an entry's subject is still in the tree, a relative path resolving from `root` (the repo
-   root, where the suite runs). */
+/** Whether an entry's subject is still in the tree, a relative path resolving from `root` (the repo
+   root, where the suite runs).
+ * @param {RegisterEntry} entry
+ * @param {string} [root] */
 function stillPresent(entry, root = process.cwd()) {
-  const at = (path) => (isAbsolute(path) ? path : join(root, path));
+  const at = (/** @type {string} */ path) =>
+    isAbsolute(path) ? path : join(root, path);
   return entry.path !== undefined
     ? existsSync(at(entry.path))
     : existsSync(at(entry.in)) &&

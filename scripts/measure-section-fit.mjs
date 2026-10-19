@@ -44,6 +44,8 @@ const MAX_WIDTH = 1300;
    rather than recording an unresolved ladder. */
 const MAX_BOUNDARIES_PER_PIXEL = 12;
 
+/** @typedef {{ minContentWidth: number, contentHeight: number }} Regime */
+
 /* One width safely inside each width tier, away from the 768/1024/1600 breakpoints. Each is swept at
    both orientations' heights below — irrelevant to the clone, which is measured off-screen in a
    detached host, but the window itself must actually be portrait or landscape for the section's
@@ -59,11 +61,19 @@ const TIERS = [
 /* Heights that set the orientation without pretending to be a real device; the sweep only needs
    the section's type resolved at that tier and orientation. */
 const ORIENTATIONS = [
-  { key: "portrait", heightFor: (width) => Math.round(width * 1.5) },
-  { key: "landscape", heightFor: (width) => Math.round(width * 0.6) },
+  {
+    key: "portrait",
+    heightFor: (/** @type {number} */ width) => Math.round(width * 1.5),
+  },
+  {
+    key: "landscape",
+    heightFor: (/** @type {number} */ width) => Math.round(width * 0.6),
+  },
 ];
 
+/** @param {string[]} argv */
 function parseArgs(argv) {
+  /** @type {Record<string, string | undefined>} */
   const flags = {};
   for (const arg of argv) {
     const match = arg.match(/^--([a-z]+)=(.*)$/s);
@@ -86,7 +96,7 @@ const outPath = args.out;
 const falsify = args.falsify === "true";
 const exportName =
   args.var ??
-  `${section ? section.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) : "section"}Fit`;
+  `${section ? section.replace(/-([a-z])/g, (/** @type {string} */ _, /** @type {string} */ c) => c.toUpperCase()) : "section"}Fit`;
 
 if (!selector || !section || !outPath) {
   console.error(
@@ -113,16 +123,23 @@ if (falsify && relative(resolve("tmp"), resolve(outPath)).startsWith("..")) {
    rather than after the sweep. */
 const contentLine = contentHashLine(section);
 
+/**
+ * @param {number} pid
+ * @param {string} label
+ */
 function safeKill(pid, label) {
   try {
     process.kill(-pid);
   } catch (error) {
-    if (error.code !== "ESRCH") {
-      console.error(`cleanup: ${label} kill failed — ${error.message}`);
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "ESRCH") {
+      console.error(
+        `cleanup: ${label} kill failed — ${/** @type {Error} */ (error).message}`,
+      );
     }
   }
 }
 
+/** @param {string[]} cliArgs */
 function cli(...cliArgs) {
   const result = spawnSync(
     "npx",
@@ -160,14 +177,16 @@ async function ensureDevServer() {
       return child;
     }
   }
-  safeKill(child.pid, "startup dev server");
+  safeKill(/** @type {number} */ (child.pid), "startup dev server");
   throw new Error("dev server did not answer within 60s");
 }
 
-/* Built as a plain JS string, not through page.evaluate's argument-passing, so the selector and
+/** Built as a plain JS string, not through page.evaluate's argument-passing, so the selector and
    the falsify flag are interpolated as JS literals directly into the evaluated source. Runs the
    entire sweep — clone, resize the host, bisect every boundary — inside the page in one call, so
-   the round trip to the CLI happens once per tier rather than once per width. */
+   the round trip to the CLI happens once per tier rather than once per width.
+ * @param {string} cssSelector
+ * @param {boolean} mutateContent */
 function sweepScript(cssSelector, mutateContent) {
   const selectorLiteral = JSON.stringify(cssSelector);
   /* Mutates the invite's own sentence, not the couple's names: the drawn names' width is `em` of the
@@ -295,13 +314,16 @@ function sweepScript(cssSelector, mutateContent) {
 })`;
 }
 
+/** @param {number} value */
 function round6(value) {
   return Math.round(value * 1e6) / 1e6;
 }
 
-/* The same shape mounted-sheet-frame.ts's assertValidFit checks at the point of use: ascending
+/** The same shape mounted-sheet-frame.ts's assertValidFit checks at the point of use: ascending
    widths, and a height that never rises as width grows. Checked here too so a malformed sweep is
-   caught at generation time, not at first render. */
+   caught at generation time, not at first render.
+ * @param {string} tier
+ * @param {Regime[]} regimes */
 function validateRegimes(tier, regimes) {
   if (regimes.length === 0) {
     throw new Error(`measure-section-fit: no regimes measured for ${tier}`);
@@ -320,16 +342,26 @@ function validateRegimes(tier, regimes) {
   }
 }
 
+/**
+ * @param {(typeof TIERS)[number]} tier
+ * @param {(typeof ORIENTATIONS)[number]} orientation
+ * @param {boolean} mutateContent
+ * @returns {Promise<Regime[]>}
+ */
 async function measureTierOrientation(tier, orientation, mutateContent) {
   const label = `${tier.key} ${orientation.key}`;
   cli("resize", String(tier.width), String(orientation.heightFor(tier.width)));
   cli("reload");
-  const raw = cli("run-code", "--raw", sweepScript(selector, mutateContent));
+  const raw = cli(
+    "run-code",
+    "--raw",
+    sweepScript(/** @type {string} */ (selector), mutateContent),
+  );
   const result = JSON.parse(raw);
   if (result.error) {
     throw new Error(`measure-section-fit: ${label} — ${result.error}`);
   }
-  const regimes = result.regimes.map((regime) => ({
+  const regimes = result.regimes.map((/** @type {Regime} */ regime) => ({
     minContentWidth: round6(regime.minContentWidth),
     contentHeight: round6(regime.contentHeight),
   }));
@@ -337,6 +369,7 @@ async function measureTierOrientation(tier, orientation, mutateContent) {
   return regimes;
 }
 
+/** @param {Regime[]} regimes */
 function formatRegimes(regimes) {
   return regimes
     .map(
@@ -346,6 +379,7 @@ function formatRegimes(regimes) {
     .join("\n");
 }
 
+/** @param {Record<string, Regime[]>} byOrientation */
 function formatOrientation(byOrientation) {
   return ORIENTATIONS.map(
     (orientation) => `      ${orientation.key}: [
@@ -354,6 +388,7 @@ ${formatRegimes(byOrientation[orientation.key])}
   ).join("\n");
 }
 
+/** @param {Record<string, Record<string, Regime[]>>} fit */
 function renderFile(fit) {
   return `/* Generated by \`npm run measure:fit\` — DO NOT hand-edit; re-run the script instead.
    Source: ${route}, selector ${JSON.stringify(selector)}.
@@ -387,6 +422,7 @@ const server = await ensureDevServer();
 try {
   cli("open", `${ORIGIN}${route}`);
 
+  /** @type {Record<string, Record<string, Regime[]>>} */
   const fit = {};
   for (const tier of TIERS) {
     fit[tier.key] = {};
@@ -418,9 +454,11 @@ try {
   try {
     cli("close");
   } catch (error) {
-    console.error(`cleanup: close failed — ${error.message}`);
+    console.error(
+      `cleanup: close failed — ${/** @type {Error} */ (error).message}`,
+    );
   }
   if (server !== null) {
-    safeKill(server.pid, "dev server");
+    safeKill(/** @type {number} */ (server.pid), "dev server");
   }
 }

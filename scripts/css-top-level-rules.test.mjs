@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { splitAtRuleBlocks, topLevelRules } from "./css-top-level-rules.mjs";
 
-const rule = (selectors, body) => ({ selectors, body });
+const rule = (
+  /** @type {string[]} */ selectors,
+  /** @type {string} */ body,
+) => ({
+  selectors,
+  body,
+});
 
 test("comments, statement at-rules, string braces and at-rule blocks leave only the real rules", () => {
   const css = `@charset "utf-8";

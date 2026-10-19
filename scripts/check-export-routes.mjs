@@ -99,14 +99,16 @@ const SECTION_IDS = [
 ];
 const RETIRED_SECTION_IDS = ["contact"];
 
-const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (/** @type {string} */ text) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /* Separates a stylesheet into the text outside every `@supports (justify-content: safe center)` block
  * and the blocks themselves, matching the minifier's spacing and parentheses tolerantly. */
 const SUPPORTS_PRELUDE =
   /^@supports\s*\(?\s*\(?\s*justify-content\s*:\s*safe center\s*\)?\s*\)?$/;
 
-const splitSupports = (css) => splitAtRuleBlocks(css, SUPPORTS_PRELUDE);
+const splitSupports = (/** @type {string} */ css) =>
+  splitAtRuleBlocks(css, SUPPORTS_PRELUDE);
 
 let failed = false;
 
@@ -145,7 +147,7 @@ if (existsSync(CSS_DIR)) {
 
 /* The frame sheets are imported files, so a route links them and its HTML carries none. The scope
  * class is what a sheet's rules are keyed on; `tall` is the one sheet whose scope is not its name. */
-const frameScope = (name) =>
+const frameScope = (/** @type {string} */ name) =>
   name === "tall"
     ? "mounted-sheet-frame--tall-section-mount"
     : `mounted-sheet-frame--${name}`;
@@ -231,7 +233,7 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
      * the one `sheetSelector` emits for the frame's layout, so a pair's leaf form on a single frame
      * (or the reverse) fails. */
     const baseRules = topLevelRules(outside);
-    const centresPlain = (selector) =>
+    const centresPlain = (/** @type {string} */ selector) =>
       baseRules.some(
         ({ selectors, body }) =>
           selectors.includes(selector) &&

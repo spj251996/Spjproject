@@ -19,6 +19,7 @@ const BANDS = [
 const IDS = ["invite", "event-info", "family", "celebrations", "wishes"];
 
 const browser = await chromium.launch({ channel: "chromium" });
+/** @type {Record<string, Record<string, number>>} */
 const out = {};
 for (const band of BANDS) {
   const page = await browser.newPage({

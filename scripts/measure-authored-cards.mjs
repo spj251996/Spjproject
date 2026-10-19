@@ -27,6 +27,7 @@ const SECTION_IDS = [
 ];
 
 const browser = await chromium.launch({ channel: "chromium" });
+/** @type {Record<string, object>} */
 const results = {};
 
 for (const band of BANDS) {
@@ -101,9 +102,11 @@ for (const band of BANDS) {
   const portraits = await page.evaluate((familyIndex) => {
     const familySection =
       document.querySelectorAll("main > section")[familyIndex];
-    const card = familySection.querySelector(".mounted-sheet-frame__box");
+    const card = /** @type {Element} */ (
+      familySection.querySelector(".mounted-sheet-frame__box")
+    );
     const cardRect = card.getBoundingClientRect();
-    const fraction = (rect) => ({
+    const fraction = (/** @type {DOMRect} */ rect) => ({
       x: (rect.left + rect.width / 2 - cardRect.left) / cardRect.width,
       y: (rect.top + rect.height / 2 - cardRect.top) / cardRect.height,
     });

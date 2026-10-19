@@ -1,8 +1,9 @@
-/* The rules sitting directly at the top of a stylesheet: a rule whose body holds no nested block, with
+/** The rules sitting directly at the top of a stylesheet: a rule whose body holds no nested block, with
  * its selector list whitespace-stripped. An at-rule's own block is skipped, and so is everything inside
  * it. Not structure: comments, quoted strings, an unquoted `url(...)`, and any character after a
  * backslash. A statement at-rule (`@layer a,b;`, `@import ...;`) ends at its `;`, so it never joins
- * the next rule's selector. */
+ * the next rule's selector.
+ * @param {string} css */
 export function topLevelRules(css) {
   return topLevelBlocks(css)
     .filter(({ prelude, nested }) => !prelude.startsWith("@") && !nested)
@@ -12,10 +13,13 @@ export function topLevelRules(css) {
     }));
 }
 
-/* The stylesheet outside every top-level at-rule block whose prelude matches `preludePattern`, and
+/** The stylesheet outside every top-level at-rule block whose prelude matches `preludePattern`, and
  * those blocks as source text. Walks the same structure as `topLevelRules`, so a brace inside a string
- * or a comment never ends a block early. */
+ * or a comment never ends a block early.
+ * @param {string} css
+ * @param {RegExp} preludePattern */
 export function splitAtRuleBlocks(css, preludePattern) {
+  /** @type {string[]} */
   const blocks = [];
   let outside = "";
   let cursor = 0;
@@ -28,16 +32,19 @@ export function splitAtRuleBlocks(css, preludePattern) {
   return { outside: outside + css.slice(cursor), blocks };
 }
 
+/** @param {string} css */
 function topLevelBlocks(css) {
+  /** @type {{ prelude: string, body: string, nested: boolean, start: number, end: number }[]} */
   const found = [];
   let start = 0;
   let depth = 0;
   let prelude = "";
   let body = "";
+  /** @type {string | null} */
   let quote = null;
   let nested = false;
   let index = 0;
-  const append = (text) => {
+  const append = (/** @type {string} */ text) => {
     if (depth === 0) {
       if (prelude.trim() === "" && text.trim() !== "") start = index;
       prelude += text;

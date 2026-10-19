@@ -25,13 +25,16 @@ ${Object.entries(GROUPS)
 </g></svg>`);
 console.log(
   await page.evaluate(() => {
+    /** @type {Record<string, { x: number, y: number, w: number, h: number }>} */
     const out = {};
-    for (const g of document.querySelectorAll("g[id^='g-']")) {
+    for (const g of /** @type {NodeListOf<SVGGraphicsElement>} */ (
+      document.querySelectorAll("g[id^='g-']")
+    )) {
       const b = g.getBBox();
-      const ctm = g.getCTM();
+      const ctm = /** @type {DOMMatrix} */ (g.getCTM());
       /* getBBox is in the group's own (pre-transform) space; map its corners through the CTM to
          land in the root viewBox's units, which is what a <use> will be placed in. */
-      const pt = (x, y) => {
+      const pt = (/** @type {number} */ x, /** @type {number} */ y) => {
         const p = new DOMPoint(x, y).matrixTransform(ctm);
         return [p.x, p.y];
       };
