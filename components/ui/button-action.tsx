@@ -79,14 +79,11 @@ export function ButtonAction({
   );
 
   if (href !== undefined) {
-    /* A web destination opens in its own tab so the invitation is never navigated away from; a
-       `tel:` handoff leaves the browser entirely, and a new tab would be left behind empty. A
+    /* A web destination opens in its own tab so the invitation is never navigated away from. A
        root-relative href is this site, and replaces the page rather than opening beside it.
        `//host` is excluded explicitly: it starts with `/` but is an EXTERNAL destination, so
        treating it as same-tab would drop `rel="noopener noreferrer"` along with the new tab. */
-    const sameTab =
-      href.startsWith("tel:") ||
-      (href.startsWith("/") && !href.startsWith("//"));
+    const sameTab = href.startsWith("/") && !href.startsWith("//");
     return (
       <a
         aria-label={accessibleName}

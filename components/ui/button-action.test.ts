@@ -121,7 +121,7 @@ test("the action role keeps its bold weight and drops the caps-era tracking", ()
 });
 
 /* EVALUATED, not pattern-matched. Pinning a spelling of the predicate passes the mis-refactor as
-   well as the correct one: `href.startsWith("tel:") || !href.startsWith("//")` satisfies any regex
+   well as the correct one: `!href.startsWith("//")` alone satisfies any regex
    asking for the `//` exclusion, and makes every external `https://` link same-tab with no
    `rel="noopener noreferrer"` -- the exact defect this guard exists to prevent. The predicate is a
    self-contained expression over one variable, so the honest test is to run it.
@@ -138,7 +138,7 @@ test("sameTab opens external destinations in a new tab and this site in place", 
     href: string,
   ) => boolean;
 
-  for (const href of ["tel:+919354187793", "/", "/design-system"]) {
+  for (const href of ["/", "/design-system"]) {
     assert.equal(sameTab(href), true, `${href} should replace the page`);
   }
   for (const href of [
