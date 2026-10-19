@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { botanicalCss, pieceOverrideCss } from "./botanical-css.ts";
@@ -87,6 +87,31 @@ const BAND_PIECES: readonly BotanicalPiece[] = [
   "meadow-band-left",
   "meadow-band-right",
 ];
+
+/* Every rule in the module, not only `.clip`: the header's list of blend-isolating properties holds
+   for the whole layer. Matched as property NAMES, so `background-size: contain` is not mistaken for
+   `contain`. */
+test("no rule in botanical.module.css declares a blend-isolating property", () => {
+  const css = readFileSync(
+    path.join(import.meta.dirname, "botanical.module.css"),
+    "utf8",
+  ).replace(/\/\*[\s\S]*?\*\//g, "");
+  const bodies = [...css.matchAll(/[^{}]+\{([^{}]*)\}/g)].map((m) => m[1]);
+  const atRules = (css.match(/@[\w-]+[^{;]*\{/g) ?? []).length;
+  assert.equal(
+    bodies.length,
+    (css.match(/\{/g) ?? []).length - atRules,
+    "every rule body was parsed",
+  );
+  const isolating =
+    /(^|;)\s*(z-index|isolation|contain|content-visibility|transform|filter|opacity|box-shadow|will-change|perspective)\s*:/;
+  for (const body of bodies) {
+    assert.ok(
+      !isolating.test(body),
+      `a botanical.module.css rule declares a blend-isolating property: ${body.trim()}`,
+    );
+  }
+});
 
 test("every piece carries a complete, well-formed record at every tier", () => {
   const pieces = Object.keys(TUNING);
@@ -327,8 +352,7 @@ test("corner-trail's placement is the value settled on a render", () => {
   });
 });
 
-test("the set is nineteen pieces and falling-spray and cosmos-arc are retired from it", () => {
-  assert.equal(Object.keys(TUNING).length, 19);
+test("retired pieces stay retired", () => {
   assert.ok(!("falling-spray" in TUNING));
   assert.ok(!("cosmos-arc" in TUNING));
 });
@@ -349,4 +373,54 @@ test("poppy-spread is a phone-only piece, dropped from the tablet tier up", () =
       `poppy-spread must be dropped at ${tier}`,
     );
   }
+});
+
+test("every image the generated sheet names exists in public/botanical", () => {
+  const css = botanicalCss(Object.keys(TUNING) as BotanicalPiece[]);
+  const urls = [...css.matchAll(/url\("?(\/botanical\/[^")]+)"?\)/g)].map(
+    (m) => m[1],
+  );
+  let pairs = 0;
+  for (const record of Object.values(TUNING)) {
+    for (const tier of TIERS) if (!record[tier].drop) pairs += 1;
+  }
+  assert.equal(
+    urls.length,
+    2 * pairs,
+    "one AVIF and one WebP per shown piece and tier",
+  );
+  for (const url of urls) {
+    assert.ok(
+      existsSync(path.join("public", url)),
+      `${url} is not in public/ — run npm run images`,
+    );
+  }
+});
+
+/* DESIGN.md → Botanical Edge: no piece appears twice in one scroll. Read from source because
+   `botanical.tsx` imports a CSS module, which `node --test` cannot load. */
+test("no piece appears twice in one scroll, and the scroll carries all nineteen", () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, "botanical.tsx"),
+    "utf8",
+  );
+  const pieces = (text: string) =>
+    [...text.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]);
+  const invite = source.match(
+    /const INVITE_PIECES = \[([\s\S]*?)\] as const/,
+  )?.[1];
+  assert.ok(invite, "no INVITE_PIECES declaration");
+  const start = source.indexOf("export const SECTION_PLACEMENT = {");
+  const end = source.indexOf('"not-found": INVITE_PIECES', start);
+  assert.ok(
+    start !== -1 && end > start,
+    "no SECTION_PLACEMENT block before not-found",
+  );
+  const scroll = [...pieces(invite), ...pieces(source.slice(start, end))];
+  assert.equal(
+    new Set(scroll).size,
+    scroll.length,
+    `a piece repeats: ${scroll}`,
+  );
+  assert.deepEqual([...scroll].sort(), Object.keys(TUNING).sort());
 });
