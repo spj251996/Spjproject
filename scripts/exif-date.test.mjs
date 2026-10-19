@@ -3,6 +3,7 @@ import test from "node:test";
 import sharp from "sharp";
 import { dateTaken } from "./exif-date.mjs";
 
+/** @param {import("sharp").Exif} exif */
 const withExif = async (exif) =>
   (
     await sharp(

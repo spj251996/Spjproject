@@ -12,6 +12,10 @@
 const EXIF_IFD_POINTER = 0x8769;
 const DATE_TIME_ORIGINAL = 0x9003;
 
+/**
+ * @param {unknown} exif
+ * @returns {number | null}
+ */
 export function dateTaken(exif) {
   if (!Buffer.isBuffer(exif)) return null;
   const start = exif.subarray(0, 6).toString("latin1") === "Exif\0\0" ? 6 : 0;
@@ -20,12 +24,14 @@ export function dateTaken(exif) {
   const order = tiff.subarray(0, 2).toString("latin1");
   if (order !== "II" && order !== "MM") return null;
   const big = order === "MM";
+  /** @param {number} at */
   const u16 = (at) =>
     at + 2 <= tiff.length
       ? big
         ? tiff.readUInt16BE(at)
         : tiff.readUInt16LE(at)
       : null;
+  /** @param {number} at */
   const u32 = (at) =>
     at + 4 <= tiff.length
       ? big
@@ -33,6 +39,10 @@ export function dateTaken(exif) {
         : tiff.readUInt32LE(at)
       : null;
 
+  /**
+   * @param {number} ifd
+   * @param {number} tag
+   */
   const find = (ifd, tag) => {
     const count = u16(ifd);
     if (count === null) return null;

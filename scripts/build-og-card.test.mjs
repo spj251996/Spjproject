@@ -42,6 +42,11 @@ const DIVIDER =
   '<span class="hairline"></span><span><svg viewBox="0 0 174.6 169.8"><use href="#sprig-mark"></use></svg></span>' +
   '<span class="hairline"></span></div>';
 
+/**
+ * @param {string} id
+ * @param {string} weekday
+ * @param {string | number} day
+ */
 const sheet = (id, weekday, day) =>
   `<h2 class="type-heading-xl" data-event="${id}">${id}</h2><div><p class="type-date-primary text-ink">` +
   `<time>${weekday}, ${day}<span class="type-date-ordinal">th</span> <span class="md:hidden">Jan</span>` +
@@ -189,7 +194,10 @@ test("mediaFiles lists the font files the CSS points at, and refuses none", () =
 });
 
 test("the flowers' shares are the pieces' desktop sizes in botanical-tuning.ts", () => {
-  const share = (piece) => PIECES.find((p) => p.piece === piece).share;
+  /** @param {string} piece */
+  const share = (piece) =>
+    /** @type {{ share: number }} */ (PIECES.find((p) => p.piece === piece))
+      .share;
   assert.equal(
     share("corner-trail"),
     TUNING["corner-trail"].desktop.size / 100,
@@ -205,12 +213,14 @@ test("a card that cannot reach the size budget throws and leaves the existing ou
   const raw = join(dir, "raw.png");
   const out = join(dir, "og-card.jpg");
   await sharp({
-    create: {
-      width: CARD.width,
-      height: CARD.height,
-      channels: 3,
-      noise: { type: "gaussian", mean: 128, sigma: 60 },
-    },
+    create: /** @type {import("sharp").Create} */ (
+      /** @type {unknown} */ ({
+        width: CARD.width,
+        height: CARD.height,
+        channels: 3,
+        noise: { type: "gaussian", mean: 128, sigma: 60 },
+      })
+    ),
   })
     .png()
     .toFile(raw);

@@ -30,6 +30,7 @@ const NEAR = 12; // px of clear gap below which a bud reads as crowding the line
 
 const browser = await chromium.launch({ channel: "chromium" });
 const page = await browser.newPage();
+/** @param {string} css */
 const probe = (css) =>
   page.evaluate((text) => {
     let el = document.getElementById("probe-style");
@@ -40,21 +41,36 @@ const probe = (css) =>
     }
     el.textContent = text;
   }, css);
+/** @param {{ x: number, y: number, width: number, height: number }} clip */
 const raw = async (clip) =>
   sharp(await page.screenshot({ clip }))
     .flatten({ background: "#fff" })
     .raw()
     .toBuffer({ resolveWithObject: true });
+/**
+ * @param {Buffer} a
+ * @param {Buffer} b
+ * @param {number} i
+ */
 const d = (a, b, i) =>
   Math.abs(a[i] - b[i]) > DIFF ||
   Math.abs(a[i + 1] - b[i + 1]) > DIFF ||
   Math.abs(a[i + 2] - b[i + 2]) > DIFF;
 
 /* Two-pass 8-neighbour chamfer: weight 1 for orthogonal steps, SQRT2 for diagonal. */
+/**
+ * @param {Uint8Array} mask
+ * @param {number} W
+ * @param {number} H
+ */
 function distanceTransform(mask, W, H) {
   const INF = 1e9;
   const dist = new Float64Array(W * H);
   for (let p = 0; p < W * H; p++) dist[p] = mask[p] ? INF : 0;
+  /**
+   * @param {number} x
+   * @param {number} y
+   */
   const at = (x, y) =>
     x < 0 || y < 0 || x >= W || y >= H ? 0 : dist[y * W + x];
   for (let y = 0; y < H; y++)
@@ -83,6 +99,11 @@ function distanceTransform(mask, W, H) {
     }
   return dist;
 }
+/**
+ * @param {Uint8Array} mask
+ * @param {number} W
+ * @param {number} H
+ */
 function components(mask, W, H) {
   const seen = new Uint8Array(W * H);
   const out = [];
@@ -92,7 +113,7 @@ function components(mask, W, H) {
     seen[p] = 1;
     const px = [];
     while (stack.length) {
-      const q = stack.pop();
+      const q = /** @type {number} */ (stack.pop());
       px.push(q);
       const x = q % W,
         y = (q / W) | 0;
@@ -127,9 +148,9 @@ for (const [vw, vh] of VIEWPORTS) {
     { timeout: 10000 },
   );
   const clip = await page.evaluate((pad) => {
-    const r = document
-      .querySelector("[data-invite-stack] .type-eyebrow")
-      .getBoundingClientRect();
+    const r = /** @type {Element} */ (
+      document.querySelector("[data-invite-stack] .type-eyebrow")
+    ).getBoundingClientRect();
     return {
       x: Math.floor(r.x) - 10,
       y: Math.floor(r.y) - pad,

@@ -220,6 +220,7 @@ test("a filename's awkward characters survive into the manifest and the URL", as
    `[name, kind]` — a real JPEG, one carrying a date taken (`["jpg-dated", "<date>"]`), a 1200x2400
    portrait (`"jpg-big"`), bytes that are not an image, a sub-folder, or an empty dotfile.
    Nothing here touches `public/`, `assets/` or `content/`. */
+/** @param {Record<string, [string, string | string[]][]>} folders */
 async function tree(folders) {
   const root = mkdtempSync(join(tmpdir(), "ritual-run-"));
   const source = join(root, "assets");
@@ -274,6 +275,7 @@ async function tree(folders) {
   return { root, source, out, manifest };
 }
 
+/** @param {{ source: string, out: string, manifest: string }} t */
 const run = (t) =>
   writeRitualPhotos({
     dryRun: false,
@@ -360,12 +362,13 @@ test("a write failure is reported as one, not blamed on the photograph", async (
       "a.jpg",
       join(blocker, "out"),
     ),
+    /** @param {unknown} error */
     (error) => {
       assert.match(
-        error.message,
+        /** @type {Error} */ (error).message,
         /wedding\/a\.jpg: its deliveries could not be written/,
       );
-      assert.doesNotMatch(error.message, /HEIC/);
+      assert.doesNotMatch(/** @type {Error} */ (error).message, /HEIC/);
       return true;
     },
   );
@@ -591,6 +594,7 @@ test("photographs sort by date taken, undated ones last by name", async () => {
 test("each photograph gets three copies, each within its own bound", async () => {
   const t = await tree({ wedding: [["tall.jpg", "jpg-big"]] });
   await run(t);
+  /** @param {string} name */
   const size = async (name) => {
     const m = await sharp(join(t.out, "wedding", name)).metadata();
     return [m.width, m.height];
@@ -611,6 +615,7 @@ test("the unreadable-photograph message names both phone settings", async () => 
 /* A throwaway repository root under the OS temp directory, with the generator's own layout: sources
    under `assets/`, deliveries under `public/`. Every path `prune` and `run` resolve is joined onto it,
    so nothing here touches the real `public/`, `assets/` or `content/`. */
+/** @param {Record<string, string | Buffer>} files */
 function generatorRoot(files) {
   const root = mkdtempSync(join(tmpdir(), "generator-run-"));
   for (const [path, contents] of Object.entries(files)) {
@@ -620,6 +625,7 @@ function generatorRoot(files) {
   return root;
 }
 
+/** @type {import("./generate-images.mjs").PassThroughRecipe} */
 const passThroughRecipe = {
   sourceDir: "assets/family",
   outDir: "public/family",
@@ -703,6 +709,7 @@ test("a run copies the pass-through files, runs the recipes and prunes what it n
     (entry) => entry.out === "public/couple/couple-1x.webp",
   );
   assert.ok(coupleRecipe, "the real couple recipe must be found");
+  /** @type {import("./generate-images.mjs").FileRecipe} */
   const botanicalRecipe = {
     source: "assets/botanical/fixture-piece.png",
     out: "public/botanical/fixture-piece-phone.webp",

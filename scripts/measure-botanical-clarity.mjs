@@ -16,6 +16,20 @@ import sharp from "sharp";
 import { TUNING } from "../components/background/botanical-tuning.ts";
 import { FILE_TIER } from "./generate-images.mjs";
 
+/**
+ * @typedef {{ piece: string, file: string, note: "NO FILE" }} MissingRow
+ * @typedef {{
+ *   piece: string,
+ *   file: string,
+ *   note?: undefined,
+ *   sourceWidth: number | null | undefined,
+ *   delivered: number | undefined,
+ *   rendered: number,
+ *   ratio: number,
+ *   capped: boolean,
+ * }} MeasuredRow
+ */
+/** @type {(MissingRow | MeasuredRow)[]} */
 const rows = [];
 for (const [piece, tiers] of Object.entries(TUNING)) {
   const source = ["png", "webp"]
@@ -44,6 +58,7 @@ for (const [piece, tiers] of Object.entries(TUNING)) {
   }
 }
 
+/** @type {Map<string, MeasuredRow>} */
 const worst = new Map();
 for (const r of rows) {
   if (r.note) continue;
