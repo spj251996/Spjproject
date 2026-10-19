@@ -16,6 +16,19 @@ const HEIGHT = 900;
 const DEFAULT_WIDTHS = [320, 768, 1440];
 
 const args = process.argv.slice(2);
+
+/* A missing "Errors: N" line means playwright-cli's console format changed, not that the page is
+   clean, so it throws rather than reading as zero. The pattern is a regex literal, so a single
+   backslash; PROBE doubles it only because it is template-literal text evaluated elsewhere. */
+function errorCount(consoleOut) {
+  const match = consoleOut.match(/Errors: (\d+)/);
+  if (!match) {
+    throw new Error(
+      'playwright-cli console output has no "Errors: N" line; its format changed',
+    );
+  }
+  return Number(match[1]);
+}
 const route = args.find((arg) => arg.startsWith("/")) ?? "/";
 const widthsArg = args.find((arg) => arg.startsWith("--widths="));
 const widths = widthsArg
@@ -190,9 +203,7 @@ try {
   }
 
   const consoleOut = cli("console", "error");
-  /* A regex literal, so a single backslash; PROBE doubles it only because it is template-literal
-     text evaluated elsewhere. Doubling it here would match nothing and report zero errors forever. */
-  const errors = Number(consoleOut.match(/Errors: (\d+)/)?.[1] ?? "0");
+  const errors = errorCount(consoleOut);
   console.log(`\npage errors  ${errors === 0 ? "ok" : `FAIL  ${errors}`}`);
   if (errors > 0) {
     console.log(cli("console", "error", "--raw"));
