@@ -15,15 +15,8 @@ const SECTIONS: readonly ThreadId[] = [
 test("celebrations is measured taller than the band's own nominal box, at wide", () => {
   const box = sectionBox("celebrations", "wide");
   assert.equal(box.width, 1536);
-  /* Re-measured three times: when the five-ritual section replaced the placeholder (1320 was the
-     placeholder's), when the first two rituals gained their temporary photographs, and on
-     2026-10-10 when each Malayalam moved onto its own line and the alternating band gave way to
-     one full-width column at every tier, and again on 2026-10-11 when the rituals went left-aligned
-     on one header line with a smaller title. The photo-free base is 1513 at this band and each
-     ritual with photographs adds a constant +190 since a photographed ritual closes to 24px from
-     64rem (2026-10-11). The test photographs came out on 2026-10-14, so this is the base; each
-     ritual's first real upload adds 190.
-     It is still the point of this test that it exceeds the band's 695. */
+  /* The photo-free base at this band; each photographed ritual adds +190. The point of this test
+     is that it exceeds the band's 695. */
   assert.equal(box.height, 1513);
   assert.ok(box.height > 695);
 });

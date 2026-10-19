@@ -37,12 +37,8 @@ export type EndTangents = { start?: Point; end?: Point };
 export type SplineOptions = {
   ends?: EndTangents;
   /* The widest span the fitter may see, defaulting to `MAX_SPAN`. Applied inside `splinePath`
-     rather than by the generator (`scripts/build-thread-paths.mjs`), and the ORIGINAL REASON FOR
-     THAT IS NOW VOID: the generator was gitignored when this was written, so a rule applied there
-     would not have survived the coming redraw. It is committed as of 2026-10-11. The placement
-     still stands on its own ground — the fitter is where a span rule belongs, since it is the
-     fitter's own invariant and every caller gets it — but do not repeat the gitignored reasoning.
-     Pass `Infinity` to opt out. */
+     rather than by the generator: it is the fitter's own invariant, so every caller gets it. Pass
+     `Infinity` to opt out. */
   maxSpan?: number;
 };
 
@@ -127,8 +123,7 @@ export function boundSpans(points: readonly Point[], maxSpan: number): Point[] {
  * index, took that index from the authored point count, and so cut at the wrong cubic the day span
  * bounding landed -- leaving part of each section's half on the other section's path, which
  * `thread-paths.test.ts`'s boundary test caught as a 19.5 degree heading mismatch. `boundSpans` is
- * exported for exactly this, and the warning lives here because the generator is gitignored and will
- * be re-derived for the coming redraw.
+ * exported for exactly this.
  *
  * A FIRST OR LAST point keeps HALF that, which is what duplicating the neighbour already gave it
  * (`|p2 - p1| / 6`) — so the tension at a connector's two ends is exactly the tension that shipped,
@@ -139,10 +134,8 @@ export function boundSpans(points: readonly Point[], maxSpan: number): Point[] {
  * able to follow, and the section renders in pieces.
  *
  * Taking the length from the arm's OWN span rather than from the point's two legs is what keeps a
- * short span from starving its neighbour: a connector runs `JOIN_OVERLAP` past each of its ends, so
- * its first and last spans are about two pixels long, and a rule that fed every arm from the shorter
- * adjacent span put a 0.3 px arm on the corner beside each of them — measured on the owner's `wide`
- * routes as a radius of curvature of 0.2 px, which is a cusp. An arm can still never reach past its
+ * short span from starving its neighbour: feeding every arm from the shorter adjacent span puts a
+ * sub-pixel arm, a cusp, beside every very short span. An arm can still never reach past its
  * own span, so a corner between an unequal pair neither bulges nor loops inside the short one.
  */
 export function splinePath(

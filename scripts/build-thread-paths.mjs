@@ -7,23 +7,18 @@
  * on its own fitted heading.
  *
  * A connector that crosses a section boundary is fit ONCE, whole, in the page's global pixels —
- * never as two independently-fit halves meeting at a shared tangent, and never forced onto
- * `TERMINAL_TANGENT` (vertical), which belongs to the retired grid where independently-authored
- * sections had to be forced to agree at all. The owner draws one continuous stroke down the page,
+ * never as two independently-fit halves meeting at a shared tangent, and never forced onto a vertical
+ * tangent. The owner draws one continuous stroke down the page,
  * so the fitted curve already agrees with itself at the boundary; it is SLICED there afterwards
  * (`sliceFittedPath`), never re-fit, so both halves stay exactly what one curve already was. A free
  * page-end (before the first motif, after the last) is left with no forced tangent at all, which
  * the drawn sheet leaves loose on purpose.
  *
- * CONTACT IS REMOVED IN CODE, not in the sheets (2026-10-14): `thread-without-section.mjs` drops its
- * section and joins Event Info's last connector to Family's first, machine-made until the redraw.
+ * CONTACT IS REMOVED IN CODE, not in the sheets: `thread-without-section.mjs` drops its section and
+ * joins Event Info's last connector to Family's first, machine-made until the redraw.
  *
- * RUN ONCE PER DRAWING UPDATE, and committed rather than kept as scratch (2026-10-11). It lived
- * in gitignored `tmp/` until then, alongside the only copy of the authored JSON it reads — which
- * meant `components/thread/thread-paths.ts` was a committed generated file that a fresh clone
- * COULD NOT REGENERATE. The three bands' sources are now `assets/thread/{wide,tall,upright}/`,
- * beside the other sources of record. The owner's drawn sheets themselves stay out of the repo:
- * they are ~18MB of PNG and the extracted JSON is what this reads.
+ * RUN ONCE PER DRAWING UPDATE. Its sources are `assets/thread/{wide,tall,upright}/`; the owner's
+ * drawn sheets stay out of the repo (about 18MB of PNG) and the extracted JSON is what this reads.
  *
  *   node scripts/build-thread-paths.mjs    # -> components/thread/thread-paths.ts
  *
@@ -65,9 +60,9 @@ const DIRS = {
   upright: "assets/thread/upright",
 };
 
-/* The owner's own tuned value, per band — READ from `.claude/work/thread-wide-placements.md`'s
-   confirmed routes, never derived. A first version of this script derived a motif's field size
-   from the drawn ends' own separation instead of holding this fixed, which silently rescaled every
+/* The owner's own tuned value, per band, set on a render and never derived. A first version of this
+   script derived a motif's field size from the drawn ends' own separation instead of holding this
+   fixed, which silently rescaled every
    motif by a different factor (heart 1.13x, rings 1.57x, bow 0.40x, …) — the drawn ends sit 4-30px
    off the authored attachment points, which is expected and fine for FITTING TURN AND CENTRE, but
    wrong for recovering a size that was never carried by that separation in the first place. `scale`
@@ -364,16 +359,9 @@ function buildBand(band, dir) {
         boundaryY,
       );
 
-      /* The owner draws ONE continuous stroke down the whole page, so the two halves must not be
-         fit as two independent curves that merely SHARE a tangent at the join — even a shared
-         tangent direction still lets each side peel away from it at its own rate (each side's
-         Catmull-Rom arm is sized from that side's own adjacent span), which reads as a small kink
-         a few pixels in. `TERMINAL_TANGENT` (vertical) belonged to the retired grid, where
-         independently-authored sections had to be forced to agree at all — forcing it here bent a
-         curve that already agrees with itself, by up to ~80 degrees against the drawn crossing.
-         Fitting the WHOLE crossing stroke once, in the page's global pixels, and slicing the
-         result at the join it already passes through, removes the seam instead of narrowing it:
-         both halves are subpaths of one curve, not two curves aimed at the same point. */
+      /* Fit the WHOLE crossing stroke once and slice at the join (see the emitted header): two
+         halves fitted separately each size their Catmull-Rom arm from their own adjacent span,
+         which reads as a small kink even with a shared tangent. */
       const combined = [...firstHalf, ...secondHalf.slice(1)];
       const combinedD = formatPath(combined, {
         start: before.exitHeadingVector,
@@ -468,9 +456,8 @@ function emit(results) {
    Every connector's \`d\` and every placement's \`x\`/\`y\` are in the SAME per-section pixel box
    \`thread-boxes.ts\`'s \`sectionBox\` describes: x from the section's left edge, y from the
    section's own top. A motif is met on its own tangent turned by \`turn\`, the fitted absolute
-   angle described below. A SECTION BOUNDARY is not met on any authored tangent at all — never
-   \`TERMINAL_TANGENT\` (vertical), which belonged to the retired grid where independently-authored
-   sections had to be forced to agree. The owner draws one continuous stroke down the page, so a
+   angle described below. A SECTION BOUNDARY is not met on any authored tangent at all. The owner
+   draws one continuous stroke down the page, so a
    boundary-crossing connector is fit ONCE, whole, then sliced at the join it already passes
    through; both halves below are exactly what one curve already was, never two curves independently
    aimed at the same point. A free page-end (before the very first motif, after the very last)
@@ -494,11 +481,10 @@ function emit(results) {
 import type { BandId } from "./thread-bands.ts";
 import type { MotifId, ThreadId } from "./thread-geometry.ts";
 
-/* The five real sections, in page order — \`not-found\` is excluded here for the same reason it is
-   excluded from \`BySection\`: it draws the invite's own paths rather than owning a row.
-   \`thread-line.ts\` composes in this order and \`page-thread.tsx\` measures one section per entry,
+/* The five sections, in page order. \`thread-line.ts\` composes in this order and
+   \`page-thread.tsx\` measures one section per entry,
    so a route rendering a different count draws no thread. */
-export const THREAD_IDS: readonly Exclude<ThreadId, "not-found">[] = [
+export const THREAD_IDS: readonly ThreadId[] = [
 ${SECTION_ORDER.map((id) => `  ${JSON.stringify(id)},`).join("\n")}
 ];
 
@@ -513,7 +499,7 @@ export type Placement = {
   mirror?: boolean;
 };
 
-type BySection<T> = Record<Exclude<ThreadId, "not-found">, T>;
+type BySection<T> = Record<ThreadId, T>;
 
 export const THREAD_PATHS: Record<BandId, BySection<Connector[]>> = {
 ${pathsBody}

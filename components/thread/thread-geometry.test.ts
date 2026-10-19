@@ -167,8 +167,8 @@ test("every motif's DRAWN tangent equals its DECLARED tangent at both terminals"
   }
 });
 
-/* The recorded aspect is what the composition sizes the motif's square against, so a value that
-   disagrees with the drawing silently distorts nothing and mis-sizes everything. */
+/* No runtime code reads `Motif.aspect`; this pins each recorded value against its drawing so it
+   cannot drift. */
 test("every motif's recorded aspect is its drawn ink's width:height ratio", () => {
   for (const motif of Object.values(MOTIFS)) {
     const { points } = flatten(motif.d);

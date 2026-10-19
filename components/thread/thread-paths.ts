@@ -7,9 +7,8 @@
    Every connector's `d` and every placement's `x`/`y` are in the SAME per-section pixel box
    `thread-boxes.ts`'s `sectionBox` describes: x from the section's left edge, y from the
    section's own top. A motif is met on its own tangent turned by `turn`, the fitted absolute
-   angle described below. A SECTION BOUNDARY is not met on any authored tangent at all — never
-   `TERMINAL_TANGENT` (vertical), which belonged to the retired grid where independently-authored
-   sections had to be forced to agree. The owner draws one continuous stroke down the page, so a
+   angle described below. A SECTION BOUNDARY is not met on any authored tangent at all. The owner
+   draws one continuous stroke down the page, so a
    boundary-crossing connector is fit ONCE, whole, then sliced at the join it already passes
    through; both halves below are exactly what one curve already was, never two curves independently
    aimed at the same point. A free page-end (before the very first motif, after the very last)
@@ -33,11 +32,10 @@
 import type { BandId } from "./thread-bands.ts";
 import type { MotifId, ThreadId } from "./thread-geometry.ts";
 
-/* The five real sections, in page order — `not-found` is excluded here for the same reason it is
-   excluded from `BySection`: it draws the invite's own paths rather than owning a row.
-   `thread-line.ts` composes in this order and `page-thread.tsx` measures one section per entry,
+/* The five sections, in page order. `thread-line.ts` composes in this order and
+   `page-thread.tsx` measures one section per entry,
    so a route rendering a different count draws no thread. */
-export const THREAD_IDS: readonly Exclude<ThreadId, "not-found">[] = [
+export const THREAD_IDS: readonly ThreadId[] = [
   "invite",
   "event-info",
   "family",
@@ -56,7 +54,7 @@ export type Placement = {
   mirror?: boolean;
 };
 
-type BySection<T> = Record<Exclude<ThreadId, "not-found">, T>;
+type BySection<T> = Record<ThreadId, T>;
 
 export const THREAD_PATHS: Record<BandId, BySection<Connector[]>> = {
   tall: {

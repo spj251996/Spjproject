@@ -332,16 +332,10 @@ test("the exact tangent at a boundary is continuous to a fraction of a degree", 
 
 /* ---- scale is an INPUT to the fit, never an output of it -------------------------------------
 
-   The owner tuned `scale` on a render (`.claude/work/thread-wide-placements.md`'s confirmed
-   routes) and nothing in the fit is entitled to move it. An earlier version of the generator
-   derived a motif's field size from the drawn ends' own separation instead — the drawn ends sit
-   4-30px off the authored attachment points, which is fine for fitting TURN and CENTRE but wrong
-   for recovering a size that was never carried by that separation, and it silently rescaled every
-   motif by a different factor (heart 1.13x, rings 1.57x, bow 0.40x…), which is why
-   `check:thread-joins` then reported the thread in pieces almost everywhere. This is the authored
-   table itself, duplicated from the source doc rather than imported from it, because
-   `thread-wide-placements.md` is prose the generator reads by eye, not a module either file can
-   share. */
+   The owner tuned `scale` on a render and nothing in the fit is entitled to move it: deriving it
+   from the drawn ends' separation (which sit 4-30px off the authored attachment points) rescales every
+   motif by a different factor. This is the authored table, stated by hand rather than imported from
+   the generator. */
 const AUTHORED_SCALE: Record<BandId, Partial<Record<MotifId, number>>> = {
   tall: { heart: 0.2, rings: 0.25, knot: 0.25, portraitLoop: 0.35 },
   wide: { heart: 0.3, rings: 0.28, knot: 0.2, portraitLoop: 0.2 },

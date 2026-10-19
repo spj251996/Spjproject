@@ -24,13 +24,11 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
      still leans right of the line rather than sitting squarely on it — but only just, where the
      untrimmed drawing leaned right by most of its width.
 
-     The crossing at the base is composed by hand; the rest is the trace unchanged. No trace
-     setting recovers it: the drawing's two tails meet the X almost collinear, so the junction
-     rule's best continuation runs tail into tail and leaves the heart as a circuit to splice
-     back in — which lays the same ink but enters and leaves the base at two hairpins instead of
-     passing through. Raster widths 1200-2200 and bridge widths 1-12 all reproduce the hairpins.
-     The four arms are re-paired the way the drawing has them: the left tail carries up into the
-     RIGHT leg and the LEFT leg carries down into the right tail. */
+     The crossing at the base is composed by hand; the rest is the trace unchanged. No trace setting
+     recovers it: the drawing's two tails meet the X almost collinear, so a trace enters and leaves
+     the base at two hairpins instead of passing through. The four arms are re-paired the way the
+     drawing has them: the left tail carries up into the RIGHT leg and the LEFT leg carries down into
+     the right tail. */
   heart: {
     id: "heart",
     d: "M 0 74.59 C 1.33 74.68, 2.68 74.76, 4.04 74.8 C 6.04 74.87, 8.06 74.8, 10.09 74.8 C 12.08 74.8, 14.14 74.87, 16.1 74.8 C 18.09 74.74, 20.09 74.61, 22.01 74.44 C 23.91 74.25, 25.67 74.02, 27.54 73.72 C 29.4 73.43, 31.29 73.07, 33.12 72.65 C 34.95 72.22, 36.75 71.67, 38.58 71.21 C 40.38 70.72, 42.27 70.33, 44 69.77 C 49.92 67.88, 52.56 66.8, 57.79 63.46 C 59.32 62.48, 61.06 61.47, 62.56 60.46 C 64.09 59.48, 65.6 58.53, 66.97 57.52 C 68.34 56.47, 69.55 55.49, 70.83 54.28 C 72.1 53.08, 73.47 51.54, 74.58 50.33 C 75.73 49.12, 76.67 48.24, 77.59 47.1 C 78.54 45.95, 79.45 44.84, 80.27 43.5 C 81.05 42.13, 81.77 40.56, 82.42 38.99 C 83.08 37.43, 83.93 35.89, 84.22 34.13 C 84.51 32.36, 84.58 30.07, 84.22 28.38 C 83.89 26.71, 83.01 25.34, 82.1 24.06 C 81.18 22.79, 80.2 21.48, 78.67 20.83 C 77.13 20.17, 74.81 20.17, 72.92 20.11 C 71.02 20.04, 69.09 19.98, 67.33 20.47 C 65.57 20.93, 63.74 22.04, 62.33 22.98 C 60.93 23.93, 60.11 25.21, 58.9 26.22 C 57.69 27.23, 56.12 29.42, 55.11 29.09 C 54.13 28.77, 53.77 25.63, 52.92 24.19 C 52.07 22.76, 51.25 21.48, 50.05 20.4 C 48.84 19.36, 47.33 18.51, 45.73 17.86 C 44.13 17.2, 42.2 16.48, 40.41 16.52 C 38.61 16.52, 36.49 17.27, 34.95 17.92 C 33.42 18.57, 32.31 19.42, 31.23 20.47 C 30.15 21.51, 29.23 22.76, 28.45 24.16 C 27.7 25.53, 27.01 27.07, 26.65 28.8 C 26.29 30.56, 26.16 32.82, 26.29 34.71 C 26.42 36.58, 26.85 38.34, 27.37 40.07 C 27.89 41.84, 28.71 43.63, 29.5 45.23 C 30.28 46.87, 31.16 48.4, 32.04 49.81 C 32.96 51.18, 33.97 52.39, 34.92 53.6 C 35.9 54.77, 36.75 55.79, 37.83 56.96 C 38.91 58.14, 40.05 59.48, 41.42 60.65 C 42.79 61.83, 44.75 62.81, 46.03 63.99 C 49.16 66.86, 52.37 67.03, 55.53 69.84 C 56.71 70.88, 58.77 71.76, 60.44 72.58 C 62.1 73.4, 63.83 74.08, 65.53 74.8 C 67.26 75.55, 68.96 76.3, 70.69 76.96 C 72.43 77.61, 74.22 78.17, 75.99 78.79 C 77.75 79.38, 79.48 80.03, 81.28 80.55 C 83.08 81.07, 84.87 81.6, 86.74 81.96 C 88.6 82.32, 90.59 82.48, 92.45 82.71 C 94.35 82.97, 96.05 83.3, 97.98 83.43 C 98.63 83.47, 99.31 83.49, 100 83.49",
@@ -38,21 +36,11 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     exit: { x: 1, y: 0.8349, angle: 0.8 },
     aspect: 1.493,
   },
-  /* Traced from the owner's outline of `ring 2.jpg`. The FIRST `rings.svg` could not be traced
-     at all: its two ring contours touch tangentially and the converter merged them into one
-     shared segment, so no single unbroken stroke could cover both rings - three measured sweeps
-     (bridge width, raster resolution, spur pruning) all plateaued at 57 per cent. `ring 2`
-     crosses properly rather than kissing, which the tracer handles, and it walks 98.8 per cent
-     of the skeleton.
-
-     It needs a wider crossing merge than the other motifs (`--bridge=9`), and that is a plateau
-     rather than a lucky value: 70.9 per cent at bridge 3-7, 98.8 at 8, 9 and 10, falling back to
-     96.7 at 12.
-
-     Both side tails are cut by 18 units of the TRACED drawing, a little under half of each. That is
-     about as far as they go: the entry's S-flick is the drawing's own character and is down to a
-     single hook by 26, and the last self-crossing sat 37.9 units from the exit terminal, so a
-     deeper cut on that side would take a crossing with it. */
+  /* Traced from the owner's outline of `ring 2.jpg`; the first `rings.svg` could not be traced,
+     because its two ring contours touch tangentially and merge into one shared segment. It needs a
+     wider crossing merge than the other motifs (`--bridge=9`), on a plateau rather than a lucky
+     value. Both side tails are cut by 18 units of the traced drawing, about as far as they go: a
+     deeper cut loses the entry's S-flick or takes the last self-crossing with it. */
   rings: {
     id: "rings",
     d: "M 0 63.52 C 1.05 63.54, 2.08 63.62, 3.08 63.78 C 6.32 64.3, 9.35 66.05, 12.39 67.1 C 15.42 68.16, 18.18 69.94, 21.26 70.14 C 24.33 70.33, 29.38 69.74, 30.85 68.22 C 32.3 66.71, 30.71 63.54, 30.05 61.03 C 29.38 58.49, 26.6 55.76, 26.87 53.07 C 27.13 50.38, 29.69 47.14, 31.61 44.9 C 33.51 42.65, 35.59 40.93, 38.33 39.6 C 41.06 38.27, 45.06 36.73, 48 36.91 C 50.93 37.12, 54.67 38.57, 55.95 40.79 C 57.22 43.02, 56.51 47.67, 55.64 50.26 C 54.76 52.84, 52.69 54.48, 50.71 56.32 C 48.72 58.14, 46.47 60.1, 43.73 61.23 C 41 62.37, 36.19 64.18, 34.33 63.14 C 32.44 62.11, 31.78 57.67, 32.47 54.99 C 33.17 52.31, 36.26 49.1, 38.48 47.06 C 40.71 45.04, 43.42 43.22, 45.82 42.8 C 48.23 42.38, 52.38 43.08, 52.92 44.59 C 53.46 46.12, 50.85 49.83, 49.05 51.93 C 47.22 54.03, 44.51 56.13, 42.03 57.2 C 39.55 58.26, 34.02 58.79, 34.17 58.31 C 34.33 57.83, 40.4 55.91, 42.98 54.34 C 45.56 52.76, 48.21 50.74, 49.62 48.84 C 51.02 46.94, 50.24 42.92, 51.38 42.95 C 52.52 43, 55.69 46.75, 56.48 49.06 C 57.26 51.37, 54.81 54.89, 56.11 56.78 C 57.4 58.68, 61.6 60.59, 64.26 60.44 C 66.9 60.3, 70.81 58.34, 72 55.9 C 73.17 53.47, 72.31 48.9, 71.35 45.87 C 70.41 42.85, 68.18 39.94, 66.32 37.72 C 64.45 35.48, 62.67 33.75, 60.12 32.47 C 57.57 31.2, 53.17 29.62, 50.99 30.09 C 48.83 30.55, 46.27 34.01, 47.08 35.29 C 47.92 36.56, 53.48 36.36, 56 37.72 C 58.5 39.08, 60.4 41.16, 62.16 43.46 C 63.92 45.75, 66.41 48.95, 66.55 51.5 C 66.67 54.03, 64.65 58.48, 62.95 58.69 C 61.26 58.9, 56.51 53.52, 56.41 52.75 C 56.34 51.98, 59.84 53.67, 62.44 54.08 C 65.03 54.49, 69.17 55.73, 71.95 55.2 C 74.73 54.66, 76.62 52.42, 79.14 50.91 C 81.67 49.4, 84.17 47.37, 87.11 46.12 C 90.04 44.89, 93.39 43.96, 96.78 43.43 C 97.82 43.27, 98.9 43.19, 100 43.14",
@@ -102,18 +90,14 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
   /* Traced from the owner's outline of `final knot 2.jpg`, then MIRRORED left to right and walked
      LEFT TO RIGHT — both on the owner's call, once they had seen the bow on the page.
 
-     It runs left to right like every other motif here. It did once run right to left, on the
-     reasoning that a terminal motif should be traversed the way the thread reaches it; that
-     convention is retired rather than merely overridden, so nothing should restore it.
+     It runs left to right like every other motif here; the right-to-left convention for a terminal
+     motif is retired, so nothing should restore it.
 
      The direction decides which tail the stroke ends on, and the two are on opposite sides of the
      knot. Running this way the thread comes in along the long flowing tail, sweeps across the curls,
      forms the right petal and then the left, cinches the tie, and leaves on the short descending
-     tail. **It does NOT finish at the knot.** This comment claimed for several rounds that it did —
-     "the line finishes at the knot rather than trailing away past it" — and a stage-by-stage render
-     (2026-10-05) showed the last ~8% of the motif's length is tail drawn PAST the cinch. The exit
-     below, bottom-right at 92 degrees, was always that tail. Whether `wishes` should instead end on
-     the cinch is an open question for the owner, not something this comment may keep asserting.
+     tail. It does NOT finish at the knot: the last ~8% of the motif's length is tail drawn past the
+     cinch, and the exit below, bottom-right at 92 degrees, is that tail.
 
      THE TIE IS DRAWN GEOMETRY, NOT PART OF THE TRACE (owner's ask, 2026-10-05: "it is not crossing
      like bow properly ... it should atleast cross over correctly"). A centreline trace of a

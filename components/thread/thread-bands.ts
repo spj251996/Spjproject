@@ -3,13 +3,12 @@ import type { SectionBox } from "./thread-geometry.ts";
 export type BandId = "tall" | "upright" | "wide";
 
 /* `min`/`max` bound the section's aspect ratio (`width / height`), inclusive at `min` and exclusive
-   at `max`, so no aspect can match two bands. The alternative — open-ended ranges that both match —
-   silently lets whichever rule the stylesheet emits later win, which this project has been bitten
-   by (Tailwind orders arbitrary variants by string, so `>=64rem` beat `>=100rem`). */
+   at `max`, so no aspect can match two bands; open-ended ranges that both match let whichever rule
+   is emitted later win. */
 export type Band = { id: BandId; box: SectionBox; min: number; max: number };
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────────
-   AN ESTIMATE, NOT A MEASUREMENT. A real reading replaces it.
+   AN ESTIMATE, NOT A MEASUREMENT, and it stays one: the thread never ships to guests.
 
    A page section is `100svh`, so the band's shape is the VIEWPORT's, not the phone's screen. The
    owner's iPhone 16 is 393x852 CSS px, and iOS Safari's small viewport subtracts its top and bottom
@@ -40,10 +39,10 @@ export const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
   (TALL_BOX.width / TALL_BOX.height) * (UPRIGHT_BOX.width / UPRIGHT_BOX.height),
 );
 
-/* A 4:3 landscape window. This is the edge Task 1's Q4 swept the anisotropy against (`wide` as
-   `[1.33, oo)`, worst factor 40%, the worst case a landscape tablet), so its verdict — three bands,
-   not four — is a verdict about THIS edge. Moving it voids that measurement, which is why this one
-   is authored where its neighbour above is the geometric mean of two nominals. */
+/* A 4:3 landscape window. The anisotropy sweep that settled on three bands rather than four (`wide`
+   as `[1.33, oo)`, worst factor 40%, a landscape tablet) was taken against this edge, so moving it
+   voids that verdict; that is why this one is authored where its neighbour above is the geometric
+   mean of two nominals. */
 export const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
 
 /* Thread geometry is emitted per ASPECT BAND, not per width tier: a motif is a square while a
