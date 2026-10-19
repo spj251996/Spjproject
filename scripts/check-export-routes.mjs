@@ -5,13 +5,13 @@
  *
  * It also discharges the `[lab]`-matches-reality claim for the thread: asserting `/` carries zero thread
  * roots IS the assertion that its subject is absent from the published page. It does NOT state how many
- * `[lab]` entries the doc has -- that count lives in the doc, and restating it here was a second copy
- * that went stale immediately.
+ * `[lab]` entries the doc has -- that count lives in the doc.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { FRAME_SHEETS } from "../app/frame-sheets.ts";
 import { splitAtRuleBlocks, topLevelRules } from "./css-top-level-rules.mjs";
+import { linkedStylesheets } from "./linked-stylesheets.mjs";
 
 /* Measured on the export before this gate was written: the trunk's no-JS fallback, the trunk's live
  * root, and the card thread's. Not a remembered figure. */
@@ -35,7 +35,7 @@ const EXPECTED = [
   },
   {
     sections: true,
-    /* One static route since 2026-10-14. MEASURED on this export before writing: a static route emits
+    /* MEASURED on this export before writing: a static route emits
      * `out/thread.html` with a sibling `out/thread/` directory of RSC payload `.txt` files only. */
     path: "out/thread.html",
     roots: LAB_ROOTS,
@@ -43,9 +43,8 @@ const EXPECTED = [
     progress: 0,
     frames: FIVE_FRAMES,
   },
-  /* The not-found screen, which is the ONLY coverage it has: no test and no render sweep opens it, and
-   * that absence is why it shipped 99.7% red for a month. Its thread was retired deliberately, so there
-   * is nothing thread-shaped left to assert -- what is left is that the route exists and carries none.
+  /* The not-found screen. Its thread was retired, so what is asserted is that the route exists and
+   * carries none.
    *
    * BOTH files are checked because the export emits both and both ship: `404.html` is what a static host
    * serves for an unknown path, `_not-found.html` is the route-named emission. They are byte-identical
@@ -72,16 +71,14 @@ const FORBIDDEN = [
   "out/thread/current.html",
   "out/thread/mount.html",
   "out/thread/stock.html",
-  /* `/preview`, retired 2026-10-14 once every lever was decided (owner). A stray copy left by a
-     half-done removal would otherwise fail nothing: nothing here enumerates `out/`'s root. */
+  /* A stray copy left by a half-done removal would otherwise fail nothing: nothing here enumerates
+     `out/`'s root. */
   "out/preview.html",
 ];
 
-/* THE OTHER HALF OF THE DOC PARITY GATE. Its first half -- every `[lab]` entry's subject absent from
- * the published page -- is the thread assertion above. Its second half, "every non-`[lab]` one is
- * present", was asserted NOWHERE: this gate counted thread roots and route names and nothing else, so a
- * section dropped from the export would have passed it. A missing section is exactly what a bundler can
- * lose without erroring, which is why a green build is not evidence.
+/* THE OTHER HALF OF THE DOC PARITY GATE: every non-`[lab]` section is present in the export. A missing
+ * section is exactly what a bundler can lose without erroring, which is why a green build is not
+ * evidence.
  *
  * The component list is read from the one module that composes them, so adding a section reaches this
  * gate without anyone remembering to. The COUNT is asserted because a zero-match extraction looks
@@ -92,9 +89,7 @@ const SECTION_COMPONENTS = [
   ),
 ].map((m) => m[1]);
 
-/* Five, one per section every route composes. `invite` joined when `29b2c52` gave it an `id`, which
- * widened this gate to a section it had never checked; `contact` left when the section was retired
- * from every route (2026-10-14) and is asserted ABSENT below instead. */
+/* Five, one per section every route composes; the retired `contact` is asserted ABSENT below. */
 const SECTION_IDS = [
   "invite",
   "event-info",
@@ -128,7 +123,7 @@ if (!EXPECTED.some((route) => route.sections)) {
   failed = true;
 }
 
-/* The stock paint is retired (2026-10-14): no built stylesheet may still carry its composed shadow. A missing
+/* The stock paint is retired: no built stylesheet may still carry its composed shadow. A missing
  * chunk directory fails rather than passing on an empty listing. */
 const CSS_DIR = "out/_next/static/chunks";
 if (existsSync(CSS_DIR)) {
@@ -190,18 +185,13 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
 
   /* Only the stylesheets this route links: concatenating every built chunk would read another route's
    * override first. */
-  const hrefs = [
-    ...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g),
-    ...html.matchAll(/<link[^>]*href="([^"]+)"[^>]*rel="stylesheet"/g),
-  ].map((m) => m[1]);
-  const linkedHrefs = [...new Set(hrefs)];
-  const linkedCss = linkedHrefs
-    .map((href) => {
-      const file = join("out", href.replace(/^\//, ""));
-      return existsSync(file) ? readFileSync(file, "utf8") : "";
-    })
-    .join("\n");
-  if (linkedHrefs.length === 0 || linkedCss === "") {
+  const sheets = linkedStylesheets(html, "out");
+  for (const { href } of sheets.filter((sheet) => sheet.css === null)) {
+    console.error(`FAIL ${label}: linked stylesheet ${href} missing from out/`);
+    failed = true;
+  }
+  const linkedCss = sheets.map((sheet) => sheet.css ?? "").join("\n");
+  if (sheets.length === 0 || linkedCss === "") {
     console.error(`FAIL ${label}: links no readable stylesheet`);
     failed = true;
   } else {
@@ -214,7 +204,7 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
         ).test(linkedCss),
     );
     console.log(
-      `${missingScopes.length === 0 ? "ok  " : "FAIL"} ${label}: linked CSS (${linkedHrefs.length} sheets) carries ${frames.length - missingScopes.length}/${frames.length} frame scopes${missingScopes.length ? ` -- missing ${missingScopes}` : ""}`,
+      `${missingScopes.length === 0 ? "ok  " : "FAIL"} ${label}: linked CSS (${sheets.length} sheets) carries ${frames.length - missingScopes.length}/${frames.length} frame scopes${missingScopes.length ? ` -- missing ${missingScopes}` : ""}`,
     );
     if (missingScopes.length > 0) failed = true;
 
