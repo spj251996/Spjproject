@@ -623,7 +623,7 @@ ${sheet} {
 }
 ${safeCentreBlock(scope, sheet)}`;
 
-  const perClass = tallWindowClasses(false).map((windowClass) => {
+  const perClass = tallWindowClasses().map((windowClass) => {
     const mountRule = (orientation: Orientation) => {
       const fill = windowClass.mountShows[orientation]
         ? ""

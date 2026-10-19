@@ -9,32 +9,53 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { pathToFileURL } from "node:url";
 import {
   FRAME_SHEETS,
   FRAMES_DIR,
+  type FrameSheet,
   frameSheetFile,
 } from "../app/frame-sheets.ts";
 
-const dryRun = process.argv.includes("--dry-run");
-if (!dryRun) mkdirSync(FRAMES_DIR, { recursive: true });
-const wanted = new Set(FRAME_SHEETS.map((sheet) => `${sheet.name}.css`));
-for (const sheet of FRAME_SHEETS) {
-  const path = `${FRAMES_DIR}/${sheet.name}.css`;
-  const next = frameSheetFile(sheet);
-  let current: string | null = null;
-  try {
-    current = readFileSync(path, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+/* Every sheet is generated before any is written, so a sheet that throws leaves the directory exactly
+   as it was rather than half regenerated and unpruned. */
+export function buildFrames(
+  sheets: readonly FrameSheet[],
+  dir: string,
+  render: (sheet: FrameSheet) => string,
+  {
+    dryRun = false,
+    log = console.log,
+  }: { dryRun?: boolean; log?: (line: string) => void } = {},
+): void {
+  const files = sheets.map((sheet) => ({
+    path: `${dir}/${sheet.name}.css`,
+    next: render(sheet),
+  }));
+  if (!dryRun) mkdirSync(dir, { recursive: true });
+  for (const { path, next } of files) {
+    let current: string | null = null;
+    try {
+      current = readFileSync(path, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    const verb =
+      current === next ? "unchanged" : current === null ? "write" : "update";
+    log(`${verb.padEnd(9)} ${path} (${next.length} bytes)`);
+    if (!dryRun && verb !== "unchanged") writeFileSync(path, next);
   }
-  const verb =
-    current === next ? "unchanged" : current === null ? "write" : "update";
-  console.log(`${verb.padEnd(9)} ${path} (${next.length} bytes)`);
-  if (!dryRun && verb !== "unchanged") writeFileSync(path, next);
+  const wanted = new Set(sheets.map((sheet) => `${sheet.name}.css`));
+  for (const name of existsSync(dir) ? readdirSync(dir) : []) {
+    if (!wanted.has(name)) {
+      log(`prune     ${dir}/${name}`);
+      if (!dryRun) rmSync(`${dir}/${name}`, { recursive: true });
+    }
+  }
 }
-for (const name of existsSync(FRAMES_DIR) ? readdirSync(FRAMES_DIR) : []) {
-  if (!wanted.has(name)) {
-    console.log(`prune     ${FRAMES_DIR}/${name}`);
-    if (!dryRun) rmSync(`${FRAMES_DIR}/${name}`, { recursive: true });
-  }
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  buildFrames(FRAME_SHEETS, FRAMES_DIR, frameSheetFile, {
+    dryRun: process.argv.includes("--dry-run"),
+  });
 }

@@ -1062,7 +1062,7 @@ test("a section taller than the compact height cap cannot be framed", () => {
    directly, because a regression here is invisible on screen until someone compares two sections
    side by side. */
 test("tall mode gives each tier its full ground and one padding step above its fitted largest", () => {
-  const byTier = new Map(tallWindowClasses(false).map((c) => [c.media, c]));
+  const byTier = new Map(tallWindowClasses().map((c) => [c.media, c]));
   const phone = [...byTier.values()].find((c) => c.widthTier === "phone");
   assert.equal(phone?.ground, 16);
   assert.equal(phone?.padding, 48);
@@ -1087,7 +1087,7 @@ test("tall mode gives each tier its full ground and one padding step above its f
 });
 
 test("a touchscreen from the compact tier up takes the tablet ground", () => {
-  const coarse = tallWindowClasses(false).filter(
+  const coarse = tallWindowClasses().filter(
     (c) =>
       c.media.includes("(pointer: coarse)") &&
       !c.media.includes("not (pointer: coarse)"),
@@ -1097,20 +1097,18 @@ test("a touchscreen from the compact tier up takes the tablet ground", () => {
 });
 
 test("a tall card's mount follows the fitted rule, per orientation", () => {
-  for (const hero of [false, true]) {
-    for (const windowClass of tallWindowClasses(hero)) {
-      for (const orientation of ["portrait", "landscape"] as const) {
-        assert.equal(
-          windowClass.mountShows[orientation],
-          mountExpected(hero, windowClass.widthTier, orientation),
-          `hero=${hero} ${windowClass.media} ${orientation}`,
-        );
-      }
+  for (const windowClass of tallWindowClasses()) {
+    for (const orientation of ["portrait", "landscape"] as const) {
+      assert.equal(
+        windowClass.mountShows[orientation],
+        mountExpected(false, windowClass.widthTier, orientation),
+        `${windowClass.media} ${orientation}`,
+      );
     }
   }
-  const phone = tallWindowClasses(true).find((c) => c.widthTier === "phone");
-  assert.deepEqual(phone?.reveal, { portrait: 16, landscape: 16 });
-  const laptop = tallWindowClasses(false).find((c) => c.widthTier === "laptop");
+  const phone = tallWindowClasses().find((c) => c.widthTier === "phone");
+  assert.deepEqual(phone?.reveal, { portrait: 0, landscape: 0 });
+  const laptop = tallWindowClasses().find((c) => c.widthTier === "laptop");
   assert.deepEqual(laptop?.reveal, { portrait: 0, landscape: 16 });
 });
 
@@ -1140,7 +1138,7 @@ const PADDING_TOKEN: Readonly<Record<number, string>> = {
 
 test("each tall window class's own block binds its ground and sheet padding, never another class's", () => {
   const css = tallFrameCss();
-  for (const windowClass of tallWindowClasses(false)) {
+  for (const windowClass of tallWindowClasses()) {
     const block = tallBlockFor(css, windowClass.media);
     assert.ok(block, `no block for "${windowClass.media}"`);
     assert.ok(
@@ -1177,7 +1175,7 @@ test("each tall window class's own block binds its ground and sheet padding, nev
 test("a tall card strips its mount per orientation, exactly where the mount does not show", () => {
   const css = tallFrameCss();
   const blocks = topLevelBlocks(css);
-  for (const windowClass of tallWindowClasses(false)) {
+  for (const windowClass of tallWindowClasses()) {
     assert.ok(
       !tallBlockFor(css, windowClass.media)?.includes(
         "mounted-sheet-frame__mount { padding",
@@ -1440,7 +1438,7 @@ test("every emitted ground is on the spacing scale, pressed values included", ()
 
 test("a tall portrait window takes its tier's two bands", () => {
   const css = tallFrameCss();
-  const phone = tallWindowClasses(false)[0];
+  const phone = tallWindowClasses()[0];
   const band = bandFor(css, phone.media, "portrait", false);
   assert.equal(band.block, "--spacing-space-3xl");
   assert.equal(band.inline, "--spacing-space-md");

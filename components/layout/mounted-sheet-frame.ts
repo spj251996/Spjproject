@@ -762,7 +762,7 @@ const TALL_INLINE: Readonly<Partial<Record<WidthTier, string>>> = {
   phone: "--tall-inline-phone",
 };
 
-export function tallWindowClasses(hero: boolean): TallWindowClass[] {
+export function tallWindowClasses(): TallWindowClass[] {
   const md = `${BREAKPOINT_REM.md}rem`;
   const lg = `${BREAKPOINT_REM.lg}rem`;
   const xl = `${BREAKPOINT_REM.xl}rem`;
@@ -773,8 +773,8 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
     widthTier: WidthTier,
     groundTier: GroundTier,
   ): TallWindowClass => {
-    const showsPortrait = hero || sideBySideWindow(widthTier, false);
-    const showsLandscape = hero || sideBySideWindow(widthTier, true);
+    const showsPortrait = sideBySideWindow(widthTier, false);
+    const showsLandscape = sideBySideWindow(widthTier, true);
     return {
       media,
       widthTier,
