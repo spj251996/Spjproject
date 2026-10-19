@@ -7,8 +7,9 @@
    `botanical.module.css`'s one, and wins whichever stylesheet the browser parses second.
 
    Nothing emitted here may isolate `mix-blend-mode` — no `z-index`, `isolation`, `contain`,
-   `filter`, sub-1 `opacity` or `content-visibility`, and no transform other than `rotate` on the
-   piece itself, which is the one a spike proved safe. `botanical.test.ts` asserts it. */
+   `filter`, sub-1 `opacity` or `content-visibility`, and no transform on the piece other than
+   `rotate` and the mirror `scale: -1 1`, the ones a spike proved safe. `botanical.test.ts` asserts
+   it. */
 import { BREAKPOINT_REM } from "../layout/mounted-sheet-frame.ts";
 import {
   type Anchor,
@@ -64,7 +65,7 @@ function vw(value: number): string {
 
 /* One anchor-to-declarations mapping, holding one invariant: `+x` moves the piece right by exactly
    `x` vw and `+y` moves it down by exactly `y` vw, whatever the anchor. Two anchors need
-   compensating for, and both were silently wrong before this mapping existed:
+   compensating for:
 
    - a piece anchored to the right or bottom edge is offset by an inset that grows the other way,
      so its nudge is negated;

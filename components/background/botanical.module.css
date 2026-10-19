@@ -1,14 +1,11 @@
-/* DESIGN.md → Botanical Edge. Delivery is a CSS background, not `<img>`: a non-matching media query
-   fetches nothing, so a phone never learns the laptop file exists, and the layer needs no alt text —
-   it is decorative by construction. Every rule here avoids the properties that isolate
+/* DESIGN.md → Botanical Edge. Every rule here avoids the properties that isolate
    `mix-blend-mode` into a new stacking context: no `z-index`, `isolation`, `contain`,
    `content-visibility`, `transform`, `filter`, sub-1 `opacity`, or shadow. A piece's own `rotate`
-   is the one exception, and it is set by the generated stylesheet, not here: a transform isolates
-   the blend only from an ancestor. */
+   and mirror `scale` are the exceptions, and they are set by the generated stylesheet, not here: a
+   transform isolates the blend only from an ancestor. */
 
 /* The wrapper carries the section's own frame-scope class (`.mounted-sheet-frame--*`) so the
-   section's own frame rule gives this layer a positioned box to sit in — see `botanical.tsx`'s
-   header comment for why it cannot instead become a literal child of that div. That rule also
+   section's own frame rule gives this layer a positioned box to sit in. That rule also
    sets `display: flex`, real padding and a `min-height` on anything carrying the
    class, meant for the card frame it was written for; `display: contents` removes this wrapper's own
    box entirely so none of that reaches it or its children, while the custom properties still
@@ -19,11 +16,10 @@
   display: contents;
 }
 
-/* The clip box. `DESIGN.md` → Botanical Edge lets a piece bleed off the left or right window edge,
-   and a tuned piece can be wider than the section — the widest once ran 290px past a 360px phone,
-   widening the document and letting a reader swipe sideways into blank ivory with the card off
-   screen. This box bounds the decorative layer to the section's own width so the bleed is cut at
-   the edge instead of extending the page.
+/* The clip box. DESIGN.md → Botanical Edge lets a piece bleed off the left or right window edge, and
+   a tuned piece can be wider than the section, which would widen the document and let a reader
+   swipe sideways. This box bounds the layer to the section's own width so the bleed is cut at the
+   edge.
 
    `overflow-x` ALONE, and `clip` rather than `hidden`: clipping overflow creates no stacking
    context, while `contain: paint` — the obvious reach when told to clip — does, and a stacking
@@ -66,5 +62,5 @@
 
 /* Where each piece sits, how wide it is and how far it is turned are per width tier and emitted by
    `botanical-css.ts`, one rule per piece per tier, so a tuned value lives once — in
-   `botanical-tuning.ts`. What stays here is what is the same at every tier: the blend, the cap and
-   each piece's own art. */
+   `botanical-tuning.ts`. What stays here is only the shared structure, the same at every tier: the
+   blend and the cap; the generated sheet (`botanical-css.ts`) carries each piece's art. */

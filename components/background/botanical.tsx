@@ -8,17 +8,12 @@ import { botanicalCss, pieceClass } from "./botanical-css";
 import type { BotanicalPiece } from "./botanical-tuning";
 
 /* Sparse wildflower elements at the screen edges — DESIGN.md → Botanical Edge. Full opacity,
-   `mix-blend-mode: multiply` against the ivory ground, no `z-index` anywhere in this layer: the
-   card's own frame (`mounted-sheet-frame__box`) carries the only explicit `z-index` in a framed
-   section, so it always paints above a layer that has none — the section itself carries no
-   z-index either (removed from the section's own composition site), which is what frees the blend
-   from an isolating
-   stacking context in the first place.
-
-   Size and placement are per width tier and read from the viewport, not from the frame's ring
-   bands — `botanical-tuning.ts` holds the records and `botanical-css.ts` emits them as this
-   layer's own stylesheet. The wrapper still carries the section's frame-scope class, because the
-   frame's own rule is what gives this layer the section's box to position against. */
+   `mix-blend-mode: multiply` against the ivory ground, and no `z-index` anywhere in this layer: the
+   card's frame (`mounted-sheet-frame__box`) carries the only explicit `z-index` in a framed section,
+   so it always paints above this layer, and the section carries none either, which keeps the blend
+   out of an isolating stacking context. Size and placement are per width tier and read from the
+   viewport, not from the frame's ring bands. The wrapper carries the section's frame-scope class
+   because the frame's own rule is what gives this layer the section's box to position against. */
 
 /* The invite's pieces, shared with the not-found screen — one layout, so a change to one is a change
    to both. */
@@ -28,15 +23,16 @@ const INVITE_PIECES = [
 ] as const satisfies readonly BotanicalPlacement[];
 
 /* Which pieces each section carries. This is the ONE place the assignment lives: `app/_sections/`
-   renders from it and the dev tuning panel reads it to group its controls. A second copy has twice
+   renders from it. A second copy has twice
    drifted out of step with a swap and sent nudges along an axis the piece was no longer anchored
    on, which moves it nowhere and reads as a dead slider. Where each piece sits is per tier and
    lives in `botanical-tuning.ts`. */
 export const SECTION_PLACEMENT = {
   invite: INVITE_PIECES,
-  /* `tall-column-a` carries the left rail and `blush-stem` the right one, both of which run bare
-     for the height of two stacked cards at the tiers that stack them. The column is dropped at
-     every other tier, where the cards sit side by side and there is no rail to carry. */
+  /* `tall-column-a` carries the left rail and `blush-stem` the right one at the tablet tier, where
+     the two cards stack and both rails run bare for the height of two cards. Both are dropped at
+     every other tier: on a phone, and from the laptop tier up, where the cards sit side by side and
+     there is no rail to carry. */
   "event-info": [
     { piece: "tied-bouquet" },
     { piece: "horizontal-garland" },
@@ -50,9 +46,6 @@ export const SECTION_PLACEMENT = {
     { piece: "arching-branch" },
     { piece: "cascade-sprigs" },
   ],
-  /* The timeline lost its two tall columns to the vines; they now carry Event Info's and Family's
-     bare side rails at the tiers whose cards stack. They are still the pieces to reach for when the
-     timeline grows with the photo gallery — a piece may sit in more than one section. */
   celebrations: [
     { piece: "crossing-stems" },
     { piece: "drooping-stem" },
@@ -75,10 +68,10 @@ export interface BotanicalPlacement {
   piece: BotanicalPiece;
 }
 
-/* Each piece's own aspect ratio, read from its shipped laptop-tier file
-   (`public/botanical/<piece>-laptop.avif`) so the box matches the art with no letterboxing —
-   `background-size: contain` then fills it exactly. Unlike the meadow band's crop, a mismatch here
-   only wastes canvas inside the box; it never breaks a crop, so no test asserts it. */
+/* Each piece's own aspect ratio, its source width over height, which the generator preserves at
+   every tier, so the box matches the art with no letterboxing and `background-size: contain` fills
+   it exactly. A mismatch only wastes canvas inside the box and never breaks a crop, so no test
+   asserts it. */
 const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
   "corner-trail": "1536 / 1024",
   "tied-bouquet": "387 / 623",
@@ -91,8 +84,6 @@ const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
   "sprig-cross-right": "491 / 578",
   "tall-column-a": "827 / 1902",
   "tall-column-b": "821 / 1915",
-  /* Every piece added after the first thirteen carries its SOURCE ratio, since the generator
-     preserves it and the shipped files are generated from exactly these. */
   "meadow-tuft": "1448 / 1086",
   "arching-branch": "1536 / 1024",
   "cascade-sprigs": "1024 / 1536",
@@ -115,11 +106,8 @@ function Bloom({ piece }: BotanicalPlacement) {
       className={`${styles.bloom} ${pieceClass(piece)}`}
       style={{
         aspectRatio: ASPECT_RATIO[piece],
-        /* The same ratio as a bare number, so `.bloom` can cap its width by the block extent it has
-           to live in. Without the cap a tuned width alone decides the height, and a width settled
-           against one window bleeds past a section's top or bottom edge at a shorter one, which
-           `DESIGN.md` forbids. The cap enforces that rule structurally rather than by hoping every
-           tuned value was checked at every window. */
+        /* The same ratio as a bare number, so `.bloom` can cap its width by its block extent
+           (DESIGN.md → Botanical Edge). */
         ["--piece-aspect" as string]: aspectNumber(ASPECT_RATIO[piece]),
       }}
     />
