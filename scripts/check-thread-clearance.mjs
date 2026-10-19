@@ -7,17 +7,11 @@
    on its OWN <svg> root. Icons already carry `aria-hidden` (see `components/icons/icon-base.tsx`),
    so `aria-hidden` alone cannot distinguish thread SVGs from decorative ones.
 
-   THE THREAD IS PAGE-LEVEL, NOT PER-SECTION (since Task 6's cutover): `<PageThread>` bakes the
-   whole page into ONE path and mounts its SVG as the LAST CHILD of `<main>` — a SIBLING of every
-   `<section>`, not a descendant of any one of them (`components/thread/page-thread.tsx`'s own
-   header comment states this is deliberate: a section-scoped SVG could only paint in front of
-   Wishes' illustration, never behind it). So `section#<id> svg[data-thread-svg] path` — this gate's
-   original selector — matches nothing for every section but Wishes, the only one with a descendant
-   match, because `CardThread` mounts inside `#wishes` itself (in the card, so the stretch paints behind
-   the type, for that same z-index reason). The fix: search the WHOLE DOCUMENT for
-   `data-thread-svg` paths, then CLIP each one's geometry to the section's own rect before
-   measuring — never re-introduce a per-section SVG to make the old selector work again, which is
-   exactly the mis-sizing this plan's thread rewrite removed (`session.md`, 2026-09-27).
+   THE THREAD IS PAGE-LEVEL: `<PageThread>` mounts its SVG as a sibling of every `<section>`, and
+   only Wishes' `CardThread` sits inside its section, so search the whole document for
+   `data-thread-svg` paths and clip each to the section's rect before measuring. Never re-introduce
+   a per-section SVG to make a per-section selector work: that is the mis-sizing the page-level
+   thread removed.
 
    METHOD, per section per aspect-band window:
      1. Find every `data-thread-svg` path ANYWHERE in the document that carries a `d`.
@@ -45,7 +39,7 @@
    the launch, not the page. Any measurement here without the pin is void.
 
    CAPS (no unbounded waits, no loops that iterate until they look right):
-     - 6 sections x 3 aspect bands x 2 windows each = 36 checks per full sweep — a fixed, finite
+     - 5 sections x 3 aspect bands x 2 windows each = 30 checks per full sweep — a fixed, finite
        loop, not a convergence loop.
      - Navigation: 15s. Font-ready: 5s (best-effort; a timeout here is logged and the check
        proceeds against whatever fonts loaded, since Latin body copy renders close enough
@@ -61,8 +55,8 @@
    USAGE:
      node scripts/check-thread-clearance.mjs                 # full sweep, all five sections
      node scripts/check-thread-clearance.mjs --section=family
-     node scripts/check-thread-clearance.mjs --validate      # Step 2: harness self-check
-     node scripts/check-thread-clearance.mjs --falsify       # Step 3: harness self-check
+     node scripts/check-thread-clearance.mjs --validate      # harness self-check
+     node scripts/check-thread-clearance.mjs --falsify       # harness self-check
      node scripts/check-thread-clearance.mjs --falsify --section=wishes --band=upright --orientation=drifted
 */
 
@@ -70,7 +64,7 @@ import { chromium } from "playwright";
 import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
-/* The thread is not on the published page -- `/` carries none since the lab split, so this gate points
+/* The thread is not on the published page -- `/` carries none, so this gate points
  * at the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). Against the DEV server the
  * extensionless path routes correctly; a gate reading the static export needs `.html`, because an
  * export emits the static route as `out/thread.html`. */
@@ -84,10 +78,7 @@ const SAMPLE_BUDGET = 200;
 
 const THREAD_SELECTOR = "svg[data-thread-svg] path";
 
-/* Every section carries its own `id`, invite included since 2026-10-08. It did not until then, and
-   this function held a `main > section:first-of-type` exception for it with a comment claiming
-   nothing else needed to address it — which `check-thread-joins.mjs` had been quietly disproving,
-   reporting invite MISSING at all 12 of its windows because `#invite` matched nothing. */
+/* Every section carries its own `id`. */
 function sectionSelectorFor(sectionId) {
   return `#${sectionId}`;
 }
@@ -459,13 +450,13 @@ function plantViolationInPage(sectionSelector) {
   };
 }
 
-/* Step 2's own in-page probe: the bride parent row, at whatever viewport the caller has already
+/* The validation's own in-page probe: the bride parent row, at whatever viewport the caller has already
    set. Isolated from `measureSectionInPage` because it measures a distance between two named text
    elements rather than a thread-path-to-text distance — a different question, asked only to
    validate the measuring machinery itself.
 
    IT RETURNS THE GAP *AND* THE THREE QUANTITIES THAT PREDICT IT, because the gap is a RESIDUAL
-   rather than a value anything sets, and Step 2 asserts the derivation rather than a remembered
+   rather than a value anything sets, and the validation asserts the derivation rather than a remembered
    number. Every figure here is measured off the page -- no token is read and no constant is
    carried -- since a number computed from the model only ever proves self-consistency. */
 function measureBrideParentGapInPage() {
@@ -572,33 +563,17 @@ function measureBrideParentGapInPage() {
   };
 }
 
-/* Step 2 asserts the gap's DERIVATION, not a recorded constant -- and the reason is the whole point
-   of the step, so it is written here rather than left to a work doc.
-
-   This step used to hard-assert 4.5px +/- 0.1 (recorded 2026-09-20) and had been failing for weeks
-   against a stable, reproducible 9.391px. The constant was VOID rather than stale: the gap between
-   the two parent names is not a value anything sets, it is what is LEFT OVER once the grid's two
-   columns and the two rendered names are placed --
+/* Asserts the gap's DERIVATION, not a recorded constant: the gap between the two parent names is
+   what is left over once the grid's columns and the two rendered names are placed --
 
      gap = (column width + column gap) - (mother name width + father name width) / 2
 
-   -- so it moves whenever the type, the roster or the diameter moves. `--text-body` was 17px when
-   4.5 was recorded and is 13px now, which renders both names narrower and the gap wider; the names
-   and every geometry token are unchanged over the same span. 4.5 was therefore one figure in a set
-   the type change falsified, and the only one that had been pinned into a gate as a hard tolerance
-   instead of being re-recorded.
-
-   Re-recording 9.391 would buy one pass and fail again on the next type or roster change -- and the
-   full-resolution portrait delivery is already queued to cause one. Asserting the derivation instead
-   validates the machinery against something that stays true, and it still fails loudly if the probe
-   stops reaching the rendered row.
-
-   The tolerance is 1px, not an equality: the engine quantises layout to 1/64px and the two sides
-   come from different box types (a line box against two element rects), so an exact match would be
-   brittle for nothing. Today's residual is about 0.01px. */
+   -- so it moves whenever the type, the roster or the diameter moves. The tolerance is 1px, not an
+   equality: the engine quantises layout to 1/64px and the two sides come from different box types
+   (a line box against two element rects). */
 async function runValidate(browser) {
   console.log(
-    "Step 2 — validating the measuring machinery against the gap's own derivation.",
+    "Validate — the measuring machinery against the gap's own derivation.",
   );
   console.log(
     'Target: Family, bride parent row, "Minimol Roy" vs "Roy John Edatt", phone tier (390px).',
@@ -635,10 +610,6 @@ async function runValidate(browser) {
       console.log(`  predicted: ${predicted.toFixed(3)}px`);
       console.log(`  measured:  ${result.minDistance.toFixed(3)}px`);
       console.log(`  residual:  ${residual.toFixed(3)}px`);
-      /* Today's value, recorded as today's value and not as the law: 9.391px, measured 2026-10-08
-         at 390x844 on the lab route, Chromium pinned to `channel: "chromium"`. It is here so a
-         reader can see at a glance whether the row has moved since; it is NOT what is asserted. */
-      console.log("  (for reference, the gap measured 9.391px on 2026-10-08)");
       if (residual <= 1) {
         console.log(
           "\nPASS — the measured gap matches the geometry that produces it.",
@@ -670,9 +641,7 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
   const width = orientation.width;
   const height = orientation.height;
 
-  console.log(
-    "Step 3 — falsifying the gate: planting a violation and confirming it is caught.",
-  );
+  console.log("Falsify — planting a violation and confirming it is caught.");
   console.log(
     `Target: #${sectionId}, ${tier.key}/${orientation.key} (${width}x${height}).\n`,
   );

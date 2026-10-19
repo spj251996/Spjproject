@@ -32,11 +32,11 @@
  * DEV SERVER: never started, stopped or restarted here — :3000 is the owner's. If nothing answers,
  * the script says so and exits rather than spawning its own.
  *
- * ROUTE: `/thread-lab` by default, because the thread is not mounted on `/` until the cutover
- * (Task 10). Point it at `/` with `--route=/` once it is, and the gate is unchanged.
+ * ROUTE: /thread by default (flag --route).
  *
- * CAPS: a fixed 7 sections x 2 viewports per aspect band x 2 states, navigation 20s, fonts 5s
- * best-effort, one fixed 350ms settle after each park. No convergence loops, no unbounded waits.
+ * CAPS: a fixed 5 sections x 6 viewports (2 per aspect band) x 2 states = 60 cases, navigation
+ * 20s, fonts 5s best-effort, one fixed 350ms settle after each park. No convergence loops, no
+ * unbounded waits.
  *
  * USAGE:
  *   node scripts/check-thread-joins.mjs
@@ -53,11 +53,6 @@ const NAV = 20000;
 const SETTLE = 350;
 
 const SECTIONS = ["invite", "event-info", "family", "celebrations", "wishes"];
-/* `not-found` was a member here until 2026-10-08 and is deliberately gone. It is a separate ROUTE, not a
-   section on this page, and its own thread was retired (DESIGN.md -> Domain Components -> Not found), so
-   this gate spent every run reporting `MISSING #not-found` for an element removed on purpose -- 48 lines
-   of noise per sweep. The route's coverage moved to `scripts/check-export-routes.mjs`, which asserts it
-   exists and carries no thread root; this is not a drop in coverage. */
 
 /* One window per ASPECT BAND, not per width tier: thread geometry is emitted per band now, so a
    sweep keyed to widths could miss a band entirely. Each band contributes its own NOMINAL box —
@@ -83,47 +78,18 @@ const flag = (name, fallback = null) => {
   const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));
   return found === undefined ? fallback : found.slice(name.length + 3);
 };
-/* The thread is not on the published page -- `/` carries none since the lab split, so the default is
- * the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). It was `/thread-lab`, a scratch
- * route that has since been deleted. */
+/* The thread is not on the published page -- `/` carries none, so the default is the lab route
+ * (DESIGN.md -> Technical Conventions -> Variant Routes). */
 const route = flag("route", "/thread");
 const falsify = process.argv.includes("--falsify");
 const only = flag("section");
 const onlyViewport = flag("viewport");
 
-/* Thread red against ivory, with its antialiased edge: red-dominant and not pale. The gold eyebrow
-   (#b08d57, r-g = 35) and the dev badge (near-neutral) are outside it.
-   TIGHTENED for the real page (Task 7): `/thread-lab`'s stand-in boxes never contained a
-   photograph, so the original bound never met one. Family's ten real portraits contain skin-tone
-   pixels that satisfy a loose red-dominant test, misread as disconnected "thread" fragments.
-   `g<90` overshot: `celebrations` draws a long connector through a stretch where its on-screen
-   tangent is nearly horizontal, which is exactly where a sub-2px stroke antialiases faintest, and
-   the single bridging pixel there measures `g=93` — three units past `g<90` — splitting one
-   drawn run into two on the page's own rendered `<path>` (proven gap-free to <0.1px in the `d`
-   itself; `.superpowers/sdd/celebrations-break-diagnosis.md`).
-
-   RE-CALIBRATED against the real page, not guessed: swept every candidate red-dominant pixel at
-   all three bands, both classified by exact SVG geometry (`isPointInStroke`, not colour) against
-   the mounted path — the `portraitLoop` motif is drawn directly over Family's portraits by design,
-   so "thread ink" and "bare skin" are sometimes the same few pixels apart, and a single g-bound
-   cannot separate them by colour alone in the abstract. What DOES separate them, on this render, is
-   where the two populations' worst cases fall in practice: re-running the join gate's own
-   connected-component classifier at every integer bound from 85 to 150 shows `celebrations
-   wide-nominal` first reads as one run at `g<94` (the miss is `g=93`), and Family's tightest
-   NOMINAL-viewport render first admits a new skin-tone fragment at `g<111` (`family tall-nominal`,
-   an 18-19px patch of dark hair/brow that reads red-dominant). `g<105` sits at the centre of that
-   measured 94-110 safe band — margin 12 below (to the last-broken `g<93`) and 6 above (to the
-   first-contaminated `g<111`) — not a guess and not the exact midpoint, but inside the only band
-   that closes `celebrations` without opening a new hole in `family`.
-
-   `r - g > 80` HAS ITS OWN SWEEP (F7, `final-review-fixes.md`) — a prior pass tightened it from 60
-   without recording why. Swept on the real page at `family tall-nominal rest`, the exact case the
-   `g` calibration above already names: `r - g > 60` reads Family's skin tones as ink and breaks the
-   thread into 46 pieces; the count falls as the bound tightens (28 at 65, 7 at 70) and the render
-   first reads as one run at `r - g > 75`, holding through 80. `celebrations wide-nominal rest` stays
-   a single run up to `r - g > 90` and first breaks at `r - g > 100`. `80` sits inside the resulting
-   75-99 safe band, 5 above the tight edge and 20 below the other — kept rather than loosened back to
-   60, which does not hold. */
+/* Thread red against ivory, with its antialiased edge: red-dominant and not pale. Both bounds are
+   calibrated on the real page, not guessed: `g < 105` sits inside the measured safe band 94-110
+   (below it a faint near-horizontal connector in `celebrations` splits; above it Family's portraits
+   admit skin-tone fragments), and `r - g > 80` inside 75-99 (looser reads Family's skin as ink; from
+   100 `celebrations` breaks). Recalibrate if the thread colour or the portraits change. */
 function isInk(r, g, b) {
   return g < 105 && r - g > 80 && r - b > 60;
 }
@@ -228,7 +194,7 @@ try {
         .catch(() => console.log("  fonts did not settle in 5s, continuing"));
 
       if (falsify) {
-        /* Step 3: break every connector on purpose. A gate that cannot see this cannot see the
+        /* Break every connector on purpose. A gate that cannot see this cannot see the
            defect it is here for, and a run that passes under --falsify is the gate failing. */
         await page.addStyleTag({
           content:

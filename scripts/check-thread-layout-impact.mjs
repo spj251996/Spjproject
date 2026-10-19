@@ -1,34 +1,12 @@
 #!/usr/bin/env node
-/* THE ZERO-LAYOUT-IMPACT GATE. `thread.module.css`'s `.pageWrapper` documents a contract — the
- * span both `PageThread` and `CardThread` mount as their root takes no space in flow and does not
- * push its host's own layout apart. That was true and verified for a flex-column host and silently
- * false for a CSS-Grid one: an in-flow box is still a grid item at `height: 0`, so `CardThread`'s
- * two copies (it drew two then; it draws one now) were auto-placing into Wishes' `>=64rem` landscape grid, growing it past its four
- * EXPLICIT rows and starving `.figureCol`'s `grid-row: 1 / -1` (which spans the explicit grid only,
- * per spec) down to two of them. `.figureCol` measured 160px against the stack's own 384px, and the
- * couple illustration overflowed ~87px above and below it — on the real page, at 1536x695, where
- * every other gate (211 unit tests, `tsc`, lint, a green build) stayed green (`session.md`,
- * `.superpowers/sdd/wishes-figure-regression.md`, 2026-09-27).
- *
- * WHY A RENDER AND NOT A UNIT TEST. The defect is an emergent interaction between two files
- * (`thread.module.css`'s positioning and `app/wishes.module.css`'s grid) that no test scoped to
- * either file alone can see — a unit test on `thread-line.ts`'s pure geometry never mounts inside
- * `wishes`' real grid, and a Tailwind/CSS-module compile probe never lays out a real box. Per this
- * project's own standing lesson (`lessons.md`, 2026-09-25): "counting a mount by COLOUR rather than
- * geometry has already passed here while the owner saw nothing" — this asserts the RECT.
- *
- * WHAT IT ASSERTS. At a grid-triggering viewport (`>=64rem` landscape — the only place Wishes'
- * `.stack` becomes a grid), `.figureCol`'s rendered height must equal `.wishes-stack`'s own height,
- * within antialiasing tolerance. This is the general shape of check `.pageWrapper`'s contract
- * needs: for anything documented as "takes no layout space," assert a sibling/ancestor's measured
- * rect is unchanged by its presence — not just that it compiles or that types check.
- *
- * SELECTORS, and why neither touches a restricted file: `.wishes-stack` is already a plain (non-
- * module) class on the stack div in `app/_sections/wishes.tsx`, so no source file needs editing to
- * reach it.
- * `.figureCol` is a CSS-module class with no stable literal name — it is found instead as the
- * element immediately BEFORE `[data-thread-card]`, the call site's own fixed DOM relationship
- * (`app/_sections/wishes.tsx`: `CardThread` is the next sibling of `wishesStyles.figureCol`).
+/* THE ZERO-LAYOUT-IMPACT GATE. The span `PageThread` and `CardThread` mount as their root must take
+ * no space in flow. In a CSS Grid host an in-flow box is still a grid item at `height: 0`, so a card
+ * thread in flow inside Wishes' `>=64rem` landscape grid grows it past its explicit rows and starves
+ * `.figureCol`'s `grid-row: 1 / -1`. No unit test can see it (it is an interaction between
+ * `thread.module.css` and `app/wishes.module.css`), so this asserts the rendered RECT: at `>=64rem`
+ * landscape, `.figureCol`'s height equals `.wishes-stack`'s height within antialiasing tolerance.
+ * `.figureCol` is a CSS-module class with no stable name, so it is found as the element immediately
+ * before `[data-thread-card]`.
  *
  * ENGINE PIN (mandatory): `chromium.launch({ channel: "chromium" })` — the default launch reaches
  * for Chromium's old `headless_shell`, whose rendering differs from every real browser.
@@ -44,7 +22,7 @@ import { chromium } from "playwright";
 import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
-/* The thread is not on the published page -- `/` carries none since the lab split, so this gate points
+/* The thread is not on the published page -- `/` carries none, so this gate points
  * at the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). Against the DEV server the
  * extensionless path routes correctly; a gate reading the static export needs `.html`, because an
  * export emits the static route as `out/thread.html`. */

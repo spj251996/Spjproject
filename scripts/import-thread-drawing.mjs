@@ -24,11 +24,9 @@ import { chromium } from "playwright";
 import sharp from "sharp";
 import { pruneSpurs, thin, walk } from "./trace-motif.mjs";
 
-/* The inset the registration crosses were drawn at is a property of the SHEET, not a constant —
- * the first sheet (`wide`) inset them only 20px with 40-unit arms, so a cross sat half-clipped by
- * the canvas edge; every later sheet (`tall`, `upright`) inset them 64px, clear of it. A clipped
- * cross biases its own centroid inward, which reads as a scale error rather than as damage — the
- * first sheet measured a phantom 0.7%. */
+/* The inset the registration crosses were drawn at is a property of the SHEET, not a constant: the
+ * `wide` sheet inset them only 20px, so a cross sat half-clipped by the canvas edge, and a clipped
+ * cross biases its own centroid inward, which reads as a scale error rather than as damage. */
 const CROSS_INSET = { wide: 20, tall: 64, upright: 64 };
 const VIEWPORT = {
   wide: { width: 1536, height: 695 },
@@ -48,20 +46,15 @@ const SECTION_ORDER = [
 ];
 const TYPE_SAMPLE_STEP = 2; // px between samples along the drawn line, for the type-clearance walk
 
-/* A small window centred on each cross's KNOWN position, not a blind corner search. The sheet is
- * one we generated, so every cross's position is known in advance; that turns detection into
- * verification. Blind corner search kept losing to page content — a 19px botanical speck sitting
- * closer to the page edge than the mark, which neither a size floor nor a squareness test excluded
- * reliably on its own. The window still allows for the image having been rescaled, which is the
- * only case registration is needed for at all. A window sized as a FRACTION of the image is not
- * safe either: 12% of the 393-wide `tall` sheet is 47px, and its crosses sit at a 64px inset. */
+/* A small window centred on each cross's KNOWN position, not a blind corner search, which loses to
+ * page content. The window is a multiple of the cross's own arm, not a fraction of the image: a
+ * fraction of a narrow sheet is smaller than its crosses' inset. It still allows for a rescaled
+ * image, the only case registration is needed for. */
 const SEARCH_RADIUS = 2.5; // multiples of the cross's own arm
 
-/* The page's darkest ink is `--color-ink` #2d1100 = rgb(45,17,0), so a fixed "dark" threshold of
- * 70 swallows body type. The cut is instead taken RELATIVE to the darkest pixel already found in
- * the search window — the cross wherever the cross is present at all, even once a heavy downscale
- * has lifted its antialiased core (measured 11-20 at 0.417x scale; a fixed cut at 30 found nothing
- * there). */
+/* The page's darkest ink is `--color-ink` #2d1100, so a fixed "dark" threshold swallows body type.
+ * The cut is taken RELATIVE to the darkest pixel in the search window, which finds the cross even
+ * once a heavy downscale has lifted its antialiased core. */
 const BLACK_MARGIN = 70;
 const BLACK_CEILING = 120;
 
