@@ -63,6 +63,16 @@
 import { chromium } from "playwright";
 import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 
+/**
+ * @typedef {import("playwright").Browser} Browser
+ * @typedef {import("playwright").Page} Page
+ * @typedef {{ left: number, top: number, right: number, bottom: number }} Rect
+ * @typedef {{ validate: boolean, falsify: boolean, section?: string, band?: string, orientation?: string }} Args
+ * @typedef {{ minDistance: number | null, sampled: number, pathCount: number, glyphCount: number, offendingText: string | null, offendingPoint: { x: number, y: number } | null, error?: string, noThread?: boolean, noText?: boolean }} Measured
+ * @typedef {{ minDistance: number, columnWidth: number, columnGap: number, motherWidth: number, fatherWidth: number, motherText: string, fatherText: string, error?: string }} GapReading
+ * @typedef {{ ok: true, headingText: string, headingNodeTexts: string[], error?: string }} Planted
+ */
+
 const ORIGIN = "http://localhost:3000";
 /* The thread is not on the published page -- `/` carries none, so this gate points
  * at the lab route (DESIGN.md -> Technical Conventions -> Variant Routes). Against the DEV server the
@@ -78,7 +88,10 @@ const SAMPLE_BUDGET = 200;
 
 const THREAD_SELECTOR = "svg[data-thread-svg] path";
 
-/* Every section carries its own `id`. */
+/**
+ * Every section carries its own `id`.
+ * @param {string} sectionId
+ */
 function sectionSelectorFor(sectionId) {
   return `#${sectionId}`;
 }
@@ -109,8 +122,15 @@ const BANDS = THREAD_BANDS.map((band) => ({
   ],
 }));
 
+/**
+ * @param {string[]} argv
+ * @returns {Args}
+ */
 function parseArgs(argv) {
-  const flags = { validate: false, falsify: false };
+  const flags = /** @type {Args & Record<string, string | boolean>} */ ({
+    validate: false,
+    falsify: false,
+  });
   for (const arg of argv) {
     if (arg === "--validate") {
       flags.validate = true;
@@ -137,6 +157,7 @@ async function isDevServerUp() {
   }
 }
 
+/** @param {Page} page */
 async function waitForFonts(page) {
   try {
     await page.waitForFunction(() => document.fonts.status === "loaded", {
@@ -159,13 +180,16 @@ async function waitForFonts(page) {
    the one DOM fact `coverRect` actually writes: an inline `left` on some thread SVG, set only once
    real measurement has happened at least once. Never done as a fixed sleep, per this project's own
    `browser-testing.md` — wait for the state being verified, not a duration. */
+/** @param {Page} page */
 async function waitForThreadMeasured(page) {
   try {
     await page.waitForFunction(
       () =>
-        Array.from(document.querySelectorAll("svg[data-thread-svg]")).some(
-          (svg) => svg.style.left !== "",
-        ),
+        Array.from(
+          /** @type {NodeListOf<SVGSVGElement>} */ (
+            document.querySelectorAll("svg[data-thread-svg]")
+          ),
+        ).some((svg) => svg.style.left !== ""),
       { timeout: FONT_TIMEOUT_MS },
     );
   } catch {
@@ -178,6 +202,7 @@ async function waitForThreadMeasured(page) {
 /* The thread re-measures on a 150ms resize debounce (`page-thread.tsx`), landing about 175ms after
    the resize on the dev server -- inside a fixed 200ms settle by only ~25ms. Waiting for the live
    SVG's viewBox to match `<main>`'s box instead waits for the write the measurement depends on. */
+/** @param {Page} page */
 async function waitForThreadRemeasured(page) {
   try {
     await page.waitForFunction(
@@ -185,7 +210,9 @@ async function waitForThreadRemeasured(page) {
         const main = document.querySelector("main")?.getBoundingClientRect();
         if (!main) return false;
         return Array.from(
-          document.querySelectorAll("svg[data-thread-svg]"),
+          /** @type {NodeListOf<SVGSVGElement>} */ (
+            document.querySelectorAll("svg[data-thread-svg]")
+          ),
         ).some((svg) => {
           const box = svg.viewBox?.baseVal;
           return (
@@ -206,6 +233,7 @@ async function waitForThreadRemeasured(page) {
 
 /* Runs inside the page. Never reference outer-scope variables here — everything it needs is
    passed as an argument, since `page.evaluate` serializes the function and its args separately. */
+/** @param {{ sectionSelector: string, threadSelector: string, sampleBudget: number }} options */
 function measureSectionInPage({
   sectionSelector,
   threadSelector,
@@ -219,6 +247,7 @@ function measureSectionInPage({
   }
   const sectionRect = section.getBoundingClientRect();
 
+  /** @type {(Rect & { text: string })[]} */
   const glyphRects = [];
   const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
@@ -251,7 +280,7 @@ function measureSectionInPage({
           top: rect.top,
           right: rect.right,
           bottom: rect.bottom,
-          text: node.nodeValue.trim().slice(0, 60),
+          text: /** @type {string} */ (node.nodeValue).trim().slice(0, 60),
         });
       }
     }
@@ -261,13 +290,16 @@ function measureSectionInPage({
   /* The thread's SVG is a SIBLING of every section (mounted once, at the end of `<main>`), so the
      search is document-wide. */
   const candidatePaths = Array.from(
-    document.querySelectorAll(threadSelector),
+    /** @type {NodeListOf<SVGPathElement>} */ (
+      document.querySelectorAll(threadSelector)
+    ),
   ).filter(
     (el) =>
       typeof el.getTotalLength === "function" &&
       (el.getAttribute("d") ?? "") !== "",
   );
 
+  /** @param {{ x: number, y: number }} point */
   function insideSection(point) {
     return (
       point.x >= sectionRect.left &&
@@ -282,6 +314,7 @@ function measureSectionInPage({
      sections; sampling the full fine budget against the whole path would starve the section under
      test of resolution, so each in-rect range becomes its own "segment" for the fine pass below. */
   const COARSE_STEPS = 400;
+  /** @type {{ path: SVGPathElement, start: number, end: number }[]} */
   const segments = [];
   for (const path of candidatePaths) {
     let len = 0;
@@ -351,6 +384,7 @@ function measureSectionInPage({
     }
   }
 
+  /** @param {number} x @param {number} y @param {Rect} rect */
   function pointRectDistance(x, y, rect) {
     const dx = Math.max(rect.left - x, 0, x - rect.right);
     const dy = Math.max(rect.top - y, 0, y - rect.bottom);
@@ -358,7 +392,9 @@ function measureSectionInPage({
   }
 
   let minDistance = Infinity;
+  /** @type {string | null} */
   let offendingText = null;
+  /** @type {{ x: number, y: number } | null} */
   let offendingPoint = null;
   let sampled = 0;
 
@@ -404,6 +440,7 @@ function measureSectionInPage({
    through its centre. Appended as a child of the SECTION (not `document.body`), so it is inside
    the scope `measureSectionInPage` queries; `position: fixed` still places it at the heading's
    real screen coordinates regardless of where in the DOM it lives. */
+/** @param {string} sectionSelector */
 function plantViolationInPage(sectionSelector) {
   const section = document.querySelector(sectionSelector);
   if (!section) {
@@ -437,6 +474,7 @@ function plantViolationInPage(sectionSelector) {
   section.appendChild(svg);
   /* The measurement names its offender by one text node, trimmed and cut to 60 characters, so the
      heading's own text nodes are returned in that same form for the caller to match against. */
+  /** @type {string[]} */
   const headingNodeTexts = [];
   const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -445,7 +483,9 @@ function plantViolationInPage(sectionSelector) {
   }
   return {
     ok: true,
-    headingText: heading.textContent.trim().slice(0, 60),
+    headingText: /** @type {string} */ (heading.textContent)
+      .trim()
+      .slice(0, 60),
     headingNodeTexts,
   };
 }
@@ -485,7 +525,9 @@ function measureBrideParentGapInPage() {
      with the glyphs' own side bearings inside them. That is the right instrument here, because the
      closed form below is in advance widths -- but it is not a measure of ink, and this function is
      named for what it returns rather than for what a reader might hope it returns. */
+  /** @param {Element} element */
   function lineBoxesOf(element) {
+    /** @type {DOMRect[]} */
     const rects = [];
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     let node = walker.nextNode();
@@ -512,6 +554,7 @@ function measureBrideParentGapInPage() {
     };
   }
 
+  /** @param {DOMRect} a @param {DOMRect} b */
   function rectRectDistance(a, b) {
     const dx = Math.max(a.left - b.right, b.left - a.right, 0);
     const dy = Math.max(a.top - b.bottom, b.top - a.bottom, 0);
@@ -558,8 +601,8 @@ function measureBrideParentGapInPage() {
     columnGap,
     motherWidth,
     fatherWidth,
-    motherText: motherSpan.textContent.trim(),
-    fatherText: fatherSpan.textContent.trim(),
+    motherText: /** @type {string} */ (motherSpan.textContent).trim(),
+    fatherText: /** @type {string} */ (fatherSpan.textContent).trim(),
   };
 }
 
@@ -571,6 +614,7 @@ function measureBrideParentGapInPage() {
    -- so it moves whenever the type, the roster or the diameter moves. The tolerance is 1px, not an
    equality: the engine quantises layout to 1/64px and the two sides come from different box types
    (a line box against two element rects). */
+/** @param {Browser} browser */
 async function runValidate(browser) {
   console.log(
     "Validate — the measuring machinery against the gap's own derivation.",
@@ -591,7 +635,9 @@ async function runValidate(browser) {
     });
     await waitForFonts(page);
     await page.waitForTimeout(SETTLE_MS);
-    const result = await page.evaluate(measureBrideParentGapInPage);
+    const result = /** @type {GapReading} */ (
+      await page.evaluate(measureBrideParentGapInPage)
+    );
 
     if (result.error) {
       console.log(`FAIL — ${result.error}`);
@@ -633,6 +679,12 @@ async function runValidate(browser) {
   return exitCode;
 }
 
+/**
+ * @param {Browser} browser
+ * @param {string} sectionId
+ * @param {string} bandKey
+ * @param {string} windowKey
+ */
 async function runFalsify(browser, sectionId, bandKey, windowKey) {
   const tier = BANDS.find((candidate) => candidate.key === bandKey) ?? BANDS[0];
   const orientation =
@@ -657,9 +709,8 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
     await waitForThreadMeasured(page);
     await page.waitForTimeout(SETTLE_MS);
 
-    const planted = await page.evaluate(
-      plantViolationInPage,
-      sectionSelectorFor(sectionId),
+    const planted = /** @type {Planted} */ (
+      await page.evaluate(plantViolationInPage, sectionSelectorFor(sectionId))
     );
     if (planted.error) {
       console.log(`FAIL — could not plant a violation: ${planted.error}`);
@@ -668,11 +719,13 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
     console.log(`  planted a path straight through: "${planted.headingText}"`);
 
     await page.waitForTimeout(SETTLE_MS);
-    const result = await page.evaluate(measureSectionInPage, {
-      sectionSelector: sectionSelectorFor(sectionId),
-      threadSelector: THREAD_SELECTOR,
-      sampleBudget: SAMPLE_BUDGET,
-    });
+    const result = /** @type {Measured} */ (
+      await page.evaluate(measureSectionInPage, {
+        sectionSelector: sectionSelectorFor(sectionId),
+        threadSelector: THREAD_SELECTOR,
+        sampleBudget: SAMPLE_BUDGET,
+      })
+    );
 
     if (result.error) {
       console.log(`FAIL — measurement error: ${result.error}`);
@@ -694,11 +747,14 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
        the gate would then pass without having found the planted path at all. */
     const crossed = result.minDistance !== null && result.minDistance <= 0;
     const foundPlanted =
-      crossed && planted.headingNodeTexts.includes(result.offendingText);
+      crossed &&
+      planted.headingNodeTexts.includes(
+        /** @type {string} */ (result.offendingText),
+      );
     if (foundPlanted) {
       console.log(
         `\nPASS — the gate reports the planted violation: section="${sectionId}", ` +
-          `tier="${tier.key}/${orientation.key}", distance=${result.minDistance.toFixed(3)}px, ` +
+          `tier="${tier.key}/${orientation.key}", distance=${/** @type {number} */ (result.minDistance).toFixed(3)}px, ` +
           `text="${result.offendingText}".`,
       );
       exitCode = 0;
@@ -721,7 +777,12 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
   return exitCode;
 }
 
+/**
+ * @param {Browser} browser
+ * @param {string[]} sections
+ */
 async function runSweep(browser, sections) {
+  /** @type {{ sectionId: string, tier: string, orientation: string, kind: "error" | "violation", detail?: string, distance?: number | null, text?: string | null }[]} */
   const findings = [];
   const noThreadSections = new Set();
 
@@ -759,11 +820,13 @@ async function runSweep(browser, sections) {
             continue;
           }
 
-          const result = await page.evaluate(measureSectionInPage, {
-            sectionSelector: sectionSelectorFor(sectionId),
-            threadSelector: THREAD_SELECTOR,
-            sampleBudget: SAMPLE_BUDGET,
-          });
+          const result = /** @type {Measured} */ (
+            await page.evaluate(measureSectionInPage, {
+              sectionSelector: sectionSelectorFor(sectionId),
+              threadSelector: THREAD_SELECTOR,
+              sampleBudget: SAMPLE_BUDGET,
+            })
+          );
 
           if (result.error) {
             console.log(`${label}  ERROR  ${result.error}`);
@@ -863,7 +926,7 @@ async function main() {
         for (const violation of violations) {
           console.log(
             `  ${violation.sectionId} @ ${violation.tier}/${violation.orientation}: ` +
-              `${violation.distance.toFixed(3)}px into "${violation.text}"`,
+              `${/** @type {number} */ (violation.distance).toFixed(3)}px into "${violation.text}"`,
           );
         }
       }

@@ -61,6 +61,7 @@ const STROKE_B = [
   [FREE_AFTER.x, FREE_AFTER.y],
 ];
 
+/** @param {number[]} from @param {number[]} to */
 const heading = (from, to) =>
   (Math.atan2(to[1] - from[1], to[0] - from[0]) * 180) / Math.PI;
 
@@ -85,6 +86,7 @@ const ATTACHMENTS = [
 
 /* A slight sinusoidal wobble, same as the proven scratch self-test — a dead-straight line thins to
  * a perfectly clean 1px skeleton and proves nothing about handling a real, shaky hand-drawn line. */
+/** @param {number[][]} pts */
 const wobble = (pts) =>
   pts
     .map(
@@ -95,6 +97,11 @@ const wobble = (pts) =>
 /** Distance from a point to the recovered POLYLINE, not to its nearest vertex — simplification
  * drops vertices the line still passes through, so a vertex-to-vertex metric would measure the
  * simplification rather than the fit. */
+/**
+ * @param {number} px
+ * @param {number} py
+ * @param {{ x: number, y: number }[]} line
+ */
 function toPolyline(px, py, line) {
   let best = Infinity;
   for (let i = 1; i < line.length; i += 1) {
@@ -112,6 +119,7 @@ function toPolyline(px, py, line) {
   return best;
 }
 
+/** @param {number[][][]} drawn */
 function sheetSvg(drawn) {
   const crosses = CROSSES.flatMap(([x, y]) => [
     `<line x1="${x - ARM}" y1="${y}" x2="${x + ARM}" y2="${y}" stroke="#000" stroke-width="3"/>`,
@@ -240,9 +248,12 @@ test("relaxes a drawn connector clear of a glyph it crosses, without moving its 
   } = relaxOffType(connectors, geometry, glyphs);
   assert.equal(stuck.length, 0, "a wide-open corridor converges");
   assert.ok(moved > 0, "the crossing vertex actually moved");
-  assert.deepEqual(relaxed[0].points[0], points[0], "the entry end is pinned");
+  const relaxedPoints = /** @type {{ x: number, y: number }[]} */ (
+    relaxed[0].points
+  );
+  assert.deepEqual(relaxedPoints[0], points[0], "the entry end is pinned");
   assert.deepEqual(
-    relaxed[0].points.at(-1),
+    relaxedPoints.at(-1),
     points.at(-1),
     "the exit end is pinned",
   );
@@ -280,6 +291,12 @@ const SHEET_GEOMETRY = {
 const EARLIER_CONNECTORS = '[{"connector":0,"points":[{"x":1,"y":2}]}]\n';
 const EARLIER_JOINS = '[{"connector":0,"end":"to"}]\n';
 
+/**
+ * @param {import("node:test").TestContext} t
+ * @param {number[][][]} drawn
+ * @param {{ glyphs: { left: number, right: number, top: number, bottom: number, text?: string }[], sections: number }} page
+ * @param {{ width: number, sections: { top: number, height: number }[] }} [geometry]
+ */
 async function runImport(t, drawn, page, geometry = SHEET_GEOMETRY) {
   const dir = mkdtempSync(join(tmpdir(), "thread-import-cli-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -292,9 +309,12 @@ async function runImport(t, drawn, page, geometry = SHEET_GEOMETRY) {
     .png()
     .toFile(drawing);
 
+  /** @type {string[]} */
   const errors = [];
   t.mock.method(console, "log", () => {});
-  t.mock.method(console, "error", (line) => errors.push(String(line)));
+  t.mock.method(console, "error", (/** @type {unknown} */ line) =>
+    errors.push(String(line)),
+  );
   let reads = 0;
   const code = await importDrawing(["tall", drawing, `--dir=${dir}`], {
     readPage: async () => {
@@ -319,7 +339,11 @@ test("a clean drawing imports: exit 0, every connector written with points", asy
   assert.equal(run.code, 0, run.errors);
   const written = JSON.parse(run.connectors);
   assert.equal(written.length, 2);
-  assert.ok(written.every((c) => Array.isArray(c.points)));
+  assert.ok(
+    written.every((/** @type {{ points: unknown }} */ c) =>
+      Array.isArray(c.points),
+    ),
+  );
   assert.notEqual(run.joins, EARLIER_JOINS);
 });
 

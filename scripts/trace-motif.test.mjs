@@ -37,6 +37,7 @@ test("the walk passes straight through a crossing rather than turning", async ()
     `the walk stopped at the crossing instead of passing through it (${crossing.index} of ${points.length})`,
   );
 
+  /** @param {number} a @param {number} b */
   const heading = (a, b) =>
     Math.atan2(points[b].y - points[a].y, points[b].x - points[a].x);
   const before = heading(crossing.index - 30, crossing.index - 10);
@@ -55,12 +56,14 @@ test("the walk passes straight through a crossing rather than turning", async ()
    of them against its true 2, which fragmented the skeleton, made spur pruning match nothing and cut
    the walk's coverage from 65.4% to 51.8%. Nothing else in this file fails when that rule is
    removed, so this is its only guard. */
+/** @param {number} width @param {number} height @param {number[][]} pixels */
 const fieldOf = (width, height, pixels) => {
   const ink = new Uint8Array(width * height);
   for (const [x, y] of pixels) ink[y * width + x] = 1;
   return { ink, width, height };
 };
 
+/** @param {{ ink: Uint8Array, width: number, height: number }} field */
 const degrees = (field) => {
   const histogram = new Map();
   for (let at = 0; at < field.ink.length; at += 1) {

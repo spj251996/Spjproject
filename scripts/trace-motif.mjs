@@ -68,6 +68,16 @@ const LOOKAHEAD = 8;
    the coverage it bought, so raising it is never a silent change to the drawing. */
 const BRIDGE_STROKES = 2;
 
+/**
+ * @typedef {{ ink: Uint8Array, width: number, height: number }} Field
+ * @typedef {{ x: number, y: number }} Point
+ * @typedef {{ from: number, to: number, pixels: number[] }} Branch
+ * @typedef {{ pixels: number[], incident: number }} Cluster
+ * @typedef {{ branches: Branch[], clusters: Map<number, Cluster>, clusterOf: Map<number, number> }} Graph
+ * @typedef {Branch & { source: Branch }} Facing
+ * @typedef {{ width?: number, threshold?: number, passes?: number, fraction?: number, rounds?: number, segments?: number, strokes?: number }} Options
+ */
+
 const NEIGHBOURS = [
   [0, -1],
   [1, -1],
@@ -79,7 +89,11 @@ const NEIGHBOURS = [
   [-1, -1],
 ];
 
-/** Render the SVG at `width` and threshold it to a binary ink field (1 = ink). */
+/**
+ * Render the SVG at `width` and threshold it to a binary ink field (1 = ink).
+ * @param {Buffer | string} svg
+ * @param {Options} [options]
+ */
 async function rasterise(
   svg,
   { width = RASTER_WIDTH, threshold = INK_THRESHOLD } = {},
@@ -98,6 +112,7 @@ async function rasterise(
   return { ink, width: info.width, height: info.height };
 }
 
+/** @param {Uint8Array} n */
 function transitions(n) {
   let count = 0;
   for (let i = 0; i < 8; i += 1)
@@ -105,10 +120,16 @@ function transitions(n) {
   return count;
 }
 
-/** Zhang-Suen thinning to a one-pixel skeleton. Throws if it has not converged in THINNING_PASSES. */
+/**
+ * Zhang-Suen thinning to a one-pixel skeleton. Throws if it has not converged in THINNING_PASSES.
+ * @param {Field} field
+ * @param {Options} [options]
+ * @returns {Field}
+ */
 export function thin(field, { passes = THINNING_PASSES } = {}) {
   const { width, height } = field;
   const ink = Uint8Array.from(field.ink);
+  /** @type {number[]} */
   const doomed = [];
   const n = new Uint8Array(8);
 
@@ -154,15 +175,20 @@ export function thin(field, { passes = THINNING_PASSES } = {}) {
  * share an ink orthogonal neighbour, because the connection it would add is one the staircase
  * already carries. Without this every step of a 1px diagonal counts three or four neighbours and
  * reads as a junction: `heart` measured 393 of them where the drawing has two crossings.
+ * @param {Field} field
+ * @param {number} at
  */
 export function neighboursOf(field, at) {
   const { ink, width, height } = field;
   const x = at % width;
   const y = (at - x) / width;
+  /** @param {number} nx @param {number} ny */
   const inside = (nx, ny) => nx >= 0 && ny >= 0 && nx < width && ny < height;
+  /** @param {number} nx @param {number} ny */
   const inkAt = (nx, ny) =>
     inside(nx, ny) && ink[ny * width + nx] === 1 ? 1 : 0;
 
+  /** @type {number[]} */
   const found = [];
   for (const [dx, dy] of NEIGHBOURS) {
     const nx = x + dx;
@@ -185,6 +211,9 @@ export function neighboursOf(field, at) {
  * block of T-junctions; reading each of those as a junction in its own right puts one-pixel
  * branches between them, and a direction measured over one pixel cannot tell an X's arms apart —
  * the walk then turns at exactly the crossing it exists to pass through.
+ * @param {Field} field
+ * @param {number} [bridge]
+ * @returns {Graph}
  */
 function branchesOf(field, bridge = 0) {
   const { ink } = field;
@@ -216,6 +245,7 @@ function branchesOf(field, bridge = 0) {
     }
   }
 
+  /** @type {Branch[]} */
   const branches = [];
   const seen = new Set();
   const cap = degree.size + 1;
@@ -250,14 +280,15 @@ function branchesOf(field, bridge = 0) {
     }
   }
 
+  /** @type {Map<number, Cluster>} */
   const clusters = new Map();
   for (const [at, id] of clusterOf) {
     if (!clusters.has(id)) clusters.set(id, { pixels: [], incident: 0 });
-    clusters.get(id).pixels.push(at);
+    /** @type {Cluster} */ (clusters.get(id)).pixels.push(at);
   }
   for (const branch of branches) {
-    clusters.get(branch.from).incident += 1;
-    clusters.get(branch.to).incident += 1;
+    /** @type {Cluster} */ (clusters.get(branch.from)).incident += 1;
+    /** @type {Cluster} */ (clusters.get(branch.to)).incident += 1;
   }
   return bridge > 0
     ? mergeBridges({ branches, clusters, clusterOf }, bridge)
@@ -273,14 +304,18 @@ function branchesOf(field, bridge = 0) {
  *
  * Only a stub between two junctions merges. A short branch reaching a loose end is a spur, which
  * `pruneSpurs` owns and judges on quite different grounds.
+ * @param {Graph} graph
+ * @param {number} bridge
+ * @returns {Graph}
  */
 function mergeBridges({ branches, clusters, clusterOf }, bridge) {
   const parent = new Map([...clusters.keys()].map((id) => [id, id]));
+  /** @param {number} id @returns {number} */
   const find = (id) => {
     /* Bounded by the cluster count: every hop moves strictly closer to a root. */
     for (let hop = 0; hop <= clusters.size; hop += 1) {
       if (parent.get(id) === id) return id;
-      id = parent.get(id);
+      id = /** @type {number} */ (parent.get(id));
     }
     throw new Error("a junction merge left a cycle in its union-find");
   };
@@ -288,8 +323,9 @@ function mergeBridges({ branches, clusters, clusterOf }, bridge) {
   const merged = new Set();
   for (const branch of branches) {
     if (branch.pixels.length > bridge) continue;
-    if (clusters.get(branch.from).incident < 3) continue;
-    if (clusters.get(branch.to).incident < 3) continue;
+    if (/** @type {Cluster} */ (clusters.get(branch.from)).incident < 3)
+      continue;
+    if (/** @type {Cluster} */ (clusters.get(branch.to)).incident < 3) continue;
     const from = find(branch.from);
     const to = find(branch.to);
     merged.add(branch);
@@ -297,11 +333,13 @@ function mergeBridges({ branches, clusters, clusterOf }, bridge) {
   }
   if (merged.size === 0) return { branches, clusters, clusterOf };
 
+  /** @type {Map<number, Cluster>} */
   const grown = new Map();
+  /** @param {number} id @returns {Cluster} */
   const at = (id) => {
     const root = find(id);
     if (!grown.has(root)) grown.set(root, { pixels: [], incident: 0 });
-    return grown.get(root);
+    return /** @type {Cluster} */ (grown.get(root));
   };
   const owner = new Map();
   for (const [pixel, id] of clusterOf) {
@@ -314,7 +352,7 @@ function mergeBridges({ branches, clusters, clusterOf }, bridge) {
     const root = find(branch.from);
     for (const pixel of branch.pixels) {
       if (owner.has(pixel)) continue;
-      grown.get(root).pixels.push(pixel);
+      /** @type {Cluster} */ (grown.get(root)).pixels.push(pixel);
       owner.set(pixel, root);
     }
   }
@@ -333,6 +371,9 @@ function mergeBridges({ branches, clusters, clusterOf }, bridge) {
  * Drop terminal branches shorter than `fraction` of the longest branch. A branch qualifies only
  * when one end is a loose end and the other is a junction — so a single open curve, whose one
  * branch is terminal at BOTH ends, is never a spur however short it is.
+ * @param {Field} field
+ * @param {Options} [options]
+ * @returns {Field}
  */
 export function pruneSpurs(
   field,
@@ -346,7 +387,10 @@ export function pruneSpurs(
     if (branches.length < 2) return working;
     const longest = Math.max(...branches.map((b) => b.pixels.length));
     const spurs = branches.filter((b) => {
-      const ends = [clusters.get(b.from).incident, clusters.get(b.to).incident];
+      const ends = [
+        /** @type {Cluster} */ (clusters.get(b.from)).incident,
+        /** @type {Cluster} */ (clusters.get(b.to)).incident,
+      ];
       const terminal = ends.filter((n) => n === 1).length;
       const junction = ends.filter((n) => n >= 3).length;
       return (
@@ -358,7 +402,11 @@ export function pruneSpurs(
       /* The junction's own pixels stay — they belong to the branches that survive. */
       for (const at of spur.pixels) {
         const id = clusterOf.get(at);
-        if (id !== undefined && clusters.get(id).incident >= 3) continue;
+        if (
+          id !== undefined &&
+          /** @type {Cluster} */ (clusters.get(id)).incident >= 3
+        )
+          continue;
         ink[at] = 0;
       }
     }
@@ -366,6 +414,11 @@ export function pruneSpurs(
   throw new Error(`spur pruning did not settle in ${rounds} rounds`);
 }
 
+/**
+ * @param {Field} field
+ * @param {number[]} pixels
+ * @param {number} span
+ */
 function directionAlong(field, pixels, span) {
   const { width } = field;
   const last = pixels[Math.min(span, pixels.length - 1)];
@@ -379,6 +432,9 @@ function directionAlong(field, pixels, span) {
  * At a junction, the branch that best continues the incoming direction. This is the whole reason a
  * self-crossing motif comes out as one rope: the nearest branch at an X is whichever arm the scan
  * order reaches first, and taking it turns the corner.
+ * @param {Point} incoming
+ * @param {Facing[]} candidates
+ * @param {Field} field
  */
 function chooseContinuation(incoming, candidates, field) {
   let best = candidates[0];
@@ -394,7 +450,12 @@ function chooseContinuation(incoming, candidates, field) {
   return best;
 }
 
-/** Present each candidate branch pixel-ordered away from `junction`, so its direction is outgoing. */
+/**
+ * Present each candidate branch pixel-ordered away from `junction`, so its direction is outgoing.
+ * @param {Branch[]} candidates
+ * @param {number} junction
+ * @returns {Facing[]}
+ */
 function oriented(candidates, junction) {
   return candidates.map((b) =>
     b.from === junction
@@ -409,7 +470,11 @@ function oriented(candidates, junction) {
   );
 }
 
-/** The direction of travel the pen arrives at a branch's far junction on. */
+/**
+ * The direction of travel the pen arrives at a branch's far junction on.
+ * @param {Field} field
+ * @param {Branch} branch
+ */
 function arrivalDirection(field, branch) {
   const leaving = directionAlong(
     field,
@@ -423,9 +488,15 @@ function arrivalDirection(field, branch) {
  * One greedy trail from `junction`, taking the best continuation at every junction and stopping
  * when nothing unused leaves the one it has reached. `incoming` is the direction the pen arrives
  * on, or null at a loose end where there is nothing to continue.
+ * @param {Field} field
+ * @param {Map<number, Branch[]>} incident
+ * @param {Set<Branch>} used
+ * @param {number} junction
+ * @param {Point | null} incoming
  */
 function greedyTrail(field, incident, used, junction, incoming) {
   const total = [...incident.values()].reduce((n, list) => n + list.length, 0);
+  /** @type {Facing[]} */
   const trail = [];
   let at = junction;
   let direction = incoming;
@@ -446,7 +517,12 @@ function greedyTrail(field, incident, used, junction, incoming) {
   return trail;
 }
 
-/** Order a pruned skeleton into a single polyline, from one loose end through to the far one. */
+/**
+ * Order a pruned skeleton into a single polyline, from one loose end through to the far one.
+ * @param {Field} field
+ * @param {Options & { bridge?: number }} [options]
+ * @returns {Point[]}
+ */
 export function walk(field, { bridge = 0 } = {}) {
   const { width } = field;
   const { branches, clusters } = branchesOf(field, bridge);
@@ -470,11 +546,12 @@ export function walk(field, { bridge = 0 } = {}) {
       : b,
   )[0];
 
+  /** @type {Map<number, Branch[]>} */
   const incident = new Map();
   for (const branch of branches) {
     for (const end of [branch.from, branch.to]) {
       if (!incident.has(end)) incident.set(end, []);
-      incident.get(end).push(branch);
+      /** @type {Branch[]} */ (incident.get(end)).push(branch);
     }
   }
 
@@ -513,6 +590,7 @@ export function walk(field, { bridge = 0 } = {}) {
     if (!spliced) break;
   }
 
+  /** @type {number[]} */
   const ordered = [];
   for (const branch of trail) {
     for (const at of branch.pixels) {
@@ -528,6 +606,8 @@ export function walk(field, { bridge = 0 } = {}) {
  * drawing with more than two loose ends it is a fragment — and `fitPath`'s aspect is then that
  * fragment's bounding box, not the motif's. This is the figure that tells the two apart without a
  * render, and the aspect is the number a later task pastes into `thread-motifs.ts`.
+ * @param {Field} field
+ * @param {Point[]} points
  */
 function coverageOf(field, points) {
   const { ink } = field;
@@ -561,6 +641,10 @@ function coverageOf(field, points) {
   return { skeleton, walked, closedLoop, fraction: walked / skeleton };
 }
 
+/**
+ * @param {Point[]} points
+ * @param {number} segments
+ */
 function resample(points, segments) {
   const cumulative = [0];
   for (let i = 1; i < points.length; i += 1) {
@@ -599,12 +683,15 @@ function resample(points, segments) {
   return out;
 }
 
+/** @param {number} n */
 const round = (n) => Number(n.toFixed(2));
 
 /**
  * Fit cubics to the polyline and scale the ink uniformly into a 0-100 square, centred on the
  * shorter axis. Uniform, because a motif is composed as a square and a non-uniform fit would make
  * the heart an egg at every tier but one.
+ * @param {Point[]} points
+ * @param {Options} [options]
  */
 function fitPath(points, { segments = SEGMENTS } = {}) {
   const xs = points.map((p) => p.x);
@@ -639,7 +726,11 @@ function fitPath(points, { segments = SEGMENTS } = {}) {
   return { d, aspect: Number((box.width / box.height).toFixed(3)) };
 }
 
-/** The whole pipeline: outline SVG in, one continuous open centreline, its aspect and its coverage. */
+/**
+ * The whole pipeline: outline SVG in, one continuous open centreline, its aspect and its coverage.
+ * @param {Buffer | string} svg
+ * @param {Options} [options]
+ */
 export async function centreline(svg, options = {}) {
   const raster = await rasterise(svg, options);
   const skeleton = pruneSpurs(thin(raster, options), options);
@@ -654,6 +745,9 @@ export async function centreline(svg, options = {}) {
  * The longest skeleton stub that counts as part of one crossing, measured from the drawing rather
  * than assumed: ink pixels over skeleton pixels is the mean stroke width, and thinning an X of
  * width w separates its two T-nodes by about w. BRIDGE_STROKES gives that headroom.
+ * @param {{ ink: Uint8Array }} raster
+ * @param {Field} skeleton
+ * @param {Options} [options]
  */
 function bridgeSpan(raster, skeleton, { strokes = BRIDGE_STROKES } = {}) {
   let ink = 0;
@@ -663,7 +757,13 @@ function bridgeSpan(raster, skeleton, { strokes = BRIDGE_STROKES } = {}) {
   return bone === 0 ? 0 : strokes * (ink / bone);
 }
 
-/** A numeric CLI flag. An unreadable value stops the run rather than reaching sharp as NaN. */
+/**
+ * A numeric CLI flag. An unreadable value stops the run rather than reaching sharp as NaN.
+ * @param {string[]} argv
+ * @param {string} name
+ * @param {number} fallback
+ * @param {number} minimum
+ */
 function flag(argv, name, fallback, minimum) {
   const hit = argv.find((a) => a.startsWith(`--${name}=`));
   if (hit === undefined) return fallback;
@@ -676,6 +776,7 @@ function flag(argv, name, fallback, minimum) {
   return value;
 }
 
+/** @param {string[]} argv */
 async function main(argv) {
   const file = argv.find((a) => !a.startsWith("--"));
   if (file === undefined) {
@@ -694,7 +795,7 @@ async function main(argv) {
       strokes: flag(argv, "bridge", BRIDGE_STROKES, 0),
     };
   } catch (error) {
-    console.error(error.message);
+    console.error(/** @type {Error} */ (error).message);
     process.exitCode = 1;
     return;
   }

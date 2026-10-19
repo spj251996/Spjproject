@@ -32,6 +32,16 @@ import { MOTIFS } from "../components/thread/thread-motifs.ts";
 import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
 import { withoutSection } from "./thread-without-section.mjs";
 
+/**
+ * @import { BandId } from "../components/thread/thread-bands.ts"
+ * @import { MotifId, Tangent } from "../components/thread/thread-geometry.ts"
+ * @import { EndTangents } from "./thread-spline.ts"
+ * @typedef {{ x: number, y: number }} Point
+ * @typedef {{ motif: string, x: number, y: number, scale: number, turn: number, mirror?: true }} Placement
+ * @typedef {{ section: string, motifId: MotifId, mirror: boolean, turn: number, x: number, y: number, entryHeadingVector: Point, exitHeadingVector: Point, drawnEntryHeading: number, drawnExitHeading: number, entryPointGlobal: Point, exitPointGlobal: Point }} Fitted
+ * @typedef {{ paths: Record<string, { d: string }[]>, placements: Record<string, Placement[]>, fitted: Fitted[] }} BandResult
+ */
+
 /* The sheets' own section order — what the owner drew against, Contact included. */
 const AUTHORED_ORDER = [
   "invite",
@@ -70,6 +80,7 @@ const DIRS = {
 
    A motif/band cell with no `scale` in the source table is `undefined` here and takes
    `DEFAULT_SCALE`, named once below. */
+/** @type {Record<BandId, Partial<Record<MotifId, number | undefined>>>} */
 const SCALE = {
   tall: {
     heart: 0.2,
@@ -114,21 +125,30 @@ const SVMIN_BY_BAND = Object.fromEntries(
    `portraitLoop` in `wide` and `tall`, where the drawn line turns the opposite sign from the
    motif's authored turn. `upright`'s two loops wind opposite ways in the drawing, so mirroring one
    is not this task's call — neither is mirrored here. */
+/**
+ * @param {string} band
+ * @param {string} motifId
+ */
 function isMirrored(band, motifId) {
   return motifId === "portraitLoop" && (band === "wide" || band === "tall");
 }
 
+/** @param {number} r */
 const deg = (r) => (r * 180) / Math.PI;
+/** @param {number} d */
 const rad = (d) => (d * Math.PI) / 180;
+/** @param {number} n @param {number} [places] */
 const round = (n, places = 2) => Math.round(n * 10 ** places) / 10 ** places;
 
 /* A reflection about the drawing's own vertical axis: entry stays entry, but the direction of
    travel flips sign on x, which is `angle -> 180 - angle`, and the offset from the square's centre
    flips on x too. */
+/** @param {Tangent} t */
 function mirrorTangent(t) {
   return { x: 1 - t.x, y: t.y, angle: 180 - t.angle };
 }
 
+/** @param {number[]} anglesRad */
 function circularMeanDegrees(anglesRad) {
   const s = anglesRad.reduce((sum, a) => sum + Math.sin(a), 0);
   const c = anglesRad.reduce((sum, a) => sum + Math.cos(a), 0);
@@ -138,23 +158,36 @@ function circularMeanDegrees(anglesRad) {
 /* The direction of travel over a fixed reach from a stroke's own terminal — never the last segment
    alone, which can be a few pixels of skeleton noise. Matches `import-thread-drawing.mjs`'s own
    `headingAt`. */
+/**
+ * @param {Point[]} stroke
+ * @param {"from" | "to"} which
+ * @param {number} reach
+ */
 function headingAt(stroke, which, reach) {
-  const anchor = which === "from" ? stroke[0] : stroke.at(-1);
+  const anchor = /** @type {Point} */ (
+    which === "from" ? stroke[0] : stroke.at(-1)
+  );
   const order = which === "from" ? stroke : [...stroke].reverse();
-  const away =
+  const away = /** @type {Point} */ (
     order.find((p) => Math.hypot(p.x - anchor.x, p.y - anchor.y) >= reach) ??
-    order.at(-1);
+      order.at(-1)
+  );
   return which === "from"
     ? deg(Math.atan2(away.y - anchor.y, away.x - anchor.x))
     : deg(Math.atan2(anchor.y - away.y, anchor.x - away.x));
 }
 
+/** @param {number} degrees */
 function headingVector(degrees) {
   return { x: Math.cos(rad(degrees)), y: Math.sin(rad(degrees)) };
 }
 
 /* `p[i]` and `p[i+1]` bracket the boundary in y; linear interpolation is exact enough for a split
    point that then gets its own fitted spline either side of it. */
+/**
+ * @param {Point[]} points
+ * @param {number} boundaryY
+ */
 function splitAtY(points, boundaryY) {
   for (let i = 0; i < points.length - 1; i += 1) {
     const a = points[i];
@@ -172,16 +205,21 @@ function splitAtY(points, boundaryY) {
     }
   }
   throw new Error(
-    `connector never reaches y=${boundaryY} (range ${points[0].y}..${points.at(-1).y})`,
+    `connector never reaches y=${boundaryY} (range ${points[0].y}..${/** @type {Point} */ (points.at(-1)).y})`,
   );
 }
 
+/**
+ * @param {Point[]} points
+ * @param {EndTangents} ends
+ */
 function formatPath(points, ends) {
   const rounded = points.map((p) => ({ x: round(p.x), y: round(p.y) }));
   return splinePath(rounded, { ends });
 }
 
 /* `d`'s own numbers, in order: `M x y (C c1x c1y c2x c2y x y)*`. */
+/** @param {string} d */
 function numbersOf(d) {
   return [...d.matchAll(/-?\d+(?:\.\d+)?(?:e-?\d+)?/g)].map((m) =>
     Number(m[0]),
@@ -196,6 +234,10 @@ function numbersOf(d) {
    arm length, sized from that side's OWN adjacent span — so even with an identical tangent forced
    at the shared point, the two curves peel away from it at different rates and the join still
    reads as a small kink a few pixels in. Slicing one curve has no such seam to begin with. */
+/**
+ * @param {string} d
+ * @param {number} beforeCount
+ */
 function sliceFittedPath(d, beforeCount) {
   const n = numbersOf(d);
   const beforeNumbers = n.slice(0, 2 + beforeCount * 6);
@@ -204,6 +246,7 @@ function sliceFittedPath(d, beforeCount) {
     n[2 + beforeCount * 6 - 1],
     ...n.slice(2 + beforeCount * 6),
   ];
+  /** @param {number[]} nums */
   const toPath = (nums) => {
     const segments = [`M ${nums[0]} ${nums[1]}`];
     for (let i = 2; i + 5 < nums.length; i += 6) {
@@ -220,6 +263,10 @@ function sliceFittedPath(d, beforeCount) {
    constant — converting a curve fit in GLOBAL page pixels into a section's own LOCAL box, which
    only ever differs from the page by how far down it starts. X needs no such shift: every
    section's box shares the page's own left edge and full width. */
+/**
+ * @param {string} d
+ * @param {number} dy
+ */
 function shiftPathY(d, dy) {
   const n = numbersOf(d);
   const shifted = n.map((v, i) => (i % 2 === 1 ? round(v + dy) : round(v)));
@@ -232,6 +279,11 @@ function shiftPathY(d, dy) {
   return segments.join(" ");
 }
 
+/**
+ * @param {BandId} band
+ * @param {string} dir
+ * @returns {BandResult}
+ */
 function buildBand(band, dir) {
   const geometry = JSON.parse(readFileSync(`${dir}/geometry.json`, "utf8"));
   const { sections, attachments, connectors } = withoutSection({
@@ -246,6 +298,7 @@ function buildBand(band, dir) {
 
   /* Each motif INSTANCE, in page order — family's two `portraitLoop`s are two separate instances,
      not two readings of one. */
+  /** @type {{ entry: (typeof attachments)[number], exit: (typeof attachments)[number], section: string, motifId: MotifId }[]} */
   const motifs = [];
   for (let i = 0; i < attachments.length; i += 2) {
     const entry = attachments[i];
@@ -257,7 +310,12 @@ function buildBand(band, dir) {
     ) {
       throw new Error(`attachments.json is not entry/exit pairs at index ${i}`);
     }
-    motifs.push({ entry, exit, section: entry.section, motifId: entry.motif });
+    motifs.push({
+      entry,
+      exit,
+      section: entry.section,
+      motifId: /** @type {MotifId} */ (entry.motif),
+    });
   }
 
   const fitted = motifs.map((m, index) => {
@@ -286,6 +344,7 @@ function buildBand(band, dir) {
     const size =
       (SCALE[band][m.motifId] ?? DEFAULT_SCALE) * SVMIN_BY_BAND[band];
 
+    /** @param {Tangent} tangent */
     const place = (tangent) => {
       const dx = tangent.x - 0.5;
       const dy = tangent.y - 0.5;
@@ -295,7 +354,7 @@ function buildBand(band, dir) {
     };
     const offEntry = place(entryTangent);
     const offExit = place(exitTangent);
-    const endA = arriving.at(-1);
+    const endA = /** @type {Point} */ (arriving.at(-1));
     const endB = leaving[0];
     const globalCx = (endA.x - offEntry.x + (endB.x - offExit.x)) / 2;
     const globalCy = (endA.y - offEntry.y + (endB.y - offExit.y)) / 2;
@@ -330,9 +389,11 @@ function buildBand(band, dir) {
      `assignConnectors`'s own `links`. A connector whose two motifs sit in different sections is the
      SAME drawn stroke crossing the boundary, so it is split at that boundary's exact y rather than
      assigned wholesale to either side. */
+  /** @type {Record<string, { d: string }[]>} */
   const bySectionConnectors = {};
   for (const id of SECTION_ORDER) bySectionConnectors[id] = [];
 
+  /** @param {string} sectionId @param {Point[]} points @param {EndTangents} ends */
   const pushLocal = (sectionId, points, ends) => {
     const top = sections[SECTION_ORDER.indexOf(sectionId)].top;
     const local = points.map((p) => ({ x: p.x, y: p.y - top }));
@@ -392,14 +453,16 @@ function buildBand(band, dir) {
       continue;
     }
 
-    const sectionId = before?.section ?? after?.section;
+    const sectionId = /** @type {string} */ (before?.section ?? after?.section);
     pushLocal(sectionId, points, {
       start: before ? before.exitHeadingVector : undefined,
       end: after ? after.entryHeadingVector : undefined,
     });
   }
 
+  /** @type {Record<string, { d: string }[]>} */
   const paths = {};
+  /** @type {Record<string, Placement[]>} */
   const placements = {};
   for (const id of SECTION_ORDER) {
     paths[id] = bySectionConnectors[id];
@@ -418,12 +481,16 @@ function buildBand(band, dir) {
   return { paths, placements, fitted };
 }
 
+/** @param {Record<string, BandResult>} results */
 function emit(results) {
   const bandOrder = ["tall", "upright", "wide"];
+  /** @param {unknown} v */
   const jsonPath = (v) => JSON.stringify(v);
 
+  /** @param {string} id @param {{ d: string }[]} list */
   const connectorEntry = (id, list) =>
     `      ${jsonPath(id)}: [\n${list.map((c) => `        { d: ${jsonPath(c.d)} },`).join("\n")}\n      ],`;
+  /** @param {string} id @param {Placement[]} list */
   const placementEntry = (id, list) =>
     `      ${jsonPath(id)}: [\n${list
       .map(
@@ -511,9 +578,10 @@ ${placementsBody}
 `;
 }
 
+/** @type {Record<string, BandResult>} */
 const results = {};
 for (const [band, dir] of Object.entries(DIRS)) {
-  results[band] = buildBand(band, dir);
+  results[band] = buildBand(/** @type {BandId} */ (band), dir);
 }
 
 writeFileSync("components/thread/thread-paths.ts", emit(results));

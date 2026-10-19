@@ -24,6 +24,23 @@ import { chromium } from "playwright";
 import sharp from "sharp";
 import { pruneSpurs, thin, walk } from "./trace-motif.mjs";
 
+/**
+ * @typedef {{ x: number, y: number }} Point
+ * @typedef {{ ink: Uint8Array, width: number, height: number }} Field
+ * @typedef {{ width: number, height: number, crossInset?: number, crossArm?: number }} Page
+ * @typedef {{ x: number, y: number, n: number, bw: number, bh: number }} Mark
+ * @typedef {{ marks: Mark[], scaleX: number, scaleY: number, identity?: boolean, toPage: (x: number, y: number) => Point }} Transform
+ * @typedef {{ section: string, motif: string, which: string, x: number, y: number, heading: number }} Attachment
+ * @typedef {{ from: Attachment | null, to: Attachment | null }} Link
+ * @typedef {{ left: number, right: number, top: number, bottom: number, text?: string }} Glyph
+ * @typedef {{ top: number, height: number }} Band
+ * @typedef {{ width: number, sections: Band[] }} Geometry
+ * @typedef {{ connector: number, points: Point[] | null }} Connector
+ * @typedef {Attachment & { connector: number, end: "from" | "to", drew: number, off: number, dist: number }} Join
+ * @typedef {{ width: number, height: number }} Viewport
+ * @typedef {{ glyphs: Glyph[], sections: number }} LivePage
+ */
+
 /* The inset the registration crosses were drawn at is a property of the SHEET, not a constant: the
  * `wide` sheet inset them only 20px, so a cross sat half-clipped by the canvas edge, and a clipped
  * cross biases its own centroid inward, which reads as a scale error rather than as damage. */
@@ -64,6 +81,17 @@ const BLACK_CEILING = 120;
 const CROSS_RATIO = [0.55, 1.8];
 const CROSS_MIN_SIDE = 8;
 
+/**
+ * @param {Uint8Array} px
+ * @param {number} w
+ * @param {number} ch
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @param {Point} corner
+ * @returns {Mark}
+ */
 function crossIn(px, w, ch, x0, y0, x1, y1, corner) {
   let darkest = 255;
   for (let y = y0; y < y1; y += 1) {
@@ -74,6 +102,7 @@ function crossIn(px, w, ch, x0, y0, x1, y1, corner) {
   }
   const BLACK = Math.min(BLACK_CEILING, darkest + BLACK_MARGIN);
   const seen = new Set();
+  /** @type {Mark[]} */
   const clusters = [];
 
   for (let y = y0; y < y1; y += 1) {
@@ -93,7 +122,7 @@ function crossIn(px, w, ch, x0, y0, x1, y1, corner) {
       let minY = y;
       let maxY = y;
       while (stack.length > 0) {
-        const [cx, cy] = stack.pop();
+        const [cx, cy] = /** @type {number[]} */ (stack.pop());
         sx += cx;
         sy += cy;
         n += 1;
@@ -139,6 +168,14 @@ function crossIn(px, w, ch, x0, y0, x1, y1, corner) {
   );
 }
 
+/**
+ * @param {Uint8Array} px
+ * @param {number} w
+ * @param {number} h
+ * @param {number} ch
+ * @param {Page} page
+ * @returns {Promise<Transform>}
+ */
 export async function transformOf(px, w, h, ch, page) {
   const inset = page.crossInset ?? 20;
   const arm = page.crossArm ?? 40;
@@ -147,6 +184,7 @@ export async function transformOf(px, w, h, ch, page) {
   const guess = Math.min(w / page.width, h / page.height);
   const reach = Math.max(12, Math.round(arm * SEARCH_RADIUS * guess));
 
+  /** @param {number} px_ @param {number} py_ */
   const find = (px_, py_) => {
     const cx = px_ * (w / page.width);
     const cy = py_ * (h / page.height);
@@ -214,6 +252,14 @@ export async function transformOf(px, w, h, ch, page) {
  *   blue tick   #2F6FED rgb( 47,111,237)  r  = 47    excluded
  *   dusty pinks of the botanical          b-g ~ 0    excluded
  *   gold, mahogany, cream                 r-g small  excluded */
+
+/**
+ * @param {Uint8Array} px
+ * @param {number} w
+ * @param {number} h
+ * @param {number} ch
+ * @returns {Field}
+ */
 export function magentaField(px, w, h, ch) {
   const ink = new Uint8Array(w * h);
   for (let i = 0; i < ink.length; i += 1) {
@@ -225,18 +271,24 @@ export function magentaField(px, w, h, ch) {
   return { ink, width: w, height: h };
 }
 
-/** One field per connected component: each lift of the pen is its own stroke. */
+/**
+ * One field per connected component: each lift of the pen is its own stroke.
+ * @param {Field} field
+ * @returns {(Field & { size: number })[]}
+ */
 export function components(field) {
   const { ink, width, height } = field;
   const seen = new Uint8Array(ink.length);
+  /** @type {(Field & { size: number })[]} */
   const out = [];
   for (let start = 0; start < ink.length; start += 1) {
     if (ink[start] === 0 || seen[start] === 1) continue;
     const stack = [start];
+    /** @type {number[]} */
     const pixels = [];
     seen[start] = 1;
     while (stack.length > 0) {
-      const at = stack.pop();
+      const at = /** @type {number} */ (stack.pop());
       pixels.push(at);
       const x = at % width;
       const y = Math.floor(at / width);
@@ -261,11 +313,16 @@ export function components(field) {
   return out;
 }
 
-/** Ramer-Douglas-Peucker: the fewest points whose polyline stays within `tolerance` of the trail. */
+/**
+ * Ramer-Douglas-Peucker: the fewest points whose polyline stays within `tolerance` of the trail.
+ * @param {Point[]} points
+ * @param {number} tolerance
+ * @returns {Point[]}
+ */
 export function simplify(points, tolerance) {
   if (points.length < 3) return points;
   const first = points[0];
-  const last = points.at(-1);
+  const last = /** @type {Point} */ (points.at(-1));
   let worst = 0;
   let at = 0;
   const dx = last.x - first.x;
@@ -291,6 +348,10 @@ export function simplify(points, tolerance) {
   ];
 }
 
+/**
+ * @param {string} file
+ * @param {{ page?: Page, tolerance?: number, spur?: number }} [options]
+ */
 export async function extract(file, { page, tolerance = 4, spur = 0.04 } = {}) {
   const { data, info } = await sharp(file)
     .flatten({ background: "#ffffff" })
@@ -298,8 +359,9 @@ export async function extract(file, { page, tolerance = 4, spur = 0.04 } = {}) {
     .toBuffer({ resolveWithObject: true });
   const { width: w, height: h, channels: ch } = info;
 
-  const map = await transformOf(data, w, h, ch, page);
+  const map = await transformOf(data, w, h, ch, /** @type {Page} */ (page));
   const field = magentaField(data, w, h, ch);
+  /** @type {Point[][]} */
   const strokes = [];
 
   for (const piece of components(field)) {
@@ -308,21 +370,38 @@ export async function extract(file, { page, tolerance = 4, spur = 0.04 } = {}) {
     strokes.push(simplify(trail, tolerance));
   }
   /* Down the page, so the strokes come back in the order the thread runs. */
-  strokes.sort((a, b) => a[0].y + a.at(-1).y - (b[0].y + b.at(-1).y));
+  strokes.sort(
+    (a, b) =>
+      a[0].y +
+      /** @type {Point} */ (a.at(-1)).y -
+      (b[0].y + /** @type {Point} */ (b.at(-1)).y),
+  );
   return { map, strokes };
 }
 
+/** @param {number} r */
 const deg = (r) => (r * 180) / Math.PI;
+/** @param {number} a */
 const wrap = (a) => ((((a + 180) % 360) + 360) % 360) - 180;
+/** @param {Point} a @param {Point} b */
 const gap = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 /* Direction over a short RUN, not the last segment: one simplified segment can be a few pixels
  * long, and its angle is then skeleton noise rather than the line's heading. */
+/**
+ * @param {Point[]} stroke
+ * @param {"from" | "to"} which
+ * @param {Page} page
+ */
 function headingAt(stroke, which, page) {
   const REACH = Math.max(20, Math.round(page.width / 34));
-  const anchor = which === "from" ? stroke[0] : stroke.at(-1);
+  const anchor = /** @type {Point} */ (
+    which === "from" ? stroke[0] : stroke.at(-1)
+  );
   const order = which === "from" ? stroke : [...stroke].reverse();
-  const away = order.find((p) => gap(p, anchor) >= REACH) ?? order.at(-1);
+  const away = /** @type {Point} */ (
+    order.find((p) => gap(p, anchor) >= REACH) ?? order.at(-1)
+  );
   return which === "from"
     ? deg(Math.atan2(away.y - anchor.y, away.x - anchor.x))
     : deg(Math.atan2(anchor.y - away.y, anchor.x - away.x));
@@ -336,21 +415,30 @@ function headingAt(stroke, which, page) {
  * connector's required from/to points, keeping whichever orientation costs least. Proximity alone,
  * with no flip, would silently accept a backwards match whenever a stroke's natural walk order
  * happens to run opposite to the connector it serves. */
+
+/**
+ * @param {Point[][]} strokes
+ * @param {Attachment[]} points
+ * @param {Page} page
+ */
 export function assignConnectors(strokes, points, page) {
+  /** @type {Link[]} */
   const links = [{ from: null, to: points[0] }];
   for (let i = 1; i < points.length; i += 2)
     links.push({ from: points[i], to: points[i + 1] ?? null });
 
   const free = new Set(strokes.keys());
+  /** @type {(Link & { stroke: Point[] | null, i?: number, flip?: boolean, cost?: number })[]} */
   const assigned = [];
   for (const link of links) {
+    /** @type {{ i: number, flip: boolean, cost: number, stroke: Point[] } | null} */
     let best = null;
     for (const i of free) {
       for (const flip of [false, true]) {
         const s = flip ? [...strokes[i]].reverse() : strokes[i];
         const cost =
           (link.from ? gap(s[0], link.from) : 0) +
-          (link.to ? gap(s.at(-1), link.to) : 0);
+          (link.to ? gap(/** @type {Point} */ (s.at(-1)), link.to) : 0);
         if (best === null || cost < best.cost)
           best = { i, flip, cost, stroke: s };
       }
@@ -364,7 +452,9 @@ export function assignConnectors(strokes, points, page) {
   }
 
   let worstAngle = 0;
+  /** @type {Join[]} */
   const joins = [];
+  /** @type {string[]} */
   const lines = [];
   assigned.forEach((a, k) => {
     if (!a.stroke) {
@@ -372,9 +462,11 @@ export function assignConnectors(strokes, points, page) {
       return;
     }
     const parts = [];
-    for (const which of ["from", "to"]) {
+    for (const which of /** @type {const} */ (["from", "to"])) {
       const t = a[which];
-      const at = which === "from" ? a.stroke[0] : a.stroke.at(-1);
+      const at = /** @type {Point} */ (
+        which === "from" ? a.stroke[0] : a.stroke.at(-1)
+      );
       if (!t) {
         parts.push(`${which} FREE`);
         continue;
@@ -410,7 +502,11 @@ export function assignConnectors(strokes, points, page) {
 /** Every glyph rect on the page, in `main`-relative coordinates — the same frame the drawing uses —
  * and the page's section count.
  * `Range.getClientRects()`, never an element's bounding box: a wrapper span is as wide as its
- * column plus any overrun allowance, so a bounding-box check reports collisions that are not there. */
+ * column plus any overrun allowance, so a bounding-box check reports collisions that are not there.
+ * @param {import("playwright").Browser} browser
+ * @param {Viewport} viewport
+ * @returns {Promise<LivePage>}
+ */
 async function fetchGlyphRects(browser, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   await page.goto("http://localhost:3000/", { waitUntil: "load" });
@@ -421,19 +517,19 @@ async function fetchGlyphRects(browser, viewport) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   const glyphs = await page.evaluate(() => {
-    const main = document.querySelector("main");
+    const main = /** @type {HTMLElement} */ (document.querySelector("main"));
     const origin = main.getBoundingClientRect().top + window.scrollY;
     const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
     const out = [];
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      if (!node.nodeValue.trim()) continue;
+      if (!(/** @type {string} */ (node.nodeValue).trim())) continue;
       const parent = node.parentElement;
       if (!parent || parent.closest("[aria-hidden='true']")) continue;
       const style = getComputedStyle(parent);
       if (style.visibility === "hidden" || style.display === "none") continue;
       const range = document.createRange();
       range.selectNodeContents(node);
-      const text = node.nodeValue.trim();
+      const text = /** @type {string} */ (node.nodeValue).trim();
       for (const r of range.getClientRects()) {
         if (r.width < 0.5 || r.height < 0.5) continue;
         out.push({
@@ -465,10 +561,19 @@ const RELAX_DENSIFY = 4;
 const RELAX_PASSES = 250;
 const RELAX_SIMPLIFY = 1.5;
 
+/**
+ * @param {string | null} sectionName
+ * @param {number} floor
+ * @param {number} floorFamily
+ */
 const floorFor = (sectionName, floor, floorFamily) =>
   sectionName === "family" ? floorFamily : floor;
 
-/** Points inserted so a SEGMENT cannot pass through a glyph between two clear vertices. */
+/**
+ * Points inserted so a SEGMENT cannot pass through a glyph between two clear vertices.
+ * @param {Point[]} points
+ * @param {number} step
+ */
 function densify(points, step) {
   const out = [points[0]];
   for (let i = 1; i < points.length; i += 1) {
@@ -485,6 +590,7 @@ function densify(points, step) {
   return out;
 }
 
+/** @param {number} x @param {number} y @param {Glyph} g */
 const relaxClearance = (x, y, g) =>
   Math.hypot(
     Math.max(g.left - x, 0, x - g.right),
@@ -498,6 +604,13 @@ const relaxClearance = (x, y, g) =>
  * nearest edge, since it has no outward direction of its own. A bounded pass cap: non-convergence
  * means a vertex is being pushed off one glyph into another, i.e. no corridor of that width exists
  * there — REPORT it, do not iterate further and do not lower the floor to force it through. */
+
+/**
+ * @param {Connector[]} connectors
+ * @param {Geometry} geometry
+ * @param {Glyph[]} glyphs
+ * @param {{ floor?: number, floorFamily?: number, densify?: number, passes?: number, simplifyTolerance?: number }} [options]
+ */
 export function relaxOffType(
   connectors,
   geometry,
@@ -512,11 +625,13 @@ export function relaxOffType(
 ) {
   const margin = simplifyTolerance + 0.5;
   const sections = geometry.sections;
+  /** @param {number} y */
   const sectionAt = (y) =>
     sections.findIndex((s) => y >= s.top && y < s.top + s.height);
 
   let moved = 0;
   let maxMove = 0;
+  /** @type {number[]} */
   const stuck = [];
 
   const relaxed = connectors.map(({ connector, points }) => {
@@ -579,10 +694,18 @@ export function relaxOffType(
  * measures the nearest glyph rect to every sample, per section, so a real crossing (distance 0) can
  * be told apart from a close pass. `nearestText` names the closest glyph found, so a report can
  * name what a warning is about rather than just a bare distance. */
+
+/**
+ * @param {Connector[]} connectors
+ * @param {Geometry} geometry
+ * @param {Glyph[]} glyphs
+ */
 export function typeClearanceReport(connectors, geometry, glyphs) {
   const sections = geometry.sections;
+  /** @param {number} y */
   const inSection = (y) =>
     sections.findIndex((s) => y >= s.top && y < s.top + s.height);
+  /** @type {{ min: number, crossings: number, samples: number, nearestText: string | null }[]} */
   const worst = SECTION_ORDER.map(() => ({
     min: Infinity,
     crossings: 0,
@@ -621,6 +744,7 @@ export function typeClearanceReport(connectors, geometry, glyphs) {
   return worst;
 }
 
+/** @param {Viewport} viewport */
 async function readLivePage(viewport) {
   const browser = await chromium.launch({ channel: "chromium" });
   try {
@@ -630,6 +754,10 @@ async function readLivePage(viewport) {
   }
 }
 
+/**
+ * @param {string[]} args
+ * @param {{ readPage?: (viewport: Viewport) => Promise<LivePage> }} [options]
+ */
 export async function importDrawing(args, { readPage = readLivePage } = {}) {
   const positional = args.filter((a) => !a.startsWith("--"));
   const [band, file] = positional;
@@ -652,7 +780,7 @@ export async function importDrawing(args, { readPage = readLivePage } = {}) {
     height: Math.round(
       geometry.sections.at(-1).top + geometry.sections.at(-1).height,
     ),
-    crossInset: CROSS_INSET[band],
+    crossInset: CROSS_INSET[/** @type {keyof typeof CROSS_INSET} */ (band)],
   };
 
   const { map, strokes } = await extract(file, { page });
@@ -695,7 +823,9 @@ export async function importDrawing(args, { readPage = readLivePage } = {}) {
     );
     return 1;
   }
-  const { glyphs, sections: liveSections } = await readPage(VIEWPORT[band]);
+  const { glyphs, sections: liveSections } = await readPage(
+    VIEWPORT[/** @type {keyof typeof VIEWPORT} */ (band)],
+  );
   if (liveSections !== geometry.sections.length) {
     console.error(
       `\nREFUSED: ${dir}/geometry.json has ${geometry.sections.length} sections; the live page has ${liveSections}. The glyph rects would sit in a different frame from the drawing — import a sheet drawn against the page it is checked on.`,

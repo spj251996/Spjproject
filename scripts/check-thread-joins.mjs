@@ -74,6 +74,7 @@ const VIEWPORTS = THREAD_BANDS.flatMap((band) => [
   { name: `${band.id}-drifted`, ...DRIFTED[band.id] },
 ]);
 
+/** @param {string} name @param {string | null} [fallback] */
 const flag = (name, fallback = null) => {
   const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));
   return found === undefined ? fallback : found.slice(name.length + 3);
@@ -90,10 +91,17 @@ const onlyViewport = flag("viewport");
    (below it a faint near-horizontal connector in `celebrations` splits; above it Family's portraits
    admit skin-tone fragments), and `r - g > 80` inside 75-99 (looser reads Family's skin as ink; from
    100 `celebrations` breaks). Recalibrate if the thread colour or the portraits change. */
+/** @param {number} r @param {number} g @param {number} b */
 function isInk(r, g, b) {
   return g < 105 && r - g > 80 && r - b > 60;
 }
 
+/**
+ * @param {Uint8Array} data
+ * @param {number} width
+ * @param {number} height
+ * @param {number} channels
+ */
 function components(data, width, height, channels) {
   const ink = new Uint8Array(width * height);
   for (let pixel = 0; pixel < width * height; pixel += 1) {
@@ -112,7 +120,7 @@ function components(data, width, height, channels) {
     const stack = [start];
     seen[start] = 1;
     while (stack.length > 0) {
-      const pixel = stack.pop();
+      const pixel = /** @type {number} */ (stack.pop());
       size += 1;
       const y = Math.floor(pixel / width);
       const x = pixel - y * width;
@@ -170,6 +178,7 @@ if (expected === 0) {
 }
 
 const browser = await chromium.launch({ channel: "chromium" });
+/** @type {{ label: string, missing?: boolean, pieces?: number }[]} */
 const failures = [];
 let measured = 0;
 let whole = 0;
@@ -228,7 +237,9 @@ try {
            page thread is one SVG over all of `<main>` (and Wishes' card thread lives inside its own
            section), so the section-clipped screenshot already holds only this section's stretch. */
         await page.evaluate(() => {
-          for (const portal of document.querySelectorAll("nextjs-portal")) {
+          for (const portal of /** @type {NodeListOf<HTMLElement>} */ (
+            document.querySelectorAll("nextjs-portal")
+          )) {
             portal.style.display = "none";
           }
         });
@@ -283,7 +294,7 @@ if (falsify) {
      as one run means the plant missed it: the page's own standing breaks would otherwise let a
      plant that cuts nothing pass. */
   const seen = failures.filter(
-    (failure) => !failure.missing && failure.pieces > 1,
+    (failure) => !failure.missing && /** @type {number} */ (failure.pieces) > 1,
   ).length;
   const sees = seen > 0 && whole === 0;
   console.log(
