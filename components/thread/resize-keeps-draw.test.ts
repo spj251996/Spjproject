@@ -143,8 +143,11 @@ type Reading = {
   total: number;
 };
 
-/* A URL-bar expand is a height-only change; 852 -> 912 is the same shape. The width is held
-   identical on purpose — a width change is a genuine layout change and SHOULD re-measure. */
+/* A URL-bar expand is a height-only change and 852 -> 912 has its shape, but a harness viewport
+   change also moves `100svh`, so `main` reflows (the last test below measures it) and every test
+   using this pair runs the SLOW re-measure. Only a resize event over an unchanged layout reaches the
+   cheap path. The width is held identical on purpose — a width change is a genuine layout change
+   and SHOULD re-measure. */
 const PHONE = { width: 393, height: 852 };
 const TALLER = { width: 393, height: 912 };
 
@@ -152,7 +155,7 @@ const TALLER = { width: 393, height: 912 };
    rather than racing the follower. */
 const SETTLE = 1200;
 
-test("a height-only resize does not un-draw the thread", async (t) => {
+test("a height-only resize that reflows the page does not un-draw the thread (slow path)", async (t) => {
   if (!freshExport(t)) return;
   /* Not wrapped: with an export present, a missing browser must fail rather than quietly skip, or
      the only guard this behaviour has would disappear without a sound. */
@@ -246,9 +249,9 @@ test("a height-only resize does not un-draw the thread", async (t) => {
    redundant at the 393x852 -> 393x912 pair. The floor is kept because it mirrors the scroll path
    exactly and because the reachable case is a resize where the invite's share of the total grows
    faster than the rest (the hero is viewport-height, the content sections are not) — which this pair
-   evidently does not reach. So read this as a guard on the cheap path not erasing the opening draw by
-   ANY mechanism, not as proof that the floor is what holds it. */
-test("a height-only resize at the top does not erase what the opening draw drew", async (t) => {
+   evidently does not reach. So read this as a guard on a reflowing resize not erasing the opening
+   draw by ANY mechanism, not as proof that the floor is what holds it. */
+test("a height-only resize that reflows the page does not erase what the opening draw drew (slow path)", async (t) => {
   if (!freshExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
@@ -351,11 +354,189 @@ test("a resize that reflows the page re-measures rather than taking the cheap pa
       Math.abs(boxedHeight - after.mainHeight) <= 16,
       `the thread's viewBox is stale: ${boxedHeight.toFixed(0)} against main's ${after.mainHeight} after the page reflowed by ${after.mainHeight - before.mainHeight}px`,
     );
-    /* Every other live root must have moved too — the weave's box is card-relative, so a stale one
-       is the same defect one level down. */
+    /* Every other live root must have moved too — the card thread's box is card-relative, so a stale
+       one is the same defect one level down. */
     assert.ok(
-      after.roots.some((v, i) => v !== before.roots[i]),
-      "no live thread root's viewBox changed at all, so none was re-measured",
+      before.roots.length >= 2,
+      `expected the page root and the card thread's root, found ${before.roots.length}`,
+    );
+    after.roots.forEach((v, i) => {
+      assert.notEqual(
+        v,
+        before.roots[i],
+        `live thread root ${i}'s viewBox did not change, so it was not re-measured`,
+      );
+    });
+    await context.close();
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* Counts writes to every thread root's `viewBox`. Both components' `measureLayout` set it on every
+   run, a `setAttribute` queues a mutation record even when the value is unchanged, and nothing else
+   writes it — so a count of 0 over a resize means neither re-measured, which is the cheap path. */
+const WATCH_MEASURES = `(() => {
+  window.__threadMeasures = 0;
+  const observer = new MutationObserver((records) => {
+    window.__threadMeasures += records.length;
+  });
+  for (const svg of document.querySelectorAll("[data-thread-svg]")) {
+    observer.observe(svg, { attributes: true, attributeFilter: ["viewBox"] });
+  }
+})()`;
+
+/* Every test above changes the viewport, which reflows `main` and so runs the slow re-measure. A
+   resize event over an unchanged layout is the URL-bar case the cheap path exists for: on a phone
+   `svh` does not follow the toolbar, so the window changes and the layout does not. */
+test("a resize event with an unchanged layout takes the cheap path and keeps the draw", async (t) => {
+  if (!freshExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: PHONE,
+      deviceScaleFactor: 1,
+    });
+    const page = await context.newPage();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForTimeout(3600);
+    for (const at of [0.2, 0.4, 0.5]) {
+      await page.evaluate(
+        `window.scrollTo(0, (document.documentElement.scrollHeight - window.innerHeight) * ${at})`,
+      );
+      await page.waitForTimeout(SETTLE);
+    }
+
+    const before = (await page.evaluate(READ)) as Reading;
+    const boxesBefore = (await page.evaluate(BOXES)) as {
+      mainHeight: number;
+      roots: string[];
+    };
+    assert.ok(
+      before.measured > 0 && before.drawn > 0,
+      `nothing was drawn at 50% of the page (${before.measured} of ${before.pieces} pieces carried a dash)`,
+    );
+
+    await page.evaluate(WATCH_MEASURES);
+    await page.evaluate(`window.dispatchEvent(new Event("resize"))`);
+    await page.waitForTimeout(600); // outlast the 150ms layout debounce
+    await page.waitForTimeout(SETTLE);
+
+    const measures = (await page.evaluate("window.__threadMeasures")) as number;
+    assert.equal(
+      measures,
+      0,
+      `a resize over an unchanged layout re-measured the thread (${measures} viewBox writes) instead of taking the cheap path`,
+    );
+    const after = (await page.evaluate(READ)) as Reading;
+    const boxesAfter = (await page.evaluate(BOXES)) as {
+      mainHeight: number;
+      roots: string[];
+    };
+    assert.deepEqual(boxesAfter, boxesBefore);
+    assert.equal(after.total, before.total);
+    assert.ok(
+      after.drawn >= before.drawn - 1,
+      `the cheap path un-drew the thread: ${before.drawn.toFixed(1)} -> ${after.drawn.toFixed(1)} of ${before.total}`,
+    );
+    await context.close();
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* ONE VIEWPORT CHANGE FIRES TWO LAYOUT EVENTS — `window.resize`, then the `ResizeObserver` on `main`
+   — and the second must not take the cheap path against the layout the first one only scheduled a
+   re-measure for. If it does, it paints the new viewport over the OLD rects, and the ratchet keeps
+   whatever that paint over-drew through the re-measure that follows.
+
+   The reader is placed where the over-draw is unmistakable: inside the last
+   `MUCH_TALLER.height - PHONE.height` pixels of the old scroll range, past the end the old rects
+   compute for the new, taller window. There the stale paint reads the thread as COMPLETE, while the
+   re-measured page, taller under a reader who did not scroll, draws no more than before.
+
+   Scroll anchoring is switched off so the reader's position cannot move under the reflow: an
+   anchored scroll runs the scroll path against the old layout in its own right, which is not the
+   dispatch under test. */
+const MUCH_TALLER = { width: 393, height: 1100 };
+
+test("the second layout event of one viewport change does not paint against the old layout", async (t) => {
+  if (!freshExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: PHONE,
+      deviceScaleFactor: 1,
+    });
+    const page = await context.newPage();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.addStyleTag({
+      content: "html, body { overflow-anchor: none; }",
+    });
+    await page.waitForTimeout(3600);
+    for (const at of [0.2, 0.4, 0.6, 0.8, 0.9]) {
+      await page.evaluate(
+        `window.scrollTo(0, (document.documentElement.scrollHeight - window.innerHeight) * ${at})`,
+      );
+      await page.waitForTimeout(SETTLE);
+    }
+    const back = (MUCH_TALLER.height - PHONE.height) / 2;
+    await page.evaluate(
+      `window.scrollTo(0, document.documentElement.scrollHeight - window.innerHeight - ${back})`,
+    );
+    await page.waitForTimeout(SETTLE);
+
+    const before = (await page.evaluate(READ)) as Reading;
+    const boxesBefore = (await page.evaluate(BOXES)) as {
+      mainHeight: number;
+      roots: string[];
+    };
+    const scrollBefore = (await page.evaluate("window.scrollY")) as number;
+    const beforeShare = before.drawn / before.total;
+    assert.ok(
+      before.measured > 0 && beforeShare < 0.99,
+      `the thread was already ${(beforeShare * 100).toFixed(1)}% drawn before the resize, so an over-draw could not show`,
+    );
+
+    await page.evaluate(WATCH_MEASURES);
+    await page.setViewportSize(MUCH_TALLER);
+    await page.waitForTimeout(600); // outlast the 150ms layout debounce
+    await page.waitForTimeout(SETTLE);
+
+    const boxesAfter = (await page.evaluate(BOXES)) as {
+      mainHeight: number;
+      roots: string[];
+    };
+    assert.notEqual(
+      boxesAfter.mainHeight,
+      boxesBefore.mainHeight,
+      `main did not reflow (${boxesBefore.mainHeight}px), so this test asserted nothing`,
+    );
+    assert.equal(
+      await page.evaluate("window.scrollY"),
+      scrollBefore,
+      "the reader's scroll position moved under the reflow",
+    );
+    assert.ok(
+      ((await page.evaluate("window.__threadMeasures")) as number) > 0,
+      "the reflow never re-measured the thread",
+    );
+    const after = (await page.evaluate(READ)) as Reading;
+    const afterShare = after.drawn / after.total;
+    assert.ok(
+      afterShare <= beforeShare + 0.005,
+      `the thread over-drew across a reflow the reader did not scroll through: ${(beforeShare * 100).toFixed(1)}% -> ${(afterShare * 100).toFixed(1)}% ` +
+        "— a layout event inside the debounce window painted the cheap path against the old layout",
     );
     await context.close();
   } finally {
