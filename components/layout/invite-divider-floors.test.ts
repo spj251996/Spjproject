@@ -2,13 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-/* Guards the one derivation `ornamental-divider.tsx`'s DIVIDER_MARK_SIZES and `page.tsx`'s
-   InvitePassage basis values share but never call as a function: each tier's floors were reduced
-   from the retired 27.5px/16.5px by half the mark's growth past the retired drawing's 11px, so the
-   block the rule sits in stays the height it always was and the 60:40 split above/below the mark
-   survives. Changing one side without the other breaks the ratio silently — tsc, lint, the rest of
-   the suite and a green build all stay clean. Desktop is excluded: DESIGN.md → `ornamental-divider`
-   states it as the one tier that departs from 60:40 on purpose. */
+/* Guards the one derivation `ornamental-divider.tsx`'s DIVIDER_MARK_SIZES and
+   `app/_sections/invite.tsx`'s InvitePassage basis values share but never call as a function: each
+   tier's rule block holds its recorded height and the 60:40 split above and below the mark. Changing
+   one side without the other breaks the ratio silently: tsc, lint, the rest of the suite and a green
+   build all stay clean. Desktop is excluded: DESIGN.md → `ornamental-divider` states it as the one
+   tier that departs from 60:40 on purpose. */
 
 const dividerSource = readFileSync(
   "components/layout/ornamental-divider.tsx",
@@ -36,9 +35,9 @@ function markSize(mediaFragment: string): number {
   return Number((match as RegExpMatchArray)[1]);
 }
 
-/** Pulls every plain `[prefix:]basis-[Npx]` pair out of one className string. An arbitrary-variant
-    class (`[@media(...)]:basis-[…]`) is a different question and is skipped: the upright phone sets
-    its own fixed spacer, outside the 60 : 40 split (owner, 2026-10-14 — DESIGN.md → Invite). */
+/** Pulls every plain `[prefix:]basis-[Npx]` pair out of one className string. An arbitrary
+    media-variant basis class is a different question and is skipped: the upright phone sets its own
+    fixed spacer, outside the 60 : 40 split (DESIGN.md → Invite). */
 function basisValues(className: string): Map<string, number> {
   const values = new Map<string, number>();
   for (const match of className.matchAll(
@@ -74,7 +73,6 @@ const TIERS: Array<{
 ];
 
 const EXPECTED_BLOCK: Record<string, number> = {
-  /* 55 until the owner took 7.5px off the phone floors, 60 : 40 kept (2026-10-14). */
   phone: 47.5,
   tablet: 23,
   laptop: 55,
