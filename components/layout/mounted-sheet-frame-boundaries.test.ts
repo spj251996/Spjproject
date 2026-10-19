@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import { FRAME_SHEETS } from "../../app/frame-sheets.ts";
 import {
+  CAPS,
   containerLowerBoundPx,
+  GROUND_HALVING,
   lowerBoundPx,
   type MeasuredFit,
+  SIDE_GROUND_MULTIPLE,
   upperBoundPx,
+  windowClasses,
 } from "./mounted-sheet-frame.ts";
 import { mountedSheetFrameCss } from "./mounted-sheet-frame-css.ts";
 
@@ -82,6 +87,39 @@ test("every boundary in every committed frame sheet is stable under the minifier
     }
   }
   assert.ok(count > 0, "no boundaries found");
+});
+
+/* Every centring band a shipped sheet emits is the cap plus its side ground, full or halved, ceiled.
+   Every such bound is a whole pixel today, so a floored band emits the same value and only the
+   source assertion below can see that mutation; a band shifted off the bound fails here. */
+test("every emitted `<=` centring band is its cap plus side ground, ceiled", () => {
+  let checked = 0;
+  for (const sheet of FRAME_SHEETS) {
+    if (sheet.fit === null || sheet.layout === "tall") continue;
+    const expected = new Set<number>();
+    for (const windowClass of windowClasses(
+      sheet.fit,
+      sheet.layout,
+      sheet.hero,
+    )) {
+      const cap = CAPS[windowClass.widthTier].height;
+      for (const ground of [
+        windowClass.groundTier.ground,
+        windowClass.groundTier.ground * GROUND_HALVING,
+      ]) {
+        expected.add(Math.ceil(cap + 2 * SIDE_GROUND_MULTIPLE * ground));
+      }
+    }
+    const css = mountedSheetFrameCss(sheet.fit, sheet.hero, sheet.layout);
+    for (const match of css.matchAll(/\(height <= ([\d.]+)px\)/g)) {
+      assert.ok(
+        expected.has(Number(match[1])),
+        `${sheet.name}: (height <= ${match[1]}px) is not a ceiled cap-plus-ground bound`,
+      );
+      checked++;
+    }
+  }
+  assert.ok(checked > 0, "no centring band found in any sheet");
 });
 
 test("the `<=` band is ceiled, never floored", () => {

@@ -436,7 +436,7 @@ function assertValidFit(fit: MeasuredFit): void {
   for (const key of Object.keys(byTier)) {
     if (!(WIDTH_TIERS as readonly string[]).includes(key)) {
       throw new Error(
-        `mounted-sheet-frame: ${label} has an unknown width tier "${key}". The width tiers are mobile, tablet, desktop and wide.`,
+        `mounted-sheet-frame: ${label} has an unknown width tier "${key}". The width tiers are ${WIDTH_TIERS.slice(0, -1).join(", ")} and ${WIDTH_TIERS.at(-1)}.`,
       );
     }
   }

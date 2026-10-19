@@ -1282,6 +1282,44 @@ test("SPACING_TOKEN agrees with app/styles/tokens.css's --spacing-* scale, in bo
   assert.doesNotThrow(() => spacingTokenFor(172));
 });
 
+test("CAPS agrees with the --container-content / --card-height-cap tokens in app/styles/tokens.css", () => {
+  const tokensCss = readFileSync(
+    fileURLToPath(new URL("../../app/styles/tokens.css", import.meta.url)),
+    "utf8",
+  );
+  const token = (name: string): number => {
+    const found = tokensCss.match(
+      new RegExp(`^\\s*${name}:\\s*(\\d+)px;`, "m"),
+    );
+    assert.ok(found, `tokens.css declares no ${name}`);
+    return Number(found[1]);
+  };
+  const plain = {
+    width: token("--container-content"),
+    height: token("--card-height-cap"),
+  };
+  const compact = {
+    width: token("--container-content-compact"),
+    height: token("--card-height-cap-compact"),
+  };
+  assert.deepEqual(CAPS.phone, plain);
+  assert.deepEqual(CAPS.tablet, plain);
+  assert.deepEqual(CAPS.laptop, compact);
+  assert.deepEqual(CAPS.desktop, plain);
+});
+
+test("an unknown width tier names every real tier and none of the retired ones", () => {
+  const fit = makeFit();
+  const regimes = { ...fit.regimes, compact: fit.regimes.laptop };
+  assert.throws(
+    () => windowClasses({ ...fit, regimes } as MeasuredFit),
+    (error: Error) =>
+      error.message.includes('unknown width tier "compact"') &&
+      Object.keys(CAPS).every((tier) => error.message.includes(tier)) &&
+      !/\b(mobile|wide)\b/.test(error.message),
+  );
+});
+
 /* Every `--ground-block` / `--ground-inline` pair one window class declares for one orientation.
    `pressed` marks the give-way rule — the one whose prelude carries a condition beyond the
    orientation query. Matched on the exact prelude rather than a substring, since one class's media
