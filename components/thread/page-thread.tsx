@@ -1646,40 +1646,65 @@ export function PageThread() {
   const stopOpeningRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    if (reducedMotion() || window.scrollY > 0) return;
-    let rafId: number | null = null;
-    let startedAt = 0;
+    let running = false;
+    let stopCurrent = () => {};
 
-    const timer = window.setTimeout(() => {
-      if (reducedMotion()) return;
-      /* The invite stops its own last connector at 75%, exactly as every other group does, so the
+    const start = (delay: number) => {
+      let rafId: number | null = null;
+      let startedAt = 0;
+      running = true;
+      const finish = () => {
+        running = false;
+      };
+
+      const timer = window.setTimeout(() => {
+        if (reducedMotion()) return finish();
+        /* The invite stops its own last connector at 75%, exactly as every other group does, so the
          line is already reaching toward Event Info when the reader starts scrolling. Drawing it to
          100% here made the thread look stuck for the whole first screen of scroll -- there was
          nothing left in the invite to draw and the next group had not opened yet. */
-      const target = openingFloor(rangesRef.current, true);
-      if (target <= 0) return;
-      const step = (now: number) => {
-        if (reducedMotion()) return;
-        if (startedAt === 0) startedAt = now;
-        const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
-        commit(target * t);
-        if (t < 1) rafId = window.requestAnimationFrame(step);
-        else {
-          openingCompleteRef.current = true;
-          /* The opening draw ends in a stop, not a scroll, so the cue's loop begins now rather than
-             after the settle interval a reader's own scroll waits out. */
-          rest();
-        }
-      };
-      rafId = window.requestAnimationFrame(step);
-    }, OPENING_DRAW_DELAY);
+        const target = openingFloor(rangesRef.current, true);
+        if (target <= 0) return finish();
+        const step = (now: number) => {
+          if (reducedMotion()) return finish();
+          if (startedAt === 0) startedAt = now;
+          const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
+          commit(target * t);
+          if (t < 1) rafId = window.requestAnimationFrame(step);
+          else {
+            finish();
+            openingCompleteRef.current = true;
+            /* The opening draw ends in a stop, not a scroll, so the cue's loop begins now rather than
+               after the settle interval a reader's own scroll waits out. */
+            rest();
+          }
+        };
+        rafId = window.requestAnimationFrame(step);
+      }, delay);
 
-    const stop = () => {
-      window.clearTimeout(timer);
-      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      stopCurrent = () => {
+        window.clearTimeout(timer);
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
+        finish();
+      };
     };
-    stopOpeningRef.current = stop;
-    return stop;
+    stopOpeningRef.current = () => stopCurrent();
+
+    /* Reduced motion cuts the opening short, or keeps it from starting at all; when motion comes back
+       while the reader is still at the top, the opening runs then, at once, rather than leaving the
+       invite's stretch undrawn until the first scroll. */
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onMotionChange = () => {
+      if (motion.matches || running || openingCompleteRef.current) return;
+      if (window.scrollY > 0) return;
+      start(0);
+    };
+    motion.addEventListener("change", onMotionChange);
+    if (!reducedMotion() && window.scrollY === 0) start(OPENING_DRAW_DELAY);
+    return () => {
+      motion.removeEventListener("change", onMotionChange);
+      stopCurrent();
+    };
   }, [commit, rest]);
 
   useEffect(() => {

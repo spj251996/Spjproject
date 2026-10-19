@@ -497,3 +497,48 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
     server.close();
   }
 });
+
+/* A page that loads under reduced motion never starts the opening; turned off while the reader is still
+   at the top, the opening then runs, rather than leaving the invite's stretch undrawn until the first
+   scroll. Loading reduced, rather than switching mid-load, keeps the case deterministic: a switch that
+   lands after the draw has begun leaves part of it on the ratchet either way. */
+test("motion arriving at the top runs the opening that reduced motion held back", async (t) => {
+  if (!freshExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await (
+      await browser.newContext({
+        viewport: { width: 393, height: 700 },
+        reducedMotion: "reduce",
+      })
+    ).newPage();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForTimeout(500);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    assert.equal(
+      await page.evaluate("window.scrollY"),
+      0,
+      "the reader is still at the top",
+    );
+    /* A re-armed draw starts at once and lasts 1200ms; this outlasts it. */
+    await page.waitForTimeout(3000);
+    const drawn = (await page.evaluate(`(() => {
+      const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
+      return pieces.filter((p) => {
+        const offset = parseFloat(p.style.strokeDashoffset);
+        return Number.isFinite(offset) && offset < parseFloat(p.style.strokeDasharray) - 1;
+      }).length;
+    })()`)) as number;
+    assert.ok(
+      drawn > 0,
+      "the opening drew the invite's stretch once motion came back",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
