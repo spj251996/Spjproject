@@ -62,85 +62,31 @@ import {
 import { MOTIF_PLACEMENTS, THREAD_IDS } from "./thread-paths";
 import type { MeasuredSection, Rect } from "./thread-warp";
 
-/* THE MODEL — read this before touching anything below.
+/* THE MODEL.
 
-   ONE PATH PER PIECE, ONE DASH PER PATH, MEASURED NOT DERIVED. `thread-line.ts` bakes the whole
-   page's thread — every section's connectors and motifs, invite's free start to wishes' exit —
-   into one `d`, in PAGE-ABSOLUTE pixels (relative to `<main>`'s own top-left), same as before. What
-   changed (Task 1): `stroke-dasharray` restarts at every `M` subpath, so ONE `<path>` driving that
-   whole `d` with ONE `stroke-dashoffset` put 19 independent draw heads on the page — every
-   connector and motif growing from its own start at once — which is exactly the defect the owner
-   reported at every prior round ("all parts of thread starting to draw at same time in all
-   sections", `task-1-report.md`). The fix is architectural, not a bigger dash: this component now
-   renders one `<path>` PER PIECE (`splitSubpaths(d)`, already one entry per connector/motif, zipped
-   1:1 against `threadLine`'s own `pieces` list), and drives each one from its OWN
-   `pieceProgress(drawn, piece)` — `drawn` is still the single page-level scalar `drawnLength`
-   produces below, unchanged; only what CONSUMES it changed. Piece ranges are contiguous and
-   disjoint by construction, so "exactly one piece mid-draw" follows without a second rule to keep
-   in sync (`thread-line.ts`'s own header on `ThreadPiece`/`pieceProgress`).
+   ONE PATH PER PIECE: `thread-line.ts` bakes the page's thread into one `d` in page-absolute pixels;
+   `stroke-dasharray` restarts at every `M` subpath, so one `<path>` would put a draw head on every
+   piece at once. This renders one `<path>` per piece (`splitSubpaths(d)`, zipped 1:1 against
+   `threadLine`'s `pieces`), each driven by `pieceProgress(drawn, piece)` from one page-level scalar;
+   piece ranges are contiguous and disjoint, so exactly one piece is ever mid-draw.
 
-   This component's job is to feed `threadLine` real numbers: the layout the browser has already
-   computed, read with `getBoundingClientRect()`, never
-   reconstructed from CSS custom properties. That reconstruction is exactly what this replaces — it
-   was exact on paper (48/48 cells at 0.000px) and still produced four owner-visible faults, because
-   it resolved only where a real frame existed and inherited (`session.md`, 2026-09-27).
+   MEASURE, NEVER MODEL THE LAYOUT: each section's `MeasuredSection` comes from two rects read at the
+   same instant (the `<section>` and its `.mounted-sheet-frame__box`), never from CSS custom
+   properties; every SVG sits in its own wrapper positioned from the same measurement, and only the
+   no-JS fallback relies on `.pageWrapper` (see the closing comment).
 
-   NOT NORMALISED. `threadLine`'s `length` (and every piece's own `end - start`) is a raw PIXEL
-   estimate (256-sample chord sum, accurate to ~0.00003% per its own header), and `d` is already
-   emitted in real page pixels — there is no arbitrary unit space to normalise INTO for the live
-   path. Using `pathLength="1"` here would buy nothing and would reintroduce a bug this project has
-   already been bitten by: Chromium does not paint a dash covering a whole `pathLength="1"` path —
-   `stroke-dasharray="0 0 1 1"` stops about 7% short, while a raw-pixel dasharray with a trailing gap
-   of zero runs to the end (`lessons.md`, 2026-09-25). So EACH PIECE's dash lives entirely in that
-   piece's own px units: `stroke-dasharray: Lk` (one on-length, which a single value repeats as
-   `Lk Lk`), `stroke-dashoffset: Lk - drawnK`, `drawnK` = `pieceProgress(drawn, piece) * Lk` —
-   `drawn` is `thread-line.ts`'s `drawnLength`, one scalar for the whole page, and `pieceProgress`
-   is what turns it into "how much of THIS piece has drawn" without the piece needing to know
-   anything about its neighbours (each section's own scroll window is itself mapped onto that
-   section's OWN stretch of the page total, not one global fraction of the whole path — the owner's
-   review, `session.md` 2026-09-27: a single `scrollY / (scrollHeight - innerHeight)` advances every
-   section's thread at once, because total path length has no relationship to where a section's
-   scroll window falls) — with a small epsilon added to each `Lk` so a piece's trailing edge
-   overshoots its own end rather than exactly meeting it.
+   NOT NORMALISED: each piece's dash is in its own px (`stroke-dasharray: Lk`, `stroke-dashoffset:
+   Lk - drawnK`, plus a small epsilon so the trailing edge overshoots), because Chromium stops a dash
+   covering a whole `pathLength="1"` path about 7% short; each section's scroll window maps onto its
+   own stretch of the total, never one global fraction.
 
-   MEASURE, NEVER ASSUME A POSITIONED ANCESTOR EITHER. Every SVG here sits inside its OWN small
-   wrapper span, measured at the same instant as its real target (`<main>`, or Wishes' card), and
-   positioned by inline style computed from that measurement — not by `position:absolute; inset:0`
-   trusting some ancestor to be the right positioned box. That is the same "measure, don't derive"
-   rule applied one level up: a page this size cannot assume WHICH ancestor Task 6 mounts it under is
-   positioned, any more than the thread's geometry can assume a card's width from a CSS variable. The
-   one place this project still needs a real positioned ancestor is the static, no-JS fallback below
-   — CSS alone cannot self-measure, so it relies on `.pageWrapper` covering `<main>` by `inset: 0`
-   rather than by measurement (`thread.module.css`; see this file's closing comment).
+   WISHES: this SVG paints at `{z.thread}` above every card, so Wishes' stretch is drawn by
+   `CardThread` inside its card (DESIGN.md → Thread → Wishes).
 
-   MEASURE, NEVER MODEL THE LAYOUT. Every section's `MeasuredSection` comes from two rects read at
-   the same instant: the `<section>` itself (`top`/`height`) and its `.mounted-sheet-frame__box`
-   (`cardLeft`/`cardWidth`) — the exact method `thread-authored-layout.ts` used to record the
-   authored figures this warps FROM. A pair (Event Info, Family) has exactly one
-   `.mounted-sheet-frame__box` spanning both leaves (`mounted-pair.tsx`), so the same selector serves
-   singles and pairs alike.
-
-   WISHES IS THE ONE SPECIAL CASE. Its own stretch is excluded from this component's drawn `<path>`
-   — this SVG paints at `{z.thread}` (40) above every card's `{z.content}` (20), so it would paint
-   over Wishes' type — and is instead drawn by `CardThread`, once, inside Wishes' card. The card is
-   a stacking context at `{z.content}` and the card thread carries no z-index, so inside it the
-   stretch paints behind the type that FOLLOWS it in document order and in front of the couple
-   illustration. It does not pass behind the illustration: a weave was built (two complementary
-   copies either side of it), the copies ended up identical so the upper covered the lower wholly,
-   and the remaining copy was deleted in `f80c750` (DESIGN.md → Thread → Wishes).
-
-   ANCHORING. `family`'s two `portraitLoop` placements must translate onto Flemy's and Sebastian's
-   REAL rendered portraits (owner requirement, `session.md` 2026-09-27) — found by relationship label
-   ("Bride"/"Groom"), the one thing about them the content model states as a fact rather than as
-   editorial copy that could read differently. The two anchors are paired to the two placements by
-   nearest measured distance (nothing in `thread-paths.ts` says which drawn loop is whose — both are
-   simply `motif: "portraitLoop"`), which is safe precisely because the owner's own decision record
-   says the correction is small: under a pixel from 1280px up and under 18px across the whole `wide`
-   band once x is card-anchored, so the plain warped position and the real portrait are never close
-   enough to a THIRD point to make the nearest-pair assignment ambiguous. If a portrait cannot be
-   found, that placement falls back to `familyPortraitFractions` — the anchor Task 1 built for exactly
-   this case — and if even the family card cannot be measured, to the plain warped position, the same
-   as every other motif. */
+   ANCHORING: `family`'s two `portraitLoop`s translate onto the portraits labelled Bride and Groom,
+   paired by nearest distance, which is safe because the correction is under 18px across `wide`; a
+   missing portrait falls back to `familyPortraitFractions`, an unmeasurable card to the plain warped
+   position. */
 
 type Point = { x: number; y: number };
 
@@ -153,17 +99,9 @@ type Point = { x: number; y: number };
    all three can share ONE viewBox and the choice between them is a plain CSS `display` toggle — no
    platform assumption beyond `@media (aspect-ratio ...)`, which this project's generated
    stylesheet already relied on. It lives outside this "use client" module because a server
-   component cannot call a function a client module exports, even a pure one. (A sibling,
-   `sectionRouteFallback`, did the same for ONE section, for `not-found`'s own closed replay; both
-   were retired on 2026-10-07 with that screen's thread.) */
+   component cannot call a function a client module exports, even a pure one. */
 const FALLBACKS = PAGE_FALLBACKS;
 
-/* The hide-all rule and every per-band show rule share the SAME specificity (a single attribute
-   selector each), so the winner is decided by SOURCE ORDER alone, not by which one a stylesheet
-   layer happens to out-rank -- the hide-all rule is listed first, and CSS applies a later rule of
-   equal specificity over an earlier one. Splitting these across a CSS-module class and this inline
-   `<style>` would let the module rule's higher specificity always win regardless of `@media`; see
-   `thread.module.css`'s own comment for why both halves live here instead. */
 /* THE MAIN TRUNK'S OWN PIECE COUNT -- every section's pieces but `wishes`' own, which `CardThread`
    draws separately below. Fixed
    at every band: `THREAD_PATHS`/`MOTIF_PLACEMENTS` carry the same connector/motif COUNTS per section
@@ -176,8 +114,8 @@ const MAIN_PIECE_COUNT = Math.max(
   ...THREAD_BANDS.map((band) => subpathRange(band.id, "wishes").start),
 );
 
-/* `wishes`' own piece count -- 3, per the same reproduction (a connector, its one motif `bow`, and
-   the trailing connector every section ends with) -- band-invariant for the same reason. */
+/* `wishes`' own piece count -- 3: a connector, its one motif `bow`, and the trailing connector every
+   section ends with -- band-invariant for the same reason. */
 const WISHES_PIECE_COUNT = Math.max(
   ...THREAD_BANDS.map((band) => {
     const range = subpathRange(band.id, "wishes");
@@ -185,6 +123,12 @@ const WISHES_PIECE_COUNT = Math.max(
   }),
 );
 
+/* The hide-all rule and every per-band show rule share the SAME specificity (a single attribute
+   selector each), so the winner is decided by SOURCE ORDER alone, not by which one a stylesheet
+   layer happens to out-rank -- the hide-all rule is listed first, and CSS applies a later rule of
+   equal specificity over an earlier one. Splitting these across a CSS-module class and this inline
+   `<style>` would let the module rule's higher specificity always win regardless of `@media`; see
+   `thread.module.css`'s own comment for why both halves live here instead. */
 const FALLBACK_STYLE = [
   "[data-thread-fallback] { display: none; }",
   ...FALLBACKS.map(
@@ -217,9 +161,8 @@ function rectRelativeTo(rect: DOMRect, origin: DOMRect): Rect {
 /* Positions `el` (already `position: absolute`) so its rendered box exactly covers `target`,
    regardless of which ancestor actually establishes `el`'s containing block — `wrapper` is `el`'s
    own small positioning span, always measured fresh alongside `target` so the two rects come from
-   the same layout pass. This is the mechanism `thread.module.css`'s old `.weave` class approximated
-   with a CSS `calc()` correction off the frame's own ring variables; measuring both rects directly
-   needs no such correction and does not drift if the frame's ring padding ever changes. */
+   the same layout pass; measuring both directly needs no correction off the frame's ring variables
+   and does not drift if the ring padding changes. */
 function coverRect(
   el: HTMLElement | SVGElement,
   wrapper: HTMLElement,
@@ -255,7 +198,7 @@ function measureSections(
   return { sections, sectionEls };
 }
 
-/* THE OWNER'S CARD/ROW SPLIT (`session.md` 2026-09-28): a stacked pair is two cards, not one window,
+/* THE OWNER'S CARD/ROW SPLIT: a stacked pair is two cards, not one window,
    and a long scrolling list of ritual rows is several rows, not one. `event-info` and `family` are
    both `<MountedPair>` (`components/layout/mounted-pair.tsx`), which always renders exactly two
    `.mounted-sheet-frame__leaf` elements regardless of whether CSS currently lays them out stacked or
@@ -441,18 +384,12 @@ const OPENING_DRAW_DURATION = 1200;
    draw delta. Re-mapping the stretch onto more scroll (`TerminalWindow`) does not help this; it only
    changes WHICH scroll position means which length.
 
-   So the scroll path keeps its pure target and gains a follower: `shown` eases toward `target` on an
-   exponential with time constant `--thread-catchup`, rather than being set to it. A fling still ends
-   at the right length, but the thread visibly travels there. Monotonic like the ratchet it follows —
-   `target` never decreases — so scrolling back up still never un-draws.
-
-   `tau` is passed in rather than read here: this ticks every frame while catching up, and
-   `getComputedStyle` would force a style recalc on each one. The caller reads it at measure time.
-   A `tau` of 0 paints immediately and starts no loop, which is the pre-2026-10-05 behaviour exactly.
-
-   The OPENING draw does not go through this — it is already time-driven on its own rAF, and easing it
-   a second time would simply make it slower than the sequence it is timed against. It calls `seen` so
-   the follower knows what is already on the page and never replays it. */
+   `shown` follows `target` over a fixed duration (`--thread-catchup`, passed to `to(next, seconds)`)
+   rather than being set to it, so a fling still ends at the right length but visibly travels there.
+   Monotonic like the ratchet it follows, so scrolling back up never un-draws. The duration is passed
+   in, not read here, because this ticks every frame and `getComputedStyle` would force a style
+   recalc. A duration of 0 paints immediately and starts no loop. The opening draw does not go through
+   this; it calls `seen` so the follower never replays it. */
 /* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
    exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
    0.4s time constant the card thread still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
@@ -1442,10 +1379,10 @@ export function PageThread() {
         const extent = end - range.start;
         if (extent <= 0) continue;
         /* Each stretch reads its own clock when a speed is set: same rate, its own loop length.
-           It is NOT given its own BUDGET: a short stretch would spend five quick loops and go dark
+           It is NOT given its own BUDGET: a short stretch would spend a few quick loops and go dark
            while a long one beside it was still on its first, trading one incoherence for another.
-           Every lit stretch keeps looping until the page's single budget -- five loops of the LONGEST
-           stretch -- runs out, so they all quiet together. */
+           Every lit stretch keeps looping until the page's single budget -- the LONGEST stretch's
+           `--retrace-loops` loops -- runs out, so they all quiet together. */
         const own = byLength
           ? { loop: ((now - start) / periodFor(extent)) % 1 }
           : { loop };
@@ -1511,8 +1448,8 @@ export function PageThread() {
     [head, taper],
   );
 
-  /* The one place a drawn length is taken from the scroll or the opening draw and put on the page:
-     through the ratchet, drawn, and told to the re-trace. */
+  /* Where a drawn length from the opening draw or a scroll-free commit is put on the page: through
+     the ratchet, drawn, and told to the re-trace. */
   /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
      what is on the page so a later scroll never replays it. */
   const commit = useCallback(
@@ -1830,8 +1767,8 @@ export function PageThread() {
                (this file's own header comment on why THAT path omits `vector-effect`). Without it,
                `--stroke-thread`'s raw px value is read as that many USER-SPACE units in a space
                where one unit is now ~1500px, which paints not a thread but a solid rectangle --
-               found on the first real no-JS render once `.pageWrapper` had a box to paint in at all
-               (`final-review-fixes.md`). */
+               found on the first real no-JS render once `.pageWrapper` had a box to paint in at
+               all. */
             vectorEffect="non-scaling-stroke"
           />
         ))}
@@ -1844,7 +1781,7 @@ export function PageThread() {
         role="presentation"
       >
         {/* ONE `<path>` PER PIECE -- fixed at `MAIN_PIECE_COUNT`, filled and dashed imperatively by
-            `measure()`/`onScroll` above. `key`s are stable indices, not piece identity, exactly
+            `measureLayout()`/`onScroll` above. `key`s are stable indices, not piece identity, exactly
             like the fallback's own `band` keys above: the SET of pieces this page draws is fixed
             (structural, band-invariant -- `MAIN_PIECE_COUNT`'s own header), so index and identity
             never diverge here. */}
@@ -1924,7 +1861,7 @@ export function CardThread() {
   const terminalWindowRef = useRef<TerminalWindow>(CHAIN_TERMINAL_WINDOW);
   const catchUpSecondsRef = useRef(0);
   /* Wishes' own stretch stays drawn on the way back up exactly as the trunk does, and needs its own
-     ratchet to do it: this component's maximum is a length along the WEAVE's path, which is not the
+     ratchet to do it: this component's maximum is a length along the card thread's path, which is not the
      trunk's (`PageThread`'s own `ratchetRef`). */
   const ratchetRef = useRef(createDrawRatchet());
 
@@ -2181,13 +2118,8 @@ export function CardThread() {
   );
 }
 
-/* THE ONE THING TASK 6 MUST ADD BESIDES THE MOUNT ITSELF: `<main>` needs `position: relative` so
-   `.pageWrapper`'s own `inset: 0` (`thread.module.css`) resolves against `<main>`'s box rather than
-   walking further up the ancestor chain to whatever the next positioned element happens to be (the
-   initial containing block, absent one) — the CORRECTED reason this rule exists; an earlier version
-   of this comment named `.pageRoot`, the wrapper's own child, which was never the thing depending on
-   `<main>` (`final-review-fixes.md`). Every JS-driven measurement above reads real rects via
-   `getBoundingClientRect()` and does not depend on which element establishes any containing block, so
-   `position: relative` matters only to the no-JS reader, who gets nothing else to size against.
-   `position: relative` adds no z-index, so it opens no new stacking context and cannot touch the
-   botanical blend layer. */
+/* `<main>` needs `position: relative` so `.pageWrapper`'s `inset: 0` (`thread.module.css`) resolves
+   against `<main>`'s box rather than whatever positioned ancestor is next up the chain. Every
+   JS-driven measurement above reads real rects and does not depend on any containing block, so this
+   matters only to the no-JS reader. `position: relative` adds no z-index, so it opens no stacking
+   context and cannot touch the botanical blend layer. */

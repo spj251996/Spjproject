@@ -1,10 +1,9 @@
 /* Warps the owner's hand-drawn thread from the box it was AUTHORED against onto the box the
-   browser actually laid out. Pure arithmetic — no DOM, no React — because Task 4's component reads
+   browser actually laid out. Pure arithmetic — no DOM, no React — because the component reads
    real measurements and this module only needs to know how to map one box onto another; testing it
    needs no render at all.
 
-   THE MODEL (owner decision, on measured evidence — `thread-and-motion.md`'s Task-11 review):
-   x is anchored to the CARD, not the viewport. Across the `wide` band the viewport ranges roughly
+   THE MODEL (owner decision, on measured evidence): x is anchored to the CARD, not the viewport. Across the `wide` band the viewport ranges roughly
    1024-2560px while the card only grows ~768-1200px, so a viewport-stretched thread drifts off the
    content it was drawn around (anisotropy 1.66 viewport-anchored against 1.00-1.38 card-anchored).
    y has no separate "card" concept — a section's height is its own measured height, full stop.
@@ -12,11 +11,8 @@
      x_page = cardLeft + (x_authored - authoredCardLeft) * (cardWidth / authoredCardWidth)
      y_page = sectionTop + y_authored * (sectionHeight / authoredSectionHeight)
 
-   `from` is `AuthoredCard` (Task 1, `thread-authored-layout.ts`) rather than the generic
-   `SectionBox` a first reading of the plan suggests: the formula needs `authoredCardLeft` and
-   `authoredCardWidth`, and `AuthoredCard` is exactly the record Task 1 built to carry them —
-   `SectionBox` (`thread-geometry.ts`) is only `{ width, height }` and cannot express a card offset
-   at all. Task 1's own brief for this task says as much: "it is the `from` side of your warp". */
+   `from` is `AuthoredCard` (`thread-authored-layout.ts`) rather than `SectionBox`, because the
+   formula needs `authoredCardLeft`/`authoredCardWidth` and `SectionBox` is only `{ width, height }`. */
 
 import type { AuthoredCard } from "./thread-authored-layout.ts";
 import type { Placement } from "./thread-paths.ts";
@@ -29,7 +25,7 @@ export type MeasuredSection = {
 };
 
 /* A DOMRect-shaped anchor, in the same page-absolute pixel space as `MeasuredSection` — the caller
-   (Task 4) hands this in from `getBoundingClientRect()` on a real portrait/illustration element. */
+   hands this in from `getBoundingClientRect()` on a real portrait or illustration element. */
 export type Rect = { left: number; top: number; width: number; height: number };
 
 type Point = { x: number; y: number };
@@ -117,7 +113,7 @@ export function warpSection(
 }
 
 /* A motif's own drawing must never shear, or its aspect stops holding across viewports — the exact
-   property Task 1's spike measured at 0.0% spread for a uniform scale against 82.9% for either
+   property measured at 0.0% spread for a uniform scale against 82.9% for either
    axis-independent alternative. So position warps per-axis like a path point, but SIZE resolves to
    ONE factor.
 

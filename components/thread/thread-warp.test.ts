@@ -43,7 +43,7 @@ test("identity: warping to the authored box returns the same geometry within 0.0
   }
 });
 
-/* Real figures from the wide band's own range (session.md / thread-and-motion review): the
+/* Real figures from the wide band's own range: the
    viewport runs ~1024-2560px while the card only grows ~768-1200px across it. A viewport-anchored
    warp and a card-anchored one disagree sharply off the card, which is exactly what this proves. */
 test("card anchoring: a doubled viewport with a smaller-than-doubled card moves an authored point to the card-relative place, not the viewport-relative one", () => {

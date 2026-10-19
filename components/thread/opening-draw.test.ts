@@ -85,11 +85,8 @@ test("the opening draw runs 1200ms and holds back a quarter of the last connecto
   assert.equal(constant("CROSSING_HOLD_BACK"), 0.25);
 });
 
-/* THE SEQUENCE'S GATE (`thread-draw-behaviour.md` Task 4) — a page that loads already scrolled is
-   not an arrival, so no step runs. The guard SUBTRACTS each rule rather than overriding it, which is
-   the same place reduced motion and a no-JS reader land, so these assert that no step escapes it.
-   `not-found`'s own timed thread is deliberately not gated: that screen has one card and no scroll,
-   so there is no scrolled state for it to load into. */
+/* A page that loads already scrolled is not an arrival, so no step runs. The guard subtracts each
+   rule, which is where reduced motion and a no-JS reader land; these assert no step escapes it. */
 const GATE = ":root:not([data-opening-skipped])";
 
 /* The selector of every rule that declares `animation:` — walk back from the declaration to its own
@@ -170,8 +167,8 @@ test("no mount or stock step remains", () => {
 
 /* THE FLOWERS NEVER FADE, AND THAT IS WORTH A GUARD BECAUSE IT IS A MEASURED CHOICE. They are the
    largest painted element on the opening screen, so starting them at opacity 0 delays the largest
-   paint: measured on the static export at 390x844, **a fade 808ms (784-836) against a translate's
-   248ms (228-264)**. No other gate in this repo would see the swap. Transform only also means the
+   paint: measured on the static export at 390x844, **a fade 808ms (784-836) against the unfurl's
+   ~218ms (152-236)**. No other gate in this repo would see the swap. Transform only also means the
    gesture can never isolate the multiply blend. */
 test("the flowers' gesture is transform only, which keeps the largest paint early", () => {
   const css = stripComments(inviteCss);
@@ -208,18 +205,13 @@ test("the beat targets the class the pieces actually carry", () => {
   );
 });
 
-/* Opacity on the PIECE, never on an ancestor: sub-1 opacity anywhere in a bloom's ancestor chain
-   isolates `mix-blend-mode: multiply` and paints the piece's opaque white backing rectangle, with no
-   error and every gate green (`botanical.module.css`'s header). `.layer` and `.clip` are that chain. */
 /* A gesture on a bloom must sit on the PIECE. On any ancestor it isolates `mix-blend-mode: multiply`
    and the piece paints its opaque backing rectangle instead of blending (`botanical.module.css`).
 
    The ancestor that actually matters is `.mounted-sheet-frame--invite` ITSELF: `Botanical` stamps
    that class on its own wrapper (`frameScopeClass`), so a rule animating the bare scope class would
-   isolate every bloom under it. An earlier version of this test forbade `.layer` and `.clip`, which
-   are HASHED CSS-module classes a global stylesheet could never name — it guarded an impossible
-   mutation while the reachable one passed untouched. Each animated selector must therefore reach
-   something BEYOND the scope class. */
+   isolate every bloom under it. Each animated selector must reach something beyond
+   `.mounted-sheet-frame--invite`. */
 test("every beat animates a descendant, never the scope class a bloom hangs from", () => {
   const SCOPE = ".mounted-sheet-frame--invite";
   for (const selector of animatedSelectors(inviteCss)) {

@@ -1,28 +1,13 @@
-/* Everything about a thread that is the same on every screen — one page-length measured line
-   (`page-thread.tsx`) and `not-found`'s own closed, timed replay of `invite`'s route
-   (`not-found-thread.tsx`). The retired per-section, CSS-generated grid model (`section-thread.tsx`,
-   `thread-css.ts`) is gone as of the cutover that mounted this — `page-thread.tsx`'s own header
-   comment covers why the live `<path>` here deliberately does NOT carry `vector-effect:
-   non-scaling-stroke`, unlike that retired model's `.ink`. */
+/* Everything about the page thread (`page-thread.tsx`) that is the same on every screen.
+   `page-thread.tsx`'s header covers why the live `<path>` deliberately does NOT carry `vector-effect:
+   non-scaling-stroke`. */
 
-/* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
-   kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
-   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `CardThread` copies it then had were
-   auto-placing into two of its four EXPLICIT rows, pushing `names` and `signoff` out into new
-   IMPLICIT ones. `.figureCol`'s `grid-row: 1 / -1` still spanned the same four tracks throughout --
-   `-1` resolves against the explicit grid only, so the span never moved -- but two of those tracks
-   now held a zero-height weave copy instead of a 112px row, which is what collapsed the column
-   384px -> 160px and spilled the illustration ~87px each way. Measured with `getComputedStyle`:
-   `20px 140px 112px 112px` fixed against `20px 140px 0px 0px 112px 112px` broken
-   (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
-   never be a grid item, whatever size it renders at -- an absolutely positioned box never
-   participates in a flex or grid parent's layout, regardless of `inset`. `inset: 0` here (rather
-   than the `height: 0` this carried through the Wishes fix) is what lets this wrapper actually cover
-   `<main>` for the no-JS fallback below, which cannot self-measure and has no other way to size
-   itself (`page-thread.tsx`'s closing comment). `<main>` (`app/page.tsx`) already carries Tailwind's
-   `relative`, so this wrapper's containing block is `<main>`'s own box, not the viewport or some
-   further ancestor -- confirmed on a real `javaScriptEnabled: false` render
-   (`final-review-fixes.md`). */
+/* `absolute`, so the wrapper takes zero layout in every layout mode it mounts inside: an in-flow box
+   is still a CSS Grid item at `height: 0`, and inside Wishes' `>=64rem` landscape grid an in-flow
+   thread wrapper auto-places into the explicit rows and collapses the figure column. `inset: 0` is
+   what lets this wrapper cover `<main>` for the no-JS fallback, which cannot self-measure
+   (`page-thread.tsx`'s closing comment); `<main>` carries `relative`, so the containing block is
+   `<main>`'s own box. */
 .pageWrapper {
   position: absolute;
   display: block;

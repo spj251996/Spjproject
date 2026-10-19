@@ -19,12 +19,12 @@ const LAB_ROUTE = "/thread.html";
    sufficient: what the owner sees depends on the drawn length actually REACHING every piece's end at
    a resting scroll position, which is a property of the page's scroll budget
    (`--thread-terminal-finish`) and of the follower that eases toward it (`--thread-catchup`) — and
-   the follower is exactly where this broke, because an exponential never arrives and left the weave
+   the follower is exactly where this broke, because an exponential never arrives and left the card thread
    99.69% drawn with the head lit (`page-thread.tsx` -> `createCatchUp`). So this runs a real page.
 
    THE MID-DRAW ASSERTION IS NOT DECORATION. A test that only checked "no head at the end" would pass
    just as well if the head never rendered at all, which is the vacuous shape this project has already
-   shipped once (`lessons.md` -> Verification). Each band must show the head WHILE drawing before its
+   shipped once. Each band must show the head WHILE drawing before its
    absence at the end means anything.
 
    The head is retired by hiding its GROUP, not by hiding each path, so that is what is asserted —

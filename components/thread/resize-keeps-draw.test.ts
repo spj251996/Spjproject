@@ -21,9 +21,8 @@ const LAB_ROUTE = "/thread.html";
 
    THE GESTURE IS THE WHOLE TEST, AND IT IS NOT ENOUGH TO SIT PART-WAY DOWN. Discarding the ratchet is
    only VISIBLE where the held peak exceeds what the current scroll position would draw on its own —
-   which is precisely a reader who has scrolled DOWN and come back UP. A first version of this test
-   scrolled to 60% and resized there, and it PASSED against the pre-fix code: at a position the reader
-   has just reached, the fresh measurement is the peak, so dropping the peak changes nothing. So this
+   which is precisely a reader who has scrolled DOWN and come back UP: at a position the reader has
+   just reached, the fresh measurement is the peak, so dropping the peak changes nothing. So this
    descends deep, returns to a shallower position where the ratchet is the only thing holding the
    thread, and resizes there. The two ends are avoided for the reasons `head-retires.test.ts` gives:
    at scroll 0 there is nothing drawn to lose, and at the page's end the thread is complete, so a
@@ -102,8 +101,7 @@ const BOXES = `(() => {
 
 /* `total` is the THREAD's own total arc length (the sum of every piece's dash period), which is the
    quantity the ratchet's peak is expressed in and the one `rebase` scales between. The page's
-   `scrollHeight` is NOT interchangeable with it — an earlier version of this test divided by that and
-   read 128% drawn. The proportion matters because an ABSOLUTE comparison carries free slack: the
+   `scrollHeight` is NOT interchangeable with it (dividing by it reads 128% drawn). The proportion matters because an ABSOLUTE comparison carries free slack: the
    thread lengthens when the page does, so the rebase makes the absolute figure larger either way and
    a mutation losing a few percent of the peak would slip through.
 
@@ -239,9 +237,8 @@ test("a height-only resize that reflows the page does not un-draw the thread (sl
    same `Math.max(..., openingFloor(...))` that `measureLayout` does, so a URL bar moving during or
    after the opening sequence cannot leave them looking at no thread. Unreachable from a unit test —
    `openingFloor` is local to `page-thread.tsx` — so it is asserted here.
-   (An earlier version of this said the SCROLL path takes that floor. It does not: `commitScrolled`
-   passes `pageDrawnLength` alone and relies on the ratchet's peak to hold the opening draw. The two
-   measure paths are the only ones that re-derive the floor.)
+   The scroll path does not take that floor: `commitScrolled` passes `pageDrawnLength` alone and
+   relies on the ratchet's peak to hold the opening draw; only the two measure paths re-derive it.
 
    HONEST LIMIT, measured 2026-10-07: this test is NOT independently mutation-proven. Dropping
    `openingFloor` from `refreshWindow` and rebuilding leaves it PASSING, because the ratchet now

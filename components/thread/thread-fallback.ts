@@ -2,12 +2,8 @@
    `page-thread.tsx` because that file is `"use client"` — every export of a client module is a
    client boundary, so a server component cannot call a function defined there even when the
    function itself touches no DOM. Nothing in this file does: it is the same identity-warp
-   arithmetic `thread-line.test.ts` already proves reproduces the authored geometry exactly.
-
-   It also carried `sectionRouteFallback` — one section's route, renormalised against its own
-   authored card — which `not-found-thread.tsx` used for a closed replay of `invite`'s route. Both
-   were retired on 2026-10-07 along with that screen's thread (DESIGN.md -> Not found). The split
-   still earns its place: the fallback below is itself server-rendered. */
+   arithmetic `thread-line.test.ts` already proves reproduces the authored geometry exactly. The
+   fallback below is itself server-rendered. */
 
 import { authoredCard } from "./thread-authored-layout.ts";
 import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
@@ -42,7 +38,7 @@ export function subpathRange(
 
 /* An IDENTITY warp (a band's own authored card/section figures as both `from` and `to`) reproduces
    the authored geometry exactly (`thread-line.test.ts`'s own identity test) — what every static,
-   script-free render on this page (the no-JS fallback, and the whole of `not-found`) draws from. */
+   script-free render of this page (the no-JS fallback) draws from. */
 export function authoredMeasuredSections(band: BandId): MeasuredSection[] {
   let top = 0;
   return THREAD_IDS.map((id) => {
