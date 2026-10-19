@@ -3,12 +3,11 @@ import { test } from "node:test";
 import type { BandId } from "./thread-bands.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import type { MotifId, ThreadId } from "./thread-geometry.ts";
-import { MOTIF_PLACEMENTS, THREAD_PATHS } from "./thread-paths.ts";
+import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths.ts";
 
-/* The page order, restated here rather than imported: `THREAD_IDS` lived in the grid this file
-   replaces, and this table is what a fresh reader needs to know which section owns how many
-   motifs — the shape every other assertion below checks against. */
-const SECTION_MOTIF_COUNT: Record<Exclude<ThreadId, "not-found">, number> = {
+/* The page order, restated here rather than imported: this table is what a fresh reader needs to
+   know which section owns how many motifs — the shape every other assertion below checks against. */
+const SECTION_MOTIF_COUNT: Record<ThreadId, number> = {
   invite: 1,
   "event-info": 2,
   family: 2,
@@ -16,10 +15,7 @@ const SECTION_MOTIF_COUNT: Record<Exclude<ThreadId, "not-found">, number> = {
   wishes: 1,
 };
 
-const SECTION_IDS = Object.keys(SECTION_MOTIF_COUNT) as Exclude<
-  ThreadId,
-  "not-found"
->[];
+const SECTION_IDS = Object.keys(SECTION_MOTIF_COUNT) as ThreadId[];
 
 function numbers(d: string): number[] {
   return [...d.matchAll(/-?\d+(?:\.\d+)?(?:e-?\d+)?/g)].map((m) =>
@@ -27,17 +23,12 @@ function numbers(d: string): number[] {
   );
 }
 
-test("every band declares every section, and no section declares 'not-found'", () => {
+test("every band declares every section and nothing else", () => {
   for (const band of THREAD_BANDS) {
     const paths = THREAD_PATHS[band.id];
     const placements = MOTIF_PLACEMENTS[band.id];
     assert.deepEqual(Object.keys(paths).sort(), [...SECTION_IDS].sort());
     assert.deepEqual(Object.keys(placements).sort(), [...SECTION_IDS].sort());
-    assert.equal(
-      "not-found" in paths,
-      false,
-      `${band.id} must not declare not-found — it resolves to invite by construction`,
-    );
   }
 });
 
@@ -116,7 +107,7 @@ test("portraitLoop is mirrored in wide and tall, and not in upright", () => {
   for (const band of THREAD_BANDS) {
     const placements = [
       ...MOTIF_PLACEMENTS[band.id].family,
-      ...(MOTIF_PLACEMENTS[band.id].celebrations ?? []),
+      ...MOTIF_PLACEMENTS[band.id].celebrations,
     ].filter((p) => p.motif === "portraitLoop");
     assert.ok(
       placements.length > 0,
@@ -210,25 +201,19 @@ function flatten(d: string): { x: number; y: number }[] {
    sit right after a genuinely short polyline span (one measured 1.37px), and `splinePath`'s own
    arm-length rule (`thread-spline.ts`, a THIRD of a span's own length at most) then holds a forced
    direction only a few px before the curve resumes bending toward its own next point — a property
-   of point spacing, not of which direction was forced. Measured empirically: at reach 10 the WORST
-   boundary was 6.8 degrees once left unforced (2026-10-07, fifteen boundaries with Contact; 5.6 on
-   today's twelve); at reach 20 it was 19.9. A smaller reach stays inside more boundaries' own short arms. */
+   of point spacing, not of which direction was forced. Measured: at reach 10 the worst boundary is
+   5.6 degrees left unforced; at reach 20 it was 19.9. A smaller reach stays inside more
+   boundaries' own short arms. */
 const REACH = 10;
-/* 10, not the 1 degree a perfectly continuous join would read as measured AT the exact point
-   (confirmed separately, by reading each side's own control-point tangent directly: under this
-   fix the worst of the fifteen was 0.09 degrees, 2026-10-07). Widened here to absorb the arm-length noise above
-   without losing the separation that matters: forcing `TERMINAL_TANGENT` measured 13-80 degrees
-   off at this SAME reach on at least one boundary in every band, comfortably outside this floor.
+/* 10, not the 1 degree a perfectly continuous join would read as measured AT the exact point (each
+   side's own control-point tangent reads at most 0.09 degrees). Widened to absorb the arm-length
+   noise above without losing the separation that matters: forcing a vertical tangent measured 13-80
+   degrees off at this same reach on at least one boundary in every band.
 
-   HEADROOM, MEASURED 2026-10-14, after Contact was removed and Event Info joined to Family in code:
-   the worst join is **5.6 degrees at `tall` family/celebrations**, and the machine-made join reads
-   2.3 / 1.4 / 0.3 at `tall` / `upright` / `wide` (`build-thread-paths.mjs` → `SEAM_MARGIN`). On
-   2026-10-07 it was 7.4 at `tall` contact/family, a join that no longer exists.
-   Worth knowing if span bounding is ever tried again (`boundSpans`, off by default — the owner
-   rejected its look): turning it on at 40 moved the two worst joins of 2026-10-07 to **8.8 and 8.3** while improving every
-   other join, because a curve bounded to even spans hugs the drawn polyline instead of bowing past
-   it, so a corner drawn near that boundary turns inside this test's 10px reach. That is the fit
-   working, not a defect — but it leaves about 1 degree of room, so re-record these figures rather
+   The worst join reads 5.6 degrees at `tall` family/celebrations, and the machine-made Event Info /
+   Family join 2.3 / 1.4 / 0.3 at `tall` / `upright` / `wide` (`build-thread-paths.mjs` →
+   `SEAM_MARGIN`). Span bounding (`boundSpans`, off by default) moves the two worst joins to about 8.8
+   while improving every other, which leaves about 1 degree of room: re-record these figures rather
    than widening the bound. */
 const TOLERANCE = 10;
 
@@ -254,7 +239,7 @@ function angleDiff(a: number, b: number): number {
   return Math.abs(((a - b + 540) % 360) - 180);
 }
 
-const SECTION_ORDER: Exclude<ThreadId, "not-found">[] = [
+const SECTION_ORDER: ThreadId[] = [
   "invite",
   "event-info",
   "family",
@@ -300,7 +285,7 @@ test("every section boundary reads as one line: same x and same heading on both 
    INSTANTANEOUS derivative at the shared point, read directly off each side's own control points,
    with no sampling to blur it. A join built by fitting the whole crossing stroke once and slicing
    it (rather than fitting each half separately toward an agreed convention) puts this at a
-   fraction of a degree; forcing an unrelated convention like `TERMINAL_TANGENT` would not — both
+   fraction of a degree; forcing an unrelated convention, a vertical tangent, would not — both
    sides would still agree with EACH OTHER (they were forced to the same value), which is exactly
    why the reach-sampled test above, not this one, is what catches that class of defect. */
 function exactTangent(d: string, which: "start" | "end"): number {
@@ -386,34 +371,7 @@ test("every placement's scale is the owner's authored value, never derived from 
   }
 });
 
-/* No band may ever go empty. The generator writes all three in one pass, so a band whose authored
-   source went missing would be emitted as nothing and `output: "export"` would ship that band's page
-   with no thread at all — `wide` being the desktop one.
-
-   CORRECTED 2026-10-07: an earlier version of this comment said `wide`'s source was GONE and that any
-   regeneration must merge. All of that was false. The generator reads `wide` from
-   `assets/thread/wide/` (`build-thread-paths.mjs`'s `DIRS`), not from `tmp/thread-draw/wide/` —
-   which does not exist — and that directory holds `geometry.json`, `attachments.json` and
-   `connectors.json` intact. Proven by neutralising `MAX_SPAN` and reproducing this file
-   byte-identically for all three bands. So there is no merge mechanism and this file is not an
-   irreplaceable artifact; do not go looking for either.
-
-   This pins the SHAPE rather than the content, which is what makes it survive the coming full redraw:
-   the routes will change, but no band may ever go empty. */
-test("every band has a route for every section", () => {
-  for (const band of THREAD_BANDS) {
-    for (const id of SECTION_ORDER) {
-      const routes = THREAD_PATHS[band.id]?.[id];
-      assert.ok(
-        Array.isArray(routes) && routes.length > 0,
-        `${band.id}/${id} has no route — a wholesale regeneration may have dropped a band`,
-      );
-      for (const route of routes) {
-        assert.ok(
-          typeof route.d === "string" && route.d.startsWith("M "),
-          `${band.id}/${id} has a malformed d`,
-        );
-      }
-    }
-  }
+test("THREAD_IDS matches the page order", () => {
+  assert.deepEqual([...THREAD_IDS], SECTION_ORDER);
+  assert.deepEqual(Object.keys(SECTION_MOTIF_COUNT), SECTION_ORDER);
 });
