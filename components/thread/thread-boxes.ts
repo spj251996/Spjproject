@@ -28,7 +28,7 @@ import type { SectionBox, ThreadId } from "./thread-geometry.ts";
    section's own `getBoundingClientRect().height`. Instrument validated first on `contact` and
    `wishes`, which reproduced their recorded 700 / 1180 / 695 exactly (2026-10-08; `wishes` alone
    since Contact was retired — see this file's header). */
-type SectionHeights = Record<Exclude<ThreadId, "not-found">, number>;
+type SectionHeights = Record<ThreadId, number>;
 
 const TALL_HEIGHTS: SectionHeights = {
   /* One screen again since 2026-10-14, when the invite's phone content came back inside 393x700; it
@@ -118,9 +118,6 @@ const WIDTH_BY_BAND: Record<BandId, number> = {
   wide: 1536,
 };
 
-/* `not-found` is the invite's geometry by construction (`thread-css.ts`'s `routeFor` resolves it
-   the same way), so it takes the invite's measured box rather than carrying its own row. */
 export function sectionBox(id: ThreadId, band: BandId): SectionBox {
-  const of = id === "not-found" ? "invite" : id;
-  return { width: WIDTH_BY_BAND[band], height: HEIGHTS_BY_BAND[band][of] };
+  return { width: WIDTH_BY_BAND[band], height: HEIGHTS_BY_BAND[band][id] };
 }

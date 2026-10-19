@@ -28,7 +28,7 @@ export type Band = { id: BandId; box: SectionBox; min: number; max: number };
      The `wide` band is already accepted at 40% off at its own worst member, so this sits well
      inside tolerance the design already carries.
    ──────────────────────────────────────────────────────────────────────────────────────────────── */
-export const TALL_BOX_HEIGHT = 700;
+const TALL_BOX_HEIGHT = 700;
 
 const TALL_BOX: SectionBox = { width: 393, height: TALL_BOX_HEIGHT };
 const UPRIGHT_BOX: SectionBox = { width: 820, height: 1180 };

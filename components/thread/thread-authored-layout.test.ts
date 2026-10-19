@@ -27,15 +27,6 @@ test("every band carries an authored card for all five sections", () => {
   }
 });
 
-test("not-found resolves to the invite's authored card in every band", () => {
-  for (const band of THREAD_BANDS) {
-    assert.deepEqual(
-      authoredCard("not-found", band.id),
-      authoredCard("invite", band.id),
-    );
-  }
-});
-
 test("the recorded section heights reproduce thread-boxes.ts's sectionBox exactly", () => {
   for (const band of THREAD_BANDS) {
     for (const id of SECTIONS) {

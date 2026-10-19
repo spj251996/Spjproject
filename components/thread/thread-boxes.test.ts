@@ -44,15 +44,6 @@ test("every band carries a measured box for all five sections", () => {
   }
 });
 
-test("not-found resolves to the invite's box in every band", () => {
-  for (const band of THREAD_BANDS) {
-    assert.deepEqual(
-      sectionBox("not-found", band.id),
-      sectionBox("invite", band.id),
-    );
-  }
-});
-
 test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("invite", "tall"), { width: 393, height: 700 });
   assert.deepEqual(sectionBox("event-info", "tall"), {

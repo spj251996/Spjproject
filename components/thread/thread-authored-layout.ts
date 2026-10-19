@@ -27,7 +27,7 @@ export type AuthoredCard = {
   sectionHeight: number;
 };
 
-type Sections = Record<Exclude<ThreadId, "not-found">, AuthoredCard>;
+type Sections = Record<ThreadId, AuthoredCard>;
 
 const TALL_CARDS: Sections = {
   invite: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
@@ -97,12 +97,8 @@ const CARDS_BY_BAND: Record<BandId, Sections> = {
   wide: WIDE_CARDS,
 };
 
-/* `not-found` is the invite's geometry by construction (`thread-css.ts`'s `routeFor` resolves it
-   the same way as `thread-boxes.ts`'s `sectionBox`), so it takes the invite's authored card
-   rather than carrying its own row. */
 export function authoredCard(id: ThreadId, band: BandId): AuthoredCard {
-  const of = id === "not-found" ? "invite" : id;
-  return CARDS_BY_BAND[band][of];
+  return CARDS_BY_BAND[band][id];
 }
 
 /* A point on the family card, as the fraction of its width/height a later warp can resolve

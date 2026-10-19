@@ -80,7 +80,7 @@ export type ThreadLine = {
    header for why that generalisation is backward compatible with every caller that never asks for a
    subdivision. */
 export type SectionRange = {
-  id: Exclude<ThreadId, "not-found">;
+  id: ThreadId;
   start: number;
   end: number;
   /* The length of this GROUP's own LAST piece. For an un-split section this is always a connector
@@ -112,11 +112,11 @@ export type SectionRect = { top: number; height: number };
    (`page-thread.tsx`) is the one that knows which sections actually have a stackable pair or a row
    list this band, and a section this page never subdivides simply never appears here. */
 export type SectionSubdivisions = Partial<
-  Record<Exclude<ThreadId, "not-found">, readonly SectionRect[]>
+  Record<ThreadId, readonly SectionRect[]>
 >;
 
 export type ThreadPiece = {
-  id: Exclude<ThreadId, "not-found">;
+  id: ThreadId;
   kind: "connector" | MotifId;
   start: number;
   end: number;
@@ -551,7 +551,7 @@ function trimMotifTails(d: string, fraction: number): string {
 export function threadLine(
   band: BandId,
   sections: MeasuredSection[],
-  anchors?: Partial<Record<Exclude<ThreadId, "not-found">, SectionAnchors>>,
+  anchors?: Partial<Record<ThreadId, SectionAnchors>>,
   subdivisions?: SectionSubdivisions,
 ): ThreadLine {
   if (sections.length !== THREAD_IDS.length) {
