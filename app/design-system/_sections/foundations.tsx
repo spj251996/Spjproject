@@ -1,13 +1,11 @@
 import Image from "next/image";
+import { PrimaryDate } from "@/app/_sections/shared";
 import {
-  type BarItem,
   BarScale,
   DepthGrid,
   type DepthLevel,
   DurationScale,
-  type DurationToken,
   EasingCurves,
-  type EasingToken,
   GallerySection,
   RuleList,
   type ShapeItem,
@@ -17,8 +15,15 @@ import {
   SwatchGrid,
   type SwatchGroup,
   TypeScaleList,
-  type TypeToken,
 } from "@/app/design-system/_kit";
+import {
+  DURATION_TOKENS,
+  EASING_TOKENS,
+  LAYOUT_CAPS,
+  LOOP_CADENCE_USES,
+  SPACING_STEPS,
+  TYPE_TOKENS,
+} from "@/app/design-system/_sections/token-tables";
 import {
   BetrothalIcon,
   LunchIcon,
@@ -31,6 +36,10 @@ import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
+import { formatEventDate } from "@/content";
+
+/* A first-of-the-month date, so the specimen shows the raised ordinal on a real baseline. */
+const SAMPLE_DATE = formatEventDate("2000-01-01");
 
 const COLOR_GROUPS: SwatchGroup[] = [
   {
@@ -137,148 +146,6 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
 ];
 
-const TYPE_TOKENS: TypeToken[] = [
-  {
-    token: "type-heading-xl",
-    family: "Playfair Display",
-    weight: 700,
-    sample: "Section-level H1.",
-    phone: { size: 26, lh: 40 },
-    tablet: { size: 32, lh: 48 },
-    laptop: { size: 30, lh: 44 },
-    desktop: { size: 38, lh: 56 },
-  },
-  {
-    token: "type-heading-md",
-    family: "Playfair Display",
-    weight: 700,
-    sample: "Each ritual's English title.",
-    phone: { size: 18, lh: 32 },
-    tablet: { size: 20, lh: 34 },
-    laptop: { size: 18, lh: 32 },
-    desktop: { size: 21, lh: 36 },
-  },
-  {
-    token: "type-heading-sm",
-    family: "Playfair Display",
-    weight: 700,
-    sample:
-      "Serif sub-headings; the event sheets' address line and segment line.",
-    phone: { size: 14, lh: 28 },
-    tablet: { size: 15, lh: 30 },
-    laptop: { size: 14, lh: 28 },
-    desktop: { size: 17, lh: 32 },
-  },
-  {
-    token: "type-date-primary",
-    family: "Playfair Display",
-    weight: 700,
-    sample:
-      "The event sheets' date line, and the invite's place beneath its date block.",
-    phone: { size: 14, lh: 28 },
-    tablet: { size: 15, lh: 30 },
-    laptop: { size: 14, lh: 28 },
-    desktop: { size: 17, lh: 32 },
-  },
-  {
-    token: "type-date-label",
-    family: "Playfair Display",
-    weight: 700,
-    sample: "Saturday · Jan · 2027",
-    phone: { size: 12, lh: 12 },
-    tablet: { size: 13, lh: 13 },
-    laptop: { size: 12, lh: 12 },
-    desktop: { size: 14, lh: 14 },
-  },
-  {
-    token: "type-date-day",
-    family: "Playfair Display",
-    weight: 400,
-    sample: "9",
-    phone: { size: 44, lh: 44 },
-    tablet: { size: 48, lh: 48 },
-    laptop: { size: 44, lh: 44 },
-    desktop: { size: 51, lh: 51 },
-  },
-  {
-    token: "type-body",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample: "Descriptions, addresses, wishes, all long-form copy.",
-    phone: { size: 13, lh: 26 },
-    tablet: { size: 14, lh: 28 },
-    laptop: { size: 13, lh: 26 },
-    desktop: { size: 16, lh: 32 },
-  },
-  {
-    token: "type-body-italic",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample: "The timeline's promise line and a ritual's tagline.",
-    phone: { size: 13, lh: 26 },
-    tablet: { size: 14, lh: 28 },
-    laptop: { size: 13, lh: 26 },
-    desktop: { size: 16, lh: 32 },
-  },
-  {
-    token: "type-caption",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample:
-      "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
-    phone: { size: 11, lh: 22 },
-    tablet: { size: 13, lh: 24 },
-    laptop: { size: 12, lh: 22 },
-    desktop: { size: 14, lh: 24 },
-  },
-  {
-    token: "type-caption-italic",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample:
-      "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
-    phone: { size: 11, lh: 22 },
-    tablet: { size: 13, lh: 24 },
-    laptop: { size: 12, lh: 22 },
-    desktop: { size: 14, lh: 24 },
-  },
-  {
-    token: "type-eyebrow",
-    family: "Libre Baskerville",
-    weight: 700,
-    sample: "Small labels above headings and sheet fields.",
-    phone: { size: 10, lh: 20 },
-    tablet: { size: 11, lh: 20 },
-    laptop: { size: 10, lh: 20 },
-    desktop: { size: 12, lh: 22 },
-  },
-  {
-    token: "type-action",
-    family: "Libre Baskerville",
-    weight: 700,
-    sample: "Buttons and calls to action.",
-    phone: { size: 13, lh: 26 },
-    tablet: { size: 14, lh: 28 },
-    laptop: { size: 13, lh: 26 },
-    desktop: { size: 16, lh: 32 },
-  },
-];
-
-const SPACING_STEPS: BarItem[] = [
-  { token: "0", px: 0 },
-  { token: "space-3xs", px: 4 },
-  { token: "space-2xs", px: 8 },
-  { token: "space-xs", px: 12 },
-  { token: "space-sm", px: 16 },
-  { token: "space-md", px: 24 },
-  { token: "space-lg", px: 32 },
-  { token: "space-xl", px: 48 },
-  { token: "space-2xl", px: 64 },
-  { token: "space-3xl", px: 96 },
-  { token: "space-4xl", px: 128 },
-  { token: "space-5xl", px: 172 },
-];
-
 const SPACING_USES = [
   "0 · flush edges, collapsed gaps",
   "space-2xs to space-sm · tight grouping",
@@ -286,14 +153,7 @@ const SPACING_USES = [
   "space-md · viewport edge for sections without a frame",
   "space-2xl to space-3xl · between two unframed sections back to back",
   "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame) — a tall card's sides below md take --tall-inline-phone (36px) instead",
-];
-
-const LAYOUT_CAPS = [
-  "--container-content · 1200px · all content; a framed card's width from xl, landscape windows only",
-  "--container-content-compact · 960px · a framed card's width, lg to xl, landscape windows only",
-  "--container-text · 600px · text blocks",
-  "--card-height-cap · 720px · a framed card's height from xl, landscape windows only",
-  "--card-height-cap-compact · 576px · a framed card's height, lg to xl, landscape windows only",
+  "space-5xl · the tablet portrait block band",
 ];
 
 const FRAME_GROUND_TIERS = [
@@ -316,31 +176,15 @@ const IMAGERY_POINTERS = [
   "Couple illustration · held back behind the closing text → Domain · Wishes",
 ];
 
-const DURATION_TOKENS: DurationToken[] = [
-  { token: "--duration-fast", ms: 200 },
-  { token: "--duration-base", ms: 400 },
-];
-
 const DURATION_USES = [
   "fast · the action press and hover, and the opening sequence beat",
   "base · section and sheet reveals, the modal",
   "--opening-type-end · 9 × fast (1800ms) · when the Bloom opening's last row of type has landed — the scroll progress bar's track arrives here and the lab thread fades in from here; a new sequence changes this one value",
 ];
 
-const EASING_TOKENS: EasingToken[] = [
-  { token: "--ease-entrance", curve: [0, 0, 0.2, 1] },
-  { token: "--ease-settle", curve: [0.4, 0, 0.2, 1] },
-];
-
 const EASING_USES = [
   "entrance · anything appearing",
   "settle · the action button's press and hover transition",
-];
-
-const LOOP_CADENCE_USES = [
-  "--retrace-duration · 3.2s · one loop of the thread's re-trace, the page's one sanctioned loop · set against the thread, not a step on the duration scale · the owner's pick",
-  "--retrace-settle · 1500ms · how long the page must be still before the re-trace loops · a delay of the same kind, the owner's pick",
-  "--retrace-loops · 4 · how many whole loops the LONGEST stretch runs before everything stops until the next scroll · a count, so a slower pace never keeps the page busy longer · every shorter stretch fits whole loops into the same window and they quiet together · the owner's pick",
 ];
 
 const SHAPE_ITEMS: ShapeItem[] = [
@@ -384,7 +228,7 @@ const DEPTH_LEVELS: DepthLevel[] = [
   {
     name: "The couple's glow · the bride's and the groom's portraits",
     spec: "surface-elevated · shadow-glow-couple",
-    className: "bg-surface-elevated shadow-glow-couple rounded-full",
+    className: "bg-surface-elevated shadow-glow-couple rounded-card",
     usage:
       "A soft gold light, 14px blur and 3px spread at 60%, laid under a portrait's paper ring and rim so it shows only outward of the rim. The couple's two portraits alone.",
   },
@@ -471,13 +315,13 @@ export function FoundationsSections() {
           description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role: the script face and its two roles were retired on 2026-10-14, and only their two SIZE tokens remain — --text-display-name and --text-heading-script — as the em the drawn lockups are measured in."
+          note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role; only the two SIZE tokens --text-display-name and --text-heading-script remain, as the em the drawn lockups are measured in."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
 
         <Specimen
-          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows the ordinal's zero-height superscript."
+          description="A separate visual because the scale's own rows sample each role as one flat line — this renders Event Info's own date line, PrimaryDate, which is what shows the ordinal's zero-height superscript."
           id="typography-names-and-date"
           name="Date line"
           note="The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
@@ -485,11 +329,7 @@ export function FoundationsSections() {
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
             <p className="type-date-primary text-ink">
-              Saturday, 1
-              <span className="type-caption type-date-ordinal align-super">
-                st
-              </span>{" "}
-              January 2000
+              <PrimaryDate date={SAMPLE_DATE} />
             </p>
           </div>
         </Specimen>
@@ -619,7 +459,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace is the one exception, and takes its own cadence."
+        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace and its catch-up and closing-stretch budgets are the exceptions, and take their own values."
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
@@ -634,7 +474,7 @@ export function FoundationsSections() {
           <RuleList rules={EASING_USES} />
         </SpecimenGroup>
 
-        <SpecimenGroup title="Loop cadence — the one exception to both scales">
+        <SpecimenGroup title="Loop cadence and thread budgets — exceptions to both scales">
           <RuleList rules={LOOP_CADENCE_USES} />
         </SpecimenGroup>
       </GallerySection>

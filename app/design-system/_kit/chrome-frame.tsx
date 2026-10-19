@@ -10,8 +10,6 @@ interface ChromeFrameProps {
   height?: number;
   /** Explicit px width — a per-demo gallery layout constant. Omit to fill the column. */
   width?: number;
-  /** True when the framed component duplicates a live landmark elsewhere on the page. */
-  ariaHidden?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -19,13 +17,11 @@ interface ChromeFrameProps {
 export function ChromeFrame({
   height,
   width,
-  ariaHidden,
   className,
   children,
 }: ChromeFrameProps) {
   return (
     <div
-      aria-hidden={ariaHidden}
       className={`relative overflow-hidden bg-surface-elevated shadow-stock ${className ?? ""}`}
       style={{
         transform: "translateZ(0)",

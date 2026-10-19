@@ -49,7 +49,7 @@ function publishedCss(): string {
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
 const gallery = readFileSync(
-  "app/design-system/_sections/foundations.tsx",
+  "app/design-system/_sections/token-tables.ts",
   "utf8",
 );
 

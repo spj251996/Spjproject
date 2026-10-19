@@ -43,13 +43,13 @@ function Variant({ label, className, children }: VariantProps) {
   );
 }
 
-/* The composing section sets the diameter, and the specimen has none of its own, so it borrows
-   Family's. These literals copy `components/family/family.tsx` and must follow it. */
 /* The dilation is set PER CALL SITE and has no default, because the right value depends on how
    large the drawing renders there. These two literals copy `app/_sections/invite.tsx` and
    `app/_sections/wishes.tsx` and must follow them. */
 const NAMES_STROKE_UNITS = { invite: 1.6, wishes: 2.2 };
 
+/* The composing section sets the diameter, and the specimen has none of its own, so it borrows
+   Family's. These literals copy `components/family/family.tsx` and must follow it. */
 const PORTRAIT_SIZING =
   "[--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px]";
 
@@ -74,17 +74,17 @@ export function ComponentsSections() {
           "hover · the disc and label scale 1.06 and thicken optically — label 0.35px either side, mark 0.4px all round — so nothing reflows",
           "press · the whole mark dims",
           "focus · the focus ring on the target, never transitioned",
-          "the target is transparent and at least --touch-target (44px) each way — the disc stopped being the touch target in 2026-10, so the hit area stays full size whatever the disc does",
-          "a web destination opens in its own tab; a telephone handoff and a link home stay in this one",
+          "the target is transparent and at least --touch-target (44px) each way, so the hit area stays full size whatever the disc does",
+          "a web destination opens in its own tab; a link home stays in this one",
         ]}
       >
         <div className="flex flex-wrap gap-space-2xl">
           <Variant
             className="items-start"
-            label="The map action · map mark · reads Meet us here · named Map, <venue>"
+            label="The map action · map mark · reads Meet us here · named Meet us here, <venue>"
           >
             <ButtonAction
-              aria-label={`Map, ${sampleEvent.venue}`}
+              aria-label={`Meet us here, ${sampleEvent.venue}`}
               href={sampleEvent.mapUrl}
               mark={<MapIcon size={24} />}
             >
@@ -121,7 +121,7 @@ export function ComponentsSections() {
         description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules, on five eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's. Five call sites; SIX ornaments on the published page, since Event Info and Family each render theirs twice and the not-found screen is not part of it."
         id="ui-sprig-ornament"
         name="sprig-ornament"
-        note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow deliberately takes none: it leads the hero. The form is the owner's pick from six arrangements on /preview (2026-10-11). Its plain pair, which served the ritual's Malayalam, left when the rituals' header line took one leading sprig instead — see it on the page at Domain · Timeline."
+        note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow deliberately takes none: it leads the hero. The rituals' header line carries one leading sprig instead; see it on the page at Domain · Timeline."
         source="@/components/ui/sprig-ornament"
         spec="the sprig mark at 23px on the diagonal, which renders 16px tall — the Iconography floor for this mark, whose viewBox is not square · gap space-2xs between every item · the LEADING mark flipped so both point outward — the trailing one as drawn already does · a rule outside each mark, space-lg (32px) long, a top border at --stroke-hairline (0.5px), in the wrapper's own colour"
       >
@@ -134,10 +134,10 @@ export function ComponentsSections() {
         description="The couple's names as drawn geometry rather than type, traced from the legacy invitation's own lettering. One source serves the invite's stack and Wishes' single line by translation alone."
         id="ui-couple-names"
         name="couple-names"
-        note="Each lockup here is sized in em of a size token — --text-display-name for the stack, --text-heading-script for the line — read from the token rather than copied, which is how the drawing stays on the names scale rather than on a size chosen for it, so the two specimens step at the breakpoints those tokens do. The dilation is per call site and has no default (the values above copy the two sections). What a specimen cannot show: the invite switches between these two forms on orientation, and the single line grows to 5.3em at laptop and 5.8em at desktop in landscape. The names are real text to a reader — an sr-only span carries them and the drawing is aria-hidden, so the invite's h1 has an accessible name. It replaced the typeset names; their two script roles and the script face were retired on 2026-10-14, leaving the two SIZE tokens these em widths resolve against."
+        note="Each lockup here is sized in em of a size token — --text-display-name for the stack, --text-heading-script for the line — read from the token rather than copied, which is how the drawing stays on the names scale rather than on a size chosen for it, so the two specimens step at the breakpoints those tokens do. The dilation is per call site and has no default (the values above copy the two sections). What a specimen cannot show: the invite switches between these two forms on orientation, and the single line grows to 5.3em at laptop and 5.8em at desktop in landscape. The names are real text to a reader — an sr-only span carries them and the drawing is aria-hidden, so the invite's h1 has an accessible name. The names are drawn geometry, not a type role; two SIZE tokens are left, and these em widths resolve against them."
         source="@/components/ui/couple-names"
         spec={[
-          "the invite's stack · 2.59em wide at phone (40% larger than the 1.85em it replaced, owner 2026-10-14 — past the 1.872em ceiling that value was chosen inside, so the ink overruns the content box at the narrowest phones), 2.513em from md up · dilated 1.6 units",
+          "the invite's stack · 2.59em wide at phone, 2.513em from md up · dilated 1.6 units",
           "Wishes' line · 3.65em at phone, 4.656em from md up · dilated 2.2 units · 6.09 : 1",
           "the ampersand drawn 35% smaller than the trace while keeping its full layout slot — a narrower slot would render the names larger, the width being a fixed em · in the stack it is lifted 24 source units above centre (AMPERSAND_LIFT)",
           "viewBox padded three stroke widths every side, or the swash tips clip flat at dpr 1 · fill currentColor, set to ink-muted INSIDE the component rather than at either call site — the invite's h1 carries text-ink and this overrides it",
@@ -174,7 +174,7 @@ export function ComponentsSections() {
         name="photo-row"
         note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that derives three deliveries on the page. Pressing a frame opens the real viewer on that photograph; the +N frame and the action open the real grid."
         source="@/components/ui/photo-row"
-        spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, aligned to its end; on the page the strip and its action sit at the ritual block's right edge (owner, 2026-10-11) · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover"
+        spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, aligned to its end; on the page the strip and its action sit at the ritual block's right edge · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover"
       >
         <PhotoStrip
           aspects={sampleRitualAspects}
@@ -221,12 +221,12 @@ export function ComponentsSections() {
         description="A hairline across the top of the screen on / that fills as the guest scrolls. Its track is /'s scroll cue: present from the first screen, it says the page continues before anything has moved."
         id="ui-scroll-progress"
         name="scroll-progress"
-        note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab routes carry none and keep the thread as their cue. Height and glow are provisional until the owner's pick on /preview."
+        note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab routes carry none and keep the thread as their cue."
         source="@/components/ui/scroll-progress"
         spec="track --progress-track, ink at 10% · --progress-height, 2px on a phone and 3px from md up · fill --progress-fill, thread-red → thread-vermilion at 82% → thread-core at the leading edge · glow --progress-glow, the thread's vermilion · fixed at the top, z --z-progress (45), under the gallery's scrim · fill = share of the page scrolled, clamped 0–1, exactly 1 at the last scroll position, a page with nothing to scroll reads as full, no transition · the track is server-rendered, so it shows with no script · the track arrives as the opening's last beat at --opening-type-end · aria-hidden, never focusable, unchanged under reduced motion"
       >
         {/* 48px: gallery layout constant, a strip tall enough to read the progress line against. */}
-        <ChromeFrame ariaHidden height={48}>
+        <ChromeFrame height={48}>
           <ScrollProgress />
         </ChromeFrame>
       </Specimen>
@@ -236,7 +236,7 @@ export function ComponentsSections() {
         id="ui-image-placeholder"
         name="image-placeholder"
         source="@/components/ui/image-placeholder"
-        spec="holds final dimensions · ivory-family tone · no icon or text"
+        spec="holds final dimensions · a faint wash of ink · no icon or text"
       >
         <div className="flex flex-wrap gap-space-lg">
           {/* 160px cell width: gallery layout constant. */}

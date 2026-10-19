@@ -1,20 +1,19 @@
 import {
   DeviceRuler,
   GallerySection,
-  type LayerItem,
   LayerStack,
   RuleList,
   type RulerStop,
   SpanTable,
   type SpanZone,
 } from "@/app/design-system/_kit";
+import { Z_LAYERS } from "@/app/design-system/_sections/token-tables";
 
 /* The published route and the lab in one list. /thread carries [lab] in the doc — built and verified
    but not on the published page. */
 const VARIANT_ROUTES = [
   "/ · five sections · no thread · the hero unpainted, the other four mounted",
   "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
-  "/preview, the review route, is retired (2026-10-14): every lever on it was decided and landed in the section files → DESIGN.md → Iteration Notes → Open Decisions",
 ];
 
 const TRY_IT = [
@@ -43,9 +42,6 @@ const ZONES: SpanZone[] = [
     name: "Desktop",
     width: "≥ 64rem (1024px)",
     changes: [
-      /* The timeline's alternation was RETIRED 2026-10-10 — one full-width column at every tier
-         now — and `timeline-node` itself went in Phase 5b, so this row named a component that had
-         not existed for days and a layout that no longer exists either. Both halves were wrong. */
       "Parallel splits",
       "Compact type step from lg, desktop type step from xl",
     ],
@@ -82,14 +78,6 @@ const ZONE_BARS: RulerStop[] = [
     boxH: 140,
   },
   {
-    px: "1536",
-    device: "Ultra wide",
-    token: "2xl",
-    used: false,
-    boxW: 264,
-    boxH: 152,
-  },
-  {
     px: "1600",
     device: "Desktop",
     token: "xl",
@@ -107,27 +95,8 @@ const RESPONSIVE_POINTERS = [
   "Narrowest supported width → Accessibility Rules",
 ];
 
-/* Four layers, not six: the ivory ground and the mounted sheets sit in document order with no
-   z-index of their own, so their tokens were defined and never read, and were retired 2026-10-03
-   (DESIGN.md → Technical Conventions → Z-Index Scale). */
-const Z_LAYERS: LayerItem[] = [
-  {
-    token: "--z-content",
-    value: "20",
-    role: "Content · all text and main components",
-  },
-  {
-    token: "--z-thread",
-    value: "40",
-    role: "Thread · the page-length thread and its head, re-trace and tapered ends",
-  },
-  {
-    token: "--z-progress",
-    value: "45",
-    role: "Progress · the scroll progress bar on /, over every section and under the scrim",
-  },
-  { token: "--z-modal", value: "50", role: "Modal · the gallery modal" },
-];
+/* Four layers: the ivory ground and the mounted sheets sit in document order with no z-index of
+   their own (DESIGN.md → Technical Conventions → Z-Index Scale). */
 
 export function TechnicalSections() {
   return (
@@ -143,7 +112,7 @@ export function TechnicalSections() {
 
       <GallerySection
         id="responsive"
-        intro="Two layout systems across three width tiers: lg switches the system, md adjusts within it."
+        intro="Two layout systems across three width tiers: lg switches the system, md adjusts within it. The device ruler scrolls sideways on a narrow screen."
         mapsTo="Interaction Rules → Responsive Behavior"
         source="--breakpoint-*"
         title="Interaction · Responsive Behavior"
@@ -165,7 +134,7 @@ export function TechnicalSections() {
 
       <GallerySection
         id="z-index"
-        intro="The layer order, from the ground up to the modal."
+        intro="The layer order, from the ground up to the modal. Scrolls sideways on a narrow screen."
         mapsTo="Technical Conventions → Z-Index Scale"
         source="--z-*"
         title="Technical · Z-Index Scale"

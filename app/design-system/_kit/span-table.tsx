@@ -15,19 +15,12 @@ interface SpanTableProps {
 const CELL =
   "border-b-(length:--stroke-divider) border-accent-gold p-space-2xs text-left align-top";
 
-/* Gallery layout constant. Narrower, the changes column wraps into near-blank bands while the
-   nowrap zone cells hold the table open anyway, so the table scrolls instead. */
-const MIN_TABLE_W = 480;
-
 export function SpanTable({ zones }: SpanTableProps) {
   return (
-    /* The nowrap cells give the table a min-content floor; scrolling here keeps the page itself
-       free of horizontal scroll at 320px. */
+    /* The zone cells wrap below md so the table fits a phone column; the scroll stays as a safety
+       net, keeping the page itself free of horizontal scroll at 320px. */
     <div className="overflow-x-auto">
-      <table
-        className="w-full border-collapse"
-        style={{ minWidth: MIN_TABLE_W }}
-      >
+      <table className="w-full border-collapse">
         <thead>
           <tr>
             <th className={`type-eyebrow ${CELL}`}>Name</th>
@@ -42,13 +35,13 @@ export function SpanTable({ zones }: SpanTableProps) {
                 {index === 0 ? (
                   <>
                     <td
-                      className={`type-eyebrow whitespace-nowrap ${CELL}`}
+                      className={`type-eyebrow md:whitespace-nowrap ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.name}
                     </td>
                     <td
-                      className={`type-eyebrow whitespace-nowrap ${CELL}`}
+                      className={`type-eyebrow md:whitespace-nowrap ${CELL}`}
                       rowSpan={zone.changes.length}
                     >
                       {zone.width}

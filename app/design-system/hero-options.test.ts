@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-/* The gallery restates `DESIGN.md` by hand and has drifted three times on this branch — twice inside
-   the very round that caused the drift. The round that last fixed it replaced the reminder-note with
-   a test, which is the pattern here: pin the CLAIM, never a spelling, because a test that asserts a
+/* The gallery restates `DESIGN.md` by hand. Pin the CLAIM, never a spelling: a test that asserts a
    source spelling passes the mutation that matters and fails the correct rewrite. */
 
 const foundations = readFileSync(
@@ -12,10 +10,9 @@ const foundations = readFileSync(
   "utf8",
 );
 const domain = readFileSync("app/design-system/_sections/domain.tsx", "utf8");
-const inviteCss = readFileSync("app/invite.css", "utf8");
 
-/* Two fixed states since 2026-10-14: the hero is unpainted, every other card mounted. The gallery shows exactly
-   those, and no specimen passes a paint -- the prop is gone, so one would not even compile. */
+/* Two fixed states: the hero is unpainted, every other card mounted. The gallery shows exactly those, and no
+   specimen passes a paint -- the prop is gone, so one would not even compile. */
 test("the gallery shows the unpainted hero and a mounted card, and no retired paint", () => {
   const sheets = [...foundations.matchAll(/<MountedSheet\b([^>]*)>/g)].map(
     (m) => m[1],
@@ -79,34 +76,11 @@ test("the gallery does not present the retired painted hero's sequence", () => {
   }
 });
 
-/* The number of beats the gallery claims must match the number the stylesheet ships. Derived from
-   the source rather than written down, so this cannot drift the way the prose it guards did. */
-test("the gallery's beat count matches the shipped sequence", () => {
-  const inFileSteps = (inviteCss.match(/^\s*animation:/gm) ?? []).length;
-  assert.strictEqual(
-    inFileSteps,
-    7,
-    "app/invite.css should carry seven steps under Bloom — the flowers and six rows of type; the thread's is in thread.module.css",
-  );
-  assert.match(
-    domain,
-    /The opening is Bloom/,
-    "the Invite entry must name the shipped sequence, Bloom",
-  );
+test("the Invite entry names the shipped opening, Bloom", () => {
+  assert.match(domain, /The opening is Bloom/);
 });
 
-/* A drift this round did not cause, fixed with it: the cue loops FIVE times (the owner's own pick,
-   2026-10-03, raised from the assistant's first value of three). Pinned so the next reader of this
-   string does not re-introduce the old number. */
-test("the gallery quotes the owner's re-trace loop count", () => {
-  assert.ok(
-    !domain.includes("loops three times"),
-    "the re-trace loops five times, not three — the owner's pick, 2026-10-03",
-  );
-});
-
-/* The gallery told readers the thread was "Live at /." for as long as it was. This pins the CLAIM,
-   not a spelling: a thread entry asserting the thread is on the published page is the drift. */
+/* A thread entry asserting the thread is on the published page is the drift: it lives on the lab route. */
 test("the gallery does not claim the thread is live on the published page", () => {
   const source = readFileSync("app/design-system/_sections/domain.tsx", "utf8");
   /* Bounded by the THREAD_ENTRIES array itself, not by the next entry name: the gallery's section

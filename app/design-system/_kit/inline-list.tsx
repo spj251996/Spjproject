@@ -1,5 +1,5 @@
-/* An `[inline]` domain entry has no component file, so it is listed, never rebuilt — rebuilding its
-   markup would fabricate a component. */
+/* Lists a domain entry (an `[inline]` section, or a component a specimen frame cannot render) with its
+   source file and what it composes. It never rebuilds the markup, which would fabricate a component. */
 
 export interface InlineEntry {
   /** The DESIGN.md entry name, e.g. "Event Info". */
@@ -8,7 +8,7 @@ export interface InlineEntry {
   home: string;
   /** What the entry composes — the real components it is documented to arrange. */
   composes: string;
-  /** Honest status when the documented composition does not exist in code yet. */
+  /** Where the entry is live, and what the gallery cannot show of it. */
   note?: string;
 }
 

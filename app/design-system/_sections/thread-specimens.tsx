@@ -204,9 +204,6 @@ function Runs({
     ));
 }
 
-/* ---------------------------------------------------------------------------------------------
-   1. THE INK AND ITS BLEED */
-
 export function ThreadInkSpecimen() {
   return (
     <div className="flex flex-wrap gap-space-lg">
@@ -223,9 +220,6 @@ export function ThreadInkSpecimen() {
     </div>
   );
 }
-
-/* ---------------------------------------------------------------------------------------------
-   2. THE DRAWING HEAD */
 
 export function ThreadHeadSpecimen() {
   return (
@@ -260,9 +254,6 @@ export function ThreadHeadSpecimen() {
     </Fragment>
   );
 }
-
-/* ---------------------------------------------------------------------------------------------
-   3. A TAPERED END */
 
 interface TaperedEndProps {
   readonly d: string;
@@ -330,7 +321,9 @@ function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
 export function ThreadTaperSpecimen() {
   return (
     <div className="flex flex-wrap items-start gap-space-lg">
-      <Panel caption="The invite's top terminal, at its own size and magnified 4x.">
+      <Panel
+        caption={`The invite's top terminal, at its own size and magnified ${TAPER_ZOOM}x.`}
+      >
         <div className="flex flex-wrap items-start gap-space-md">
           <TaperedEnd
             at="start"
@@ -346,7 +339,9 @@ export function ThreadTaperSpecimen() {
           />
         </div>
       </Panel>
-      <Panel caption="Wishes' closing end, at its own size and magnified 4x.">
+      <Panel
+        caption={`Wishes' closing end, at its own size and magnified ${TAPER_ZOOM}x.`}
+      >
         <div className="flex flex-wrap items-start gap-space-md">
           <TaperedEnd
             at="end"
@@ -365,9 +360,6 @@ export function ThreadTaperSpecimen() {
     </div>
   );
 }
-
-/* ---------------------------------------------------------------------------------------------
-   4. THE RE-TRACE */
 
 export function ThreadRetraceSpecimen() {
   return (

@@ -1,6 +1,4 @@
-/* Silhouette sizes are visualization geometry supplied by the caller.
-
-   Never pair `type-eyebrow` with `text-ink`: a utility beats the components layer and silently
+/* Never pair `type-eyebrow` with `text-ink`: a utility beats the components layer and silently
    turns the always-gold eyebrow to ink. */
 
 export interface RulerStop {

@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
 
-/* Reference lines (doc path, source path, note, spec) take `type-caption`; content takes
-   `type-body`. */
-
 interface GallerySectionProps {
   /** Section slug WITHOUT the `ds-` prefix; the rendered id is always `ds-{id}`. */
   id: string;

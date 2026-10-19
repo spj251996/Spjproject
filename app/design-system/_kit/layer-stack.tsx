@@ -1,4 +1,4 @@
-/* Every plane is the kit panel; its opaque fill and sheet shadow keep the overlapping stack
+/* Every plane is `bg-surface-elevated shadow-stock`; its opaque fill and sheet shadow keep the overlapping stack
    legible. The inline z-index orders the diagram's own planes and is not the scale being shown. */
 
 /* Diagram geometry. OFFSET_Y clears each plane's three text lines so the next plane never hides

@@ -36,7 +36,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "date-block",
     home: "app/_sections/invite.tsx",
     composes:
-      "a two-row grid, 1fr | hairline | auto | hairline | 1fr · the weekday, month and year in date-label, the day in date-day in accent-gold, the labels at weight 700 and the day at 400, with lining figures · hairlines --rule-date-bracket (42px) tall at --stroke-divider (1px) in accent-gold, ending space-3xs (4px) below the day's baseline · labels lifted --date-label-lift (13px) off that baseline · both inner gaps opened by --date-open (4px) on a phone — 8px from the tablet, 7px at laptop (owner, 2026-10-11 and 10-14) — the weekday's row pulled to 5px less than it and the place's margin taking the rest · space-sm (16px) either side of a hairline · the block dropped --date-place-pull (14px) toward the place, which takes it back off a space-3xs + --date-open margin (8px on a phone), so the day-to-place ink gap matches the weekday-to-day one",
+      "a two-row grid, 1fr | hairline | auto | hairline | 1fr · the weekday, month and year in date-label, the day in date-day in accent-gold, the labels at weight 700 and the day at 400, with lining figures · hairlines --rule-date-bracket (42px) tall at --stroke-divider (1px) in accent-gold, ending space-3xs (4px) below the day's baseline · labels lifted --date-label-lift (13px) off that baseline · both inner gaps opened by --date-open (4px) on a phone — 8px from the tablet, 7px at laptop — the weekday's row pulled to 5px less than it and the place's margin taking the rest · space-sm (16px) either side of a hairline · the block dropped --date-place-pull (14px) toward the place, which takes it back off a space-3xs + --date-open margin (8px on a phone), so the day-to-place ink gap matches the weekday-to-day one",
     note: "Live at /, inside the invite. NOT rendered here: it is composed inside the invite section rather than exported, and the gallery does not reach into production code to extract a component for a specimen — so its gold hairline is visible nowhere in this gallery. Every value above is the phone tier: the bracket, the lift, both type roles, --date-open and the weekday pull derived from it step at each breakpoint, and only the overshoot and --date-place-pull hold at one value. The proportions are ratios to the label's cap height rather than steps on the spacing scale — the figure's parts hold a fixed relation to each other, so resizing it means moving date-label and letting the rest follow (Cross-Cutting Rules states the exception).",
   },
 ];
@@ -47,7 +47,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     home: "app/_sections/event-info.tsx",
     composes:
       "mounted-pair · per sheet: eyebrow bracketed by the sprig ornament, heading-xl heading, date line, address, a divider rule after the heading block (tablet band only), segment plates · per plate, two columns at every tier: the mark beside its details, the details left-aligned so both entries start at one edge, the pair of columns centred as one group · segment line, venue, then button-action with map space-2xs below the venue, its disc's left edge on the venue's first letter · on a phone, four clusters in a natural rhythm — eyebrow and title, date and place, the first event, the second — ink gaps header → date 30, date → events 48, event → event 48 · a venue that wraps narrows to its widest line + 1px, so the group centres on its ink; its line count never changes, a venue that fits one line is untouched (so it acts on phones in practice), and it is measured once the fonts load",
-    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI. The phone layout is decided (owner and couple, 2026-10-11): the two columns above at every tier, chosen on /preview, its fit re-measured.",
+    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI.",
   },
 ];
 
@@ -57,7 +57,7 @@ const TIMELINE_ENTRIES: InlineEntry[] = [
     home: "app/_sections/celebrations.tsx",
     composes:
       "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, one left-aligned full-width column at every tier with space-xl (48px) between them, closing to space-md (24px) after a ritual that carries photographs from lg, each opened by one header line — the sprig from lg only, a heading-md English title and its Malayalam on one baseline, the Malayalam at the line's right end on a phone — then a body-italic tagline and a body description, and a photo-row at the block's right edge only when the ritual has photographs · the card's sides 36px (--tall-inline-phone) on a phone",
-    note: "Live at /. The rituals are LEFT-ALIGNED at every width, the owner's and the couple's pick on /preview over justified (2026-10-11); the centred column of 2026-10-10 and the alternating band before it are both retired. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Timeline).",
+    note: "Live at /. The rituals are left-aligned at every width. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Timeline).",
   },
 ];
 
@@ -98,11 +98,6 @@ const GROOM_SHEET = {
   group: sampleGroupBySide("groom"),
 };
 const FAMILY_SHEETS = [BRIDE_SHEET, GROOM_SHEET];
-
-/* Family's rows never reflow, so its unframed specimen always stacks (Layout → mounted-pair →
-   Without a fit) rather than toggling to a side-by-side form at lg. `MountedPair` takes no
-   breakpoint, so this hand-built stacked sheet is the specimen's only form; the side-by-side pair
-   is the framed page composition, not reproduced here. */
 
 export function DomainSections() {
   return (
@@ -150,7 +145,7 @@ export function DomainSections() {
           description="The tapered ends: the thread's two static free ends, the invite's top terminal and Wishes' closing end, narrow to a point instead of stopping at a round cap."
           id="thread-taper"
           name="tapered ends"
-          note="Each end is shown at its own size and magnified 4×; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
+          note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
           source="components/thread/thread-light.ts · taperSegments"
           spec={[
             "length · --length-thread-taper (24px)",
@@ -205,7 +200,7 @@ export function DomainSections() {
           description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, then one row for each child who has a family of their own carrying that whole family, then a last row for the children with none."
           id="domain-family"
           name="family"
-          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
+          note="Unframed, as every specimen box is: the sheet reproduces the unfitted pair's sheet by hand and always stacks, since its rows never reflow (Layout → mounted-pair) and MountedPair has no always-stacked form. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
             "eyebrow bracketed by the sprig ornament · heading-xl family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
@@ -214,6 +209,11 @@ export function DomainSections() {
           ]}
         >
           <div className="flex flex-col gap-space-md">
+            {/* Family's rows never reflow, so its unframed specimen always stacks (Layout →
+                mounted-pair → Without a fit) rather than toggling to a side-by-side form at lg.
+                `MountedPair` takes no breakpoint, so this hand-built stacked sheet is the
+                specimen's only form; the side-by-side pair is the framed page composition, not
+                reproduced here. */}
             {FAMILY_SHEETS.map(({ eyebrow, group }) => (
               <div
                 className="rounded-card bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl lg:p-space-3xl"

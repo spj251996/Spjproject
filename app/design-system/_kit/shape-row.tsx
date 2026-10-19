@@ -1,4 +1,4 @@
-/* The box is the kit panel. Its radius is the value being shown, applied inline per item. */
+/* The box is `bg-surface-elevated shadow-stock`. Its radius is the value being shown, applied inline per item. */
 
 export interface ShapeItem {
   token: string;
