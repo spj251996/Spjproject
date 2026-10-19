@@ -683,7 +683,9 @@ export function threadLine(
           assignRectIndex(midpoint.y, windowRects),
         );
         if (assignedIndex !== rectIndex) {
-          closeGroup(pieceStart);
+          /* A section whose first piece already reads a later rect moves its open group there;
+             closing first would emit a group with no piece in it. */
+          if (groupStart < pieceStart) closeGroup(pieceStart);
           rectIndex = assignedIndex;
           groupStart = pieceStart;
         }

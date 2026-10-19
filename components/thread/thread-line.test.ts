@@ -1175,6 +1175,58 @@ function subdivisionsFor(
   };
 }
 
+/* The pair laid out side by side, as `wide` lays it: both card rects share the section's top and
+   height, so one scroll window covers both. The ritual rows stay stacked -- a list never sits side
+   by side. */
+function sideBySideSubdivisionsFor(
+  sections: MeasuredSection[],
+): Partial<
+  Record<(typeof THREAD_IDS)[number], { top: number; height: number }[]>
+> {
+  const byId = new Map(THREAD_IDS.map((id, i) => [id, sections[i]]));
+  const sideBySide = (rect: { top: number; height: number }) => [
+    { top: rect.top, height: rect.height },
+    { top: rect.top, height: rect.height },
+  ];
+  const eventInfo = byId.get("event-info");
+  const family = byId.get("family");
+  const celebrations = byId.get("celebrations");
+  return {
+    ...(eventInfo && { "event-info": sideBySide(eventInfo) }),
+    ...(family && { family: sideBySide(family) }),
+    ...(celebrations && { celebrations: splitRect(celebrations, 6) }),
+  };
+}
+
+function piecesInGroup(
+  line: ReturnType<typeof threadLine>,
+  group: ReturnType<typeof threadLine>["sections"][number],
+) {
+  return line.pieces.filter(
+    (piece) =>
+      piece.id === group.id &&
+      piece.start >= group.start &&
+      piece.end <= group.end,
+  );
+}
+
+function groupHolding(
+  line: ReturnType<typeof threadLine>,
+  id: (typeof THREAD_IDS)[number],
+  kind: string,
+  occurrence = 0,
+): number {
+  const piece = line.pieces.filter((p) => p.id === id && p.kind === kind)[
+    occurrence
+  ];
+  if (piece === undefined)
+    throw new Error(`no ${kind} #${occurrence} in ${id}`);
+  return line.sections.findIndex(
+    (group) =>
+      group.id === id && piece.start >= group.start && piece.end <= group.end,
+  );
+}
+
 test("with no subdivisions given, every group is exactly one section, its rect the section's own -- unchanged from before this file supported splitting", () => {
   const band = "wide";
   const sections = measuredSections(band);
@@ -1194,30 +1246,81 @@ test("with no subdivisions given, every group is exactly one section, its rect t
   }
 });
 
-test("event-info and family split into exactly two groups each when given two real card rects; celebrations splits when given real row rects", () => {
+test("no group is ever empty -- every group spans length and holds at least one piece, at every band, stacked or side by side", () => {
+  for (const band of ["tall", "upright", "wide"] as const) {
+    const sections = measuredSections(band);
+    for (const [shape, subdivisions] of [
+      ["stacked", subdivisionsFor(sections)],
+      ["side by side", sideBySideSubdivisionsFor(sections)],
+    ] as const) {
+      const line = threadLine(band, sections, undefined, subdivisions);
+      line.sections.forEach((group, i) => {
+        assert.ok(
+          group.end > group.start,
+          `${band} (${shape}): ${group.id}'s group ${i} spans no length`,
+        );
+        assert.ok(
+          piecesInGroup(line, group).length > 0,
+          `${band} (${shape}): ${group.id}'s group ${i} holds no piece`,
+        );
+      });
+    }
+  }
+});
+
+test("at a stacked band, event-info and family split into two groups each, with each card's motif in its own group; celebrations splits one group per piece", () => {
+  for (const band of ["tall", "upright"] as const) {
+    const sections = measuredSections(band);
+    const line = threadLine(
+      band,
+      sections,
+      undefined,
+      subdivisionsFor(sections),
+    );
+    const countFor = (id: (typeof THREAD_IDS)[number]) =>
+      line.sections.filter((group) => group.id === id).length;
+
+    assert.equal(countFor("event-info"), 2, `${band}: event-info`);
+    assert.notEqual(
+      groupHolding(line, "event-info", "rings"),
+      groupHolding(line, "event-info", "knot"),
+      `${band}: rings and knot sit in different cards, so they must fall in different groups`,
+    );
+    assert.equal(countFor("family"), 2, `${band}: family`);
+    assert.notEqual(
+      groupHolding(line, "family", "portraitLoop", 0),
+      groupHolding(line, "family", "portraitLoop", 1),
+      `${band}: the two portraitLoop placements sit in different cards, so they must fall in different groups`,
+    );
+    // Six equal row slices put the midpoints of celebrations' three pieces in three different rows.
+    assert.equal(countFor("celebrations"), 3, `${band}: celebrations`);
+    for (const id of THREAD_IDS) {
+      if (id === "event-info" || id === "family" || id === "celebrations")
+        continue;
+      assert.equal(
+        countFor(id),
+        1,
+        `${band}: ${id} was not asked to split and must not`,
+      );
+    }
+  }
+});
+
+test("at wide, a side-by-side pair shares one scroll window, so event-info and family each stay one group", () => {
   const band = "wide";
   const sections = measuredSections(band);
-  const subdivisions = subdivisionsFor(sections);
-  const line = threadLine(band, sections, undefined, subdivisions);
-
+  const line = threadLine(
+    band,
+    sections,
+    undefined,
+    sideBySideSubdivisionsFor(sections),
+  );
   const countFor = (id: (typeof THREAD_IDS)[number]) =>
     line.sections.filter((group) => group.id === id).length;
 
-  assert.equal(
-    countFor("event-info"),
-    2,
-    "rings and knot sit in different cards, so event-info's own piece-run must split there",
-  );
-  assert.equal(
-    countFor("family"),
-    2,
-    "the two portraitLoop placements sit in different cards, so family must split there too",
-  );
-  assert.ok(
-    countFor("celebrations") >= 1,
-    "celebrations has only one motif (wishesLoop), so it can split into at most as many groups as it has pieces (3) -- but must produce at least one",
-  );
-  // Every OTHER section keeps exactly one group -- nothing outside the three the owner named splits.
+  assert.equal(countFor("event-info"), 1);
+  assert.equal(countFor("family"), 1);
+  assert.equal(countFor("celebrations"), 3);
   for (const id of THREAD_IDS) {
     if (id === "event-info" || id === "family" || id === "celebrations")
       continue;
@@ -1278,25 +1381,26 @@ test("each group's rect is one of the rects it was given -- the section's own wh
 });
 
 test("event-info's two groups are ordered card 1 then card 2 -- the first group's rect sits above the second's", () => {
-  const band = "wide";
-  const sections = measuredSections(band);
-  const subdivisions = subdivisionsFor(sections);
-  const { sections: groups, groupRects } = threadLine(
-    band,
-    sections,
-    undefined,
-    subdivisions,
-  );
+  for (const band of ["tall", "upright"] as const) {
+    const sections = measuredSections(band);
+    const subdivisions = subdivisionsFor(sections);
+    const { sections: groups, groupRects } = threadLine(
+      band,
+      sections,
+      undefined,
+      subdivisions,
+    );
 
-  const indices = groups
-    .map((group, i) => ({ group, i }))
-    .filter(({ group }) => group.id === "event-info")
-    .map(({ i }) => i);
-  assert.equal(indices.length, 2);
-  assert.ok(
-    groupRects[indices[0]].top < groupRects[indices[1]].top,
-    "card 1's group must be drawn before card 2's",
-  );
+    const indices = groups
+      .map((group, i) => ({ group, i }))
+      .filter(({ group }) => group.id === "event-info")
+      .map(({ i }) => i);
+    assert.equal(indices.length, 2, band);
+    assert.ok(
+      groupRects[indices[0]].top < groupRects[indices[1]].top,
+      `${band}: card 1's group must be drawn before card 2's`,
+    );
+  }
 });
 
 test("AT MOST ONE PIECE IS MID-DRAW at any scroll position with card/row subdivisions active, swept across the whole page at all three bands", () => {
