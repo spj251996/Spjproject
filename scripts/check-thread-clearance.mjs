@@ -50,7 +50,8 @@
      - Navigation: 15s. Font-ready: 5s (best-effort; a timeout here is logged and the check
        proceeds against whatever fonts loaded, since Latin body copy renders close enough
        either way and this gate is about geometry, not glyph shaping).
-     - Post-resize settle: one fixed 200ms wait, not a poll.
+     - Post-resize settle: a poll for the thread's re-measure, bounded at 5s; a window it times
+       out on is reported as an error, never measured.
 
    DEV SERVER: this script never starts, stops, or restarts it — the dev server on :3000 is the
    owner's (Next 16 builds and dev-serves concurrently; a build still contends for machine
@@ -78,6 +79,7 @@ const LAB_ROUTE = "/thread";
 const NAV_TIMEOUT_MS = 15_000;
 const FONT_TIMEOUT_MS = 5_000;
 const SETTLE_MS = 200;
+const REMEASURE_TIMEOUT_MS = 5_000;
 const SAMPLE_BUDGET = 200;
 
 const THREAD_SELECTOR = "svg[data-thread-svg] path";
@@ -179,6 +181,35 @@ async function waitForThreadMeasured(page) {
     console.error(
       "  warning: the thread never reported itself measured within the timeout — proceeding anyway",
     );
+  }
+}
+
+/* The thread re-measures on a 150ms resize debounce (`page-thread.tsx`), landing about 175ms after
+   the resize on the dev server -- inside a fixed 200ms settle by only ~25ms. Waiting for the live
+   SVG's viewBox to match `<main>`'s box instead waits for the write the measurement depends on. */
+async function waitForThreadRemeasured(page) {
+  try {
+    await page.waitForFunction(
+      () => {
+        const main = document.querySelector("main")?.getBoundingClientRect();
+        if (!main) return false;
+        return Array.from(
+          document.querySelectorAll("svg[data-thread-svg]"),
+        ).some((svg) => {
+          const box = svg.viewBox?.baseVal;
+          return (
+            box !== undefined &&
+            box !== null &&
+            Math.abs(box.width - main.width) < 1 &&
+            Math.abs(box.height - main.height) < 1
+          );
+        });
+      },
+      { timeout: REMEASURE_TIMEOUT_MS },
+    );
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -413,7 +444,19 @@ function plantViolationInPage(sectionSelector) {
   path.setAttribute("d", "M0,50 L100,50");
   svg.appendChild(path);
   section.appendChild(svg);
-  return { ok: true, headingText: heading.textContent.trim().slice(0, 60) };
+  /* The measurement names its offender by one text node, trimmed and cut to 60 characters, so the
+     heading's own text nodes are returned in that same form for the caller to match against. */
+  const headingNodeTexts = [];
+  const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = (node.nodeValue ?? "").trim();
+    if (text !== "") headingNodeTexts.push(text.slice(0, 60));
+  }
+  return {
+    ok: true,
+    headingText: heading.textContent.trim().slice(0, 60),
+    headingNodeTexts,
+  };
 }
 
 /* Step 2's own in-page probe: the bride parent row, at whatever viewport the caller has already
@@ -678,12 +721,24 @@ async function runFalsify(browser, sectionId, bandKey, windowKey) {
     );
     console.log(`  offending text: "${result.offendingText ?? "none"}"`);
 
-    if (result.minDistance !== null && result.minDistance <= 0) {
+    /* A crossing alone is not proof: the real thread can touch other type in the same section, and
+       the gate would then pass without having found the planted path at all. */
+    const crossed = result.minDistance !== null && result.minDistance <= 0;
+    const foundPlanted =
+      crossed && planted.headingNodeTexts.includes(result.offendingText);
+    if (foundPlanted) {
       console.log(
-        `\nPASS — the gate reports a violation: section="${sectionId}", ` +
-          `tier="${tier.key}/${orientation.key}", distance=${result.minDistance.toFixed(3)}px.`,
+        `\nPASS — the gate reports the planted violation: section="${sectionId}", ` +
+          `tier="${tier.key}/${orientation.key}", distance=${result.minDistance.toFixed(3)}px, ` +
+          `text="${result.offendingText}".`,
       );
       exitCode = 0;
+    } else if (crossed) {
+      console.log(
+        `\nFAIL — the gate reports a crossing, but into "${result.offendingText}", not the ` +
+          `planted heading "${planted.headingText}". The planted path was not shown to be caught.`,
+      );
+      exitCode = 1;
     } else {
       console.log(
         "\nFAIL — a path planted straight through a heading was NOT reported as a " +
@@ -721,15 +776,25 @@ async function runSweep(browser, sections) {
           const width = orientation.width;
           const height = orientation.height;
           await page.setViewportSize({ width, height });
-          await page.waitForTimeout(SETTLE_MS);
+          const label = `  ${tier.key}/${orientation.key} (${width}x${height})`;
+          if (!(await waitForThreadRemeasured(page))) {
+            const detail = `the thread's viewBox never matched <main>'s box within ${REMEASURE_TIMEOUT_MS}ms of the resize`;
+            console.log(`${label}  ERROR  ${detail}`);
+            findings.push({
+              sectionId,
+              tier: tier.key,
+              orientation: orientation.key,
+              kind: "error",
+              detail,
+            });
+            continue;
+          }
 
           const result = await page.evaluate(measureSectionInPage, {
             sectionSelector: sectionSelectorFor(sectionId),
             threadSelector: THREAD_SELECTOR,
             sampleBudget: SAMPLE_BUDGET,
           });
-
-          const label = `  ${tier.key}/${orientation.key} (${width}x${height})`;
 
           if (result.error) {
             console.log(`${label}  ERROR  ${result.error}`);
@@ -793,68 +858,66 @@ async function main() {
   }
 
   const browser = await chromium.launch({ channel: "chromium" });
+  let exitCode = 1;
   try {
     if (args.validate) {
-      process.exit(await runValidate(browser));
-    }
-
-    if (args.falsify) {
+      exitCode = await runValidate(browser);
+    } else if (args.falsify) {
       const sectionId = args.section ?? "family";
       const tierKey = args.band ?? BANDS[0].key;
       const orientationKey = args.orientation ?? "nominal";
-      process.exit(
-        await runFalsify(browser, sectionId, tierKey, orientationKey),
-      );
-    }
-
-    const sections = args.section ? [args.section] : SECTION_IDS;
-    console.log(
-      `Thread type-clearance gate — ${sections.length} section(s) x ${BANDS.length} aspect bands x ` +
-        `${BANDS[0].windows.length} windows = ${sections.length * BANDS.length * BANDS[0].windows.length} checks.`,
-    );
-    console.log(`Selector: ${THREAD_SELECTOR}\n`);
-
-    const { findings, noThreadSections } = await runSweep(browser, sections);
-
-    console.log("\n---");
-    if (noThreadSections.size > 0) {
+      exitCode = await runFalsify(browser, sectionId, tierKey, orientationKey);
+    } else {
+      const sections = args.section ? [args.section] : SECTION_IDS;
       console.log(
-        `NO_THREAD: ${[...noThreadSections].join(", ")} — no element matching "${THREAD_SELECTOR}" ` +
-          "was found. Expected until Task 10 mounts <SectionThread> with that convention; treated " +
-          "as a failure here rather than a silent pass on an empty set.",
+        `Thread type-clearance gate — ${sections.length} section(s) x ${BANDS.length} aspect bands x ` +
+          `${BANDS[0].windows.length} windows = ${sections.length * BANDS.length * BANDS[0].windows.length} checks.`,
       );
-    }
-    const violations = findings.filter(
-      (finding) => finding.kind === "violation",
-    );
-    const errors = findings.filter((finding) => finding.kind === "error");
-    if (violations.length > 0) {
-      console.log(`VIOLATIONS (${violations.length}):`);
-      for (const violation of violations) {
-        console.log(
-          `  ${violation.sectionId} @ ${violation.tier}/${violation.orientation}: ` +
-            `${violation.distance.toFixed(3)}px into "${violation.text}"`,
-        );
-      }
-    }
-    if (errors.length > 0) {
-      console.log(`ERRORS (${errors.length}):`);
-      for (const error of errors) {
-        console.log(
-          `  ${error.sectionId} @ ${error.tier}/${error.orientation}: ${error.detail}`,
-        );
-      }
-    }
+      console.log(`Selector: ${THREAD_SELECTOR}\n`);
 
-    const clean =
-      noThreadSections.size === 0 &&
-      violations.length === 0 &&
-      errors.length === 0;
-    console.log(clean ? "\nPASS — clean." : "\nFAIL.");
-    process.exit(clean ? 0 : 1);
+      const { findings, noThreadSections } = await runSweep(browser, sections);
+
+      console.log("\n---");
+      if (noThreadSections.size > 0) {
+        console.log(
+          `NO_THREAD: ${[...noThreadSections].join(", ")} — no thread SVG ([data-thread-svg]) on ` +
+            `${LAB_ROUTE}; point LAB_ROUTE at a route that mounts the page thread (/thread). ` +
+            "Treated as a failure here rather than a silent pass on an empty set.",
+        );
+      }
+      const violations = findings.filter(
+        (finding) => finding.kind === "violation",
+      );
+      const errors = findings.filter((finding) => finding.kind === "error");
+      if (violations.length > 0) {
+        console.log(`VIOLATIONS (${violations.length}):`);
+        for (const violation of violations) {
+          console.log(
+            `  ${violation.sectionId} @ ${violation.tier}/${violation.orientation}: ` +
+              `${violation.distance.toFixed(3)}px into "${violation.text}"`,
+          );
+        }
+      }
+      if (errors.length > 0) {
+        console.log(`ERRORS (${errors.length}):`);
+        for (const error of errors) {
+          console.log(
+            `  ${error.sectionId} @ ${error.tier}/${error.orientation}: ${error.detail}`,
+          );
+        }
+      }
+
+      const clean =
+        noThreadSections.size === 0 &&
+        violations.length === 0 &&
+        errors.length === 0;
+      console.log(clean ? "\nPASS — clean." : "\nFAIL.");
+      exitCode = clean ? 0 : 1;
+    }
   } finally {
     await browser.close();
   }
+  process.exit(exitCode);
 }
 
 await main();
