@@ -7,14 +7,6 @@ import styles from "./botanical.module.css";
 import { botanicalCss, pieceClass } from "./botanical-css";
 import type { BotanicalPiece } from "./botanical-tuning";
 
-export type {
-  Anchor,
-  BotanicalPiece,
-  PieceTuning,
-  Tier,
-} from "./botanical-tuning";
-export { ANCHORS, TIERS, TUNING } from "./botanical-tuning";
-
 /* Sparse wildflower elements at the screen edges — DESIGN.md → Botanical Edge. Full opacity,
    `mix-blend-mode: multiply` against the ivory ground, no `z-index` anywhere in this layer: the
    card's own frame (`mounted-sheet-frame__box`) carries the only explicit `z-index` in a framed
@@ -87,7 +79,7 @@ export interface BotanicalPlacement {
    (`public/botanical/<piece>-laptop.avif`) so the box matches the art with no letterboxing —
    `background-size: contain` then fills it exactly. Unlike the meadow band's crop, a mismatch here
    only wastes canvas inside the box; it never breaks a crop, so no test asserts it. */
-export const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
+const ASPECT_RATIO: Readonly<Record<BotanicalPiece, string>> = {
   "corner-trail": "1536 / 1024",
   "tied-bouquet": "387 / 623",
   "crossing-stems": "1312 / 1199",

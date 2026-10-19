@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { botanicalCss, pieceOverrideCss } from "./botanical-css.ts";
+import { botanicalCss, pieceRule } from "./botanical-css.ts";
 import {
   ANCHORS,
   type BotanicalPiece,
@@ -216,14 +216,14 @@ test("a positive nudge moves a piece right and down by exactly that many vw, at 
   const expected = (nudge / 100) * box.width;
 
   for (const anchor of ANCHORS) {
-    const base = pieceOverrideCss("corner-trail", {
+    const base = pieceRule("corner-trail", {
       anchor,
       x: 0,
       y: 0,
       size: 20,
       rotation: 0,
     });
-    const moved = pieceOverrideCss("corner-trail", {
+    const moved = pieceRule("corner-trail", {
       anchor,
       x: nudge,
       y: nudge,

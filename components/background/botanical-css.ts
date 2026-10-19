@@ -19,7 +19,7 @@ import {
   TUNING,
 } from "./botanical-tuning.ts";
 
-export const PIECE_CLASS = "botanical-piece";
+const PIECE_CLASS = "botanical-piece";
 
 export function pieceClass(piece: BotanicalPiece): string {
   return `${PIECE_CLASS} ${PIECE_CLASS}--${piece}`;
@@ -146,7 +146,7 @@ function imageDeclaration(piece: BotanicalPiece, tier: Tier): string {
   );
 }
 
-function pieceRule(
+export function pieceRule(
   piece: BotanicalPiece,
   tuning: PieceTuning,
   at = selector(piece),
@@ -169,20 +169,6 @@ function pieceRule(
     ...(tier === undefined ? [] : [imageDeclaration(piece, tier)]),
   ].join(" ");
   return `${at} { ${declarations} }`;
-}
-
-/* One piece's rule for the dev tuning panel, at a selector one class heavier than the sheet's so it
-   wins over every tier block whatever the window — the panel edits the tier it is in, and the
-   mapping from a record to declarations stays here rather than being restated there. */
-export function pieceOverrideCss(
-  piece: BotanicalPiece,
-  tuning: PieceTuning,
-): string {
-  return pieceRule(
-    piece,
-    tuning,
-    `${selector(piece)}.${PIECE_CLASS}--${piece}`,
-  );
 }
 
 /* Only the pieces the section carries, so five sections' stylesheets stay small and none restates
