@@ -337,8 +337,10 @@ test("a tip at a piece's end is covered by a round-capped cover, since no butt s
   assert.equal(dots.length, 1, "exactly one round-capped cover");
   assert.equal(dots[0].piece, 0);
   assert.ok(Math.abs(dots[0].end - 300) < 1e-9, "it ends at the piece's end");
-  assert.ok(
-    dots[0].width === OPTIONS.tipWidth || dots[0].width <= OPTIONS.tipWidth,
+  assert.equal(
+    dots[0].width,
+    Math.max(OPTIONS.baseWidth, OPTIONS.tipWidth),
+    "the cover is as wide as the head",
   );
   for (const segment of butts(segments)) {
     assert.ok(
@@ -1384,10 +1386,20 @@ test("every stretch fits whole loops into the shared budget, at one speed", () =
   assert.equal(Math.round(budget / longestPeriod), loops);
 });
 
-test("a stretch shorter than one loop of the budget still runs a whole loop", () => {
+test("a short stretch fits as many whole loops into the budget as its nominal period allows", () => {
   const budget = 4 * retraceNominalMs(4173, 845);
-  /* `Math.round` would take a huge count here; the floor of one keeps the period meaningful. */
-  const period = retracePeriodMs(budget, retraceNominalMs(1, 845));
-  assert.ok(period > 0 && Number.isFinite(period));
-  assert.ok(budget / period >= 1);
+  const nominal = retraceNominalMs(100, 845);
+  assert.equal(
+    retracePeriodMs(budget, nominal),
+    budget / Math.round(budget / nominal),
+  );
+});
+
+/* The floor of one keeps a stretch longer than twice the budget from rounding to zero loops, which
+   would make the period infinite. */
+test("a stretch longer than twice the budget runs exactly one loop of the budget", () => {
+  const budget = 4 * retraceNominalMs(4173, 845);
+  const period = retracePeriodMs(budget, retraceNominalMs(1e9, 845));
+  assert.ok(Number.isFinite(period), "the period is finite");
+  assert.equal(period, budget);
 });

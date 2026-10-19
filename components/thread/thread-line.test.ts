@@ -3,7 +3,6 @@ import { test } from "node:test";
 import { authoredCard } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import {
-  clamp01,
   createDrawRatchet,
   dashForPiece,
   drawnLength,
@@ -684,57 +683,6 @@ test("length is a positive number roughly on the order of the page's own pixel h
 });
 
 /* ------------------------------------------------------------------------------------------------
-   TASK 1 REPRODUCTION -- the finding this task exists to fix, pinned as a test before anything
-   else. `stroke-dasharray` restarting at every `M` subpath (proven in isolation, `task-1-brief.md`)
-   is a RENDERING behaviour with no unit-testable surface of its own in `thread-line.ts` -- this
-   file's pure functions never touched a `<path>` before this task, so there was no "old formula" to
-   contrast against. What this test pins instead is the ARITHMETIC that behaviour is equivalent to,
-   independently derived here: with one dash covering the WHOLE concatenated path and one shared
-   `dashoffset = totalLength - drawn` applied to every subpath, a subpath of its own length `Lk`
-   renders `min(Lk, max(0, drawn))` of ITSELF -- every piece measuring its own progress from its own
-   start against the SAME global `drawn`, with no offset for how far into the page that piece sits.
-   That is "all parts of thread starting to draw at same time" exactly. Contrast: `pieceProgress`
-   (the fix) measures `drawn` against `piece.start`, so a piece cannot begin until every piece before
-   it has finished. */
-function oldSingleDashPieceProgress(
-  drawn: number,
-  piece: { readonly start: number; readonly end: number },
-): number {
-  const length = piece.end - piece.start;
-  return length <= 0 ? 1 : clamp01(drawn / length);
-}
-
-test("REPRODUCTION: the old single-dash-per-page arithmetic draws every piece from its own start at once; pieceProgress (the fix) draws exactly one at a time", () => {
-  const band = "wide";
-  const sections = measuredSections(band);
-  const { pieces } = threadLine(band, sections);
-  assert.ok(pieces.length > 5, "need several real pieces to show simultaneity");
-
-  // A `drawn` partway through the page's very first piece is tiny relative to every later piece's
-  // own (much longer) length, so under the OLD arithmetic every piece with `length > drawn` reads
-  // partially drawn AT THE SAME TIME -- the bug, reproduced without touching a DOM.
-  const drawn = pieces[0].end / 2;
-  const oldMidDrawCount = pieces.filter((piece) => {
-    const progress = oldSingleDashPieceProgress(drawn, piece);
-    return progress > 1e-9 && progress < 1 - 1e-9;
-  }).length;
-  assert.ok(
-    oldMidDrawCount > 1,
-    `expected the OLD arithmetic to show several pieces mid-draw at once, found ${oldMidDrawCount} -- the reproduction itself is wrong if this fails`,
-  );
-
-  const newMidDrawCount = pieces.filter((piece) => {
-    const progress = pieceProgress(drawn, piece);
-    return progress > 1e-9 && progress < 1 - 1e-9;
-  }).length;
-  assert.equal(
-    newMidDrawCount,
-    1,
-    `expected pieceProgress to show exactly one piece mid-draw, found ${newMidDrawCount}`,
-  );
-});
-
-/* ------------------------------------------------------------------------------------------------
    drawnLength — the per-section progress map `pieceProgress` above is driven from. Synthetic
    sections and ranges below, never real THREAD_IDS/measured data, so each behaviour (not-reached,
    held-past, the crossing rule, a section too short for the model, the page's own end) can be
@@ -1015,8 +963,7 @@ test("drawnLength: at scrollY 0 nothing has started; at the page's max scroll ev
 });
 
 /* ------------------------------------------------------------------------------------------------
-   AT MOST ONE PIECE IS MID-DRAW -- the property this whole task exists to establish, and the
-   assertion whose absence let the defect survive three rounds of review (`task-1-brief.md`). Not
+   AT MOST ONE PIECE IS MID-DRAW -- the property the per-piece dash exists to establish. Not
    "one section" -- one PIECE, swept across the real page shape at all three bands, reading each
    section's own progress directly off `sectionProgressAt` (section-level) and each piece's own off
    `pieceProgress` against the shared `drawn` scalar (piece-level) -- never by hand-zeroing a
@@ -1138,7 +1085,7 @@ test("every piece of a real band's thread is blank before the draw reaches it", 
 });
 
 /* ------------------------------------------------------------------------------------------------
-   CARD/ROW GROUPING — the owner's decision `session.md` 2026-09-28: a stacked pair is two windows,
+   CARD/ROW GROUPING: a stacked pair is two windows,
    not one, and a long ritual list is several. `subdivisions` never comes from real DOM in this file
    (that measurement lives in `page-thread.tsx`, untestable off a browser) — every test below hands
    `threadLine` a synthetic, but geometrically plausible, top-to-bottom split of a section's own
@@ -1470,7 +1417,7 @@ test("with event-info split into two card groups, card 2's pieces (knot and its 
   }
 });
 
-/* THE RATCHET (`thread-draw-behaviour.md` Task 2) -- the owner's "and then stay drawn". These
+/* THE RATCHET -- the owner's "and then stay drawn". These
    assert BEHAVIOUR, not the source's spelling: `drawnLength` is a pure function of `scrollY` with
    no memory, so without a ratchet at the call site the thread unravels on the way back up and is
    gone again at scroll 0. */
