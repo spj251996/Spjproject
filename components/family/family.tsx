@@ -13,7 +13,7 @@ interface FamilyProps {
 
 type Side = FamilyGroup["side"];
 
-/* The portrait diameter per type step. */
+/* Portrait diameter and row gaps per type step; values in DESIGN.md Components, portrait. */
 const SHEET_CLASS =
   "flex w-full flex-col items-center text-center [--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px] [--rows-gap:var(--spacing-space-md)] md:[--rows-gap:var(--spacing-space-sm)] lg:[--rows-gap:var(--spacing-space-xs)] xl:[--rows-gap:var(--spacing-space-sm)] [--family-row-gap:var(--spacing-space-lg)] md:[--family-row-gap:var(--spacing-space-2xl)] lg:[--family-row-gap:var(--spacing-space-xl)] xl:[--family-row-gap:var(--spacing-space-2xl)]";
 
@@ -28,19 +28,11 @@ const PORTRAIT_TO_NAME = "gap-space-2xs md:gap-space-3xs";
 const EQUAL_GAP = "[--couple-gap:var(--family-row-gap)]";
 const EQUAL_ROW_GAP = "gap-(--family-row-gap)";
 
-/* How far a name or relationship may run past its portrait before it wraps. One value per side for
-   the child rows now, rather than three per role: every child-row member sits in the same kind of
-   slot since the clusters flattened, so the old spouse / child / sibling split described an
-   arrangement that no longer exists.
-
-   RE-MEASURED 2026-10-08 against the real roster after the flattening, and KEPT UNCHANGED — the
-   groom's three-member row clears at all four tiers with no label wrapping and no ink meeting.
-
-   Read the rendered row, not a box comparison, if these are ever revisited. `Portrait`'s `TextLine`
-   is deliberately WIDER than the portrait — that is what `--portrait-overrun` buys — so adjacent
-   outer spans overlap by design and a harness comparing them reports collisions that are not
-   there. On the shipped roster those phantom overlaps run to 64-80px on the BRIDE's long-accepted
-   row, against 16px on this new one. */
+/* How far a name or relationship may run past its portrait before it wraps; one value per side for
+   the child rows, since every child-row member sits in the same kind of slot. If these are
+   revisited, measure the rendered row rather than comparing boxes: `TextLine` is deliberately wider
+   than its portrait (that is what `--portrait-overrun` buys), so adjacent spans overlap by design and
+   a box comparison reports collisions that are not there. */
 const OVERRUN = {
   parent: "[--portrait-overrun:20px] xl:[--portrait-overrun:28px]",
   row: {

@@ -18,14 +18,11 @@ export function splitRoster(members: FamilyMember[]): FamilyRoster {
   return { parents: [mother, father], children };
 }
 
-/* A cluster child's whole family stands on ONE row, sister then her spouse then their children, and
-   the children who have no family of their own take the row after it (owner, 2026-10-08; the groom
-   asked for his sister's family to read as one line).
-
-   This replaces a nested arrangement where the nephews sat in a row of their own beneath their
-   parents. The nesting in `content/family.ts` is unchanged and still expresses the relationships; only
-   how it is laid out changed. `family` carries no role field, so its order is the contract
-   (PROJECT.md → FamilyMember): spouse first, then the children in birth order. */
+/* A cluster child's whole family stands on ONE row (sister, then her spouse, then their children) so
+   the sister's family reads as one line; the children with no family of their own take the row after
+   it. `content/family.ts` keeps the nesting, which still expresses the relationships; only the layout
+   flattens it. `family` carries no role field, so its order is the contract (PROJECT.md →
+   FamilyMember): spouse first, then the children in birth order. */
 
 export function flattenCluster(member: FamilyMember): FamilyMember[] {
   return [member, ...member.family];

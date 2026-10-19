@@ -1,8 +1,7 @@
 import type { ReactElement } from "react";
 
 /* THE COUPLE'S NAMES AS DRAWN GEOMETRY, placing the three word-groups that
-   `components/icons/couple-names-symbol.tsx` defines. It replaced the typeset names at the invite
-   and at Wishes; their two script roles and the script face were retired on 2026-10-14.
+   `components/icons/couple-names-symbol.tsx` defines.
 
    MEASURED INK OF EACH GROUP, in the source file's own viewBox units (scripts/measure-couple-names-bbox.mjs, a
    real engine). `x`/`y` are where the group sits in the SOURCE box, which is what makes the stacked
@@ -79,34 +78,12 @@ const AMPERSAND_SCALE = 0.65;
    `--text-heading-script`, so those TOKENS outlived the ROLES, and the asset is now their only
    reader.
 
-   THE STACKED PHONE LOCKUP IS 2.59em SINCE 2026-10-14 — 40% larger than the 1.85em below, the owner
-   stepping back from the 45% (2.68em) of 2026-10-11 so the invite fits one phone screen. It still
-   puts the ink past the invite's content box at the narrowest phones (DESIGN.md -> couple-names).
-   The line's 3.65em is unchanged.
-
-   THE PHONE TIER TOOK SMALLER RATIOS — 1.85em stacked and 3.65em on the line, against the 2.513
-   and 4.656 every wider tier keeps (owner, 2026-10-10, choosing this over accepting the overflow
-   they reported as the names reading cut off). An `em` width is FIXED per tier while the card's
-   content box SHRINKS with the window, so both lockups ran off their cards at the narrow end.
-   MEASURED ACROSS THE WHOLE TIER rather than at one window, because the box depends on HEIGHT as
-   much as on width:
-
-     invite, stacked at 2.513em = 236.2px     Wishes, line at 4.656em = 260.8px
-       320 wide: box 176-208, over by up to 60   320 wide: box 208-240, over by up to 53
-       360 wide: box 216-232, over by up to 20   360 wide: box 248-264, over by 13
-       375 wide and up: fits                     393 wide and up: fits
-
-   The narrowest box anywhere is 176px at 320x844 for the invite and 208px there for Wishes, so the
-   ceilings are 1.872em and 3.714em. 1.85 and 3.65 sit just inside them, leaving 2.1px and 3.6px at
-   the worst box rather than the 0.22px a value at the ceiling would leave. Nothing clips either
-   lockup, so before this the ink simply painted out over the card's padding and, at 320, past the
-   sheet's own edge.
-
-   THE COST IS REAL AND IS THE OWNER'S OWN CHOICE: the names are about 26% smaller at EVERY phone,
-   including the wide ones that had 50px and 73px of slack to spare. The alternatives were a
-   container cap, which the fit model refuses — see the viewBox note below — or living with ink
-   over the card's edge at 320 and 360. `md:` restores the settled ratio from 48rem up, so only
-   this tier moves. */
+   THE PHONE TIER TAKES SMALLER RATIOS: 2.59em stacked and 3.65em on the line, against the 2.513
+   and 4.656 every wider tier keeps, because an `em` width is FIXED per tier while the card's
+   content box SHRINKS with the window. The stacked lockup's ink deliberately runs past the invite's
+   content box at the narrowest phones so the invite fits one phone screen (DESIGN.md ->
+   couple-names). No container cap: the fit model refuses one (see the viewBox note below). `md:`
+   restores the settled ratio from 48rem up. */
 
 /* The DRAWN size of the mark. Its SLOT stays `AMPERSAND.w` x `AMPERSAND.h` — see the scale's own
    note above — so this is only ever the `<use>` box, never a layout dimension. */
@@ -172,14 +149,6 @@ function Lockup({
   strokeUnits: number;
 }): ReactElement {
   const box = layout === "line" ? LINE : STACK;
-  /* THE SCALED MARK IN BOTH LAYOUTS. This read `layout === "line" ? ampersand : AMPERSAND` while
-     the scale was the line's alone and the stack was "left exactly as drawn" — and when the scale
-     became both lockups' the stacked `<use>` kept rendering at FULL size while `STACK.ampersand`
-     had already been computed for the scaled one, so the mark was both the wrong size and off
-     centre. Caught by measuring the rendered mark against its as-drawn width — 98.9% where 65%
-     was asked for — and by nothing else: the constant, the types and every source assertion were
-     all satisfied. */
-  const amp = ampersand;
   return (
     <svg
       aria-hidden
@@ -187,13 +156,9 @@ function Lockup({
       /* WHICH LOCKUP THIS IS, as markup rather than as a class spelling. `orientation` renders
          BOTH and hides one by media query, so neither a stylesheet nor a measuring harness can
          tell them apart without re-deriving the orientation rule.
-         IT IS A MEASURING HOOK AND NOTHING ELSE READS IT — no stylesheet, no test, no script, as
-         of 2026-10-11. That is deliberate rather than dead: a harness measuring one lockup on a
-         render has no other way to say WHICH it just measured, and this round's own did exactly
-         that. Do not go looking for the CSS rule that keys on it, and do not delete it as unused
-         without checking the harnesses in `tmp/`. The two lockups do differ: on the LINE the
-         ampersand is centred in the slot the trace gives it, in the STACK on the lockup's own
-         box — centred across, and lifted `AMPERSAND_LIFT` units above centre since 2026-10-11. */
+         IT IS A MEASURING HOOK AND NOTHING ELSE READS IT, and that is deliberate rather than dead: a
+         harness measuring one lockup on a render has no other way to say WHICH it measured. Do not
+         delete it as unused. */
       data-names-layout={layout}
       role="presentation"
       /* `round` on both, not the default miter: a trace of handwriting is full of shallow cusps,
@@ -202,28 +167,13 @@ function Lockup({
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={strokeUnits * 10}
-      /* PADDED BY THREE STROKE WIDTHS ON EVERY SIDE, and the FACTOR is what was wrong before.
-         The group boxes are tight to the drawing's ink and the outermost <svg> clips at its
-         viewBox, so a stroke falling outside the contour has its swash tips shaved flat instead of
-         tapering to a point. ONE stroke width was measured to clear at dpr 2 and 3 — and at dpr 1
-         it does not, which is where the owner saw it (2026-10-10, "slightly cutoff in phone
-         tier"): one stroke width is **0.63 CSS px** at the invite's phone lockup and **0.50px** at
-         Wishes', so the outermost antialiased ink lands in the boundary pixel itself. Measured per
-         edge in device px, at all three densities:
-           dpr 3  every site and tier clear, 1-5px of pad
-           dpr 2  every site and tier clear, 1-5px of pad
-           dpr 1  invite phone CLIPPED top and left; Wishes CLIPPED left at phone and bottom-left
-                  at tablet and laptop — four of eight cases with ink in the boundary pixel
-         Three strokes puts the narrowest pad at about 1.5 CSS px, which leaves a whole boundary
-         pixel at dpr 1 with room for the antialiasing either side.
-         THE COST, and it is why the factor is 3 rather than larger: the pad grows the viewBox, so
-         the ink renders slightly smaller for a given CSS width — about 1.0% at the invite and 0.4%
-         at Wishes. Both fits are regenerated on it, and the `em` figures above are ratios of the
-         ROLE rather than of the ink, so they are untouched.
-         NOT FIXED BY A CONTAINER CAP, which was tried first and is not available: `min(2.513em,
-         100%)` makes the lockup's height GROW with the window over the capped range, and
-         `measure:fit` throws on exactly that — "regime 1 stands taller than regime 0 at a wider
-         width" — because the frame's model requires content height to fall as width rises. */
+      /* PADDED BY THREE STROKE WIDTHS ON EVERY SIDE. The group boxes are tight to the ink and the
+         outermost <svg> clips at its viewBox, so a stroke outside the contour has its swash tips
+         shaved flat. One stroke width (about 0.5-0.63 CSS px at the phone lockups) clips at dpr 1;
+         three puts the narrowest pad at about 1.5 CSS px. Not larger, because the pad grows the
+         viewBox and renders the ink slightly smaller for a given CSS width. Not fixed by a container
+         cap: `min(2.513em, 100%)` makes the lockup's height grow with the window, and `measure:fit`
+         refuses content that stands taller at a wider width. */
       viewBox={`${-3 * strokeUnits} ${-3 * strokeUnits} ${box.w + 6 * strokeUnits} ${box.h + 6 * strokeUnits}`}
     >
       <use
@@ -234,9 +184,9 @@ function Lockup({
         y={box.sebastian.y}
       />
       <use
-        height={amp.h}
+        height={ampersand.h}
         href="#names-ampersand"
-        width={amp.w}
+        width={ampersand.w}
         x={box.ampersand.x}
         y={box.ampersand.y}
       />

@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-/* `app/` is outside this project's test glob (`content/*.test.ts`, `components/**`, `scripts/**`),
-   so a test for a global stylesheet lives here and reads it by path.
+/* This test reads the global stylesheet by path.
 
    Comments are stripped ONCE, up front, and every helper below works on the stripped text. Each rule
    in that file is preceded by a comment explaining it, and those comments quote the selectors and
@@ -23,9 +22,8 @@ function ruleBody(selector: string) {
   return globals.slice(open + 1, close);
 }
 
-/* NOTHING ON THE SITE IS SELECTABLE -- owner, 2026-10-03, restated after a round briefly scoped the
-   suppression to chrome and let content select. The rule is document-wide on purpose: set on `html`
-   so it inherits to every surface without any element opting in, and so no future component can
+/* NOTHING ON THE SITE IS SELECTABLE. The rule is document-wide on purpose: set on `html` so it
+   inherits to every surface without any element opting in, and so no future component can
    become selectable by being added. A guest reads the invitation; they do not harvest it. */
 test("nothing on the site is selectable", () => {
   const html = ruleBody("html {");
@@ -36,25 +34,22 @@ test("nothing on the site is selectable", () => {
 });
 
 /* The whole point of setting it on `html` is that nothing re-enables it. A single `user-select: text`
-   anywhere in this stylesheet reopens whatever it matches, which is how the previous round's change
-   went in -- so the absence is asserted FILE-WIDE, not just outside the `html` rule. */
+   anywhere in this stylesheet reopens whatever it matches, so the absence is asserted FILE-WIDE, not
+   just outside the `html` rule. */
 test("no rule re-enables selection anywhere in the stylesheet", () => {
   assert.doesNotMatch(globals, /user-select:\s*(text|auto|all)/);
 });
 
-/* NOTHING TAKES THE LONG-PRESS CALLOUT BACK. The one exemption there was — the Call action's `tel:`
-   link, so a guest could copy a number the page never printed — left with Contact (2026-10-14), and
-   the page carries no `tel:` link. A rule granting `default` anywhere would reopen the iOS sheet on
-   whatever it matched, including a portrait's save menu. */
+/* NOTHING TAKES THE LONG-PRESS CALLOUT BACK. The page carries no `tel:` link, so no exemption is
+   needed, and a rule granting `default` anywhere would reopen the iOS sheet on whatever it matched,
+   including a portrait's save menu. */
 test("no rule takes the long-press callout back", () => {
   assert.doesNotMatch(globals, /-webkit-touch-callout:\s*default/);
 });
 
 /* The gallery is the visual companion to `DESIGN.md`, so a pointer or note that states the opposite
-   of what ships is worse than none. Two strings were edited to describe selectable content during
-   the round that briefly shipped it; the one in `technical.tsx` is pinned back to what the site does.
-   The other lived in the Contact entry, which left the gallery with the section (2026-10-14), so
-   `domain.tsx` is held to the negative instead: nothing there may claim content selects. */
+   of what ships is worse than none. `technical.tsx` is pinned to what the site does, and
+   `domain.tsx` is held to the negative: nothing there may claim content selects. */
 test("the gallery states that nothing selects, and the domain sections claim no content does", () => {
   assert.match(
     readFileSync("app/design-system/_sections/technical.tsx", "utf8"),

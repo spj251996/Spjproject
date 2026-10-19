@@ -345,10 +345,9 @@ export function GalleryModal({
     }
   }, [state.layer, shownIndex]);
 
-  /* Portalled to `<body>`: rendered inline it sat inside Celebrations' card, a stacking context at
-     `--z-content`, where its own `--z-modal` counted only locally — the scroll progress bar at the root
-     painted over the open viewer. In the root context 50 is above the bar's 45. React keeps the tree's
-     events and context through a portal. */
+  /* Portalled to `<body>` so `--z-modal` is compared against `--z-progress` in the root stacking
+     context (see gallery-modal-portal.test.ts). React keeps the tree's events and context through a
+     portal. */
   return createPortal(
     // biome-ignore lint/a11y/useKeyWithClickEvents: the click only decides a tap on empty space; the keyboard's way back is Escape, handled on the document above.
     <div

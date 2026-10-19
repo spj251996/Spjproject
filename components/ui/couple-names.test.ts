@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-/* The drawn names replace two script type roles. Five things can go wrong here and only one of them
+/* The drawn names replace two script type roles. Three things can go wrong here and only one of them
    shows on screen:
 
    - the `<h1>` loses its accessible name, so the page's one meaningful heading announces nothing
@@ -10,10 +10,7 @@ import test from "node:test";
      from real text, and exactly once — a second copy stutters.
    - the traced `#000000` survives, and no colour token can reach the asset.
    - the two layouts' placement arithmetic drifts from the measured ink, which no render would flag
-     because a wrong gap still draws three words in a row.
-   - today's script markup is deleted rather than kept, which removes `/preview`'s lever-2
-     alternate before the couple have chosen.
-   - the alternate is left visible, so `/` paints the asset AND the script text at once. */
+     because a wrong gap still draws three words in a row. */
 
 /* COMMENTS ARE STRIPPED BEFORE ANY SOURCE MATCH, and that is not tidiness. Every claim below
    names the thing it forbids in order to explain itself — `#000000`, a second `sr-only` — so a
@@ -110,8 +107,8 @@ test("the asset is sized in em of the role it replaces, at the measured ratios",
     "the single line's width literal drifted",
   );
   /* NO CONTAINER CAP, AND THAT IS A RULING RATHER THAN AN OVERSIGHT. `w-[min(2.513em,100%)]` was
-     built and reverted: it fixes a real overflow — the invite's stacked lockup is 236.2px at the
-     phone tier against a content box that measures 176px at 320x844 — but it makes the lockup's
+     built and reverted: it fixes a real overflow — the invite's stacked lockup (2.59em at the phone
+     tier) is wider than a content box that measures 176px at 320x844 — but it makes the lockup's
      height GROW with the window over the capped range, and `measure:fit` throws on exactly that
      ("phone portrait regime 1 stands taller than regime 0 at a wider width"), because the frame's
      model requires content height to FALL as width rises. A media query cannot rescue it either:

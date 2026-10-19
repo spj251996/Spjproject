@@ -1,7 +1,4 @@
-/* Class strings the client viewer and the server-renderable grid panel share — a plain module, so
-   either can import it.
-
-   The gallery's round control — previous / next, All photos and Close — shared by the client viewer
+/* The gallery's round control — previous / next, All photos and Close — shared by the client viewer
    and the server-renderable grid panel, so it lives in a plain module rather than either of them.
    48px, past the touch-target floor, on the scrim at 60% so a mark reads wherever it overlaps a
    photograph. On hover — and on press, since a phone has no hover — it goes fully dark and grows 10%: a

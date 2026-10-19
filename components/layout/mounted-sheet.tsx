@@ -39,11 +39,8 @@ const MOUNT_REVEAL = {
   section: "p-0 md:p-space-xs lg:p-space-sm xl:p-space-md",
 } as const;
 
-/* The ladder's FILL, split out from its padding so the two can be gated separately. They were one
-   string until 2026-10-05, which meant an unpainted card still painted: the prop gated the paint
-   constants while the reveal went on supplying `bg-surface-mount` underneath, and the unfitted branch
-   rendered an unpainted hero as a solid tan block. The padding above is geometry and is never gated;
-   this is paint and always is. The section's `bg-transparent` below `{breakpoints.md}` is what keeps
+/* The ladder's FILL, split out from its padding so the two can be gated separately. Padding is
+   geometry and is never gated; paint always is. The section's `bg-transparent` below `{breakpoints.md}` is what keeps
    a non-hero card bare where it shows no mount. The hero has no rung here: it paints nothing. */
 const MOUNT_REVEAL_FILL = {
   section: "bg-transparent md:bg-surface-mount",
@@ -57,7 +54,7 @@ const CARD_CORNERS = "rounded-card";
 
 const SHEET = "bg-surface-elevated shadow-stock";
 
-/* A card's paint follows its ROLE (owner, 2026-10-14 — DESIGN.md → Foundations → Layout →
+/* A card's paint follows its ROLE (DESIGN.md → Foundations → Layout →
    `mounted-sheet` → The card's two states): the hero is unpainted, every other framed card mounted.
 
    Only the PAINT differs: the frame's geometry is identical either way, because the invite's height

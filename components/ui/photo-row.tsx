@@ -5,9 +5,8 @@
    action open the grid, since the cue stands for the whole set. Every frame carries the save cover:
    a transparent `aria-hidden` layer over a non-draggable image, so a right-click, a long-press or a
    drag lands on the cover while a tap still reaches the frame. Presentational, plus its own modal
-   state: the height and the frame count are decided
-   for the WHOLE section in `photo-fit`, so the section's height does not depend on which
-   photographs a ritual happens to carry.
+   state: the height and the frame count are decided for the WHOLE section in `photo-fit`, so the
+   section's height does not depend on which photographs a ritual happens to carry.
 
    Flat props rather than `Ritual`: a portable component may not name a domain type. */
 
@@ -39,8 +38,8 @@ interface PhotoRowProps {
   aspectCap: number;
   /** Names the gallery for assistive technology; never rendered in the strip. */
   title: string;
-  /** Display path to its 600px thumbnail. Required, not optional: an optional prop is how this
-      project last shipped a frame generated at the wrong paint with tsc clean. */
+  /** Display path to its 600px thumbnail. Required, not optional, so a caller cannot omit it and
+      ship a frame generated at the wrong paint. */
   thumbs: Record<string, string>;
   /** Display path to its viewer copy (bounded 2000×2000). Required, like `thumbs`. */
   fulls: Record<string, string>;

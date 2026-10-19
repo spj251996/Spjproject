@@ -45,7 +45,7 @@ test("a framed branch takes its paint only from the gated constants", () => {
   }
 });
 
-/* PAINT FOLLOWS FROM ROLE (owner, 2026-10-14): the hero is always unpainted, every other card always mounted. The
+/* PAINT FOLLOWS FROM ROLE: the hero is always unpainted, every other card always mounted. The
    records are keyed by role, read by walking braces from each header, and the hero arm must be EMPTY -- the
    unpainted card is a subtraction, so any utility in a hero arm is paint leaking onto the invitation's first screen. */
 function roleRecords(src: string): Record<string, Record<string, string>> {
@@ -150,7 +150,7 @@ test("no branch names a fill outside a gated paint constant", () => {
 });
 
 /* THE FITTED HERO'S REVEAL IS THE UTILITY LADDER, and the ladder must equal the arithmetic. The frame
-   generator emits no mount rule for the hero (owner, 2026-10-14), so `MOUNT_REVEAL.hero` is what paints
+   generator emits no mount rule for the hero, so `MOUNT_REVEAL.hero` is what paints
    the hero's reveal, while `revealFor` is what every threshold, tier line and padding chain assumed it
    to be. Walked over every window class the real hero produces, touchscreen classes included — a
    width-keyed ladder and a width-tier-keyed reveal agree only while the tiers are cut at the same

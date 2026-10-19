@@ -64,21 +64,19 @@ test("three frames when three fit, two when they do not", () => {
   assert.equal(photoFit(sets, 100, 220, aspects, 1.5).shown.a, 2);
 });
 
-// Review Focus 1
 test("a single-photograph ritual yields one frame and a finite height", () => {
   const fit = photoFit({ a: ["/s.jpg"] }, 150, 400, aspects, 1.5);
   assert.equal(fit.shown.a, 1);
   assert.ok(Number.isFinite(fit.rowHeight) && fit.rowHeight > 0);
 });
 
-// Review Focus 2
 test("an unresolved aspect does not stall or zero the row", () => {
   const fit = photoFit({ a: ["/missing.jpg", "/s.jpg"] }, 150, 400, {}, 1.5);
   assert.equal(fit.ready, false);
   assert.equal(fit.rowHeight, 150, "an unready row keeps the nominal height");
 });
 
-// Review Focus 3 — this exact class killed a renderer in this project
+// A zero width once made the loop unbounded and crashed the renderer.
 test("zero available width never divides by zero", () => {
   const fit = photoFit({ a: ["/s.jpg", "/s.jpg"] }, 150, 0, aspects, 1.5);
   assert.equal(fit.rowHeight, 150, "an unready row keeps the nominal height");

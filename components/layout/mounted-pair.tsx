@@ -24,13 +24,8 @@ const CREASE_GEOMETRY =
    casting `shadow-mount` in that shape either way. */
 const CARD_CORNERS = "rounded-card";
 
-/* THE FITTED PAIR'S PAINT. A pair is never the hero, so it is always mounted (DESIGN.md -> Foundations
-   -> Layout -> `mounted-sheet` -> The card's two states). Which surface shows is decided by the generated
-   stylesheet, which strips whichever one a layout does not reveal -- so both the mount and the leaf
-   carry a fill here and the stylesheet picks. */
-const PAIR_MOUNT_PAINT = `${CARD_CORNERS} bg-surface-mount shadow-mount`;
-
-const PAIR_LEAF_PAINT = `${CARD_CORNERS} bg-surface-mount shadow-mount`;
+/* The mount and the leaf carry the same paint; the stylesheet picks. */
+const PAIR_PAINT = `${CARD_CORNERS} bg-surface-mount shadow-mount`;
 
 const PAIR_SHEET_PAINT = `${CARD_CORNERS} bg-surface-elevated shadow-stock`;
 
@@ -38,8 +33,7 @@ const PAIR_SHEET_PAINT = `${CARD_CORNERS} bg-surface-elevated shadow-stock`;
    sit centred on their own leaf. Below `{breakpoints.md}` the pair stacks and has no mount, so the
    base gap is two cards' spacing rather than a rung of the ladder.
 
-   GEOMETRY ONLY, with the paint in its own constants below: one constant answering two questions has
-   been ungatable for one of them three times in this codebase. */
+   GEOMETRY ONLY, with the paint in its own constants below. */
 const UNFITTED_MOUNT = `relative flex flex-col gap-space-md md:flex-row md:gap-space-md lg:gap-space-lg xl:gap-space-xl md:p-space-xs lg:p-space-sm xl:p-space-md`;
 
 const UNFITTED_SHEET = `relative flex-1 p-space-lg md:p-space-2xl lg:p-space-3xl`;
@@ -55,12 +49,12 @@ export function MountedPair({ children, fit }: MountedPairProps) {
   const [first, second] = children;
 
   if (fit !== undefined) {
-    const leaf = `${FRAME_CLASS.leaf} relative ${PAIR_LEAF_PAINT}`;
+    const leaf = `${FRAME_CLASS.leaf} relative ${PAIR_PAINT}`;
     const sheet = `${FRAME_CLASS.sheet} ${PAIR_SHEET_PAINT}`;
     return (
       <div className={frameScopeClass(fit)}>
         <div className={FRAME_CLASS.box}>
-          <div className={`${FRAME_CLASS.mount} relative ${PAIR_MOUNT_PAINT}`}>
+          <div className={`${FRAME_CLASS.mount} relative ${PAIR_PAINT}`}>
             <div
               aria-hidden
               className={`${FRAME_CLASS.crease} ${CREASE_GEOMETRY}`}

@@ -1,7 +1,7 @@
 import { IconBase } from "./icon-base";
 
-/* The gallery's Close mark (DESIGN.md → Components → `photo-viewer`, `gallery-modal`), drawn at the
-   chevron's stroke so the header's three marks read as one set. */
+/* The gallery's Close mark (DESIGN.md → Components → `photo-viewer`, `gallery-modal`), drawn in the
+   chevron's style; the header's marks share a style, not an exact rendered weight. */
 
 export function CloseIcon({
   size,

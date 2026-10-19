@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /* The `href` form is an anchor with no handler, so this file needs no client boundary; a caller
-   supplying `onClick` (the timeline-node gallery action) is the boundary.
+   supplying `onClick` (photo-row's View photos action) is the boundary.
 
    Transitions name their properties instead of `transition-colors`, which in Tailwind v4 includes
    `outline-color` and would fade the focus ring in from `currentColor`. */
@@ -30,26 +30,24 @@ const markClassName = [
   "motion-safe:transition-[transform,text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle",
 ].join(" ");
 
-/* The mark sits on its own raised disc (owner, 2026-09-28), replacing the pair of hairline rules
-   that used to flank the label. The disc is the stock's own surface and shadow, so it reads as a
-   small piece of paper laid on the card rather than as a control borrowed from an application. */
+/* The mark sits on its own raised disc: the stock's own surface and shadow, so it reads as a small
+   piece of paper laid on the card rather than a control borrowed from an application. */
 const discClassName = [
   "inline-flex shrink-0 items-center justify-center rounded-full",
   /* The token as a bare colour, not the `bg-surface-elevated` utility: that utility also lays the
      stock's grain, and a tile sized for a whole sheet reads as noise inside a circle this small
-     (owner, 2026-09-28). The disc wants the surface's colour and its shadow, nothing else.
+     The disc wants the surface's colour and its shadow, nothing else.
 
-     `--action-disc`, not `--touch-target`: the two were one token until 2026-10-07, so this size
-     also set the hit area. The target's own `min-h/min-w-(--touch-target)` is what holds the 44px
-     now, and it must stay there — sizing the disc down is a visual change only. */
+     `--action-disc`, not `--touch-target`: this size is visual only. The target's own
+     `min-h/min-w-(--touch-target)` holds the 44px hit area and must stay. */
   "size-(--action-disc) bg-(--color-surface-elevated) shadow-mount",
   /* Scaled here rather than by raising each caller's `size`: `IconBase` derives its box from the
      drawing's own DIAGONAL, so equal `size` values across different marks do not give equal
      rendered boxes, and a uniform scale keeps each mark's aspect while filling more of the disc.
 
-     1.2 is 1.65 x 32/44 — the scale the 44px disc carried, held in proportion as the disc came down
-     (owner, 2026-10-07), so the mark keeps its share of the circle and reads as the same drawing
-     rather than a crowded one. Move it with `--action-disc` or not at all. */
+     1.2 is 1.65 x 32/44 — the scale the 44px disc carried, held in proportion as the disc came
+     down, so the mark keeps its share of the circle and reads as the same drawing rather than a
+     crowded one. Move it with `--action-disc` or not at all. */
   "[&_svg]:[transform:scale(1.2)]",
 ].join(" ");
 

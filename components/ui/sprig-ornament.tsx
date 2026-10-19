@@ -14,8 +14,7 @@ import { SprigIcon } from "@/components/icons";
    same floor. FIXED rather than a prop: the mark is deliberately flat across tiers. */
 export const FLOOR_DIAGONAL = 23;
 
-/* ONE FORM (owner, 2026-10-11, on `/preview` from six). Its plain pair served the ritual's
-   Malayalam until the rituals' header line took one leading sprig instead, and left with it.
+/* ONE FORM.
 
    OUTWARD MEANS THE LEADING MARK FLIPS AND THE TRAILING ONE DOES NOT. The mark as drawn points
    right — the way `ornamental-divider`'s does, which sets its canonical direction — so on the
