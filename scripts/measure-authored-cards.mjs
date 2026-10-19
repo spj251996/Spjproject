@@ -1,5 +1,5 @@
-/* Task 1 measurement: the card the thread's hand-drawn paths were authored against.
-   Renders the real page (never /thread-lab, which has no cards) at each band's nominal
+/* The card the thread's hand-drawn paths were authored against.
+   Renders the real page at each band's nominal
    viewport, and for every section reads:
      - the `.mounted-sheet-frame__box` element's rendered width and left offset (the card the
        thread must land on)
@@ -8,7 +8,7 @@
      - Flemy's and Sebastian's portrait centres as a fraction of the family section's card
 
    channel: "chromium" is required — the default reaches for headless_shell, which quantises
-   glyph advances and renders text ~3% wider (lessons.md, 2026-09-21). */
+   glyph advances and renders text ~3% wider. */
 import { chromium } from "playwright";
 
 const BANDS = [
@@ -17,7 +17,7 @@ const BANDS = [
   { id: "wide", width: 1536, height: 695 },
 ];
 
-// Render order in app/page.tsx's <main>: invite has no id, the rest do.
+// Render order in app/page.tsx's <main>; every section carries an id.
 const SECTION_IDS = [
   "invite",
   "event-info",
@@ -88,7 +88,7 @@ for (const band of BANDS) {
     });
   }, SECTION_IDS);
 
-  // Verify assumed order against the DOM's own ids (invite and celebrations carry none).
+  // Verify the assumed order against the DOM's own ids, so a reordered page cannot be read as this one.
   for (const row of perSection) {
     if (row.domId !== null && row.domId !== row.id) {
       throw new Error(

@@ -7,10 +7,6 @@
 import { chromium } from "playwright";
 import sharp from "sharp";
 
-/* The chamfer transform's diagonal step. Written as the constant rather than the 1.414 the
-   classic 3x3 kernel uses: the approximation was chosen for integer-ish speed on hardware that
-   is not this, and at the radii this measures (a bud is ink whose largest inscribed disc is
-   >=3px) the difference is below the pixel the answer is read in either way. */
 const DIAGONAL = Math.SQRT2;
 
 const VIEWPORTS = [
@@ -24,8 +20,7 @@ const VIEWPORTS = [
   [430, 568],
   [430, 844],
 ];
-/* The invite's top-right piece and the `top` values (vw) swept for it. `falling-spray` was swept at
-   -18.4..-18.8 before it retired (2026-10-14); `corner-trail` is seeded at 0. */
+/* The invite's top-right piece and the `top` values (vw) swept for it. */
 const PIECE = "corner-trail";
 const VALUES = [0];
 const DIFF = 6;
@@ -55,7 +50,7 @@ const d = (a, b, i) =>
   Math.abs(a[i + 1] - b[i + 1]) > DIFF ||
   Math.abs(a[i + 2] - b[i + 2]) > DIFF;
 
-/* Two-pass chamfer (3,4)/3 — good to a few percent of true euclidean, which is ample here. */
+/* Two-pass 8-neighbour chamfer: weight 1 for orthogonal steps, SQRT2 for diagonal. */
 function distanceTransform(mask, W, H) {
   const INF = 1e9;
   const dist = new Float64Array(W * H);

@@ -1,8 +1,6 @@
-/* Exact per-path and per-group bboxes in viewBox units, read from the real file in a real engine.
-   getBBox() on a <path> returns its own user space, so each is multiplied through the group's
-   `translate(0,446) scale(0.1,-0.1)` by taking the bbox of the path AS LAID OUT — which is what
-   getBoundingClientRect on a known-size viewport gives, scaled back. Simpler: read getBBox of a
-   <g> wrapper per group, inside the same transform, which is already in viewBox units. */
+/* Exact per-group bboxes in viewBox units, read from the real file in a real engine: each group's
+   `getBBox()` (its own pre-transform space) mapped through its CTM into the root viewBox's units,
+   which is what a `<use>` is placed in. */
 
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";

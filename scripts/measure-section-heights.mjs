@@ -1,9 +1,8 @@
-/* Re-measures each section's own rect height at the three band nominals, on `/thread` — the
-   route the thread's constants describe. Both routes compose the same five sections since Contact
-   was retired (2026-10-14), so `/` would read the same heights.
+/* Re-measures each section's own rect height at the three band nominals, on `/thread`, the route
+   the thread's constants describe.
 
-   `getBoundingClientRect().height`, never `scrollHeight` — the two disagreed by 200px+ on the retired `contact`,
-   and the rect is what the committed constants came from.
+   `getBoundingClientRect().height`, never `scrollHeight`: the rect is what the committed constants
+   came from.
 
    The URL carries `.html` deliberately: a plain static server serves literal paths, and under
    `output: "export"` the static route emits `out/thread.html`, with the sibling directory holding only
@@ -28,8 +27,8 @@ for (const band of BANDS) {
   await page.goto(URL, { waitUntil: "domcontentloaded" });
   /* Scroll the whole page first: `next/image` lazy-loads, so a below-the-fold portrait has no src
      until it comes into view — and it is never `complete`, never fires `load`, and never fires
-     `error`, so an unbounded wait on it hangs forever. That is what hung the first run of this
-     harness. Scroll to arm them, then bound the wait anyway. */
+     `error`, so an unbounded wait on it hangs forever. Scroll to arm them, then bound the wait
+     anyway. */
   await page.evaluate(async () => {
     const step = window.innerHeight;
     for (let y = 0; y < document.body.scrollHeight; y += step) {
