@@ -173,7 +173,7 @@ test("a motif's own aspect is preserved to 0.1% after baking onto a warped, non-
 });
 
 /* ------------------------------------------------------------------------------------------------
-   PORTRAIT LOOP TAIL TRIM (Task 3) — the owner's ask, "trim the entry/exit tails of the motif so
+   PORTRAIT LOOP TAIL TRIM — the owner's ask, "trim the entry/exit tails of the motif so
    connectors don't do weird turns there". Every helper below is an INDEPENDENT re-implementation of
    `thread-line.ts`'s own arc-length math (same convention as `unrotatedAspect`/`parseAllPoints`
    above), so these tests cannot pass by sharing a bug with the code they verify. */

@@ -13,8 +13,7 @@
   --color-ink: #2d1100;
   --color-ink-muted: #5a3a2a;
   --color-ink-inverse: #f4f1e8;
-  /* Deep gold, the owner's pick on `/preview` (2026-10-11) over today's #d29b2f and four bronzes:
-     darker and less yellow. */
+  /* Deep gold: darker and less yellow than the brighter golds and bronzes it was chosen over. */
   --color-accent-gold: #b88528;
   --color-thread-red: #a31f1b;
   --color-thread-vermilion: #e2502c;
@@ -123,7 +122,7 @@
     var(--shadow-sheet-edge), var(--shadow-sheet-highlight), var(--shadow-sheet);
   /* The bride's and the groom's portraits (DESIGN.md -> Components -> `portrait`). The ring utilities
      compose their box-shadow chain over `--tw-shadow`, so this lands UNDER the paper ring and the rim
-     and shows only outward of it. The owner's "medium" of three, chosen on `/preview` (2026-10-11). */
+     and shows only outward of it. The owner's "medium" of three. */
   --shadow-glow-couple: 0 0 14px 3px
     color-mix(in srgb, var(--color-accent-gold) 60%, transparent);
 
@@ -178,9 +177,9 @@
      place takes `--date-open` below. */
   --rule-date-bracket: 42px;
   --date-label-lift: 13px;
-  /* Both inner gaps of the date block open by this (owner, 2026-10-11): 8px from the tablet up, 7px on
-     a laptop, where 8 left the invite 2px past its compact-touchscreen tier line — and 4px on a phone
-     (owner, 2026-10-14), part of what brings the invite back inside one phone screen. */
+  /* Both inner gaps of the date block open by this: 8px from the tablet up, 7px on a laptop, where 8
+     left the invite 2px past its laptop tier line — and 4px on a phone, part of what keeps the invite
+     inside one phone screen. */
   --date-open: 4px;
   --date-weekday-pull: calc(var(--date-open) - 5px);
   /* How far the date block drops toward the place beneath it, so the day-to-place INK gap equals the

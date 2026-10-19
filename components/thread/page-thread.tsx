@@ -230,9 +230,7 @@ function measureSubdivisions(
   sectionEls: readonly Element[],
   mainRect: DOMRect,
 ): SectionSubdivisions {
-  const subdivisions: Partial<
-    Record<Exclude<(typeof THREAD_IDS)[number], "not-found">, Rect[]>
-  > = {};
+  const subdivisions: Partial<Record<(typeof THREAD_IDS)[number], Rect[]>> = {};
   THREAD_IDS.forEach((id, index) => {
     const el = sectionEls[index];
     if (el === undefined) return;
@@ -1808,12 +1806,12 @@ export function PageThread() {
 
 /* ---------------------------------------------------------------------------------------------
    THE CARD THREAD — a stretch of the thread drawn INSIDE a card's own stacking context, so it paints
-   behind that card's type rather than over it. `PageThread`'s trunk paints at `{z.thread}` (40), above
-   every card's `{z.content}` (20), so any stretch that must pass behind type has to be drawn in the
-   card. Wishes is the first and so far only place that need arose; the piece range below is this
+   by document order within the card: over the siblings before it, behind those after it.
+   `PageThread`'s trunk paints at `{z.thread}` (40), above every card's `{z.content}` (20), so any
+   stretch that must pass behind type has to be drawn in the card. Wishes is the first and so far only place that need arose; the piece range below is this
    component's one Wishes-bound part, and Phase 6b's redraw is the trigger to generalise it.
 
-   It mounts once, after the couple illustration (`app/_sections/wishes.tsx`). It measures
+   It mounts once, after the couple illustration and before the names (`app/_sections/wishes.tsx`). It measures
    independently of `PageThread` -- wishes' own subpath never depends on
    family's anchors (celebrations sits between them, and the boundary-snap in `thread-line.ts` only
    ever copies an ADJACENT section's own endpoint), so this needs no state shared with `PageThread`,

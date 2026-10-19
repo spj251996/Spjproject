@@ -70,8 +70,7 @@ function InvitePassage() {
 
           From `{breakpoints.xl}` the floor below is 32px and the 60 : 40 deliberately does not hold,
           because a desktop window leaves this stack about 190px unused (DESIGN.md →
-          `ornamental-divider`). The tablet band's block is the smallest because its landscape card
-          stands within 3px of its 720px cap, so a larger block leaves the frame no tier line.
+          `ornamental-divider`).
 
           On an upright phone neither spacer grows: names, sentence, date and rule sit one 22px ink
           gap apart, and 13px lands the rule's ink there, measured rather than derived because the
@@ -207,7 +206,7 @@ export function InviteSection() {
                 place beneath takes back off its own margin: the block
                 sits as close to the place as its weekday sits to its day. The place's own margin is
                 `space-3xs` plus `--date-open` (8 / 12 / 11 / 12px by tier) because both of the block's
-                inner gaps were opened by `--date-open` (owner, 2026-10-11; 4px on a phone since 2026-10-14) — the weekday's half
+                inner gaps are opened by `--date-open` — the weekday's half
                 lives in `--date-weekday-pull`. */}
             <div className="mt-[calc(var(--spacing-space-3xs)+var(--date-place-pull))] md:mt-[calc(var(--spacing-space-md)+var(--date-place-pull))] [@media(width<48rem)_and_(orientation:portrait)]:mt-(--date-place-pull)">
               <InviteDate date={weddingDate} />

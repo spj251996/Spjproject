@@ -64,8 +64,7 @@ test("the hairline is a bracket, not an underline", () => {
 });
 
 test("the hairline takes the page's one stroke width and the ornament's gold", () => {
-  /* Gold since 2026-10-11 (owner, on /preview), replacing a faint ink whose token existed for this
-     rule alone and is retired with it — so the token's absence is asserted too. */
+  /* Gold; the faint ink token this rule once took is retired, so its absence is asserted too. */
   const hairline = rule(block, ".hairline");
   assert.match(hairline, /width:\s*var\(--stroke-divider\)/);
   assert.match(hairline, /background:\s*var\(--color-accent-gold\)/);

@@ -28,7 +28,7 @@ export const MAX_SPAN = Number.POSITIVE_INFINITY;
 /* A direction the curve must leave its first point along, or arrive at its last point along, as a
    vector in the SAME SPACE as the points — not an angle, because a connector's box is stretched and
    an angle would have to say which of the two spaces it was measured in. The caller converts: a
-   motif's tangent is stated in the section's pixels, and `thread-css.ts` divides each component by
+   motif's tangent is stated in the section's pixels, and the caller divides each component by
    that axis's span so the RENDERED curve leaves along the rendered angle.
 
    Magnitude is ignored; only the direction is read. */

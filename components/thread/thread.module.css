@@ -82,15 +82,14 @@
    so all three bands can share one `viewBox` and CSS alone decides which one paints -- the
    hide-all-then-show-one rule pair lives entirely in `page-thread.tsx`'s own generated `<style>`, not
    here, because both halves must carry the SAME specificity and rely on SOURCE ORDER to pick a
-   winner (the exact mechanism `thread-css.ts` used for its own band toggle above). Splitting them
+   winner. Splitting them
    across this CSS-module class and an inline `<style>` would let the module rule's higher
    specificity always win regardless of `@media` -- the standing lesson this project keeps
    re-learning about a bare utility losing to a scoped one, the other way round. JS hides the whole
    fallback layer once it has measured and taken over. */
 
-/* The card thread's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why it must
-   take its place from the card's stacking context, behind the type, and a z-index would lift it out
-   of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
+/* The card thread's own SVG carries no `z-index`: it takes its place from the card's stacking context
+   by document order (`page-thread.tsx` → `CardThread`), and a z-index would lift it out of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
    own edge; it is a drawn line, not content clipped to a box. */
 .cardRoot {
   overflow: visible;

@@ -29,8 +29,8 @@ const INVITE_PIECES = [
    lives in `botanical-tuning.ts`. */
 export const SECTION_PLACEMENT = {
   invite: INVITE_PIECES,
-  /* `tall-column-a` carries the left rail and `blush-stem` the right one at the tablet tier, where
-     the two cards stack and both rails run bare for the height of two cards. Both are dropped at
+  /* `tall-column-a` (bottom-left) and `blush-stem` (middle-left) carry the rail at the tablet tier,
+     where the two cards stack and the rail runs bare for the height of two cards. Both are dropped at
      every other tier: on a phone, and from the laptop tier up, where the cards sit side by side and
      there is no rail to carry. */
   "event-info": [

@@ -240,14 +240,10 @@ test("a height-only resize that reflows the page does not un-draw the thread (sl
    The scroll path does not take that floor: `commitScrolled` passes `pageDrawnLength` alone and
    relies on the ratchet's peak to hold the opening draw; only the two measure paths re-derive it.
 
-   HONEST LIMIT, measured 2026-10-07: this test is NOT independently mutation-proven. Dropping
-   `openingFloor` from `refreshWindow` and rebuilding leaves it PASSING, because the ratchet now
-   REBASES rather than resets, so the peak already carries the opening draw's length and the floor is
-   redundant at the 393x852 -> 393x912 pair. The floor is kept because it mirrors the scroll path
-   exactly and because the reachable case is a resize where the invite's share of the total grows
-   faster than the rest (the hero is viewport-height, the content sections are not) — which this pair
-   evidently does not reach. So read this as a guard on a reflowing resize not erasing the opening
-   draw by ANY mechanism, not as proof that the floor is what holds it. */
+   LIMIT: this pair reflows `main`, so it runs the slow path only and never reaches
+   `refreshWindow`; the cheap path's opening floor at scroll 0 is not exercised here. Read this as a
+   guard on a reflowing resize not erasing the opening draw by any mechanism, not as proof that the
+   floor is what holds it. */
 test("a height-only resize that reflows the page does not erase what the opening draw drew (slow path)", async (t) => {
   if (!freshExport(t)) return;
   const { chromium } = await import("playwright");

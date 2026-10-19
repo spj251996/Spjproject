@@ -15,8 +15,7 @@ import styles from "./ornamental-divider.module.css";
    `>=48rem` rule would be written before `>=64rem` and beat it wherever both match; that pattern is
    what the middle band's explicit bound guards against.
 
-   The tablet band keeps the smallest mark on purpose: its landscape card stands within a few px of
-   its height cap, so it is the one tier with no height to give. */
+   The tablet band keeps the smallest mark on purpose. */
 const DIVIDER_MARK_SIZES = [
   { size: 32, show: "[@media(width<48rem)]:block hidden" },
   { size: 23, show: "hidden [@media(48rem<=width<64rem)]:block" },

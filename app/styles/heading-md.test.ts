@@ -28,9 +28,8 @@ const CSS_DIR = "out/_next/static/chunks";
 const PUBLISHED = "out/index.html";
 
 /* THE STYLESHEETS `/` ITSELF LOADS, not every chunk in the export concatenated. The difference is
-   not pedantry: a route-scoped stylesheet gets its own chunk — `/preview`, since retired, imported one
-   that overrode `.type-heading-md` for a tuning lever, and a concatenating read matched THAT rule
-   first and failed this gate on correct work. Reading the published document's own `<link>` set
+   not pedantry: a route-scoped stylesheet gets its own chunk, and a concatenating read can match an override
+   from another route first and fail this gate on correct work. Reading the published document's own `<link>` set
    makes the claim what it was always meant to be — the role resolves on the page that ships. */
 function publishedCss(): string {
   const html = readFileSync(PUBLISHED, "utf8");

@@ -475,8 +475,8 @@ export function assignConnectors(strokes, points, page) {
       const drew = headingAt(a.stroke, which, page);
       const off = Math.abs(wrap(drew - t.heading));
       worstAngle = Math.max(worstAngle, off);
-      /* `end` names which end of the CONNECTOR this join is ("from"/"to"); `t.which`, spread in
-         below, is the MOTIF's own "entry"/"exit" tag, so `end` must come after the spread. */
+      /* `end` names which end of the CONNECTOR this join is ("from"/"to"). It is not called
+         `which` because `t`, spread in below, carries the MOTIF's own `which` ("entry"/"exit"). */
       joins.push({
         connector: k,
         ...t,

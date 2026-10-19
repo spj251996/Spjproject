@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-/* THE OWNER'S AND THE COUPLE'S REVIEW PICKS, CHECKED WHERE THEY LANDED. Each was decided on `/preview`,
-   retired 2026-10-14; these assertions moved here from its route test when the route went, because a
-   decided value with no guard reads as settled and drifts the first time someone tidies the file.
-   DESIGN.md → Iteration Notes → Open Decisions carries each pick and its alternatives. */
+/* THE OWNER'S AND THE COUPLE'S REVIEW PICKS, CHECKED WHERE THEY LANDED: a decided value with no guard
+   reads as settled and drifts the first time someone tidies the file. DESIGN.md → Iteration Notes →
+   Open Decisions carries each pick. */
 
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 
@@ -25,8 +24,8 @@ test("the 2026-10-10 picks: the ritual title's size and the ampersand's scale", 
 });
 
 test("the 2026-10-11 picks: the date's opening, the day's weight, the glow, the padding, the rituals", () => {
-  /* The opening is one token: 8px from the tablet, 7px at laptop (8 refused the compact-touchscreen
-     tier line by 2px), and 4px on a phone since the invite came back inside one screen. */
+  /* The opening is one token: 8px from the tablet, 7px at laptop (8 refused the laptop tier line by
+     2px), and 4px on a phone, which keeps the invite inside one screen. */
   assert.match(
     tokens,
     /--date-weekday-pull:\s*calc\(var\(--date-open\) - 5px\);/,

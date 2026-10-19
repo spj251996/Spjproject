@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-/* THE OWNER'S PICKS FROM /preview ROUNDS 7-9 (2026-10-11) AND THE INVITE'S ONE-SCREEN ROUND
-   (2026-10-14), each pinned where it landed. They shipped from the section files with no test
-   behind them, so any one of them could be reverted by a later edit with every gate green. Source
-   assertions, one fact per test, each mutation-proven when written. */
+/* THE OWNER'S DESIGN PICKS AND THE INVITE'S ONE-SCREEN VALUES, each pinned where it landed, so none
+   can be reverted by a later edit with every gate green. Source assertions, one fact per test, each
+   mutation-proven when written. */
 
 const read = (path: string) => readFileSync(path, "utf8");
 
