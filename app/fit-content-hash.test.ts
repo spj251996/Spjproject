@@ -23,8 +23,15 @@ test("FIT_CONTENT covers exactly the measured fits", () => {
   assert.deepEqual(Object.keys(FIT_CONTENT).sort(), fitSections);
 });
 
+/* The hash covers a section's `content/` exports only — copy written into its JSX is outside it — so
+   a section that reads no export (not-found) has nothing to hold and is skipped. */
 for (const section of fitSections) {
-  test(`${section}-fit.ts was measured against the content it renders now`, () => {
+  const covered = Object.keys(FIT_CONTENT[section] ?? {}).length > 0;
+  test(`${section}-fit.ts: its content/ exports are unchanged since it was measured`, {
+    skip: covered
+      ? false
+      : `${section} renders no content/ export, so its hash covers nothing`,
+  }, () => {
     const file = readFileSync(`app/${section}${FIT_SUFFIX}`, "utf8");
     const recorded = file.match(CONTENT_HASH_PATTERN)?.[1];
     assert.ok(
