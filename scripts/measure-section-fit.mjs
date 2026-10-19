@@ -29,7 +29,7 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 
 const ORIGIN = "http://localhost:3000";
 const SESSION = "measure-fit";
@@ -89,7 +89,21 @@ const exportName =
 
 if (!selector || !section || !outPath) {
   console.error(
-    "usage: node scripts/measure-section-fit.mjs --route=/ --selector=<css> --section=<name> --out=<path.ts> [--var=<exportName>] [--falsify]",
+    "usage: node scripts/measure-section-fit.mjs --route=/ --selector=<css> --section=<name> --out=<path.ts> [--var=<exportName>] [--falsify] (--falsify: --section=invite only, and --out under tmp/; it never writes to app/)",
+  );
+  process.exit(2);
+}
+/* `--falsify` mutates the invite's own sentence, so for any other section it changes content outside
+   the measured stack and proves nothing; and the fit it writes is a mutated one. */
+if (falsify && section !== "invite") {
+  console.error(
+    `measure-section-fit: --falsify mutates [data-invite-line], so it measures --section=invite only (got "${section}")`,
+  );
+  process.exit(2);
+}
+if (falsify && relative(resolve("tmp"), resolve(outPath)).startsWith("..")) {
+  console.error(
+    `measure-section-fit: --falsify writes a mutated fit, so --out must be under tmp/ (got "${outPath}")`,
   );
   process.exit(2);
 }
@@ -151,18 +165,10 @@ async function ensureDevServer() {
    the round trip to the CLI happens once per tier rather than once per width. */
 function sweepScript(cssSelector, mutateContent) {
   const selectorLiteral = JSON.stringify(cssSelector);
-  /* THE FALSIFICATION MOVED OFF THE COUPLE'S NAMES, and what it was measuring is the reason.
-     It used to lengthen the invite `<h1>`'s text behind an `if (heading)` guard (the selector
-     named the script role, retired 2026-10-14). That check still reported a difference, which is exactly why it had to be looked at rather than
-     trusted: it reports one by REPLACING the asset with text, since `textContent +=` rewrites the
-     heading's children, and not by lengthening a name.
-     MEASURED, with the asset in place: lengthening the names changes the emitted fit by NOTHING.
-     The asset's width is `em` of the heading's own size token, so the string's length cannot reach the
-     layout at all. So the property the old mutation claimed — "the sweep notices longer names" —
-     is gone, while the mutation kept passing for an unrelated reason.
-     The invitation's own sentence is real text whose length genuinely drives wrapping and so the
-     card's height, which is what this check exists to prove the sweep sees. An empty read THROWS
-     rather than passing quietly: a zero-match mutation is indistinguishable from success. */
+  /* Mutates the invite's own sentence, not the couple's names: the drawn names' width is `em` of the
+     heading's size token, so a name's length cannot reach the layout, while the sentence's length
+     drives wrapping and so the card's height. An empty read throws: a zero-match mutation is
+     indistinguishable from success. */
   const mutate = mutateContent
     ? `const line = document.querySelector("[data-invite-line]"); if (!line) throw new Error("--falsify found no [data-invite-line] to mutate; the sweep would have passed while changing nothing"); line.textContent += " — and a much longer rendering of this sentence, added only to falsify the measuring script";`
     : "";
