@@ -397,7 +397,7 @@ export const RETRACE_LENGTH_RATIO = 89;
 /* Of one loop, the share the tip spends reaching the end of the stretch; the tail then runs out the
    remainder. The reference's tip reaches the end of its curve a little over half way through its 2.0s
    loop and the tail finishes as the next begins. */
-export const RETRACE_TIP_ARRIVES = 0.55;
+const RETRACE_TIP_ARRIVES = 0.55;
 
 /* A segment shorter than this share of its peak is faint, so it appears and vanishes rather than
    popping: the reference's colour falls away as its length does, peak colour 126 -> 14 as the length

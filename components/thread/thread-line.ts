@@ -994,7 +994,7 @@ export function pieceProgress(
    epsilon painted at progress 0 -- a seed of ink on every one of the nineteen pieces before any of
    them has begun. Lives here rather than in the component so the arithmetic is testable without a
    DOM. */
-export const DASH_EPSILON = 4;
+const DASH_EPSILON = 4;
 
 export function dashForPiece(
   length: number,

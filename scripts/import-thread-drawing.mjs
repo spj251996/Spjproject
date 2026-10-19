@@ -411,7 +411,7 @@ export function assignConnectors(strokes, points, page) {
  * and the page's section count.
  * `Range.getClientRects()`, never an element's bounding box: a wrapper span is as wide as its
  * column plus any overrun allowance, so a bounding-box check reports collisions that are not there. */
-export async function fetchGlyphRects(browser, viewport) {
+async function fetchGlyphRects(browser, viewport) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   await page.goto("http://localhost:3000/", { waitUntil: "load" });
   const count = await page.locator("main > section").count();

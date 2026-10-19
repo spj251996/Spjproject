@@ -80,7 +80,7 @@ const NEIGHBOURS = [
 ];
 
 /** Render the SVG at `width` and threshold it to a binary ink field (1 = ink). */
-export async function rasterise(
+async function rasterise(
   svg,
   { width = RASTER_WIDTH, threshold = INK_THRESHOLD } = {},
 ) {
@@ -529,7 +529,7 @@ export function walk(field, { bridge = 0 } = {}) {
  * fragment's bounding box, not the motif's. This is the figure that tells the two apart without a
  * render, and the aspect is the number a later task pastes into `thread-motifs.ts`.
  */
-export function coverageOf(field, points) {
+function coverageOf(field, points) {
   const { ink } = field;
   let skeleton = 0;
   for (const at of ink) skeleton += at;
@@ -606,7 +606,7 @@ const round = (n) => Number(n.toFixed(2));
  * shorter axis. Uniform, because a motif is composed as a square and a non-uniform fit would make
  * the heart an egg at every tier but one.
  */
-export function fitPath(points, { segments = SEGMENTS } = {}) {
+function fitPath(points, { segments = SEGMENTS } = {}) {
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   const box = {

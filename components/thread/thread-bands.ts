@@ -35,7 +35,7 @@ const UPRIGHT_BOX: SectionBox = { width: 820, height: 1180 };
 /* The GEOMETRIC mean of the two bands' nominal aspects (0.5614 and 0.6949), not the arithmetic one.
    A section drawn away from its band's nominal is stretched by the RATIO of the two aspects, so the
    geometric mean is the aspect that costs both neighbours the same factor — 1.1125 either side. */
-export const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
+const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
   (TALL_BOX.width / TALL_BOX.height) * (UPRIGHT_BOX.width / UPRIGHT_BOX.height),
 );
 
@@ -43,7 +43,7 @@ export const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
    as `[1.33, oo)`, worst factor 40%, a landscape tablet) was taken against this edge, so moving it
    voids that verdict; that is why this one is authored where its neighbour above is the geometric
    mean of two nominals. */
-export const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
+const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
 
 /* Thread geometry is emitted per ASPECT BAND, not per width tier: a motif is a square while a
    section is not, so it is the section's aspect that decides where a connector's ends land. Each
