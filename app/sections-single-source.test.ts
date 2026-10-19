@@ -82,3 +82,42 @@ test("the thread lab is one static route, painted as / is", () => {
     "/thread passes a paint, so it no longer shows what / ships",
   );
 });
+
+/* The thread's render gates carry their own section lists, so a section added to the module would be
+   skipped by them with every gate green. The page's ids are read off the module in composition order:
+   each `<…Section` the module renders, then that component's own `<section id>`. Read as text, because
+   importing a gate launches its browser. */
+test("the thread render gates sweep exactly the sections the module composes, in order", () => {
+  const module = readFileSync("app/_sections/index.tsx", "utf8");
+  const imports = new Map(
+    [...module.matchAll(/import \{ (\w+Section) \} from "\.\/([\w-]+)";/g)].map(
+      (m) => [m[1], m[2]],
+    ),
+  );
+  const rendered = [...module.matchAll(/<(\w+Section)\b/g)].map((m) => m[1]);
+  assert.ok(
+    rendered.length > 0,
+    "no section rendered by app/_sections/index.tsx",
+  );
+  const ids = rendered.map((name) => {
+    const file = imports.get(name);
+    assert.ok(file, `${name} is not imported from a sibling file`);
+    const id = readFileSync(`app/_sections/${file}.tsx`, "utf8").match(
+      /<section\b[^>]*\bid="([\w-]+)"/,
+    )?.[1];
+    assert.ok(id, `${file}.tsx has no <section id>`);
+    return id;
+  });
+  const listIn = (path: string, name: string) => {
+    const body = readFileSync(path, "utf8").match(
+      new RegExp(`const ${name} = \\[([^\\]]*)\\]`),
+    )?.[1];
+    assert.ok(body, `${path} declares no ${name} list`);
+    return [...body.matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
+  };
+  assert.deepEqual(
+    listIn("scripts/check-thread-clearance.mjs", "SECTION_IDS"),
+    ids,
+  );
+  assert.deepEqual(listIn("scripts/check-thread-joins.mjs", "SECTIONS"), ids);
+});
