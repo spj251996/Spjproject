@@ -13,7 +13,7 @@
  */
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -21,6 +21,7 @@ import sharp from "sharp";
 import {
   assignConnectors,
   extract,
+  importDrawing,
   relaxOffType,
   typeClearanceReport,
 } from "./import-thread-drawing.mjs";
@@ -111,20 +112,25 @@ function toPolyline(px, py, line) {
   return best;
 }
 
-test("recovers a hand-drawn thread from a rescaled, re-encoded JPEG", async () => {
+function sheetSvg(drawn) {
   const crosses = CROSSES.flatMap(([x, y]) => [
     `<line x1="${x - ARM}" y1="${y}" x2="${x + ARM}" y2="${y}" stroke="#000" stroke-width="3"/>`,
     `<line x1="${x}" y1="${y - ARM}" x2="${x}" y2="${y + ARM}" stroke="#000" stroke-width="3"/>`,
   ]).join("\n");
-  const strokes = [STROKE_A, STROKE_B]
+  const strokes = drawn
     .map(
       (s) =>
         `<path d="${wobble(s)}" fill="none" stroke="#FF00FF" stroke-width="6" stroke-linecap="round"/>`,
     )
     .join("\n");
-  const sheet =
+  return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE.width}" height="${PAGE.height}">` +
-    `<rect width="100%" height="100%" fill="#fff"/>${crosses}${strokes}</svg>`;
+    `<rect width="100%" height="100%" fill="#fff"/>${crosses}${strokes}</svg>`
+  );
+}
+
+test("recovers a hand-drawn thread from a rescaled, re-encoded JPEG", async () => {
+  const sheet = sheetSvg([STROKE_A, STROKE_B]);
 
   const dir = mkdtempSync(join(tmpdir(), "thread-import-test-"));
   const jpegPath = join(dir, "drawing.jpg");
@@ -256,4 +262,134 @@ test("relaxes a drawn connector clear of a glyph it crosses, without moving its 
     after[0].min > 0,
     `relaxed clearance ${after[0].min.toFixed(1)}px is genuinely off the glyph, not just at its edge`,
   );
+});
+
+/* The CLI end to end, in a temp sheet directory, with the live page read injected so no browser
+ * runs. The sheet's six sections match `SECTION_ORDER`; only the first holds the drawing. */
+const SHEET_GEOMETRY = {
+  width: PAGE.width,
+  sections: [
+    { top: 0, height: 895 },
+    { top: 895, height: 1 },
+    { top: 896, height: 1 },
+    { top: 897, height: 1 },
+    { top: 898, height: 1 },
+    { top: 899, height: 1 },
+  ],
+};
+const EARLIER_CONNECTORS = '[{"connector":0,"points":[{"x":1,"y":2}]}]\n';
+const EARLIER_JOINS = '[{"connector":0,"end":"to"}]\n';
+
+async function runImport(t, drawn, page, geometry = SHEET_GEOMETRY) {
+  const dir = mkdtempSync(join(tmpdir(), "thread-import-cli-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  writeFileSync(join(dir, "geometry.json"), JSON.stringify(geometry));
+  writeFileSync(join(dir, "attachments.json"), JSON.stringify(ATTACHMENTS));
+  writeFileSync(join(dir, "connectors.json"), EARLIER_CONNECTORS);
+  writeFileSync(join(dir, "joins.json"), EARLIER_JOINS);
+  const drawing = join(dir, "drawing.png");
+  await sharp(Buffer.from(sheetSvg(drawn)))
+    .png()
+    .toFile(drawing);
+
+  const errors = [];
+  t.mock.method(console, "log", () => {});
+  t.mock.method(console, "error", (line) => errors.push(String(line)));
+  let reads = 0;
+  const code = await importDrawing(["tall", drawing, `--dir=${dir}`], {
+    readPage: async () => {
+      reads += 1;
+      return page;
+    },
+  });
+  return {
+    code,
+    reads,
+    errors: errors.join("\n"),
+    connectors: readFileSync(join(dir, "connectors.json"), "utf8"),
+    joins: readFileSync(join(dir, "joins.json"), "utf8"),
+  };
+}
+
+test("a clean drawing imports: exit 0, every connector written with points", async (t) => {
+  const run = await runImport(t, [STROKE_A, STROKE_B], {
+    glyphs: [],
+    sections: SHEET_GEOMETRY.sections.length,
+  });
+  assert.equal(run.code, 0, run.errors);
+  const written = JSON.parse(run.connectors);
+  assert.equal(written.length, 2);
+  assert.ok(written.every((c) => Array.isArray(c.points)));
+  assert.notEqual(run.joins, EARLIER_JOINS);
+});
+
+test("a drawing missing a stroke is refused before the page is read, and writes nothing", async (t) => {
+  const run = await runImport(t, [STROKE_A], {
+    glyphs: [],
+    sections: SHEET_GEOMETRY.sections.length,
+  });
+  assert.notEqual(run.code, 0);
+  assert.match(run.errors, /REFUSED.*NO STROKE/s);
+  assert.equal(run.reads, 0, "refused before reading the live page");
+  assert.equal(run.connectors, EARLIER_CONNECTORS);
+  assert.equal(run.joins, EARLIER_JOINS);
+});
+
+test("a drawing with a stroke no connector takes is refused, and writes nothing", async (t) => {
+  const stray = [
+    [700, 650],
+    [740, 700],
+    [780, 760],
+  ];
+  const run = await runImport(t, [STROKE_A, STROKE_B, stray], {
+    glyphs: [],
+    sections: SHEET_GEOMETRY.sections.length,
+  });
+  assert.notEqual(run.code, 0);
+  assert.match(run.errors, /REFUSED: 1 drawn stroke\(s\) left unassigned/);
+  assert.equal(run.reads, 0, "refused before reading the live page");
+  assert.equal(run.connectors, EARLIER_CONNECTORS);
+  assert.equal(run.joins, EARLIER_JOINS);
+});
+
+test("a drawing that crosses type leaves the sheet's connectors and joins byte-identical", async (t) => {
+  /* Over the entry attachment, which relaxing never moves, so the crossing survives the relax. */
+  const glyph = { left: 220, right: 280, top: 270, bottom: 330, text: "Flemy" };
+  const run = await runImport(t, [STROKE_A, STROKE_B], {
+    glyphs: [glyph],
+    sections: SHEET_GEOMETRY.sections.length,
+  });
+  assert.notEqual(run.code, 0);
+  assert.match(run.errors, /REFUSED: the drawn thread crosses type/);
+  assert.equal(run.connectors, EARLIER_CONNECTORS);
+  assert.equal(run.joins, EARLIER_JOINS);
+});
+
+test("a sheet whose section count differs from the live page's is refused, and writes nothing", async (t) => {
+  const run = await runImport(t, [STROKE_A, STROKE_B], {
+    glyphs: [],
+    sections: SHEET_GEOMETRY.sections.length - 1,
+  });
+  assert.notEqual(run.code, 0);
+  assert.match(run.errors, /REFUSED: .* the live page has 5\./);
+  assert.equal(run.connectors, EARLIER_CONNECTORS);
+  assert.equal(run.joins, EARLIER_JOINS);
+});
+
+test("a sheet whose section count differs from SECTION_ORDER is refused before the page is read", async (t) => {
+  const geometry = {
+    ...SHEET_GEOMETRY,
+    sections: [{ top: 0, height: 896 }, ...SHEET_GEOMETRY.sections.slice(2)],
+  };
+  const run = await runImport(
+    t,
+    [STROKE_A, STROKE_B],
+    { glyphs: [], sections: geometry.sections.length },
+    geometry,
+  );
+  assert.notEqual(run.code, 0);
+  assert.match(run.errors, /REFUSED: .* SECTION_ORDER names 6\./);
+  assert.equal(run.reads, 0, "refused before reading the live page");
+  assert.equal(run.connectors, EARLIER_CONNECTORS);
+  assert.equal(run.joins, EARLIER_JOINS);
 });

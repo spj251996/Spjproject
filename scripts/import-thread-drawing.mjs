@@ -15,7 +15,8 @@
  *
  * <sheet dir> already holds `geometry.json` (the page's width and section bands) and
  * `attachments.json` (every motif's entry/exit tick, in page pixels, in the order the thread
- * runs). The tool writes `connectors.json` and `joins.json` back into it.
+ * runs). The tool writes `connectors.json` and `joins.json` back into it only once every check
+ * passes; a refused import leaves both as they were.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -413,7 +414,8 @@ export function assignConnectors(strokes, points, page) {
   return { links, assigned, joins, worstAngle, unassigned: free.size, lines };
 }
 
-/** Every glyph rect on the page, in `main`-relative coordinates — the same frame the drawing uses.
+/** Every glyph rect on the page, in `main`-relative coordinates — the same frame the drawing uses —
+ * and the page's section count.
  * `Range.getClientRects()`, never an element's bounding box: a wrapper span is as wide as its
  * column plus any overrun allowance, so a bounding-box check reports collisions that are not there. */
 export async function fetchGlyphRects(browser, viewport) {
@@ -453,7 +455,7 @@ export async function fetchGlyphRects(browser, viewport) {
     return out;
   });
   await page.close();
-  return glyphs;
+  return { glyphs, sections: count };
 }
 
 /* The owner's decision (in chat): a drawn thread that comes under a glyph is closed
@@ -626,8 +628,16 @@ export function typeClearanceReport(connectors, geometry, glyphs) {
   return worst;
 }
 
-async function main() {
-  const args = process.argv.slice(2);
+async function readLivePage(viewport) {
+  const browser = await chromium.launch({ channel: "chromium" });
+  try {
+    return await fetchGlyphRects(browser, viewport);
+  } finally {
+    await browser.close();
+  }
+}
+
+export async function importDrawing(args, { readPage = readLivePage } = {}) {
   const positional = args.filter((a) => !a.startsWith("--"));
   const [band, file] = positional;
   const dirArg = args.find((a) => a.startsWith("--dir="));
@@ -637,8 +647,7 @@ async function main() {
     console.error(
       "usage: node scripts/import-thread-drawing.mjs <wide|tall|upright> <drawing.png> --dir=<sheet dir>",
     );
-    process.exitCode = 1;
-    return;
+    return 1;
   }
 
   const geometry = JSON.parse(readFileSync(`${dir}/geometry.json`, "utf8"));
@@ -668,14 +677,37 @@ async function main() {
     `  worst angle ${worstAngle.toFixed(1)}deg   unassigned ${unassigned}`,
   );
 
-  writeFileSync(`${dir}/joins.json`, `${JSON.stringify(joins, null, 2)}\n`);
+  const missing = assigned.flatMap((a, k) => (a.stroke ? [] : [k]));
+  const strokeFaults = [
+    ...(missing.length > 0
+      ? [`connector(s) ${missing.join(", ")} got NO STROKE`]
+      : []),
+    ...(unassigned > 0
+      ? [`${unassigned} drawn stroke(s) left unassigned`]
+      : []),
+  ];
+  if (strokeFaults.length > 0) {
+    console.error(
+      `\nREFUSED: ${strokeFaults.join("; ")}. The drawing needs exactly one stroke per connector (${assigned.length}); redraw and re-import.`,
+    );
+    return 1;
+  }
 
-  const browser = await chromium.launch({ channel: "chromium" });
-  let glyphs;
-  try {
-    glyphs = await fetchGlyphRects(browser, VIEWPORT[band]);
-  } finally {
-    await browser.close();
+  /* Every section lookup below is by POSITION — `geometry.json` carries no ids — and the glyph
+     rects come from the live page, so the sheet, `SECTION_ORDER` and the page must agree on the
+     count or the floors and the clearance report attach to the wrong sections. */
+  if (geometry.sections.length !== SECTION_ORDER.length) {
+    console.error(
+      `\nREFUSED: ${dir}/geometry.json has ${geometry.sections.length} sections; SECTION_ORDER names ${SECTION_ORDER.length}.`,
+    );
+    return 1;
+  }
+  const { glyphs, sections: liveSections } = await readPage(VIEWPORT[band]);
+  if (liveSections !== geometry.sections.length) {
+    console.error(
+      `\nREFUSED: ${dir}/geometry.json has ${geometry.sections.length} sections; the live page has ${liveSections}. The glyph rects would sit in a different frame from the drawing — import a sheet drawn against the page it is checked on.`,
+    );
+    return 1;
   }
 
   const drawnConnectors = assigned.map((a, k) => ({
@@ -691,11 +723,6 @@ async function main() {
       (relax.stuck.length > 0
         ? `   NO CORRIDOR on connector(s) ${[...new Set(relax.stuck)].join(", ")}`
         : ""),
-  );
-
-  writeFileSync(
-    `${dir}/connectors.json`,
-    `${JSON.stringify(relax.connectors, null, 2)}\n`,
   );
 
   const worst = typeClearanceReport(relax.connectors, geometry, glyphs);
@@ -731,14 +758,20 @@ async function main() {
     console.error(
       "\nREFUSED: the drawn thread crosses type. The placement law is 'may cross anything, may never cross type' — nudge the drawing clear of it and re-import.",
     );
-    process.exitCode = 1;
-    return;
+    return 1;
   }
+
+  writeFileSync(`${dir}/joins.json`, `${JSON.stringify(joins, null, 2)}\n`);
+  writeFileSync(
+    `${dir}/connectors.json`,
+    `${JSON.stringify(relax.connectors, null, 2)}\n`,
+  );
   console.log(
     "\nOK: no crossing after relaxing. See any WARNING lines above for what is still under the floor.",
   );
+  return 0;
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
-  await main();
+  process.exitCode = await importDrawing(process.argv.slice(2));
 }
