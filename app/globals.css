@@ -28,8 +28,8 @@ html {
   scrollbar-width: thin;
 }
 
-/* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
-   second ring rule. */
+/* One ring on every surface: vermilion clears 3:1 on the ground, the mount, the card and the scrim,
+   so no subtree rebinds it. */
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

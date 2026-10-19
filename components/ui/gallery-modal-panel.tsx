@@ -52,7 +52,7 @@ export function GalleryModalPanel({
 }: GalleryModalPanelProps) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-scrim/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)] [scrollbar-color:auto] ${className ?? ""}`}
+      className={`absolute inset-0 flex flex-col gap-space-md overflow-y-auto bg-scrim/92 p-space-md [scrollbar-color:auto] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-space-md">
         <h2 className="type-heading-sm text-ink-inverse" id={titleId}>
@@ -93,7 +93,12 @@ export function GalleryModalPanel({
                 loading="lazy"
                 src={src}
               />
-              <span aria-hidden="true" className="absolute inset-0" />
+              {/* The ring is drawn here, as `photo-row`'s frames draw it: the clipped photo and this
+                  cover paint over the button's own outline at any offset. */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 group-focus-visible:shadow-[inset_0_0_0_var(--focus-ring-width)_var(--focus-ring-color)]"
+              />
             </button>
           </figure>
         ))}

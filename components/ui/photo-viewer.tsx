@@ -61,7 +61,7 @@ export function PhotoViewerPanel({
   const [failed, setFailed] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<string | null>(null);
   return (
-    <div className="absolute inset-0 flex flex-col gap-space-md bg-scrim/92 p-space-md [--focus-ring-color:var(--focus-ring-color-inverse)]">
+    <div className="absolute inset-0 flex flex-col gap-space-md bg-scrim/92 p-space-md">
       <header className="flex items-start justify-between gap-space-md">
         <h2 className="type-heading-sm text-ink-inverse" id={titleId}>
           {title}

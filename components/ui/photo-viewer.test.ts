@@ -15,10 +15,13 @@ const panel = read("gallery-modal-panel.tsx");
 const modal = read("gallery-modal.tsx");
 const control = read("gallery-control.ts");
 
-const COVER = '<span aria-hidden="true" className="absolute inset-0" />';
+/* The cover may carry more classes after its box (the clipped frames draw the focus ring on it), but
+   it is always a self-closing, aria-hidden span filling its frame. */
+const COVER_PATTERN =
+  /<span\s+aria-hidden="true"\s+className="absolute inset-0(?: [^"]*)?"\s*\/>/;
 
 test("the viewer photograph sits under a save cover and cannot be dragged", () => {
-  assert.ok(viewer.includes(COVER), "the viewer's cover span is missing");
+  assert.ok(COVER_PATTERN.test(viewer), "the viewer's cover span is missing");
   assert.ok(viewer.includes("draggable={false}"));
 });
 
@@ -49,7 +52,7 @@ test("every ritual photograph surface carries the cover and refuses a drag", () 
     ["gallery-modal-panel.tsx", panel],
     ["photo-viewer.tsx", viewer],
   ]) {
-    assert.ok(source.includes(COVER), `${name} has no save cover`);
+    assert.ok(COVER_PATTERN.test(source), `${name} has no save cover`);
     assert.ok(source.includes("draggable={false}"), `${name} can be dragged`);
   }
 });

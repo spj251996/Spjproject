@@ -329,8 +329,7 @@
 
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
-  --focus-ring-color: var(--color-ink);
-  --focus-ring-color-inverse: var(--color-accent-gold);
+  --focus-ring-color: var(--color-thread-vermilion);
 
   /* DESIGN.md → Components → UI → `scroll-progress`. The fill reads as the thread: its red, then
      vermilion, brightening to the core at the leading edge the way the drawing head does. Height

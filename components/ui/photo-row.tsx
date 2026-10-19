@@ -83,7 +83,7 @@ export function PhotoRow({
                     ? `All ${photos.length} photos`
                     : `Photo ${index + 1} of ${photos.length}`
                 }
-                className="block size-full"
+                className="group block size-full"
                 onClick={() => setStart(cue ? null : index)}
                 type="button"
               >
@@ -109,7 +109,12 @@ export function PhotoRow({
                     {`+${remaining}`}
                   </span>
                 )}
-                <span aria-hidden="true" className="absolute inset-0" />
+                {/* The focus ring is drawn on the save cover, the frame's topmost layer: the clipped
+                    photo and this cover paint over the button's own outline at any offset. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 group-focus-visible:shadow-[inset_0_0_0_var(--focus-ring-width)_var(--focus-ring-color)]"
+                />
               </button>
             </li>
           );
