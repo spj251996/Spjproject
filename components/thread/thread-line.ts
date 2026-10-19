@@ -565,7 +565,7 @@ export function threadLine(
 
     const bakedMotifs = placements.map((placement, placementIndex) => {
       const anchor = sectionAnchors?.[placementIndex];
-      const warped = warpPlacement(placement, from, to, bandBox, anchor);
+      const warped = warpPlacement(placement, from, to, anchor);
       const bakedD = bakeMotif(MOTIFS[placement.motif].d, warped, bandBox);
       const { first, last } = firstAndLastPoint(bakedD);
       return { d: bakedD, entry: first, exit: last };

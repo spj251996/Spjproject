@@ -552,8 +552,8 @@ function totalLength(ranges: readonly SectionRange[]): number {
 /* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
    (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
    `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
-   the same connection order `pieces` is built in -- proven in `thread-line.test.ts`'s own "exactly
-   one subpath per connector and per motif" test), so this loop never has to match them up by name. */
+   the same connection order `pieces` is built in -- proven at every band in
+   `thread-fallback.test.ts`), so this loop never has to match them up by name. */
 function applyPieceDashes(
   paths: readonly (SVGPathElement | null)[],
   pieces: readonly ThreadPiece[],

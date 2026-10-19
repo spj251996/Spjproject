@@ -19,7 +19,6 @@
    at all. Task 1's own brief for this task says as much: "it is the `from` side of your warp". */
 
 import type { AuthoredCard } from "./thread-authored-layout.ts";
-import type { SectionBox } from "./thread-geometry.ts";
 import type { Placement } from "./thread-paths.ts";
 
 export type MeasuredSection = {
@@ -122,47 +121,21 @@ export function warpSection(
    axis-independent alternative. So position warps per-axis like a path point, but SIZE resolves to
    ONE factor.
 
-   THE BASIS IS THE BAND'S NOMINAL BOX, NEVER THE CARD OR THE SECTION HEIGHT — read directly off the
-   code this warp replaces, because the wrong basis is invisible at the identity point and wrong
-   everywhere else. `thread-css.ts:497` computes a motif's AUTHORED side as
-     authoredSide = place.scale * Math.min(band.box.width, band.box.height)
-   off `band.box` — the band's nominal viewport (`thread-bands.ts`), a constant for every section in
-   that band, never a section's own card width or measured height. `thread-css.ts:1190-1199` then
-   expresses that side as a fraction of the card, so a motif tracks the card at runtime:
-     pageSide = authoredSide * (to.cardWidth / from.cardWidth)
-   An earlier version of this function substituted `Math.min(from.cardWidth, from.sectionHeight)` —
-   a per-SECTION quantity — for the authored unit. That silently swaps bands for cards: at `upright`
-   (`thread-bands.ts`'s `UPRIGHT_BOX`, 820x1180) every section's authored card is 564
-   (`thread-authored-layout.ts`'s `UPRIGHT_CARDS`), so the substitution undersized every motif in the
-   band 31% at the identity point, where `from` and `to` are equal and nothing has reflowed yet.
-   `bandBox` is threaded in and used explicitly, computed the same way as the source formula it
-   mirrors, rather than assumed constant and derived from the card — that assumption is exactly the
-   mistake being corrected. Task 3 bakes the resulting `scale` into the motif's own transform; this
-   only resolves the number. */
-function uniformScaleFactor(
-  from: AuthoredCard,
-  to: MeasuredSection,
-  bandBox: SectionBox,
-): number {
-  const nominalUnit = Math.min(bandBox.width, bandBox.height);
-  const authoredSide = nominalUnit; // `place.scale` multiplies this in the caller
-  const pageSide = authoredSide * (to.cardWidth / from.cardWidth);
-  /* `nominalUnit` cancels out of this ratio (`pageSide / authoredSide` reduces to
-     `to.cardWidth / from.cardWidth`), so `bandBox` is not load-bearing for the RATIO returned here —
-     do not "fix" the apparent unused-parameter smell by letting `from` and `to` resolve against
-     different band boxes, which would silently reintroduce cross-band scaling. It is threaded
-     through anyway so this derivation traces exactly against `thread-css.ts:497`/`:1190-1199`'s
-     two-step formula (authored side, then page side), and so the caller has the same `bandBox` in
-     scope to recover the motif's ABSOLUTE pixel side afterwards: `warped.scale * Math.min(bandBox.width,
-     bandBox.height)`. */
-  return pageSide / authoredSide;
+   THE BASIS IS THE BAND'S NOMINAL BOX, NEVER THE CARD OR THE SECTION HEIGHT, because the wrong basis
+   is invisible at the identity point and wrong everywhere else. A motif's authored side is
+   `place.scale * Math.min(band.box.width, band.box.height)`, a constant for every section in the band,
+   and its page side is that times `to.cardWidth / from.cardWidth`, so the motif tracks the card; the
+   band unit cancels out of the factor, which is the card-width ratio alone. A per-section unit
+   (`Math.min(from.cardWidth, from.sectionHeight)`) undersizes every motif in `upright` by 31% at the
+   identity point. The caller resolves the absolute side against its own band box. */
+function uniformScaleFactor(from: AuthoredCard, to: MeasuredSection): number {
+  return to.cardWidth / from.cardWidth;
 }
 
 export function warpPlacement(
   placement: Placement,
   from: AuthoredCard,
   to: MeasuredSection,
-  bandBox: SectionBox,
   anchor?: Rect,
 ): Placement {
   const warped = warpPoint({ x: placement.x, y: placement.y }, from, to);
@@ -182,6 +155,6 @@ export function warpPlacement(
     ...placement,
     x: centre.x,
     y: centre.y,
-    scale: placement.scale * uniformScaleFactor(from, to, bandBox),
+    scale: placement.scale * uniformScaleFactor(from, to),
   };
 }

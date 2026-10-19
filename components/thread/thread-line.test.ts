@@ -413,7 +413,6 @@ test("family's portraitLoop entry and exit sit further along the motif's own arc
     authoredPlacement,
     authoredCard("family", band),
     sections[familyIndex],
-    bandBox,
   );
 
   const points = parseAllPoints(subpaths[motifIndex]);

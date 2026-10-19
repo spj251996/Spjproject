@@ -9,12 +9,12 @@
    were retired on 2026-10-07 along with that screen's thread (DESIGN.md -> Not found). The split
    still earns its place: the fallback below is itself server-rendered. */
 
-import { authoredCard } from "./thread-authored-layout";
-import { type BandId, THREAD_BANDS } from "./thread-bands";
-import { sectionBox } from "./thread-boxes";
-import { threadLine } from "./thread-line";
-import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths";
-import type { MeasuredSection } from "./thread-warp";
+import { authoredCard } from "./thread-authored-layout.ts";
+import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
+import { sectionBox } from "./thread-boxes.ts";
+import { threadLine } from "./thread-line.ts";
+import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths.ts";
+import type { MeasuredSection } from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 

@@ -2,8 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { AuthoredCard } from "./thread-authored-layout.ts";
 import { authoredCard } from "./thread-authored-layout.ts";
-import { THREAD_BANDS } from "./thread-bands.ts";
-import type { SectionBox } from "./thread-geometry.ts";
 import type { Placement } from "./thread-paths.ts";
 import {
   type MeasuredSection,
@@ -11,11 +9,6 @@ import {
   warpPlacement,
   warpSection,
 } from "./thread-warp.ts";
-
-const WIDE_BOX: SectionBox = THREAD_BANDS.find((b) => b.id === "wide")!.box;
-const UPRIGHT_BOX: SectionBox = THREAD_BANDS.find(
-  (b) => b.id === "upright",
-)!.box;
 
 function parseNumbers(d: string): number[] {
   return (d.match(/-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? []).map(Number);
@@ -153,7 +146,7 @@ test("without an anchor, warpPlacement maps position the same way warpSection ma
     cardWidth: 1000,
   };
 
-  const warped = warpPlacement(HEART, WIDE_INVITE_AUTHORED, to, WIDE_BOX);
+  const warped = warpPlacement(HEART, WIDE_INVITE_AUTHORED, to);
 
   const scaleX = 1000 / 960;
   const scaleY = 800 / 695;
@@ -193,7 +186,6 @@ test("anchoring: a placement with an anchor lands its centre on the anchor's mea
     },
     WIDE_INVITE_AUTHORED,
     to,
-    WIDE_BOX,
     anchor,
   );
 
@@ -204,20 +196,11 @@ test("anchoring: a placement with an anchor lands its centre on the anchor's mea
   assert.equal(warped.mirror, true);
 });
 
-/* Regression for the review finding that `uniformScaleFactor` had used
-   `Math.min(from.cardWidth, from.sectionHeight)` — a per-SECTION quantity — as the authored unit
-   instead of the BAND's nominal box. Every number here is read from source, not typed from a review
-   comment: `UPRIGHT_BOX` from `thread-bands.ts` (via `THREAD_BANDS`), and the invite's upright
-   `AuthoredCard` from `thread-authored-layout.ts` (via `authoredCard`). */
-test("motif scale resolves against the BAND's nominal unit, not the card or the section height", () => {
+/* The motif's size follows the card: one uniform factor, the ratio of the measured card width to the
+   authored one, whatever the section's height. `to` is shorter than its card is wide, the shape a
+   height-based unit would get wrong. */
+test("a motif scales by the card-width ratio, and by nothing else", () => {
   const from = authoredCard("invite", "upright");
-  const nominalUnit = Math.min(UPRIGHT_BOX.width, UPRIGHT_BOX.height);
-
-  // A `to` whose HEIGHT is smaller than its card width — the shape that discriminates the two
-  // formulas. `from`'s own dimensions never do: every upright section's authored sectionHeight
-  // (1180-2360) exceeds its cardWidth (564), so `Math.min(from.cardWidth, from.sectionHeight)`
-  // always happens to equal `from.cardWidth` anyway, and a `to` shaped the same way would hide the
-  // bug behind a coincidence rather than exercise it.
   const to: MeasuredSection = {
     top: 0,
     height: 400,
@@ -231,26 +214,8 @@ test("motif scale resolves against the BAND's nominal unit, not the card or the 
     scale: 0.25,
     turn: 0,
   };
-
-  const warped = warpPlacement(placement, from, to, UPRIGHT_BOX);
-
-  // The formula this test pins, read from `thread-css.ts:497` and `:1190-1199`:
-  //   pageSide = scale * min(band.box.width, band.box.height) * (to.cardWidth / from.cardWidth)
-  const expectedSide =
-    placement.scale * nominalUnit * (to.cardWidth / from.cardWidth);
-  const actualSide = warped.scale * nominalUnit;
-  assert.ok(
-    Math.abs(actualSide - expectedSide) < 1e-9,
-    `expected side ${expectedSide}, got ${actualSide}`,
-  );
-
-  // The old (wrong) basis this replaces, stated so a future regression is legible against it: it
-  // would have resolved `warped.scale` to `scale * (min(to.cardWidth, to.height) /
-  // min(from.cardWidth, from.sectionHeight))`, which for these figures is NOT `expectedSide` above.
-  const oldUnitFrom = Math.min(from.cardWidth, from.sectionHeight);
-  const oldUnitTo = Math.min(to.cardWidth, to.height);
-  const oldSide = placement.scale * (oldUnitTo / oldUnitFrom) * nominalUnit;
-  assert.notEqual(oldSide, expectedSide);
+  const warped = warpPlacement(placement, from, to);
+  assert.equal(warped.scale, placement.scale * (700 / from.cardWidth));
 });
 
 test("identity: warpPlacement to the authored box returns the same position and a scale ratio of 1", () => {
@@ -268,7 +233,7 @@ test("identity: warpPlacement to the authored box returns the same position and 
     cardWidth: WIDE_INVITE_AUTHORED.cardWidth,
   };
 
-  const warped = warpPlacement(placement, WIDE_INVITE_AUTHORED, to, WIDE_BOX);
+  const warped = warpPlacement(placement, WIDE_INVITE_AUTHORED, to);
 
   assert.ok(Math.abs(warped.x - placement.x) < 0.01);
   assert.ok(Math.abs(warped.y - placement.y) < 0.01);
