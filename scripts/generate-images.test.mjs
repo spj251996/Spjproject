@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -20,7 +20,11 @@ import {
   PRUNED_DIRS,
   parseGeneratorArgs,
   planRitualPhotos,
+  prepareBotanicalPiece,
+  prune,
+  RECIPES,
   ritualManifestSource,
+  run as runGenerator,
   runScope,
   uprightRitualImage,
   writeRitualPhotos,
@@ -602,4 +606,148 @@ test("each photograph gets three copies, each within its own bound", async () =>
 test("the unreadable-photograph message names both phone settings", async () => {
   const t = await tree({ wedding: [["zbad.jpg", "text"]] });
   await assert.rejects(run(t), /Most Compatible.*Android.*High efficiency/s);
+});
+
+/* A throwaway repository root under the OS temp directory, with the generator's own layout: sources
+   under `assets/`, deliveries under `public/`. Every path `prune` and `run` resolve is joined onto it,
+   so nothing here touches the real `public/`, `assets/` or `content/`. */
+function generatorRoot(files) {
+  const root = mkdtempSync(join(tmpdir(), "generator-run-"));
+  for (const [path, contents] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), contents);
+  }
+  return root;
+}
+
+const passThroughRecipe = {
+  sourceDir: "assets/family",
+  outDir: "public/family",
+  recipe: "pass-through",
+};
+
+test("prune unlinks only the orphan, and a dry run unlinks nothing", async (t) => {
+  t.mock.method(console, "log", () => {});
+  const root = generatorRoot({
+    "assets/family/keep.jpg": "source",
+    "public/family/keep.jpg": "kept",
+    "public/family/old-name.jpg": "orphan",
+    "public/family/.gitkeep": "",
+    "public/robots.txt": "outside the pruned directories",
+  });
+  const recipes = [passThroughRecipe];
+  const dirs = ["public/family"];
+
+  const wouldRemove = await prune({ dryRun: true, dirs, root, recipes });
+  assert.deepEqual(wouldRemove, ["public/family/old-name.jpg"]);
+  assert.ok(existsSync(join(root, "public/family/old-name.jpg")));
+
+  const removed = await prune({ dryRun: false, dirs, root, recipes });
+  assert.deepEqual(removed, ["public/family/old-name.jpg"]);
+  assert.ok(!existsSync(join(root, "public/family/old-name.jpg")));
+  assert.ok(existsSync(join(root, "public/family/keep.jpg")));
+  assert.ok(existsSync(join(root, "public/family/.gitkeep")));
+  assert.ok(existsSync(join(root, "public/robots.txt")));
+});
+
+test("a run copies the pass-through files, runs the recipes and prunes what it no longer writes", async (t) => {
+  t.mock.method(console, "log", () => {});
+  const couple = await sharp({
+    create: {
+      width: 40,
+      height: 40,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([
+      {
+        input: await sharp({
+          create: { width: 20, height: 10, channels: 3, background: "#806040" },
+        })
+          .png()
+          .toBuffer(),
+        left: 10,
+        top: 15,
+      },
+    ])
+    .png()
+    .toBuffer();
+  /* Near-white everywhere but one dark corner, so the clamp has something to lift: an 8x8 piece
+     halved to 4x4 keeps the far corner at 252 unless `clampWhite` runs. */
+  const piece = await sharp({
+    create: { width: 8, height: 8, channels: 3, background: "#fcfcfc" },
+  })
+    .composite([
+      {
+        input: await sharp({
+          create: { width: 2, height: 2, channels: 3, background: "#000000" },
+        })
+          .png()
+          .toBuffer(),
+        left: 0,
+        top: 0,
+      },
+    ])
+    .png()
+    .toBuffer();
+  const root = generatorRoot({
+    "assets/couple/couple.png": couple,
+    "assets/botanical/fixture-piece.png": piece,
+    "assets/family/portrait.jpg": "portrait bytes",
+    "assets/family/.gitkeep": "",
+    "public/botanical/retired-piece.webp": "orphan",
+    "public/robots.txt": "outside the pruned directories",
+  });
+  const coupleRecipe = RECIPES.find(
+    (entry) => entry.out === "public/couple/couple-1x.webp",
+  );
+  assert.ok(coupleRecipe, "the real couple recipe must be found");
+  const botanicalRecipe = {
+    source: "assets/botanical/fixture-piece.png",
+    out: "public/botanical/fixture-piece-phone.webp",
+    recipe: async (image) =>
+      (await prepareBotanicalPiece(image, "fixture-piece", 4)).webp({
+        lossless: true,
+      }),
+  };
+
+  await runGenerator({
+    dryRun: false,
+    only: null,
+    root,
+    recipes: [coupleRecipe, passThroughRecipe, botanicalRecipe],
+  });
+
+  assert.equal(
+    readFileSync(join(root, "public/family/portrait.jpg"), "utf8"),
+    "portrait bytes",
+  );
+  assert.ok(!existsSync(join(root, "public/family/.gitkeep")));
+
+  /* The couple's transparent border is trimmed before the resize: 20x10 of ink becomes 560x280. */
+  const coupleOut = await sharp(
+    join(root, "public/couple/couple-1x.webp"),
+  ).metadata();
+  assert.deepEqual([coupleOut.width, coupleOut.height], [560, 280]);
+
+  const { data, info } = await sharp(
+    join(root, "public/botanical/fixture-piece-phone.webp"),
+  )
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  assert.equal(info.width, 4);
+  const farCorner = (info.height - 1) * info.width * 3 + (info.width - 1) * 3;
+  assert.deepEqual(
+    [...data.subarray(farCorner, farCorner + 3)],
+    [255, 255, 255],
+  );
+
+  assert.ok(!existsSync(join(root, "public/botanical/retired-piece.webp")));
+  assert.ok(existsSync(join(root, "public/robots.txt")));
+  assert.ok(
+    existsSync(join(root, "content/ritual-photos.generated.ts")),
+    "the rituals family writes its manifest under the injected root",
+  );
 });

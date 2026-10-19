@@ -4,7 +4,7 @@
    left there ships to every guest unreferenced.
 
    NOT a `prebuild` step for the botanical, couple and OG families: the deploy must not depend on
-   re-encoding 152 files that only change when someone is already at a keyboard.
+   re-encoding every botanical file, which only changes when someone is already at a keyboard.
 
    THE RITUALS FAMILY IS THE EXCEPTION, and it runs on the deploy — `prebuild` calls
    `--only=rituals`. Its inputs arrive by phone upload into `assets/rituals/`, so nobody will run a
@@ -40,14 +40,6 @@ import { dateTaken } from "./exif-date.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/* The couple drawing is trimmed of its own transparent border before resizing: the border is
-   lopsided (81px left against 12 right on the source), which pushes the couple off-centre in their
-   box. The two widths cover the largest rendered size (470px) at 1x and 2x.
-
-   One entry per image family. `pass-through` is a real recipe, not a stub: the ten portraits are
-   already web-sized files with no larger original, so re-encoding today's placeholders would change
-   `content/family.ts`'s paths for no visual gain. When the full-resolution portraits arrive, this
-   entry becomes a resize-and-encode like the couple's. */
 /* The couple drawing is held back so it sits behind the closing text rather than competing with
    it — desaturated and slightly transparent. Baked into the file rather than applied as a CSS
    filter: the values are settled, and a filter on a layer this large is paint work on every frame
@@ -137,7 +129,7 @@ const FLIP_V_PIECES = new Set(["tied-bouquet"]);
 /* Resizes (never upscaling past the source), applies the one baked mirror, and clamps near-white to
    pure white so the multiply blend has no halo. Returns a sharp pipeline ready for
    `.avif()`/`.webp()`. */
-async function prepareBotanicalPiece(image, name, width) {
+export async function prepareBotanicalPiece(image, name, width) {
   const sized = image.resize({ width, withoutEnlargement: true });
   const resized = FLIP_V_PIECES.has(name) ? sized.flip() : sized;
   const { data, info } = await resized
@@ -151,8 +143,8 @@ async function prepareBotanicalPiece(image, name, width) {
 
 /* Sources are high-quality WebP, not PNG: at the sizes these pieces are delivered the difference
    the container makes is about 1/255 mean against a PNG master — below perception, and the
-   delivery step is itself lossy — while the sources go from 19.5MB of committed weight to 2.5MB.
-   A PNG is still preferred where one exists, so a piece that arrives lossless stays lossless. */
+   delivery step is itself lossy. A PNG is still preferred where one exists, so a piece that
+   arrives lossless stays lossless. */
 function botanicalSource(name) {
   const png = join(ROOT, `assets/botanical/${name}.png`);
   return existsSync(png)
@@ -201,18 +193,11 @@ function botanicalRecipes() {
   return entries;
 }
 
-/* THE RITUAL PHOTOGRAPHS — the one family that generates on the DEPLOY rather than locally, and the
-   reason this script's header now qualifies its own refusal to be a prebuild step. The botanical,
-   couple and OG inputs change when someone is already at a keyboard; these arrive by phone upload
-   into `assets/rituals/<ritual-id>/`, and nobody will run a command afterwards. The header's fear is
-   answered rather than ignored: a build-time generator that throws fails the deploy loudly and cannot
-   silently drop an image, which is exactly what local generation does when the command is forgotten.
-
-   A third kind, because it is neither a single source/out pair nor a pass-through: it scans a
-   directory per ritual, emits three copies per photograph, and writes the dimensions module the page
-   reads. It is deliberately NOT a member of `RECIPES` — keeping it out leaves `expectedOutputs()`,
-   `orphansIn()` and the prune untouched, and it needs none of them because it wipes its own output
-   directory wholesale. */
+/* THE RITUAL PHOTOGRAPHS — the one family that generates on the DEPLOY (see the header). A third
+   kind, neither a source/out pair nor a pass-through: it scans a directory per ritual, emits three
+   copies per photograph, and writes the dimensions module the page reads. It is deliberately NOT a
+   member of `RECIPES`, which leaves `expectedOutputs()`, `orphansIn()` and the prune untouched; it
+   needs none of them because it wipes its own output directory wholesale. */
 const RITUAL_SOURCE_ROOT = "assets/rituals";
 const RITUAL_OUT_ROOT = "public/rituals";
 const RITUAL_MANIFEST = "content/ritual-photos.generated.ts";
@@ -252,7 +237,6 @@ const RITUAL_EXTENSIONS = new Set([
   ".heif",
 ]);
 
-/** The delivery's name without its extension. Pure. */
 export function outputBaseName(fileName) {
   const dot = fileName.lastIndexOf(".");
   return dot <= 0 ? fileName : fileName.slice(0, dot);
@@ -297,8 +281,13 @@ ${body}
 `;
 }
 
-const RECIPES = [
-  /* Wishes' illustration renders at a fixed 320px CSS box (`--wishes-illustration`), never larger, so
+/* One entry per image family. */
+export const RECIPES = [
+  /* The couple drawing is trimmed of its own transparent border before resizing: the border is
+     lopsided (81px left against 12 right on the source), which pushes the couple off-centre in their
+     box.
+
+     Wishes' illustration renders at a fixed 320px CSS box (`--wishes-illustration`), never larger, so
      these two widths are its 1x and 2x delivery rather than one oversized file for every screen. */
   {
     source: "assets/couple/couple.png",
@@ -335,6 +324,9 @@ const RECIPES = [
         quality: 72,
       }),
   },
+  /* `pass-through` is a real recipe, not a stub: the portraits are already web-sized files with no
+     larger original, so re-encoding them would change `content/family.ts`'s paths for no visual
+     gain. */
   {
     sourceDir: "assets/family",
     outDir: "public/family",
@@ -364,11 +356,11 @@ export const PRUNED_DIRS = [
 /* Every path a run of this script is expected to leave behind, as `public/...` strings. Read from
    `RECIPES` rather than from the filesystem, so it describes what the generator WRITES and not what
    happens to be there -- which is the whole point of comparing the two. */
-export async function expectedOutputs() {
+export async function expectedOutputs({ root = ROOT, recipes = RECIPES } = {}) {
   const expected = new Set();
-  for (const entry of RECIPES) {
+  for (const entry of recipes) {
     if (entry.recipe === "pass-through") {
-      const names = (await readdir(join(ROOT, entry.sourceDir))).filter(
+      const names = (await readdir(join(root, entry.sourceDir))).filter(
         (name) => !name.startsWith("."),
       );
       for (const name of names) expected.add(`${entry.outDir}/${name}`);
@@ -391,11 +383,16 @@ export function orphansIn(dir, names, expected) {
 /* `public/` is copied wholesale into `out/`, so a delivery the generator no longer writes still
    ships. Pruning runs AFTER every recipe, never before: a failed generation must not take the
    current deliveries with it. */
-async function prune({ dryRun, dirs = PRUNED_DIRS }) {
-  const expected = await expectedOutputs();
-  let removed = 0;
+export async function prune({
+  dryRun,
+  dirs = PRUNED_DIRS,
+  root = ROOT,
+  recipes = RECIPES,
+}) {
+  const expected = await expectedOutputs({ root, recipes });
+  const orphans = [];
   for (const dir of dirs) {
-    const absolute = join(ROOT, dir);
+    const absolute = join(root, dir);
     if (!existsSync(absolute)) continue;
     for (const name of orphansIn(dir, await readdir(absolute), expected)) {
       if (dryRun) {
@@ -404,14 +401,15 @@ async function prune({ dryRun, dirs = PRUNED_DIRS }) {
         await unlink(join(absolute, name));
         console.log(`removed  ${dir}/${name}`);
       }
-      removed += 1;
+      orphans.push(`${dir}/${name}`);
     }
   }
   console.log(
-    removed === 0
+    orphans.length === 0
       ? "pruned  nothing orphaned"
-      : `pruned  ${removed} orphaned file(s)${dryRun ? " (dry run, nothing deleted)" : ""}`,
+      : `pruned  ${orphans.length} orphaned file(s)${dryRun ? " (dry run, nothing deleted)" : ""}`,
   );
+  return orphans;
 }
 
 /* `.rotate()` with NO argument applies the file's own EXIF orientation, and it is not optional
@@ -428,9 +426,6 @@ export function uprightRitualImage(input) {
   return sharp(input).rotate();
 }
 
-/* `outRoot` is injectable so the test can assert on the ROW the manifest records, written to a temp
-   directory. The web path is URL-encoded because a filename renamed by hand can carry a `#` or `?`,
-   which a browser would otherwise read as a fragment or query and 404 on; the disk path is not. */
 /* Decode and encode into MEMORY. A failure here is about the PHOTOGRAPH; a failure in
    `writeRitualDeliveries` is about the DISK. One catch around both once blamed a full disk on HEIC.
 
@@ -678,7 +673,7 @@ export async function writeRitualPhotos({
 }
 
 /* `--only=<family>` runs one family. `prebuild` uses `--only=rituals`, so a deploy regenerates the
-   photographs and nothing else — the alternative, running the whole script, would re-encode 152
+   photographs and nothing else — the alternative, running the whole script, would re-encode the
    botanical files on every build. A filtered run SKIPS the global prune: it has not written the
    other families, and the rituals family wipes its own directory instead. `--only=botanical` exists so
    a changed piece can be regenerated without re-copying the family and couple sources, and it prunes
@@ -686,21 +681,21 @@ export async function writeRitualPhotos({
 const ONLY_FAMILIES = new Set(["rituals", "botanical"]);
 
 /* What one run touches, by family. Exported so the scope is tested without generating anything. */
-export function runScope(only) {
+export function runScope(only, recipes = RECIPES) {
   if (only === "botanical") {
     return {
       rituals: false,
-      recipes: RECIPES.filter((entry) =>
+      recipes: recipes.filter((entry) =>
         entry.out?.startsWith("public/botanical/"),
       ),
       prunedDirs: ["public/botanical"],
     };
   }
-  return { rituals: true, recipes: RECIPES, prunedDirs: PRUNED_DIRS };
+  return { rituals: true, recipes, prunedDirs: PRUNED_DIRS };
 }
 
-/* A typo here must FAIL rather than fall through: `--only rituals` (a space) or `--dryrun` used to
-   run every recipe — 152 botanical files re-encoded, or a "dry" run that wrote. */
+/* A typo here must FAIL rather than fall through: `--only rituals` (a space) would re-encode the
+   botanical files, and `--dryrun` would make a "dry" run that wrote. */
 export function parseGeneratorArgs(argv) {
   let dryRun = false;
   let only = null;
@@ -726,22 +721,29 @@ export function parseGeneratorArgs(argv) {
   return { dryRun, only };
 }
 
-async function run({ dryRun, only }) {
-  const scope = runScope(only);
-  if (scope.rituals) await writeRitualPhotos({ dryRun });
+export async function run({ dryRun, only, root = ROOT, recipes = RECIPES }) {
+  const scope = runScope(only, recipes);
+  if (scope.rituals) {
+    await writeRitualPhotos({
+      dryRun,
+      sourceRoot: join(root, RITUAL_SOURCE_ROOT),
+      outRoot: join(root, RITUAL_OUT_ROOT),
+      manifestPath: join(root, RITUAL_MANIFEST),
+    });
+  }
   if (only === "rituals") return;
   /* A dry run reports orphans and generates nothing. The expected set is read from `RECIPES`, never
-     from the filesystem, so it needs no generation to be computed -- and rewriting 150 deliveries to
+     from the filesystem, so it needs no generation to be computed -- and rewriting the deliveries to
      answer "what would you delete?" would be a surprising thing for the flag's name to mean,
      especially while someone is rendering against the dev server. */
   if (dryRun) {
-    await prune({ dryRun, dirs: scope.prunedDirs });
+    await prune({ dryRun, dirs: scope.prunedDirs, root, recipes });
     return;
   }
   for (const entry of scope.recipes) {
     if (entry.recipe === "pass-through") {
-      const dir = join(ROOT, entry.sourceDir);
-      const outDir = join(ROOT, entry.outDir);
+      const dir = join(root, entry.sourceDir);
+      const outDir = join(root, entry.outDir);
       await mkdir(outDir, { recursive: true });
       const names = (await readdir(dir)).filter((n) => !n.startsWith("."));
       for (const name of names) {
@@ -750,23 +752,21 @@ async function run({ dryRun, only }) {
       }
       continue;
     }
-    const out = join(ROOT, entry.out);
+    const out = join(root, entry.out);
     await mkdir(dirname(out), { recursive: true });
     /* `await` on a recipe's return value is a no-op for the couple's synchronous chains and
        resolves the botanical recipes' async pixel processing (clampWhite) alike. */
-    const pipeline = await entry.recipe(sharp(join(ROOT, entry.source)));
+    const pipeline = await entry.recipe(sharp(join(root, entry.source)));
     const info = await pipeline.toFile(out);
     console.log(
       `wrote   ${entry.out}  ${(info.size / 1024).toFixed(0)} KB  ${info.width}x${info.height}`,
     );
   }
-  await prune({ dryRun, dirs: scope.prunedDirs });
+  await prune({ dryRun, dirs: scope.prunedDirs, root, recipes });
 }
 
 /* Guarded so the module can be imported by its test without generating anything. */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  /* `npm run images -- <flags>` passes exactly the flags after `--`, so `argv.slice(2)` is all of
-     them. */
   /* The message goes out first and alone: the reader is looking at a deploy log on a phone, where an
      uncaught throw shows a frame of source code before the sentence. The cause chain, when there is
      one, follows on the next lines for a reader at a keyboard. */
