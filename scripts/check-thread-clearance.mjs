@@ -160,7 +160,7 @@ async function isDevServerUp() {
 /** @param {Page} page */
 async function waitForFonts(page) {
   try {
-    await page.waitForFunction(() => document.fonts.status === "loaded", {
+    await page.waitForFunction(() => document.fonts.status === "loaded", null, {
       timeout: FONT_TIMEOUT_MS,
     });
   } catch {
@@ -190,6 +190,7 @@ async function waitForThreadMeasured(page) {
             document.querySelectorAll("svg[data-thread-svg]")
           ),
         ).some((svg) => svg.style.left !== ""),
+      null,
       { timeout: FONT_TIMEOUT_MS },
     );
   } catch {
@@ -223,6 +224,7 @@ async function waitForThreadRemeasured(page) {
           );
         });
       },
+      null,
       { timeout: REMEASURE_TIMEOUT_MS },
     );
     return true;

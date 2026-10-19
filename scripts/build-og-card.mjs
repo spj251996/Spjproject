@@ -412,6 +412,7 @@ async function capture(htmlPath, rawPath) {
             document.querySelectorAll(".og-flower")
           ),
         ].every((i) => i.complete && i.naturalWidth > 0),
+      null,
       { timeout: 15000 },
     );
 
