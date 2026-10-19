@@ -4,10 +4,16 @@
  * divider, and Event Info's two sheet dates with their ordinal in its own element. */
 
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
+import sharp from "sharp";
+import { TUNING } from "../components/background/botanical-tuning.ts";
 import {
   CARD,
   cardHtml,
+  compress,
   extractDates,
   extractDivider,
   extractFontVars,
@@ -180,4 +186,35 @@ test("mediaFiles lists the font files the CSS points at, and refuses none", () =
     () => mediaFiles("@font-face{src:url(/_next/static/media/a.woff2)}"),
     /no font files/,
   );
+});
+
+test("the flowers' shares are the pieces' desktop sizes in botanical-tuning.ts", () => {
+  const share = (piece) => PIECES.find((p) => p.piece === piece).share;
+  assert.equal(
+    share("corner-trail"),
+    TUNING["corner-trail"].desktop.size / 100,
+  );
+  assert.equal(
+    share("corner-spray"),
+    TUNING["corner-spray"].desktop.size / 100,
+  );
+});
+
+test("a card that cannot reach the size budget throws and leaves the existing output untouched", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "og-card-"));
+  const raw = join(dir, "raw.png");
+  const out = join(dir, "og-card.jpg");
+  await sharp({
+    create: {
+      width: CARD.width,
+      height: CARD.height,
+      channels: 3,
+      noise: { type: "gaussian", mean: 128, sigma: 60 },
+    },
+  })
+    .png()
+    .toFile(raw);
+  writeFileSync(out, "the committed card");
+  await assert.rejects(() => compress(raw, out, 1), /could not reach 1KB/);
+  assert.equal(readFileSync(out, "utf8"), "the committed card");
 });

@@ -1,7 +1,7 @@
 /* Builds public/og-card.jpg's source — the 1200x630 link-preview card — from the running dev
  * server. Nothing under app/ is touched.
  *
- * The card is the invite distilled on its own ground (owner, 2026-10-14): the invite's ground and
+ * The card is the invite distilled on its own ground: the invite's ground and
  * both of its flowers, the couple's drawn names on one line, the sprig divider, and the two dates in
  * `date-label`'s style. DESIGN.md -> Domain Components -> Link Preview Card is the contract.
  *
@@ -30,18 +30,17 @@
  *   node scripts/build-og-card.mjs --names 84 --flowers 1 --dates 24 --out tmp/og-card/a.jpg
  */
 
-import { copyFile, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import sharp from "sharp";
+import { TUNING } from "../components/background/botanical-tuning.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORK = join(ROOT, "tmp", "og-card");
 
-/* Every value the card sets, in one place — the owner's picks on renders (2026-10-14): candidate
-   C's names, candidate A's dates, the flowers at 1.65x their desktop share, and the bottom-left
-   piece dropped until its longest stem clears the date line by 8-12px. */
+/* Every value the card sets, in one place, each picked on a render. */
 export const CARD = Object.freeze({
   width: 1200,
   height: 630,
@@ -52,25 +51,24 @@ export const CARD = Object.freeze({
   /* The flowers at their desktop share of the page's width, times this. */
   flowers: 1.65,
   /* How far the bottom-left piece sits below the card's lower edge, so its longest stem clears the
-     date line rather than crossing it (the owner's 8-12px). Its overhang is clipped. Measured with
-     the type and the other piece hidden: 50 leaves 1.4px, 55 5.4px, 60 10.0px, 65 14.9px. */
+     date line by about 10px. Its overhang is clipped. */
   sprayDrop: 60,
   gapDivider: 20,
   gapDates: 20,
   maxKb: 400,
 });
 
-/* Each piece at its desktop tier, as a share of the window's width — `botanical-tuning.ts`'s desktop
-   `size` (vw). Copied here as the default scale only; the owner's pick replaces it. */
+/* Each piece at its desktop tier, as a share of the window's width: `botanical-tuning.ts`'s desktop
+   `size` (vw). */
 export const PIECES = Object.freeze([
   {
     piece: "corner-trail",
-    share: 0.4,
+    share: TUNING["corner-trail"].desktop.size / 100,
     place: () => "top: 0; right: 0;",
   },
   {
     piece: "corner-spray",
-    share: 0.24826389,
+    share: TUNING["corner-spray"].desktop.size / 100,
     place: (card) => `bottom: ${-card.sprayDrop}px; left: 0;`,
   },
 ]);
@@ -273,7 +271,11 @@ export function cardHtml({ fontVars, names, divider, symbols, dates, card }) {
 }
 
 async function get(url) {
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) }).catch(
+    (error) => {
+      throw new Error(`${error.message} for ${url}`);
+    },
+  );
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res;
 }
@@ -423,19 +425,24 @@ async function capture(htmlPath, rawPath) {
 
 /* Quality is stepped down only until the budget is met. mozjpeg + 4:4:4: small saturated type on a
    light ground suffers visibly under the default 4:2:0 subsampling. */
-async function compress(rawPath, outPath, maxKb) {
+export async function compress(rawPath, outPath, maxKb) {
   const meta = await sharp(rawPath).metadata();
   if (meta.width !== CARD.width || meta.height !== CARD.height) {
     throw new Error(
       `raw shot is ${meta.width}x${meta.height}, expected ${CARD.width}x${CARD.height}`,
     );
   }
+  /* Each trial is encoded in memory, so a run that cannot reach the budget leaves `outPath` as it
+     was rather than holding the last over-budget trial. */
   for (const quality of QUALITY_STEPS) {
-    await sharp(rawPath)
+    const jpeg = await sharp(rawPath)
       .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:4:4" })
-      .toFile(outPath);
-    const kb = Math.round((await stat(outPath)).size / 1024);
-    if (kb <= maxKb) return { quality, kb };
+      .toBuffer();
+    const kb = Math.round(jpeg.length / 1024);
+    if (kb <= maxKb) {
+      await writeFile(outPath, jpeg);
+      return { quality, kb };
+    }
   }
   throw new Error(`could not reach ${maxKb}KB`);
 }
@@ -464,7 +471,7 @@ async function main() {
   );
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   main().catch((err) => {
     console.error(`build failed: ${err.message}`);
     process.exit(1);
