@@ -47,7 +47,7 @@ const header = `/* THE COUPLE'S NAMES, drawn. Source: the owner's potrace conver
    — there is no font and no vector original, and \`legacy-html/index.html\` holds only a 780x580 PNG
    inline as a data URI. Generated from \`assets/names/Names-svg.svg\` by
    \`scripts/build-couple-names-symbol.mjs\`, the committed source of record — the trace with the
-   y of Flemy's loop redrawn where the original canvas cut it flat (owner, 2026-10-14).
+   y of Flemy's loop redrawn where the original canvas cut it flat.
    A re-trace must re-run that script, not hand-edit these paths.
 
    SPLIT INTO THE THREE WORD-GROUPS THE TRACE ALREADY SEPARATES, which is what lets ONE source serve
@@ -83,8 +83,7 @@ const body = GROUPS.map((g) => {
   const inner = g.paths
     .map((i) => `            <path d="${paths[i]}" />`)
     .join("\n");
-  return `        {/* ${g.what} — measured ink ${g.w} x ${g.h} at ${g.x}, ${g.y} in the source box */}
-        <symbol id="${g.id}" viewBox="0 0 ${g.w} ${g.h}">
+  return `        <symbol id="${g.id}" viewBox="0 0 ${g.w} ${g.h}">
           <g fill="currentColor" transform="translate(${-g.x},${-g.y}) ${SOURCE_TRANSFORM}">
 ${inner}
           </g>

@@ -2,7 +2,7 @@
    — there is no font and no vector original, and `legacy-html/index.html` holds only a 780x580 PNG
    inline as a data URI. Generated from `assets/names/Names-svg.svg` by
    `scripts/build-couple-names-symbol.mjs`, the committed source of record — the trace with the
-   y of Flemy's loop redrawn where the original canvas cut it flat (owner, 2026-10-14).
+   y of Flemy's loop redrawn where the original canvas cut it flat.
    A re-trace must re-run that script, not hand-edit these paths.
 
    SPLIT INTO THE THREE WORD-GROUPS THE TRACE ALREADY SEPARATES, which is what lets ONE source serve
@@ -32,7 +32,6 @@ export function CoupleNamesSymbol() {
       width="0"
     >
       <defs>
-        {/* Sebastian and the dot on its i — measured ink 599.68 x 190.11 at 0.32, 0.19 in the source box */}
         <symbol id="names-sebastian" viewBox="0 0 599.68 190.11">
           <g
             fill="currentColor"
@@ -42,7 +41,6 @@ export function CoupleNamesSymbol() {
             <path d="M4296 3604 c-9 -24 -7 -31 9 -38 17 -6 45 19 45 40 0 19 -46 18 -54 -2z" />
           </g>
         </symbol>
-        {/* the ampersand — measured ink 101.43 x 84.63 at 271.35, 160.17 in the source box */}
         <symbol id="names-ampersand" viewBox="0 0 101.43 84.63">
           <g
             fill="currentColor"
@@ -51,7 +49,6 @@ export function CoupleNamesSymbol() {
             <path d="M2963 2849 c-45 -13 -100 -71 -113 -119 -14 -51 0 -108 36 -143 26 -26 26 -26 -13 -46 -112 -58 -180 -196 -154 -314 49 -214 349 -289 514 -129 100 96 121 244 52 346 -23 35 -23 35 21 15 203 -86 373 -49 415 91 16 52 3 107 -31 142 -38 38 -104 40 -144 3 -26 -24 -34 -45 -17 -45 5 0 16 11 25 25 13 20 25 25 60 25 37 0 48 -5 71 -32 23 -28 27 -39 22 -81 -7 -80 -67 -139 -153 -152 -64 -9 -111 1 -249 52 -103 38 -127 44 -170 39 -107 -12 -173 -112 -130 -196 19 -37 43 -50 93 -50 26 0 45 6 57 20 23 25 12 39 -13 17 -48 -43 -115 1 -114 74 1 76 64 125 142 113 50 -8 75 -27 106 -80 23 -39 27 -58 27 -118 0 -81 -21 -133 -77 -189 -87 -87 -222 -109 -324 -53 -88 49 -132 128 -132 235 0 121 101 251 196 251 33 0 31 18 -3 22 -60 7 -93 119 -55 188 25 46 60 70 109 77 84 11 152 -54 137 -132 -4 -21 -2 -35 4 -35 15 0 22 54 12 92 -22 78 -110 115 -207 87z" />
           </g>
         </symbol>
-        {/* the F of Flemy, then lemy — measured ink 415.43 x 183.52 at 101.36, 262.08 in the source box */}
         <symbol id="names-flemy" viewBox="0 0 415.43 183.52">
           <g
             fill="currentColor"
