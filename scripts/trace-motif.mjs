@@ -46,6 +46,7 @@
 import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import sharp from "sharp";
 
 /* Wide enough that a hairline in the source survives thresholding as several pixels, which is what
@@ -817,6 +818,9 @@ async function main(argv) {
   );
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   await main(process.argv.slice(2));
 }

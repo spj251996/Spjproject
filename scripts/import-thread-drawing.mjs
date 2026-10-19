@@ -20,6 +20,7 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import sharp from "sharp";
 import { pruneSpurs, thin, walk } from "./trace-motif.mjs";
@@ -887,6 +888,9 @@ export async function importDrawing(args, { readPage = readLivePage } = {}) {
   return 0;
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   process.exitCode = await importDrawing(process.argv.slice(2));
 }

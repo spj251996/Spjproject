@@ -13,31 +13,28 @@ if (paths.length !== 5)
 /* Measured in a real engine, scripts/measure-couple-names-bbox.mjs, in the file's own viewBox units. */
 const GROUPS = [
   {
-    id: "names-sebastian",
+    id: "names-sebastian", // Sebastian and the dot on its i
     paths: [0, 1],
     x: 0.32,
     y: 0.19,
     w: 599.68,
     h: 190.11,
-    what: "Sebastian and the dot on its i",
   },
   {
-    id: "names-ampersand",
+    id: "names-ampersand", // the ampersand
     paths: [2],
     x: 271.35,
     y: 160.17,
     w: 101.43,
     h: 84.63,
-    what: "the ampersand",
   },
   {
-    id: "names-flemy",
+    id: "names-flemy", // the F of Flemy, then lemy
     paths: [3, 4],
     x: 101.36,
     y: 262.08,
     w: 415.43,
     h: 183.52,
-    what: "the F of Flemy, then lemy",
   },
 ];
 
