@@ -32,6 +32,7 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
 import { MOTIFS } from "../components/thread/thread-motifs.ts";
 import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
 import { withoutSection } from "./thread-without-section.mjs";
@@ -72,15 +73,13 @@ const DIRS = {
    wrong for recovering a size that was never carried by that separation in the first place. `scale`
    is an INPUT to the fit, never an output of it.
 
-   A motif/band cell with no `scale` in the source table takes its `?? 0.3` default — pinned here by
-   `undefined` rather than by copying 0.3 in, so a future correction to that default only has to
-   change one place. */
+   A motif/band cell with no `scale` in the source table is `undefined` here and takes
+   `DEFAULT_SCALE`, named once below. */
 const SCALE = {
   tall: {
     heart: 0.2,
     rings: 0.25,
     knot: 0.25,
-    phone: 0.2,
     portraitLoop: 0.35,
     wishesLoop: undefined,
     bow: undefined,
@@ -89,7 +88,6 @@ const SCALE = {
     heart: 0.3,
     rings: 0.28,
     knot: 0.2,
-    phone: 0.17,
     portraitLoop: 0.2,
     wishesLoop: undefined,
     bow: undefined,
@@ -98,18 +96,24 @@ const SCALE = {
     heart: 0.2,
     rings: 0.25,
     knot: 0.25,
-    phone: 0.2,
     portraitLoop: 0.25,
     wishesLoop: 0.2,
     bow: undefined,
   },
 };
 
+const DEFAULT_SCALE = 0.3;
+
 /* `scale` multiplies `100svmin` of the band's OWN nominal viewport (`thread-bands.ts`'s `box`) —
    the field basis the drawn sheets were rendered against, in CSS px: `min(box.width, box.height)`.
    Confirmed against the coordinator's own expected renders (wide/heart 0.3 x 695 = 208.5,
-   wide/rings 0.28 x 695 = 194.6, wide/phone 0.17 x 695 = 118.15). */
-const SVMIN_BY_BAND = { tall: 393, wide: 695, upright: 820 };
+   wide/rings 0.28 x 695 = 194.6). */
+const SVMIN_BY_BAND = Object.fromEntries(
+  THREAD_BANDS.map((band) => [
+    band.id,
+    Math.min(band.box.width, band.box.height),
+  ]),
+);
 
 /* Owner decision, in chat: the reflection that negates the motif's own internal turn is wanted for
    `portraitLoop` in `wide` and `tall`, where the drawn line turns the opposite sign from the
@@ -284,7 +288,8 @@ function buildBand(band, dir) {
 
     /* HELD FIXED — an input to the fit, never solved for. See `SCALE`'s own comment for why
        deriving it from the drawn ends' separation was wrong. */
-    const size = (SCALE[band][m.motifId] ?? 0.3) * SVMIN_BY_BAND[band];
+    const size =
+      (SCALE[band][m.motifId] ?? DEFAULT_SCALE) * SVMIN_BY_BAND[band];
 
     const place = (tangent) => {
       const dx = tangent.x - 0.5;
@@ -416,7 +421,7 @@ function buildBand(band, dir) {
         motif: f.motifId,
         x: round(f.x),
         y: round(f.y),
-        scale: SCALE[band][f.motifId] ?? 0.3,
+        scale: SCALE[band][f.motifId] ?? DEFAULT_SCALE,
         turn: round(f.turn),
         ...(f.mirror ? { mirror: true } : {}),
       }));
@@ -527,7 +532,9 @@ for (const [band, dir] of Object.entries(DIRS)) {
 
 writeFileSync("components/thread/thread-paths.ts", emit(results));
 
-console.log("\n=== fitted turn, all 8 motifs x 3 bands ===");
+console.log(
+  `\n=== fitted turn, all ${Object.keys(MOTIFS).length} motifs x 3 bands ===`,
+);
 for (const band of Object.keys(DIRS)) {
   console.log(`\n-- ${band} --`);
   for (const f of results[band].fitted) {

@@ -1,4 +1,4 @@
-import type { BandId } from "./thread-bands.ts";
+import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
 import type { SectionBox, ThreadId } from "./thread-geometry.ts";
 
 /* MEASURED on the real render, at the band's own nominal viewport (the width below is that band's
@@ -112,11 +112,9 @@ const HEIGHTS_BY_BAND: Record<BandId, SectionHeights> = {
   wide: WIDE_HEIGHTS,
 };
 
-const WIDTH_BY_BAND: Record<BandId, number> = {
-  tall: 393,
-  upright: 820,
-  wide: 1536,
-};
+const WIDTH_BY_BAND = Object.fromEntries(
+  THREAD_BANDS.map((band) => [band.id, band.box.width]),
+) as Record<BandId, number>;
 
 export function sectionBox(id: ThreadId, band: BandId): SectionBox {
   return { width: WIDTH_BY_BAND[band], height: HEIGHTS_BY_BAND[band][id] };

@@ -236,24 +236,6 @@ test("the tension puts a straight run's controls at the span's thirds", () => {
   assert.equal(Math.round(c2.x * 1e6) / 1e6, 16.666667);
 });
 
-/* The shaping happens in the space the points are given in; `project` only writes the result
-   somewhere else. A connector measures in the band's pixels and emits into its own stretched box,
-   and normalising a direction in the stretched space instead renders the same arm a hundred times
-   longer pointing one way than the other. */
-test("project moves the emitted curve without reshaping it", () => {
-  const plain = splinePath(unequal);
-  const halved = splinePath(unequal, {
-    project: (point) => ({ x: point.x / 2, y: point.y / 4 }),
-  });
-  const a = numbers(plain);
-  const b = numbers(halved);
-  assert.equal(a.length, b.length);
-  for (let i = 0; i < a.length; i += 2) {
-    assert.ok(Math.abs(a[i] / 2 - b[i]) < 1e-9, `x at ${i}`);
-    assert.ok(Math.abs(a[i + 1] / 4 - b[i + 1]) < 1e-9, `y at ${i}`);
-  }
-});
-
 /* ---- bounding the span-length ratio the fitter sees ---------------------------------------------
 
    The owner reported the thread reading as chicken scratch rather than a flowing line. `splinePath`

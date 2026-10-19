@@ -36,18 +36,6 @@ export type EndTangents = { start?: Point; end?: Point };
 
 export type SplineOptions = {
   ends?: EndTangents;
-  /* Where the curve is MEASURED and where it is EMITTED are not the same space, and separating them
-     is what makes the shaping rules below mean anything. A connector's box is stretched — often past
-     100:1 on a run that barely moves on one axis — so a direction normalised in box units and an arm
-     measured in them describe no distance a reader sees: the same arm renders a hundred times longer
-     pointing one way than the other, and the curve leaves the route entirely.
-
-     So the caller passes its points in the band's own PIXELS, where a bisector bisects and a third of
-     a span is a third of a span, and `project` carries each emitted control point into the box. Both
-     spaces are related per-axis and affinely, so projecting the control points is exact — the drawn
-     curve is the same one, written in the other space. */
-  project?: (point: Point) => Point;
-
   /* The widest span the fitter may see, defaulting to `MAX_SPAN`. Applied inside `splinePath`
      rather than by the generator (`scripts/build-thread-paths.mjs`), and the ORIGINAL REASON FOR
      THAT IS NOW VOID: the generator was gitignored when this was written, so a rule applied there
@@ -159,17 +147,13 @@ export function boundSpans(points: readonly Point[], maxSpan: number): Point[] {
  */
 export function splinePath(
   points: readonly Point[],
-  {
-    ends = {},
-    project = (point) => point,
-    maxSpan = MAX_SPAN,
-  }: SplineOptions = {},
+  { ends = {}, maxSpan = MAX_SPAN }: SplineOptions = {},
 ): string {
   /* Every rule below reads `spaced`, not `points`. Subdivision never moves the first or last point,
      so `ends.start`/`ends.end` still land on exactly the points they were measured for. */
   const spaced = boundSpans(points, maxSpan);
   if (spaced.length === 0) return "";
-  const first = project(spaced[0]);
+  const first = spaced[0];
   const segments = [`M ${first.x} ${first.y}`];
   const spanCount = spaced.length - 1;
   for (let i = 0; i < spanCount; i++) {
@@ -182,9 +166,9 @@ export function splinePath(
       (length * (at === 0 || at === spanCount ? 1 : 2)) / CONTROL_DIVISOR;
     const near = reach(i);
     const far = reach(i + 1);
-    const c1 = project({ x: p1.x + t1.x * near, y: p1.y + t1.y * near });
-    const c2 = project({ x: p2.x - t2.x * far, y: p2.y - t2.y * far });
-    const to = project(p2);
+    const c1 = { x: p1.x + t1.x * near, y: p1.y + t1.y * near };
+    const c2 = { x: p2.x - t2.x * far, y: p2.y - t2.y * far };
+    const to = p2;
     segments.push(`C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${to.x} ${to.y}`);
   }
   return segments.join(" ");

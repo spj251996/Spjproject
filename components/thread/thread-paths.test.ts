@@ -82,7 +82,6 @@ test("every placement names a real motif and carries finite geometry", () => {
     "heart",
     "rings",
     "knot",
-    "phone",
     "portraitLoop",
     "wishesLoop",
     "bow",
@@ -344,13 +343,12 @@ test("the exact tangent at a boundary is continuous to a fraction of a degree", 
    `thread-wide-placements.md` is prose the generator reads by eye, not a module either file can
    share. */
 const AUTHORED_SCALE: Record<BandId, Partial<Record<MotifId, number>>> = {
-  tall: { heart: 0.2, rings: 0.25, knot: 0.25, phone: 0.2, portraitLoop: 0.35 },
-  wide: { heart: 0.3, rings: 0.28, knot: 0.2, phone: 0.17, portraitLoop: 0.2 },
+  tall: { heart: 0.2, rings: 0.25, knot: 0.25, portraitLoop: 0.35 },
+  wide: { heart: 0.3, rings: 0.28, knot: 0.2, portraitLoop: 0.2 },
   upright: {
     heart: 0.2,
     rings: 0.25,
     knot: 0.25,
-    phone: 0.2,
     portraitLoop: 0.25,
     wishesLoop: 0.2,
   },
@@ -358,6 +356,24 @@ const AUTHORED_SCALE: Record<BandId, Partial<Record<MotifId, number>>> = {
 /* Every cell the table above leaves out — `wishesLoop` and `bow` in every band except
    `upright`/`wishesLoop` — carries no `scale` in the source and takes this default. */
 const DEFAULT_SCALE = 0.3;
+
+test("a motif with no authored scale takes the generator's default", () => {
+  let unscaled = 0;
+  for (const band of THREAD_BANDS) {
+    for (const id of SECTION_IDS) {
+      for (const placement of MOTIF_PLACEMENTS[band.id][id]) {
+        if (AUTHORED_SCALE[band.id][placement.motif] !== undefined) continue;
+        assert.equal(
+          placement.scale,
+          DEFAULT_SCALE,
+          `${band.id}/${id}/${placement.motif}: the generator's DEFAULT_SCALE is not this file's ${DEFAULT_SCALE}`,
+        );
+        unscaled++;
+      }
+    }
+  }
+  assert.ok(unscaled > 0, "no placement takes the default scale");
+});
 
 test("every placement's scale is the owner's authored value, never derived from the drawn geometry", () => {
   for (const band of THREAD_BANDS) {

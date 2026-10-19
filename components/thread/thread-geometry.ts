@@ -5,7 +5,6 @@ export type MotifId =
   | "heart"
   | "rings"
   | "knot"
-  | "phone"
   | "portraitLoop"
   | "wishesLoop"
   | "bow";

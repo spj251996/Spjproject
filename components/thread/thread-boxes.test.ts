@@ -90,3 +90,30 @@ test("the measured heights match the render exactly", () => {
   });
   assert.deepEqual(sectionBox("wishes", "wide"), { width: 1536, height: 695 });
 });
+
+/* A one-screen section is exactly its band's nominal box, so `invite` and `wishes` tie each box's
+   height here as the width does for every section. */
+test("every section box is its band's width, and a one-screen section its band's height", () => {
+  for (const band of THREAD_BANDS) {
+    for (const id of [
+      "invite",
+      "event-info",
+      "family",
+      "celebrations",
+      "wishes",
+    ] as const) {
+      assert.equal(
+        sectionBox(id, band.id).width,
+        band.box.width,
+        `${id}/${band.id} width`,
+      );
+    }
+    for (const id of ["invite", "wishes"] as const) {
+      assert.equal(
+        sectionBox(id, band.id).height,
+        band.box.height,
+        `${id}/${band.id} height`,
+      );
+    }
+  }
+});
