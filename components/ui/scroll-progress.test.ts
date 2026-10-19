@@ -8,7 +8,6 @@ const css = strip(
   readFileSync("components/ui/scroll-progress.module.css", "utf8"),
 );
 const page = readFileSync("app/page.tsx", "utf8");
-const lab = readFileSync("app/thread/page.tsx", "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 const invite = strip(readFileSync("app/invite.css", "utf8"));
 
@@ -31,6 +30,7 @@ test("the bar sits beside <main>, never inside it, so no section's box can move"
 });
 
 test("the lab route carries no bar", () => {
+  const lab = readFileSync("app/thread/page.tsx", "utf8");
   assert.equal(lab.includes("ScrollProgress"), false);
 });
 

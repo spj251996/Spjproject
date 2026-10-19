@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { cappedAspect, photoFit } from "./photo-fit.ts";
+import {
+  cappedAspect,
+  MIN_ROW_HEIGHT,
+  PHOTO_GAP,
+  photoFit,
+} from "./photo-fit.ts";
 
 const A = { wide: 2.64, land: 1.6, sq: 1.0, tall: 0.67 };
 const aspects = {
@@ -43,7 +49,8 @@ test("the row height is solved across every ritual, not just the first", () => {
       photos.reduce(
         (total, src) => total + cappedAspect(src, aspects, 1.5) * fit.rowHeight,
         0,
-      ) + 8;
+      ) +
+      PHOTO_GAP * (photos.length - 1);
     assert.ok(
       width <= available,
       `${id} overflows its block at the shared height: ${width} > ${available}`,
@@ -68,13 +75,13 @@ test("a single-photograph ritual yields one frame and a finite height", () => {
 test("an unresolved aspect does not stall or zero the row", () => {
   const fit = photoFit({ a: ["/missing.jpg", "/s.jpg"] }, 150, 400, {}, 1.5);
   assert.equal(fit.ready, false);
-  assert.ok(Number.isFinite(fit.rowHeight) && fit.rowHeight > 0);
+  assert.equal(fit.rowHeight, 150, "an unready row keeps the nominal height");
 });
 
 // Review Focus 3 — this exact class killed a renderer in this project
 test("zero available width never divides by zero", () => {
   const fit = photoFit({ a: ["/s.jpg", "/s.jpg"] }, 150, 0, aspects, 1.5);
-  assert.ok(Number.isFinite(fit.rowHeight) && fit.rowHeight > 0);
+  assert.equal(fit.rowHeight, 150, "an unready row keeps the nominal height");
   assert.equal(fit.ready, false);
 });
 
@@ -82,4 +89,37 @@ test("no rituals at all is not an error", () => {
   const fit = photoFit({}, 150, 400, aspects, 1.5);
   assert.deepEqual(fit.shown, {});
   assert.ok(Number.isFinite(fit.rowHeight));
+});
+
+test("a solve that would fall below the floor stops at it", () => {
+  const fit = photoFit({ a: ["/w.jpg", "/w.jpg"] }, 150, 100, aspects, 1.5);
+  assert.equal(fit.ready, true);
+  assert.equal(fit.rowHeight, MIN_ROW_HEIGHT);
+});
+
+test("only the first three photographs gate readiness", () => {
+  const ready = photoFit(
+    { a: ["/s.jpg", "/s.jpg", "/s.jpg", "/unknown.jpg"] },
+    150,
+    400,
+    aspects,
+    1.5,
+  );
+  assert.equal(ready.ready, true, "a fourth photograph's aspect is not needed");
+  const unready = photoFit(
+    { a: ["/s.jpg", "/unknown.jpg", "/s.jpg"] },
+    150,
+    400,
+    aspects,
+    1.5,
+  );
+  assert.equal(unready.ready, false, "one of the first three is missing");
+});
+
+/* The strip renders its gap as `gap-space-2xs`, so the solver's gap must be that token's value. */
+test("PHOTO_GAP is --spacing-space-2xs", () => {
+  const tokens = readFileSync("app/styles/tokens.css", "utf8");
+  const value = tokens.match(/^\s*--spacing-space-2xs:\s*(\d+)px;/m)?.[1];
+  assert.ok(value, "tokens.css declares no --spacing-space-2xs");
+  assert.equal(Number(value), PHOTO_GAP);
 });

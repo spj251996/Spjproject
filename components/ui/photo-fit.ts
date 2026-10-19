@@ -19,7 +19,7 @@ export const PHOTO_GAP = 8;
    NARROW end: a tall frame only makes its own tile narrower, which can never force the row down. */
 export const DEFAULT_ASPECT_CAP = 3 / 2;
 
-const MIN_ROW_HEIGHT = 64;
+export const MIN_ROW_HEIGHT = 64;
 const PREVIEW_CAP = 3;
 
 /** The aspect the LAYOUT uses, which is not always the file's own. */
