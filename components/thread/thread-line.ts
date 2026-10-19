@@ -1,8 +1,5 @@
-/* Bakes the whole page's thread — every section's connectors and motifs, in the order the owner
-   drew them — into ONE `d`, so a later component can drive the reveal from a single
-   `stroke-dashoffset` and the line reads as one continuous stroke growing from the invite's free
-   start to the wishes' exit (the owner's review, `session.md`'s "ONE line ... only ONE thing
-   drawing at any moment"). Pure arithmetic on top of `thread-warp.ts`'s per-section warp: no DOM, no
+/* Bakes the page's thread into pieces, one dash per piece, and maps scroll position to each piece's
+   progress. Pure arithmetic on top of `thread-warp.ts`'s per-section warp: no DOM, no
    React, so it needs no render to test.
 
    CONNECTION ORDER is read from the data, not assumed: `thread-paths.ts`'s `THREAD_IDS` is the
@@ -52,7 +49,7 @@ export type ThreadLine = {
      card or ritual row its own pieces' geometry actually sits in (`assignRectIndex`'s own header).
      `id` still names the OWNING SECTION, not a group identity of its own — nothing downstream needs
      to tell two groups of the same section apart by anything other than array position, and the
-     `id === "wishes"` terminal check (`drawnLength` below) only needs to find wishes' own (always
+     `id === "wishes"` terminal check (`sectionProgressAt` below) only needs to find wishes' own (always
      single) group. This is what lets `page-thread.tsx` map a scroll position onto "how much of the
      whole dash has drawn" per WINDOW rather than per section, without recomputing geometry it has
      already baked once here. */
@@ -66,10 +63,9 @@ export type ThreadLine = {
      invent a rect for each one. */
   groupRects: readonly SectionRect[];
   /* ONE PIECE PER connector and per motif, in draw order, over the SAME cumulative scale as
-     `length`/`sections` — the fix for the finding that supersedes the previous architecture:
-     `stroke-dasharray` restarts at every `M` subpath, so a single dash driving a `d` that holds 19
-     subpaths (the main path, `wishes` excluded — its own card thread carries the other 3) produced
-     19 simultaneous draw heads rather than one (`task-1-report.md`). `page-thread.tsx` and
+     `length`/`sections`. The thread has 19 pieces in all (16 on the main path; Wishes' card thread
+     owns the other 3), each its own `<path>` with its own dash, because `stroke-dasharray` restarts
+     at every `M` subpath. `page-thread.tsx` and
      `CardThread` give each piece its OWN `<path>` and its OWN dash, computed from its own
      `[start, end)` here — contiguous and disjoint by construction, which is what makes "exactly one
      piece mid-draw" true without a second rule to keep in sync (see `pieceProgress` below). */
@@ -126,8 +122,8 @@ export type ThreadPiece = {
    at an index means that placement takes the plain warped position, exactly today's behaviour. Kept
    generic (per section, per placement index) rather than naming `family`/`portraitLoop` here: the
    owner's anchoring requirement is Family's today, but the mechanism — translate a motif's warped
-   centre onto a real measured element — has nothing Family-specific about it, and Task 4's caller is
-   the one that knows which placement is which (by matching a real DOM rect to the nearest warped
+   centre onto a real measured element — has nothing Family-specific about it, and the caller is the
+   one that knows which placement is which (by matching a real DOM rect to the nearest warped
    placement, since two `portraitLoop`s in one section are otherwise indistinguishable here). */
 export type SectionAnchors = readonly (Rect | undefined)[];
 
@@ -136,13 +132,10 @@ const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 type Point = { x: number; y: number };
 
 /* A motif is drawn in its own 0-100 unit square (`thread-motifs.ts`) and carries a single
-   scale-rotate[-mirror] onto the page. This is the SAME transform `thread-css.ts` (the stylesheet
-   this component replaces) already applies as CSS `rotate`/`scale` on the motif's own field —
-   confirmed against that file's live composition, not assumed: at identity (band's own nominal
-   viewport, `place.turn`/`place.mirror` as authored), this formula lands the heart's entry point
-   within 0.05px of `THREAD_PATHS.tall.invite`'s first connector's own recorded endpoint (44.49,
-   417.61), and `family`'s first mirrored `portraitLoop` entry within 0.01px of that section's first
-   connector endpoint (79.29, 397.4) — both read from `thread-paths.ts`, not typed by hand.
+   scale-rotate[-mirror] onto the page. At identity (a band's own nominal viewport, `place.turn` /
+   `place.mirror` as authored) this formula lands the heart's entry within 0.05px of
+   `THREAD_PATHS.tall.invite`'s first connector endpoint, and `family`'s first mirrored
+   `portraitLoop` entry within 0.01px of that section's first connector endpoint.
 
    CSS's individual transform properties compose in a fixed order regardless of declaration order —
    translate, then rotate, then scale — applied to a POINT that means scale (the mirror) runs first,
@@ -180,8 +173,7 @@ function bakeMotifPoint(
    motif's own entry, which the `d` cannot afford under the "one continuous line" requirement this
    module exists for.
 
-   The motif's transform is the one that must not bend — Task 1's spike measured 0.0% aspect spread
-   under it, against 82.9% for either axis-independent alternative. The connector's endpoint carries
+   The motif's transform is the one that must not bend — it measured 0.0% aspect spread under it, against 82.9% for either axis-independent alternative. The connector's endpoint carries
    no such constraint, so IT yields: every connector point that touches a motif is snapped to that
    motif's own baked entry/exit point after both are computed, rather than trusted as an independent
    warp of the same authored coordinate. This is also the more literal reading of "connector k runs
@@ -216,11 +208,11 @@ function withLastPoint(d: string, point: Point): string {
   return tokens.join(" ");
 }
 
-/* PORTRAIT LOOP TAIL TRIM — the owner's ask (`session.md` 2026-09-27): "can we trim the entry/exit
+/* PORTRAIT LOOP TAIL TRIM — the owner's ask: "can we trim the entry/exit
    tails of the motif so that connectors don't do weird turns there?" `portraitLoop`'s own drawn
    tails run nearly flat (entry angle -0.4deg, exit -29.8deg — `thread-motifs.ts`) before curving into
    the loop proper, while the connectors either side of it were authored against those FULL,
-   untrimmed endpoints — measured on the real rendered page (Task 3's own baseline), the join turns
+   untrimmed endpoints — measured on the real rendered page, the join turns
    30-117 degrees at every band, far past what that shallow authored tangent alone would predict.
    Dropping a fraction of the motif's own arc at each end moves the point the connector meets
    further round the loop's curve, onto ink closer to the connector's actual angle of approach.
@@ -297,9 +289,8 @@ function bakeMotif(
    1/samples^2 for a curve without a cusp (each sub-arc becomes flatter, and a flatter arc's
    chord-length deficit falls with the square of its own span); measured directly against this
    module's own output (the `wide`-band test fixture in `thread-line.test.ts`), going from 256 to 512
-   samples per cubic moves the page's own total length of ~14208px by ~0.0042px, a relative change of
-   ~0.00003% — so 256 is already several orders inside the 0.01px tolerance every other measurement in
-   this file works to. */
+   samples per cubic moves the page's total length negligibly, so 256 is already several orders inside
+   the 0.01px tolerance every other measurement in this file works to. */
 const LENGTH_SAMPLES = 256;
 
 function pointOnCubic(
@@ -703,12 +694,10 @@ export function threadLine(
 }
 
 /* ---------------------------------------------------------------------------------------------
-   THE PIECEWISE PROGRESS MAP — replaces one global `scrollY / (scrollHeight - innerHeight)`
-   (`page-thread.tsx`'s old `pageProgress`), which advanced the draw head at a constant rate through
-   TOTAL PATH LENGTH. Total path length has no relationship to where a section's own scroll window
-   falls, so every section crept forward at once instead of drawing in the order the reader reaches
-   them (the owner's review, `session.md` 2026-09-27). This is a MAPPING fix only: still one path,
-   one dash, one number -- only the function producing that number changes. */
+   THE PIECEWISE PROGRESS MAP. Each section's scroll window maps onto that section's own stretch of
+   the page total, never one global `scrollY / (scrollHeight - innerHeight)`: total path length has no
+   relationship to where a section's scroll window falls, so a global fraction advances every section
+   at once. */
 
 export function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
@@ -728,9 +717,8 @@ function lerpProgress(
   return y0 + (y1 - y0) * clamp01((scrollY - x0) / (x1 - x0));
 }
 
-/* THE 75%/25% CROSSING RULE, owner decision 2026-09-28, superseding this same file's earlier
-   60%-of-window/40%-hold rule (session.md, 2026-09-27) now that the dash is per-PIECE rather than
-   per-section: "the last connector of every section except wishes is 75% drawn at the moment the
+/* THE 75%/25% CROSSING RULE, now that the dash is per-PIECE rather than per-section: "the last
+   connector of every section except wishes is 75% drawn at the moment the
    section's top reaches the viewport's top... the remaining 25% draws as the reader scrolls on...
    the next section's first piece waits for that 25%." In the owner's own words this is about ONE
    piece -- the section's final connector -- not the section as a whole, so the fraction of the
@@ -757,14 +745,11 @@ function terminalSectionProgress(
   };
 }
 
-/* THE TERMINAL STRETCH'S OWN SCROLL BUDGET — the owner's finding, 2026-10-05, on a real render.
-   Measured at every band: `wishes.top` EQUALS the page's own `maxScroll` (4100 at `wide`, 6780 at
-   `tall`), because wishes occupies exactly the final viewport. Its card is therefore never scrolled
-   THROUGH — the page runs out of scroll precisely where wishes begins — so the chain handed it
-   whatever the previous section left over, which measured 100px of 4100 at `wide` (2.4%) and 524px
-   of 6780 at `tall` (7.7%). Three owner-visible symptoms followed from that one fact: the stretch
-   drew too fast to read as a draw, it reached 100% only at the page's LAST PIXEL, and so the drawing
-   head stayed lit over the closing taper at any resting position short of the exact bottom.
+/* THE TERMINAL STRETCH'S OWN SCROLL BUDGET. `wishes.top` EQUALS the page's own `maxScroll`, because
+   wishes occupies exactly the final viewport, so its card is never scrolled THROUGH and the chain
+   would hand it only whatever the previous section left over: the stretch would draw too fast to read
+   as a draw and reach 100% only at the page's last pixel, leaving the drawing head lit over the
+   closing taper at any resting position short of the bottom.
 
    `span` buys the stretch a real window and `finish` lands it before the page bottom, so the head
    retires while the reader is still there. Both are read from tokens rather than coined here: the
@@ -772,7 +757,7 @@ function terminalSectionProgress(
    earlier sections' shared budget — the page's total is fixed — which is why `sectionProgressAt`
    bounds those sections by the terminal window's own start rather than by `maxScroll`. That bound is
    what keeps "at most one section mid-ramp" true; without it the terminal ramp would overlap
-   whichever section is still running. A `span` of 0 keeps the pre-2026-10-05 behaviour exactly. */
+   whichever section is still running. A `span` of 0 defers to the chain's leftover. */
 export type TerminalWindow = {
   /* Scroll distance, in px, the terminal stretch draws across. 0 defers to the chain's leftover. */
   readonly span: number;
@@ -798,8 +783,8 @@ export const CHAIN_TERMINAL_WINDOW: TerminalWindow = { span: 0, finish: 0 };
    every later section in turn, reading the WHOLE PAGE complete at scroll 0. That is a correctness
    bug, not a matter of degree, so `invite` instead keeps this file's own PRE-crossing rule: ramp
    across the first `FIRST_SECTION_DRAW_FRACTION` of its own window (still `[rect.top, rect.top +
-   rect.height]`, no lead-in) and hold for the rest — reported to the owner in `task-1-report.md`
-   as a deliberate, evidence-driven exception to "every section except wishes", not a silent one. */
+   rect.height]`, no lead-in) and hold for the rest — a deliberate, evidence-driven exception to
+   "every section except wishes". */
 const FIRST_SECTION_DRAW_FRACTION = 0.6;
 
 function firstSectionProgress(
@@ -832,8 +817,8 @@ function firstSectionProgress(
    the same rate carries the last piece through its own 75%/100% boundary, so the crossing speed and
    the approach speed are the same number, never chosen independently.
 
-   `windowStart` is NOT this section's own `rect.top` -- it is wherever the PREVIOUS section's own
-   ramp B finished (or, for the first section, the page's own scroll origin), threaded through
+   `windowStart` is NOT this section's own `rect.top` -- it is the previous section's `windowEnd`
+   (the first section uses `firstSectionProgress`), threaded through
    `drawnLength`'s loop below. That chaining is what "the next section's first piece waits" reduces
    to: the next section's ramp A cannot begin, by definition, before this one's ramp B has an
    `windowEnd` to hand it. */
@@ -888,23 +873,19 @@ function pageMaxScroll(
   return Math.max(totalHeight - viewportHeight, 0);
 }
 
-/* The total drawn length of the whole page's dash at a given scroll position: each section's own
-   range contributes `progress * rangeLength`, and nothing more -- a section whose window has not
-   opened yet contributes zero regardless of how far past it any LATER section already is, and a
-   section fully behind keeps its full range regardless of how far the reader has since continued.
-   `windowStart` threads sequentially through the loop -- each section's own ramp begins exactly
-   where the previous one's ramp B ended (or the page's own scroll origin, for the first section) --
-   which is the mechanism, not an assumption, behind "the next section's first piece waits": its
-   ramp A cannot start before `windowStart` reaches it, and `windowStart` cannot advance until the
-   previous section's crossing piece (or, for `wishes`, its own terminal ramp) has reported its own
-   `windowEnd`. */
 /* Every section's own 0-1 progress at a given scroll position, in THREAD_IDS order -- the piece
    this file's three ramp shapes (`firstSectionProgress`/`crossingSectionProgress`/
    `terminalSectionProgress`) share, and what `drawnLength` below sums. Exported (alongside the sum)
    because "which sections are mid-ramp right now" is itself a testable claim -- "at most one
    section mid-ramp" (`thread-line.test.ts`) needs to inspect EACH section's own value, not just
    their combined total, and re-deriving that by hand-zeroing ranges in the test would only
-   reproduce these same ramp shapes a second time, with its own chance to drift from them. */
+   reproduce these same ramp shapes a second time, with its own chance to drift from them.
+
+   `windowStart` threads sequentially through the loop: each section's ramp begins exactly where the
+   previous one's ramp B ended (the first section uses `firstSectionProgress`), which is the mechanism
+   behind "the next section's first piece waits": its ramp A cannot start before `windowStart`
+   reaches it, and `windowStart` cannot advance until the previous section's crossing piece (or, for
+   `wishes`, its own terminal ramp) has reported its `windowEnd`. */
 export function sectionProgressAt(
   scrollY: number,
   viewportHeight: number,
@@ -1009,11 +990,10 @@ export function pieceProgress(
 
 /* A piece's dash, as the two numbers the renderer sets. The offset scales by the whole PERIOD, not
    by `length` alone: `dasharray` overshoots the piece's own end by `DASH_EPSILON` so a
-   fully-drawn piece never lands on the "stops short" case `lessons.md` (2026-09-25) records for an
-   exactly-matching dash, and scaling the offset by `length` instead would leave exactly that
+   fully-drawn piece never lands on the "stops short" case an exactly-matching dash hits, and scaling the offset by `length` instead would leave exactly that
    epsilon painted at progress 0 -- a seed of ink on every one of the nineteen pieces before any of
    them has begun. Lives here rather than in the component so the arithmetic is testable without a
-   DOM, which is how the seed went unnoticed. */
+   DOM. */
 export const DASH_EPSILON = 4;
 
 export function dashForPiece(

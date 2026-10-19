@@ -15,8 +15,8 @@
    THE HEAD BELONGS TO THE THREAD, NOT TO A PIECE. It is the last `length` of drawn line up to the
    tip, so with the tip 10px into a piece its tail lies in the piece before. A head computed per
    piece would shrink to a stub at every boundary and regrow, so this takes the whole chain of
-   pieces and returns the runs each one carries. The trunk and Wishes' weave, which are separate
-   `<svg>`s, call it with the same pieces and the same drawn length and each draws the runs in its
+   pieces and returns the runs each one carries. The trunk and Wishes' card thread (`CardThread`),
+   which are separate `<svg>`s, call it with the same pieces and the same drawn length and each draws the runs in its
    own — which is what lets the head cross the join between them unbroken. */
 
 import { dashForPiece, pieceProgress } from "./thread-line.ts";
@@ -35,11 +35,10 @@ const MAX_STEP_DELTA_E = 2;
 const MAX_STEP_LENGTH = 8;
 const MAX_STEPS = 48;
 
-/* Each step is run this far under the one behind it, as insurance: a 0.75px within-stack overlap was
-   measured as making no difference to the colour jump on the centreline, so it is kept because it
-   costs nothing, not because a seam was seen there. What WAS seen is a hairline (and a dark half-disc of ink cap) at the
-   join between the trunk's `<svg>` and the weave's, at 12x. That is why it is exported: where the
-   head crosses into a piece that lives in another `<svg>`, the run on the near side carries the same
+/* Each step is run this far under the one behind it, as insurance: within one stack the overlap was
+   measured as making no difference, so it is kept because it costs nothing. It is exported for the
+   join between the trunk's `<svg>` and the card thread's, where a hairline was seen: where the head
+   crosses into a piece that lives in another `<svg>`, the run on the near side carries the same
    overlap past its own path's end. */
 export const HEAD_STEP_OVERLAP = 1;
 
@@ -183,7 +182,6 @@ function rampSpan({ tailColor, midColor, tipColor }: HeadOptions): number {
   return deltaE(tailColor, midColor) + deltaE(midColor, tipColor);
 }
 
-/* `steps = max(ceil(length / 8), ceil(span / 2))`, capped. Exported so the rule itself is tested. */
 export function headStepCount(options: HeadOptions): number {
   return Math.min(
     MAX_STEPS,
@@ -288,10 +286,8 @@ export interface PieceSpan {
 
    Each run is clipped to its own piece, so when the tip is within that reach of a piece's end the
    butt step stops short of the ink's cap, and a short round-capped run of the tip colour covers it
-   instead. Measured on the shipped build with that cover removed: every one of the 30 forced
-   piece-end states checked (25 at wide, 5 at tall) showed a dark pip; with it, none. (An earlier
-   dashed head additionally could not draw a butt past a path's end at all; that mechanism is not
-   tested on the shipped polylines, and only the clipping is claimed here.) */
+   instead: the round-capped cover stops the butt-ended runs from showing a dark pip at a piece's end;
+   only that clipping is claimed. */
 export function headSegments(
   drawn: number,
   pieces: readonly PieceSpan[],
@@ -453,13 +449,9 @@ export function retraceTargets(
    each frame. (A group with `opacity` below 1, which a short segment's group takes, is still an
    isolated group; that case is inferred and was not isolated in the measurement.)
 
-   Fitted to the 4x filter halo as measured on a straight 3.2px line over the ivory ground: the share
-   of vermilion at 2-60px from the centreline is 0.24 at 2px, 0.13 at 6, 0.06 at 10-12, 0.036 at 20,
-   0.018 at 30 and 0.006 at 50-60. Each stroke covers one band of that curve, and its alpha is what
-   brings the composite inside the band up to the measured share given the strokes outside it. Three
-   strokes gave an RMS error of 0.014 in that share and a visibly stepped edge at 3x (the widest
-   stroke's rim read as an outline); eight give 0.007 and none shows at 3x. Widest first, as they are
-   painted.
+   Fitted to the 4x filter halo as measured on a straight 3.2px line over the ivory ground, one stroke
+   per band of its falloff; eight strokes, because fewer show a stepped edge at 3x. Widest first, as
+   they are painted.
 
    THESE EIGHT ALPHAS DEPEND ON THE HALO'S RADII (3.5 / 12 / 33px, `--halo-thread-head`) AND ON ITS
    THREE ALPHAS: they were fitted to the falloff those values produce. Retune the halo and this stack
@@ -479,12 +471,9 @@ const FITTED_GLOW = [
 /* SCALED BY `RETRACE_GLOW_SCALE`. A constant-width stroke over the whole segment covers more area
    with faint glow than the filter does round a segment that tapers to the ink's width and fades at
    its ends, although it is fainter than the filter at every distance on a straight line. So the
-   fitted alphas are scaled until the real segment's glow area is near the filter's. Measured on the
-   real segment (393x700, scroll 0, ten frames, pixels changed against the layer hidden, three runs;
-   figures are pixels over 12/255, summed delta, pixels over 4/255): the filter 2,217 / 64,412 /
-   5,592; scale 1.0 gives 2,770 / 85,598 / 9,306; 0.72 gives 1,979 / 57,440 / 4,613; the shipped
-   0.77 gives 2,528 / 70,946 / 6,399. The response steps rather than ramps because an alpha is
-   stored in eight bits. */
+   fitted alphas are scaled until the real segment's glow area is near the filter's: 0.77, measured
+   on the real segment. The response steps rather than ramps because an alpha is stored in eight
+   bits. */
 export const RETRACE_GLOW_SCALE = 0.77;
 export const RETRACE_GLOW = FITTED_GLOW.map(({ width, alpha }) => ({
   width,
@@ -569,11 +558,7 @@ export function retraceLoopAt(
     : { loop: through % 1, spent: false };
 }
 
-/* THE RE-TRACE'S SPEED MODEL (owner, 2026-10-05: "lets decouple speed and length, its not calm
-   retrace but jarring effect", and "max looping duration as N loops on biggest thread section ...
-   find looping duration that ensures complete loops for all").
-
-   A loop of fixed duration makes the light's SPEED depend on the stretch's length, because every
+/* THE RE-TRACE'S SPEED MODEL. A loop of fixed duration makes the light's SPEED depend on the stretch's length, because every
    stretch has to finish in the same time whatever distance it covers. Measured on the shipped layout
    that is a 10.3x spread at `wide` -- 231px/s on celebrations' short row against 2371px/s on
    event-info, both on screen together.
@@ -587,7 +572,7 @@ export function retraceLoopAt(
    against the 10.3x it replaces. The longest stretch is exact by construction.
 
    Lives here, not in the component, for the same reason the rest of the arithmetic does: it is
-   testable without a DOM, which is how the epsilon seed and the vacuous checks were caught. */
+   testable without a DOM. */
 export function retraceNominalMs(extent: number, speed: number): number {
   return (extent / (RETRACE_TIP_ARRIVES * speed)) * 1000;
 }
