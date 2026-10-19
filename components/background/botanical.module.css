@@ -47,14 +47,12 @@
 .bloom {
   position: absolute;
   height: auto;
-  /* Two limits, whichever is smaller. The first is the width this tier tunes the piece to, in `vw`.
-     The second caps it by the block extent the piece has to live in, because a width settled
-     against one window would otherwise run past a section's top or bottom edge at a shorter one.
-     `DESIGN.md` allows a bleed off the left or right window edge only, so the cap enforces that
-     rule structurally rather than relying on every tuned value having been checked at every window
-     size. The generated stylesheet sets both custom properties; these are the fallbacks. */
+  /* Two limits, whichever is smaller: the tier's tuned width in `vw`, and a cap by the block extent
+     the piece lives in, so no piece bleeds past a section's top or bottom edge at a shorter window
+     (DESIGN.md → Botanical Edge). The generated stylesheet sets both custom properties; these are
+     the fallbacks for a Bloom with no generated rule. */
   --piece-max-block: 100svh;
-  --piece-size: 0;
+  --piece-size: 0px;
   width: min(
     var(--piece-size),
     calc(var(--piece-max-block) * var(--piece-aspect))
