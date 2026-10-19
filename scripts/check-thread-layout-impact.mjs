@@ -76,6 +76,8 @@ if (!reachable) {
 }
 
 const browser = await chromium.launch({ channel: "chromium" });
+/* 1 is a detected break, 2 a measurement that never ran -- kept apart so `--falsify` cannot read an
+   errored render as the gate seeing its defect. */
 let exitCode = 1;
 try {
   const page = await browser.newPage({
@@ -85,10 +87,10 @@ try {
   page.setDefaultTimeout(NAV);
   await page.goto(`${ORIGIN}${LAB_ROUTE}`, { waitUntil: "load", timeout: NAV });
   await page
-    .evaluate(() => document.fonts.ready)
-    .catch(() =>
-      console.warn("  fonts did not settle; geometry is unaffected"),
-    );
+    .waitForFunction(() => document.fonts.status === "loaded", null, {
+      timeout: 5000,
+    })
+    .catch(() => console.log("fonts did not settle in 5s, continuing"));
 
   if (falsify) {
     /* Reproduce the exact defect this gate exists to catch: put the card thread's wrapper back in flow,
@@ -117,8 +119,8 @@ try {
   });
 
   if ("error" in result) {
-    console.log(`  BREAK: ${result.error}`);
-    exitCode = 1;
+    console.log(`  ERROR: ${result.error}`);
+    exitCode = 2;
   } else {
     const { stackHeight, figureColHeight, cardPathD } = result;
     const delta = Math.abs(stackHeight - figureColHeight);
@@ -146,12 +148,16 @@ try {
 }
 
 if (falsify) {
+  if (exitCode === 2) {
+    console.log("\nfalsify inconclusive: measurement errored");
+    process.exit(1);
+  }
   console.log(
-    exitCode !== 0
+    exitCode === 1
       ? "\nfalsify: the gate reported a break against a deliberately reintroduced defect -- it can see it."
       : "\nfalsify: the gate saw nothing wrong with a deliberately reintroduced defect. IT IS NOT A GATE.",
   );
-  process.exit(exitCode !== 0 ? 0 : 1);
+  process.exit(exitCode === 1 ? 0 : 1);
 }
 
 process.exit(exitCode);

@@ -79,22 +79,6 @@ const VIEWPORTS = THREAD_BANDS.flatMap((band) => [
   { name: `${band.id}-drifted`, ...DRIFTED[band.id] },
 ]);
 
-/* THE FORMER RECORDED EXCEPTION — REMOVED, per this file's own stale-exemption rule below.
- *
- * `event-info upright-nominal` was recorded here as a known break, attributed to `rings`/`knot`
- * inverting at `r = 0.6849` against the `upright` band's own `0.6949` and composing a connector
- * 0.9 px long, under a generator's 1 px floor. That whole mechanism — seeded scales, a four-row
- * grid, per-band normalisation against a nominal box — belonged to the retired `thread-css.ts` grid
- * model, which no longer exists: `event-info`'s connectors are now hand-authored, measured curves in
- * `thread-paths.ts`, and every one of them at `upright` spans hundreds to low thousands of px (the
- * shortest measured on the live page's mounted trunk at `upright` 820x1180 is 319.57 px, none under
- * 2 px — `final-review-fixes.md`). There is no seeded scale left to invert and no floor left to fall
- * under, so the exception's own cause cannot recur; that is why it is gone, not only that the render
- * currently shows one run. A geometry change that reintroduces a sub-pixel connector would need a
- * new mechanism capable of producing one, at which point a new entry belongs here. */
-
-const CROSSINGS = new Map();
-
 const flag = (name, fallback = null) => {
   const found = process.argv.find((arg) => arg.startsWith(`--${name}=`));
   return found === undefined ? fallback : found.slice(name.length + 3);
@@ -201,16 +185,28 @@ if (!reachable) {
   process.exit(2);
 }
 
-const browser = await chromium.launch({ channel: "chromium" });
 /* `rest` and `scrub` are named once: the loop and the coverage assertion below read the
    same list, so neither can drift from the other. */
 const STATES = ["rest", "scrub"];
+const sectionsInScope = SECTIONS.filter((id) => only === null || id === only);
+const viewportsInScope = VIEWPORTS.filter(
+  (viewport) => onlyViewport === null || viewport.name === onlyViewport,
+);
+const expected =
+  sectionsInScope.length * viewportsInScope.length * STATES.length;
+if (expected === 0) {
+  console.error(
+    `check-thread-joins: no case matched --section=${only ?? "(any)"} --viewport=${onlyViewport ?? "(any)"}.\n` +
+      `  sections: ${SECTIONS.join(", ")}\n` +
+      `  viewports: ${VIEWPORTS.map((viewport) => viewport.name).join(", ")}`,
+  );
+  process.exit(1);
+}
+
+const browser = await chromium.launch({ channel: "chromium" });
 const failures = [];
-/* Which recorded crossings this run actually saw break, and which have stopped breaking — the
-   second set is what keeps the record from outliving the route that caused it. */
-const crossed = new Set();
-const mended = new Set();
 let measured = 0;
+let whole = 0;
 try {
   for (const viewport of VIEWPORTS) {
     if (onlyViewport !== null && viewport.name !== onlyViewport) continue;
@@ -226,16 +222,17 @@ try {
         timeout: NAV,
       });
       await page
-        .evaluate(() => document.fonts.ready)
-        .catch(() =>
-          console.warn("  fonts did not settle; geometry is unaffected"),
-        );
+        .waitForFunction(() => document.fonts.status === "loaded", null, {
+          timeout: 5000,
+        })
+        .catch(() => console.log("  fonts did not settle in 5s, continuing"));
 
       if (falsify) {
         /* Step 3: break every connector on purpose. A gate that cannot see this cannot see the
            defect it is here for, and a run that passes under --falsify is the gate failing. */
         await page.addStyleTag({
-          content: ".thread__connector { stroke-dasharray: 14 8 !important; }",
+          content:
+            "[data-thread-svg] path { stroke-dasharray: 14 8 !important; }",
         });
       }
 
@@ -254,44 +251,21 @@ try {
           console.log(
             `  MISSING ${label}: no element matches #${id} — not rendered`,
           );
-          /* Pushed in the same shape as the other failure path below -- a bare string printed as
+          /* Pushed with its label like the break path below -- a bare string printed as
              `undefined` in the summary, which hid 12 real findings behind a word that looks like a
              crash. */
-          failures.push({ label, found: 0 });
+          failures.push({ label, missing: true });
           continue;
         }
-        /* Three things that are not this section's thread and would read as a second piece of ink:
-           a NEIGHBOUR's thread, which legitimately runs past a section boundary and lands inside
-           this section's box (a placement question, not a join); the Next dev-tools badge, which
-           turns into a red pill the moment the dev server has anything to say; and the tuning
-           panel's own chrome, which is `position: fixed` over the whole route.
-
-           The panel is untracked scratch, so this hides it by a marker it opts into rather than by
-           naming a file that may not exist — with no panel present the selector simply matches
-           nothing. Without it the gate reports every section broken into the SAME 212 pieces at
-           the SAME coordinates, which is the tell: a sweep whose answer is "everything is broken"
-           is a bug in the sweep. */
-        await page.evaluate((id) => {
-          for (const thread of document.querySelectorAll(".thread")) {
-            thread.style.visibility =
-              thread.closest("section")?.id === id ? "" : "hidden";
-          }
+        /* The Next dev-tools badge turns into a red pill the moment the dev server has anything to
+           say, and would read as a second piece of ink. The thread itself needs no isolation: the
+           page thread is one SVG over all of `<main>` (and Wishes' card thread lives inside its own
+           section), so the section-clipped screenshot already holds only this section's stretch. */
+        await page.evaluate(() => {
           for (const portal of document.querySelectorAll("nextjs-portal")) {
             portal.style.display = "none";
           }
-          /* The panel's chrome is hidden by an injected STYLESHEET, not an inline style: the
-             overlay is React-managed and re-renders when the section below is scrolled into view,
-             which replaces the nodes and takes any inline `display` with them. A rule in the
-             document outlives that. Measured: with the inline form the gate still reported 12
-             broken invite renders; the same frames collapse to one run of ink under the rule. */
-          const HIDE_ID = "thread-joins-hide-lab-chrome";
-          if (document.getElementById(HIDE_ID) === null) {
-            const style = document.createElement("style");
-            style.id = HIDE_ID;
-            style.textContent = "[data-lab-chrome]{display:none !important}";
-            document.head.append(style);
-          }
-        }, id);
+        });
         await section.evaluate((node, at) => {
           node.scrollIntoView();
           /* `scrub` parks the section's own top at the window's top, which sits inside the hold
@@ -307,15 +281,11 @@ try {
           .toBuffer({ resolveWithObject: true });
         const found = components(data, info.width, info.height, info.channels);
         const label = `${id} ${viewport.name} ${state}`;
-        const crossing = CROSSINGS.get(`${id} ${viewport.name}`);
         if (found.length === 1) {
-          if (crossing !== undefined) mended.add(`${id} ${viewport.name}`);
+          whole += 1;
           console.log(`  ok    ${label}: one run of ink (${found[0].size}px)`);
-        } else if (crossing !== undefined) {
-          crossed.add(`${id} ${viewport.name}`);
-          console.log(`  known ${label}: ${found.length} pieces — ${crossing}`);
         } else {
-          failures.push({ label, found });
+          failures.push({ label, pieces: found.length });
           console.log(
             `  BREAK ${label}: ${found.length} pieces — ` +
               found
@@ -332,48 +302,35 @@ try {
   await browser.close();
 }
 
-if (falsify) {
-  const seen = failures.length;
-  console.log(
-    seen > 0
-      ? `\nfalsify: the gate reported ${seen} broken renders against a deliberately cut thread — it can see a break.`
-      : "\nfalsify: the gate saw nothing wrong with a deliberately cut thread. IT IS NOT A GATE.",
-  );
-  process.exit(seen > 0 ? 0 : 1);
-}
-
-console.log(
-  failures.length === 0
-    ? `\nevery section renders as one connected run of ink${
-        crossed.size === 0
-          ? ""
-          : `, apart from ${crossed.size} recorded crossing(s)`
-      }.`
-    : `\n${failures.length} render(s) show a thread in pieces:\n${failures.map((f) => `  ${f.label}`).join("\n")}`,
-);
 /* The expected case count is asserted outright, so a whole viewport dropping out can never read as
-   a pass: every section, at every viewport, in every state. */
-const expected = SECTIONS.length * VIEWPORTS.length * STATES.length;
-if (only === null && onlyViewport === null && measured !== expected) {
+   a pass: every section in scope, at every viewport in scope, in every state. */
+if (measured !== expected) {
   console.log(
     `\nMEASURED ${measured} of ${expected} expected cases — the gate did not cover its surface.`,
   );
   process.exit(1);
 }
 
-/* A recorded crossing that no longer breaks is a stale exemption, and a stale exemption is a hole
-   in the gate. Tuning one away deletes its entry; it does not leave it here. */
-if (only === null && onlyViewport === null && !falsify) {
-  const stale = [...CROSSINGS.keys()].filter(
-    (key) => mended.has(key) && !crossed.has(key),
+if (falsify) {
+  /* Only a render cut into pieces counts. A MISSING section or a frame with no ink at all is a
+     failure in a normal run, but neither shows the gate seeing the cut. And any render still read
+     as one run means the plant missed it: the page's own standing breaks would otherwise let a
+     plant that cuts nothing pass. */
+  const seen = failures.filter(
+    (failure) => !failure.missing && failure.pieces > 1,
+  ).length;
+  const sees = seen > 0 && whole === 0;
+  console.log(
+    sees
+      ? `\nfalsify: the gate reported ${seen} broken renders against a deliberately cut thread, and none as one run — it can see a break.`
+      : `\nfalsify: ${whole} render(s) still read as one run of ink against a deliberately cut thread (${seen} cut). IT IS NOT A GATE.`,
   );
-  if (stale.length > 0) {
-    console.log(
-      `\nRECORDED CROSSINGS THAT NO LONGER BREAK — remove them from CROSSINGS:\n${stale
-        .map((key) => `  ${key}`)
-        .join("\n")}`,
-    );
-    process.exit(1);
-  }
+  process.exit(sees ? 0 : 1);
 }
+
+console.log(
+  failures.length === 0
+    ? "\nevery section renders as one connected run of ink."
+    : `\n${failures.length} render(s) show a thread in pieces:\n${failures.map((f) => `  ${f.label}`).join("\n")}`,
+);
 process.exit(failures.length === 0 ? 0 : 1);
