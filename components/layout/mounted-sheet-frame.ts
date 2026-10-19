@@ -99,11 +99,11 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
     name: "phone",
     ground: 16,
     portrait: { block: 96, blockPressed: 48, inline: 24, inlinePressed: 16 },
-    /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`), and
-       the smallest of those conditions needs ~804px — taller than the phones this site meets — so on
-       a phone the floor is the only step ever reached. 32 as the floor measures the invite and
-       Wishes at 1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at
-       exactly 1.00 (couple, 2026-10-02: the cards read as too filled). */
+    /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`); at
+       390 wide the 32 step is reached from about 608px tall for Wishes up to about 683px for
+       Family, so a short phone keeps the floor. 32 as the floor measures the invite and Wishes at
+       1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at exactly
+       1.00. */
     paddingSteps: [32, 24],
     /* Never emitted as a card's padding; available to `windowFits` alone, so a short phone keeps
        its pressed ground band instead of gaining 176px of page. */
@@ -115,7 +115,7 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
     portrait: { block: 172, blockPressed: 96, inline: 128, inlinePressed: 64 },
     paddingSteps: [64, 48, 32],
   },
-  /* Compact and laptop take a square band DERIVED from their landscape ground, never a literal:
+  /* Laptop and desktop take a square band DERIVED from their landscape ground, never a literal:
      DESIGN.md gives their band as "Its `Ground, landscape`" and says it follows that ground wherever
      it moves, which a copied number would silently stop doing. Halving is safe on these two alone —
      both halves are on the spacing scale, where the tablet's 172 / 2 = 86 is not. */
@@ -150,12 +150,7 @@ const PAIR_TIER_LINE_WIDTH_REM = 80;
 /* The reveal ladder, one rung per width tier: `{reveal.base}` below `{breakpoints.md}`,
    `{reveal.md}` from there to `{breakpoints.lg}`, `{reveal.lg}` to `{breakpoints.xl}`, `{reveal.xl}`
    above it. The phone and tablet rungs reach the hero alone — every other section shows its mount
-   only where a pair can stand side by side (`mountShows`).
-
-   The tablet rung is the narrowest deliberately, and it is the one value here that is not a
-   preference: the invite's landscape card in a `{breakpoints.md}`-to-`{breakpoints.lg}` window
-   stands 717px against a 720px cap, and the reveal is taken out of the card, so 14 or more leaves
-   that tier no line and `tierLine` refuses at build time. */
+   only where a pair can stand side by side (`mountShows`). */
 const REVEAL: Readonly<Record<WidthTier, number>> = {
   phone: 16,
   tablet: 12,
@@ -252,15 +247,10 @@ export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
-/* What the fit arithmetic may ASSUME, which is not always what a card SHOWS. The two were one number
-   until the phone floor rose to 24 (couple, 2026-10-02), and that silently answered a second
-   question: `windowFits` asks "does this window hold the card?" at the smallest padding, so raising
-   the floor made the halving condition fail BOTH ways at phone heights 693-804 — the card no longer
-   fit even on the halved ground, the press was lost, and Event Info gained 176px of page.
-
-   A tier declaring `rescuePadding` keeps the old number for that question alone: the frame may still
-   reach for 16 when deciding whether a window can hold a card, while never emitting it as a card's
-   padding. Owner's decision, 2026-10-02 — "keep the gated 16 step as last resort". */
+/* What the fit arithmetic may ASSUME, which is not always what a card SHOWS. The rescue padding
+   answers only the pressed fit; the full-ground fit is asked at the padding the card shows, because
+   the two questions differ. A tier declaring `rescuePadding` may reach for it when deciding whether a
+   window can hold a pressed card, while never emitting it as a card's padding. */
 export function fitPadding(groundTier: GroundTier): number {
   return groundTier.rescuePadding ?? smallestPadding(groundTier);
 }
@@ -747,7 +737,7 @@ export interface TallWindowClass {
 }
 
 /* One step above each ground tier's own largest (`paddingSteps[0]`), read off the spacing scale:
-   phone 32 → 48, tablet and compact 64 → 96, laptop 96 → 128 (owner, 2026-09-18). */
+   phone 32 → 48, tablet and laptop 64 → 96, desktop 96 → 128. */
 const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   phone: 48,
   tablet: 96,
@@ -755,7 +745,7 @@ const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   desktop: 128,
 };
 
-/* The phone's sides are the one exception (owner, 2026-10-11): 36px, off the spacing scale, so a
+/* The phone's sides are the one exception: 36px, off the spacing scale, so a
    ritual's measure gains 24px where it is shortest. A token rather than a number because `spacing()`
    admits only the scale. */
 const TALL_INLINE: Readonly<Partial<Record<WidthTier, string>>> = {

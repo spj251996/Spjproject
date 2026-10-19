@@ -102,11 +102,10 @@ test("a compact window takes the compact ground tier and its smallest padding", 
   assert.deepEqual(compact?.groundTier.paddingSteps, [64, 48, 32, 24]);
 });
 
-/* Every step above the floor is gated on the window's HEIGHT, and the smallest of those conditions
-   needs about 804px — taller than the phones this site meets. So on a phone the floor is the only
-   step ever reached, and what it is set to IS what a short phone's card looks like. 16 was what the
-   couple saw as "too filled" (2026-10-02); 32 measures the invite at 1.05 viewports at 375x667 and
-   breaks its one-screen requirement. */
+/* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`); at 390
+   wide the 32 step is reached from about 608px tall for Wishes up to about 683px for Family, so a
+   short phone keeps the floor. 32 as the floor measures the invite and Wishes at 1.05 viewports at
+   375x667, breaking `Fits the first viewport`; 24 keeps both at exactly 1.00. */
 test("the phone tier's padding ladder has no step below 24", () => {
   const classes = windowClasses(makeFit(), "single");
   const phone = classes.find((c) => c.widthTier === "phone");
@@ -136,11 +135,8 @@ test("a phone sheet is emitted at 24px unconditionally, and 16px appears nowhere
   }
 });
 
-/* The ladder's floor used to do two jobs: set what a card SHOWS, and tell the fit arithmetic what it
-   may ASSUME when asking "does this window hold the card?". Raising the floor to 24 silently answered
-   the second question differently — the halving condition then failed both ways at phone heights
-   693-804, so Event Info stopped taking its pressed ground band and gained 176px of page. Owner's
-   decision, 2026-10-02: keep 16 available to the arithmetic as a last resort, while never emitting it. */
+/* What a card SHOWS and what the fit arithmetic may ASSUME are separate: the phone keeps 16 available
+   to the pressed-fit question as a last resort, while never emitting it as a card's padding. */
 test("the phone tier shows 24 but lets the fit arithmetic assume 16", () => {
   const classes = windowClasses(makeFit(), "single");
   const phone = classes.find((c) => c.widthTier === "phone");
@@ -176,7 +172,7 @@ test("the phone halving condition is computed at the rescue padding, not the flo
 });
 
 /* The rescue value answers whether the PRESSED card fits, and nothing else. Whether the full-ground
-   card fits is asked at the floor the card actually shows (owner, 2026-10-14): asked at 16, the frame
+   card fits is asked at the floor the card actually shows: asked at 16, the frame
    believed a window held a full-ground card it did not, kept the full ground there, and the section ran
    past one screen — 1px at 390x844, 18px at 360x780, 11px at 430x739 — where pressing would have fitted. */
 test("the phone halving condition asks the full-ground fit at the floor the card shows", () => {
@@ -232,7 +228,7 @@ test("a landscape phone asks the full-ground fit at the floor the card shows", (
   );
 });
 
-test("a wide window keeps the laptop ground tier", () => {
+test("a wide window keeps the desktop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
   const wide = classes.find((c) => c.widthTier === "desktop");
   assert.equal(wide?.groundTier.ground, 96);
@@ -261,8 +257,8 @@ test("regimesFor picks the orientation named", () => {
 
 test("a valid two-orientation fit frames without throwing", () => {
   const classes = windowClasses(makeFit());
-  /* Mobile 1 + tablet 2 + desktop (compact) pointer 2 + desktop touchscreen 2 + wide pointer 2 +
-     wide touchscreen 2 = 11, now that the frame carries a fourth width tier. */
+  /* Phone 1 + tablet 2 + laptop pointer 2 + laptop touchscreen 2 + desktop pointer 2 + desktop
+     touchscreen 2 = 11. */
   assert.equal(classes.length, 11);
   for (const windowClass of classes) {
     assert.equal(windowClass.regimes.portrait, TINY);
@@ -314,7 +310,7 @@ test("a landscape rectangle taller than the height cap is dropped, not thrown", 
 });
 
 test("a landscape rectangle wider than the height cap is decided below the centring band", () => {
-  /* 700 + 2 x 24 + 2 x 12 = 772px wide at the compact tier's smallest padding: wider than its
+  /* 700 + 2 x 24 + 2 x 16 = 780px wide at the compact tier's smallest padding: wider than its
      576px height cap, so it counts only up to cap + 4 x ground, the height past which the
      centring gap could bind — 832px at full compact ground, 672px at halved touchscreen ground. */
   const wide = makeFit({
@@ -586,9 +582,7 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
      a pair-only width has leaked into the single-card stylesheet.
      These two are DOCUMENTATION of the pair-only set rather than independent guards — assertions run
      in order and any leak this mechanism can produce trips the 592 rule above first, so 656 and 720
-     fire only if a leak ever reaches the larger padding steps without the smaller one. Kept because
-     stating all three in one place is what the review asked for; do not read them as three
-     independent checks. */
+     fire only if a leak ever reaches the larger padding steps without the smaller one. */
   assert.ok(!single.includes("@container (width >= 656px)"));
   assert.ok(!single.includes("@container (width >= 720px)"));
 
@@ -852,8 +846,7 @@ test("the tier line and padding chain read the reveal the mount shows", () => {
   const shortLaptop = chainWidths(false, "laptop", "phone", "landscape");
   assert.ok(shortLaptop.includes("@container (width >= 216px)"), shortLaptop);
   /* 184 is this step's own bare-card counterfactual — the width an emitter that ignored the mount's
-     reveal would write. 168 was the RETIRED 24 step's, so asserting it absent became vacuous when
-     that step became the floor. */
+     reveal would write. */
   assert.ok(!shortLaptop.includes("@container (width >= 184px)"));
 });
 
@@ -1120,9 +1113,9 @@ test("tall mode states no height threshold and no container query", () => {
   assert.equal(/min-height:\s*min\(/.test(css), false);
 });
 
-/* Ground and padding pixel values tall mode actually emits (phone 16/48, tablet 48/96, compact
-   64/96, laptop 96/128), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
-   (private) `SPACING_TOKEN` does. Kept separate from that map, as every other CSS-content assertion
+/* Ground and padding pixel values tall mode actually emits (phone 16/48, tablet 48/96, laptop
+   64/96, desktop 96/128), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
+   `SPACING_TOKEN` does. Kept separate from that map, as every other CSS-content assertion
    in this file states its expected literal by hand rather than importing the generator's internals. */
 const GROUND_TOKEN: Readonly<Record<number, string>> = {
   16: "--spacing-space-sm",

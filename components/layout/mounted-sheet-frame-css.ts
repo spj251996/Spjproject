@@ -567,8 +567,8 @@ export function mountedSheetFrameCss(
    is never the hero (`mounted-sheet` throws on both), so there is one tall form and one class.
 
    The string is carried by the generated tall sheet (`app/frames/tall.css`) and by the botanical
-   layer's inline stylesheet, so changing it moves both. Its `-section-mount` suffix is the role and
-   paint the key once carried, kept so the bytes do not move. */
+   layer's inline stylesheet, so changing it moves both; its `-section-mount` suffix no longer names a
+   role or paint and is kept only so those bytes do not move. */
 export function tallScopeClass(): string {
   return "mounted-sheet-frame--tall-section-mount";
 }
