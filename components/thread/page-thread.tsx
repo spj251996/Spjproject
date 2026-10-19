@@ -514,6 +514,7 @@ function createCatchUp(paint: (drawn: number) => void) {
       from = value;
       target = value;
     },
+    stop,
     reset() {
       stop();
       shown = 0;
@@ -1626,6 +1627,8 @@ export function PageThread() {
     fallbackSvg.style.display = "none";
 
     if (reducedMotion()) {
+      stopOpeningRef.current();
+      catchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
       taper()?.paint(Number.POSITIVE_INFINITY);
     } else {
@@ -1705,6 +1708,7 @@ export function PageThread() {
      here: the timed draw advances the same ratchet every scroll frame advances, so the higher of
      the two wins by construction and there is one mechanism holding the line instead of two. */
   const openingCompleteRef = useRef(false);
+  const stopOpeningRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (reducedMotion() || window.scrollY > 0) return;
@@ -1712,6 +1716,7 @@ export function PageThread() {
     let startedAt = 0;
 
     const timer = window.setTimeout(() => {
+      if (reducedMotion()) return;
       /* The invite stops its own last connector at 75%, exactly as every other group does, so the
          line is already reaching toward Event Info when the reader starts scrolling. Drawing it to
          100% here made the thread look stuck for the whole first screen of scroll -- there was
@@ -1719,6 +1724,7 @@ export function PageThread() {
       const target = openingFloor(rangesRef.current, true);
       if (target <= 0) return;
       const step = (now: number) => {
+        if (reducedMotion()) return;
         if (startedAt === 0) startedAt = now;
         const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
         commit(target * t);
@@ -1733,10 +1739,12 @@ export function PageThread() {
       rafId = window.requestAnimationFrame(step);
     }, OPENING_DRAW_DELAY);
 
-    return () => {
+    const stop = () => {
       window.clearTimeout(timer);
       if (rafId !== null) window.cancelAnimationFrame(rafId);
     };
+    stopOpeningRef.current = stop;
+    return stop;
   }, [commit, rest]);
 
   useEffect(() => {
@@ -1980,6 +1988,7 @@ export function CardThread() {
       terminalWindowRef.current,
     );
     if (reducedMotion()) {
+      cardCatchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
       taper()?.paint(Number.POSITIVE_INFINITY);
       return;

@@ -167,6 +167,101 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
   }
 });
 
+interface Dashes {
+  pieces: number;
+  dashed: number;
+  midDraw: number;
+}
+
+const DASHES = `(() => {
+  const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
+  return {
+    pieces: pieces.length,
+    dashed: pieces.filter((p) => p.style.strokeDasharray !== "" || p.style.strokeDashoffset !== "").length,
+    midDraw: pieces.filter((p) => {
+      const offset = parseFloat(p.style.strokeDashoffset);
+      return offset > 0 && offset < parseFloat(p.style.strokeDasharray);
+    }).length,
+  };
+})()`;
+
+/* The two draws that run on their own clock rather than on a scroll frame: the opening's timed draw
+   and the catch-up follower easing toward a fling's target. Both paint dashes frame by frame, so a
+   change to reduce that lands while one is in flight is cleared by the re-measure and then re-dashed
+   by the draw's next frame unless the draw is stopped with it. Each case switches while a piece is
+   visibly mid-draw, then waits out the draw's whole remaining time before reading. */
+test("a change to reduced motion during the opening draw or a catch-up leaves no piece dashed", async (t) => {
+  if (!freshExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const open = async () => {
+      const page = await (
+        await browser.newContext({ viewport: { width: 393, height: 700 } })
+      ).newPage();
+      await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+        waitUntil: "load",
+      });
+      return page;
+    };
+    const switchToReduce = async (page: Awaited<ReturnType<typeof open>>) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      assert.equal(
+        await page.evaluate(
+          "matchMedia('(prefers-reduced-motion: reduce)').matches",
+        ),
+        true,
+        "the media query flipped",
+      );
+    };
+
+    const opening = await open();
+    await opening.waitForFunction(
+      `(${DASHES}).midDraw > 0 && performance.now() > 2000`,
+      null,
+      { timeout: 10000, polling: 10 },
+    );
+    await switchToReduce(opening);
+    /* The opening draw lasts 1200ms from its first frame; this outlasts all of it. */
+    await opening.waitForTimeout(2000);
+    const afterOpening = (await opening.evaluate(DASHES)) as Dashes;
+    assert.ok(afterOpening.pieces > 0, "the thread is on the page");
+    assert.equal(
+      afterOpening.dashed,
+      0,
+      "no piece is re-dashed by the opening draw after the change",
+    );
+
+    const catchUp = await open();
+    /* The opening draw has ended and its loop is lit, so nothing but the follower is drawing. */
+    await catchUp.waitForFunction(
+      "document.querySelector('[data-thread-retrace-group]') !== null",
+      null,
+      { timeout: 15000 },
+    );
+    const inFlight = (await catchUp.evaluate(
+      `new Promise((resolve) => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve((${DASHES}).midDraw)));
+      })`,
+    )) as number;
+    assert.ok(inFlight > 0, "the follower is mid-draw when the change lands");
+    await switchToReduce(catchUp);
+    /* `--thread-catchup` is 0.4s; this outlasts it several times over. */
+    await catchUp.waitForTimeout(1500);
+    const afterCatchUp = (await catchUp.evaluate(DASHES)) as Dashes;
+    assert.equal(
+      afterCatchUp.dashed,
+      0,
+      "no piece, on the page thread or the card's, is re-dashed by a follower after the change",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 /* The bounded loop's lifecycle, which only a real page can show: what is scheduled and what is painted.
    The loop's tokens are overridden with a shorter pace so a whole budget fits inside a test: they are
    read by name from the stylesheet, which is what is being relied on. `requestAnimationFrame` is
