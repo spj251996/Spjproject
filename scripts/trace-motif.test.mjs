@@ -1,4 +1,3 @@
-// scripts/trace-motif.test.mjs — a straight stroke's centreline is a straight line
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { centreline, neighboursOf } from "./trace-motif.mjs";

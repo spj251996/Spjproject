@@ -84,8 +84,8 @@ const ATTACHMENTS = [
   },
 ];
 
-/* A slight sinusoidal wobble, same as the proven scratch self-test — a dead-straight line thins to
- * a perfectly clean 1px skeleton and proves nothing about handling a real, shaky hand-drawn line. */
+/* A slight sinusoidal wobble: a dead-straight line thins to a perfectly clean 1px skeleton and
+ * proves nothing about handling a real, shaky hand-drawn line. */
 /** @param {number[][]} pts */
 const wobble = (pts) =>
   pts
@@ -264,11 +264,7 @@ test("relaxes a drawn connector clear of a glyph it crosses, without moving its 
     0,
     "no sample lands on the glyph after relaxing",
   );
-  /* The floor is a TARGET the relax step aims for, not a guarantee: the real `tall`/wishes case
-     this ports (see the report) settles at 3.1px against an 8px floor because the bow's own pinned
-     attachment point sits that close to a glyph already. The one guarantee this test enforces is
-     the one the placement law actually states — no longer an outright crossing. Anything still
-     under the floor is the CLI's job to report as a warning, not this function's to hide. */
+  /* The relax floor is a target, not a guarantee, so only the absence of a crossing is asserted. */
   assert.ok(
     after[0].min > 0,
     `relaxed clearance ${after[0].min.toFixed(1)}px is genuinely off the glyph, not just at its edge`,

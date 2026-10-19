@@ -60,12 +60,10 @@ const SEGMENTS = 48;
    single 8-connected step quantises to 45 degrees, which cannot tell two arms of an X apart. */
 const LOOKAHEAD = 8;
 /* In stroke widths: how far apart the two halves of a thinned crossing may sit and still be read as
-   one crossing. Measured on the five sources, the artifact stubs run 3-17px against strokes of
-   3-18px, and the shortest REAL stroke between two crossings is 82px against a 7.9px stroke — so 2
-   covers a clean crossing with headroom. A drawing whose crossings are TIGHT needs more, because
-   two strokes meeting at a shallow angle thin into a longer shared stub: `final knot`'s bow loops
-   need 5, which raises its coverage from 33% to 94%. `--bridge` is that number, and the run prints
-   the coverage it bought, so raising it is never a silent change to the drawing. */
+   one crossing. 2 covers a clean crossing with headroom below the shortest real stroke between two
+   crossings; a drawing whose crossings are TIGHT needs more, because two strokes meeting at a
+   shallow angle thin into a longer shared stub. `--bridge` sets it, and the run prints the coverage
+   it bought, so raising it is never a silent change to the drawing. */
 const BRIDGE_STROKES = 2;
 
 /**
@@ -558,11 +556,9 @@ export function walk(field, { bridge = 0 } = {}) {
   const used = new Set();
   const trail = greedyTrail(field, incident, used, start, null);
 
-  /* The junction rule says WHICH arm continues a rope through a crossing; it says nothing about
-     which of a crossing's two through-routes the pen should take FIRST. So the greedy trail can
-     reach the far loose end with a whole lobe still untouched — `heart` is a long line with the
-     heart hanging off one crossing, and straight on IS the right choice there, which left 65% of
-     the skeleton undrawn.
+  /* The junction rule says WHICH arm continues a rope through a crossing, not which of a crossing's
+     two through-routes the pen takes FIRST, so the greedy trail can reach the far loose end with a
+     whole lobe still untouched.
 
      Splicing each remaining circuit back in at a junction the trail already passes through is
      Hierholzer's construction, and it adds no join the drawing does not have: the pen arrives at

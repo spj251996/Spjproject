@@ -474,11 +474,8 @@ export function assignConnectors(strokes, points, page) {
       const drew = headingAt(a.stroke, which, page);
       const off = Math.abs(wrap(drew - t.heading));
       worstAngle = Math.max(worstAngle, off);
-      /* `end` names which end of the CONNECTOR this join is ("from"/"to"); `t.which` survives the
-         spread as the MOTIF's own "entry"/"exit" tag — a bug in the original scratch script
-         spread `t` over a field also named `which`, so the connector-role value was silently
-         overwritten by the motif's tag on every join. The console line above was unaffected (it
-         reads the closure variable directly), but `joins.json` lost the distinction. */
+      /* `end` names which end of the CONNECTOR this join is ("from"/"to"); `t.which`, spread in
+         below, is the MOTIF's own "entry"/"exit" tag, so `end` must come after the spread. */
       joins.push({
         connector: k,
         ...t,
@@ -547,16 +544,13 @@ async function fetchGlyphRects(browser, viewport) {
   return { glyphs, sections: count };
 }
 
-/* The owner's decision (in chat): a drawn thread that comes under a glyph is closed
- * PROGRAMMATICALLY, not redrawn. Every section holds an 8px floor, except `family`, whose loops
- * wrap the portraits and necessarily pass close to the labels beside them — 5px there still clears
- * ink and bleed (the stroke is 1.6px, so its edge is 0.8px inside any centreline figure, and the
- * bleed reaches about 3.5px further). */
+/* A drawn thread that comes under a glyph is closed programmatically: connectors are relaxed to
+ * floor + tolerance (8px; 5px for family, where loops wrap the portraits) because a relax targeting
+ * the floor lands under it. */
 const FLOOR = 8;
 const FLOOR_FAMILY = 5;
 /* Relax to the floor PLUS the simplification tolerance, then re-simplify: re-simplifying afterwards
- * cuts corners back TOWARD the glyph, so relaxing to the bare floor lands under it. The first
- * attempt at this targeted 8px and measured 3.4px. */
+ * cuts corners back TOWARD the glyph, so relaxing to the bare floor lands under it. */
 const RELAX_DENSIFY = 4;
 const RELAX_PASSES = 250;
 const RELAX_SIMPLIFY = 1.5;
@@ -837,9 +831,7 @@ export async function importDrawing(args, { readPage = readLivePage } = {}) {
     connector: k,
     points: a.stroke,
   }));
-  /* The owner has decided (in chat) that a connector under the floor is closed programmatically
-     rather than redrawn — relax BEFORE the clearance check, not after, so the check reports what
-     will actually ship. */
+  /* Relax BEFORE the clearance check, not after, so the check reports what will actually ship. */
   const relax = relaxOffType(drawnConnectors, geometry, glyphs);
   console.log(
     `\n=== relax ===  ${relax.moved} points moved, largest push ${relax.maxMove.toFixed(1)}px` +
