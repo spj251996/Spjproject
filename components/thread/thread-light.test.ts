@@ -450,6 +450,19 @@ test("a run that begins before its piece's start carries on backwards along the 
   );
 });
 
+test("a piece whose length is not a whole pixel ends a run on its own end", () => {
+  const samples = straightSamples(10.5);
+  const toEnd = pointsOf(polylineBetween(samples, 0, 10.5));
+  const last = toEnd[toEnd.length - 1][0];
+  assert.ok(Math.abs(last - 20.5) < 0.01, `ends at x 20.5, not ${last}`);
+  const past = pointsOf(polylineBetween(samples, 5, 12.5));
+  const beyond = past[past.length - 1][0];
+  assert.ok(
+    Math.abs(beyond - 22.5) < 0.01,
+    `the extension starts from the end: x 22.5, not ${beyond}`,
+  );
+});
+
 test("a run that stays inside its piece is not extended", () => {
   const points = pointsOf(polylineBetween(straightSamples(10), 7, 10));
   assert.ok(Math.abs(points[points.length - 1][0] - 20) < 0.01);

@@ -888,7 +888,8 @@ export function polylineBetween(
   const point = (position: number): [number, number] => {
     const clamped = Math.max(0, Math.min(length, position));
     const index = Math.min(Math.floor(clamped), lastIndex);
-    const t = clamped - index;
+    const next = Math.min(length, index + 1);
+    const t = next > index ? (clamped - index) / (next - index) : 0;
     return [
       xy[2 * index] * (1 - t) + xy[2 * index + 2] * t,
       xy[2 * index + 1] * (1 - t) + xy[2 * index + 3] * t,
