@@ -1164,31 +1164,34 @@ function useLayoutTriggers(
       ].join("|");
     }
 
-    let lastLayout = layoutSignature();
+    let lastLayout = "";
+
+    /* Recorded only when the slow path actually re-measures, so an event arriving inside the
+       debounce window cannot mark the new layout as already measured and then paint the cheap path
+       against the old one. */
+    function remeasure() {
+      lastLayout = layoutSignature();
+      measureLayout();
+    }
 
     function remeasureSoon() {
       if (resizeTimer !== null) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(measureLayout, 150);
+      resizeTimer = setTimeout(remeasure, 150);
     }
 
     /* The cheap path is NOT debounced: it is a read plus an arithmetic recompute, and delaying it by
        150ms is what a reader would see as the thread lagging their URL bar. */
     function onLayoutEvent() {
-      const layout = layoutSignature();
-      if (layout === lastLayout) {
+      if (layoutSignature() === lastLayout) {
         refreshWindow();
         return;
       }
-      /* Recorded only when the slow path actually re-measures, so an event arriving inside the
-         debounce window cannot mark the new layout as already measured and then paint the cheap path
-         against the old one. */
-      lastLayout = layout;
       remeasureSoon();
     }
 
-    measureLayout();
+    remeasure();
     document.fonts.ready.then(() => {
-      if (!cancelled) measureLayout();
+      if (!cancelled) remeasure();
     });
 
     let resizeObserver: ResizeObserver | null = null;
@@ -1198,14 +1201,14 @@ function useLayoutTriggers(
     }
 
     window.addEventListener("resize", onLayoutEvent);
-    reduceMotion.addEventListener("change", measureLayout);
+    reduceMotion.addEventListener("change", remeasure);
 
     return () => {
       cancelled = true;
       if (resizeTimer !== null) clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
       window.removeEventListener("resize", onLayoutEvent);
-      reduceMotion.removeEventListener("change", measureLayout);
+      reduceMotion.removeEventListener("change", remeasure);
     };
   }, []);
 }
