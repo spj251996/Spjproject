@@ -12,7 +12,7 @@ import {
   type Point,
 } from "./gallery-pointer";
 import {
-  back,
+  createGalleryHistory,
   type GalleryState,
   openGallery,
   showGrid,
@@ -28,7 +28,8 @@ import { PhotoViewerPanel } from "./photo-viewer";
    `gallery-state.ts`'s: every forward step is one history entry, so the phone's back button pops one
    layer. Every close therefore goes THROUGH `history.back()` and is finished by the `popstate`
    listener, never by calling `onClose` directly — a direct close would strand the entry, and the next
-   back press would land on the page doing nothing. The entries are pushed without a URL, and Next's
+   back press would land on the page doing nothing. Which pops are ours, and the guard against going
+   back twice, live with the state model too. The entries are pushed without a URL, and Next's
    router patches `pushState` to copy its own state into them, so popping between them re-renders
    nothing.
 
@@ -45,7 +46,7 @@ import { PhotoViewerPanel } from "./photo-viewer";
    it starts the closing fade, and `onClose` runs when that fade ends, so the scroll lock and focus are
    released only once the gallery has gone. A timeout one beat past the fade stands in case
    `animationend` never arrives (a hidden tab), and under reduced motion there is no fade to wait
-   for. While closing, every input is ignored and a further pop is not ours to handle.
+   for. While closing, every input is ignored.
 
    A tap on empty space goes back one layer, like Close. It must be deliberate: down AND up both on
    empty space, less than 10px apart, so a swipe that ends in the dark never closes. It is decided on
@@ -110,15 +111,12 @@ export function GalleryModal({
   const pressRef = useRef<Point | null>(null);
   const [state, setState] = useState<GalleryState>(() => openGallery(start));
   const stateRef = useRef(state);
-  /* Survives React's development-only double mount, which would otherwise push a second entry. */
-  const pushedRef = useRef(false);
-  /* `history.back()` lands asynchronously, so a double tap on Close would otherwise go back twice
-     and take the guest off the invitation. Cleared when the pop arrives. */
-  const closingRef = useRef(false);
-  /* The fade-out in progress: `closing` drives the class, the ref gates the listeners, and
+  /* State rather than created in the mount effect, so it survives React's development-only double
+     mount, which would otherwise push a second entry. */
+  const [gallery] = useState(() => createGalleryHistory(window.history));
+  /* The fade-out in progress: `closing` drives the class, `gallery.closing` gates the listeners, and
      `closedRef` makes the animation end and the fallback timeout finish the close only once. */
   const [closing, setClosing] = useState(false);
-  const closingPhaseRef = useRef(false);
   const closedRef = useRef(false);
   const closeTimerRef = useRef<number | undefined>(undefined);
   const finishCloseRef = useRef<() => void>(() => {});
@@ -155,10 +153,7 @@ export function GalleryModal({
     const previousRestoration = history.scrollRestoration;
     history.scrollRestoration = "manual";
 
-    if (!pushedRef.current) {
-      pushedRef.current = true;
-      history.pushState({ gallery: 1 }, "");
-    }
+    gallery.open();
     const finishClose = () => {
       if (closedRef.current) return;
       closedRef.current = true;
@@ -166,11 +161,9 @@ export function GalleryModal({
     };
     finishCloseRef.current = finishClose;
     const onPopState = () => {
-      if (closingPhaseRef.current) return;
-      closingRef.current = false;
-      const next = back(stateRef.current);
-      if (next === null) {
-        closingPhaseRef.current = true;
+      const next = gallery.pop(stateRef.current);
+      if (next === "ignore") return;
+      if (next === "close") {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           finishClose();
           return;
@@ -185,7 +178,8 @@ export function GalleryModal({
         closeTimerRef.current = window.setTimeout(finishClose, fade + 100);
         return;
       }
-      /* `showLayer`, inlined: this listener is mount-scoped and the setters are all it needs. */
+      /* Mirrors `showLayer` minus `setHint(false)`: the hint is only read by the viewer, which unmounts
+         on a pop to the grid, and the next openPhoto clears it. */
       setSwapped(true);
       setDirection(0);
       setState(next);
@@ -205,7 +199,7 @@ export function GalleryModal({
         previouslyFocused.focus();
       }
     };
-  }, []);
+  }, [gallery]);
 
   /* Every layer change goes through here: the new layer fades rather than rises, and a photograph
      opened fresh shows without a slide. */
@@ -245,11 +239,7 @@ export function GalleryModal({
     return !insideRect({ x: event.clientX, y: event.clientY }, drawn);
   };
 
-  const goBack = () => {
-    if (closingRef.current || closingPhaseRef.current) return;
-    closingRef.current = true;
-    history.back();
-  };
+  const goBack = () => gallery.goBack();
   const close = goBack;
   /* Only a step that actually moves sets the side to slide from: at either end the photograph stays,
      and a changed class on it would replay the slide in place. */
@@ -271,9 +261,7 @@ export function GalleryModal({
     [count],
   );
   const openPhoto = (index: number) => {
-    if (closingPhaseRef.current) return;
-    history.pushState({ gallery: 2 }, "");
-    showLayer(tapTile(index));
+    if (gallery.openPhoto()) showLayer(tapTile(index));
   };
   /* From a grid-opened viewer the grid is one entry back, so going there consumes it; from a
      strip-opened viewer there is no grid entry, so the layer swaps in place and adds none. */
@@ -287,15 +275,13 @@ export function GalleryModal({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (closingPhaseRef.current) {
+      if (gallery.closing) {
         event.preventDefault();
         return;
       }
       if (event.key === "Escape") {
         event.preventDefault();
-        if (closingRef.current) return;
-        closingRef.current = true;
-        history.back();
+        gallery.goBack();
         return;
       }
       if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
@@ -335,7 +321,7 @@ export function GalleryModal({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [state.layer, step]);
+  }, [gallery, state.layer, step]);
 
   /* Only on touch, where the swipe is the gesture to learn; the CSS gate keeps it still under
      reduced motion. */
@@ -379,7 +365,7 @@ export function GalleryModal({
         touchStartXRef.current = null;
         const endX = event.changedTouches[0]?.clientX;
         if (
-          closingPhaseRef.current ||
+          gallery.closing ||
           state.layer !== "viewer" ||
           startX === null ||
           endX === undefined
@@ -406,7 +392,7 @@ export function GalleryModal({
         pressRef.current = null;
         if (
           down !== null &&
-          !closingPhaseRef.current &&
+          !gallery.closing &&
           isDeliberateTap(down, { x: event.clientX, y: event.clientY }) &&
           isEmptySpace(event)
         ) {

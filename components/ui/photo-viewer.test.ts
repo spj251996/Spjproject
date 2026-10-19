@@ -3,8 +3,9 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 /* STRUCTURAL claims, deliberately: these are JSX and cannot be exercised without rendering. The
-   layer logic they wire up is behaviour-tested in `gallery-state.test.ts`, and the render-backed
-   proof of every tap route, history step and save cover is a Playwright check against the page. */
+   layer logic, the history steps and the double-close guard they wire up are behaviour-tested in
+   `gallery-state.test.ts`. No committed render harness opens the gallery, so the wiring itself — tap
+   routes, focus return, save covers — is held only by the source checks below. */
 
 const read = (name: string) =>
   readFileSync(new URL(`./${name}`, import.meta.url), "utf8");
@@ -98,17 +99,16 @@ test("focus is put back inside the dialog whenever a layer swap removes the focu
   assert.match(modal, /!container\.contains\(document\.activeElement\)/);
 });
 
-test("a second close before the first has landed does not go back again", () => {
-  /* history.back() lands asynchronously; a double tap on Close would otherwise go back twice and take
-     the guest off the invitation. */
-  /* Both ways back are guarded: the close control (and "All photos" from a grid-opened viewer), and
-     Escape. */
-  assert.equal(
-    modal.match(
-      /if \(closingRef\.current(?: \|\| closingPhaseRef\.current)?\) return;/g,
-    )?.length,
-    2,
+test("the open gallery steps the history only through its guarded history", () => {
+  /* The guard is behaviour-tested in `gallery-state.test.ts`; a direct call here would bypass it. The
+     one `history.back()` left is the forward guard, which runs only once every gallery has closed. */
+  const guard = modal.slice(
+    modal.indexOf("export function ensureForwardGuard"),
   );
+  assert.match(guard.slice(0, guard.indexOf("\n}\n")), /history\.back\(\);/);
+  assert.equal(modal.match(/history\.back\(\);/g)?.length, 1);
+  assert.doesNotMatch(modal, /history\.pushState/);
+  assert.match(modal, /createGalleryHistory\(window\.history\)/);
 });
 
 const motionCss = () => read("gallery-motion.module.css");
@@ -204,16 +204,6 @@ test("while the gallery fades out it still catches every tap, so nothing reaches
     rootClass.slice(0, rootClass.indexOf("\n")),
     /pointer-events-none/,
     "the dialog root lets taps through while closing",
-  );
-  const goBack = modal.slice(modal.indexOf("const goBack = () => {"));
-  assert.match(
-    goBack.slice(0, goBack.indexOf("};")),
-    /closingPhaseRef\.current/,
-  );
-  const openPhoto = modal.slice(modal.indexOf("const openPhoto = "));
-  assert.match(
-    openPhoto.slice(0, openPhoto.indexOf("};")),
-    /closingPhaseRef\.current/,
   );
 });
 
