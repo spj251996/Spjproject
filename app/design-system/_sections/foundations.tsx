@@ -70,7 +70,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink",
         name: "ink",
         usage:
-          "Body text, names, dates (the invite's day numeral is gold), venues and addresses; the focus ring on light surfaces.",
+          "Body text, names, dates (the invite's day numeral is gold), venues and addresses.",
       },
       {
         token: "--color-ink-muted",
@@ -82,13 +82,13 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink-inverse",
         name: "ink-inverse",
         usage:
-          "Light text and marks on the scrim — the photo grid and viewer's title, counter, failure message and every control, and the design-system gallery's own preview modal.",
+          "Light text and marks on the scrim — the photo grid and viewer's title, counter, failure message and every control.",
       },
     ],
   },
   {
     label: "Accent",
-    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam and the marks only. It falls below 3:1 on the mount (2.56:1), so the focus ring and a mark that carries meaning without a label stay ink on light surfaces; on the scrim the ring takes the inverse ring colour.",
+    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam and the marks only. It falls below 3:1 on the mount (2.56:1), so a mark that carries meaning without a label stays ink.",
     tokens: [
       {
         token: "--color-accent-gold",
@@ -100,25 +100,25 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Thread",
-    note: "Reserved for the thread and the seal mark.",
+    note: "Reserved for the thread, the seal mark, the scroll-progress line and the focus ring, which takes thread-vermilion alone.",
     tokens: [
       {
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp and of the re-trace's.",
+          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp and of the re-trace's; the start of the scroll-progress line's fill.",
       },
       {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
         usage:
-          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp, and the re-trace's ramp and glow strokes. Never the ink, never text.",
+          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp, and the re-trace's ramp and glow strokes; the scroll-progress line's fill and glow; the focus ring, on every surface. Never the ink, never text.",
       },
       {
         token: "--color-thread-core",
         name: "thread-core",
         usage:
-          "The tip of the drawing head's colour ramp and of the re-trace's, the hottest the thread gets. Never the ink, never text.",
+          "The tip of the drawing head's colour ramp and of the re-trace's, the hottest the thread gets, and the leading edge of the scroll-progress line's fill. Never the ink, never text.",
       },
     ],
   },

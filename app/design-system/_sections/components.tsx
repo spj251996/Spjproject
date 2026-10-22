@@ -46,7 +46,7 @@ function Variant({ label, className, children }: VariantProps) {
 /* The dilation is set PER CALL SITE and has no default, because the right value depends on how
    large the drawing renders there. These two literals copy `app/_sections/invite.tsx` and
    `app/_sections/wishes.tsx` and must follow them. */
-const NAMES_STROKE_UNITS = { invite: 1.6, wishes: 2.2 };
+const NAMES_STROKE_UNITS = { invite: 1.6, wishes: 3.2 };
 
 /* The composing section sets the diameter, and the specimen has none of its own, so it borrows
    Family's. These literals copy `components/family/family.tsx` and must follow it. */
@@ -138,7 +138,7 @@ export function ComponentsSections() {
         source="@/components/ui/couple-names"
         spec={[
           "the invite's stack · 2.59em wide at phone, 2.513em from md up · dilated 1.6 units",
-          "Wishes' line · 3.65em at phone, 4.656em from md up · dilated 2.2 units · 6.09 : 1",
+          "Wishes' line · 3.65em at phone, 4.656em from md up · dilated 3.2 units · 6.09 : 1",
           "the ampersand drawn 35% smaller than the trace while keeping its full layout slot — a narrower slot would render the names larger, the width being a fixed em · in the stack it is lifted 24 source units above centre (AMPERSAND_LIFT)",
           "viewBox padded three stroke widths every side, or the swash tips clip flat at dpr 1 · fill currentColor, set to ink-muted INSIDE the component rather than at either call site — the invite's h1 carries text-ink and this overrides it",
         ]}
@@ -174,7 +174,7 @@ export function ComponentsSections() {
         name="photo-row"
         note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that derives three deliveries on the page. Pressing a frame opens the real viewer on that photograph; the +N frame and the action open the real grid."
         source="@/components/ui/photo-row"
-        spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, aligned to its end; on the page the strip and its action sit at the ritual block's right edge · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover"
+        spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, aligned to its end; on the page the strip and its action sit at the ritual block's right edge · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover, which draws the frame's focus ring as a 2px inset band"
       >
         <PhotoStrip
           aspects={sampleRitualAspects}
@@ -192,7 +192,7 @@ export function ComponentsSections() {
         name="gallery-modal"
         note="Shown through its grid panel with generated sample images; tiles here open nothing. The history that lets back pop one layer, focus handling and the scroll restore on close need the live modal — open it from photo-row above."
         source="@/components/ui/gallery-modal"
-        spec="z-modal · scrim at 0.92 · masonry whose column count follows the photo count (1 → one, centred · 2–4 → two · 5+ → two, three from lg) · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover · on hover a tile shows the zoom-in cursor and its photograph grows 3% in its frame · Close is the viewer's round control, a cross in a 48px dark circle · opens and closes with a fade and a 24px rise (duration-base) · a layer change fades the new layer's content (duration-fast), the scrim never moving · a deliberate tap on empty space (down and up, under 10px) goes back one layer · reduced motion: instant"
+        spec="z-modal · scrim at 0.92 · masonry whose column count follows the photo count (1 → one, centred · 2–4 → two · 5+ → two, three from lg) · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile that fails to load is hidden, deliberately · every tile under a transparent save cover, which draws the tile's focus ring as a 2px inset band · on hover a tile shows the zoom-in cursor and its photograph grows 3% in its frame · Close is the viewer's round control, a cross in a 48px dark circle · opens and closes with a fade and a 24px rise (duration-base) · a layer change fades the new layer's content (duration-fast), the scrim never moving · a deliberate tap on empty space (down and up, under 10px) goes back one layer · reduced motion: instant"
       >
         <ChromeFrame height={320}>
           <GalleryModalPanel {...sampleGalleryPanel} />
