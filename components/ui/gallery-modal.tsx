@@ -124,6 +124,11 @@ export function GalleryModal({
   const [swapped, setSwapped] = useState(false);
   const [direction, setDirection] = useState<1 | -1 | 0>(0);
   const [hint, setHint] = useState(false);
+  /* Held here, not in the grid panel, because the panel unmounts each time the viewer opens: a
+     photograph keeps its state when the grid comes back, and every open starts afresh. The viewer
+     keeps a failed photograph's index and says it could not load. */
+  const [loaded, setLoaded] = useState<ReadonlySet<number>>(() => new Set());
+  const [failed, setFailed] = useState<ReadonlySet<number>>(() => new Set());
   const shownIndex = state.layer === "viewer" ? state.index : -1;
   const titleId = useId();
   const count = images.length;
@@ -262,6 +267,12 @@ export function GalleryModal({
   );
   const openPhoto = (index: number) => {
     if (gallery.openPhoto()) showLayer(tapTile(index));
+  };
+  const photoLoaded = (index: number) => {
+    setLoaded((previous) => new Set(previous).add(index));
+  };
+  const photoFailed = (index: number) => {
+    setFailed((previous) => new Set(previous).add(index));
   };
   /* From a grid-opened viewer the grid is one entry back, so going there consumes it; from a
      strip-opened viewer there is no grid entry, so the layer swaps in place and adds none. */
@@ -425,9 +436,13 @@ export function GalleryModal({
           />
         ) : (
           <GalleryModalPanel
+            failed={failed}
             images={images}
+            loaded={loaded}
             onClose={close}
             onOpenPhoto={openPhoto}
+            onPhotoError={photoFailed}
+            onPhotoLoad={photoLoaded}
             title={title}
             titleId={titleId}
           />
