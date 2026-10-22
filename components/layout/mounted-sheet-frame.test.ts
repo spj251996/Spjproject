@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { FRAME_SHEETS } from "../../app/frame-sheets.ts";
 import {
   CAPS,
   type FitRegime,
   fitPadding,
   fitRectangles,
+  GROUND_HALVING,
+  lowerBoundPx,
   type MeasuredFit,
   type Orientation,
   pairsSideBySide,
@@ -328,6 +331,47 @@ test("a landscape rectangle wider than the height cap is decided below the centr
   );
 });
 
+/* A card never grows past its tier's width cap, so a rectangle wider than the cap is a card the box
+   can never be; a tier line set by one admits windows too short for every card the box can be.
+   Checked against the shipped fits, because a synthetic fit only proves the case it was built for. */
+test("no tier line sits below a width-capped card's real minimum", () => {
+  let checked = 0;
+  for (const sheet of FRAME_SHEETS) {
+    if (sheet.fit === null || sheet.layout === "tall") continue;
+    for (const windowClass of windowClasses(
+      sheet.fit,
+      sheet.layout,
+      sheet.hero,
+    )) {
+      const line = windowClass.media.match(/\(height >= ([\d.]+)px\)/)?.[1];
+      if (line === undefined) continue;
+      const cap = CAPS[windowClass.widthTier];
+      const halved = windowClass.groundTier.ground * GROUND_HALVING;
+      const reachable = fitRectangles(
+        regimesFor(windowClass.regimes, "landscape"),
+        revealFor(windowClass, sheet.hero, true),
+        fitPadding(windowClass.groundTier),
+        pairsSideBySide(sheet.layout, windowClass, true),
+      )
+        .filter(
+          (rectangle) =>
+            rectangle.minCardWidth <= cap.width &&
+            rectangle.minCardHeight <= cap.height,
+        )
+        .map((rectangle) => rectangle.minCardHeight + 2 * halved);
+      const label = `${sheet.name} ${windowClass.media}`;
+      assert.ok(reachable.length > 0, `${label}: no card fits both caps`);
+      const floor = Number.parseFloat(lowerBoundPx(Math.min(...reachable)));
+      assert.ok(
+        Number(line) >= floor,
+        `${label}: the tier line ${line}px sits below ${floor}px, the shortest card within both caps`,
+      );
+      checked++;
+    }
+  }
+  assert.equal(checked, 25, "five tier lines for each of five fitted sheets");
+});
+
 /* Every rule body written directly against a scope selector (never one of its descendants — the
    ` > .` that follows a descendant selector breaks the match), wherever it appears: bare or nested
    inside an `@media` block. These bodies are flat declaration lists with no further nesting, so a
@@ -413,11 +457,13 @@ test("a pair's compact tier lines are worked out at 1280px", () => {
   });
   assert.doesNotThrow(() => windowClasses(framable, "pair"));
 
-  /* Content 400 side by side is 2 x (400 + 48) + 48 = 944px: with 4 x 32 halved-ground clearance
-     that is 1072 — over a hypothetical 1024px line, but inside the 1280px line's clearance
-     (1072 <= 1280), so it frames only because the pair's line is worked out at 1280. */
+  /* Content 380 side by side is 2 x (380 + 48) + 64 = 920px: with 4 x 32 halved-ground clearance
+     that is 1048 — over a hypothetical 1024px line, but inside the 1280px line's clearance
+     (1048 <= 1280), so it frames only because the pair's line is worked out at 1280. At the
+     touchscreen line's 32 padding it is 2 x (380 + 64) + 64 = 952px, inside the 960px compact width
+     cap that any wider content would break. */
   const onlyFromWide = makeFit({
-    laptop: { landscape: [{ minContentWidth: 400, contentHeight: 100 }] },
+    laptop: { landscape: [{ minContentWidth: 380, contentHeight: 100 }] },
   });
   assert.doesNotThrow(() => windowClasses(onlyFromWide, "pair"));
 

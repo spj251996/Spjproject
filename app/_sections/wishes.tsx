@@ -101,14 +101,13 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
               size and nothing else: it is the `em` the asset's width resolves against, so the signature keeps the size it
               ships at today (260.8px at 56px, 335.2 at 72, 298 at 64 — 4.656em at every one). */}
           <p className="text-(length:--text-heading-script) mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
-            {/* 2.2 units, kept where the owner settled it on the render. Note it lands this lockup's
-                thinnest stroke at 0.95px on a phone, a hair UNDER the one-device-pixel floor the
-                figures above derive — their eye governs over the floor, and 2.5 is the number if it
-                ever reads washed out on a monitor. */}
+            {/* 3.2 units, picked by eye on a render: it lands this lockup's thinnest stroke at 0.90px
+                on a phone, a hair UNDER the one-device-pixel floor the figures above derive; 3.8 is
+                the number that reaches it. */}
             <CoupleNames
               layout="line"
               names={wishes.coupleNames}
-              strokeUnits={2.2}
+              strokeUnits={3.2}
             />
           </p>
 

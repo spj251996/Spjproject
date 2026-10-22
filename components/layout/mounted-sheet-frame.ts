@@ -348,6 +348,7 @@ function tierLine(
   )
     .filter(
       (rectangle) =>
+        rectangle.minCardWidth <= CAPS[widthTier].width &&
         rectangle.minCardHeight <= CAPS[widthTier].height &&
         rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * halved <=
           narrowestWindow,

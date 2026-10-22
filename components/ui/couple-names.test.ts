@@ -136,13 +136,13 @@ test("the asset is sized in em of the role it replaces, at the measured ratios",
 const SITES = [
   {
     file: "app/_sections/invite.tsx",
-    pxPerUnit: 0.3939,
-    where: "the invite's stacked lockup at phone, 236.2px across 599.68 units",
+    pxPerUnit: 0.3996,
+    where: "the invite's stacked lockup at phone, 243.45px across 609.28 units",
   },
   {
     file: "app/_sections/wishes.tsx",
-    pxPerUnit: 0.2253,
-    where: "Wishes' line at phone, 260.7px across 1156.94 units",
+    pxPerUnit: 0.1738,
+    where: "Wishes' line at phone, 204.39px across 1176.14 units",
   },
 ];
 
@@ -170,10 +170,10 @@ test("every call site sets its own dilation, between its pixel floor and the tap
     assert.notStrictEqual(m, null, `${site.file} does not set strokeUnits`);
     const units = Number((m as RegExpExecArray)[1]);
     const hairline = (2.0 + units) * site.pxPerUnit;
-    /* 0.9 rather than 1.0, and the gap is recorded rather than tuned away: Wishes ships 2.2 by the
-       owner's eye on a render, which lands it at 0.95px — a hair under the floor the figures
-       derive. Their judgement governs; this bound exists to catch a REGRESSION below it, not to
-       restate the floor. 2.5 is the number if Wishes ever reads washed out on a monitor. */
+    /* 0.9 rather than 1.0, and the gap is recorded rather than tuned away: Wishes ships 3.2, picked
+       by eye on a render, which lands it at 0.90px, a hair under the floor the figures derive. That
+       judgement governs; this bound exists to catch a REGRESSION below it, not to restate the
+       floor. 3.8 is the number that reaches one device pixel at dpr 1. */
     assert.ok(
       hairline >= 0.9,
       `${site.where}: ${units} units leaves the thinnest stroke at ${hairline.toFixed(2)}px — it greys out there`,
