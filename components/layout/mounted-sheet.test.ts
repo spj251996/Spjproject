@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { inviteFit } from "../../app/invite-fit.ts";
+import { inviteFit } from "../../app/_frame/invite-fit.ts";
 import {
   BREAKPOINT_REM,
   revealFor,

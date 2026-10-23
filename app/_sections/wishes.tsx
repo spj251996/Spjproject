@@ -1,6 +1,6 @@
 import wishesStyles from "./wishes.module.css";
-import "@/app/frames/wishes.css";
-import { wishesFit } from "@/app/wishes-fit";
+import "@/app/_frame/sheets/wishes.css";
+import { wishesFit } from "@/app/_frame/wishes-fit";
 import { Botanical } from "@/components/background/botanical";
 import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { FRAME_SHEETS } from "../../app/frame-sheets.ts";
+import { FRAME_SHEETS } from "../../app/_frame/frame-sheets.ts";
 import {
   CAPS,
   type FitRegime,
@@ -1597,7 +1597,7 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
   );
 });
 
-/* The string is carried by the generated tall sheet (`app/frames/tall.css`) and by the botanical layer's
+/* The string is carried by the generated tall sheet (`app/_frame/sheets/tall.css`) and by the botanical layer's
    inline stylesheet, so changing it moves both. A tall card is never the hero (`mounted-sheet` throws on
    both), so the tall frame takes no role argument at all -- a hero variant would be CSS nothing can
    reach. */

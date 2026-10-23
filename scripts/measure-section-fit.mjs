@@ -16,10 +16,10 @@
 
    Usage:
      node scripts/measure-section-fit.mjs --route=/ --selector="[data-invite-stack]" \
-       --section=invite --out=app/invite-fit.ts
+       --section=invite --out=app/_frame/invite-fit.ts
 
    `--out` stays in `app/`, beside the other fits and next to the section CSS that reads them, e.g.
-   `app/invite-fit.ts` for the invite -- the section components themselves live in `app/_sections/`.
+   `app/_frame/invite-fit.ts` for the invite -- the section components themselves live in `app/_sections/`.
 
    Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
    landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending

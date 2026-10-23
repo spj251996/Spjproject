@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { FRAME_SHEETS } from "../../app/frame-sheets.ts";
+import { FRAME_SHEETS } from "../../app/_frame/frame-sheets.ts";
 import {
   mountedSheetFrameCss,
   tallFrameCss,

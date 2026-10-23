@@ -106,7 +106,7 @@ export function MountedSheet({
         "mounted-sheet: a tall card takes no measured fit. The fitted frame is defined only for a card that fits its tier's height cap; a tall section is taller than every window.",
       );
     }
-    /* The section's generated sheet (`app/frames/`, imported by the section) sets the reveal and
+    /* The section's generated sheet (`app/_frame/sheets/`, imported by the section) sets the reveal and
        padding and removes the mount's fill where it does not show, so neither element carries a
        padding utility. */
     return (
@@ -125,7 +125,7 @@ export function MountedSheet({
   }
 
   if (fit !== undefined) {
-    /* The section's generated sheet (`app/frames/`, imported by the section) sets the sheet's
+    /* The section's generated sheet (`app/_frame/sheets/`, imported by the section) sets the sheet's
        padding and a section's reveal, stripping its fill where it does not show. The hero's reveal
        is the ladder on its mount instead: the sheet is unlayered, so a rule there would beat the
        ladder's utilities. */

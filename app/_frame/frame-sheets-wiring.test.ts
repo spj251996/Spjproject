@@ -14,7 +14,7 @@ test("every consumer imports its own sheet and passes the list's arguments", () 
     const src = strip(readFileSync(sheet.consumer, "utf8"));
     assert.match(
       src,
-      new RegExp(`import "@/app/frames/${sheet.name}\\.css";`),
+      new RegExp(`import "@/app/_frame/sheets/${sheet.name}\\.css";`),
       `${sheet.consumer} does not import its sheet`,
     );
     if (sheet.layout === "tall") {
@@ -43,13 +43,14 @@ test("each sheet is imported by its listed consumer and by no other file", () =>
   const walk = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const path = `${dir}/${entry.name}`;
-      if (entry.isDirectory()) return path === "app/frames" ? [] : walk(path);
+      if (entry.isDirectory())
+        return path === "app/_frame/sheets" ? [] : walk(path);
       return /\.tsx?$/.test(entry.name) ? [path] : [];
     });
   const importers = new Map<string, string[]>();
   for (const file of [...walk("app"), ...walk("components")]) {
     for (const m of strip(readFileSync(file, "utf8")).matchAll(
-      /import "@\/app\/frames\/([\w-]+)\.css";/g,
+      /import "@\/app\/_frame\/sheets\/([\w-]+)\.css";/g,
     )) {
       importers.set(m[1], [...(importers.get(m[1]) ?? []), file]);
     }

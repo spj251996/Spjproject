@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { FrameSheet } from "../app/frame-sheets.ts";
+import type { FrameSheet } from "../app/_frame/frame-sheets.ts";
 import { buildFrames } from "./build-frame-css.ts";
 
 const sheet = (name: string) => ({ name }) as FrameSheet;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { FRAME_SHEETS } from "../../app/frame-sheets.ts";
+import { FRAME_SHEETS } from "../../app/_frame/frame-sheets.ts";
 import {
   CAPS,
   containerLowerBoundPx,
@@ -69,10 +69,10 @@ const BOUNDARY = /(width|height)\s*(>=|<=|<|>)\s*([\d.]+)px/g;
 
 test("every boundary in every committed frame sheet is stable under the minifier", () => {
   let count = 0;
-  for (const name of readdirSync("app/frames").filter((n) =>
+  for (const name of readdirSync("app/_frame/sheets").filter((n) =>
     n.endsWith(".css"),
   )) {
-    for (const m of readFileSync(`app/frames/${name}`, "utf8").matchAll(
+    for (const m of readFileSync(`app/_frame/sheets/${name}`, "utf8").matchAll(
       BOUNDARY,
     )) {
       count++;

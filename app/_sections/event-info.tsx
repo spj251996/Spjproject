@@ -1,7 +1,8 @@
 import type { ComponentType } from "react";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import "./event-info.css";
-import "@/app/frames/event-info.css";
+import "@/app/_frame/sheets/event-info.css";
+import { eventInfoFit } from "@/app/_frame/event-info-fit";
 import {
   mapLabel,
   segmentLineParts,
@@ -10,7 +11,6 @@ import {
   venueRuns,
 } from "@/app/_sections/event-info-text";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
-import { eventInfoFit } from "@/app/event-info-fit";
 import { Botanical } from "@/components/background/botanical";
 import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import {

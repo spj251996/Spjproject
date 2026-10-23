@@ -9,7 +9,7 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { FRAME_SHEETS } from "../app/frame-sheets.ts";
+import { FRAME_SHEETS } from "../app/_frame/frame-sheets.ts";
 import { splitAtRuleBlocks, topLevelRules } from "./css-top-level-rules.mjs";
 import { linkedStylesheets } from "./linked-stylesheets.mjs";
 

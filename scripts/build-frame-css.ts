@@ -1,5 +1,5 @@
-/* Writes every frame sheet in `app/frame-sheets.ts` to `app/frames/<name>.css`, and prunes any entry
-   there that the list no longer names — `app/frames/` is wholly this script's. `--dry-run` lists what would
+/* Writes every frame sheet in `app/_frame/frame-sheets.ts` to `app/_frame/sheets/<name>.css`, and prunes any entry
+   there that the list no longer names — `app/_frame/sheets/` is wholly this script's. `--dry-run` lists what would
    be written and pruned and writes nothing. */
 import {
   existsSync,
@@ -15,7 +15,7 @@ import {
   FRAMES_DIR,
   type FrameSheet,
   frameSheetFile,
-} from "../app/frame-sheets.ts";
+} from "../app/_frame/frame-sheets.ts";
 
 /* Every sheet is generated before any is written, so a sheet that throws leaves the directory exactly
    as it was rather than half regenerated and unpruned. */

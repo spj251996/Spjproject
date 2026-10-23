@@ -1,5 +1,5 @@
-import "@/app/frames/not-found.css";
-import { notFoundFit } from "@/app/not-found-fit";
+import "@/app/_frame/sheets/not-found.css";
+import { notFoundFit } from "@/app/_frame/not-found-fit";
 import { Botanical } from "@/components/background/botanical";
 import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
