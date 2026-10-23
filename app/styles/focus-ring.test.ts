@@ -17,8 +17,8 @@ const INSET_RING = [
   "shadow-[inset_0_0_0_var(--focus-ring-width)_var(--focus-ring-color)]",
 ].join(":");
 const CLIPPED_FRAMES = [
-  "components/ui/photo-row.tsx",
-  "components/ui/gallery-modal-panel.tsx",
+  "components/ui/gallery/photo-row.tsx",
+  "components/ui/gallery/gallery-modal-panel.tsx",
 ];
 
 function sources(dir: string): string[] {

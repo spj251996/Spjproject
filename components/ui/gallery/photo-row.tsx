@@ -11,9 +11,9 @@
    Flat props rather than `Ritual`: a portable component may not name a domain type. */
 
 import { useEffect, useState } from "react";
-import { ButtonAction } from "./button-action";
+import { ButtonAction } from "../button-action";
+import { ImagePlaceholder } from "../image-placeholder";
 import { ensureForwardGuard, GalleryModal } from "./gallery-modal";
-import { ImagePlaceholder } from "./image-placeholder";
 import { cappedAspect } from "./photo-fit";
 
 /* The same URL can appear twice, so keys are the URL plus its occurrence count rather than the

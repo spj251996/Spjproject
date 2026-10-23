@@ -8,7 +8,10 @@ import test from "node:test";
    the open viewer: measured, 786 of the top three rows' 1,179 pixels bar-coloured. Portalled to
    `<body>`, the modal stacks in the root context, where 50 is above 45. */
 test("the gallery modal portals to <body>, out of the card's stacking context", () => {
-  const source = readFileSync("components/ui/gallery-modal.tsx", "utf8");
+  const source = readFileSync(
+    "components/ui/gallery/gallery-modal.tsx",
+    "utf8",
+  );
   assert.match(source, /import \{ createPortal \} from "react-dom";/);
   assert.match(source, /return createPortal\(/);
   assert.match(source, /,\s*document\.body,?\s*\);\s*\}\s*$/);

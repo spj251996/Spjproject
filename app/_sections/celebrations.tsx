@@ -5,7 +5,7 @@ import { Botanical } from "@/components/background/botanical";
 import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { PhotoStrip } from "@/components/ui/photo-strip";
+import { PhotoStrip } from "@/components/ui/gallery/photo-strip";
 import { FLOOR_DIAGONAL, SprigOrnament } from "@/components/ui/sprig-ornament";
 import { rituals } from "@/content";
 import { ritualPhotos } from "@/content/ritual-photos.generated";
