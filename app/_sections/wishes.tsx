@@ -1,10 +1,8 @@
 import wishesStyles from "@/app/wishes.module.css";
 import "@/app/frames/wishes.css";
 import { wishesFit } from "@/app/wishes-fit";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { CardThread } from "@/components/thread/page-thread";
 import { CoupleNames } from "@/components/ui/couple-names";

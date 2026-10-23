@@ -4,10 +4,8 @@ import { eventById } from "@/app/_sections/shared";
 import dateBlock from "@/app/invite-date.module.css";
 import "@/app/frames/invite.css";
 import { inviteFit } from "@/app/invite-fit";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
 import { CoupleNames } from "@/components/ui/couple-names";

@@ -1,5 +1,5 @@
 import { GallerySection, RuleList, Specimen } from "@/app/design-system/_kit";
-import { SECTION_PLACEMENT } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 
 const PAPER_BASE_POINTERS = [
   "No component: this page's own background is the paper base.",

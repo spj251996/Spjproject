@@ -11,10 +11,8 @@ import {
 } from "@/app/_sections/event-info-text";
 import { eventById, PrimaryDate } from "@/app/_sections/shared";
 import { eventInfoFit } from "@/app/event-info-fit";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import {
   BetrothalIcon,
   LunchIcon,
@@ -25,12 +23,12 @@ import {
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { ButtonAction } from "@/components/ui/button-action";
-import { ShrinkToWidestLine } from "@/components/ui/shrink-to-widest-line";
 import {
   type EventSegment,
   formatEventDate,
   type WeddingEvent,
 } from "@/content";
+import { ShrinkToWidestLine } from "@/components/ui/shrink-to-widest-line";
 
 /* The eyebrow names the occasion plainly; the heading is the couple's phrase for it. Both are fixed
    chrome at the composition site, like Family's and Wishes' eyebrows, rather than content fields. */

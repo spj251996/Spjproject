@@ -1,10 +1,8 @@
 import { ritualPhotoProps } from "@/app/_sections/ritual-photo-props";
 import celebrations from "@/app/celebrations.module.css";
 import "@/app/frames/tall.css";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { PhotoStrip } from "@/components/ui/photo-strip";

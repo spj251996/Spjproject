@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { botanicalCss, pieceRule } from "./botanical-css.ts";
+import { SECTION_PLACEMENT } from "./botanical-placement.ts";
 import {
   ANCHORS,
   type BotanicalPiece,
@@ -299,26 +300,15 @@ test("every piece the section carries gets a rule at every tier, and no other pi
 });
 
 /* The invite and the not-found screen share one botanical layout (DESIGN.md → Botanical Edge), so
-   both keys must name the SAME list — a copy would let the two drift apart one swap at a time. Read
-   from source because `botanical.tsx` imports a CSS module, which `node --test` cannot load. */
+   both keys must name the SAME list — a copy would let the two drift apart one swap at a time. */
 test("not-found reuses the invite's own piece list, and that list is corner-trail then corner-spray", () => {
-  const source = readFileSync(
-    path.join(import.meta.dirname, "botanical.tsx"),
-    "utf8",
+  assert.equal(
+    SECTION_PLACEMENT["not-found"],
+    SECTION_PLACEMENT.invite,
+    "not-found must reuse the invite's list",
   );
-  const invite = source.match(/^\s*invite: (\w+),$/m)?.[1];
-  const notFound = source.match(/^\s*"not-found": (\w+),$/m)?.[1];
-  assert.ok(
-    invite,
-    "invite's placement must be a named list, not an inline copy",
-  );
-  assert.equal(notFound, invite, "not-found must reuse the invite's list");
-  const declaration = source.match(
-    new RegExp(`const ${invite} = \\[([\\s\\S]*?)\\] as const`),
-  )?.[1];
-  assert.ok(declaration, `no declaration found for ${invite}`);
   assert.deepEqual(
-    [...declaration.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]),
+    SECTION_PLACEMENT.invite.map((placement) => placement.piece),
     ["corner-trail", "corner-spray"],
   );
 });
@@ -389,26 +379,12 @@ test("every image the generated sheet names exists in public/botanical", () => {
   }
 });
 
-/* DESIGN.md → Botanical Edge: no piece appears twice in one scroll. Read from source because
-   `botanical.tsx` imports a CSS module, which `node --test` cannot load. */
+/* DESIGN.md → Botanical Edge: no piece appears twice in one scroll. */
 test("no piece appears twice in one scroll, and the scroll carries all nineteen", () => {
-  const source = readFileSync(
-    path.join(import.meta.dirname, "botanical.tsx"),
-    "utf8",
+  const { "not-found": _notFound, ...scrollSections } = SECTION_PLACEMENT;
+  const scroll = Object.values(scrollSections).flatMap((placements) =>
+    placements.map((placement) => placement.piece),
   );
-  const pieces = (text: string) =>
-    [...text.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]);
-  const invite = source.match(
-    /const INVITE_PIECES = \[([\s\S]*?)\] as const/,
-  )?.[1];
-  assert.ok(invite, "no INVITE_PIECES declaration");
-  const start = source.indexOf("export const SECTION_PLACEMENT = {");
-  const end = source.indexOf('"not-found": INVITE_PIECES', start);
-  assert.ok(
-    start !== -1 && end > start,
-    "no SECTION_PLACEMENT block before not-found",
-  );
-  const scroll = [...pieces(invite), ...pieces(source.slice(start, end))];
   assert.equal(
     new Set(scroll).size,
     scroll.length,
