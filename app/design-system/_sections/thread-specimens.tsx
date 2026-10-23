@@ -18,27 +18,33 @@ import {
   type HeadOptions,
   type HeadSegment,
   headSegments,
-  type PieceSamples,
   type PieceSpan,
-  polylineBetween,
-  retraceFade,
-  retraceGlow,
-  retraceSegments,
-  retraceSpan,
-  samplePath,
-  TAPER_STEPS,
-  taperCut,
-  taperSegments,
-} from "@/components/thread/thread-light";
+} from "@/components/thread/thread-head";
 import { THREAD_PATHS } from "@/components/thread/thread-paths";
 import {
   dashForPiece,
   pieceProgress,
 } from "@/components/thread/thread-progress";
+import {
+  retraceFade,
+  retraceGlow,
+  retraceSegments,
+  retraceSpan,
+} from "@/components/thread/thread-retrace";
+import {
+  type PieceSamples,
+  polylineBetween,
+  samplePath,
+} from "@/components/thread/thread-samples";
+import {
+  TAPER_STEPS,
+  taperCut,
+  taperSegments,
+} from "@/components/thread/thread-taper";
 
 /* Four specimens of the thread's light, each laid on a stretch of the page's own authored geometry
    (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
-   `thread-light.ts`'s, imported; the classes are the page's own (`thread.module.css`), so the filters
+   `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s, imported; the classes are the page's own (`thread.module.css`), so the filters
    are the same ones, not copies. Static: a pose of each layer, never a loop. */
 
 /* A connector from the middle of the page, so neither of its ends is a free end and the ink, the head

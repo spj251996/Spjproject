@@ -274,7 +274,7 @@ const FAST_TOKENS =
   /* `--retrace-speed:0` pins the FIXED-DURATION path deliberately: with a speed set, a loop lasts as
    long as the stretch needs and the injected `--retrace-duration` no longer governs, so these cases
    could not state a budget in milliseconds at all. The speed model's own arithmetic is covered
-   without a browser in `thread-light.test.ts`. */
+   without a browser in `thread-retrace.test.ts`. */
   ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0}";
 
 const WRAP_RAF = `(() => {

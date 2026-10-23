@@ -116,7 +116,7 @@
   filter: var(--bleed-thread);
 }
 
-/* A tapered end (`thread-light.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
+/* A tapered end (`thread-taper.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
    takes the thread's own colour and its bleed: a taper that did not bleed would read as a different
    material from the line it ends. The bleed is ONE filter on the group, as the head's halo is, over
    geometry that never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
@@ -136,7 +136,7 @@
   stroke-linejoin: round;
 }
 
-/* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
+/* The drawing head (`thread-head.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
    filter on this ONE group, never on the steps inside it: per path it cost 141 dropped frames over
    these tight polylines, against 10 for the group in the same comparison (6 as built). The steps' own colour, width and cap are set per
    element by `page-thread.tsx`; only what is the same for all of them lives here. Hidden with
@@ -152,7 +152,7 @@
   stroke-linejoin: round;
 }
 
-/* The re-trace (`thread-light.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
+/* The re-trace (`thread-retrace.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
    drawn line, one `<g>` per stretch that is animating, laid by script beneath the head. It takes NO
    FILTER, and that is the point: the head's 4x halo as a filter over these segments cost 77 dropped
    frames at three stretches at `wide` and the bleed's quarter-radius one still cost a buffer per

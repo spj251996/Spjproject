@@ -14,32 +14,9 @@ import {
   type HeadOptions,
   type HeadSegment,
   headSegments,
-  type PieceSamples,
   paintedLength,
-  parseCssCount,
-  parseCssTime,
-  polylineBetween,
-  RETRACE_LENGTH_RATIO,
-  type RetracePhase,
   type Rgb,
-  retraceFade,
-  retraceGlow,
-  retraceLoopAt,
-  retraceNominalMs,
-  retracePeriodMs,
-  retracePhase,
-  retraceSegments,
-  retraceSpan,
-  retraceTargets,
-  samplePath,
-  TAPER_CUT_WIDTH,
-  TAPER_STEPS,
-  type TaperSegment,
-  taperCut,
-  taperReached,
-  taperSegments,
-  tipGroupIndex,
-} from "./thread-light";
+} from "./thread-head";
 import {
   type SectionAnchors,
   type SectionRange,
@@ -60,6 +37,35 @@ import {
   type TerminalWindow,
   totalLength,
 } from "./thread-progress";
+import {
+  parseCssCount,
+  parseCssTime,
+  RETRACE_LENGTH_RATIO,
+  type RetracePhase,
+  retraceFade,
+  retraceGlow,
+  retraceLoopAt,
+  retraceNominalMs,
+  retracePeriodMs,
+  retracePhase,
+  retraceSegments,
+  retraceSpan,
+  retraceTargets,
+  tipGroupIndex,
+} from "./thread-retrace";
+import {
+  type PieceSamples,
+  polylineBetween,
+  samplePath,
+} from "./thread-samples";
+import {
+  TAPER_CUT_WIDTH,
+  TAPER_STEPS,
+  type TaperSegment,
+  taperCut,
+  taperReached,
+  taperSegments,
+} from "./thread-taper";
 import type { MeasuredSection, Rect } from "./thread-warp";
 
 /* THE MODEL.
@@ -504,7 +510,7 @@ function clearPieceDashes(paths: readonly (SVGPathElement | null)[]) {
 
 /* ---------------------------------------------------------------------------------------------
    THE DRAWING HEAD — light laid over the leading end of the ink while a piece draws. The arithmetic
-   is `thread-light.ts`'s and has no DOM; what is here is what needs one: reading the tokens and
+   is `thread-head.ts`'s and has no DOM; what is here is what needs one: reading the tokens and
    keeping a pool of `<path>`s.
 
    Each step of the head is a polyline through only its own run of the piece, never a dash on a copy
@@ -678,13 +684,13 @@ type HeadPainter = ReturnType<typeof createHeadPainter>;
 
 /* ---------------------------------------------------------------------------------------------
    THE RE-TRACE — a lit segment that runs a stretch of the thread once it is already drawn
-   (`thread-light.ts`; DESIGN.md -> Thread -> The re-trace). The arithmetic is `thread-light.ts`'s;
+   (`thread-retrace.ts`; DESIGN.md -> Thread -> The re-trace). The arithmetic is `thread-retrace.ts`'s;
    what is here is what needs a DOM: the painters, the loop that drives them, and the tokens.
 
    It is the head's own stack, laid again, so each stretch that is animating gets a `<g>` and the head's
    painter inside it. The painters share the head's samples, so a piece is sampled once whichever
    layer reaches it first. A second `<g>` per stretch, beneath it, holds the glow as translucent strokes
-   (`thread-light.ts`); there is no filter on either. */
+   (`thread-retrace.ts`); there is no filter on either. */
 
 /* The drawing head's own settled values (the owner's ruling, 2026-10-02) with the re-trace's peak
    length: the head's options, read once from the same tokens, not a second copy of any of them. */
@@ -826,7 +832,7 @@ const cardRetraces = new Set<RetracePainter>();
 
 /* ---------------------------------------------------------------------------------------------
    THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
-   `thread-light.ts`'s; what is here is the DOM it needs.
+   `thread-taper.ts`'s; what is here is the DOM it needs.
 
    A taper is a stack of narrowing runs laid over a stretch of ink that has been cut away beneath
    them (a stroke cannot be thinned by drawing a narrower one over it). The cut is a `<mask>` on the
@@ -1186,7 +1192,7 @@ export function PageThread() {
   const piecesRef = useRef<readonly ThreadPiece[]>([]);
   /* EVERY piece of the page, the card thread's included: the head is the last stretch of the drawn line, so
      when the tip is a few pixels into Wishes' first piece the trunk still draws the head's tail in
-     its own last one (`thread-light.ts`'s header). */
+     its own last one (`thread-head.ts`'s header). */
   const chainRef = useRef<readonly ThreadPiece[]>([]);
   const headGroupRef = useRef<SVGGElement>(null);
   const headRef = useRef<HeadPainter | null>(null);
