@@ -15,7 +15,7 @@ import {
   FRAMES_DIR,
   type FrameSheet,
   frameSheetFile,
-} from "../app/_frame/frame-sheets.ts";
+} from "../../app/_frame/frame-sheets.ts";
 
 /* Every sheet is generated before any is written, so a sheet that throws leaves the directory exactly
    as it was rather than half regenerated and unpruned. */

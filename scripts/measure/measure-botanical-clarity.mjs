@@ -6,15 +6,15 @@
  * it prints which pieces sit AT SOURCE CEILING (`DESIGN.md` → Iteration Notes → Known Gaps): no code
  * change lifts those, only larger source art.
  *
- *   node scripts/measure-botanical-clarity.mjs
+ *   node scripts/measure/measure-botanical-clarity.mjs
  *
  * Reads the sources in `assets/botanical/` against the delivered rasters in `public/botanical/`,
  * at the sizes `components/background/botanical-tuning.ts` renders each piece. */
 
 import { existsSync } from "node:fs";
 import sharp from "sharp";
-import { TUNING } from "../components/background/botanical-tuning.ts";
-import { FILE_TIER } from "./generate-images.mjs";
+import { TUNING } from "../../components/background/botanical-tuning.ts";
+import { FILE_TIER } from "../generators/generate-images.mjs";
 
 /**
  * @typedef {{ piece: string, file: string, note: "NO FILE" }} MissingRow

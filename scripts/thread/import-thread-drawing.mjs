@@ -11,7 +11,7 @@
  * same code that traced the motifs — so this file adds a colour mask and a coordinate transform,
  * not a second geometry implementation.
  *
- * usage: node scripts/import-thread-drawing.mjs <wide|tall|upright> <drawing.png> --dir=<sheet dir>
+ * usage: node scripts/thread/import-thread-drawing.mjs <wide|tall|upright> <drawing.png> --dir=<sheet dir>
  *
  * <sheet dir> already holds `geometry.json` (the page's width and section bands) and
  * `attachments.json` (every motif's entry/exit tick, in page pixels, in the order the thread
@@ -761,7 +761,7 @@ export async function importDrawing(args, { readPage = readLivePage } = {}) {
 
   if (!band || !file || !dir || !(band in CROSS_INSET)) {
     console.error(
-      "usage: node scripts/import-thread-drawing.mjs <wide|tall|upright> <drawing.png> --dir=<sheet dir>",
+      "usage: node scripts/thread/import-thread-drawing.mjs <wide|tall|upright> <drawing.png> --dir=<sheet dir>",
     );
     return 1;
   }

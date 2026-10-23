@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 /* THE COUPLE'S NAMES AS DRAWN GEOMETRY, placing the three word-groups that
    `components/shell/couple-names-symbol.tsx` defines.
 
-   MEASURED INK OF EACH GROUP, in the source file's own viewBox units (scripts/measure-couple-names-bbox.mjs, a
+   MEASURED INK OF EACH GROUP, in the source file's own viewBox units (scripts/measure/measure-couple-names-bbox.mjs, a
    real engine). `x`/`y` are where the group sits in the SOURCE box, which is what makes the stacked
    layout free: the drawn lockup IS those positions, so stacking is a re-origin and nothing else. */
 const SEBASTIAN = { w: 599.68, h: 190.11, x: 0.32, y: 0.19 };

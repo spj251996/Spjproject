@@ -25,9 +25,9 @@
  * in. Pass --out to place it.
  *
  * USAGE:
- *   node scripts/build-og-card.mjs                        # -> tmp/og-card/og-card.jpg
- *   node scripts/build-og-card.mjs --out assets/og/og-card.jpg
- *   node scripts/build-og-card.mjs --names 84 --flowers 1 --dates 24 --out tmp/og-card/a.jpg
+ *   node scripts/generators/build-og-card.mjs                        # -> tmp/og-card/og-card.jpg
+ *   node scripts/generators/build-og-card.mjs --out assets/og/og-card.jpg
+ *   node scripts/generators/build-og-card.mjs --names 84 --flowers 1 --dates 24 --out tmp/og-card/a.jpg
  */
 
 import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
@@ -35,9 +35,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import sharp from "sharp";
-import { TUNING } from "../components/background/botanical-tuning.ts";
+import { TUNING } from "../../components/background/botanical-tuning.ts";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORK = join(ROOT, "tmp", "og-card");
 
 /**

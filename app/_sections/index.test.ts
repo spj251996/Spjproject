@@ -29,7 +29,7 @@ test("no route enumerates sections -- every route composes Sections", () => {
 });
 
 /* The published page carries no thread. Asserted on the import and the flag, because those are what a
-   later edit reaches for; the BUILT page is asserted separately by scripts/check-export-routes.mjs,
+   later edit reaches for; the BUILT page is asserted separately by scripts/gates/check-export-routes.mjs,
    since a green build proves nothing about the artifact. */
 test("the published route neither imports the thread nor sets the flag", () => {
   const raw = readFileSync("app/page.tsx", "utf8");
@@ -116,10 +116,13 @@ test("the thread render gates sweep exactly the sections the module composes, in
     return [...body.matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
   };
   assert.deepEqual(
-    listIn("scripts/check-thread-clearance.mjs", "SECTION_IDS"),
+    listIn("scripts/gates/check-thread-clearance.mjs", "SECTION_IDS"),
     ids,
   );
-  assert.deepEqual(listIn("scripts/check-thread-joins.mjs", "SECTIONS"), ids);
+  assert.deepEqual(
+    listIn("scripts/gates/check-thread-joins.mjs", "SECTIONS"),
+    ids,
+  );
 });
 
 test("/preview is retired", () => {

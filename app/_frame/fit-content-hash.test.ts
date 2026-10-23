@@ -5,7 +5,7 @@ import {
   CONTENT_HASH_PATTERN,
   contentHash,
   FIT_CONTENT,
-} from "../../scripts/fit-content.ts";
+} from "../../scripts/lib/fit-content.ts";
 
 const FIT_SUFFIX = "-fit.ts";
 

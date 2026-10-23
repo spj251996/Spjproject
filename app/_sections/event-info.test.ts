@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { EventSegment, WeddingEvent } from "../../content/types.ts";
-import { withClasses } from "../../scripts/source-classes.ts";
+import { withClasses } from "../../scripts/lib/source-classes.ts";
 import {
   mapLabel,
   segmentLineParts,

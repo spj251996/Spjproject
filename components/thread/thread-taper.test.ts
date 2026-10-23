@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { BASE_WIDTH } from "../../scripts/built-tokens.ts";
+import { BASE_WIDTH } from "../../scripts/lib/built-tokens.ts";
 import {
   TAPER_CUT_WIDTH,
   type TaperSegment,

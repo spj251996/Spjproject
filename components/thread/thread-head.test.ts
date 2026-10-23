@@ -10,7 +10,7 @@ import {
   OPTIONS,
   pxToken,
   tokenValue,
-} from "../../scripts/built-tokens.ts";
+} from "../../scripts/lib/built-tokens.ts";
 import {
   deltaE,
   HEAD_LENGTH_RATIO,

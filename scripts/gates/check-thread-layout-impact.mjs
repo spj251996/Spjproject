@@ -14,12 +14,12 @@
  * DEV SERVER: never started, stopped or restarted here — :3000 is the owner's own review surface.
  *
  * USAGE:
- *   node scripts/check-thread-layout-impact.mjs
- *   node scripts/check-thread-layout-impact.mjs --falsify   # prove the gate can see the defect
+ *   node scripts/gates/check-thread-layout-impact.mjs
+ *   node scripts/gates/check-thread-layout-impact.mjs --falsify   # prove the gate can see the defect
  */
 
 import { chromium } from "playwright";
-import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
+import { THREAD_BANDS } from "../../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
 /* The thread is not on the published page -- `/` carries none, so this gate points

@@ -101,7 +101,7 @@ test("a symbol entry is present while its file holds the symbol and gone once it
 test("a relative `in` resolves from the repo root", () => {
   const entry = {
     symbol: "RETIRE_REGISTER",
-    in: relative(process.cwd(), "scripts/retire-register.mjs"),
+    in: relative(process.cwd(), "scripts/gates/retire-register.mjs"),
   };
   assert.equal(stillPresent(entry), true);
   assert.equal(

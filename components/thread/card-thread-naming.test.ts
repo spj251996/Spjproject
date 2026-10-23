@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
-/* A half-rename is how a gate goes blind: `scripts/check-thread-clearance.mjs` locates this
+/* A half-rename is how a gate goes blind: `scripts/gates/check-thread-clearance.mjs` locates this
    component by its DOM attribute, so renaming the export without the attribute leaves that gate
    passing while measuring nothing. This asserts the whole namespace is closed -- comments and
    scripts included, because a comment naming a symbol that no longer exists is the drift class this

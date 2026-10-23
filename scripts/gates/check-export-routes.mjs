@@ -9,9 +9,12 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { FRAME_SHEETS } from "../app/_frame/frame-sheets.ts";
-import { splitAtRuleBlocks, topLevelRules } from "./css-top-level-rules.mjs";
-import { linkedStylesheets } from "./linked-stylesheets.mjs";
+import { FRAME_SHEETS } from "../../app/_frame/frame-sheets.ts";
+import {
+  splitAtRuleBlocks,
+  topLevelRules,
+} from "../lib/css-top-level-rules.mjs";
+import { linkedStylesheets } from "../lib/linked-stylesheets.mjs";
 
 /* Measured on the export before this gate was written: the trunk's no-JS fallback, the trunk's live
  * root, and the card thread's. Not a remembered figure. */

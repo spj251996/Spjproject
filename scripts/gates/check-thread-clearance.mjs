@@ -53,15 +53,15 @@
    spawning its own.
 
    USAGE:
-     node scripts/check-thread-clearance.mjs                 # full sweep, all five sections
-     node scripts/check-thread-clearance.mjs --section=family
-     node scripts/check-thread-clearance.mjs --validate      # harness self-check
-     node scripts/check-thread-clearance.mjs --falsify       # harness self-check
-     node scripts/check-thread-clearance.mjs --falsify --section=wishes --band=upright --orientation=drifted
+     node scripts/gates/check-thread-clearance.mjs                 # full sweep, all five sections
+     node scripts/gates/check-thread-clearance.mjs --section=family
+     node scripts/gates/check-thread-clearance.mjs --validate      # harness self-check
+     node scripts/gates/check-thread-clearance.mjs --falsify       # harness self-check
+     node scripts/gates/check-thread-clearance.mjs --falsify --section=wishes --band=upright --orientation=drifted
 */
 
 import { chromium } from "playwright";
-import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
+import { THREAD_BANDS } from "../../components/thread/thread-bands.ts";
 
 /**
  * @typedef {import("playwright").Browser} Browser

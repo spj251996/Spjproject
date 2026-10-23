@@ -4,7 +4,7 @@ import type { ThreadId } from "./thread-geometry.ts";
 /* MEASURED on the real render at each band's nominal viewport (`thread-bands.ts`: 393x700, 820x1180,
    1536x695, not the wider viewports the clearance gate sweeps; a card figure that looks changed is the
    wrong viewport before it is a regression), with `channel: "chromium"` (a default
-   `chromium.launch()` renders text about 3% wider). Script: `scripts/measure-authored-cards.mjs`.
+   `chromium.launch()` renders text about 3% wider). Script: `scripts/thread/measure-authored-cards.mjs`.
    Re-measure after `document.fonts.ready` and every image reporting `complete && naturalWidth > 0`,
    reading `.mounted-sheet-frame__box`'s rect for the card and the outer `<section>`'s rect for the
    height; never derive either from a CSS expression.

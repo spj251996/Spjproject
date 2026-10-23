@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Measures how a section's content stack fits its card, for the `mounted-sheet` frame in
    `components/layout/mounted-sheet-frame.ts`. Drives the `playwright-cli` devDependency, as
-   `scripts/verify-section.mjs` does, never `playwright-core` directly.
+   `scripts/gates/verify-section.mjs` does, never `playwright-core` directly.
 
    Method: for each width tier the window is set in both orientations, so content that differs by
    orientation is measured as it renders. Web fonts are confirmed loaded, every stack the selector
@@ -15,10 +15,10 @@
    the page in one `page.evaluate` call per tier and orientation, with no per-pixel round trip.
 
    Usage:
-     node scripts/measure-section-fit.mjs --route=/ --selector="[data-invite-stack]" \
+     node scripts/generators/measure-section-fit.mjs --route=/ --selector="[data-invite-stack]" \
        --section=invite --out=app/_frame/invite-fit.ts
 
-   `--out` stays in `app/`, beside the other fits and next to the section CSS that reads them, e.g.
+   `--out` goes in `app/_frame/`, beside the other fits and `frame-sheets.ts`, which reads them, e.g.
    `app/_frame/invite-fit.ts` for the invite -- the section components themselves live in `app/_sections/`.
 
    Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
@@ -30,7 +30,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
-import { contentHashLine } from "./fit-content.ts";
+import { contentHashLine } from "../lib/fit-content.ts";
 
 const ORIGIN = "http://localhost:3000";
 const SESSION = "measure-fit";
@@ -100,7 +100,7 @@ const exportName =
 
 if (!selector || !section || !outPath) {
   console.error(
-    "usage: node scripts/measure-section-fit.mjs --route=/ --selector=<css> --section=<name> --out=<path.ts> [--var=<exportName>] [--falsify] (--falsify: --section=invite only, and --out under tmp/; it never writes to app/)",
+    "usage: node scripts/generators/measure-section-fit.mjs --route=/ --selector=<css> --section=<name> --out=<path.ts> [--var=<exportName>] [--falsify] (--falsify: --section=invite only, and --out under tmp/; it never writes to app/)",
   );
   process.exit(2);
 }

@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import sharp from "sharp";
-import { TUNING } from "../components/background/botanical-tuning.ts";
+import { TUNING } from "../../components/background/botanical-tuning.ts";
 import {
   CARD,
   cardHtml,

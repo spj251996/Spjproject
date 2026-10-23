@@ -4,7 +4,7 @@ import test from "node:test";
 
 const leaf = readFileSync("app/_sections/shrink-to-widest-line.tsx", "utf8");
 const section = readFileSync("app/_sections/event-info.tsx", "utf8");
-const fit = readFileSync("scripts/measure-section-fit.mjs", "utf8");
+const fit = readFileSync("scripts/generators/measure-section-fit.mjs", "utf8");
 
 test("it waits for the fonts before measuring a line", () => {
   assert.match(leaf, /document\.fonts\.ready/);

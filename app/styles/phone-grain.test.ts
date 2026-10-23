@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/built-export.ts";
+import { freshExport } from "../../scripts/lib/built-export.ts";
 
 /* The card paper on phones takes half its tooth (owner, 2026-10-14, picked on an iPhone) —
    DESIGN.md → Foundations → Paper Grain. The same tile, each channel's final transfer slope halved

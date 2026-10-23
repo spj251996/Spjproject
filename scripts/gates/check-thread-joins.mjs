@@ -39,14 +39,14 @@
  * unbounded waits.
  *
  * USAGE:
- *   node scripts/check-thread-joins.mjs
- *   node scripts/check-thread-joins.mjs --section=family --viewport=tall-nominal
- *   node scripts/check-thread-joins.mjs --falsify     # prove the gate can see a break
+ *   node scripts/gates/check-thread-joins.mjs
+ *   node scripts/gates/check-thread-joins.mjs --section=family --viewport=tall-nominal
+ *   node scripts/gates/check-thread-joins.mjs --falsify     # prove the gate can see a break
  */
 
 import { chromium } from "playwright";
 import sharp from "sharp";
-import { THREAD_BANDS } from "../components/thread/thread-bands.ts";
+import { THREAD_BANDS } from "../../components/thread/thread-bands.ts";
 
 const ORIGIN = "http://localhost:3000";
 const NAV = 20000;

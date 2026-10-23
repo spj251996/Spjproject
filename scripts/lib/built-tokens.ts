@@ -10,7 +10,7 @@ import {
   type HeadOptions,
   type HeadSegment,
   type Rgb,
-} from "../components/thread/thread-head.ts";
+} from "../../components/thread/thread-head.ts";
 
 export const tokens = readFileSync("app/styles/tokens.css", "utf8");
 

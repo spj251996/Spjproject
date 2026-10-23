@@ -10,7 +10,7 @@ const paths = [...src.matchAll(/<path d="([^"]*)"/g)].map((m) =>
 if (paths.length !== 5)
   throw new Error(`expected 5 paths, found ${paths.length}`);
 
-/* Measured in a real engine, scripts/measure-couple-names-bbox.mjs, in the file's own viewBox units. */
+/* Measured in a real engine, scripts/measure/measure-couple-names-bbox.mjs, in the file's own viewBox units. */
 const GROUPS = [
   {
     id: "names-sebastian", // Sebastian and the dot on its i
@@ -43,7 +43,7 @@ const SOURCE_TRANSFORM = "translate(0,446) scale(0.1,-0.1)";
 const header = `/* THE COUPLE'S NAMES, drawn. Source: the owner's potrace conversion of the legacy site's raster
    — there is no font and no vector original, and \`legacy-html/index.html\` holds only a 780x580 PNG
    inline as a data URI. Generated from \`assets/names/Names-svg.svg\` by
-   \`scripts/build-couple-names-symbol.mjs\`, the committed source of record — the trace with the
+   \`scripts/generators/build-couple-names-symbol.mjs\`, the committed source of record — the trace with the
    y of Flemy's loop redrawn where the original canvas cut it flat.
    A re-trace must re-run that script, not hand-edit these paths.
 

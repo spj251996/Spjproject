@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { events, familyGroups, invite, wishes } from "../content/index.ts";
+import { events, familyGroups, invite, wishes } from "../../content/index.ts";
 
 /* Each measured fit → the `content/` exports its section renders, so a fit whose content has
    changed since it was measured can be detected without a browser. Whole exports rather than the
@@ -48,8 +48,8 @@ export function contentHashLine(section: string): string {
   const values = FIT_CONTENT[section];
   if (values === undefined) {
     throw new Error(
-      `fit-content: no FIT_CONTENT entry for section "${section}" — add the content exports it renders to scripts/fit-content.ts`,
+      `fit-content: no FIT_CONTENT entry for section "${section}" — add the content exports it renders to scripts/lib/fit-content.ts`,
     );
   }
-  return `   Content hash: ${contentHash(values)} (FIT_CONTENT["${section}"], scripts/fit-content.ts).`;
+  return `   Content hash: ${contentHash(values)} (FIT_CONTENT["${section}"], scripts/lib/fit-content.ts).`;
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { withClasses } from "../../scripts/source-classes.ts";
+import { withClasses } from "../../scripts/lib/source-classes.ts";
 
 const read = (path: string) => readFileSync(path, "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");

@@ -9,7 +9,7 @@ import {
   OPTIONS,
   tokens,
   tokenValue,
-} from "../../scripts/built-tokens.ts";
+} from "../../scripts/lib/built-tokens.ts";
 import {
   deltaE,
   type HeadOptions,

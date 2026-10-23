@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/built-export.ts";
+import { freshExport } from "../../scripts/lib/built-export.ts";
 
 /* `heading-md` exists because nothing sat between `heading-sm` (14px) and `heading-xl` (26px), and
    `heading-sm` could not be grown to reach it.

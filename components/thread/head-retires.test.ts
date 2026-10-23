@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/built-export.ts";
+import { freshExport } from "../../scripts/lib/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions

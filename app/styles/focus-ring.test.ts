@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/built-export.ts";
-import { linkedStylesheets } from "../../scripts/linked-stylesheets.mjs";
+import { freshExport } from "../../scripts/lib/built-export.ts";
+import { linkedStylesheets } from "../../scripts/lib/linked-stylesheets.mjs";
 
 /* The focus ring is thread-vermilion on every surface (DESIGN.md → Interaction Rules → Focus), so no
    subtree rebinds it; on the clipped photo frames, whose photo paints over the button's own outline,
