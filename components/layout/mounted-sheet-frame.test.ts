@@ -1601,11 +1601,8 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
    inline stylesheet, so changing it moves both. A tall card is never the hero (`mounted-sheet` throws on
    both), so the tall frame takes no role argument at all -- a hero variant would be CSS nothing can
    reach. */
-test("the tall scope class keeps its shipped string, and the tall frame has no hero form", () => {
-  assert.strictEqual(
-    tallScopeClass(),
-    "mounted-sheet-frame--tall-section-mount",
-  );
+test("the tall scope class is named for its sheet, and the tall frame has no hero form", () => {
+  assert.strictEqual(tallScopeClass(), "mounted-sheet-frame--tall");
   assert.strictEqual(
     tallScopeClass.length,
     0,

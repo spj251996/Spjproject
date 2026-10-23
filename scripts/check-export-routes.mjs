@@ -146,11 +146,9 @@ if (existsSync(CSS_DIR)) {
 }
 
 /* The frame sheets are imported files, so a route links them and its HTML carries none. The scope
- * class is what a sheet's rules are keyed on; `tall` is the one sheet whose scope is not its name. */
+ * class is what a sheet's rules are keyed on. */
 const frameScope = (/** @type {string} */ name) =>
-  name === "tall"
-    ? "mounted-sheet-frame--tall-section-mount"
-    : `mounted-sheet-frame--${name}`;
+  `mounted-sheet-frame--${name}`;
 
 for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
   if (!existsSync(path)) {
