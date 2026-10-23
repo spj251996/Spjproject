@@ -141,7 +141,7 @@
   /* components/layout/mounted-sheet-frame*.ts holds `--container-content` as a number, because a
      media query cannot read a custom property — change both together. */
   --container-content: 1200px;
-  --container-content-compact: 960px;
+  --container-content-laptop: 960px;
   --container-text: 600px;
 }
 
@@ -162,7 +162,7 @@
      components/layout/mounted-sheet-frame*.ts derives its thresholds from the same number, because
      a media query cannot read this variable — change both together. */
   --card-height-cap: 720px;
-  --card-height-cap-compact: 576px;
+  --card-height-cap-laptop: 576px;
   /* A tall card's side padding below 48rem (DESIGN.md -> mounted-sheet -> Tall mode). Off the spacing
      scale by the owner's choice (2026-10-11): 48 left a ritual's measure short and 24 was "too extra".
      `mounted-sheet-frame.ts` holds it as a number, because the frame emits plain pixel rules. */

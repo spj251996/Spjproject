@@ -153,10 +153,10 @@ export const SPACING_STEPS: BarItem[] = [
 
 export const LAYOUT_CAPS = [
   "--container-content · 1200px · all content; a framed card's width from xl, landscape windows only",
-  "--container-content-compact · 960px · a framed card's width, lg to xl, landscape windows only",
+  "--container-content-laptop · 960px · a framed card's width, lg to xl, landscape windows only",
   "--container-text · 600px · text blocks",
   "--card-height-cap · 720px · a framed card's height from xl, landscape windows only",
-  "--card-height-cap-compact · 576px · a framed card's height, lg to xl, landscape windows only",
+  "--card-height-cap-laptop · 576px · a framed card's height, lg to xl, landscape windows only",
 ];
 
 export const DURATION_TOKENS: DurationToken[] = [

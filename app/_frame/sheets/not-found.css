@@ -14,7 +14,7 @@
 .mounted-sheet-frame--not-found { --ring-cap: var(--card-height-cap); --ring-side: max(calc(2 * var(--mounted-sheet-ground)), calc((100svh - var(--ring-cap)) / 2)); }
 }
 @media (orientation: landscape) and (64rem <= width < 100rem) {
-.mounted-sheet-frame--not-found { --ring-cap: var(--card-height-cap-compact); }
+.mounted-sheet-frame--not-found { --ring-cap: var(--card-height-cap-laptop); }
 }
 .mounted-sheet-frame--not-found > .mounted-sheet-frame__box {
   container-type: inline-size;
@@ -34,8 +34,8 @@
 }
 @media (orientation: landscape) and (64rem <= width < 100rem) {
 .mounted-sheet-frame--not-found > .mounted-sheet-frame__box {
-  width: min(var(--container-content-compact), 100%);
-  min-height: min(var(--card-height-cap-compact), calc(100svh - 2 * var(--ground-block)));
+  width: min(var(--container-content-laptop), 100%);
+  min-height: min(var(--card-height-cap-laptop), calc(100svh - 2 * var(--ground-block)));
 }
 }
 .mounted-sheet-frame--not-found > .mounted-sheet-frame__box > .mounted-sheet-frame__mount {

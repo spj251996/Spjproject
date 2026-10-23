@@ -6,8 +6,8 @@
 
 /* The four width bands, named the same here, in `GroundTierName`, in the generated fits and in
    `DESIGN.md`: phone below `{breakpoints.md}`, tablet to `{breakpoints.lg}`, laptop to
-   `{breakpoints.xl}` (1024-1599), desktop from `{breakpoints.xl}` (1600+). The `--*-compact` CSS
-   tokens still carry the tier's former name; they are token identifiers, not tier names. */
+   `{breakpoints.xl}` (1024-1599), desktop from `{breakpoints.xl}` (1600+). The `--*-laptop` CSS
+   tokens carry the laptop tier's caps. */
 export type WidthTier = "phone" | "tablet" | "laptop" | "desktop";
 
 export type Orientation = "portrait" | "landscape";
@@ -158,8 +158,8 @@ const REVEAL: Readonly<Record<WidthTier, number>> = {
   desktop: 24,
 };
 
-/* `--container-content` / `--card-height-cap` (phone, tablet and desktop) and their `-compact`
-   siblings (the laptop tier — the token keeps the tier's former name). The stylesheet reads the tokens themselves; every
+/* `--container-content` / `--card-height-cap` (phone, tablet and desktop) and their `-laptop`
+   siblings (the laptop tier). The stylesheet reads the tokens themselves; every
    threshold derived from a cap needs it as a number, because a media query cannot read a custom
    property. Change the tokens and this together. */
 export const CAPS: Readonly<

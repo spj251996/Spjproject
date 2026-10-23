@@ -78,7 +78,7 @@ const GROUND_INLINE = "--ground-inline";
    everywhere else (phone, tablet, desktop). */
 const CARD_HEIGHT = `calc(100svh - 2 * var(${GROUND_BLOCK}))`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
-const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-compact), ${CARD_HEIGHT})`;
+const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-laptop), ${CARD_HEIGHT})`;
 const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
 
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
@@ -494,7 +494,7 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
 ${scope} { ${RING_CAP}: var(--card-height-cap); ${RING_SIDE}: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(${RING_CAP})) / 2)); }
 }
 @media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
-${scope} { ${RING_CAP}: var(--card-height-cap-compact); }
+${scope} { ${RING_CAP}: var(--card-height-cap-laptop); }
 }
 ${box} {
   container-type: inline-size;
@@ -514,7 +514,7 @@ ${box} {
 }
 @media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
 ${box} {
-  width: min(var(--container-content-compact), 100%);
+  width: min(var(--container-content-laptop), 100%);
   min-height: ${COMPACT_CAPPED_CARD_HEIGHT};
 }
 }
@@ -607,7 +607,7 @@ ${box} {
 ${box} { width: min(var(--container-content), 100%); }
 }
 @media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
-${box} { width: min(var(--container-content-compact), 100%); }
+${box} { width: min(var(--container-content-laptop), 100%); }
 }
 ${mount} {
   flex: 1 0 auto;

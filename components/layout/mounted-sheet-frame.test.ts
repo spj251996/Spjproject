@@ -1252,7 +1252,7 @@ test("the width cap binds only in landscape, and only the compact band takes the
   );
   assert.ok(baseCap, "a plain landscape rule sets the base width cap");
   assert.ok(
-    !baseCap?.includes("--container-content-compact"),
+    !baseCap?.includes("--container-content-laptop"),
     "the base cap rule never carries the compact token",
   );
 
@@ -1260,7 +1260,7 @@ test("the width cap binds only in landscape, and only the compact band takes the
     (block) =>
       block.startsWith(
         "@media (orientation: landscape) and (64rem <= width < 100rem) {",
-      ) && block.includes("width: min(var(--container-content-compact), 100%)"),
+      ) && block.includes("width: min(var(--container-content-laptop), 100%)"),
   );
   assert.ok(
     compactCap,
@@ -1338,8 +1338,8 @@ test("CAPS agrees with the --container-content / --card-height-cap tokens in app
     height: token("--card-height-cap"),
   };
   const compact = {
-    width: token("--container-content-compact"),
-    height: token("--card-height-cap-compact"),
+    width: token("--container-content-laptop"),
+    height: token("--card-height-cap-laptop"),
   };
   assert.deepEqual(CAPS.phone, plain);
   assert.deepEqual(CAPS.tablet, plain);

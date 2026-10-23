@@ -25,7 +25,7 @@
 .mounted-sheet-frame--tall > .mounted-sheet-frame__box { width: min(var(--container-content), 100%); }
 }
 @media (orientation: landscape) and (64rem <= width < 100rem) {
-.mounted-sheet-frame--tall > .mounted-sheet-frame__box { width: min(var(--container-content-compact), 100%); }
+.mounted-sheet-frame--tall > .mounted-sheet-frame__box { width: min(var(--container-content-laptop), 100%); }
 }
 .mounted-sheet-frame--tall > .mounted-sheet-frame__box > .mounted-sheet-frame__mount {
   flex: 1 0 auto;
