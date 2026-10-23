@@ -173,7 +173,7 @@ export function ComponentsSections() {
         id="ui-photo-row"
         name="photo-row"
         note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that derives three deliveries on the page. Pressing a frame opens the real viewer on that photograph; the +N frame and the action open the real grid."
-        source="@/components/ui/photo-row"
+        source="@/components/ui/gallery/photo-row"
         spec="one solved row height · frame width is the capped aspect times it · 3 frames when 3 fit, else 2 · +N on the last frame · action below the strip, aligned to its end; on the page the strip and its action sit at the ritual block's right edge · a frame opens the viewer, the +N frame and the action the grid · a frame shows the copy bounded 600×600, the grid the 1000px one, the viewer the copy bounded 2000×2000, so the strip never fetches a larger file · every frame under a transparent save cover, which draws the frame's focus ring as a 2px inset band"
       >
         <PhotoStrip
@@ -191,7 +191,7 @@ export function ComponentsSections() {
         id="ui-gallery-modal"
         name="gallery-modal"
         note="Shown through its grid panel with generated sample images; tiles here open nothing. The history that lets back pop one layer, focus handling and the scroll restore on close need the live modal — open it from photo-row above."
-        source="@/components/ui/gallery-modal"
+        source="@/components/ui/gallery/gallery-modal"
         spec="z-modal · scrim at 0.92 · masonry whose column count follows the photographs it shows (1 → one, centred · 2–4 → two · 5+ → two, three from lg) · radius-card tiles · a tile opens photo-viewer · scrolling is the grid's only gesture · a tile holds no place until its photograph has loaded, and one that fails is hidden whole, leaving no gap or focus stop · every tile under a transparent save cover, which draws the tile's focus ring as a 2px inset band · on hover a tile shows the zoom-in cursor and its photograph grows 3% in its frame · Close is the viewer's round control, a cross in a 48px dark circle · opens and closes with a fade and a 24px rise (duration-base) · a layer change fades the new layer's content (duration-fast), the scrim never moving · a deliberate tap on empty space (down and up, under 10px) goes back one layer · reduced motion: instant"
       >
         <ChromeFrame height={320}>
@@ -204,7 +204,7 @@ export function ComponentsSections() {
         id="ui-photo-viewer"
         name="photo-viewer"
         note="Shown through its panel at the second of three sample images, so both previous and next show; the controls here move nothing. Swipe, the arrow keys, the slide, the fades, a tap outside and back popping one layer need the live modal — open a frame in photo-row above."
-        source="@/components/ui/photo-viewer"
+        source="@/components/ui/gallery/photo-viewer"
         spec="the grid's scrim · one photograph fitted whole (object-contain), never cropped · counter n / N in type-action · every control a drawn mark in a 48px circle of the scrim at 60%, going fully dark and growing 10% on hover and on press: All photos (four tiles) and Close (a cross), icon only and named for screen readers, and previous / next chevrons absent at the ends · the viewer copy only for the photograph on screen, with its strip copy drawn under the stage while it loads so the stage never goes dark · a failed copy reads This photo couldn't load, and a tap on its dark stage closes the viewer · a transparent save cover · the next photograph slides 32px in from the side it came from (duration-fast), after release · the letterbox around the fitted photograph is empty space · on touch, the first full-screen photograph of a visit nudges once toward the next"
       >
         <ChromeFrame height={320}>
