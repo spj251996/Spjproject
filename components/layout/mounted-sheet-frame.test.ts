@@ -233,9 +233,9 @@ test("a landscape phone asks the full-ground fit at the floor the card shows", (
 
 test("a desktop window keeps the desktop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
-  const desktopClass = classes.find((c) => c.widthTier === "desktop");
-  assert.equal(desktopClass?.groundTier.ground, 96);
-  assert.deepEqual(desktopClass?.groundTier.paddingSteps, [96, 64, 48, 32]);
+  const desktop = classes.find((c) => c.widthTier === "desktop");
+  assert.equal(desktop?.groundTier.ground, 96);
+  assert.deepEqual(desktop?.groundTier.paddingSteps, [96, 64, 48, 32]);
 });
 
 test("the caps differ by tier, and tablet keeps the full cap", () => {
@@ -1117,12 +1117,12 @@ test("tall mode gives each tier its full ground and one padding step above its f
   assert.equal(laptop?.ground, 64);
   assert.equal(laptop?.padding, 96);
 
-  const desktopClass = [...byTier.values()].find(
+  const desktop = [...byTier.values()].find(
     (c) =>
       c.widthTier === "desktop" && c.media.includes("not (pointer: coarse)"),
   );
-  assert.equal(desktopClass?.ground, 96);
-  assert.equal(desktopClass?.padding, 128);
+  assert.equal(desktop?.ground, 96);
+  assert.equal(desktop?.padding, 128);
 });
 
 test("a touchscreen from the laptop tier up takes the tablet ground", () => {

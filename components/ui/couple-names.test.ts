@@ -5,6 +5,7 @@ import { withClasses } from "../../scripts/lib/source-classes.ts";
 
 const read = (path: string) => readFileSync(path, "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
+
 /* The drawn names replace two script type roles. Three things can go wrong here and only one of them
    shows on screen:
 

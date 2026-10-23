@@ -59,7 +59,7 @@ export function normalise(d: string, width: number, height: number): string {
   return out.join(" ");
 }
 
-export type Fallback = { band: BandId; d: string; media: string };
+type Fallback = { band: BandId; d: string; media: string };
 
 /* The whole page's no-JS fallback: every section, stacked, normalised into one 0-1 square per band
    so all three can share one viewBox. */

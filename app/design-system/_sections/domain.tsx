@@ -51,7 +51,7 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
   },
 ];
 
-const TIMELINE_ENTRIES: InlineEntry[] = [
+const CELEBRATIONS_ENTRIES: InlineEntry[] = [
   {
     name: "Celebrations",
     home: "app/_sections/celebrations.tsx",
@@ -232,7 +232,7 @@ export function DomainSections() {
         mapsTo="Domain Components → Celebrations"
         title="Domain · Celebrations"
       >
-        <InlineList entries={TIMELINE_ENTRIES} />
+        <InlineList entries={CELEBRATIONS_ENTRIES} />
       </GallerySection>
 
       <GallerySection

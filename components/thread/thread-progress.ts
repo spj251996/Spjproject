@@ -6,7 +6,7 @@ import type { SectionRange, SectionRect } from "./thread-line.ts";
    relationship to where a section's scroll window falls, so a global fraction advances every section
    at once. */
 
-export function clamp01(value: number): number {
+function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 

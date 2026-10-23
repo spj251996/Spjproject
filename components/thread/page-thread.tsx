@@ -452,8 +452,6 @@ export function PageThread() {
     [head, taper],
   );
 
-  /* Where a drawn length from the opening draw or a scroll-free commit is put on the page: through
-     the ratchet, drawn, and told to the re-trace. */
   /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
      what is on the page so a later scroll never replays it. */
   const commit = useCallback(
@@ -793,7 +791,7 @@ export function PageThread() {
             /* The fallback's `d` lives in a normalised 0-1 square (`thread-fallback.ts`'s
                `normalise`), stretched by `.pageRoot`'s real box to cover `<main>` -- a coordinate
                system nothing like the live path's, which is already in real page pixels 1:1
-               (this file's own header comment on why THAT path omits `vector-effect`). Without it,
+               (which is why THAT path carries no `vector-effect`). Without it,
                `--stroke-thread`'s raw px value is read as that many USER-SPACE units in a space
                where one unit is now ~1500px, which paints not a thread but a solid rectangle --
                found on the first real no-JS render once `.pageWrapper` had a box to paint in at

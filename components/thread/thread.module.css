@@ -1,6 +1,6 @@
 /* Everything about the page thread (`page-thread.tsx`) that is the same on every screen.
-   `page-thread.tsx`'s header covers why the live `<path>` deliberately does NOT carry `vector-effect:
-   non-scaling-stroke`. */
+   The live `<path>` deliberately does NOT carry `vector-effect: non-scaling-stroke`; only the
+   fallback's paths do. */
 
 /* `absolute`, so the wrapper takes zero layout in every layout mode it mounts inside: an in-flow box
    is still a CSS Grid item at `height: 0`, and inside Wishes' `>=64rem` landscape grid an in-flow
@@ -78,7 +78,7 @@
   }
 }
 
-/* The static, authored fallback lives in a normalised 0-1 square (`page-thread.tsx`'s `normalise`)
+/* The static, authored fallback lives in a normalised 0-1 square (`thread-fallback.ts`'s `normalise`)
    so all three bands can share one `viewBox` and CSS alone decides which one paints -- the
    hide-all-then-show-one rule pair lives entirely in `page-thread.tsx`'s own generated `<style>`, not
    here, because both halves must carry the SAME specificity and rely on SOURCE ORDER to pick a
