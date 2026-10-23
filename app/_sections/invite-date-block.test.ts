@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const section = readFileSync("app/_sections/invite.tsx", "utf8");
-const block = readFileSync("app/invite-date.module.css", "utf8");
+const block = readFileSync("app/_sections/invite-date.module.css", "utf8");
 const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
 
 function rule(css: string, selector: string): string {

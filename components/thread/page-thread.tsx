@@ -366,7 +366,7 @@ function clearDash(path: SVGPathElement) {
    type rising line by line until it lands at `--opening-type-end` (1800ms under Bloom, owner
    2026-10-14), then the thread's own fade for one `--duration-base` (`DESIGN.md` -> Motion -> The
    opening sequence). The draw begins as that fade completes, so this is the sequence's own end, not a
-   value of its own: `opening-draw.test.ts` derives it from `app/invite.css` and fails if the two
+   value of its own: `opening-draw.test.ts` derives it from `app/_sections/invite.css` and fails if the two
    part. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
    multiple rather than a coined number, since a fresh design value is the owner's to set. */
 const OPENING_DRAW_DELAY = 2200;

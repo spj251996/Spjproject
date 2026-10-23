@@ -197,7 +197,7 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
     console.error(`FAIL ${label}: links no readable stylesheet`);
     failed = true;
   } else {
-    /* The scope alone is not frame-only (`app/invite.css` names the invite's), but a child combinator
+    /* The scope alone is not frame-only (`app/_sections/invite.css` names the invite's), but a child combinator
      * onto the frame's box is, in any spacing the minifier leaves. */
     const missingScopes = frames.filter(
       (name) =>

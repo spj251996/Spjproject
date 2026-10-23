@@ -1,7 +1,7 @@
 import type { FormattedDate } from "@/content/types";
-import "@/app/invite.css";
+import "./invite.css";
 import { eventById } from "@/app/_sections/shared";
-import dateBlock from "@/app/invite-date.module.css";
+import dateBlock from "./invite-date.module.css";
 import "@/app/frames/invite.css";
 import { inviteFit } from "@/app/invite-fit";
 import { Botanical } from "@/components/background/botanical";
@@ -134,7 +134,7 @@ export function InviteSection() {
 
   return (
     <section className="relative" id="invite">
-      {/* `corners`: the opening grows these pieces from their own corners (`app/invite.css`). */}
+      {/* `corners`: the opening grows these pieces from their own corners (`app/_sections/invite.css`). */}
       <Botanical corners fit={inviteFit} pieces={SECTION_PLACEMENT.invite} />
       <MountedSheet fit={inviteFit} hero>
         {/* The stack fills the card so the passage can settle against its bottom edge. Growth

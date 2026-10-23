@@ -3,7 +3,7 @@
  * no space in flow. In a CSS Grid host an in-flow box is still a grid item at `height: 0`, so a card
  * thread in flow inside Wishes' `>=64rem` landscape grid grows it past its explicit rows and starves
  * `.figureCol`'s `grid-row: 1 / -1`. No unit test can see it (it is an interaction between
- * `thread.module.css` and `app/wishes.module.css`), so this asserts the rendered RECT: at `>=64rem`
+ * `thread.module.css` and `app/_sections/wishes.module.css`), so this asserts the rendered RECT: at `>=64rem`
  * landscape, `.figureCol`'s height equals `.wishes-stack`'s height within antialiasing tolerance.
  * `.figureCol` is a CSS-module class with no stable name, so it is found as the element immediately
  * before `[data-thread-card]`.

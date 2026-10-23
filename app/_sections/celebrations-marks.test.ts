@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const css = readFileSync("app/celebrations.module.css", "utf8");
+const css = readFileSync("app/_sections/celebrations.module.css", "utf8");
 
 test("celebrations has no spine", () => {
   // The retired spine's own selector — narrower than banning every `::before`, which would also

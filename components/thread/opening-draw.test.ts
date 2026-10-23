@@ -5,7 +5,7 @@ import test from "node:test";
 const source = readFileSync("components/thread/page-thread.tsx", "utf8");
 const moduleCss = readFileSync("components/thread/thread.module.css", "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
-const inviteCss = readFileSync("app/invite.css", "utf8");
+const inviteCss = readFileSync("app/_sections/invite.css", "utf8");
 const layout = readFileSync("app/layout.tsx", "utf8");
 
 function constant(name: string) {
@@ -35,13 +35,13 @@ function calcMs(expression: string, what: string) {
   );
 }
 
-/* THE ONE SOURCE. `--opening-type-end` in `app/invite.css` says when the type has landed; the
+/* THE ONE SOURCE. `--opening-type-end` in `app/_sections/invite.css` says when the type has landed; the
    thread's fade and the progress bar's track read it, and the timed draw is derived from it. */
 function typeEndMs() {
   const match = stripComments(inviteCss).match(
     /--opening-type-end:\s*(calc\([^;]*\));/,
   );
-  assert.ok(match, "--opening-type-end not found in app/invite.css");
+  assert.ok(match, "--opening-type-end not found in app/_sections/invite.css");
   return calcMs(match[1], "--opening-type-end");
 }
 

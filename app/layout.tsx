@@ -65,7 +65,7 @@ const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
    restores a reloaded page's scroll position ASYNCHRONOUSLY, so a check that runs as this script is
    parsed reads 0 and defeats itself — measured, not assumed: at document-start `scrollY` reads 0,
    and it reads the true restored 2808 from `readyState === "interactive"` onward, ~111ms in. The
-   sequence's own earliest step is the flowers' settle at 200ms (`app/invite.css`), so a gate applied
+   sequence's own earliest step is the flowers' settle at 200ms (`app/_sections/invite.css`), so a gate applied
    at `DOMContentLoaded` lands before ANY step begins. It is an inline script rather than a React
    effect so it does not wait on hydration, whose timing is nobody's contract.
 

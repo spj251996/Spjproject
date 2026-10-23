@@ -34,7 +34,7 @@ test("the stacked ampersand is lifted above centre", () => {
 
 test("a photographed ritual closes to space-md from 64rem", () => {
   assert.match(
-    read("app/celebrations.module.css"),
+    read("app/_sections/celebrations.module.css"),
     /\.row:has\(\[data-photo-ready\]\)\s*\{\s*margin-block-end:\s*calc\(var\(--spacing-space-md\) - var\(--spacing-space-xl\)\)/,
   );
 });

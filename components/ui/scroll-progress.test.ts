@@ -9,7 +9,7 @@ const css = strip(
 );
 const page = readFileSync("app/page.tsx", "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
-const invite = strip(readFileSync("app/invite.css", "utf8"));
+const invite = strip(readFileSync("app/_sections/invite.css", "utf8"));
 
 const z = (name: string) => {
   const m = tokens.match(new RegExp(`--z-${name}:\\s*(\\d+);`));

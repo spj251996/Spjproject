@@ -15,7 +15,7 @@ import { ASPECT_RATIO, type BotanicalPlacement } from "./botanical-placement";
    viewport, not from the frame's ring bands. The wrapper carries the section's frame-scope class
    because the frame's own rule is what gives this layer the section's box to position against. */
 
-/* `"1536 / 1024"` -> `1.5`. Kept beside the table it reads so the two cannot drift. */
+/* `"1536 / 1024"` -> `1.5`, for the ratios in `botanical-placement.ts`. */
 function aspectNumber(ratio: string): number {
   const [w, h] = ratio.split("/").map((n) => Number(n.trim()));
   return w / h;
@@ -40,7 +40,7 @@ interface BotanicalProps {
      Wishes. Omit it for Celebrations, the page's one `tall` section, which has no measured fit. */
   fit?: MeasuredFit;
   pieces: readonly BotanicalPlacement[];
-  /* Emit each piece's growth corner for the invite's opening (`app/invite.css`). The invite alone
+  /* Emit each piece's growth corner for the invite's opening (`app/_sections/invite.css`). The invite alone
      asks, so every other section's stylesheet is byte-identical without it. */
   corners?: boolean;
 }

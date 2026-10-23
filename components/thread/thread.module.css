@@ -39,12 +39,12 @@
   overflow: visible;
 }
 
-/* THE OPENING SEQUENCE's last step (DESIGN.md → Motion → "The opening sequence"; `app/invite.css`
+/* THE OPENING SEQUENCE's last step (DESIGN.md → Motion → "The opening sequence"; `app/_sections/invite.css`
    carries the steps ahead of it). The thread fades in once those have each completed in turn — the
    ground carries no step at all, it is present from the first frame — so the two files describe one
    discrete-beat sequence without sharing a keyframe across a module boundary.
 
-   It starts at `--opening-type-end` (`app/invite.css`, 1800ms under Bloom) — the moment the type
+   It starts at `--opening-type-end` (`app/_sections/invite.css`, 1800ms under Bloom) — the moment the type
    lands, the owner's rule, to leave no dead air between the names appearing and the line starting —
    and runs one base, ending at 2200ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. It reads
    the custom property rather than restating its value, so a new sequence moves it with the type.

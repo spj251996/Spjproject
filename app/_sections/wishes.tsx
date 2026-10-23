@@ -1,4 +1,4 @@
-import wishesStyles from "@/app/wishes.module.css";
+import wishesStyles from "./wishes.module.css";
 import "@/app/frames/wishes.css";
 import { wishesFit } from "@/app/wishes-fit";
 import { Botanical } from "@/components/background/botanical";

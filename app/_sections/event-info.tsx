@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
-import "@/app/event-info.css";
+import "./event-info.css";
 import "@/app/frames/event-info.css";
 import {
   mapLabel,

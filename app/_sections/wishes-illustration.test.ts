@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const wishes = readFileSync("app/_sections/wishes.tsx", "utf8");
-const css = readFileSync("app/wishes.module.css", "utf8");
+const css = readFileSync("app/_sections/wishes.module.css", "utf8");
 
 /* Owner, 2026-10-14: the illustration downloads only as Wishes nears the screen. A CSS background
    is fetched at first paint wherever it sits on the page; a lazy <img> is not. */

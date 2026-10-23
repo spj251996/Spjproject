@@ -46,7 +46,7 @@ test("the 2026-10-11 picks: the date's opening, the day's weight, the glow, the 
     /glow=\{COUPLE\.has\(member\.relationship\)\}/,
   );
   assert.match(tokens, /--tall-inline-phone:\s*36px;/);
-  const module = readFileSync("app/celebrations.module.css", "utf8");
+  const module = readFileSync("app/_sections/celebrations.module.css", "utf8");
   const text = module.slice(
     module.indexOf(".text {"),
     module.indexOf("}", module.indexOf(".text {")),
