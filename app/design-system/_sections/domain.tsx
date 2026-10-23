@@ -129,7 +129,7 @@ export function DomainSections() {
           id="thread-head"
           name="drawing head"
           note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
-          source="components/thread/thread-light.ts · headSegments"
+          source="components/thread/thread-head.ts · headSegments"
           spec={[
             "length · 60× the ink, 96px",
             "colour · thread-red at the tail, thread-vermilion in the middle, thread-core at the tip, interpolated in OKLCH",
@@ -146,7 +146,7 @@ export function DomainSections() {
           id="thread-taper"
           name="tapered ends"
           note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
-          source="components/thread/thread-light.ts · taperSegments"
+          source="components/thread/thread-taper.ts · taperSegments"
           spec={[
             "length · --length-thread-taper (24px)",
             "mechanism · 16 butt-capped runs, each a little narrower than the one inside it, from --stroke-thread down to a 0.2px floor, with the ink cut away beneath them",
@@ -161,7 +161,7 @@ export function DomainSections() {
           id="thread-retrace"
           name="re-trace"
           note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on three or four stretches at once and a filter that wide does not survive that."
-          source="components/thread/thread-light.ts · retraceSegments, retraceGlow"
+          source="components/thread/thread-retrace.ts · retraceSegments, retraceGlow"
           spec={[
             "core · the head's own stack and values, at a peak of 89× the ink (142px), growing from nothing and shrinking back to nothing over a loop",
             "glow · eight thread-vermilion strokes under the core, 100 / 56 / 38 / 26 / 18 / 13 / 9 and 6px wide, widest and faintest first, scaled by 0.77",
