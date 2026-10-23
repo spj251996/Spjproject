@@ -6,35 +6,13 @@
    fallback below is itself server-rendered. */
 
 import { authoredCard } from "./thread-authored-layout.ts";
-import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
+import { aspectQuery, type BandId, THREAD_BANDS } from "./thread-bands.ts";
 import { sectionBox } from "./thread-boxes.ts";
 import { threadLine } from "./thread-line.ts";
-import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths.ts";
+import { THREAD_IDS } from "./thread-paths.ts";
 import type { MeasuredSection } from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
-
-/* `threadLine` emits exactly one `M ...` subpath per connector and per motif (asserted in
-   `thread-line.test.ts`), so splitting on an `M` boundary and counting is exact. */
-export function splitSubpaths(d: string): string[] {
-  return d.split(/(?=M )/).filter((s) => s.trim().length > 0);
-}
-
-function subpathCount(band: BandId, id: (typeof THREAD_IDS)[number]): number {
-  return THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length;
-}
-
-/* The index range, in the FLATTENED subpath list `threadLine` emits, that belongs to one section —
-   `THREAD_IDS` order is the same connection order `threadLine` composes in. */
-export function subpathRange(
-  band: BandId,
-  id: (typeof THREAD_IDS)[number],
-): { start: number; end: number } {
-  const index = THREAD_IDS.indexOf(id);
-  let start = 0;
-  for (let i = 0; i < index; i++) start += subpathCount(band, THREAD_IDS[i]);
-  return { start, end: start + subpathCount(band, id) };
-}
 
 /* An IDENTITY warp (a band's own authored card/section figures as both `from` and `to`) reproduces
    the authored geometry exactly (`thread-line.test.ts`'s own identity test) — what every static,
@@ -79,22 +57,6 @@ export function normalise(d: string, width: number, height: number): string {
     out.push(formatNumber(x / width), formatNumber(y / height));
   }
   return out.join(" ");
-}
-
-function round(value: number): string {
-  const fixed = value.toFixed(5).replace(/\.?0+$/, "");
-  return fixed === "-0" ? "0" : fixed;
-}
-
-/* Bounded ranges, never open-ended, so no aspect can match two bands — the same rule
-   `thread-bands.ts` states and the same one a stale rule in this project once got bitten by
-   (Tailwind orders arbitrary variants by string, so an open `>=64rem` beat an open `>=100rem`). */
-export function aspectQuery(min: number, max: number): string {
-  if (min === 0) return `(aspect-ratio < ${round(max)})`;
-  if (max === Number.POSITIVE_INFINITY) {
-    return `(${round(min)} <= aspect-ratio)`;
-  }
-  return `(${round(min)} <= aspect-ratio < ${round(max)})`;
 }
 
 export type Fallback = { band: BandId; d: string; media: string };

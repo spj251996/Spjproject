@@ -1,45 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { THREAD_BANDS } from "./thread-bands.ts";
-import {
-  aspectQuery,
-  authoredMeasuredSections,
-  normalise,
-  PAGE_FALLBACKS,
-  splitSubpaths,
-  subpathRange,
-} from "./thread-fallback.ts";
-import { threadLine } from "./thread-line.ts";
-import { THREAD_IDS } from "./thread-paths.ts";
-
-test("splitSubpaths returns one entry per M", () => {
-  const parts = splitSubpaths("M 0 0 C 1 1 2 2 3 3 M 4 4 C 5 5 6 6 7 7 M 8 8");
-  assert.equal(parts.length, 3);
-  for (const part of parts) assert.match(part, /^M /);
-});
-
-test("each band emits one subpath per piece, and its section ranges are contiguous and cover them all", () => {
-  for (const band of THREAD_BANDS) {
-    const { d, pieces } = threadLine(
-      band.id,
-      authoredMeasuredSections(band.id),
-    );
-    const total = splitSubpaths(d).length;
-    assert.equal(pieces.length, total, `${band.id}: one subpath per piece`);
-    let next = 0;
-    for (const id of THREAD_IDS) {
-      const { start, end } = subpathRange(band.id, id);
-      assert.equal(start, next, `${band.id}/${id} starts where the last ended`);
-      assert.ok(end > start, `${band.id}/${id} owns at least one subpath`);
-      next = end;
-    }
-    assert.equal(
-      next,
-      total,
-      `${band.id}: the ranges cover all ${total} subpaths`,
-    );
-  }
-});
+import { aspectQuery, THREAD_BANDS } from "./thread-bands.ts";
+import { normalise, PAGE_FALLBACKS } from "./thread-fallback.ts";
 
 /* Evaluates the three query shapes `aspectQuery` writes, so the bands' own media strings can be
    checked against sample aspects, the band edges themselves included. */

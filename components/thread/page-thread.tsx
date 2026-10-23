@@ -6,13 +6,8 @@ import {
   authoredCard,
   familyPortraitFractions,
 } from "./thread-authored-layout";
-import { type BandId, THREAD_BANDS } from "./thread-bands";
-import {
-  aspectQuery,
-  PAGE_FALLBACKS,
-  splitSubpaths,
-  subpathRange,
-} from "./thread-fallback";
+import { aspectQuery, type BandId, THREAD_BANDS } from "./thread-bands";
+import { PAGE_FALLBACKS } from "./thread-fallback";
 import {
   HEAD_LENGTH_RATIO,
   HEAD_STEP_OVERLAP,
@@ -50,6 +45,8 @@ import {
   type SectionRange,
   type SectionRect,
   type SectionSubdivisions,
+  splitSubpaths,
+  subpathRange,
   type ThreadPiece,
   threadLine,
 } from "./thread-line";
@@ -485,7 +482,7 @@ function openingFloor(
    (`thread-progress.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
    `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
    the same connection order `pieces` is built in -- proven at every band in
-   `thread-fallback.test.ts`), so this loop never has to match them up by name. */
+   `thread-line.test.ts`), so this loop never has to match them up by name. */
 function applyPieceDashes(
   paths: readonly (SVGPathElement | null)[],
   pieces: readonly ThreadPiece[],

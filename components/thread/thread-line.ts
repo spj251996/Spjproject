@@ -692,3 +692,25 @@ export function threadLine(
   const d = perSection.flat().join(" ");
   return { d, length: cursor, sections: groups, groupRects, pieces };
 }
+
+/* `threadLine` emits exactly one `M ...` subpath per connector and per motif (asserted in
+   `thread-line.test.ts`), so splitting on an `M` boundary and counting is exact. */
+export function splitSubpaths(d: string): string[] {
+  return d.split(/(?=M )/).filter((s) => s.trim().length > 0);
+}
+
+function subpathCount(band: BandId, id: (typeof THREAD_IDS)[number]): number {
+  return THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length;
+}
+
+/* The index range, in the FLATTENED subpath list `threadLine` emits, that belongs to one section —
+   `THREAD_IDS` order is the same connection order `threadLine` composes in. */
+export function subpathRange(
+  band: BandId,
+  id: (typeof THREAD_IDS)[number],
+): { start: number; end: number } {
+  const index = THREAD_IDS.indexOf(id);
+  let start = 0;
+  for (let i = 0; i < index; i++) start += subpathCount(band, THREAD_IDS[i]);
+  return { start, end: start + subpathCount(band, id) };
+}

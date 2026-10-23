@@ -76,3 +76,19 @@ export const THREAD_BANDS = [
     max: Number.POSITIVE_INFINITY,
   },
 ] as const satisfies readonly Band[];
+
+function round(value: number): string {
+  const fixed = value.toFixed(5).replace(/\.?0+$/, "");
+  return fixed === "-0" ? "0" : fixed;
+}
+
+/* Bounded ranges, never open-ended, so no aspect can match two bands — the same rule
+   `Band` states above and the same one a stale rule in this project once got bitten by
+   (Tailwind orders arbitrary variants by string, so an open `>=64rem` beat an open `>=100rem`). */
+export function aspectQuery(min: number, max: number): string {
+  if (min === 0) return `(aspect-ratio < ${round(max)})`;
+  if (max === Number.POSITIVE_INFINITY) {
+    return `(${round(min)} <= aspect-ratio)`;
+  }
+  return `(${round(min)} <= aspect-ratio < ${round(max)})`;
+}
