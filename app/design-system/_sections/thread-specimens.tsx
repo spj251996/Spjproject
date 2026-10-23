@@ -30,8 +30,11 @@ import {
   taperCut,
   taperSegments,
 } from "@/components/thread/thread-light";
-import { dashForPiece, pieceProgress } from "@/components/thread/thread-line";
 import { THREAD_PATHS } from "@/components/thread/thread-paths";
+import {
+  dashForPiece,
+  pieceProgress,
+} from "@/components/thread/thread-progress";
 
 /* Four specimens of the thread's light, each laid on a stretch of the page's own authored geometry
    (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is

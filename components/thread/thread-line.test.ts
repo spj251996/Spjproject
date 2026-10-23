@@ -2,15 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { authoredCard } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
-import {
-  createDrawRatchet,
-  dashForPiece,
-  drawnLength,
-  PORTRAIT_LOOP_TRIM_FRACTION,
-  pieceProgress,
-  sectionProgressAt,
-  threadLine,
-} from "./thread-line.ts";
+import { PORTRAIT_LOOP_TRIM_FRACTION, threadLine } from "./thread-line.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 import {
   MOTIF_PLACEMENTS,
@@ -18,6 +10,13 @@ import {
   THREAD_IDS,
   THREAD_PATHS,
 } from "./thread-paths.ts";
+import {
+  createDrawRatchet,
+  dashForPiece,
+  drawnLength,
+  pieceProgress,
+  sectionProgressAt,
+} from "./thread-progress.ts";
 import { type MeasuredSection, warpPlacement } from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
@@ -691,7 +690,7 @@ test("length is a positive number roughly on the order of the page's own pixel h
    - the FIRST section (`i === 0`) has no predecessor to inherit ramp room from, so it keeps this
      file's own PRE-crossing rule (ramp across `FIRST_SECTION_DRAW_FRACTION` of its own
      `[top, top + height]` window, hold for the rest) -- `firstSectionProgress`'s own header in
-     `thread-line.ts` walks through why applying the crossing formula there instead collapses the
+     `thread-progress.ts` walks through why applying the crossing formula there instead collapses the
      ENTIRE page to complete at scrollY 0.
    - `wishes` is the page's own terminal stretch and the owner's stated exception -- a single ramp
      across its own remaining window to completion, no crossing anchor.

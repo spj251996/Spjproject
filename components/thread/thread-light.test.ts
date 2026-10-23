@@ -34,8 +34,9 @@ import {
   taperSegments,
   tipGroupIndex,
 } from "./thread-light.ts";
-import { dashForPiece, threadLine } from "./thread-line.ts";
+import { threadLine } from "./thread-line.ts";
 import { THREAD_IDS } from "./thread-paths.ts";
+import { dashForPiece } from "./thread-progress.ts";
 
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
 

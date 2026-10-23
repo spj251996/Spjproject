@@ -46,20 +46,23 @@ import {
   tipGroupIndex,
 } from "./thread-light";
 import {
+  type SectionAnchors,
+  type SectionRange,
+  type SectionRect,
+  type SectionSubdivisions,
+  type ThreadPiece,
+  threadLine,
+} from "./thread-line";
+import { MOTIF_PLACEMENTS, THREAD_IDS } from "./thread-paths";
+import {
   CHAIN_TERMINAL_WINDOW,
   createDrawRatchet,
   dashForPiece,
   drawnLength,
   pieceProgress,
-  type SectionAnchors,
-  type SectionRange,
-  type SectionRect,
-  type SectionSubdivisions,
   type TerminalWindow,
-  type ThreadPiece,
-  threadLine,
-} from "./thread-line";
-import { MOTIF_PLACEMENTS, THREAD_IDS } from "./thread-paths";
+  totalLength,
+} from "./thread-progress";
 import type { MeasuredSection, Rect } from "./thread-warp";
 
 /* THE MODEL.
@@ -478,14 +481,8 @@ function openingFloor(
   return invite.end - CROSSING_HOLD_BACK * invite.lastPieceLength;
 }
 
-/* The thread's total drawn length is the last range's end -- the same quantity a ratchet's peak is
-   expressed in, which is what makes the two commensurable across a re-measure. */
-function totalLength(ranges: readonly SectionRange[]): number {
-  return ranges[ranges.length - 1]?.end ?? 0;
-}
-
 /* Drives every piece's own `<path>` from the ONE page-level `drawn` scalar -- `pieceProgress`
-   (`thread-line.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
+   (`thread-progress.ts`) is what makes "exactly one piece mid-draw" hold, by construction, from here:
    `pieces[k]` and `paths[k]` are index-aligned (`splitSubpaths(d)` emits one subpath per piece, in
    the same connection order `pieces` is built in -- proven at every band in
    `thread-fallback.test.ts`), so this loop never has to match them up by name. */

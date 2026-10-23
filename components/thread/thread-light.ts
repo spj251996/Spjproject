@@ -19,7 +19,7 @@
    which are separate `<svg>`s, call it with the same pieces and the same drawn length and each draws the runs in its
    own — which is what lets the head cross the join between them unbroken. */
 
-import { dashForPiece, pieceProgress } from "./thread-line.ts";
+import { dashForPiece, pieceProgress } from "./thread-progress.ts";
 
 export type Rgb = readonly [number, number, number];
 
