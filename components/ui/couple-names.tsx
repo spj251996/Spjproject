@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 /* THE COUPLE'S NAMES AS DRAWN GEOMETRY, placing the three word-groups that
-   `components/icons/couple-names-symbol.tsx` defines.
+   `components/shell/couple-names-symbol.tsx` defines.
 
    MEASURED INK OF EACH GROUP, in the source file's own viewBox units (scripts/measure-couple-names-bbox.mjs, a
    real engine). `x`/`y` are where the group sits in the SOURCE box, which is what makes the stacked

@@ -5,7 +5,7 @@ import {
   Noto_Serif_Malayalam,
   Playfair_Display,
 } from "next/font/google";
-import { CoupleNamesSymbol, SprigSymbol } from "@/components/icons";
+import { CoupleNamesSymbol, SprigSymbol } from "@/components/shell";
 import "./globals.css";
 
 /* Libre Baskerville ships as static faces and needs explicit weights; Playfair Display is variable,

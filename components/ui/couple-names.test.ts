@@ -27,7 +27,7 @@ function code(path: string): string {
     .replace(/^\s*\/\/.*$/gm, "");
 }
 
-const SYMBOL = code("components/icons/couple-names-symbol.tsx");
+const SYMBOL = code("components/shell/couple-names-symbol.tsx");
 const NAMES = code("components/ui/couple-names.tsx");
 const INVITE = code("app/_sections/invite.tsx");
 

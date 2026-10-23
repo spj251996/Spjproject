@@ -1,4 +1,4 @@
-/* Emits components/icons/couple-names-symbol.tsx from assets/names/Names-svg.svg. Run by hand;
+/* Emits components/shell/couple-names-symbol.tsx from assets/names/Names-svg.svg. Run by hand;
    not a build step. Each symbol gets a TIGHT viewBox around its own word-group, re-origined to
    0,0, so a <use> whose width/height equal that viewBox places the group at 1:1 scale. */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -88,7 +88,7 @@ ${inner}
 }).join("\n");
 
 writeFileSync(
-  "components/icons/couple-names-symbol.tsx",
+  "components/shell/couple-names-symbol.tsx",
   `${header}${body}
       </defs>
     </svg>
@@ -96,4 +96,4 @@ writeFileSync(
 }
 `,
 );
-console.log("wrote components/icons/couple-names-symbol.tsx");
+console.log("wrote components/shell/couple-names-symbol.tsx");
