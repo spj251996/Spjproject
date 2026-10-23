@@ -121,7 +121,7 @@ export function ComponentsSections() {
         description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules, on five eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's. Five call sites; SIX ornaments on the published page, since Event Info and Family each render theirs twice and the not-found screen is not part of it."
         id="ui-sprig-ornament"
         name="sprig-ornament"
-        note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow deliberately takes none: it leads the hero. The rituals' header line carries one leading sprig instead; see it on the page at Domain · Timeline."
+        note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow deliberately takes none: it leads the hero. The rituals' header line carries one leading sprig instead; see it on the page at Domain · Celebrations."
         source="@/components/ui/sprig-ornament"
         spec="the sprig mark at 23px on the diagonal, which renders 16px tall — the Iconography floor for this mark, whose viewBox is not square · gap space-2xs between every item · the LEADING mark flipped so both point outward — the trailing one as drawn already does · a rule outside each mark, space-lg (32px) long, a top border at --stroke-hairline (0.5px), in the wrapper's own colour"
       >

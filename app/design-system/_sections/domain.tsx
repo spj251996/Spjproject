@@ -53,11 +53,11 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
 
 const TIMELINE_ENTRIES: InlineEntry[] = [
   {
-    name: "Timeline",
+    name: "Celebrations",
     home: "app/_sections/celebrations.tsx",
     composes:
       "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, one left-aligned full-width column at every tier with space-xl (48px) between them, closing to space-md (24px) after a ritual that carries photographs from lg, each opened by one header line — the sprig from lg only, a heading-md English title and its Malayalam on one baseline, the Malayalam at the line's right end on a phone — then a body-italic tagline and a body description, and a photo-row at the block's right edge only when the ritual has photographs · the card's sides 36px (--tall-inline-phone) on a phone",
-    note: "Live at /. The rituals are left-aligned at every width. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Timeline).",
+    note: "Live at /. The rituals are left-aligned at every width. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Celebrations).",
   },
 ];
 
@@ -105,7 +105,7 @@ export function DomainSections() {
       <GallerySection
         id="thread"
         intro="The page's one spine: a single red line from the invite to the closing wishes."
-        mapsTo="Domain Components → Thread → thread-overlay"
+        mapsTo="Domain Components → Thread → page-thread"
         title="Domain · Thread"
       >
         <InlineList entries={THREAD_ENTRIES} />
@@ -229,8 +229,8 @@ export function DomainSections() {
       <GallerySection
         id="timeline"
         intro="The one section that scrolls to its natural length."
-        mapsTo="Domain Components → Timeline"
-        title="Domain · Timeline"
+        mapsTo="Domain Components → Celebrations"
+        title="Domain · Celebrations"
       >
         <InlineList entries={TIMELINE_ENTRIES} />
       </GallerySection>

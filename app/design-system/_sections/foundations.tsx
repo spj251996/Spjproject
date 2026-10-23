@@ -306,7 +306,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
+        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Celebrations."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"

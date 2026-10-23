@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /* `transform: translateZ(0)` makes the frame a containing block, so `position: fixed` descendants
-   resolve to the frame instead of the viewport. Without it `thread-overlay` escapes the demo and
+   resolve to the frame instead of the viewport. Without it `page-thread` escapes the demo and
    covers the page. */
 
 interface ChromeFrameProps {
