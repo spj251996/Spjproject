@@ -89,7 +89,7 @@
    fallback layer once it has measured and taken over. */
 
 /* The card thread's own SVG carries no `z-index`: it takes its place from the card's stacking context
-   by document order (`page-thread.tsx` → `CardThread`), and a z-index would lift it out of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
+   by document order (`card-thread.tsx` → `CardThread`), and a z-index would lift it out of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
    own edge; it is a drawn line, not content clipped to a box. */
 .cardRoot {
   overflow: visible;

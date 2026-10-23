@@ -4,7 +4,7 @@ import { wishesFit } from "@/app/_frame/wishes-fit";
 import { Botanical } from "@/components/background/botanical";
 import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { CardThread } from "@/components/thread/page-thread";
+import { CardThread } from "@/components/thread/card-thread";
 import { CoupleNames } from "@/components/ui/couple-names";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { wishes } from "@/content";
