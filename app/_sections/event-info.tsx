@@ -128,7 +128,7 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
    Tailwind emits the landscape variant after `md:` and `xl:`, so it overrides them; each class is
    written out whole because Tailwind finds classes by scanning source.
 
-   Size 72 covers both the phone plate and the compact-laptop side-by-side plate, in one entry
+   Size 72 covers both the phone plate and the narrow-laptop side-by-side plate, in one entry
    because a size may render only once per `PlateMark` (the array is keyed by size). */
 const PLATE_MARKS = [
   {

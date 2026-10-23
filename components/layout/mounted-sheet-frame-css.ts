@@ -78,8 +78,8 @@ const GROUND_INLINE = "--ground-inline";
    everywhere else (phone, tablet, desktop). */
 const CARD_HEIGHT = `calc(100svh - 2 * var(${GROUND_BLOCK}))`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
-const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-laptop), ${CARD_HEIGHT})`;
-const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
+const LAPTOP_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-laptop), ${CARD_HEIGHT})`;
+const LAPTOP_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
 
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
    value, because the arithmetic needs the number a media query cannot read from the token — a
@@ -478,7 +478,7 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
 
      `--ring-cap` carries whichever height-cap token the current width band reads, so the landscape
      side-padding formula (`max(...)`) is written once, on the general landscape rule, and the
-     compact-width rule only swaps the token `--ring-cap` resolves to — the `max(...)` expression
+     laptop-width rule only swaps the token `--ring-cap` resolves to — the `max(...)` expression
      itself is never repeated. */
   return `${scope} {
   display: flex;
@@ -493,7 +493,7 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
 @media (orientation: landscape) {
 ${scope} { ${RING_CAP}: var(--card-height-cap); ${RING_SIDE}: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(${RING_CAP})) / 2)); }
 }
-@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+@media (orientation: landscape) and ${LAPTOP_WIDTH_QUERY} {
 ${scope} { ${RING_CAP}: var(--card-height-cap-laptop); }
 }
 ${box} {
@@ -512,10 +512,10 @@ ${box} {
   min-height: ${CAPPED_CARD_HEIGHT};
 }
 }
-@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+@media (orientation: landscape) and ${LAPTOP_WIDTH_QUERY} {
 ${box} {
   width: min(var(--container-content-laptop), 100%);
-  min-height: ${COMPACT_CAPPED_CARD_HEIGHT};
+  min-height: ${LAPTOP_CAPPED_CARD_HEIGHT};
 }
 }
 ${mount} {
@@ -606,7 +606,7 @@ ${box} {
 @media (orientation: landscape) {
 ${box} { width: min(var(--container-content), 100%); }
 }
-@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+@media (orientation: landscape) and ${LAPTOP_WIDTH_QUERY} {
 ${box} { width: min(var(--container-content-laptop), 100%); }
 }
 ${mount} {

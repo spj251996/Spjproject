@@ -96,13 +96,13 @@ test("a fit missing the desktop regimes is rejected", () => {
   );
 });
 
-test("a compact window takes the compact ground tier and its smallest padding", () => {
+test("a laptop window takes the laptop ground tier and its smallest padding", () => {
   const classes = windowClasses(makeFit(), "single");
-  const compact = classes.find(
+  const laptop = classes.find(
     (c) => c.widthTier === "laptop" && c.media.includes("64rem"),
   );
-  assert.equal(compact?.groundTier.ground, 64);
-  assert.deepEqual(compact?.groundTier.paddingSteps, [64, 48, 32, 24]);
+  assert.equal(laptop?.groundTier.ground, 64);
+  assert.deepEqual(laptop?.groundTier.paddingSteps, [64, 48, 32, 24]);
 });
 
 /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`); at 390
@@ -231,11 +231,11 @@ test("a landscape phone asks the full-ground fit at the floor the card shows", (
   );
 });
 
-test("a wide window keeps the desktop ground tier", () => {
+test("a desktop window keeps the desktop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
-  const wide = classes.find((c) => c.widthTier === "desktop");
-  assert.equal(wide?.groundTier.ground, 96);
-  assert.deepEqual(wide?.groundTier.paddingSteps, [96, 64, 48, 32]);
+  const desktopClass = classes.find((c) => c.widthTier === "desktop");
+  assert.equal(desktopClass?.groundTier.ground, 96);
+  assert.deepEqual(desktopClass?.groundTier.paddingSteps, [96, 64, 48, 32]);
 });
 
 test("the caps differ by tier, and tablet keeps the full cap", () => {
@@ -313,14 +313,14 @@ test("a landscape rectangle taller than the height cap is dropped, not thrown", 
 });
 
 test("a landscape rectangle wider than the height cap is decided below the centring band", () => {
-  /* 700 + 2 x 24 + 2 x 16 = 780px wide at the compact tier's smallest padding: wider than its
+  /* 700 + 2 x 24 + 2 x 16 = 780px wide at the laptop tier's smallest padding: wider than its
      576px height cap, so it counts only up to cap + 4 x ground, the height past which the
-     centring gap could bind — 832px at full compact ground, 672px at halved touchscreen ground. */
+     centring gap could bind — 832px at full laptop ground, 672px at halved touchscreen ground. */
   const wide = makeFit({
     laptop: { landscape: [{ minContentWidth: 700, contentHeight: 100 }] },
   });
   const css = mountedSheetFrameCss(wide, false);
-  assert.ok(css.includes("(height <= 832px)"), "full compact ground band");
+  assert.ok(css.includes("(height <= 832px)"), "full laptop ground band");
   assert.ok(
     css.includes("(height <= 672px)"),
     "halved touchscreen ground band",
@@ -436,10 +436,10 @@ test("a pair is never the hero", () => {
   );
 });
 
-test("a pair's compact tier lines are worked out at 1280px", () => {
-  /* A pair's compact and touchscreen tier lines start at 80rem, at the compact ground tier's
+test("a pair's laptop tier lines are worked out at 1280px", () => {
+  /* A pair's laptop and touchscreen tier lines start at 80rem, at the laptop ground tier's
      smallest padding (24) and reveal (16). Content 550 side by side is
-     2 x (550 + 48) + 64 = 1260px, and 1260 + 4 x 32 (halved compact ground) = 1388 — over 1280, so
+     2 x (550 + 48) + 64 = 1260px, and 1260 + 4 x 32 (halved laptop ground) = 1388 — over 1280, so
      it still cannot be framed even at the 1280px line. A single card keeps 1024: 550 + 48 + 32 =
      630, well inside 1024 - 128 = 896. */
   const tooWide = makeFit({
@@ -451,7 +451,7 @@ test("a pair's compact tier lines are worked out at 1280px", () => {
     /cannot be framed[\s\S]*laptop ground tier fit its laptop content[\s\S]*1280px/,
   );
 
-  /* Content 320 frames regardless of which narrowest window the compact line is worked out at. */
+  /* Content 320 frames regardless of which narrowest window the laptop line is worked out at. */
   const framable = makeFit({
     laptop: { landscape: [{ minContentWidth: 320, contentHeight: 100 }] },
   });
@@ -460,7 +460,7 @@ test("a pair's compact tier lines are worked out at 1280px", () => {
   /* Content 380 side by side is 2 x (380 + 48) + 64 = 920px: with 4 x 32 halved-ground clearance
      that is 1048 — over a hypothetical 1024px line, but inside the 1280px line's clearance
      (1048 <= 1280), so it frames only because the pair's line is worked out at 1280. At the
-     touchscreen line's 32 padding it is 2 x (380 + 64) + 64 = 952px, inside the 960px compact width
+     touchscreen line's 32 padding it is 2 x (380 + 64) + 64 = 952px, inside the 960px laptop width
      cap that any wider content would break. */
   const onlyFromWide = makeFit({
     laptop: { landscape: [{ minContentWidth: 380, contentHeight: 100 }] },
@@ -475,8 +475,8 @@ test("a pair's compact tier lines are worked out at 1280px", () => {
   assert.doesNotThrow(() => windowClasses(tabletFit, "pair"));
 });
 
-test("a pair gives landscape compact-width windows under 80rem the phone ground tier", () => {
-  /* Mobile 1 + tablet 2 + desktop (narrow band, mid band) x 2 pointers x 2 + wide x 2 pointers x
+test("a pair gives landscape laptop-width windows under 80rem the phone ground tier", () => {
+  /* Mobile 1 + tablet 2 + laptop (narrow band, mid band) x 2 pointers x 2 + desktop x 2 pointers x
      2 = 1 + 2 + 8 + 4 = 15. */
   const pair = windowClasses(makeFit(), "pair");
   assert.equal(pair.length, 15);
@@ -496,7 +496,7 @@ test("a pair gives landscape compact-width windows under 80rem the phone ground 
     assert.equal(windowClass.portraitPossible, false);
     assert.equal(windowClass.landscapePossible, true);
   }
-  /* The compact tier's own band, bounded above by the wide tier's 100rem: (80rem <= width < 100rem). */
+  /* The laptop tier's own band, bounded above by the desktop tier's 100rem: (80rem <= width < 100rem). */
   const midBand = pair.filter((windowClass) =>
     windowClass.media.includes("(80rem <= width < 100rem)"),
   );
@@ -517,7 +517,7 @@ test("a pair gives landscape compact-width windows under 80rem the phone ground 
   );
 });
 
-test("a pair's portrait compact-width windows under 80rem take a single card's ground", () => {
+test("a pair's portrait laptop-width windows under 80rem take a single card's ground", () => {
   const narrowPortrait = windowClasses(makeFit(), "pair").filter(
     (windowClass) =>
       windowClass.media.includes("(64rem <= width < 80rem)") &&
@@ -551,10 +551,10 @@ test("a pair's portrait compact-width windows under 80rem take a single card's g
   }
 });
 
-test("a pair's compact tier lines stay below 64rem", () => {
-  /* A portrait narrow class takes compact or tablet ground with no height condition, which holds
+test("a pair's laptop tier lines stay below 64rem", () => {
+  /* A portrait narrow class takes laptop or tablet ground with no height condition, which holds
      only while every pair tier line sits below 1024px. The height cap bounds a line at 576 plus the
-     halved ground top and bottom — 640 at compact ground, 624 at tablet — so no fit reaches 1024;
+     halved ground top and bottom — 640 at laptop ground, 624 at tablet — so no fit reaches 1024;
      `windowClasses` still checks it, so a change to the caps or ground tiers fails the build.
      Content 320 at 400 tall, comfortably framable, makes a 472px card. */
   assert.doesNotThrow(() =>
@@ -567,13 +567,13 @@ test("a pair's compact tier lines stay below 64rem", () => {
   );
 });
 
-test("side by side in every landscape compact-width or wide window", () => {
+test("side by side in every landscape laptop-width or desktop window", () => {
   const classes = windowClasses(makeFit(), "pair");
   const sideBySide = classes.filter((windowClass) =>
     pairsSideBySide("pair", windowClass, true),
   );
-  /* The two narrow-band landscape classes, the four compact mid-band classes and the four wide
-     classes — every desktop or wide class with a landscape window, now that the tier splits in
+  /* The two narrow-band landscape classes, the four laptop mid-band classes and the four desktop
+     classes — every laptop or desktop class with a landscape window, now that the tier splits in
      two. */
   assert.equal(sideBySide.length, 10);
   for (const windowClass of sideBySide) {
@@ -582,7 +582,7 @@ test("side by side in every landscape compact-width or wide window", () => {
       windowClass.media,
     );
   }
-  /* Below each pointer's tier line (desktop and wide alike), plus the two narrow-band landscape
+  /* Below each pointer's tier line (laptop and desktop alike), plus the two narrow-band landscape
      classes, which always take phone ground. */
   const phoneGround = sideBySide.filter(
     (windowClass) => windowClass.groundTier.name === "phone",
@@ -596,13 +596,13 @@ test("side by side in every landscape compact-width or wide window", () => {
 
 test("a pair's landscape padding chain uses side-by-side widths", () => {
   /* Desktop content 200, desktop reveal 16, side by side = 2 x (200 + 2p) + 4 x 16.
-     - Compact ground (>= 80rem, above the line), steps 64/48/32/24: 592 at 32, 656 at 48, 720 at 64.
+     - Laptop ground (>= 80rem, above the line), steps 64/48/32/24: 592 at 32, 656 at 48, 720 at 64.
      - Tablet ground (touchscreen, >= 80rem, above the line), steps 64/48/32: 656, 720 — the same
        numbers, since the two ground tiers share the 48 and 64 steps at this reveal.
      - Phone ground (64-80rem narrow band, and >= 80rem below a line), steps 32/24: 592 at 32. Its
        24 is the ladder's FLOOR and is emitted unconditionally, so it carries no container rule —
        which is why 560 is asserted absent below rather than present.
-     Stacked portrait carries no reveal, so 200 + 2p: 328 at the compact tier's largest step (64);
+     Stacked portrait carries no reveal, so 200 + 2p: 328 at the laptop tier's largest step (64);
      248 and 264 in the narrow classes' portrait chains at 24 and 32. None of the stacked numbers is
      pair-only, because a single card reads 200 + 2p + 32 and its 48 step lands on 328 as well — so
      the side-by-side widths carry the whole of this test's evidence, and the stacked ones are
@@ -647,7 +647,7 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
 
 test("every pair window and orientation gets exactly one layout block", () => {
   const pair = mountedSheetFrameCss(makeFit(), false, "pair");
-  /* 15 classes, ten of which are a landscape orientation side by side (desktop and wide alike,
+  /* 15 classes, ten of which are a landscape orientation side by side (laptop and desktop alike,
      now that the tier splits in two): 21 blocks total, 10 row and 11 stacked. */
   assert.equal((pair.match(/flex-direction: row;/g) ?? []).length, 10);
   assert.equal(
@@ -1071,8 +1071,8 @@ test("allows equal consecutive heights", () => {
 
 /* Tall mode exists because the fitted frame refuses a section taller than its tier's height cap:
    `tierLine` keeps only rectangles clearing `CAPS[tier].height`, and a tall section has none. The
-   compact tier's 576px cap binds first. If this ever stops throwing, tall mode's premise is gone. */
-test("a section taller than the compact height cap cannot be framed", () => {
+   laptop tier's 576px cap binds first. If this ever stops throwing, tall mode's premise is gone. */
+test("a section taller than the laptop height cap cannot be framed", () => {
   const tall = makeFit({
     phone: {
       portrait: [{ minContentWidth: 120, contentHeight: 600 }],
@@ -1110,22 +1110,22 @@ test("tall mode gives each tier its full ground and one padding step above its f
   assert.equal(tablet?.ground, 48);
   assert.equal(tablet?.padding, 96);
 
-  const compact = [...byTier.values()].find(
+  const laptop = [...byTier.values()].find(
     (c) =>
       c.widthTier === "laptop" && c.media.includes("not (pointer: coarse)"),
   );
-  assert.equal(compact?.ground, 64);
-  assert.equal(compact?.padding, 96);
+  assert.equal(laptop?.ground, 64);
+  assert.equal(laptop?.padding, 96);
 
-  const wide = [...byTier.values()].find(
+  const desktopClass = [...byTier.values()].find(
     (c) =>
       c.widthTier === "desktop" && c.media.includes("not (pointer: coarse)"),
   );
-  assert.equal(wide?.ground, 96);
-  assert.equal(wide?.padding, 128);
+  assert.equal(desktopClass?.ground, 96);
+  assert.equal(desktopClass?.padding, 128);
 });
 
-test("a touchscreen from the compact tier up takes the tablet ground", () => {
+test("a touchscreen from the laptop tier up takes the tablet ground", () => {
   const coarse = tallWindowClasses().filter(
     (c) =>
       c.media.includes("(pointer: coarse)") &&
@@ -1241,7 +1241,7 @@ test("a tall card strips its mount per orientation, exactly where the mount does
   }
 });
 
-test("the width cap binds only in landscape, and only the compact band takes the compact-cap token", () => {
+test("the width cap binds only in landscape, and only the laptop band takes the laptop-cap token", () => {
   const css = tallFrameCss();
   const blocks = topLevelBlocks(css);
 
@@ -1253,18 +1253,18 @@ test("the width cap binds only in landscape, and only the compact band takes the
   assert.ok(baseCap, "a plain landscape rule sets the base width cap");
   assert.ok(
     !baseCap?.includes("--container-content-laptop"),
-    "the base cap rule never carries the compact token",
+    "the base cap rule never carries the laptop token",
   );
 
-  const compactCap = blocks.find(
+  const laptopCap = blocks.find(
     (block) =>
       block.startsWith(
         "@media (orientation: landscape) and (64rem <= width < 100rem) {",
       ) && block.includes("width: min(var(--container-content-laptop), 100%)"),
   );
   assert.ok(
-    compactCap,
-    "the compact-width band overrides with the compact-cap token",
+    laptopCap,
+    "the laptop-width band overrides with the laptop-cap token",
   );
 
   /* No rule anywhere sets either width-cap token outside a landscape-gated prelude — catches the
@@ -1337,13 +1337,13 @@ test("CAPS agrees with the --container-content / --card-height-cap tokens in app
     width: token("--container-content"),
     height: token("--card-height-cap"),
   };
-  const compact = {
+  const laptop = {
     width: token("--container-content-laptop"),
     height: token("--card-height-cap-laptop"),
   };
   assert.deepEqual(CAPS.phone, plain);
   assert.deepEqual(CAPS.tablet, plain);
-  assert.deepEqual(CAPS.laptop, compact);
+  assert.deepEqual(CAPS.laptop, laptop);
   assert.deepEqual(CAPS.desktop, plain);
 });
 

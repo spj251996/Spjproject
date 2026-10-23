@@ -43,7 +43,7 @@ const ZONES: SpanZone[] = [
     width: "≥ 64rem (1024px)",
     changes: [
       "Parallel splits",
-      "Compact type step from lg, desktop type step from xl",
+      "Laptop type step from lg, desktop type step from xl",
     ],
   },
 ];
