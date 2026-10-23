@@ -28,7 +28,7 @@ import {
   formatEventDate,
   type WeddingEvent,
 } from "@/content";
-import { ShrinkToWidestLine } from "@/components/ui/shrink-to-widest-line";
+import { ShrinkToWidestLine } from "./shrink-to-widest-line";
 
 /* The eyebrow names the occasion plainly; the heading is the couple's phrase for it. Both are fixed
    chrome at the composition site, like Family's and Wishes' eyebrows, rather than content fields. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef } from "react";
-import { widestLine } from "@/components/ui/widest-line";
+import { widestLine } from "./widest-line";
 
 /* A paragraph that, once it wraps, narrows its own box to its widest line — so a centred `w-fit`
    group around it centres on the ink rather than on the width the text was offered. CSS has no
