@@ -200,7 +200,7 @@ async function waitForThreadMeasured(page) {
   }
 }
 
-/* The thread re-measures on a 150ms resize debounce (`page-thread.tsx`), landing about 175ms after
+/* The thread re-measures on a 150ms resize debounce (`thread-measure.ts`), landing about 175ms after
    the resize on the dev server -- inside a fixed 200ms settle by only ~25ms. Waiting for the live
    SVG's viewBox to match `<main>`'s box instead waits for the write the measurement depends on. */
 /** @param {Page} page */

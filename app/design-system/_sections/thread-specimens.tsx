@@ -7,12 +7,6 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  headOptions,
-  retraceOptions,
-  TaperCutMask,
-  tokenLength,
-} from "@/components/thread/page-thread";
 import styles from "@/components/thread/thread.module.css";
 import {
   type HeadOptions,
@@ -20,6 +14,7 @@ import {
   headSegments,
   type PieceSpan,
 } from "@/components/thread/thread-head";
+import { TaperCutMask } from "@/components/thread/thread-ink";
 import { THREAD_PATHS } from "@/components/thread/thread-paths";
 import {
   dashForPiece,
@@ -41,15 +36,22 @@ import {
   taperCut,
   taperSegments,
 } from "@/components/thread/thread-taper";
+import {
+  headOptions,
+  retraceOptions,
+  tokenLength,
+} from "@/components/thread/thread-tokens";
 
 /* Four specimens of the thread's light, each laid on a stretch of the page's own authored geometry
    (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
-   `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s, imported; the classes are the page's own (`thread.module.css`), so the filters
-   are the same ones, not copies. Static: a pose of each layer, never a loop. */
+   `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
+   imported; the classes are the page's own (`thread.module.css`), so the filters are the same ones,
+   not copies. Static: a pose of each layer, never a loop. */
 
 /* A connector from the middle of the page, so neither of its ends is a free end and the ink, the head
    and the re-trace show on a line that is not tapered. The two tapered ends are the pieces the page
-   itself tapers (`page-thread.tsx`): the invite's first, at its start, and Wishes' last, at its end. */
+   itself tapers: the invite's first, at its start (`PageThread`), and Wishes' last, at its end
+   (`CardThread`). */
 const WIDE = THREAD_PATHS.wide;
 const MID_PAGE = WIDE.family[1].d;
 const INVITE_START = WIDE.invite[0].d;
@@ -278,7 +280,7 @@ interface TaperedEndProps {
 }
 
 /* The ink is cut under the taper by a mask on its own path and bled as a group, so the halo is the
-   halo of the ink that is left (`page-thread.tsx`, `ThreadInk`); the runs take the bleed on a group
+   halo of the ink that is left (`thread-ink.tsx`, `ThreadInk`); the runs take the bleed on a group
    of their own, as the page's do. */
 function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
   const maskId = `ds-thread-taper-cut-${useId().replaceAll(":", "")}`;

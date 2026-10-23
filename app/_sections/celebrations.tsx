@@ -73,7 +73,7 @@ export function CelebrationsSection() {
           <ol className={CELEBRATIONS_LIST_CLASS} role="list">
             {rituals.map((ritual) => (
               // `data-thread-row` is the one hook the thread's per-row scroll split needs
-              // (`components/thread/page-thread.tsx`'s `measureSubdivisions`) -- nothing else here
+              // (`components/thread/thread-measure.ts`'s `measureSubdivisions`) -- nothing else here
               // identifies a single ritual row, and celebrations carries no `.mounted-sheet-frame__
               // leaf` (it is one tall card, not a stacked pair) for that mechanism to reuse.
               <li className={celebrations.row} data-thread-row key={ritual.id}>

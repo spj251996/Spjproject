@@ -58,7 +58,7 @@ const SHEET = "bg-surface-elevated shadow-stock";
    `mounted-sheet` → The card's two states): the hero is unpainted, every other framed card mounted.
 
    Only the PAINT differs: the frame's geometry is identical either way, because the invite's height
-   contract and the thread's measured card box (`page-thread.tsx`'s `measureSections`) both ride on
+   contract and the thread's measured card box (`thread-measure.ts`'s `measureSections`) both ride on
    the box staying exactly where it was measured. The hero's reveal is the one piece of
    geometry this file carries for a fitted card: the generator emits no mount rule for the hero, so the
    fitted branch gives its mount `MOUNT_REVEAL.hero`, held equal to `revealFor` by a test.

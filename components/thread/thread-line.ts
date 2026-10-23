@@ -49,10 +49,10 @@ export type ThreadLine = {
      card or ritual row its own pieces' geometry actually sits in (`assignRectIndex`'s own header).
      `id` still names the OWNING SECTION, not a group identity of its own — nothing downstream needs
      to tell two groups of the same section apart by anything other than array position, and the
-     `id === "wishes"` terminal check (`sectionProgressAt`, `thread-progress.ts`) only needs to find wishes' own (always
-     single) group. This is what lets `page-thread.tsx` map a scroll position onto "how much of the
-     whole dash has drawn" per WINDOW rather than per section, without recomputing geometry it has
-     already baked once here. */
+     `id === "wishes"` terminal check (`sectionProgressAt`, `thread-progress.ts`) only needs to
+     find wishes' own (always single) group. This is what lets `page-thread.tsx` map a scroll
+     position onto "how much of the whole dash has drawn" per WINDOW rather than per section,
+     without recomputing geometry it has already baked once here. */
   sections: readonly SectionRange[];
   /* `groupRects[i]` is `sections[i]`'s own scroll window — the measured card/row rect its pieces
      were assigned against, or the section's own `{top, height}` when no subdivision applied. Kept
@@ -68,7 +68,8 @@ export type ThreadLine = {
      at every `M` subpath. `page-thread.tsx` and
      `CardThread` give each piece its OWN `<path>` and its OWN dash, computed from its own
      `[start, end)` here — contiguous and disjoint by construction, which is what makes "exactly one
-     piece mid-draw" true without a second rule to keep in sync (see `pieceProgress`, `thread-progress.ts`). */
+     piece mid-draw" true without a second rule to keep in sync (see `pieceProgress`,
+     `thread-progress.ts`). */
   pieces: readonly ThreadPiece[];
 };
 
@@ -83,18 +84,19 @@ export type SectionRange = {
      (every section ends with one more connector than it has motifs), matching this field's original
      meaning exactly; for a group formed by a card/row split, the group's own last piece can be
      whichever piece (connector or motif) happens to fall before the geometry crosses into the next
-     card or row. Needed only for the 75%/25% crossing rule (`drawnLength`, `thread-progress.ts`): the owner's anchor
-     is stated as a fraction of THIS piece, not of the group as a whole, so the group-level progress
-     fraction that reproduces it depends on how much of the group's own total length that one piece
-     is. */
+     card or row. Needed only for the 75%/25% crossing rule (`drawnLength`, `thread-progress.ts`):
+     the owner's anchor is stated as a fraction of THIS piece, not of the group as a whole, so the
+     group-level progress fraction that reproduces it depends on how much of the group's own total
+     length that one piece is. */
   lastPieceLength: number;
 };
 
 /* A group's own scroll window, in the SAME page-absolute pixel space every `MeasuredSection` and
    `Rect` here already uses. Shares its shape with `MeasuredSection`'s own `top`/`height` fields
    (see that type's comment in `thread-warp.ts`) but is declared fresh rather than importing it, so
-   this stays the minimal shape the progress-ramp functions (`thread-progress.ts`) actually read — neither a card's
-   `cardLeft`/`cardWidth` nor an x-axis at all ever enters a vertical scroll calculation. */
+   this stays the minimal shape the progress-ramp functions (`thread-progress.ts`) actually read —
+   neither a card's `cardLeft`/`cardWidth` nor an x-axis at all ever enters a vertical scroll
+   calculation. */
 export type SectionRect = { top: number; height: number };
 
 /* One real card/row rect per placement WITHIN a section — `event-info` and `family` hand in their
@@ -105,8 +107,9 @@ export type SectionRect = { top: number; height: number };
    than two rects, takes no split — the section's own whole rect is used instead, precisely today's
    behaviour (`threadLine`'s own `windowRects` fallback). Kept generic over EVERY section rather than
    naming `event-info`/`family`/`celebrations` in the type itself: the measuring caller
-   (`page-thread.tsx`) is the one that knows which sections actually have a stackable pair or a row
-   list this band, and a section this page never subdivides simply never appears here. */
+   (`thread-measure.ts`'s `measureSubdivisions`) is the one that knows which sections actually
+   have a stackable pair or a row list this band, and a section this page never subdivides simply
+   never appears here. */
 export type SectionSubdivisions = Partial<
   Record<ThreadId, readonly SectionRect[]>
 >;

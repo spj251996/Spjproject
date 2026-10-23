@@ -103,7 +103,7 @@ function firstSectionProgress(
   // is exactly `[rect.top, rect.top + rect.height]` (the "no lead-in" rule, unchanged from before
   // the crossing rule existed), never the page's bare scroll origin. On the real page `rect.top` IS
   // 0 for `invite`, so this coincides with the chain's placeholder start of 0 -- but a synthetic
-  // section placed away from x=0 (this file's own tests do this deliberately, to rule out an
+  // section placed away from x=0 (`thread-line.test.ts` does this deliberately, to rule out an
   // accidental origin dependency) would otherwise ramp from the wrong point entirely.
   const windowStart = Math.min(rect.top, maxScroll);
   const windowEnd = rect.top + rect.height;

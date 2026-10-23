@@ -1091,7 +1091,7 @@ test("every piece of a real band's thread is blank before the draw reaches it", 
 /* ------------------------------------------------------------------------------------------------
    CARD/ROW GROUPING: a stacked pair is two windows,
    not one, and a long ritual list is several. `subdivisions` never comes from real DOM in this file
-   (that measurement lives in `page-thread.tsx`, untestable off a browser) — every test below hands
+   (that measurement lives in `thread-measure.ts`, untestable off a browser) — every test below hands
    `threadLine` a synthetic, but geometrically plausible, top-to-bottom split of a section's own
    measured rect, exactly the shape `measureSubdivisions` produces from real leaf/row elements. */
 

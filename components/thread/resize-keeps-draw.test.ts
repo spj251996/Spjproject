@@ -33,10 +33,10 @@ const LAB_ROUTE = "/thread.html";
    are temporary), so an absolute figure would rot.
 
    This runs the BUILT export rather than the model: the defect is in the render layer's listener
-   wiring, which no unit test reaches — `pageDrawnLength` and `openingFloor` are local to
-   `page-thread.tsx`, and exporting them to reach the arithmetic from a unit test would only re-check
-   a formula, not the dispatch that was wrong. The harness shape is copied from
-   `head-retires.test.ts`, which exports nothing. */
+   wiring, which no unit test reaches — `openingFloor` is local to `page-thread.tsx` and
+   `pageDrawnLength` (`thread-measure.ts`) reads `window.scrollY`, and reaching the arithmetic from a
+   unit test would only re-check a formula, not the dispatch that was wrong. The harness shape is
+   copied from `head-retires.test.ts`, which exports nothing. */
 
 const TYPES: Record<string, string> = {
   ".html": "text/html",

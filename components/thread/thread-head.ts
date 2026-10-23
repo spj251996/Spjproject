@@ -2,9 +2,9 @@
 
    `thread-line.ts` answers WHERE the thread is; this module answers HOW ITS LEADING END IS LIT, and
    owns the colour ramp and the stack of steps the re-trace (`thread-retrace.ts`) lays its own segment
-   with. The component that owns the SVG turns these numbers into elements (`page-thread.tsx`); a
-   piece's points come from `thread-samples.ts`, which reads its own path data and asks the browser
-   for nothing.
+   with. The component that owns the SVG turns these numbers into elements through
+   `thread-painters.ts` (`createHeadPainter`); a piece's points come from `thread-samples.ts`, which
+   reads its own path data and asks the browser for nothing.
 
    WHY A STACK OF STEPS. A dash follows a curve because it is geometry; an SVG gradient lives in
    user space and does not, so a gradient laid along a bend puts its colour in the wrong place. A

@@ -20,7 +20,7 @@ const LAB_ROUTE = "/thread.html";
    a resting scroll position, which is a property of the page's scroll budget
    (`--thread-terminal-finish`) and of the follower that eases toward it (`--thread-catchup`) — and
    the follower is exactly where this broke, because an exponential never arrives and left the card thread
-   99.69% drawn with the head lit (`page-thread.tsx` -> `createCatchUp`). So this runs a real page.
+   99.69% drawn with the head lit (`thread-catch-up.ts` -> `createCatchUp`). So this runs a real page.
 
    THE MID-DRAW ASSERTION IS NOT DECORATION. A test that only checked "no head at the end" would pass
    just as well if the head never rendered at all, which is the vacuous shape this project has already
