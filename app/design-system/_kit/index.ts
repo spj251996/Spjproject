@@ -1,6 +1,6 @@
 export { type BarItem, BarScale } from "./bar-scale";
 export { ChromeFrame } from "./chrome-frame";
-export { DemoViewOnly, InertDemo } from "./click-guards";
+export { DemoViewOnly } from "./click-guards";
 export { DepthGrid, type DepthLevel } from "./depth-grid";
 export { DeviceRuler, type RulerStop } from "./device-ruler";
 export { GallerySection, Specimen, SpecimenGroup } from "./gallery-section";

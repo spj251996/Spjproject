@@ -106,7 +106,7 @@ interface Crop {
   readonly zoom: number;
 }
 
-interface FragmentProps {
+interface PathFragmentProps {
   readonly d: string;
   readonly label: string;
   readonly crop?: Crop;
@@ -118,7 +118,13 @@ interface FragmentProps {
 
 /* One `<svg>` at 1:1 CSS pixels: the page draws the thread in pixels, so its strokes and filters are
    the size they are on the page. A crop shows one end of the stretch, and may magnify it. */
-function Fragment({ d, label, crop, drawnTo = 1, children }: FragmentProps) {
+function PathFragment({
+  d,
+  label,
+  crop,
+  drawnTo = 1,
+  children,
+}: PathFragmentProps) {
   const [ref, measured] = useMeasured(d);
   let view = { x: 0, y: 0, width: 0, height: 0, zoom: 1 };
   if (measured !== undefined) {
@@ -208,14 +214,14 @@ export function ThreadInkSpecimen() {
   return (
     <div className="flex flex-wrap gap-space-lg">
       <Panel caption="The ink alone, with the bleed switched off. A comparison, not a state the page is ever in.">
-        <Fragment d={MID_PAGE} label="The thread's ink without its bleed">
+        <PathFragment d={MID_PAGE} label="The thread's ink without its bleed">
           {() => <path className={styles.pageInkBare} d={MID_PAGE} />}
-        </Fragment>
+        </PathFragment>
       </Panel>
       <Panel caption="The ink as the page draws it, with --bleed-thread.">
-        <Fragment d={MID_PAGE} label="The thread's ink with its bleed">
+        <PathFragment d={MID_PAGE} label="The thread's ink with its bleed">
           {() => <path className={styles.pageInk} d={MID_PAGE} />}
-        </Fragment>
+        </PathFragment>
       </Panel>
     </div>
   );
@@ -223,7 +229,7 @@ export function ThreadInkSpecimen() {
 
 export function ThreadHeadSpecimen() {
   return (
-    <Fragment
+    <PathFragment
       d={MID_PAGE}
       drawnTo={HEAD_POSED_AT}
       label="The drawing head at the tip of a part-drawn stretch"
@@ -251,7 +257,7 @@ export function ThreadHeadSpecimen() {
           </>
         );
       }}
-    </Fragment>
+    </PathFragment>
   );
 }
 
@@ -268,7 +274,7 @@ interface TaperedEndProps {
 function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
   const maskId = `ds-thread-taper-cut-${useId().replaceAll(":", "")}`;
   return (
-    <Fragment crop={{ at, span: TAPER_CROP, zoom }} d={d} label={label}>
+    <PathFragment crop={{ at, span: TAPER_CROP, zoom }} d={d} label={label}>
       {(m) => {
         const endAt = at === "start" ? 0 : m.length;
         const direction = at === "start" ? -1 : 1;
@@ -314,7 +320,7 @@ function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
           </>
         );
       }}
-    </Fragment>
+    </PathFragment>
   );
 }
 
@@ -365,7 +371,7 @@ export function ThreadRetraceSpecimen() {
   return (
     <div className="flex flex-wrap gap-space-lg">
       <Panel caption="The glow alone: eight translucent strokes under the segment, no filter.">
-        <Fragment d={MID_PAGE} label="The re-trace's glow strokes alone">
+        <PathFragment d={MID_PAGE} label="The re-trace's glow strokes alone">
           {(m) => {
             const { tail, tip } = retraceSpan(
               RETRACE_POSED_AT,
@@ -389,10 +395,10 @@ export function ThreadRetraceSpecimen() {
               </>
             );
           }}
-        </Fragment>
+        </PathFragment>
       </Panel>
       <Panel caption="The re-trace: the glow strokes under the head's own stack, over the drawn thread.">
-        <Fragment d={MID_PAGE} label="The re-trace over the drawn thread">
+        <PathFragment d={MID_PAGE} label="The re-trace over the drawn thread">
           {(m) => {
             const { tail, tip } = retraceSpan(
               RETRACE_POSED_AT,
@@ -423,7 +429,7 @@ export function ThreadRetraceSpecimen() {
               </>
             );
           }}
-        </Fragment>
+        </PathFragment>
       </Panel>
     </div>
   );
