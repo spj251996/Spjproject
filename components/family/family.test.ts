@@ -4,6 +4,8 @@ import { test } from "node:test";
 import { familyGroups } from "../../content/family.ts";
 import type { FamilyMember } from "../../content/types.ts";
 
+const read = (path: string) => readFileSync(path, "utf8");
+
 /* The couple's portrait glow is keyed on free-text relationship strings, so a rename in the content
    would drop the glow with nothing failing. Read from source because `family.tsx` is JSX, which
    `node --test` cannot load. */
@@ -28,5 +30,12 @@ test("the glow's relationships name exactly the bride and the groom in the conte
     glowing.map((member) => member.relationship).sort(),
     ["Bride", "Groom"],
     "exactly one Bride and one Groom carry the glow",
+  );
+});
+
+test("only the couple's portraits glow", () => {
+  assert.match(
+    read("components/family/family.tsx"),
+    /new Set\(\["Bride", "Groom"\]\)/,
   );
 });

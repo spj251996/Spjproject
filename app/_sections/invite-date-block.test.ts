@@ -7,7 +7,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { withClasses } from "../../scripts/source-classes.ts";
 
+const read = (path: string) => readFileSync(path, "utf8");
 const section = readFileSync("app/_sections/invite.tsx", "utf8");
 const block = readFileSync("app/_sections/invite-date.module.css", "utf8");
 const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
@@ -110,5 +112,16 @@ test("the day is a bare numeral with no raised ordinal", () => {
     body,
     /<PrimaryDate/,
     "the block composes its own parts; PrimaryDate renders one line with an ordinal",
+  );
+});
+
+test("the invite's day numeral is gold", () => {
+  assert.equal(
+    withClasses(
+      read("app/_sections/invite.tsx"),
+      "type-date-day",
+      "text-accent-gold",
+    ).length,
+    1,
   );
 });

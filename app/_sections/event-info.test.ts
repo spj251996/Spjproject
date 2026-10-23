@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { EventSegment, WeddingEvent } from "../../content/types.ts";
+import { withClasses } from "../../scripts/source-classes.ts";
 import {
   mapLabel,
   segmentLineParts,
@@ -8,6 +10,8 @@ import {
   splitAddress,
   venueRuns,
 } from "./event-info-text.ts";
+
+const read = (path: string) => readFileSync(path, "utf8");
 
 const segment = (overrides: Partial<EventSegment> = {}): EventSegment => ({
   id: "wedding-church",
@@ -123,4 +127,29 @@ test("an event with no address refuses a header", () => {
     () => sharedAddress(event([segment({ address: null })])),
     /has no address/,
   );
+});
+
+test("Event Info is two columns at every tier, details left, map disc on the venue", () => {
+  const eventInfo = read("app/_sections/event-info.tsx");
+  assert.equal(
+    withClasses(eventInfo, "grid-cols-[auto_minmax(0,auto)]").length,
+    1,
+  );
+  assert.equal(withClasses(eventInfo, "grid-cols-1").length, 0);
+  assert.ok(withClasses(eventInfo, "items-start", "text-left").length > 0);
+  assert.equal(
+    withClasses(eventInfo, "mt-space-2xs", "-ms-space-sm").length,
+    1,
+  );
+});
+
+test("the 2026-10-14 picks: Event Info's natural phone rhythm", () => {
+  const eventInfo = readFileSync("app/_sections/event-info.tsx", "utf8");
+  for (const cls of [
+    "[@media(width<48rem)]:mt-[calc(var(--spacing-space-sm)+2.5px)]",
+    "mt-[calc(var(--spacing-space-lg)+2px)]",
+    "gap-y-[calc(var(--spacing-space-md)+2px)]",
+  ]) {
+    assert.ok(eventInfo.includes(cls), `Event Info lost ${cls}`);
+  }
 });

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { withClasses } from "../../scripts/source-classes.ts";
 
+const read = (path: string) => readFileSync(path, "utf8");
+const tokens = readFileSync("app/styles/tokens.css", "utf8");
 /* The drawn names replace two script type roles. Three things can go wrong here and only one of them
    shows on screen:
 
@@ -228,5 +231,32 @@ test("the invite's h1 holds the asset and is still the page's only h1", () => {
   assert.ok(
     asset !== -1 && asset < close,
     "the asset must sit INSIDE the h1, not beside it",
+  );
+});
+
+test("the stacked ampersand is lifted above centre", () => {
+  assert.match(
+    read("components/ui/couple-names.tsx"),
+    /const AMPERSAND_LIFT = 24;/,
+  );
+});
+
+test("the phone names are 40% larger than the tier's 1.85em, both layouts", () => {
+  const names = read("components/ui/couple-names.tsx");
+  assert.equal(
+    withClasses(names, "w-[2.59em]", "md:w-[2.513em]").length,
+    2,
+    "the stacked lockup's phone width — 1.85em x 1.40 — in both its layout arms",
+  );
+});
+
+test("the 2026-10-10 picks: the ritual title's size and the ampersand's scale", () => {
+  assert.deepStrictEqual(
+    [...tokens.matchAll(/--text-heading-md:\s*(\d+)px/g)].map((m) => m[1]),
+    ["18", "20", "18", "21"],
+  );
+  assert.match(
+    readFileSync("components/ui/couple-names.tsx", "utf8"),
+    /const AMPERSAND_SCALE = 0\.65;/,
   );
 });

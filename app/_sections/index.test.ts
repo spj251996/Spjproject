@@ -121,3 +121,7 @@ test("the thread render gates sweep exactly the sections the module composes, in
   );
   assert.deepEqual(listIn("scripts/check-thread-joins.mjs", "SECTIONS"), ids);
 });
+
+test("/preview is retired", () => {
+  assert.ok(!existsSync("app/preview"), "app/preview is back");
+});

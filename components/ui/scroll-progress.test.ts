@@ -77,3 +77,12 @@ test("the fill re-reads when the page's own height changes", () => {
   assert.match(component, /\.observe\(document\.body\)/);
   assert.match(component, /\.disconnect\(\)/);
 });
+
+test("the 2026-10-14 picks: the progress line — 2px on a phone, 3px up, the soft glow", () => {
+  assert.match(tokens, /--progress-height: 3px;/);
+  assert.match(tokens, /@variant max-md \{[^}]*--progress-height: 2px;[^}]*\}/);
+  assert.match(
+    tokens,
+    /--progress-glow: drop-shadow\(\s*0 0 2px color-mix\(in srgb, var\(--color-thread-vermilion\) 55%, transparent\)\s*\);/,
+  );
+});

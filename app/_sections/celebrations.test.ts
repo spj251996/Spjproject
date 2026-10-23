@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { withClasses } from "../../scripts/source-classes.ts";
 
+const read = (path: string) => readFileSync(path, "utf8");
 const source = readFileSync("app/_sections/celebrations.tsx", "utf8");
 
 /* The composition site is a server component, so these are source assertions rather than render
@@ -142,4 +144,21 @@ test("the ritual description takes no reading-measure cap", () => {
       `no reading-measure cap inside the ritual list: ${value}`,
     );
   }
+});
+
+test("a photographed ritual closes to space-md from 64rem", () => {
+  assert.match(
+    read("app/_sections/celebrations.module.css"),
+    /\.row:has\(\[data-photo-ready\]\)\s*\{\s*margin-block-end:\s*calc\(var\(--spacing-space-md\) - var\(--spacing-space-xl\)\)/,
+  );
+});
+
+test("the ritual leaf shows from 64rem only; the phone Malayalam sits right", () => {
+  const celebrations = read("app/_sections/celebrations.tsx");
+  assert.equal(
+    withClasses(celebrations, "text-accent-gold", "max-lg:hidden").length,
+    1,
+    "the ritual leaf, gold and hidden below 64rem",
+  );
+  assert.equal(withClasses(celebrations, "max-md:ms-auto").length, 1);
 });
