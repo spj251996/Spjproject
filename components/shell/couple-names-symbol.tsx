@@ -1,7 +1,7 @@
 /* THE COUPLE'S NAMES, drawn. Source: the owner's potrace conversion of the legacy site's raster
    — there is no font and no vector original, and `legacy-html/index.html` holds only a 780x580 PNG
    inline as a data URI. Generated from `assets/names/Names-svg.svg` by
-   `scripts/build-couple-names-symbol.mjs`, the committed source of record — the trace with the
+   `scripts/generators/build-couple-names-symbol.mjs`, the committed source of record — the trace with the
    y of Flemy's loop redrawn where the original canvas cut it flat.
    A re-trace must re-run that script, not hand-edit these paths.
 
