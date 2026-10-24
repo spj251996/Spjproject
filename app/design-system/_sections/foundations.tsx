@@ -172,7 +172,7 @@ const FRAME_PORTRAIT_BAND = [
 const IMAGERY_POINTERS = [
   "Family portraits · circular crops → Components · UI → portrait",
   "A delivered portrait · at least 3× its rendered diameter, never upscaled",
-  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal; one photograph full screen → photo-viewer",
+  "Gallery images · masonry, inside the modal only → Components · UI → Gallery → gallery-modal; one photograph full screen → Components · UI → Gallery → photo-viewer",
   "Couple illustration · held back behind the closing text → Domain · Wishes",
 ];
 

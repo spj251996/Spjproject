@@ -227,7 +227,7 @@ export function DomainSections() {
       </GallerySection>
 
       <GallerySection
-        id="timeline"
+        id="celebrations"
         intro="The one section that scrolls to its natural length."
         mapsTo="Domain Components → Celebrations"
         title="Domain · Celebrations"
