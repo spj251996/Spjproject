@@ -88,7 +88,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Accent",
-    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam and the marks only. It falls below 3:1 on the mount (2.56:1), so a mark that carries meaning without a label stays ink.",
+    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam, the date-block day numeral and the marks only. It falls below 3:1 on the mount (2.56:1), so a mark that carries meaning without a label stays ink.",
     tokens: [
       {
         token: "--color-accent-gold",
@@ -150,9 +150,9 @@ const SPACING_USES = [
   "0 · flush edges, collapsed gaps",
   "space-2xs to space-sm · tight grouping",
   "space-sm to space-md · component padding",
-  "space-md · viewport edge for sections without a frame",
-  "space-2xl to space-3xl · between two unframed sections back to back",
-  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame) — a tall card's sides below md take --tall-inline-phone (36px) instead",
+  "space-md · the frame's minimum edge padding",
+  "space-2xl to space-3xl · the frame's ground and padding steps, not a between-sections step",
+  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame)",
   "space-5xl · the tablet portrait block band",
 ];
 
@@ -173,18 +173,18 @@ const IMAGERY_POINTERS = [
   "Family portraits · circular crops → Components · UI → portrait",
   "A delivered portrait · at least 3× its rendered diameter, never upscaled",
   "Gallery images · masonry, inside the modal only → Components · UI → Gallery → gallery-modal; one photograph full screen → Components · UI → Gallery → photo-viewer",
-  "Couple illustration · held back behind the closing text → Domain · Wishes",
+  "Couple illustration · minimal and elegant, never cartoonish → Domain · Wishes",
 ];
 
 const DURATION_USES = [
-  "fast · the action press and hover, and the opening sequence beat",
-  "base · section and sheet reveals, the modal",
+  "fast · the action press and hover, the opening sequence beat, gallery-modal's layer change and tile hover, photo-viewer's slide",
+  "base · gallery-modal's open and close, photo-viewer's swipe nudge, the lab thread's fade-in",
   "--opening-type-end · 9 × fast (1800ms) · when the Bloom opening's last row of type has landed — the scroll progress bar's track arrives here and the lab thread fades in from here; a new sequence changes this one value",
 ];
 
 const EASING_USES = [
   "entrance · anything appearing",
-  "settle · the action button's press and hover transition",
+  "settle · the action's press and hover, the opening's flower unfurl, gallery-modal's tile hover and round controls, photo-viewer's nudge — retuning it moves all of them",
 ];
 
 const SHAPE_ITEMS: ShapeItem[] = [
@@ -238,28 +238,28 @@ const ICONS = [
   {
     name: "wedding",
     marks: "the church ceremony",
-    nudge: "1",
+    nudge: "1.01",
     stroke: "added stroke",
     Icon: WeddingIcon,
   },
   {
     name: "betrothal",
     marks: "the betrothal",
-    nudge: "0.97",
+    nudge: "0.98",
     stroke: "added stroke",
     Icon: BetrothalIcon,
   },
   {
     name: "reception",
     marks: "the reception",
-    nudge: "1.02",
+    nudge: "1.03",
     stroke: "",
     Icon: ReceptionIcon,
   },
   {
     name: "lunch",
     marks: "the betrothal lunch",
-    nudge: "0.92",
+    nudge: "0.93",
     stroke: "",
     Icon: LunchIcon,
   },
@@ -422,7 +422,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Thin rule separating grouped content within a section. Its only consumer is Event Info's event sheet, after the heading block — the sprig mark was tried there and reverted, since the rule shows only in Event Info's tightest band and a mark that size earns nothing there."
+          description="Thin rule separating grouped content within a section. Its only consumer is Event Info's event sheet, after the heading block. It carries no mark: it shows only in Event Info's tablet band, its tightest, where a mark that size earns nothing."
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
@@ -535,7 +535,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of six marks, plus the seal mark that serves as the site's icon, all traced from drawings made for this invitation."
+        intro="A closed set of six marks, plus the seal mark that serves as the site's icon and three control glyphs (chevron, close, grid) shown on photo-viewer in Components · UI → Gallery, all drawn for this invitation."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -597,7 +597,7 @@ export function FoundationsSections() {
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"
-          spec="nudge 1 · no added stroke · filled around its contour, the one exception to the set's centreline-stroke rule · never below 16px"
+          spec="nudge 1 · no added stroke · filled around its contour, the one exception to the set's centreline-stroke rule · never below 16px of rendered height, not the diagonal size prop"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
             {[

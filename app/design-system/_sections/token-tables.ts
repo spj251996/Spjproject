@@ -86,6 +86,7 @@ export const TYPE_TOKENS: TypeToken[] = [
     token: "type-body-italic",
     family: "Libre Baskerville",
     weight: 400,
+    italic: true,
     sample: "The timeline's promise line and a ritual's tagline.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
@@ -107,6 +108,7 @@ export const TYPE_TOKENS: TypeToken[] = [
     token: "type-caption-italic",
     family: "Libre Baskerville",
     weight: 400,
+    italic: true,
     sample:
       "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
     phone: { size: 11, lh: 22 },
@@ -128,6 +130,7 @@ export const TYPE_TOKENS: TypeToken[] = [
     token: "type-action",
     family: "Libre Baskerville",
     weight: 700,
+    italic: true,
     sample: "Buttons and calls to action.",
     phone: { size: 13, lh: 26 },
     tablet: { size: 14, lh: 28 },
@@ -189,7 +192,7 @@ export const Z_LAYERS: LayerItem[] = [
 ];
 
 export const LOOP_CADENCE_USES = [
-  "--retrace-duration · 3.2s · one loop of the thread's re-trace, the page's one sanctioned loop · set against the thread, not a step on the duration scale · the owner's pick",
+  "--retrace-duration · 3.2s · one loop of the thread's re-trace, governing only when no speed is set · set against the thread, not a step on the duration scale · the owner's pick",
   "--retrace-settle · 1500ms · how long the page must be still before the re-trace loops · a delay of the same kind, the owner's pick",
   "--retrace-loops · 4 · how many whole loops the LONGEST stretch runs before everything stops until the next scroll · a count, so a slower pace never keeps the page busy longer · every shorter stretch fits whole loops into the same window and they quiet together · the owner's pick",
   "--retrace-speed · 845 px/s · the one speed every lit stretch of the re-trace moves at, so a stretch's length never sets its pace · the owner's pick",

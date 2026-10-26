@@ -101,13 +101,13 @@ export function ComponentsSections() {
 
       <GallerySection
         id="ui"
-        intro="Portable primitives: the action, the sprig ornament, the couple's drawn names, portraits, the preview row, the gallery overlay, the full-screen photo viewer and the image stand-in."
+        intro="The UI primitives: the action, portraits, the gallery's preview row, overlay and full-screen viewer, the image stand-in, the sprig ornament and the scroll progress line — plus the couple's drawn names, which are not portable but shared by two sections."
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control: a mark on a small raised disc beside a sentence-case italic label, with no box around it. Used for the map action and for a ritual's photo-row gallery action."
+          description="The page's one control: a mark on a small raised disc beside a sentence-case italic label, with no box around it. Used for the map action, a ritual's photo-row gallery action and the not-found page's way back."
           id="ui-button-action"
           name="button-action"
           note="The three states cannot be posed — hover it on a pointer device to see the disc and label grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
@@ -227,8 +227,11 @@ export function ComponentsSections() {
             <Variant className="w-[160px]" label="1:1 · portrait">
               <ImagePlaceholder height={1} width={1} />
             </Variant>
-            <Variant className="w-[160px]" label="4:5 · gallery previews">
-              <ImagePlaceholder height={5} width={4} />
+            <Variant
+              className="w-[160px]"
+              label="3:2 · a photo-row frame at its cap"
+            >
+              <ImagePlaceholder height={2} width={3} />
             </Variant>
           </div>
         </Specimen>
@@ -288,7 +291,7 @@ export function ComponentsSections() {
           description="A hairline across the top of the screen on / that fills as the guest scrolls. Its track is /'s scroll cue: present from the first screen, it says the page continues before anything has moved."
           id="ui-scroll-progress"
           name="scroll-progress"
-          note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab routes carry none and keep the thread as their cue."
+          note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab route, /thread, carries none and keeps the thread as its cue."
           source="@/components/ui/scroll-progress"
           spec="track --progress-track, ink at 10% · --progress-height, 2px on a phone and 3px from md up · fill --progress-fill, thread-red → thread-vermilion at 82% → thread-core at the leading edge · glow --progress-glow, the thread's vermilion · fixed at the top, z --z-progress (45), under the gallery's scrim · fill = share of the page scrolled, clamped 0–1, exactly 1 at the last scroll position, a page with nothing to scroll reads as full, no transition · the track is server-rendered, so it shows with no script · the track arrives as the opening's last beat at --opening-type-end · aria-hidden, never focusable, unchanged under reduced motion"
         >
