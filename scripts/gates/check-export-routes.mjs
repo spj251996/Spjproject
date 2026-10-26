@@ -35,6 +35,7 @@ const EXPECTED = [
     sections: true,
     progress: 1,
     frames: FIVE_FRAMES,
+    robots: "noindex, nofollow",
   },
   {
     sections: true,
@@ -45,6 +46,7 @@ const EXPECTED = [
     label: "/thread (lab)",
     progress: 0,
     frames: FIVE_FRAMES,
+    robots: "noindex, nofollow",
   },
   /* The not-found screen. Its thread was retired, so what is asserted is that the route exists and
    * carries none.
@@ -54,18 +56,23 @@ const EXPECTED = [
    * today, so asserting one would leave the other unguarded for free.
    *
    * Asserted against the built file, never a served URL: an SPA-fallback rewrite returns the index
-   * document for any unknown path, which has already made a check of `/404` measure the HOME page. */
+   * document for any unknown path, which has already made a check of `/404` measure the HOME page.
+   *
+   * Their one robots tag is Next's own: it injects `noindex` on any 404 by itself, and `not-found.tsx`
+   * takes no metadata export, so a second tag here means a layout is setting robots again. */
   {
     path: "out/404.html",
     roots: 0,
     label: "/404 (not found, served)",
     frames: ["not-found"],
+    robots: "noindex",
   },
   {
     path: "out/_not-found.html",
     roots: 0,
     label: "/_not-found (route-named)",
     frames: ["not-found"],
+    robots: "noindex",
   },
 ];
 const FORBIDDEN = [
@@ -153,7 +160,15 @@ if (existsSync(CSS_DIR)) {
 const frameScope = (/** @type {string} */ name) =>
   `mounted-sheet-frame--${name}`;
 
-for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
+for (const {
+  path,
+  roots,
+  label,
+  sections,
+  progress,
+  frames,
+  robots,
+} of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
     failed = true;
@@ -172,6 +187,24 @@ for (const { path, roots, label, sections, progress, frames } of EXPECTED) {
     const ok = bars === progress;
     console.log(
       `${ok ? "ok  " : "FAIL"} ${label}: ${bars} scroll progress bar(s), expected ${progress}`,
+    );
+    if (!ok) failed = true;
+  }
+
+  /* Required on every row: with no robots tag on the root layout, a route added later carries none
+   * unless its page sets one, and a missing expectation must fail rather than pass by omission. */
+  if (typeof robots !== "string") {
+    console.error(
+      `FAIL ${label}: no expected robots content on this EXPECTED row`,
+    );
+    failed = true;
+  } else {
+    const tags = [
+      ...html.matchAll(/<meta name="robots" content="([^"]*)"\s*\/?>/g),
+    ].map((m) => m[1]);
+    const ok = tags.length === 1 && tags[0] === robots;
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${label}: ${tags.length} robots tag(s) [${tags.join(" | ")}], expected one "${robots}"`,
     );
     if (!ok) failed = true;
   }

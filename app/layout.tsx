@@ -51,10 +51,9 @@ const malayalam = Noto_Serif_Malayalam({
   display: "swap",
 });
 
-/* The invitation is shared by link only. robots.txt stops the crawl; this states the same intent
-   to anything that fetches the page regardless, and metadataBase is what resolves the OpenGraph
-   image to the absolute URL a preview fetcher needs. https, not http: Vercel redirects http, and
-   an http base would emit http image URLs that some clients refuse to load. */
+/* metadataBase is what resolves the OpenGraph image to the absolute URL a preview fetcher needs.
+   https, not http: Vercel redirects http, and an http base would emit http image URLs that some
+   clients refuse to load. */
 const SITE_URL = "https://flemy-weds-sebastian.vercel.app";
 
 /* THE OPENING SEQUENCE'S GATE. The sequence is an ENTRANCE to the invite; a reader who reloads
@@ -84,7 +83,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Sebastian & Flemy",
   description: "You’re invited — 4th & 9th January 2027, Kerala",
-  robots: { index: false, follow: false },
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
      export carries them. Left alone rather than suppressed: they are free, they agree with the og:
      values, and some clients read them as a fallback. Twitterbot itself is blocked in robots.txt,
