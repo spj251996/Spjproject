@@ -202,6 +202,27 @@ try {
         })
         .catch(() => console.log("  fonts did not settle in 5s, continuing"));
 
+      if (state === "scrub") {
+        /* The opening draw lands 3.4s after load (2200ms delay + 1200ms draw); parking a section
+           before then races it, which is what made `scrub` counts differ run to run. Bounded: a page
+           that never opens is reported, not waited on forever. */
+        const opened = await page
+          .waitForSelector("[data-thread-opened]", {
+            state: "attached",
+            timeout: 10000,
+          })
+          .then(() => true)
+          .catch(() => false);
+        if (!opened) {
+          console.log(
+            `  OPENING never landed ${viewport.name}: data-thread-opened absent after 10s`,
+          );
+          failures.push({ label: `opening ${viewport.name}`, missing: true });
+          await page.close();
+          continue;
+        }
+      }
+
       if (falsify) {
         /* Break every connector on purpose. A gate that cannot see this cannot see the
            defect it is here for, and a run that passes under --falsify is the gate failing. */

@@ -678,6 +678,10 @@ export function PageThread() {
           else {
             finish();
             openingCompleteRef.current = true;
+            /* A signal for harnesses, not for styling: the opening draw is timed on its own rAF, and a
+               gate that parks a section before it lands measures the race, not the thread
+               (`check-thread-joins.mjs`). Never set under reduced motion, where no opening runs. */
+            liveSvgRef.current?.setAttribute("data-thread-opened", "true");
             /* The opening draw ends in a stop, not a scroll, so the cue's loop begins now rather than
                after the settle interval a reader's own scroll waits out. */
             rest();
