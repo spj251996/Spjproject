@@ -10,7 +10,7 @@ export const events: WeddingEvent[] = validateEvents([
       {
         id: "engagement-church",
         label: "Betrothal",
-        time: "10:00 AM",
+        time: "11:00 AM",
         venue: "St. Antony's Syro-Malabar Church",
         address: "Paroppadi, Kozhikode, Kerala",
         mapUrl: "https://maps.app.goo.gl/zgM9uq5vf8B5RD7Q9",
@@ -18,7 +18,7 @@ export const events: WeddingEvent[] = validateEvents([
       {
         id: "engagement-reception",
         label: "Reception",
-        time: "12:00 PM",
+        time: "12:30 PM",
         venue: "St. Antony's Church Parish Hall",
         address: "Paroppadi, Kozhikode, Kerala",
         mapUrl: "https://maps.app.goo.gl/zGrd6SAFTZk3gAEx9",
@@ -33,7 +33,7 @@ export const events: WeddingEvent[] = validateEvents([
       {
         id: "wedding-church",
         label: "Wedding",
-        time: "10:00 AM",
+        time: "10:30 AM",
         venue: "St. John the Baptist Catholic Church, Vadakara",
         address: "Koothattukulam, Ernakulam, Kerala",
         mapUrl: "https://maps.app.goo.gl/Js7xUDTPfWqoeTc18",
@@ -41,7 +41,7 @@ export const events: WeddingEvent[] = validateEvents([
       {
         id: "wedding-reception",
         label: "Reception",
-        time: "12:00 PM",
+        time: "12:30 PM",
         venue: "Thuvampallil Convention Centre",
         address: "Koothattukulam, Ernakulam, Kerala",
         mapUrl: "https://maps.app.goo.gl/uHGeZVh5jYNtpMZC9",
