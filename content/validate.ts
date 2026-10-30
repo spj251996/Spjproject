@@ -91,7 +91,7 @@ function claimId(id: string, path: string, seen: Set<string>): void {
 }
 
 /* Malayalam pre-base vowel signs. In LOGICAL order each follows its base consonant; in VISUAL
-   order — how a PDF text layer often stores it — it precedes one. Two of the five ritual titles
+   order — how a PDF text layer often stores it — it precedes one. Two of the ritual titles
    arrived from the couple's PDF that way and would have shipped shaped wrongly.
 
    THE RULE IS "PRECEDED BY", NOT "FOLLOWED BY", and that distinction is the whole check: in

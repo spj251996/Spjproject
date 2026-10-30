@@ -1,8 +1,8 @@
 import type { Ritual } from "./types.ts";
 import { validateRituals } from "./validate.ts";
 
-/* The five celebrations, in order, from the couple's own `Kerala Christian Wedding Traditions`
-   document; every description is the owner's approved rewrite of its prose, ritual by ritual.
+/* The four celebrations, in order, from the couple's own `Kerala Christian Wedding Traditions`
+   document; every description is the couple's own copy, corrected for grammar only.
 
    Two cautions that cost a correction each and must not be undone:
    - **The pendant keeps the couple's own naming** — Minnukettu is the ritual, the sacred Thali the
@@ -33,7 +33,7 @@ export const rituals: Ritual[] = validateRituals([
     malayalam: "മധുരംവെപ്പ്",
     tagline: "Where the celebrations begin with sweetness.",
     description:
-      "On the eve of the wedding, family and loved ones gather to bless the couple with sweets, prayers and good wishes. A cherished Kerala Christian tradition, Madhuramveppu marks the passage from one chapter to the next — honouring the life each has shared with their family before stepping into a new one.",
+      "Madhuramveppu is a pre-wedding tradition, usually held separately at the bride's and groom's homes. On the eve of the betrothal or the wedding, family and loved ones gather to bless the bride and groom with sweets, prayers and good wishes.",
   },
   {
     id: "betrothal",
@@ -41,7 +41,7 @@ export const rituals: Ritual[] = validateRituals([
     malayalam: "മനസ്സമ്മതം",
     tagline: "Where a promise is made.",
     description:
-      "In the presence of their families, witnesses and the Church, the couple formally give their consent to marry. The betrothal marks the beginning of their journey towards the sacrament of marriage — a promise made with faith, intention and the blessing of all who stand with them.",
+      "A sacred commitment made in the presence of family, witnesses and the Church, the betrothal formally declares the couple's intention to marry, marking the beginning of their journey towards the Sacrament of Marriage with faith and blessings.",
   },
   {
     id: "wedding",
@@ -49,22 +49,14 @@ export const rituals: Ritual[] = validateRituals([
     malayalam: "വിവാഹം",
     tagline: "Where two lives become one.",
     description:
-      "Before God and their loved ones, the bride and groom enter into the sacrament of marriage. Through prayer, Scripture and their solemn consent, they promise to walk together in love and faith, sharing in the joys and challenges of the life ahead.",
-  },
-  {
-    id: "exchange-of-rings",
-    title: "Ring Exchange",
-    malayalam: "മോതിരമാറ്റം",
-    tagline: "A promise held in a circle.",
-    description:
-      "Each ring is an unbroken circle — enduring love, faithfulness and companionship, given to one another. With God and those they hold dear as witnesses, the rings they exchange become a promise to go on together, through all that life brings.",
+      "Rooted in the beautiful traditions of the Syro-Malabar Catholic Church, the Sacrament of Marriage celebrates the sacred union of the bride and groom in a lifelong covenant of love. Surrounded by loved ones and blessed by the Church, they freely commit to a life together, receiving the priest's blessing and beginning their journey as husband and wife, grounded in faith, strengthened by God's grace and united in love.",
   },
   {
     id: "tying-the-knot",
-    title: "Tying the knot",
+    title: "Tying the Knot",
     malayalam: "മിന്നുകെട്ട്",
     tagline: "A promise tied close to the heart.",
     description:
-      "Minnukettu is the tying of the sacred Thali — a small leaf-shaped gold pendant bearing the cross. As it is tied around the bride's neck, it becomes a lasting symbol of the covenant and the bond they now share. The Manthrakodi — a silk kasavu saree, gifted and blessed by the groom's family — is then draped over her shoulders, welcoming her into a new chapter surrounded by family and grace.",
+      "The Minnukettu and Manthrakodi are cherished Kerala Christian wedding traditions celebrating love and new beginnings. The Minnukettu is the tying of the sacred, leaf-shaped gold Thali bearing the cross, symbolising the couple's lifelong bond. The Manthrakodi, gifted by the groom's family, welcomes the bride into a new chapter filled with love, blessings and togetherness.",
   },
 ]);

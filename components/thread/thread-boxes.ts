@@ -25,7 +25,7 @@ const TALL_HEIGHTS: SectionHeights = {
      measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
      The thread's route through Celebrations is still composed for the placeholder section: this
      height is real, its shape awaits the redraw. */
-  celebrations: 2173,
+  celebrations: 1895,
   wishes: 700,
 };
 
@@ -37,7 +37,7 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
      measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
      The thread's route through Celebrations is still composed for the placeholder section: this
      height is real, its shape awaits the redraw. */
-  celebrations: 2262,
+  celebrations: 1968,
   wishes: 1180,
 };
 
@@ -49,7 +49,7 @@ const WIDE_HEIGHTS: SectionHeights = {
      measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
      The thread's route through Celebrations is still composed for the placeholder section: this
      height is real, its shape awaits the redraw. */
-  celebrations: 1513,
+  celebrations: 1339,
   wishes: 695,
 };
 

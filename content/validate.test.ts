@@ -133,14 +133,8 @@ test("validateRituals rejects a Malayalam title stored in visual order", () => {
 });
 
 test("validateRituals accepts every shipped Malayalam title", () => {
-  // All five, in logical order. If this fails the rule is over-strict.
-  for (const malayalam of [
-    "മധുരംവെപ്പ്",
-    "മനസ്സമ്മതം",
-    "വിവാഹം",
-    "മോതിരമാറ്റം",
-    "മിന്നുകെട്ട്",
-  ]) {
+  // All four, in logical order. If this fails the rule is over-strict.
+  for (const malayalam of ["മധുരംവെപ്പ്", "മനസ്സമ്മതം", "വിവാഹം", "മിന്നുകെട്ട്"]) {
     assert.doesNotThrow(() => validateRituals([ritual({ malayalam })]));
   }
 });

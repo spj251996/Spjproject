@@ -61,7 +61,7 @@ test("tall band's authored cards, measured on the real render at 393x700", () =>
   assert.deepEqual(authoredCard("celebrations", "tall"), {
     cardWidth: 345,
     cardLeft: 24,
-    sectionHeight: 2173,
+    sectionHeight: 1895,
   });
   assert.deepEqual(authoredCard("wishes", "tall"), {
     cardWidth: 361,
@@ -77,7 +77,7 @@ test("upright band's authored cards, measured on the real render at 820x1180", (
     assert.equal(card.cardLeft, 128, id);
   }
   assert.equal(authoredCard("event-info", "upright").sectionHeight, 2360);
-  assert.equal(authoredCard("celebrations", "upright").sectionHeight, 2262);
+  assert.equal(authoredCard("celebrations", "upright").sectionHeight, 1968);
 });
 
 test("wide band's authored cards, measured on the real render at 1536x695", () => {
@@ -86,7 +86,7 @@ test("wide band's authored cards, measured on the real render at 1536x695", () =
     assert.equal(card.cardWidth, 960, id);
     assert.equal(card.cardLeft, 288, id);
   }
-  assert.equal(authoredCard("celebrations", "wide").sectionHeight, 1513);
+  assert.equal(authoredCard("celebrations", "wide").sectionHeight, 1339);
 });
 
 test("Flemy's and Sebastian's portrait centres are recorded for every band, as a fraction of the family card", () => {

@@ -30,7 +30,7 @@ const TALL_CARDS: Sections = {
      measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
      The thread's route through Celebrations is still composed for the placeholder section: this
      height is real, its shape awaits the redraw. */
-  celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 2173 },
+  celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 1895 },
   wishes: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
 };
 
@@ -42,7 +42,7 @@ const UPRIGHT_CARDS: Sections = {
      measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
      The thread's route through Celebrations is still composed for the placeholder section: this
      height is real, its shape awaits the redraw. */
-  celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 2262 },
+  celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 1968 },
   wishes: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
 };
 
@@ -54,7 +54,7 @@ const WIDE_CARDS: Sections = {
      measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
      The thread's route through Celebrations is still composed for the placeholder section: this
      height is real, its shape awaits the redraw. */
-  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1513 },
+  celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1339 },
   wishes: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
 };
 
