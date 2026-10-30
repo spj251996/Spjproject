@@ -254,12 +254,14 @@ try {
           continue;
         }
         /* The Next dev-tools badge turns into a red pill the moment the dev server has anything to
-           say, and would read as a second piece of ink. The thread itself needs no isolation: the
+           say, and would read as a second piece of ink. The thread review panel's button is fixed
+           over the thread's right-hand run, so a section screenshot taller than the window draws it
+           mid-crop as a gap in the line (it split Celebrations in two at tall). The thread itself needs no isolation: the
            page thread is one SVG over all of `<main>` (and Wishes' card thread lives inside its own
            section), so the section-clipped screenshot already holds only this section's stretch. */
         await page.evaluate(() => {
           for (const portal of /** @type {NodeListOf<HTMLElement>} */ (
-            document.querySelectorAll("nextjs-portal")
+            document.querySelectorAll("nextjs-portal, [data-thread-review]")
           )) {
             portal.style.display = "none";
           }
