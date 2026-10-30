@@ -199,7 +199,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     token: "circle",
     radius: "9999px",
     value: "—",
-    usage: "portrait's crop; button-action's disc.",
+    usage: "portrait's crop; button-action's pill.",
   },
 ];
 

@@ -107,19 +107,19 @@ export function ComponentsSections() {
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control: a mark on a small raised disc beside a sentence-case italic label, with no box around it. Used for the map action, a ritual's photo-row gallery action and the not-found page's way back. The map action alone takes the pill ground — the same paper widened to hold the mark and an upright label."
+          description="The page's one control: a sentence-case italic label with no box around it. Used for the map action, a ritual's photo-row gallery action and the not-found page's way back. The map action alone takes the pill ground — a piece of the card's paper holding the map mark and an upright label."
           id="ui-button-action"
           name="button-action"
-          note="The three states cannot be posed — hover it on a pointer device to see the disc and label grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
+          note="The three states cannot be posed — hover it on a pointer device to see the label (or the whole pill) grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
           source="@/components/ui/button-action"
           spec={[
-            "rest · the mark on an --action-disc (32px) disc in the bare surface-elevated colour with the mount shadow — never the bg-surface-elevated utility, which would lay the stock's grain; no fill, border or lift on the control itself",
-            "pill ground · the map action's alone: the disc's paper at full radius holds the mark and the label on one line, never wrapping — space-3xs block, space-3xs at the start, space-2xs at the end, space-3xs between — the mark keeps its 32px box with no paper of its own, and the label sets upright",
-            "the mark is scaled on the disc, never resized by its size prop — each mark's box derives from its own drawing's diagonal, so equal sizes give unequal boxes; the scale moves with the disc in proportion, so the mark keeps its share of the circle",
-            "hover · the disc and label scale 1.06 and thicken optically — label 0.35px either side, mark 0.4px all round — so nothing reflows",
+            "rest · plain ground: the italic label alone — no fill, border, lift or paper on the control",
+            "pill ground · the map action's alone: paper in the bare surface-elevated colour with the mount shadow, at full radius — never the bg-surface-elevated utility, which would lay the stock's grain — holds the mark and the label on one line, never wrapping; space-3xs block, space-3xs at the start, space-2xs at the end, space-3xs between; the label sets upright",
+            "the mark sits in a square --action-disc (32px) box with no paper of its own, scaled there and never resized by its size prop — each mark's box derives from its own drawing's diagonal, so equal sizes give unequal boxes; the scale moves with the box in proportion",
+            "hover · the label (in the pill ground, the whole pill) scales 1.06 and thickens optically — label 0.35px either side, mark 0.4px all round — so nothing reflows",
             "press · the whole mark dims",
             "focus · the focus ring on the target, never transitioned; in the pill ground it rounds with the pill",
-            "the target is transparent and at least --touch-target (44px) each way, so the hit area stays full size whatever the disc does",
+            "the target is transparent and at least --touch-target (44px) each way, so the hit area stays full size whatever the mark does",
             "a web destination opens in its own tab; a link home stays in this one",
           ]}
         >
