@@ -55,6 +55,7 @@ import {
   tipGroupIndex,
 } from "./thread-retrace";
 import type { PieceSamples } from "./thread-samples";
+import { createThreadSpikes, type ThreadSpikes } from "./thread-spikes";
 import {
   headOptions,
   readTerminalWindow,
@@ -242,15 +243,19 @@ export function PageThread() {
      line where it was, never unravel it. `CardThread` owns its own; the two maxima are in
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
+  /* TEMPORARY: the review panel's twist and sway spikes (`thread-spikes.ts`). */
+  const spikesRef = useRef<ThreadSpikes | null>(null);
 
   /* The `d` of a chain piece that lives in this `<svg>`, or nothing for the card thread's. */
-  const pathOf = useCallback(
-    (index: number) =>
-      index < piecesRef.current.length
-        ? (pathsRef.current[index]?.getAttribute("d") ?? undefined)
-        : undefined,
-    [],
-  );
+  const pathOf = useCallback((index: number) => {
+    if (index >= piecesRef.current.length) return undefined;
+    const path = pathsRef.current[index];
+    if (path === null || path === undefined) return undefined;
+    /* TEMPORARY (review panel): a swaying `d` is not the geometry; the spike holds the unswayed one. */
+    return (
+      spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
+    );
+  }, []);
 
   const head = useCallback((): HeadPainter | null => {
     const group = headGroupRef.current;
@@ -445,6 +450,7 @@ export function PageThread() {
   const draw = useCallback(
     (drawn: number) => {
       applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
+      spikesRef.current?.painted(drawn);
       head()?.paint(drawn, chainRef.current, headOptions());
       const first = piecesRef.current[0];
       if (first !== undefined) taper()?.paint(paintedLength(drawn, first));
@@ -544,6 +550,14 @@ export function PageThread() {
     });
     piecesRef.current = trunkPieces;
     chainRef.current = pieces;
+    spikesRef.current ??= createThreadSpikes(
+      liveSvg,
+      taperGroupRef.current,
+      TRUNK_CUT_ID,
+      () => 0,
+      reducedMotion(),
+    );
+    spikesRef.current.measured(pathsRef.current, trunkPieces, main);
     stopRetrace();
     head()?.reset();
     const invitePiece = trunkPieces[0];
@@ -569,6 +583,7 @@ export function PageThread() {
       stopOpeningRef.current();
       catchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
+      spikesRef.current?.painted(Number.POSITIVE_INFINITY);
       taper()?.paint(Number.POSITIVE_INFINITY);
     } else {
       /* The path this ratchet's maximum was measured against no longer exists. The maximum is
@@ -771,6 +786,7 @@ export function PageThread() {
         window.clearTimeout(settleTimerRef.current);
       }
       stopRetrace();
+      spikesRef.current?.stop();
     },
     [stopRetrace],
   );

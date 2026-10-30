@@ -43,6 +43,7 @@ import {
   totalLength,
 } from "./thread-progress";
 import type { PieceSamples } from "./thread-samples";
+import { createThreadSpikes, type ThreadSpikes } from "./thread-spikes";
 import {
   headOptions,
   readTerminalWindow,
@@ -118,13 +119,18 @@ export function CardThread() {
      ratchet to do it: this component's maximum is a length along the card thread's path, which is not the
      trunk's (`PageThread`'s own `ratchetRef`). */
   const ratchetRef = useRef(createDrawRatchet());
+  /* TEMPORARY: the review panel's twist and sway spikes (`thread-spikes.ts`). */
+  const spikesRef = useRef<ThreadSpikes | null>(null);
 
   /* The `d` of a chain piece that lives in THIS `<svg>`, or nothing for the trunk's. */
   function pathOf(index: number): string | undefined {
-    return index >= firstPieceRef.current
-      ? (pathsRef.current[index - firstPieceRef.current]?.getAttribute("d") ??
-          undefined)
-      : undefined;
+    if (index < firstPieceRef.current) return undefined;
+    const path = pathsRef.current[index - firstPieceRef.current];
+    if (path === null || path === undefined) return undefined;
+    /* TEMPORARY (review panel): a swaying `d` is not the geometry; the spike holds the unswayed one. */
+    return (
+      spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
+    );
   }
 
   function head(): HeadPainter | null {
@@ -157,6 +163,7 @@ export function CardThread() {
 
   function paintCard(drawn: number) {
     applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
+    spikesRef.current?.painted(drawn);
     head()?.paint(drawn, chainRef.current, headOptions());
     const last = piecesRef.current[piecesRef.current.length - 1];
     if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
@@ -181,6 +188,7 @@ export function CardThread() {
     if (reducedMotion()) {
       cardCatchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
+      spikesRef.current?.painted(Number.POSITIVE_INFINITY);
       taper()?.paint(Number.POSITIVE_INFINITY);
       return;
     }
@@ -262,6 +270,14 @@ export function CardThread() {
     piecesRef.current = wishesPieces;
     chainRef.current = pieces;
     firstPieceRef.current = range.start;
+    spikesRef.current ??= createThreadSpikes(
+      svg,
+      taperGroupRef.current,
+      CARD_CUT_ID,
+      (count) => count - 1,
+      reducedMotion(),
+    );
+    spikesRef.current.measured(pathsRef.current, wishesPieces, main);
     head()?.reset();
     retrace()?.hide();
     const closingPiece = wishesPieces[wishesPieces.length - 1];
@@ -317,6 +333,7 @@ export function CardThread() {
     return () => {
       cardRetraces.delete(painter);
       painter.hide();
+      spikesRef.current?.stop();
     };
   }, []);
 

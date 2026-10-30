@@ -16,6 +16,9 @@ export type VariantOption = {
   /* Custom properties set on `<html>` while this option is chosen. A painter that reads its value in
      code instead asks `readVariant`, so an option may carry none. */
   readonly properties?: Readonly<Record<string, string>>;
+  /* A stylesheet added to `<head>` while this option is chosen, for a value that must follow a media
+     query, which an inline property cannot. */
+  readonly css?: string;
 };
 
 export type VariantAxis = {
@@ -26,7 +29,53 @@ export type VariantAxis = {
 
 /* One axis per decision; the shipped value is the absence of a choice, never an option here, so the
    panel cannot show a stale "shipped" that differs from what ships. */
-export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [];
+export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
+  /* Task 3's twist: the long lay the owner liked best (2026-10-30), as measured off the reference
+     and one change from it per option (`ROPES`). Ticks on mechanism (b) are still parsed, not offered. */
+  {
+    id: "twist",
+    label: "Twist · long lay (spike)",
+    options: [
+      { id: "long-ref", label: "Long lay · as the reference" },
+      { id: "long-tight", label: "Tighter lay (more strands, steeper)" },
+      { id: "long-loose", label: "Looser lay (fewer strands, flatter)" },
+      { id: "long-gaps", label: "Wider gaps" },
+      { id: "long-soft", label: "Softer gaps (less light)" },
+      { id: "long-bright", label: "Brighter gaps" },
+      { id: "long-round", label: "Rounder strands (more bow)" },
+    ],
+  },
+  /* Laptop and desktop only: the phone keeps 1.6px. A media rule, not an inline property, so the
+     width follows the window across the 64rem line. */
+  {
+    id: "width",
+    label: "Line width from laptop up",
+    options: [
+      {
+        id: "2.2",
+        label: "2.2px (picked)",
+        css: "@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
+      },
+    ],
+  },
+  /* Task 3's sway spike: the owner's pick, sway + gust at 8px, and one change from it per option
+     (`parseSway`). */
+  {
+    id: "sway",
+    label: "Sway (spike)",
+    options: [
+      { id: "sg-8-p7-e8-g50", label: "Sway + gust · 8px (as picked)" },
+      { id: "sg-8-p11-e8-g50", label: "Slower sway (11s)" },
+      { id: "sg-8-p4-e8-g50", label: "Faster sway (4s)" },
+      { id: "sg-8-p7-e5-g50", label: "Gusts more often (every 5s)" },
+      { id: "sg-8-p7-e13-g50", label: "Gusts rarer (every 13s)" },
+      { id: "sg-8-p7-e8-g70", label: "More gust, less sway" },
+      { id: "sg-8-p7-e8-g30", label: "More sway, less gust" },
+      { id: "sg-10-p7-e8-g50", label: "Bigger · 10px" },
+      { id: "sg-12-p7-e8-g50", label: "Bigger · 12px" },
+    ],
+  },
+];
 
 export const THREAD_VARIANT_STORAGE_KEY = "thread-review";
 
@@ -50,5 +99,5 @@ export function variantBootScript(
 ): string {
   const known = JSON.stringify(axes);
   const key = JSON.stringify(THREAD_VARIANT_STORAGE_KEY);
-  return `(function(){try{var axes=${known};var chosen=JSON.parse(localStorage.getItem(${key})||"{}");if(!chosen||typeof chosen!=="object")return;var root=document.documentElement;axes.forEach(function(axis){var id=chosen[axis.id];var option=axis.options.filter(function(o){return o.id===id;})[0];if(!option)return;root.setAttribute("data-thread-variant-"+axis.id,option.id);var props=option.properties||{};Object.keys(props).forEach(function(name){root.style.setProperty(name,props[name]);});});}catch(e){}})();`;
+  return `(function(){try{var axes=${known};var chosen=JSON.parse(localStorage.getItem(${key})||"{}");if(!chosen||typeof chosen!=="object")return;var root=document.documentElement;axes.forEach(function(axis){var id=chosen[axis.id];var option=axis.options.filter(function(o){return o.id===id;})[0];if(!option)return;root.setAttribute("data-thread-variant-"+axis.id,option.id);var props=option.properties||{};Object.keys(props).forEach(function(name){root.style.setProperty(name,props[name]);});if(option.css){var sheet=document.createElement("style");sheet.setAttribute("data-thread-variant-css",axis.id);sheet.textContent=option.css;document.head.appendChild(sheet);}});}catch(e){}})();`;
 }
