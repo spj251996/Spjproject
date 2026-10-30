@@ -138,7 +138,7 @@ test("Event Info is two columns at every tier, details left, map pill on the ven
   assert.equal(withClasses(eventInfo, "grid-cols-1").length, 0);
   assert.ok(withClasses(eventInfo, "items-start", "text-left").length > 0);
   /* The pill's left edge is the target's own, so it sits on the venue's first letter with nothing
-     pulling it back (owner, 2026-10-30) — the disc ground's `-ms-space-sm` inset is gone. */
+     pulling it back (owner, 2026-10-30) — the old disc layout's `-ms-space-sm` inset is gone. */
   assert.match(
     eventInfo,
     /<ButtonAction[^>]*className="mt-space-2xs"[^>]*ground="pill"/,

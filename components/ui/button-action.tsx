@@ -16,8 +16,8 @@ const targetClassName =
    the focus ring the target draws. */
 const markClassName = [
   "type-action inline-flex items-center text-accent-gold",
-  /* Hover thickens the mark optically — a heavier cut would widen the text and shift the disc
-     sideways on every hover, which the mark's no-reflow requirement forbids. */
+  /* Hover thickens the mark optically — a heavier cut would widen the text and shift it sideways on
+     every hover, which the mark's no-reflow requirement forbids. */
   "group-hover:[transform:scale(1.06)]",
   "group-hover:[text-shadow:0.35px_0_0_currentColor,-0.35px_0_0_currentColor]",
   "group-hover:[&_svg]:[filter:drop-shadow(0_0_0.4px_currentColor)]",
@@ -29,12 +29,16 @@ const markClassName = [
   "motion-safe:transition-[transform,text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle",
 ].join(" ");
 
-const discMarkClassName = "gap-space-xs px-space-sm py-space-3xs";
+/* The plain ground is the label alone, italic in the card's own written voice, with no paper: an
+   action reads as part of the card, not as a control borrowed from an application. */
+const plainMarkClassName = "gap-space-xs px-space-sm py-space-3xs";
 
-/* THE PILL GROUND IS THE MAP ACTION'S ALONE (owner, 2026-10-30): the disc's paper widened to hold the
-   mark and an upright label, so a guest reads "Get directions" as the way to the venue rather than
-   as a line of the card's prose. It is the same paper, not a fill — the bare surface colour and the
-   mount shadow, at full radius — and the gallery and not-found actions keep the disc.
+/* THE PILL GROUND IS THE MAP ACTION'S ALONE (owner, 2026-10-30): a piece of the card's paper holding
+   the mark and an upright label, so a guest reads "Get directions" as the way to the venue rather
+   than as a line of the card's prose. It is paper, not a fill — the surface's colour and the mount
+   shadow, at full radius. The colour is the token used bare, not the `bg-surface-elevated` utility:
+   that utility also lays the stock's grain, and a tile sized for a whole sheet reads as noise
+   inside a shape this small.
 
    Tight on purpose, and never wrapping: at the looser space-2xs / space-sm the label broke onto a
    second line on a 320px phone and the pill swelled into a 60px capsule (owner, 2026-10-30). */
@@ -43,34 +47,25 @@ const pillMarkClassName = [
   "gap-space-3xs ps-space-3xs pe-space-2xs py-space-3xs whitespace-nowrap",
 ].join(" ");
 
-/* The mark sits on its own raised disc: the stock's own surface and shadow, so it reads as a small
-   piece of paper laid on the card rather than a control borrowed from an application. In the pill
-   ground the paper is the pill's, so the disc keeps only its box. */
-const discPaperClassName = "bg-(--color-surface-elevated) shadow-mount";
-
-const discClassName = [
-  "inline-flex shrink-0 items-center justify-center rounded-full",
-  /* The token as a bare colour, not the `bg-surface-elevated` utility: that utility also lays the
-     stock's grain, and a tile sized for a whole sheet reads as noise inside a circle this small
-     The disc wants the surface's colour and its shadow, nothing else.
-
-     `--action-disc`, not `--touch-target`: this size is visual only. The target's own
-     `min-h/min-w-(--touch-target)` holds the 44px hit area and must stay. */
-  "size-(--action-disc)",
+/* The mark's box carries no paper of its own (the disc's paper was retired 2026-10-30: the only
+   mark sits on the pill). `--action-disc`, not `--touch-target`: this size is visual only. The
+   target's own `min-h/min-w-(--touch-target)` holds the 44px hit area and must stay. */
+const markBoxClassName = [
+  "inline-flex shrink-0 items-center justify-center size-(--action-disc)",
   /* Scaled here rather than by raising each caller's `size`: `IconBase` derives its box from the
      drawing's own DIAGONAL, so equal `size` values across different marks do not give equal
-     rendered boxes, and a uniform scale keeps each mark's aspect while filling more of the disc.
+     rendered boxes, and a uniform scale keeps each mark's aspect while filling more of the box.
 
-     1.2 is 1.65 x 32/44 — the scale the 44px disc carried, held in proportion as the disc came
-     down, so the mark keeps its share of the circle and reads as the same drawing rather than a
-     crowded one. Move it with `--action-disc` or not at all. */
+     1.2 is 1.65 x 32/44 — the scale the 44px box carried, held in proportion as the box came down,
+     so the mark keeps its share of it and reads as the same drawing rather than a crowded one.
+     Move it with `--action-disc` or not at all. */
   "[&_svg]:[transform:scale(1.2)]",
 ].join(" ");
 
 type ButtonActionProps = {
   children: ReactNode;
   className?: string;
-  ground?: "disc" | "pill";
+  ground?: "plain" | "pill";
   /* Marks are already hidden from assistive technology (icons/icon-base.tsx), so the accessible
      name stays the label. */
   mark?: ReactNode;
@@ -80,7 +75,7 @@ type ButtonActionProps = {
 export function ButtonAction({
   children,
   className,
-  ground = "disc",
+  ground = "plain",
   mark,
   "aria-label": accessibleName,
   href,
@@ -92,15 +87,9 @@ export function ButtonAction({
   const composed = `${targetClassName}${pill ? " rounded-full" : ""} ${className ?? ""}`;
   const label = (
     <span
-      className={`${markClassName} ${pill ? pillMarkClassName : discMarkClassName} justify-center`}
+      className={`${markClassName} ${pill ? pillMarkClassName : plainMarkClassName} justify-center`}
     >
-      {mark !== undefined && (
-        <span
-          className={`${discClassName}${pill ? "" : ` ${discPaperClassName}`}`}
-        >
-          {mark}
-        </span>
-      )}
+      {mark !== undefined && <span className={markBoxClassName}>{mark}</span>}
       {children}
     </span>
   );

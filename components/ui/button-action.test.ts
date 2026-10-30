@@ -51,27 +51,27 @@ test("type-action carries no capitals and no tracking tuned for them", () => {
   );
 });
 
-// The utility also lays the stock's grain, which reads as noise inside a circle this small.
-test("the disc takes the surface colour bare, never the grained utility", () => {
+// The utility also lays the stock's grain, which reads as noise inside a shape this small.
+test("the pill takes the surface colour bare, never the grained utility", () => {
   assert.match(buttonAction, /bg-\(--color-surface-elevated\)/);
   assert.doesNotMatch(buttonAction, /(^|[\s"'`])bg-surface-elevated/);
 });
 
-test("the mark is scaled on the disc rather than sized by class", () => {
+test("the mark is scaled in its box rather than sized by class", () => {
   assert.match(buttonAction, /\[&_svg\]:\[transform:scale\(/);
 });
 
-/* The disc was `--touch-target` until 2026-10-07, so its size WAS the 44px accessibility floor.
-   Shrinking it to 32 only works because the target carries the floor itself; if that ever moves
-   back onto the disc, the disc's size silently becomes the hit area again and no render check
-   would report it as a failure — it would just be a smaller tap target. */
-test("the disc has its own size token and is no longer the touch target", () => {
+/* The mark's box was `--touch-target` until 2026-10-07, so its size WAS the 44px accessibility
+   floor. Shrinking it to 32 only works because the target carries the floor itself; if that ever
+   moves back onto the box, its size silently becomes the hit area again and no render check would
+   report it as a failure — it would just be a smaller tap target. */
+test("the mark's box has its own size token and is not the touch target", () => {
   assert.match(tokens, /--action-disc:\s*32px/);
   assert.match(buttonAction, /size-\(--action-disc\)/);
   assert.doesNotMatch(
     buttonAction,
     /size-\(--touch-target\)/,
-    "the disc must not be sized by the touch target again",
+    "the mark's box must not be sized by the touch target again",
   );
 });
 
@@ -82,19 +82,19 @@ test("the target keeps the touch-target floor on both axes", () => {
 });
 
 /* An owner-tuned constant with nothing pinning it is how a fitting step silently overwrites a
-   value someone chose by eye. 1.2 is 1.65 x 32/44: the scale the 44px disc carried, held in
-   proportion as the disc came down, so the mark keeps its share of the circle. The ratio is
-   asserted rather than the bare number, so moving the disc without moving the scale fails here
-   instead of rendering a crowded or a lost mark. */
-test("the mark's scale is in proportion to the disc", () => {
+   value someone chose by eye. 1.2 is 1.65 x 32/44: the scale the 44px box carried, held in
+   proportion as the box came down, so the mark keeps its share of it. The ratio is asserted rather
+   than the bare number, so moving the box without moving the scale fails here instead of rendering
+   a crowded or a lost mark. */
+test("the mark's scale is in proportion to its box", () => {
   const scale = /\[&_svg\]:\[transform:scale\(([\d.]+)\)\]/.exec(buttonAction);
-  assert.ok(scale, "no mark scale found on the disc");
+  assert.ok(scale, "no mark scale found on the mark's box");
   const disc = /--action-disc:\s*(\d+)px/.exec(tokens);
   assert.ok(disc, "no --action-disc in tokens.css");
   const expected = (1.65 * Number(disc[1])) / 44;
   assert.ok(
     Math.abs(Number(scale[1]) - expected) < 0.005,
-    `the mark is scaled ${scale[1]} on a ${disc[1]}px disc; in proportion it should be ${expected.toFixed(3)}`,
+    `the mark is scaled ${scale[1]} in a ${disc[1]}px box; in proportion it should be ${expected.toFixed(3)}`,
   );
 });
 
@@ -117,9 +117,9 @@ function classList(name: string) {
   return [...match[1].matchAll(/"([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
 }
 
-/* The pill is the disc's own paper widened (owner, 2026-10-30), so it must carry exactly the
-   paper's two parts — the bare surface colour and the mount shadow — and set the label upright. */
-test("the pill ground lays the disc's paper on the whole mark and sets the label upright", () => {
+/* The pill is the card's own paper (owner, 2026-10-30), so it must carry exactly the paper's two
+   parts — the bare surface colour and the mount shadow — and set the label upright. */
+test("the pill ground lays paper under the mark and label and sets the label upright", () => {
   const pill = classList("pillMarkClassName");
   for (const utility of [
     "bg-(--color-surface-elevated)",
@@ -153,23 +153,60 @@ test("the pill holds its label on one line: tight padding and no wrap", () => {
   }
 });
 
-test("the disc ground is today's look and stays the default", () => {
-  assert.match(buttonAction, /ground\s*=\s*"disc"/);
-  const disc = classList("discMarkClassName");
+/* The disc's paper is retired (owner, 2026-10-30): no caller but the map action ever carried a mark,
+   and the map action moved onto the pill, so a paper disc rendered nowhere. The plain ground is the
+   label alone, italic, with no paper of any kind. */
+test("the plain ground is the default: an italic label with no paper", () => {
+  assert.match(buttonAction, /ground\s*=\s*"plain"/);
+  const plain = classList("plainMarkClassName");
   for (const utility of ["gap-space-xs", "px-space-sm", "py-space-3xs"]) {
-    assert.ok(disc.includes(utility), `the disc ground lacks ${utility}`);
+    assert.ok(plain.includes(utility), `the plain ground lacks ${utility}`);
   }
-  assert.ok(
-    !disc.includes("not-italic"),
-    "the disc ground's label stays italic",
-  );
-  assert.deepEqual(classList("discPaperClassName").sort(), [
+  for (const paper of [
+    "not-italic",
     "bg-(--color-surface-elevated)",
     "shadow-mount",
-  ]);
+    "rounded-full",
+  ]) {
+    assert.ok(!plain.includes(paper), `the plain ground carries ${paper}`);
+  }
 });
 
-/* "View photos" and the not-found page's way back keep the disc (owner, 2026-10-30): a second
+test("the pill is the only paper: the mark's box carries none", () => {
+  assert.equal(
+    buttonAction.split("bg-(--color-surface-elevated)").length - 1,
+    1,
+    "the surface colour is laid once, on the pill",
+  );
+  assert.equal(
+    buttonAction.split("shadow-mount").length - 1,
+    1,
+    "the mount shadow is laid once, on the pill",
+  );
+  const box = classList("markBoxClassName");
+  assert.ok(
+    box.includes("size-(--action-disc)"),
+    "the mark's box lost its size",
+  );
+  assert.doesNotMatch(buttonAction, /discPaperClassName|discMarkClassName/);
+});
+
+/* The class lists above say what each ground carries; this says which ground gets which. Without it a
+   swapped branch passes every other test while turning "View photos" into a pill and the map action
+   back into an italic label — and "View photos" cannot be rendered until a ritual has photographs. */
+test("ground decides the classes: the pill side takes the pill, the plain side the plain label", () => {
+  assert.match(
+    buttonAction,
+    /pill\s*\?\s*pillMarkClassName\s*:\s*plainMarkClassName/,
+  );
+  assert.match(
+    buttonAction,
+    /\$\{pill\s*\?\s*" rounded-full"\s*:\s*""\}/,
+    "only the pill ground rounds the target its focus ring is drawn on",
+  );
+});
+
+/* "View photos" and the not-found page's way back stay plain labels (owner, 2026-10-30): a second
    caller taking the pill is a design change, not a refactor. */
 test("only the map action takes the pill", () => {
   /* Every shipped caller, found rather than listed, so a new one is covered the day it appears. The
@@ -195,7 +232,7 @@ test("only the map action takes the pill", () => {
   assert.deepEqual(pills, ["app/_sections/event-info.tsx"]);
 });
 
-// Bold is a deliberate departure from type-body-italic's 400, giving an action presence beside its disc.
+// Bold is a deliberate departure from type-body-italic's 400, giving an action presence on the card.
 test("the action role keeps its bold weight and drops the caps-era tracking", () => {
   assert.match(tokens, /--text-action--font-weight:\s*700/);
   assert.match(
