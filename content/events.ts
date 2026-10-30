@@ -10,7 +10,7 @@ export const events: WeddingEvent[] = validateEvents([
       {
         id: "engagement-church",
         label: "Betrothal",
-        time: "11:00 AM",
+        time: "10:30 AM",
         venue: "St. Antony's Syro-Malabar Church",
         address: "Paroppadi, Kozhikode, Kerala",
         mapUrl: "https://maps.app.goo.gl/zgM9uq5vf8B5RD7Q9",
