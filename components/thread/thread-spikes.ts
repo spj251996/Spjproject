@@ -185,11 +185,17 @@ type Tracked = {
   weights: Float32Array | null;
   top: number;
   bottom: number;
+  /* The flattened path's length unswayed, and as last written. */
+  length0: number;
+  length: number;
 };
 
 function parse(
   d: string,
-): Pick<Tracked, "parts" | "numbers" | "top" | "bottom"> {
+): Pick<
+  Tracked,
+  "parts" | "numbers" | "top" | "bottom" | "length0" | "length"
+> {
   const numbers = (d.match(NUMBER) ?? []).map(Number);
   const parts = d.split(NUMBER);
   let top = Number.POSITIVE_INFINITY;
@@ -198,7 +204,14 @@ function parse(
     top = Math.min(top, numbers[i]);
     bottom = Math.max(bottom, numbers[i]);
   }
-  return { parts, numbers, top, bottom };
+  let length0 = 0;
+  for (let i = 2; i < numbers.length; i += 2) {
+    length0 += Math.hypot(
+      numbers[i] - numbers[i - 2],
+      numbers[i + 1] - numbers[i - 1],
+    );
+  }
+  return { parts, numbers, top, bottom, length0, length: length0 };
 }
 
 function createSway(svg: SVGSVGElement, sway: Sway) {
@@ -256,6 +269,9 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     entry.weights ??= weightsFor(entry);
     const { numbers, parts, weights } = entry;
     let out = parts[0];
+    let length = 0;
+    let px = 0;
+    let py = 0;
     for (let i = 0; i < numbers.length; i += 2) {
       const w = weights[i / 2] * sway.amplitude;
       let x = numbers[i];
@@ -265,8 +281,12 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         x += w * fx;
         y += w * fy;
       }
+      if (i > 0) length += Math.hypot(x - px, y - py);
+      px = x;
+      py = y;
       out += `${x.toFixed(2)}${parts[i + 1]}${y.toFixed(2)}${parts[i + 2] ?? ""}`;
     }
+    entry.length = length;
     return out;
   }
 
@@ -292,6 +312,47 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       entry.written = next;
       path.setAttribute("d", next);
     }
+    rescaleDash(path, entry);
+  }
+
+  /* THE INK'S DASH FOLLOWS THE SWAY. The painter writes each piece's dash in its unswayed length, and
+     a swaying piece is longer (by 2-3.4px measured at 8-12px), so a finished piece stopped short of
+     its end and every join showed a gap. `pathLength` would rescale it for free, but WebKit then drew
+     pieces ahead of the tip, several at once (bug 258897, seen on an iPhone). So the dash the painter
+     wrote is kept as the base and scaled by the piece's own swayed-to-unswayed length: the drawn
+     fraction is unchanged and a finished piece reaches its end. */
+  const dashes = new WeakMap<
+    SVGPathElement,
+    { array: number; offset: number; wroteArray: string; wroteOffset: string }
+  >();
+  function rescaleDash(path: SVGPathElement, entry: Tracked) {
+    if (path.dataset.threadPiece === undefined) return;
+    const currentArray = path.style.strokeDasharray;
+    const currentOffset = path.style.strokeDashoffset;
+    if (currentArray === "") return;
+    let dash = dashes.get(path);
+    if (
+      dash === undefined ||
+      currentArray !== dash.wroteArray ||
+      currentOffset !== dash.wroteOffset
+    ) {
+      dash = {
+        array: Number.parseFloat(currentArray),
+        offset: Number.parseFloat(currentOffset) || 0,
+        wroteArray: currentArray,
+        wroteOffset: currentOffset,
+      };
+      dashes.set(path, dash);
+    }
+    const k = entry.length0 > 0 ? entry.length / entry.length0 : 1;
+    const array = String(dash.array * k);
+    const offset = String(dash.offset * k);
+    if (path.style.strokeDasharray !== array)
+      path.style.strokeDasharray = array;
+    if (path.style.strokeDashoffset !== offset)
+      path.style.strokeDashoffset = offset;
+    dash.wroteArray = path.style.strokeDasharray;
+    dash.wroteOffset = path.style.strokeDashoffset;
   }
 
   const seconds = () => (performance.now() - start) / 1000;
@@ -304,15 +365,16 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     for (const record of records) {
       const path = record.target as SVGPathElement;
       const entry = track(path);
-      if (entry !== undefined && entry.written === entry.base)
-        write(path, entry, t, band);
+      if (entry === undefined) continue;
+      if (record.attributeName === "style") rescaleDash(path, entry);
+      else if (entry.written === entry.base) write(path, entry, t, band);
     }
   });
   const observe = () =>
     observer.observe(svg, {
       subtree: true,
       attributes: true,
-      attributeFilter: ["d"],
+      attributeFilter: ["d", "style"],
     });
   observe();
 
@@ -546,7 +608,6 @@ function createTwist(
           copy.style.stroke = stroke;
           copy.style.strokeWidth = "var(--stroke-thread)";
           copy.setAttribute("d", baseOf(ink));
-          copy.setAttribute("pathLength", String(length));
           copy.style.display = "none";
           holder.append(copy);
           copies[index] = copy;
@@ -631,13 +692,11 @@ export function createThreadSpikes(
       main: Element,
     ) {
       if (sway !== undefined) {
-        /* The ink's dash is in its UNSWAYED length; a swaying path is a little longer, so its own
-           length is pinned to the unswayed one or a finished piece would stop short of its end. */
-        inks.forEach((ink, index) => {
-          const piece = pieces[index];
-          if (ink === null || ink === undefined || piece === undefined) return;
-          ink.setAttribute("pathLength", String(piece.end - piece.start));
-        });
+        /* NO `pathLength`. The ink's dash is in its unswayed length, and a swaying piece is a hair
+           longer, so pinning `pathLength` to the unswayed length looked right — but WebKit (Safari,
+           and every iOS browser) then drew pieces ahead of the tip, several at once (WebKit bug
+           258897, seen on an iPhone). The sway lengthens a piece by far less than a pixel; the round
+           cap covers the difference. */
         const mainRect = main.getBoundingClientRect();
         sway.measured(
           obstacleBoxes(main, mainRect),
