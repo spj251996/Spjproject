@@ -40,11 +40,12 @@ const plainMarkClassName = "gap-space-xs px-space-sm py-space-3xs";
    that utility also lays the stock's grain, and a tile sized for a whole sheet reads as noise
    inside a shape this small.
 
-   Tight on purpose, and never wrapping: at the looser space-2xs / space-sm the label broke onto a
-   second line on a 320px phone and the pill swelled into a 60px capsule (owner, 2026-10-30). */
+   The start and the gap are tight, and the label never wraps: with a wider start and gap it broke
+   onto a second line on a 320px phone and the pill swelled into a 60px capsule. The end keeps
+   space-sm, so the text is not cramped against the pill's edge (owner, 2026-10-30). */
 const pillMarkClassName = [
   "rounded-full bg-(--color-surface-elevated) shadow-mount not-italic",
-  "gap-space-3xs ps-space-3xs pe-space-2xs py-space-3xs whitespace-nowrap",
+  "gap-space-3xs ps-space-3xs pe-space-sm py-space-3xs whitespace-nowrap",
 ].join(" ");
 
 /* The mark's box carries no paper of its own (the disc's paper was retired 2026-10-30: the only

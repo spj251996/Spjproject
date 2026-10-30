@@ -131,24 +131,26 @@ test("the pill ground lays paper under the mark and label and sets the label upr
   }
 });
 
-/* The label stays on one line down to a 320px phone (owner, 2026-10-30): at the first pill's
-   space-2xs / space-sm it wrapped into a 60px capsule there, so the pill is tighter everywhere and
-   never wraps. The looser values are asserted absent so a revert reads as a failure, not a pass. */
-test("the pill holds its label on one line: tight padding and no wrap", () => {
+/* The label stays on one line down to a 320px phone (owner, 2026-10-30): the first pill's wider start
+   and gap wrapped it into a 60px capsule there, so the start and the gap are tight and the label never
+   wraps. The end is space-sm (owner, on a render, 2026-10-30): at space-2xs the text sat cramped
+   against the pill's right edge. Each superseded value is asserted absent so a revert reads as a
+   failure, not a pass. */
+test("the pill holds its label on one line with room after the text", () => {
   const pill = classList("pillMarkClassName");
   for (const utility of [
     "ps-space-3xs",
-    "pe-space-2xs",
+    "pe-space-sm",
     "py-space-3xs",
     "gap-space-3xs",
     "whitespace-nowrap",
   ]) {
     assert.ok(pill.includes(utility), `the pill ground lacks ${utility}`);
   }
-  for (const looser of ["ps-space-2xs", "pe-space-sm", "gap-space-2xs"]) {
+  for (const superseded of ["ps-space-2xs", "pe-space-2xs", "gap-space-2xs"]) {
     assert.ok(
-      !pill.includes(looser),
-      `the pill ground still carries ${looser}`,
+      !pill.includes(superseded),
+      `the pill ground still carries ${superseded}`,
     );
   }
 });
