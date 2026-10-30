@@ -88,6 +88,27 @@
       var(--duration-fast) backwards;
   }
 
+  /* EVERY OTHER SECTION'S PIECES WAIT OUT THE OPENING. While it animates, WebKit — every iPhone
+     browser — paints a multiply-blended piece outside the invite as its opaque white backing
+     rectangle; it clears once the animations end (owner, on a phone, 2026-10-30: gone under reduced
+     motion, back with it). So those pieces stay hidden until one beat past the type's landing.
+     `visibility` is discrete and no compositor animates it, so the hold cannot itself re-trigger the
+     flash. On the piece, like every gesture here; `not-found` loads no opening and is spared too. */
+  @keyframes opening-hold {
+    from {
+      visibility: hidden;
+    }
+    to {
+      visibility: hidden;
+    }
+  }
+
+  :root:not([data-opening-skipped])
+    section:not(#invite):not(#not-found)
+    .botanical-piece {
+    animation: opening-hold calc(var(--duration-fast) * 10);
+  }
+
   /* The type, top to bottom. The date block rises as one: its labels carry a static lift transform
      of their own, so they are never animated separately. */
   :root:not([data-opening-skipped])

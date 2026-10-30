@@ -112,14 +112,15 @@ function animatedSelectors(css: string): string[] {
   return selectors;
 }
 
-/* SEVEN steps live in this file under Bloom: the flowers and six rows of type. The thread's own fade
-   lives in `thread.module.css`, asserted separately below. */
+/* EIGHT steps live in this file under Bloom: the flowers, six rows of type, and the hold on every
+   other section's pieces. The thread's own fade lives in `thread.module.css`, asserted separately
+   below. */
 test("no step of the invite's sequence animates without the gate", () => {
   const selectors = animatedSelectors(inviteCss);
   assert.equal(
     selectors.length,
-    7,
-    `expected the sequence's seven in-file steps, found ${selectors.length}`,
+    8,
+    `expected the sequence's eight in-file steps, found ${selectors.length}`,
   );
   for (const selector of selectors) {
     assert.ok(
@@ -259,5 +260,66 @@ test("the flowers are the sequence's first beat", () => {
   assert.match(
     inviteCss,
     /\.botanical-piece\s*\{[\s\S]{0,160}var\(--duration-fast\) backwards/,
+  );
+});
+
+/* While the opening animates, WebKit — every iPhone browser — paints a multiply-blended piece outside
+   the invite as its opaque white backing rectangle (owner, on a phone, 2026-10-30: gone under reduced
+   motion, back with it). So every other section's pieces stay hidden until the opening has ended. The
+   hold is `visibility`, which no compositor animates, so the hold cannot itself re-trigger the flash. */
+test("every piece outside the invite is held hidden until the opening has ended", () => {
+  const css = stripComments(inviteCss);
+  const rule = css.match(/([^{}]*)\{\s*animation:\s*opening-hold\s+([^;]*);/);
+  assert.ok(rule, "no rule runs opening-hold");
+  const selector = rule[1].replace(/\s+/g, " ").trim();
+  assert.ok(selector.startsWith(GATE), `the hold is not gated: ${selector}`);
+  assert.ok(
+    selector.endsWith(".botanical-piece"),
+    `the hold is not on the piece itself: ${selector}`,
+  );
+  for (const spared of ["#invite", "#not-found"]) {
+    assert.ok(
+      selector.includes(`:not(${spared})`),
+      `the hold reaches ${spared}: ${selector}`,
+    );
+  }
+
+  /* Inside the reduced-motion guard, so reduced motion — which runs no opening — never hides them. */
+  const guard = css.indexOf("@media (prefers-reduced-motion: no-preference)");
+  assert.notStrictEqual(guard, -1, "no reduced-motion guard in invite.css");
+  let depth = 0;
+  let close = -1;
+  for (let at = css.indexOf("{", guard); at < css.length; at++) {
+    if (css[at] === "{") depth++;
+    if (css[at] === "}" && --depth === 0) {
+      close = at;
+      break;
+    }
+  }
+  const held = css.indexOf("opening-hold ");
+  assert.ok(
+    held > guard && held < close,
+    "the hold sits outside the reduced-motion guard",
+  );
+
+  const frames = css.match(/@keyframes opening-hold\s*\{([\s\S]*?)\n {2}\}/);
+  assert.ok(frames, "@keyframes opening-hold not found");
+  const declarations = [...frames[1].matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)].map(
+    ([, property, value]) => `${property}: ${value.trim()}`,
+  );
+  assert.ok(declarations.length > 0, "opening-hold declares nothing");
+  for (const declaration of declarations) {
+    assert.equal(
+      declaration,
+      "visibility: hidden",
+      `opening-hold animates more than visibility: ${declaration}`,
+    );
+  }
+
+  const duration = rule[2].match(/calc\(.*\)/);
+  assert.ok(duration, `the hold's duration is not a token calc: ${rule[2]}`);
+  assert.ok(
+    calcMs(duration[0], "opening-hold") > typeEndMs(),
+    "the hold must outlast the type's landing, when the opening's last animation ends",
   );
 });
