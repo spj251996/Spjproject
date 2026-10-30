@@ -15,8 +15,7 @@ const targetClassName =
    Hover and press apply to the inner span rather than the target, so neither dims or transforms
    the focus ring the target draws. */
 const markClassName = [
-  "type-action inline-flex items-center gap-space-xs text-accent-gold",
-  "px-space-sm py-space-3xs",
+  "type-action inline-flex items-center text-accent-gold",
   /* Hover thickens the mark optically — a heavier cut would widen the text and shift the disc
      sideways on every hover, which the mark's no-reflow requirement forbids. */
   "group-hover:[transform:scale(1.06)]",
@@ -30,8 +29,25 @@ const markClassName = [
   "motion-safe:transition-[transform,text-shadow,opacity] motion-safe:duration-(--duration-fast) motion-safe:ease-settle",
 ].join(" ");
 
+const discMarkClassName = "gap-space-xs px-space-sm py-space-3xs";
+
+/* THE PILL GROUND IS THE MAP ACTION'S ALONE (owner, 2026-10-30): the disc's paper widened to hold the
+   mark and an upright label, so a guest reads "Get directions" as the way to the venue rather than
+   as a line of the card's prose. It is the same paper, not a fill — the bare surface colour and the
+   mount shadow, at full radius — and the gallery and not-found actions keep the disc.
+
+   Tight on purpose, and never wrapping: at the looser space-2xs / space-sm the label broke onto a
+   second line on a 320px phone and the pill swelled into a 60px capsule (owner, 2026-10-30). */
+const pillMarkClassName = [
+  "rounded-full bg-(--color-surface-elevated) shadow-mount not-italic",
+  "gap-space-3xs ps-space-3xs pe-space-2xs py-space-3xs whitespace-nowrap",
+].join(" ");
+
 /* The mark sits on its own raised disc: the stock's own surface and shadow, so it reads as a small
-   piece of paper laid on the card rather than a control borrowed from an application. */
+   piece of paper laid on the card rather than a control borrowed from an application. In the pill
+   ground the paper is the pill's, so the disc keeps only its box. */
+const discPaperClassName = "bg-(--color-surface-elevated) shadow-mount";
+
 const discClassName = [
   "inline-flex shrink-0 items-center justify-center rounded-full",
   /* The token as a bare colour, not the `bg-surface-elevated` utility: that utility also lays the
@@ -40,7 +56,7 @@ const discClassName = [
 
      `--action-disc`, not `--touch-target`: this size is visual only. The target's own
      `min-h/min-w-(--touch-target)` holds the 44px hit area and must stay. */
-  "size-(--action-disc) bg-(--color-surface-elevated) shadow-mount",
+  "size-(--action-disc)",
   /* Scaled here rather than by raising each caller's `size`: `IconBase` derives its box from the
      drawing's own DIAGONAL, so equal `size` values across different marks do not give equal
      rendered boxes, and a uniform scale keeps each mark's aspect while filling more of the disc.
@@ -54,6 +70,7 @@ const discClassName = [
 type ButtonActionProps = {
   children: ReactNode;
   className?: string;
+  ground?: "disc" | "pill";
   /* Marks are already hidden from assistive technology (icons/icon-base.tsx), so the accessible
      name stays the label. */
   mark?: ReactNode;
@@ -63,15 +80,27 @@ type ButtonActionProps = {
 export function ButtonAction({
   children,
   className,
+  ground = "disc",
   mark,
   "aria-label": accessibleName,
   href,
   onClick,
 }: ButtonActionProps) {
-  const composed = `${targetClassName} ${className ?? ""}`;
+  const pill = ground === "pill";
+  /* The focus ring is drawn on the target, so in the pill ground the target takes the pill's radius
+     and the ring follows it instead of boxing it (owner, 2026-10-30). */
+  const composed = `${targetClassName}${pill ? " rounded-full" : ""} ${className ?? ""}`;
   const label = (
-    <span className={`${markClassName} justify-center`}>
-      {mark !== undefined && <span className={discClassName}>{mark}</span>}
+    <span
+      className={`${markClassName} ${pill ? pillMarkClassName : discMarkClassName} justify-center`}
+    >
+      {mark !== undefined && (
+        <span
+          className={`${discClassName}${pill ? "" : ` ${discPaperClassName}`}`}
+        >
+          {mark}
+        </span>
+      )}
       {children}
     </span>
   );

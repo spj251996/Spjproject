@@ -33,7 +33,7 @@ const event = (segments: EventSegment[]): WeddingEvent => ({
 test("the map action is named by its visible label, then the venue", () => {
   assert.equal(
     mapLabel(segment({ venue: "Chinnas Auditorium" })),
-    "Meet us here, Chinnas Auditorium",
+    "Get directions to Chinnas Auditorium",
   );
 });
 
@@ -129,7 +129,7 @@ test("an event with no address refuses a header", () => {
   );
 });
 
-test("Event Info is two columns at every tier, details left, map disc on the venue", () => {
+test("Event Info is two columns at every tier, details left, map pill on the venue", () => {
   const eventInfo = read("app/_sections/event-info.tsx");
   assert.equal(
     withClasses(eventInfo, "grid-cols-[auto_minmax(0,auto)]").length,
@@ -137,10 +137,13 @@ test("Event Info is two columns at every tier, details left, map disc on the ven
   );
   assert.equal(withClasses(eventInfo, "grid-cols-1").length, 0);
   assert.ok(withClasses(eventInfo, "items-start", "text-left").length > 0);
-  assert.equal(
-    withClasses(eventInfo, "mt-space-2xs", "-ms-space-sm").length,
-    1,
+  /* The pill's left edge is the target's own, so it sits on the venue's first letter with nothing
+     pulling it back (owner, 2026-10-30) — the disc ground's `-ms-space-sm` inset is gone. */
+  assert.match(
+    eventInfo,
+    /<ButtonAction[^>]*className="mt-space-2xs"[^>]*ground="pill"/,
   );
+  assert.equal(withClasses(eventInfo, "-ms-space-sm").length, 0);
 });
 
 test("the 2026-10-14 picks: Event Info's natural phone rhythm", () => {

@@ -244,9 +244,8 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
           </div>
           <div className="flex min-w-0 flex-col items-start text-left">
             <SegmentLine segment={segment} />
-            {/* The action sits under the venue with its disc's left edge on the venue's first letter
-                (owner, 2026-10-11): the mark sits `space-sm` inside its target, so the target is
-                pulled back by it. */}
+            {/* The action sits under the venue with its pill's left edge on the venue's first letter
+                (owner, 2026-10-30): the pill is the target's own edge, so nothing pulls it back. */}
             <div className="flex flex-col items-start">
               {segment.venue !== null && (
                 <ShrinkToWidestLine className="type-body text-ink text-pretty">
@@ -256,11 +255,12 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
               {segment.mapUrl !== null && (
                 <ButtonAction
                   aria-label={mapLabel(segment)}
-                  className="mt-space-2xs -ms-space-sm"
+                  className="mt-space-2xs"
+                  ground="pill"
                   href={segment.mapUrl}
                   mark={<MapIcon size={24} />}
                 >
-                  Meet us here
+                  Get directions
                 </ButtonAction>
               )}
             </div>

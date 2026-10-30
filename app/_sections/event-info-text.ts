@@ -62,5 +62,5 @@ export function mapLabel(segment: EventSegment): string {
       `sections: segment "${segment.id}" has a map link but no venue; its map action is named for the venue.`,
     );
   }
-  return `Meet us here, ${segment.venue}`;
+  return `Get directions to ${segment.venue}`;
 }

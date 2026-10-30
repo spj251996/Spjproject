@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
@@ -102,11 +102,97 @@ test("the flanking hairline rules are gone", () => {
   assert.doesNotMatch(buttonAction, /stroke-divider|<hr|h-px/);
 });
 
-test("the map action reads Meet us here", () => {
+test("the map action reads Get directions on the pill ground", () => {
   assert.match(
     page,
-    /mark=\{<MapIcon size=\{24\} \/>\}\s*>\s*Meet us here\s*<\/ButtonAction>/,
+    /ground="pill"[\s\S]*?mark=\{<MapIcon size=\{24\} \/>\}\s*>\s*Get directions\s*<\/ButtonAction>/,
   );
+});
+
+function classList(name: string) {
+  const match = new RegExp(`const ${name} =\\s*([\\s\\S]*?);`).exec(
+    buttonAction,
+  );
+  assert.ok(match, `${name} not found`);
+  return [...match[1].matchAll(/"([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
+}
+
+/* The pill is the disc's own paper widened (owner, 2026-10-30), so it must carry exactly the
+   paper's two parts — the bare surface colour and the mount shadow — and set the label upright. */
+test("the pill ground lays the disc's paper on the whole mark and sets the label upright", () => {
+  const pill = classList("pillMarkClassName");
+  for (const utility of [
+    "bg-(--color-surface-elevated)",
+    "shadow-mount",
+    "rounded-full",
+    "not-italic",
+  ]) {
+    assert.ok(pill.includes(utility), `the pill ground lacks ${utility}`);
+  }
+});
+
+/* The label stays on one line down to a 320px phone (owner, 2026-10-30): at the first pill's
+   space-2xs / space-sm it wrapped into a 60px capsule there, so the pill is tighter everywhere and
+   never wraps. The looser values are asserted absent so a revert reads as a failure, not a pass. */
+test("the pill holds its label on one line: tight padding and no wrap", () => {
+  const pill = classList("pillMarkClassName");
+  for (const utility of [
+    "ps-space-3xs",
+    "pe-space-2xs",
+    "py-space-3xs",
+    "gap-space-3xs",
+    "whitespace-nowrap",
+  ]) {
+    assert.ok(pill.includes(utility), `the pill ground lacks ${utility}`);
+  }
+  for (const looser of ["ps-space-2xs", "pe-space-sm", "gap-space-2xs"]) {
+    assert.ok(
+      !pill.includes(looser),
+      `the pill ground still carries ${looser}`,
+    );
+  }
+});
+
+test("the disc ground is today's look and stays the default", () => {
+  assert.match(buttonAction, /ground\s*=\s*"disc"/);
+  const disc = classList("discMarkClassName");
+  for (const utility of ["gap-space-xs", "px-space-sm", "py-space-3xs"]) {
+    assert.ok(disc.includes(utility), `the disc ground lacks ${utility}`);
+  }
+  assert.ok(
+    !disc.includes("not-italic"),
+    "the disc ground's label stays italic",
+  );
+  assert.deepEqual(classList("discPaperClassName").sort(), [
+    "bg-(--color-surface-elevated)",
+    "shadow-mount",
+  ]);
+});
+
+/* "View photos" and the not-found page's way back keep the disc (owner, 2026-10-30): a second
+   caller taking the pill is a design change, not a refactor. */
+test("only the map action takes the pill", () => {
+  /* Every shipped caller, found rather than listed, so a new one is covered the day it appears. The
+     dev-only gallery is excluded: it shows each ground as a specimen. */
+  const callers = ["app", "components"]
+    .flatMap((root) =>
+      readdirSync(root, { recursive: true, encoding: "utf8" }).map(
+        (path) => `${root}/${path}`,
+      ),
+    )
+    .filter(
+      (path) =>
+        path.endsWith(".tsx") &&
+        !path.startsWith("app/design-system/") &&
+        path !== "components/ui/button-action.tsx",
+    )
+    .map((path) => [path, readFileSync(path, "utf8")] as const)
+    .filter(([, source]) => source.includes("<ButtonAction"));
+  assert.ok(callers.length >= 3, `found ${callers.length} callers`);
+  const pills = callers.flatMap(([path, source]) =>
+    [...source.matchAll(/ground="pill"/g)].map(() => path),
+  );
+  assert.deepEqual(pills, ["app/_sections/event-info.tsx"]);
 });
 
 // Bold is a deliberate departure from type-body-italic's 400, giving an action presence beside its disc.
