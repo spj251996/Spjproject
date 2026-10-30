@@ -157,18 +157,99 @@ function Diagnostics() {
       [
         `pieces: ${rows.join(" | ")}`,
         `sway frames: ${swayDiagnostics.ticks} · scrollY ${Math.round(window.scrollY)}`,
+        `shown: ${Object.entries(LAYERS)
+          .map(([name, selector]) => {
+            const shown = [...document.querySelectorAll(selector)]
+              .flatMap((node) =>
+                node instanceof SVGPathElement
+                  ? [node]
+                  : [...node.querySelectorAll("path")],
+              )
+              .filter((path) => {
+                const style = getComputedStyle(path);
+                const box = path.getBoundingClientRect();
+                return (
+                  style.display !== "none" &&
+                  style.visibility !== "hidden" &&
+                  box.width + box.height > 0 &&
+                  path.getAttribute("d")
+                );
+              }).length;
+            return `${name} ${shown}`;
+          })
+          .join(" · ")}`,
         `errors: ${swayDiagnostics.errors.join(" ; ") || "none"}`,
         `engine: ${(engine ?? []).join(" ")}`,
       ].join("\n"),
     );
   };
   useEffect(read, []);
+  const [hidden, setHidden] = useState<string[]>([]);
+  const toggle = (layer: string) => {
+    const next = hidden.includes(layer)
+      ? hidden.filter((name) => name !== layer)
+      : [...hidden, layer];
+    setHidden(next);
+    let sheet = document.getElementById("thread-layer-hide");
+    if (sheet === null) {
+      sheet = document.createElement("style");
+      sheet.id = "thread-layer-hide";
+      document.head.append(sheet);
+    }
+    sheet.textContent = next
+      .map((name) => `${LAYERS[name]}{display:none!important}`)
+      .join("");
+  };
+  /* Forces WebKit to repaint the thread from scratch: a stale paint left behind by a moving path
+     is gone after this, a real element is not. */
+  const repaint = () => {
+    for (const svg of document.querySelectorAll<SVGSVGElement>(
+      "svg[data-thread-svg]",
+    )) {
+      const was = svg.style.display;
+      svg.style.display = "none";
+      void svg.getBoundingClientRect();
+      svg.style.display = was;
+    }
+  };
   return (
     <div className="mt-space-2xs">
       <pre className="type-caption whitespace-pre-wrap break-all">{text}</pre>
       <button type="button" className="type-caption underline" onClick={read}>
         Refresh diagnostics
       </button>
+      <p className="type-caption mt-space-2xs">
+        Hide a layer, close the panel, and see if the stray line goes:
+      </p>
+      <div className="flex flex-wrap gap-space-2xs">
+        {Object.keys(LAYERS).map((layer) => (
+          <button
+            key={layer}
+            type="button"
+            className={`type-caption underline${hidden.includes(layer) ? " font-bold" : ""}`}
+            onClick={() => toggle(layer)}
+          >
+            {hidden.includes(layer) ? `show ${layer}` : `hide ${layer}`}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="type-caption underline"
+          onClick={repaint}
+        >
+          repaint
+        </button>
+      </div>
     </div>
   );
 }
+
+/* The thread's layers, by the markers the painters already put on them. */
+const LAYERS: Record<string, string> = {
+  line: "path[data-thread-piece]",
+  head: "[data-thread-head]",
+  retrace: "[data-thread-retrace-group],[data-thread-retrace-glow]",
+  taper: "[data-thread-taper]",
+  twist: "[data-thread-twist]",
+  fallback: "svg[data-thread-svg]:has([data-thread-fallback])",
+};
