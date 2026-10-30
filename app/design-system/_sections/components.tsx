@@ -114,7 +114,7 @@ export function ComponentsSections() {
           source="@/components/ui/button-action"
           spec={[
             "rest · plain ground: the italic label alone — no fill, border, lift or paper on the control",
-            "pill ground · the map action's alone: paper in the bare surface-elevated colour with the mount shadow, at full radius — never the bg-surface-elevated utility, which would lay the stock's grain — holds the mark and the label on one line, never wrapping; space-3xs block, space-3xs at the start, space-2xs at the end, space-3xs between; the label sets upright",
+            "pill ground · the map action's alone: paper in the bare surface-elevated colour with the mount shadow, at full radius — never the bg-surface-elevated utility, which would lay the stock's grain — holds the mark and the label on one line, never wrapping; space-3xs block, space-3xs at the start, space-sm at the end, space-3xs between; the label sets upright",
             "the mark sits in a square --action-disc (32px) box with no paper of its own, scaled there and never resized by its size prop — each mark's box derives from its own drawing's diagonal, so equal sizes give unequal boxes; the scale moves with the box in proportion",
             "hover · the label (in the pill ground, the whole pill) scales 1.06 and thickens optically — label 0.35px either side, mark 0.4px all round — so nothing reflows",
             "press · the whole mark dims",
