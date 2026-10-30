@@ -344,9 +344,18 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       };
       dashes.set(path, dash);
     }
+    /* ONLY THE PIECE BEING DRAWN DEPENDS ON ITS DASH. On an iPhone (WebKit), with the sway rewriting
+       each piece's `d` every frame, pieces the dash should have hidden were drawn ahead of the tip;
+       shipped, twist alone and width alone were clean (the owner's isolation on the device). The
+       engine's mechanism is not established — no WebKit here — so the fix does not depend on it: a
+       piece not yet started is hidden outright, a finished one carries no dash at all, and only
+       the one mid-draw piece is masked, with its dash scaled to its swayed length. */
+    const progress = dash.array > 0 ? 1 - dash.offset / dash.array : 1;
+    const hidden = progress <= 0 ? "hidden" : "";
+    if (path.style.visibility !== hidden) path.style.visibility = hidden;
     const k = entry.length0 > 0 ? entry.length / entry.length0 : 1;
-    const array = String(dash.array * k);
-    const offset = String(dash.offset * k);
+    const array = progress >= 1 ? "none" : String(dash.array * k);
+    const offset = progress >= 1 ? "0" : String(dash.offset * k);
     if (path.style.strokeDasharray !== array)
       path.style.strokeDasharray = array;
     if (path.style.strokeDashoffset !== offset)
