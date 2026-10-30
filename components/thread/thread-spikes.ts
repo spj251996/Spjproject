@@ -214,6 +214,14 @@ function parse(
   return { parts, numbers, top, bottom, length0, length: length0 };
 }
 
+/* DIAGNOSTICS for a device this repo cannot run (an iPhone): the review panel prints these, so a
+   screenshot says whether the sway's loop runs there and what it threw. */
+export const swayDiagnostics = { ticks: 0, errors: [] as string[] };
+function recordError(where: string, error: unknown) {
+  if (swayDiagnostics.errors.length < 5)
+    swayDiagnostics.errors.push(`${where}: ${String(error)}`);
+}
+
 function createSway(svg: SVGSVGElement, sway: Sway) {
   const tracked = new WeakMap<SVGPathElement, Tracked>();
   let obstacles: Rect[] = [];
@@ -369,14 +377,18 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   /* A painter that writes a new `d` mid-frame (the re-trace, the taper) is displaced in the same
      frame: the observer runs at the end of that callback, before the frame paints. */
   const observer = new MutationObserver((records) => {
-    const t = seconds();
-    const band = view();
-    for (const record of records) {
-      const path = record.target as SVGPathElement;
-      const entry = track(path);
-      if (entry === undefined) continue;
-      if (record.attributeName === "style") rescaleDash(path, entry);
-      else if (entry.written === entry.base) write(path, entry, t, band);
+    try {
+      const t = seconds();
+      const band = view();
+      for (const record of records) {
+        const path = record.target as SVGPathElement;
+        const entry = track(path);
+        if (entry === undefined) continue;
+        if (record.attributeName === "style") rescaleDash(path, entry);
+        else if (entry.written === entry.base) write(path, entry, t, band);
+      }
+    } catch (error) {
+      recordError("observer", error);
     }
   });
   const observe = () =>
@@ -388,15 +400,20 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   observe();
 
   function tick() {
-    const t = seconds();
-    const band = view();
-    const top = band.top - VIEW_MARGIN;
-    const bottom = band.top + band.height + VIEW_MARGIN;
-    for (const path of svg.querySelectorAll("path")) {
-      const entry = track(path);
-      if (entry === undefined) continue;
-      if (entry.bottom < top || entry.top > bottom) continue;
-      write(path, entry, t, band);
+    swayDiagnostics.ticks += 1;
+    try {
+      const t = seconds();
+      const band = view();
+      const top = band.top - VIEW_MARGIN;
+      const bottom = band.top + band.height + VIEW_MARGIN;
+      for (const path of svg.querySelectorAll("path")) {
+        const entry = track(path);
+        if (entry === undefined) continue;
+        if (entry.bottom < top || entry.top > bottom) continue;
+        write(path, entry, t, band);
+      }
+    } catch (error) {
+      recordError("tick", error);
     }
     frame = window.requestAnimationFrame(tick);
   }

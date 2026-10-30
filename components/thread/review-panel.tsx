@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { swayDiagnostics } from "./thread-spikes.ts";
 import {
   readVariant,
   THREAD_VARIANT_AXES,
@@ -75,6 +76,7 @@ export function ReviewPanel() {
           <p className="type-caption text-ink-muted">
             Thread review — this page only, removed before release.
           </p>
+          <Diagnostics />
           {THREAD_VARIANT_AXES.length === 0 && (
             <p className="type-caption mt-space-2xs">
               No candidates yet: this is the shipped thread.
@@ -121,6 +123,51 @@ export function ReviewPanel() {
         className="size-(--touch-target) rounded-full bg-surface-elevated shadow-mount type-caption font-bold"
       >
         {Object.keys(live).length > 0 ? Object.keys(live).length : "T"}
+      </button>
+    </div>
+  );
+}
+
+/* What each thread piece is doing right now, read off the page: F finished, M mid-draw, H hidden,
+   ? anything else. Plus whether the sway loop runs and what it threw. For a device this repo cannot
+   run; read it off a screenshot. */
+function Diagnostics() {
+  const [text, setText] = useState("");
+  const read = () => {
+    const rows = [...document.querySelectorAll("svg[data-thread-svg]")]
+      .map((svg) =>
+        [...svg.querySelectorAll<SVGPathElement>("path[data-thread-piece]")]
+          .filter((path) => path.getAttribute("d"))
+          .map((path) => {
+            const array = path.style.strokeDasharray;
+            const offset = Number.parseFloat(path.style.strokeDashoffset);
+            if (path.style.visibility === "hidden") return "H";
+            if (array === "none" || array === "") return "F";
+            if (offset > 0.01)
+              return offset >= Number.parseFloat(array) - 0.01 ? "h" : "M";
+            return "F";
+          })
+          .join(""),
+      )
+      .filter(Boolean);
+    const engine = navigator.userAgent.match(
+      /OS [\d_]+|AppleWebKit\/[\d.]+|Chrome\/[\d.]+|CriOS\/[\d.]+/g,
+    );
+    setText(
+      [
+        `pieces: ${rows.join(" | ")}`,
+        `sway frames: ${swayDiagnostics.ticks} · scrollY ${Math.round(window.scrollY)}`,
+        `errors: ${swayDiagnostics.errors.join(" ; ") || "none"}`,
+        `engine: ${(engine ?? []).join(" ")}`,
+      ].join("\n"),
+    );
+  };
+  useEffect(read, []);
+  return (
+    <div className="mt-space-2xs">
+      <pre className="type-caption whitespace-pre-wrap break-all">{text}</pre>
+      <button type="button" className="type-caption underline" onClick={read}>
+        Refresh diagnostics
       </button>
     </div>
   );
