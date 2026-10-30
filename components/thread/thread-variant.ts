@@ -45,16 +45,32 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
       { id: "long-round", label: "Rounder strands (more bow)" },
     ],
   },
-  /* Laptop and desktop only: the phone keeps 1.6px. A media rule, not an inline property, so the
-     width follows the window across the 64rem line. */
+  /* The owner picked 2.2px from laptop up (2026-10-30); the phone candidates scale it toward the same
+     ratio (1.6 -> 2.2 is x1.375). A stylesheet, not an inline property, so each width follows the
+     window across the 64rem line. */
   {
     id: "width",
-    label: "Line width from laptop up",
+    label: "Line width (laptop up: 2.2px, picked)",
     options: [
       {
         id: "2.2",
-        label: "2.2px (picked)",
+        label: "Phone 1.6px (as shipped)",
         css: "@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
+      },
+      {
+        id: "2.2-p1.8",
+        label: "Phone 1.8px",
+        css: ":root{--stroke-thread:1.8px}@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
+      },
+      {
+        id: "2.2-p2.0",
+        label: "Phone 2.0px",
+        css: ":root{--stroke-thread:2px}@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
+      },
+      {
+        id: "2.2-p2.2",
+        label: "Phone 2.2px (same ratio as laptop)",
+        css: ":root{--stroke-thread:2.2px}",
       },
     ],
   },
