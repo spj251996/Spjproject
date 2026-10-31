@@ -10,8 +10,8 @@ const BOTANICAL_POINTERS = [
   "Nineteen named pieces, generated into public/botanical/.",
   "Each piece's width and placement are tuned per width tier and read from the viewport, never from the frame's ring bands.",
   "A portrait window takes the tablet tier's placement at any width, because a portrait window stacks its cards however wide it is.",
-  "Composites with mix-blend-mode: multiply, so the layer and anything a piece sits inside carry no z-index — DOM order alone keeps it below content.",
-  "Only the invite's two pieces carry a z-index, --z-invite-bloom (1), on the piece itself: nothing botanical paints after the pieces the opening animates, which WebKit would paint as white rectangles.",
+  "Composites with mix-blend-mode: multiply, so the layer and anything a piece sits inside carry no z-index — every card's frame at --z-content (20) keeps it below content.",
+  "Only the invite's two pieces carry a z-index, --z-invite-bloom (1), on the piece itself, so they paint after every other piece: while they animate, WebKit would paint any piece painted after them as a white rectangle.",
   "The invite and the not-found screen share one layout: not-found reuses the invite's own list.",
 ];
 
