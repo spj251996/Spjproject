@@ -360,7 +360,12 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
        the one mid-draw piece is masked, with its dash scaled to its swayed length. */
     const progress = dash.array > 0 ? 1 - dash.offset / dash.array : 1;
     const hidden = progress <= 0 ? "hidden" : "";
-    if (path.style.visibility !== hidden) path.style.visibility = hidden;
+    if (path.style.visibility !== hidden) {
+      path.style.visibility = hidden;
+      /* The tick skips a hidden piece, so one starting now still carries a stale shape: sway it
+         before this frame paints, or its first ink misses the swayed end of the piece before. */
+      if (hidden === "") write(path, entry, seconds(), view());
+    }
     const k = entry.length0 > 0 ? entry.length / entry.length0 : 1;
     const array = progress >= 1 ? "none" : String(dash.array * k);
     const offset = progress >= 1 ? "0" : String(dash.offset * k);
@@ -410,6 +415,10 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         const entry = track(path);
         if (entry === undefined) continue;
         if (entry.bottom < top || entry.top > bottom) continue;
+        /* A piece not yet started paints nothing, so it is never re-shaped. On an iPhone, re-shaping
+           those hidden pieces every frame left their stale pixels on screen ahead of the tip — gone
+           on a forced repaint and with the line layer hidden (the owner's device test). */
+        if (path.style.visibility === "hidden") continue;
         write(path, entry, t, band);
       }
     } catch (error) {
