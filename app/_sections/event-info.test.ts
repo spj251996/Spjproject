@@ -139,9 +139,15 @@ test("Event Info is two columns at every tier, details left, map pill on the ven
   assert.ok(withClasses(eventInfo, "items-start", "text-left").length > 0);
   /* The pill's left edge is the target's own, so it sits on the venue's first letter with nothing
      pulling it back (owner, 2026-10-30) — the old disc layout's `-ms-space-sm` inset is gone. */
-  assert.match(
-    eventInfo,
-    /<ButtonAction[^>]*className="mt-space-2xs"[^>]*ground="pill"/,
+  const pill = eventInfo
+    .split("<ButtonAction")
+    .slice(1)
+    .map((rest) => rest.slice(0, rest.indexOf("</ButtonAction>")))
+    .filter((element) => element.includes('ground="pill"'));
+  assert.equal(pill.length, 1, "Event Info carries one map action");
+  assert.ok(
+    pill[0].includes('className="mt-space-2xs"'),
+    "the pill gained a class that moves its left edge",
   );
   assert.equal(withClasses(eventInfo, "-ms-space-sm").length, 0);
 });
