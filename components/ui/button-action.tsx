@@ -46,6 +46,10 @@ const plainMarkClassName = "gap-space-xs px-space-sm py-space-3xs";
 const pillMarkClassName = [
   "rounded-full bg-(--color-surface-elevated) shadow-mount not-italic",
   "gap-space-3xs ps-space-3xs pe-space-sm py-space-3xs whitespace-nowrap",
+  /* Scaled 1.06 the pill reaches 4.6px past the target, over the focus ring 4px out, so while it
+     holds keyboard focus it keeps its size and only thickens. The plain ground has no paper at the
+     target's edge and keeps its growth. */
+  "group-focus-visible:[transform:none]",
 ].join(" ");
 
 /* The mark's box carries no paper of its own (the disc's paper was retired 2026-10-30: the only

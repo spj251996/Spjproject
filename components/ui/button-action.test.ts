@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
+import { freshExport } from "../../scripts/lib/built-export.ts";
+import { linkedStylesheets } from "../../scripts/lib/linked-stylesheets.mjs";
 
 const typeScale = readFileSync("app/styles/type-scale.css", "utf8");
 // Comments explain the retired design by name, so the assertions read the code alone.
@@ -102,10 +104,24 @@ test("the flanking hairline rules are gone", () => {
   assert.doesNotMatch(buttonAction, /stroke-divider|<hr|h-px/);
 });
 
+/* Each element is read on its own, from its opening tag to its own closing tag, and its props in any
+   order: one pattern across the joined sections could start in one action and finish in another. */
 test("the map action reads Get directions on the pill ground", () => {
-  assert.match(
-    page,
-    /ground="pill"[\s\S]*?mark=\{<MapIcon size=\{24\} \/>\}\s*>\s*Get directions\s*<\/ButtonAction>/,
+  const actions = page
+    .split("<ButtonAction")
+    .slice(1)
+    .map((rest) => rest.slice(0, rest.indexOf("</ButtonAction>")));
+  const maps = actions.filter((element) =>
+    />\s*Get directions\s*$/.test(element),
+  );
+  assert.equal(maps.length, 1, "one map action, rendered per event");
+  assert.ok(
+    maps[0].includes('ground="pill"'),
+    "the map action is not on the pill",
+  );
+  assert.ok(
+    maps[0].includes("mark={<MapIcon size={24} />}"),
+    "the map action lost its mark",
   );
 });
 
@@ -153,6 +169,45 @@ test("the pill holds its label on one line with room after the text", () => {
       `the pill ground still carries ${superseded}`,
     );
   }
+});
+
+/* Scaled 1.06 the pill reaches 4.6px past the target, and the focus ring sits 4px out, so a pill hovered
+   while keyboard-focused covered the ring's ends (rendered, 2026-10-31). It stops growing while focused;
+   the plain ground carries no paper to the target's edge, so it keeps its growth. The class is composed
+   at run time: a literal here would keep the utility in the build on its own. */
+const STEADY_WHEN_FOCUSED = ["group-focus-visible", "[transform:none]"].join(
+  ":",
+);
+
+test("a keyboard-focused pill does not grow over its focus ring", () => {
+  assert.ok(
+    classList("pillMarkClassName").includes(STEADY_WHEN_FOCUSED),
+    "the pill grows while keyboard-focused",
+  );
+  assert.ok(
+    !classList("plainMarkClassName").includes(STEADY_WHEN_FOCUSED),
+    "the plain ground was held steady too",
+  );
+});
+
+/* Both rules have the same specificity, so the later one wins; this reads the order that shipped. */
+test("the built CSS lets focus hold the pill over hover's growth", (t) => {
+  if (!freshExport(t)) return;
+  const css = linkedStylesheets(readFileSync("out/index.html", "utf8"), "out")
+    .map((sheet) => sheet.css ?? "")
+    .join("\n");
+  const grow = css.search(
+    /:where\(\.group\):hover \*\)\{transform:scale\(1\.06\)\}/,
+  );
+  const hold = css.search(
+    /:where\(\.group\):focus-visible \*\)\{transform:none\}/,
+  );
+  assert.notStrictEqual(grow, -1, "the hover growth did not ship");
+  assert.notStrictEqual(hold, -1, "the focused hold compiled to nothing");
+  assert.ok(
+    hold > grow,
+    "the hover growth ships after the focused hold and wins",
+  );
 });
 
 /* The disc's paper is retired (owner, 2026-10-30): no caller but the map action ever carried a mark,
