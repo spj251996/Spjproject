@@ -50,8 +50,8 @@
    frames, 2026-10-31). Lifted above every other piece, they leave nothing botanical after them, so no
    piece has to be hidden while the opening runs.
    The settled page does not move: every card sits above at `--z-content`, and what the pieces now
-   paint over is the ground and other pieces, both multiply-blended, which give the same pixels in
-   either order. On the piece itself, never an ancestor: a piece's own stacking context isolates only
+   paint over is the ground they blend onto and other sections' pieces, which are multiply-blended
+   too, and two multiply pieces give the same pixels in either order. On the piece itself, never an ancestor: a piece's own stacking context isolates only
    its children, so its blend is untouched. Not gated on motion, so every visitor gets one paint order. */
 .mounted-sheet-frame--invite .botanical-piece {
   z-index: var(--z-invite-bloom);

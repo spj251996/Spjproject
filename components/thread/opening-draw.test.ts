@@ -280,21 +280,24 @@ test("the invite's pieces paint last, below every card", () => {
     "the lift is on the invite's own pieces only, ungated",
   );
 
-  const guard = css.indexOf("@media (prefers-reduced-motion: no-preference)");
-  assert.notStrictEqual(guard, -1, "no reduced-motion guard in invite.css");
-  let depth = 0;
-  let close = -1;
-  for (let at = css.indexOf("{", guard); at < css.length; at++) {
-    if (css[at] === "{") depth++;
-    if (css[at] === "}" && --depth === 0) {
-      close = at;
-      break;
-    }
-  }
-  const at = rules[0].index;
-  assert.ok(
-    at < guard || at > close,
-    "the lift sits inside the reduced-motion guard, so reduced motion would paint in another order",
+  /* Top level, outside every `@media` and `@supports`: inside any of them, some visitors would paint in
+     another order. */
+  const before = css.slice(0, rules[0].index);
+  assert.equal(
+    (before.match(/\{/g) ?? []).length - (before.match(/\}/g) ?? []).length,
+    0,
+    "the lift sits inside an at-rule block, so some visitors would paint in another order",
+  );
+
+  /* The lift belongs to the invite alone, so no Tailwind `z-*` utility may reach a Bloom either;
+     `botanical.test.ts` already refuses a `z-index` in every rule of `botanical.module.css`. */
+  const bloomMarkup = stripComments(
+    readFileSync("components/background/botanical.tsx", "utf8"),
+  );
+  assert.doesNotMatch(
+    bloomMarkup,
+    /(?:^|[\s"'`])-?z-(?:\d|\[|\()/m,
+    "botanical.tsx carries a z-* utility",
   );
 
   assert.ok(
