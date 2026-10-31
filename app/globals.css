@@ -13,11 +13,18 @@ body {
    the prefixed property, and the long-press menu needs the callout suppression as well.
 
    This overrides the usual rule that content stays selectable, by the owner's decision; do not
-   re-scope it without them. */
+   re-scope it without them.
+
+   TEXT-ONLY SCALING IS SWITCHED OFF (owner, 2026-10-31): a phone browser's own text scaling grows
+   type inside the fixed compositions, so zoom is the one way to enlarge the page. Each engine reads
+   only its own spelling; never `none`, which has blocked zoom in Safari. */
 html {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
 }
 
 /* THE SCROLLBAR IS THIN AND IN THE SITE'S COLOURS (owner, 2026-10-14) — DESIGN.md → Interaction
