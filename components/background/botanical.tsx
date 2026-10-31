@@ -8,10 +8,11 @@ import { botanicalCss, pieceClass } from "./botanical-css";
 import { ASPECT_RATIO, type BotanicalPlacement } from "./botanical-placement";
 
 /* Sparse wildflower elements at the screen edges — DESIGN.md → Botanical Edge. Full opacity,
-   `mix-blend-mode: multiply` against the ivory ground, and no `z-index` anywhere in this layer: the
-   card's frame (`mounted-sheet-frame__box`) carries the only explicit `z-index` in a framed section,
-   so it always paints above this layer, and the section carries none either, which keeps the blend
-   out of an isolating stacking context. Size and placement are per width tier and read from the
+   `mix-blend-mode: multiply` against the ivory ground, and no `z-index` on this layer or anything a
+   piece sits inside: the card's frame (`mounted-sheet-frame__box`) sits at `--z-content`, so it always
+   paints above this layer, and the section carries none, which keeps the blend out of an isolating
+   stacking context. The invite's own pieces take `--z-invite-bloom` on the piece itself
+   (`app/_sections/invite.css`), which isolates nothing they blend with. Size and placement are per width tier and read from the
    viewport, not from the frame's ring bands. The wrapper carries the section's frame-scope class
    because the frame's own rule is what gives this layer the section's box to position against. */
 

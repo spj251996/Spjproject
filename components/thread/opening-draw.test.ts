@@ -112,15 +112,14 @@ function animatedSelectors(css: string): string[] {
   return selectors;
 }
 
-/* EIGHT steps live in this file under Bloom: the flowers, six rows of type, and the hold on every
-   other section's pieces. The thread's own fade lives in `thread.module.css`, asserted separately
-   below. */
+/* SEVEN steps live in this file under Bloom: the flowers and six rows of type. The thread's own fade
+   lives in `thread.module.css`, asserted separately below. */
 test("no step of the invite's sequence animates without the gate", () => {
   const selectors = animatedSelectors(inviteCss);
   assert.equal(
     selectors.length,
-    8,
-    `expected the sequence's eight in-file steps, found ${selectors.length}`,
+    7,
+    `expected the sequence's seven in-file steps, found ${selectors.length}`,
   );
   for (const selector of selectors) {
     assert.ok(
@@ -263,28 +262,24 @@ test("the flowers are the sequence's first beat", () => {
   );
 });
 
-/* While the opening animates, WebKit — every iPhone browser — paints a multiply-blended piece outside
-   the invite as its opaque white backing rectangle (owner, on a phone, 2026-10-30: gone under reduced
-   motion, back with it). So every other section's pieces stay hidden until the opening has ended. The
-   hold is `visibility`, which no compositor animates, so the hold cannot itself re-trigger the flash. */
-test("every piece outside the invite is held hidden until the opening has ended", () => {
+/* While the invite's pieces animate on the compositor, WebKit — every iPhone browser — paints any
+   multiply-blended piece that paints after them as its opaque white backing rectangle (reproduced in
+   recorded WebKit frames, 2026-10-31). Lifted above every other piece and below every card, they leave
+   nothing botanical after them, so no piece has to wait out the opening. On the piece itself, never an
+   ancestor: a piece's own stacking context isolates only its children. Ungated, so every visitor gets
+   one paint order. */
+test("the invite's pieces paint last, below every card", () => {
   const css = stripComments(inviteCss);
-  const rule = css.match(/([^{}]*)\{\s*animation:\s*opening-hold\s+([^;]*);/);
-  assert.ok(rule, "no rule runs opening-hold");
-  const selector = rule[1].replace(/\s+/g, " ").trim();
-  assert.ok(selector.startsWith(GATE), `the hold is not gated: ${selector}`);
-  assert.ok(
-    selector.endsWith(".botanical-piece"),
-    `the hold is not on the piece itself: ${selector}`,
+  const rules = [...css.matchAll(/([^{}]*)\{[^{}]*z-index\s*:\s*([^;]+);/g)];
+  assert.equal(rules.length, 1, "invite.css sets z-index in exactly one rule");
+  const [, selector, value] = rules[0];
+  assert.equal(value.trim(), "var(--z-invite-bloom)");
+  assert.equal(
+    selector.replace(/\s+/g, " ").trim(),
+    ".mounted-sheet-frame--invite .botanical-piece",
+    "the lift is on the invite's own pieces only, ungated",
   );
-  for (const spared of ["#invite", "#not-found"]) {
-    assert.ok(
-      selector.includes(`:not(${spared})`),
-      `the hold reaches ${spared}: ${selector}`,
-    );
-  }
 
-  /* Inside the reduced-motion guard, so reduced motion — which runs no opening — never hides them. */
   const guard = css.indexOf("@media (prefers-reduced-motion: no-preference)");
   assert.notStrictEqual(guard, -1, "no reduced-motion guard in invite.css");
   let depth = 0;
@@ -296,30 +291,28 @@ test("every piece outside the invite is held hidden until the opening has ended"
       break;
     }
   }
-  const held = css.indexOf("opening-hold ");
+  const at = rules[0].index;
   assert.ok(
-    held > guard && held < close,
-    "the hold sits outside the reduced-motion guard",
+    at < guard || at > close,
+    "the lift sits inside the reduced-motion guard, so reduced motion would paint in another order",
   );
 
-  const frames = css.match(/@keyframes opening-hold\s*\{([\s\S]*?)\n {2}\}/);
-  assert.ok(frames, "@keyframes opening-hold not found");
-  const declarations = [...frames[1].matchAll(/([a-z-]+)\s*:\s*([^;]+);/g)].map(
-    ([, property, value]) => `${property}: ${value.trim()}`,
-  );
-  assert.ok(declarations.length > 0, "opening-hold declares nothing");
-  for (const declaration of declarations) {
-    assert.equal(
-      declaration,
-      "visibility: hidden",
-      `opening-hold animates more than visibility: ${declaration}`,
-    );
-  }
-
-  const duration = rule[2].match(/calc\(.*\)/);
-  assert.ok(duration, `the hold's duration is not a token calc: ${rule[2]}`);
   assert.ok(
-    calcMs(duration[0], "opening-hold") > typeEndMs(),
-    "the hold must outlast the type's landing, when the opening's last animation ends",
+    !inviteCss.includes("opening-hold"),
+    "the hold is still in invite.css",
+  );
+
+  const level = (name: string) => {
+    const match = tokens.match(new RegExp(`--${name}:\\s*(\\d+);`));
+    assert.ok(match, `--${name} not found`);
+    return Number(match[1]);
+  };
+  assert.ok(
+    level("z-invite-bloom") > 0,
+    "the lift must put the pieces above the unlayered page",
+  );
+  assert.ok(
+    level("z-invite-bloom") < level("z-content"),
+    "the lift must stay below every card",
   );
 });

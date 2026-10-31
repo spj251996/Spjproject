@@ -2,7 +2,8 @@
    `mix-blend-mode` into a new stacking context: no `z-index`, `isolation`, `contain`,
    `content-visibility`, `transform`, `filter`, sub-1 `opacity`, or shadow. A piece's own `rotate`
    and mirror `scale` are the exceptions, and they are set by the generated stylesheet, not here: a
-   transform isolates the blend only from an ancestor. */
+   transform isolates the blend only from an ancestor. The invite's pieces' own `z-index` is the other,
+   set in `app/_sections/invite.css` for the same reason. */
 
 /* The wrapper carries the section's own frame-scope class (`.mounted-sheet-frame--*`) so the
    section's own frame rule gives this layer a positioned box to sit in. That rule also
