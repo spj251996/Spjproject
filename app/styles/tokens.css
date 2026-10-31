@@ -347,6 +347,8 @@
 
   /* DESIGN.md → Technical Conventions → Z-Index Scale. `z-*` accepts any bare number, so an
      off-scale `z-999` still compiles; only review enforces this scale. */
+  /* The invite's two botanical pieces: above every other piece, below every card (`invite.css`). */
+  --z-invite-bloom: 1;
   --z-content: 20;
   --z-thread: 40;
   /* The scroll progress bar: over every section, under the gallery's scrim. */

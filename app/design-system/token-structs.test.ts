@@ -125,7 +125,7 @@ test("the duration and easing tables are the motion tokens", () => {
 
 test("the z-index table is the z scale", () => {
   const layers = [...base].filter(([name]) => name.startsWith("--z-"));
-  assert.equal(layers.length, 4, "the z-index token count");
+  assert.equal(layers.length, 5, "the z-index token count");
   assert.deepEqual(
     Z_LAYERS.map((item) => [item.token, item.value]),
     layers,

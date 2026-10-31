@@ -174,6 +174,11 @@ export const EASING_TOKENS: EasingToken[] = [
 
 export const Z_LAYERS: LayerItem[] = [
   {
+    token: "--z-invite-bloom",
+    value: "1",
+    role: "Invite bloom · the invite's two botanical pieces, above every other piece and below every card",
+  },
+  {
     token: "--z-content",
     value: "20",
     role: "Content · all text and main components",

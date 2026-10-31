@@ -95,7 +95,7 @@ const RESPONSIVE_POINTERS = [
   "Narrowest supported width → Accessibility Rules",
 ];
 
-/* Four layers: the ivory ground and the mounted sheets sit in document order with no z-index of
+/* Five layers: the ivory ground and the mounted sheets sit in document order with no z-index of
    their own (DESIGN.md → Technical Conventions → Z-Index Scale). */
 
 export function TechnicalSections() {
