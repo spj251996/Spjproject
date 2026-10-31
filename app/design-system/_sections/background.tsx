@@ -10,7 +10,8 @@ const BOTANICAL_POINTERS = [
   "Nineteen named pieces, generated into public/botanical/.",
   "Each piece's width and placement are tuned per width tier and read from the viewport, never from the frame's ring bands.",
   "A portrait window takes the tablet tier's placement at any width, because a portrait window stacks its cards however wide it is.",
-  "Composites with mix-blend-mode: multiply, so it never carries its own z-index — DOM order alone keeps it below content.",
+  "Composites with mix-blend-mode: multiply, so the layer and anything a piece sits inside carry no z-index — DOM order alone keeps it below content.",
+  "Only the invite's two pieces carry a z-index, --z-invite-bloom (1), on the piece itself: nothing botanical paints after the pieces the opening animates, which WebKit would paint as white rectangles.",
   "The invite and the not-found screen share one layout: not-found reuses the invite's own list.",
 ];
 
@@ -53,7 +54,7 @@ export function BackgroundSections() {
           name="Pieces"
           note="Shown side by side at a gallery size, not at their tuned widths or anchors — placement is per section and per tier, listed below."
           source="public/botanical/"
-          spec="AVIF first, WebP fallback · mix-blend-mode: multiply on surface-base · no z-index"
+          spec="AVIF first, WebP fallback · mix-blend-mode: multiply on surface-base · no z-index but the invite's own two"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-base p-space-md">
             {SAMPLE_PIECES.map((piece) => (
