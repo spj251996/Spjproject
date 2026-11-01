@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {
+  PHASE_DEVELOPMENT_SERVER,
+  PHASE_PRODUCTION_BUILD,
+} from "next/constants.js";
 import { pageExtensionsFor } from "../../next.config.ts";
 
-/* The gallery and the thread lab (both `page.dev.tsx`) are built for dev and Vercel previews only. A production
-   build is the default: anything but the exact string "preview" builds neither. */
+/* Only the dev server and VERCEL_ENV exactly "preview" build the `.dev.tsx` pages; NODE_ENV has no say. */
 
-test("dev builds both lab routes", () => {
-  assert.deepEqual(pageExtensionsFor({ NODE_ENV: "development" }), [
+test("the dev server builds both lab routes", () => {
+  assert.deepEqual(pageExtensionsFor(PHASE_DEVELOPMENT_SERVER, {}), [
     "dev.tsx",
     "tsx",
     "ts",
@@ -15,12 +18,12 @@ test("dev builds both lab routes", () => {
 
 test("a preview build carries both lab routes", () => {
   assert.deepEqual(
-    pageExtensionsFor({ NODE_ENV: "production", VERCEL_ENV: "preview" }),
+    pageExtensionsFor(PHASE_PRODUCTION_BUILD, { VERCEL_ENV: "preview" }),
     ["dev.tsx", "tsx", "ts"],
   );
 });
 
-test("production builds neither, whatever else VERCEL_ENV says", () => {
+test("a production build carries neither, whatever else VERCEL_ENV says", () => {
   for (const VERCEL_ENV of [
     undefined,
     "",
@@ -31,9 +34,19 @@ test("production builds neither, whatever else VERCEL_ENV says", () => {
     "preview ",
   ]) {
     assert.deepEqual(
-      pageExtensionsFor({ NODE_ENV: "production", VERCEL_ENV }),
+      pageExtensionsFor(PHASE_PRODUCTION_BUILD, { VERCEL_ENV }),
       ["tsx", "ts"],
       `VERCEL_ENV=${JSON.stringify(VERCEL_ENV)}`,
+    );
+  }
+});
+
+test("a production build carries neither, whatever NODE_ENV says", () => {
+  for (const NODE_ENV of [undefined, "development", "test", "production"]) {
+    assert.deepEqual(
+      pageExtensionsFor(PHASE_PRODUCTION_BUILD, { NODE_ENV }),
+      ["tsx", "ts"],
+      `NODE_ENV=${JSON.stringify(NODE_ENV)}`,
     );
   }
 });
