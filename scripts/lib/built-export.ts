@@ -2,10 +2,11 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { TestContext } from "node:test";
 
-/* The source the static export is built from. The design-system gallery is `.dev.tsx` and never
-   exported, so an edit there cannot make `out/` stale. */
+/* The source the static export is built from. The design-system gallery is `.dev.tsx`: a default build never
+   exports it and no lab test reads its page, so an edit there cannot make a page these tests read stale. */
 const SOURCE_ROOTS = ["app", "components", "content"];
 const EXCLUDED = ["app/design-system"];
+const PREVIEW_BUILD = "VERCEL_ENV=preview npm run build";
 
 function newestSource(
   roots: readonly string[],
@@ -35,15 +36,16 @@ export function freshExport(
   page = "out/index.html",
   roots: readonly string[] = SOURCE_ROOTS,
   excluded: readonly string[] = EXCLUDED,
+  rebuild = "npm run build",
 ): boolean {
   if (!existsSync(page)) {
-    t.skip("no static export: run `npm run build` first");
+    t.skip(`no static export: run \`${rebuild}\` first`);
     return false;
   }
   const newest = newestSource(roots, excluded);
   if (newest.mtimeMs > statSync(page).mtimeMs) {
     throw new Error(
-      `stale static export: ${newest.path} changed after out/ was built; run \`npm run build\``,
+      `stale static export: ${newest.path} changed after out/ was built; run \`${rebuild}\``,
     );
   }
   return true;
@@ -59,10 +61,8 @@ export function labExport(
   excluded: readonly string[] = EXCLUDED,
 ): boolean {
   if (!existsSync(page)) {
-    t.skip(
-      "the export has no /thread: build it with `VERCEL_ENV=preview npm run build`",
-    );
+    t.skip(`the export has no /thread: build it with \`${PREVIEW_BUILD}\``);
     return false;
   }
-  return freshExport(t, page, roots, excluded);
+  return freshExport(t, page, roots, excluded, PREVIEW_BUILD);
 }

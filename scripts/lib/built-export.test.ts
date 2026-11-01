@@ -132,3 +132,21 @@ test("with a stale lab page, labExport throws naming the file", () => {
     (error: Error) => error.message.includes("late.tsx"),
   );
 });
+
+test("a stale lab page's error names the preview build", () => {
+  const root = tree({
+    "app/late.tsx": 3000,
+    "out/thread.html": 2000,
+  });
+  assert.throws(
+    () =>
+      labExport(
+        fakeContext(),
+        join(root, "out/thread.html"),
+        [join(root, "app")],
+        [],
+      ),
+    (error: Error) =>
+      error.message.includes("VERCEL_ENV=preview npm run build"),
+  );
+});
