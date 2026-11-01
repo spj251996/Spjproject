@@ -50,6 +50,15 @@
   }
 }
 
+/* Text only, at every width. The card thread is absolutely positioned, so it paints over every
+   non-positioned line whatever the document order; raising the text keeps the thread behind the type.
+   `[aria-hidden]` excludes the card thread: this rule's `position` and `z-index` would take it out of
+   `absolute` into the flow. `position: relative` adds no offset, so nothing moves. */
+.stack > *:not(.figureCol):not([aria-hidden]) {
+  position: relative;
+  z-index: 1;
+}
+
 /* Side by side the card is two real columns: the text takes 55 and centres in its own column, the
    drawing 45 with a fixed square centred in it.
 
@@ -67,14 +76,9 @@
     align-items: center;
   }
 
-  /* Text only. `[aria-hidden]` excludes the card thread: this rule's `position` and `z-index` would
-     take it out of `absolute` into the flow. Leaving it at `auto` while the text takes `z-index: 1`
-     keeps the thread behind the type here. */
   .stack > *:not(.figureCol):not([aria-hidden]) {
     grid-column: 1;
     justify-self: center;
-    position: relative;
-    z-index: 1;
   }
 
   /* The column is the drawing's positioning box, and the drawing is taken out of the flow inside
