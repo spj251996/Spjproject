@@ -199,7 +199,7 @@
   /* Half the divider, for the eyebrow ornament's rules (DESIGN.md -> Components -> UI ->
      `sprig-ornament`). At dpr 1 it paints as a fainter full pixel rather than a thinner one. */
   --stroke-hairline: 0.5px;
-  --stroke-thread: 1.6px;
+  --stroke-thread: 2.2px;
   --stroke-thread-head: 3.2px;
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
      ends). */

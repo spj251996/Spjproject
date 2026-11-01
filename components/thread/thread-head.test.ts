@@ -190,7 +190,11 @@ test("the ramp passes through vermilion, where vermilion sits on it", () => {
 });
 
 test("the step count follows the colour span as well as the length", () => {
-  assert.equal(headStepCount(OPTIONS), 14, "14 at the shipped values");
+  assert.equal(
+    headStepCount(OPTIONS),
+    17,
+    "ceil(132 / 8) at the shipped values",
+  );
 
   const longer = { ...OPTIONS, length: 160 };
   assert.equal(headStepCount(longer), 20, "length: ceil(160 / 8)");
@@ -200,7 +204,7 @@ test("the step count follows the colour span as well as the length", () => {
     midColor: OPTIONS.tailColor,
     tipColor: OPTIONS.tailColor,
   };
-  assert.equal(headStepCount(flat), 12, "no colour span leaves ceil(96 / 8)");
+  assert.equal(headStepCount(flat), 17, "no colour span leaves ceil(132 / 8)");
 
   const paler: HeadOptions = { ...OPTIONS, tipColor: [255, 178, 87] };
   assert.ok(
@@ -300,9 +304,9 @@ test("a tip at a piece's end is covered by a round-capped cover, since no butt s
   );
 });
 
-test("the head is 60 times the base stroke, 96px at the shipped width", () => {
+test("the head is 60 times the base stroke, 132px at the shipped width", () => {
   assert.equal(HEAD_LENGTH_RATIO, 60);
-  assert.ok(Math.abs(OPTIONS.length - 96) < 1e-9);
+  assert.ok(Math.abs(OPTIONS.length - 132) < 1e-9);
 });
 
 /* Owner-tuned values, chosen on live renders (2026-09-30): pinned so a fitting step or a stray edit
@@ -311,7 +315,7 @@ test("the head is 60 times the base stroke, 96px at the shipped width", () => {
 test("the head's owner-chosen values are the ones in the stylesheet", () => {
   assert.deepEqual(colourToken("color-thread-core"), [0xff, 0x79, 0x00]);
   assert.equal(pxToken("stroke-thread-head"), 3.2);
-  assert.equal(pxToken("stroke-thread"), 1.6);
+  assert.equal(pxToken("stroke-thread"), 2.2);
 });
 
 /* Any failure here is also a prompt to re-fit `FITTED_GLOW` (`thread-retrace.ts`): the re-trace's eight

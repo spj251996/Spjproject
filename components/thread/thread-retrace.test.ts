@@ -321,7 +321,7 @@ test("a segment crosses a piece boundary whole", () => {
 test("a segment whose tip is on a piece's end is covered by the round cap there, as the head is", () => {
   const segments = retraceSegments(180, 300, CHAIN, RETRACE_OPTIONS);
   assert.equal(segments.filter((segment) => segment.cap === "round").length, 1);
-  const none = retraceSegments(180, 299, CHAIN, RETRACE_OPTIONS);
+  const none = retraceSegments(180, 298, CHAIN, RETRACE_OPTIONS);
   assert.equal(
     none.filter((segment) => segment.cap === "round").length,
     0,
