@@ -26,3 +26,27 @@ test("the frames directory holds exactly the listed sheets", () => {
     FRAME_SHEETS.map((sheet) => `${sheet.name}.css`).sort(),
   );
 });
+
+/* Below 20rem only browser zoom (or a screen narrower than 320px) lays the page out, so the frame
+   narrows its ground and padding there in one block appended last — last, so it wins every regime
+   rule of equal specificity by order. */
+const REFLOW_MEDIA = "@media (width < 20rem) {";
+
+test("each sheet ends with exactly one reflow block", () => {
+  for (const sheet of FRAME_SHEETS) {
+    const committed = readFileSync(`${FRAMES_DIR}/${sheet.name}.css`, "utf8");
+    const at = committed.indexOf(REFLOW_MEDIA);
+    assert.ok(at > 0, `${sheet.name}.css has no reflow block`);
+    assert.equal(
+      committed.indexOf(REFLOW_MEDIA, at + 1),
+      -1,
+      `${sheet.name}.css has more than one reflow block`,
+    );
+    const block = committed.slice(at);
+    assert.match(
+      block,
+      /^@media \(width < 20rem\) \{\n[^@]*\n\}\n$/,
+      `${sheet.name}.css's reflow block is not the last thing in the file`,
+    );
+  }
+});

@@ -2482,3 +2482,7 @@
 }
 }
 }
+@media (width < 20rem) {
+.mounted-sheet-frame--not-found { --mounted-sheet-ground: var(--spacing-space-3xs); --ground-block: var(--spacing-space-3xs); --ground-inline: var(--spacing-space-3xs); }
+.mounted-sheet-frame--not-found > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__sheet { padding: var(--spacing-space-xs); }
+}

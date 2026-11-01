@@ -112,3 +112,7 @@
 @media (width >= 100rem) and (pointer: coarse) and (orientation: landscape) {
 .mounted-sheet-frame--tall > .mounted-sheet-frame__box > .mounted-sheet-frame__mount { padding: var(--spacing-space-md); }
 }
+@media (width < 20rem) {
+.mounted-sheet-frame--tall { --mounted-sheet-ground: var(--spacing-space-3xs); --ground-block: var(--spacing-space-3xs); --ground-inline: var(--spacing-space-3xs); }
+.mounted-sheet-frame--tall > .mounted-sheet-frame__box > .mounted-sheet-frame__mount > .mounted-sheet-frame__sheet { padding: var(--spacing-space-xs); }
+}

@@ -174,7 +174,14 @@ test("the hero's reveal ladder equals revealFor in every window the hero can be 
     "xl:": "desktop",
   };
   const ladder: Partial<Record<WidthTier, number>> = {};
-  for (const utility of heroArm[1].split(/\s+/)) {
+  // The one addition below the reflow width, which this ladder (>= 20rem) does not read.
+  const reflowRung = `${["max", "reflow"].join("-")}:p-0`;
+  const rungs = heroArm[1].split(/\s+/);
+  assert.ok(
+    rungs.includes(reflowRung),
+    "the hero's reveal drops to zero below the reflow width",
+  );
+  for (const utility of rungs.filter((rung) => rung !== reflowRung)) {
     const parts = utility.match(/^(md:|lg:|xl:)?p-(.+)$/);
     assert.ok(parts, `not an all-sides padding utility: ${utility}`);
     const px = pxOfStep[parts[2]];
@@ -195,6 +202,14 @@ test("the hero's reveal ladder equals revealFor in every window the hero can be 
       `Tailwind's ${key}: is not cut where the frame's width tiers are`,
     );
   }
+
+  assert.match(
+    tokens,
+    new RegExp(
+      `@custom-variant\\s+max-reflow\\s+\\(\\s*@media\\s*\\(\\s*width\\s*<\\s*${BREAKPOINT_REM.reflow}rem\\s*\\)\\s*\\)\\s*;`,
+    ),
+    "Tailwind's max-reflow: is not cut where the frame's reflow tier is",
+  );
 
   let checked = 0;
   for (const windowClass of windowClasses(inviteFit, "single", true)) {

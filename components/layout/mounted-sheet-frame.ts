@@ -133,12 +133,19 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
   },
 };
 
-/* `{breakpoints.md}`, `{breakpoints.lg}` and `{breakpoints.xl}`. The media queries use rem, as the
-   type's breakpoint variants do, so ground and type change at the same width; the arithmetic needs
-   pixels, which agree at the default 16px root. Held as numbers because a media query cannot read
-   a custom property — change `--breakpoint-*` in app/styles/tokens.css and these together. */
+/* `{breakpoints.reflow}`, `{breakpoints.md}`, `{breakpoints.lg}` and `{breakpoints.xl}`. The media
+   queries use rem, as the type's breakpoint variants do, so ground and type change at the same
+   width; the arithmetic needs pixels, which agree at the default 16px root. Held as numbers because
+   a media query cannot read a custom property. `md`, `lg` and `xl` are `--breakpoint-*` tokens in
+   app/styles/tokens.css, tied by mounted-sheet.test.ts; `reflow` is the `max-reflow` `@custom-variant`
+   there, tied to this value by the same test. Change each with its counterpart. */
 const DEFAULT_ROOT_FONT_SIZE = 16;
-export const BREAKPOINT_REM = { md: 48, lg: 64, xl: 100 } as const;
+export const BREAKPOINT_REM = {
+  reflow: 20,
+  md: 48,
+  lg: 64,
+  xl: 100,
+} as const;
 
 function breakpointPx(rem: number): number {
   return rem * DEFAULT_ROOT_FONT_SIZE;

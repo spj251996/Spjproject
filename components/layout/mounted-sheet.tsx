@@ -33,9 +33,10 @@ const MOUNT_SHADOW = "shadow-mount";
    ladder's four rungs, in `{spacing.*}` utilities: `{reveal.base}` · `{reveal.md}` · `{reveal.lg}` ·
    `{reveal.xl}`. Only the hero reaches the first — an ordinary section has no mount below
    `{breakpoints.md}` to reveal one on. On a fitted card the hero's rungs come from here rather than
-   from the generated stylesheet. */
+   from the generated stylesheet. Below the reflow width the hero paints no mount, so its reveal there
+   is only space that pushes the date and sentence past the card (DESIGN.md → Accessibility Rules). */
 const MOUNT_REVEAL = {
-  hero: "p-space-sm md:p-space-xs lg:p-space-sm xl:p-space-md",
+  hero: "p-space-sm md:p-space-xs lg:p-space-sm xl:p-space-md max-reflow:p-0",
   section: "p-0 md:p-space-xs lg:p-space-sm xl:p-space-md",
 } as const;
 

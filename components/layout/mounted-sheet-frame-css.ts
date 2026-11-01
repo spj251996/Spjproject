@@ -81,6 +81,21 @@ const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
 const LAPTOP_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-laptop), ${CARD_HEIGHT})`;
 const LAPTOP_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
 
+/* Below `{breakpoints.reflow}` the layout is narrower than any unzoomed phone the site supports, so
+   only browser zoom (or a screen under 320px) reaches it. There the frame gives up ground and
+   padding so the card's text keeps its width. The block is emitted LAST in every sheet: each rule it
+   overrides has the same selector, so it wins by order alone and changes nothing at 20rem and up. */
+const REFLOW_WIDTH_QUERY = `(width < ${BREAKPOINT_REM.reflow}rem)`;
+export const REFLOW_FRAME = { ground: 4, padding: 12 } as const;
+
+function reflowRules(scope: string, sheet: string): string {
+  const ground = spacingTokenFor(REFLOW_FRAME.ground);
+  return `@media ${REFLOW_WIDTH_QUERY} {
+${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
+${sheet} { padding: ${spacingTokenFor(REFLOW_FRAME.padding)}; }
+}`;
+}
+
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
    value, because the arithmetic needs the number a media query cannot read from the token — a
    spacing token change must change this map too. */
@@ -560,6 +575,7 @@ export function mountedSheetFrameCss(
           : [mountRules(windowClass, scope)]),
       paddingRules(windowClass, hero, layout, scope),
     ]),
+    reflowRules(scope, sheetSelector(scope, layout)),
   ].join("\n");
 }
 
@@ -643,5 +659,5 @@ ${mountRule("landscape")}
 }`;
   });
 
-  return [base, ...perClass].join("\n");
+  return [base, ...perClass, reflowRules(scope, sheet)].join("\n");
 }
