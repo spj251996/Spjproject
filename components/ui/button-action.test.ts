@@ -267,7 +267,7 @@ test("ground decides the classes: the pill side takes the pill, the plain side t
    caller taking the pill is a design change, not a refactor. */
 test("only the map action takes the pill", () => {
   /* Every shipped caller, found rather than listed, so a new one is covered the day it appears. The
-     dev-only gallery is excluded: it shows each ground as a specimen. */
+     design-system gallery is excluded: it shows each ground as a specimen. */
   const callers = ["app", "components"]
     .flatMap((root) =>
       readdirSync(root, { recursive: true, encoding: "utf8" }).map(

@@ -70,8 +70,8 @@ test("the viewer is handed the full-screen copy, never the grid's", () => {
 
 test("the grid panel creates no handler of its own, so a server page can still render it", () => {
   /* The design-system gallery renders the panel from a server component, where a function created
-     inside it cannot reach a \`<button>\` — the route answers 500. Neither tsc, this suite nor the build
-     sees it, because that route is dev-only. A tile's handler must come from \`onOpenPhoto\` itself. */
+     inside it cannot reach a \`<button>\` — the route answers 500. Neither tsc nor this suite sees it, and
+     only a preview build renders that route. A tile's handler must come from \`onOpenPhoto\` itself. */
   assert.ok(
     !panel.includes('"use client"'),
     "the panel is meant to stay server-renderable",
