@@ -1,11 +1,18 @@
 # SF Wedding
 
-A single-page wedding invitation for Flemy and Sebastian, covering a betrothal and a
-wedding. Venues, dates and times live in the content modules, not here.
+A single-page wedding invitation for Sebastian and Flemy, covering their betrothal and their wedding.
 
-Guests get event facts up front, with zero interaction cost, plus a growing photo record of the
-celebration as each ritual completes. The red thread is an exploration at `/thread`, built for preview
-deploys and `next dev` only — never part of the invitation or the production build.
+Guests open one link and scroll one page:
+
+- **Invitation** — the couple's names, the blessing and the dates.
+- **Event Info** — each event's date, time and place, with a map link to get there.
+- **Family** — the families of the bride and groom.
+- **Celebrations & Gallery** — the rituals, and their photographs once each has taken place.
+- **Wishes** — a closing verse and the families' sign-off.
+
+The page is built for phones first, for guests of every age and on slow connections: everything a
+guest needs is visible without tapping anything, and photographs never slow the event details down.
+Venues, dates and times live in `content/`, not in this README.
 
 ## Stack
 
@@ -15,10 +22,10 @@ deploys and `next dev` only — never part of the invitation or the production b
 | Framework | Next.js, App Router, static export |
 | Styling | Tailwind CSS |
 | Animation | CSS and plain scripts, no animation library |
-| Content | Typed TypeScript modules under `content/`, each exported through its validator |
+| Content | Typed TypeScript modules under `content/`, each checked by a validator |
 | Lint and format | Biome, which fully replaces ESLint and Prettier |
 | Hosting | Vercel |
-| Images | Generated from `assets/` by a committed script (`npm run images`; AVIF + WebP); `next/image` (unoptimized) for portraits, bare `<img>` for the ritual photographs |
+| Images | AVIF and WebP generated from `assets/` by a committed script (`npm run images`) |
 
 ## Requirements
 
@@ -45,24 +52,33 @@ npm run format    # Biome, writing in place
 ## Content
 
 Content lives in `content/` as typed modules rather than data files, so a malformed entry fails the
-build instead of reaching a page. Each module exports through its validator, and `npm run build` runs
-`prebuild` first, which executes those validators and checks that every referenced asset exists on disk.
-Run that check alone with `npm run validate:content`.
+build instead of reaching a page. `npm run build` runs `prebuild` first, which executes the validators
+and checks that every referenced image exists on disk. Run that check alone with
+`npm run validate:content`.
+
+## Development-only pages
+
+Two pages are built only by `npm run dev` and on Vercel preview deploys — never in the production
+build, so guests never receive them:
+
+- `/design-system` — a visual reference of the design system's tokens and components.
+- `/thread` — a design study of the invitation with an animated red thread running down the page. It
+  is not part of the invitation.
 
 ## Project structure
 
 ```
-app/                    Next.js App Router routes, layout and global styles
+app/                    Routes, layout and global styles
 components/             React components, grouped by layer
 content/                Typed content modules and their validators
 assets/                 Source art the generators read
-scripts/                Generators and gates (fits, frames, images, export checks)
+scripts/                Generators and checks (layout fits, images, export checks)
 public/                 Static assets served as-is
-legacy-html/            Archived pre-Next.js static-HTML build — reference-only, not served
+legacy-html/            The earlier static-HTML version — kept for reference, not served
 ```
 
-Generated files (the fits, the frame sheets, the thread paths, the image deliveries) are never
-hand-edited — re-run their generator.
+Generated files (layout fits, frame stylesheets, thread paths, delivered images) are never edited by
+hand — re-run their generator.
 
 ## Deployment
 
