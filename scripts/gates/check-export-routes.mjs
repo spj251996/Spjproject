@@ -19,6 +19,7 @@ import {
   splitAtRuleBlocks,
   topLevelRules,
 } from "../lib/css-top-level-rules.mjs";
+import { galleryVerdict, labForbidden } from "../lib/lab-routes.mjs";
 import { linkedStylesheets } from "../lib/linked-stylesheets.mjs";
 
 /* Measured on the export before this gate was written: the trunk's no-JS fallback, the trunk's live
@@ -96,25 +97,8 @@ const FORBIDDEN = [
   /* A stray copy left by a half-done removal would otherwise fail nothing: nothing here enumerates
      `out/`'s root. */
   "out/preview.html",
-  ...(PREVIEW
-    ? []
-    : [
-        "out/thread.html",
-        "out/thread.txt",
-        "out/thread",
-        "out/design-system.html",
-        "out/design-system",
-      ]),
+  ...labForbidden(PREVIEW),
 ];
-
-/* The gallery composes no section and carries no frame, so it is not an EXPECTED row. What a preview build must
- * show is that the page is the gallery and not a 404 body in its place: a page that calls `notFound()` still
- * exports a file at its path. */
-const GALLERY = {
-  path: "out/design-system.html",
-  heading: /<h1[^>]*>Design System<\/h1>/,
-  robots: "noindex, nofollow",
-};
 
 /* THE OTHER HALF OF THE DOC PARITY GATE: every non-`[lab]` section is present in the export. A missing
  * section is exactly what a bundler can lose without erroring, which is why a green build is not
@@ -156,18 +140,11 @@ console.log(
 );
 
 if (PREVIEW) {
-  const html = existsSync(GALLERY.path)
-    ? readFileSync(GALLERY.path, "utf8")
-    : "";
-  const robots = [
-    ...html.matchAll(/<meta name="robots" content="([^"]*)"/g),
-  ].map((m) => m[1]);
-  const ok =
-    GALLERY.heading.test(html) &&
-    robots.length === 1 &&
-    robots[0] === GALLERY.robots;
+  const path = "out/design-system.html";
+  const html = existsSync(path) ? readFileSync(path, "utf8") : "";
+  const { ok, heading, robots } = galleryVerdict(html);
   console.log(
-    `${ok ? "ok  " : "FAIL"} /design-system (gallery): ${html ? `heading ${GALLERY.heading.test(html) ? "found" : "MISSING"}, robots [${robots}]` : "missing from the export"}`,
+    `${ok ? "ok  " : "FAIL"} /design-system (gallery): ${html ? `heading ${heading ? "found" : "MISSING"}, robots [${robots}]` : "missing from the export"}`,
   );
   if (!ok) failed = true;
 }
