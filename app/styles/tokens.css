@@ -214,7 +214,7 @@
      interval, before everything stops until the next scroll. A count, not a time, so the pace can
      change without changing how long the page stays busy; every shorter stretch fits whole loops into
      the same window (`page-thread.tsx` -> `periodFor`). */
-  --retrace-loops: 4;
+  --retrace-loops: 2;
   /* THE RE-TRACE'S SPEED, in px of thread per second, so every lit stretch moves at one rate: a
      fixed-duration loop makes a long stretch travel several times faster than a short one. 0 keeps
      the fixed-duration behaviour. 845 is the invite's speed at `wide` under a 3.2s loop, the pace the
@@ -229,9 +229,11 @@
      from script. */
   /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL, so a fling shows the line travelling
      rather than popping in. A follower, not a delay: the thread always ends at the length the scroll
-     position means. A fixed DURATION, not a time constant, because an exponential never arrives and
-     the head would never retire. 0 paints immediately. */
-  --thread-catchup: 0.4s;
+     position means. A fixed DURATION on a named curve, not a time constant, because an exponential
+     never arrives and the head would never retire. The curve is a keyword the script reads
+     (`thread-catch-up.ts`). 0 paints immediately. */
+  --thread-catchup: 0.6s;
+  --thread-catchup-ease: ease-out-cubic;
   --thread-terminal-span: 0.2;
   --thread-terminal-finish: 0.08;
   --stroke-rim-offset: 2px;

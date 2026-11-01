@@ -44,8 +44,9 @@ export function retracePhase(drawn: number, totalLength: number): RetracePhase {
 
 /* The group indices that should carry a running loop; empty when nothing should animate.
 
-   While `"drawing"` it is at most the group holding the tip, if that group is on screen: an unfinished
-   line with a live tip says there is more below, which is the page's scroll cue. Once `"complete"` it
+   While `"drawing"` it is every group the tip has reached — its own and each earlier one — that is on
+   screen: an unfinished line with a live tip says there is more below, which is the page's scroll cue,
+   and a reader who scrolls back up to a stretch already passed sees it loop too. Once `"complete"` it
    is every group on screen, one loop per stretch. The whole page is not one stretch because at 9.4
    screens a single travelling segment would be in view for about a tenth of each loop, and either
    whip past as a glitch or leave the reader watching nothing between passes. A stretch is a group
@@ -68,7 +69,10 @@ export function retraceTargets(
     );
   };
   if (phase === "drawing") {
-    return tipGroup !== undefined && onScreen(tipGroup) ? [tipGroup] : [];
+    if (tipGroup === undefined) return [];
+    return groupRects.flatMap((_, index) =>
+      index <= tipGroup && onScreen(index) ? [index] : [],
+    );
   }
   return groupRects.flatMap((_, index) => (onScreen(index) ? [index] : []));
 }

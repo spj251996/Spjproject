@@ -169,7 +169,7 @@ test("a cubic flattens into short chords that start and end where the curve does
 
 /* Task 4's code-read axes: an id the reader cannot parse would offer a candidate that paints the
    shipped value under a new label. */
-test("every light option names a lift and pairs the head with the re-trace, and every easing option sets a duration", () => {
+test("every light option names a lift and pairs the head with the re-trace, and every shadow option is a filter", () => {
   const axis = (id: string) => {
     const found = THREAD_VARIANT_AXES.find((candidate) => candidate.id === id);
     assert.ok(found, `no ${id} axis`);
@@ -188,12 +188,6 @@ test("every light option names a lift and pairs the head with the re-trace, and 
     !ids.includes("end") && !ids.includes("rest"),
     "the head and re-trace are one axis",
   );
-  for (const option of axis("easing").options) {
-    assert.match(
-      option.properties?.["--thread-catchup"] ?? "",
-      /^\d+(\.\d+)?s$/,
-    );
-  }
   for (const option of axis("shadow").options) {
     assert.match(option.properties?.["--bleed-thread"] ?? "", /^drop-shadow\(/);
   }

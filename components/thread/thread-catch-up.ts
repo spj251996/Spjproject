@@ -14,8 +14,6 @@
    in, not read here, because this ticks every frame and `getComputedStyle` would force a style
    recalc. A duration of 0 paints immediately and starts no loop. The opening draw does not go through
    this; it calls `seen` so the follower never replays it. */
-import { readVariant } from "./thread-variant.ts";
-
 /* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
    exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
    0.4s time constant the card thread still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
@@ -26,22 +24,24 @@ import { readVariant } from "./thread-variant.ts";
    `--thread-catchup` is therefore how long the thread takes to ARRIVE, which is also what the owner
    is setting when they dial it. Re-targeting mid-flight eases from wherever it has got to, so a
    continuous scroll trails smoothly rather than restarting with a jerk. */
-function easeOutQuad(t: number): number {
-  return 1 - (1 - t) * (1 - t);
-}
-
-/* The review panel's draw-easing candidates (Task 4); the shipped curve is the absence of a choice. */
-const EASINGS: Readonly<Record<string, (t: number) => number>> = {
-  "out-cubic-0.6": (t) => 1 - (1 - t) ** 3,
-  "in-out-sine-0.7": (t) => -(Math.cos(Math.PI * t) - 1) / 2,
-  "out-quart-0.9": (t) => 1 - (1 - t) ** 4,
+/* The curve is named by `--thread-catchup-ease`, so the line is pulled into place fast and settles
+   slowly (DESIGN.md -> Motion). Every curve here starts at 0, arrives at exactly 1 and never overshoots:
+   the draw never runs backwards, so an overshooting ease is forbidden, and the test holds every entry
+   to that. An unknown keyword falls back to the first. */
+export const CATCH_UP_EASES: Readonly<Record<string, (t: number) => number>> = {
+  "ease-out-cubic": (t) => 1 - (1 - t) ** 3,
+  "ease-out-quad": (t) => 1 - (1 - t) * (1 - t),
 };
+const FALLBACK_EASE = CATCH_UP_EASES["ease-out-cubic"];
 
-/* Asked on the first `to`, never at creation: the follower is created during render, which also runs
-   on the server, where there is no document to read the choice from. */
+/* Read on the first `to`, once per follower, never at creation: the follower is created during
+   render, which also runs on the server, where there is no document to read the token from. */
 function chosenEasing(): (t: number) => number {
-  if (typeof document === "undefined") return easeOutQuad;
-  return EASINGS[readVariant("easing") ?? ""] ?? easeOutQuad;
+  if (typeof document === "undefined") return FALLBACK_EASE;
+  const keyword = getComputedStyle(document.documentElement)
+    .getPropertyValue("--thread-catchup-ease")
+    .trim();
+  return CATCH_UP_EASES[keyword] ?? FALLBACK_EASE;
 }
 
 export function createCatchUp(paint: (drawn: number) => void) {
@@ -61,7 +61,7 @@ export function createCatchUp(paint: (drawn: number) => void) {
   function tick(now: number) {
     raf = null;
     const t = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-    shown = from + (target - from) * (ease ?? easeOutQuad)(t);
+    shown = from + (target - from) * (ease ?? FALLBACK_EASE)(t);
     if (t >= 1) shown = target;
     paint(shown);
     if (t < 1) raf = window.requestAnimationFrame(tick);

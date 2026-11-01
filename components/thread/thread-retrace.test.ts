@@ -53,7 +53,7 @@ test("the phase turns over only when the whole thread has been drawn", () => {
   assert.equal(retracePhase(1000, 1000), "complete");
 });
 
-test("while drawing, only the group holding the tip may loop", () => {
+test("while drawing, the group holding the tip loops", () => {
   assert.deepEqual(
     retraceTargets("drawing", RECTS, { scrollY: 0, height: 700 }, 0),
     [0],
@@ -62,6 +62,20 @@ test("while drawing, only the group holding the tip may loop", () => {
     retraceTargets("drawing", RECTS, { scrollY: 0, height: 700 }, undefined),
     [],
     "no tip, no loop",
+  );
+});
+
+/* C0, ruled (b): scrolling back up to a stretch the tip has already passed loops that stretch too. */
+test("while drawing, every on-screen group the tip has reached loops, and none past it", () => {
+  assert.deepEqual(
+    retraceTargets("drawing", RECTS, { scrollY: 350, height: 700 }, 2),
+    [0, 1],
+    "scrolled back up over two passed groups, both loop",
+  );
+  assert.deepEqual(
+    retraceTargets("drawing", RECTS, { scrollY: 1750, height: 700 }, 2),
+    [2],
+    "a group past the tip does not",
   );
 });
 
@@ -334,8 +348,8 @@ test("the built page reads the re-trace's loop cadence, settle interval and loop
   assert.match(tokenValue("retrace-settle"), /^[\d.]+m?s$/);
   assert.equal(
     parseCssCount(tokenValue("retrace-loops")),
-    4,
-    "--retrace-loops is the owner's pick, 4 on the LONGEST stretch (2026-10-05), superseding the 5 of 2026-10-02 for that stretch alone -- every shorter one now runs more than five",
+    2,
+    "--retrace-loops is 2 on the LONGEST stretch (DESIGN.md -> Motion); every shorter one runs more",
   );
   if (!labExport(t)) return;
   const css = builtChunks(".css");

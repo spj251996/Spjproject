@@ -99,37 +99,6 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
       },
     ],
   },
-  /* Task 4's draw easing: the curve is chosen in `thread-catch-up.ts`, the duration here. */
-  {
-    id: "easing",
-    label: "Draw catch-up",
-    options: [
-      {
-        id: "out-cubic-0.6",
-        label: "Ease-out cubic · 0.6s",
-        properties: { "--thread-catchup": "0.6s" },
-      },
-      {
-        id: "in-out-sine-0.7",
-        label: "Ease-in-out sine · 0.7s",
-        properties: { "--thread-catchup": "0.7s" },
-      },
-      {
-        id: "out-quart-0.9",
-        label: "Ease-out quart · 0.9s",
-        properties: { "--thread-catchup": "0.9s" },
-      },
-    ],
-  },
-  /* Task 4's loop budget for the re-trace (the shipped 4 is the absence of a choice). */
-  {
-    id: "loops",
-    label: "Re-trace loops when still",
-    options: [
-      { id: "2", label: "2 loops", properties: { "--retrace-loops": "2" } },
-      { id: "1", label: "1 loop", properties: { "--retrace-loops": "1" } },
-    ],
-  },
 ];
 
 /* The head's shipped halo (3.5 / 12 / 33px at 68 / 44 / 30%, `--halo-thread-head`) at `percent` of
