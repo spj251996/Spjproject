@@ -266,6 +266,15 @@ try {
             portal.style.display = "none";
           }
         });
+        /* The question is whether the thread is DRAWN in one piece, not whether anything covers it:
+           Wishes' type is raised over the card thread at every width, so a line passing behind the
+           names reads as two runs of ink with the type shown. Everything in `<main>` but the thread's
+           own `<svg>`s and the sections themselves (an element screenshot needs a visible element) is
+           hidden for the shot; `visibility` hides an element's own paint and leaves its box, so
+           nothing reflows and a visible descendant still paints. */
+        await page.addStyleTag({
+          content: `main * { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg], [data-thread-svg] * { visibility: visible !important; }`,
+        });
         await section.evaluate((node, at) => {
           node.scrollIntoView();
           /* `scrub` parks the section's own top at the window's top, which sits inside the hold
