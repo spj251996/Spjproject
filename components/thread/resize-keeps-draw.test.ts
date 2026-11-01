@@ -5,6 +5,10 @@ import { extname, join } from "node:path";
 import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
 
+/* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
+   own and re-shapes every path: the panel's "off" turns it off for them. */
+const SWAY_OFF = `localStorage.setItem("thread-review", JSON.stringify({ sway: "off" }))`;
+
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
    -> Variant Routes). The export server serves literal paths, and a static route emits
@@ -166,6 +170,7 @@ test("a height-only resize that reflows the page does not un-draw the thread (sl
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
@@ -255,6 +260,7 @@ test("a height-only resize that reflows the page does not erase what the opening
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
@@ -309,6 +315,7 @@ test("a resize that reflows the page re-measures rather than taking the cheap pa
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
@@ -394,6 +401,7 @@ test("a resize event with an unchanged layout takes the cheap path and keeps the
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
@@ -470,6 +478,7 @@ test("the second layout event of one viewport change does not paint against the 
       deviceScaleFactor: 1,
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });

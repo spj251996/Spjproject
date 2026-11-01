@@ -170,6 +170,12 @@
    filter): eight translucent vermilion strokes on the segment's own path, fitted to the 4x halo's
    measured falloff. One `<g>` per stretch, set by script, below `.pageRetrace` in paint order so the
    core lies over it. */
+/* At half strength, as the head's halo is: the sheen glows faintly rather than burns. One opacity on
+   the group, so the strokes composite inside it before it fades. */
+.pageRetraceGlow {
+  opacity: 0.5;
+}
+
 .pageRetraceGlow path {
   fill: none;
   stroke-linejoin: round;

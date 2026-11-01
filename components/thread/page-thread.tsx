@@ -55,7 +55,11 @@ import {
   tipGroupIndex,
 } from "./thread-retrace";
 import type { PieceSamples } from "./thread-samples";
-import { createThreadSpikes, type ThreadSpikes } from "./thread-spikes";
+import {
+  createThreadSpikes,
+  setSwayAwake,
+  type ThreadSpikes,
+} from "./thread-spikes";
 import {
   headOptions,
   readTerminalWindow,
@@ -224,6 +228,13 @@ export function PageThread() {
   const retraceStartRef = useRef<number | null>(null);
   const retraceSuspendedAtRef = useRef<number | null>(null);
   const retraceSpentRef = useRef(false);
+  /* IDLE: the page has gone `--thread-idle` without a scroll, tap, click or key, or the tab is hidden.
+     The re-trace then stops at the end of its current budget (never before `--retrace-loops` whole
+     loops) and the sway stops with it; any interaction wakes both. `idleAtRef` is when the page went
+     idle, so the loop knows which budget is its last. */
+  const idleRef = useRef(false);
+  const idleAtRef = useRef<number | null>(null);
+  const idleTimerRef = useRef<number | null>(null);
   const retraceNowRef = useRef<ReturnType<typeof retraceNow>>({
     phase: "drawing",
     targets: [],
@@ -366,14 +377,22 @@ export function PageThread() {
     const frame = (now: number) => {
       const start = retraceStartRef.current;
       if (start === null) return;
+      /* Awake, the loop keeps going; once idle, it runs to the end of the budget it is in, and never
+         fewer than `loops` whole loops, so every stretch stops on a loop boundary together. */
+      const idleAt = idleAtRef.current;
+      const allowed =
+        idleAt === null
+          ? Number.POSITIVE_INFINITY
+          : loops * Math.max(1, Math.ceil((idleAt - start) / budgetMs));
       const { loop, spent } = retraceLoopAt(
         now - start,
         budgetMs / loops,
-        loops,
+        allowed,
       );
       if (spent) {
         retraceSpentRef.current = true;
         stopRetrace();
+        setSwayAwake(false);
         return;
       }
       const { phase, targets } = retraceNowRef.current;
@@ -410,6 +429,30 @@ export function PageThread() {
     retraceFrameRef.current = window.requestAnimationFrame(frame);
   }, [retrace, stopRetrace]);
 
+  /* The page has gone idle: a running loop finishes its budget and then stops the sway too; with no loop
+     running, the sway stops now. */
+  const goIdle = useCallback(() => {
+    idleTimerRef.current = null;
+    idleRef.current = true;
+    idleAtRef.current = performance.now();
+    if (retraceStartRef.current === null) setSwayAwake(false);
+  }, []);
+
+  /* Any scroll, tap, click or key: the idle clock starts over, and a page that had gone idle wakes, its
+     sway moving again and its re-trace free to start once the page is still. */
+  const wake = useCallback(() => {
+    if (idleTimerRef.current !== null)
+      window.clearTimeout(idleTimerRef.current);
+    const idle = tokenTime("--thread-idle");
+    idleTimerRef.current =
+      idle === undefined ? null : window.setTimeout(goIdle, idle);
+    if (!idleRef.current) return;
+    idleRef.current = false;
+    idleAtRef.current = null;
+    retraceSpentRef.current = false;
+    setSwayAwake(true);
+  }, [goIdle]);
+
   const rest = useCallback(() => {
     if (settleTimerRef.current !== null) {
       window.clearTimeout(settleTimerRef.current);
@@ -428,6 +471,7 @@ export function PageThread() {
     (drawn: number) => {
       if (drawn > drawnRef.current) drawnRef.current = drawn;
       movingRef.current = true;
+      wake();
       if (settleTimerRef.current !== null) {
         window.clearTimeout(settleTimerRef.current);
       }
@@ -436,7 +480,7 @@ export function PageThread() {
         settle === undefined ? null : window.setTimeout(rest, settle);
       syncRetrace();
     },
-    [rest, syncRetrace],
+    [rest, syncRetrace, wake],
   );
 
   const taper = useCallback((): TaperPainter | null => {
@@ -763,6 +807,7 @@ export function PageThread() {
     function onVisibility() {
       const now = performance.now();
       if (document.visibilityState === "hidden") {
+        setSwayAwake(false);
         if (retraceFrameRef.current === null) return;
         window.cancelAnimationFrame(retraceFrameRef.current);
         retraceFrameRef.current = null;
@@ -774,11 +819,33 @@ export function PageThread() {
         retraceStartRef.current += now - suspendedAt;
       }
       retraceSuspendedAtRef.current = null;
+      /* Coming back resumes what was running; it is not an interaction, so an idle page stays idle. */
+      setSwayAwake(!idleRef.current);
       syncRetrace();
     }
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [syncRetrace]);
+
+  /* A tap, click or key wakes the page as a scroll does; a page that had gone idle also gets its
+     re-trace back once it is still. The idle clock starts at load. */
+  useEffect(() => {
+    function onInteraction() {
+      const wasIdle = idleRef.current;
+      wake();
+      if (wasIdle) syncRetrace();
+    }
+    wake();
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    for (const name of events)
+      window.addEventListener(name, onInteraction, { passive: true });
+    return () => {
+      for (const name of events)
+        window.removeEventListener(name, onInteraction);
+      if (idleTimerRef.current !== null)
+        window.clearTimeout(idleTimerRef.current);
+    };
+  }, [wake, syncRetrace]);
 
   useEffect(
     () => () => {

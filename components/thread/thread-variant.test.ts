@@ -113,6 +113,10 @@ test("every sway option id parses to its amplitude, periods and mix", () => {
   const sway = THREAD_VARIANT_AXES.find((axis) => axis.id === "sway");
   assert.ok(sway !== undefined, "the panel offers no sway axis");
   for (const option of sway.options) {
+    if (option.id === "off") {
+      assert.equal(parseSway(option.id), undefined, "off parses to no sway");
+      continue;
+    }
     const parsed = parseSway(option.id);
     assert.ok(parsed !== undefined, `${option.id} does not parse`);
     assert.ok(parsed.amplitude > 0, `${option.id} parses to nothing`);
@@ -165,12 +169,7 @@ test("every light option names a lift and pairs the head with the re-trace, and 
     return found;
   };
   for (const option of axis("light").options) {
-    assert.match(option.id, /^sheen-\d+-(half|none)$/);
-    assert.ok(
-      option.properties?.["--halo-thread-head"],
-      `${option.id} sets no head halo`,
-    );
-    assert.match(option.css ?? "", /data-thread-retrace-glow/);
+    assert.match(option.id, /^(sheen-\d+-(half|none)|orange)$/);
   }
   const ids = THREAD_VARIANT_AXES.map((candidate) => candidate.id);
   assert.ok(

@@ -69,11 +69,11 @@ function shippedHead(): HeadOptions {
   const baseWidth = tokenLength("--stroke-thread");
   resolvedShippedHead = {
     length: HEAD_LENGTH_RATIO * baseWidth,
-    tipWidth: tokenLength("--stroke-thread-head"),
+    tipWidth: baseWidth,
     baseWidth,
     tailColor: tokenColour("--color-thread-red"),
-    midColor: tokenColour("--color-thread-vermilion"),
-    tipColor: tokenColour("--color-thread-core"),
+    midColor: tokenColour("--color-thread-sheen-mid"),
+    tipColor: tokenColour("--color-thread-sheen"),
   };
   return resolvedShippedHead;
 }
@@ -108,8 +108,14 @@ export function retraceFrom(head: HeadOptions, stroke: number): HeadOptions {
 
 /* The review panel's light candidates: `sheen-<L>-<glow>` paints the head and the re-trace in a lighter
    stretch of the thread's own red — the tip L hundredths of OKLCH lightness over it, the middle half
-   that — at the ink's own width. The glow is the panel's property and stylesheet. */
+   that — at the ink's own width; `orange` is the earlier head's colours, vermilion and the hot core, at the same width. The glow
+   is the panel's property and stylesheet. */
 function sheenFor(id: string | undefined): Partial<HeadOptions> {
+  if (id === "orange")
+    return {
+      midColor: tokenColour("--color-thread-vermilion"),
+      tipColor: tokenColour("--color-thread-core"),
+    };
   const match = /^sheen-(\d+)-\w+$/.exec(id ?? "");
   if (match === null) return {};
   return sheenColours(

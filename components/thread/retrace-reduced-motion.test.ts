@@ -5,6 +5,10 @@ import { extname, join } from "node:path";
 import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
 
+/* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
+   own and re-shapes every path: the panel's "off" turns it off for them. */
+const SWAY_OFF = `localStorage.setItem("thread-review", JSON.stringify({ sway: "off" }))`;
+
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
    -> Variant Routes). The export server serves literal paths, and a static route emits
@@ -90,6 +94,7 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
         reducedMotion,
       });
       const page = await context.newPage();
+      await page.addInitScript(SWAY_OFF);
       await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
         waitUntil: "load",
       });
@@ -200,6 +205,7 @@ test("a change to reduced motion during the opening draw or a catch-up leaves no
       const page = await (
         await browser.newContext({ viewport: { width: 393, height: 700 } })
       ).newPage();
+      await page.addInitScript(SWAY_OFF);
       await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
         waitUntil: "load",
       });
@@ -273,9 +279,10 @@ test("a change to reduced motion during the opening draw or a catch-up leaves no
 const FAST_TOKENS =
   /* `--retrace-speed:0` pins the FIXED-DURATION path deliberately: with a speed set, a loop lasts as
    long as the stretch needs and the injected `--retrace-duration` no longer governs, so these cases
-   could not state a budget in milliseconds at all. The speed model's own arithmetic is covered
+   could not state a budget in milliseconds at all. `--thread-idle:1ms` makes the page idle at once (0 is no time at all, so no clock), so
+   the budget is the loop's last, as the stop it tests needs. The speed model's own arithmetic is covered
    without a browser in `thread-retrace.test.ts`. */
-  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0}";
+  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0;--thread-idle:1ms}";
 
 const WRAP_RAF = `(() => {
   const pending = new Set();
@@ -317,11 +324,14 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
       viewport: { width: 393, height: 700 },
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
     await page.addStyleTag({ content: FAST_TOKENS });
+    /* The page read `--thread-idle` when it woke at load; a key wakes it again so it reads the 1ms here. */
+    await page.keyboard.press("Shift");
     const read = async () => (await page.evaluate(LIFECYCLE)) as Lifecycle;
     const waitFor = (condition: string, timeout = 15000) =>
       page.waitForFunction(condition, null, { timeout, polling: 25 });
@@ -408,6 +418,7 @@ test("Wishes' closing stretch loops, painted by the one card thread and nowhere 
     const page = await (
       await browser.newContext({ viewport: { width: 393, height: 700 } })
     ).newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
@@ -459,6 +470,7 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
     const page = await (
       await browser.newContext({ viewport: { width: 393, height: 700 } })
     ).newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
@@ -514,6 +526,7 @@ test("motion arriving at the top runs the opening that reduced motion held back"
         reducedMotion: "reduce",
       })
     ).newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });

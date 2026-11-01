@@ -309,12 +309,12 @@ test("the head is 60 times the base stroke, 132px at the shipped width", () => {
   assert.ok(Math.abs(OPTIONS.length - 132) < 1e-9);
 });
 
-/* Owner-tuned values, chosen on live renders (2026-09-30): pinned so a fitting step or a stray edit
-   cannot move them unseen. The code reads every one of these from the built stylesheet, so this is
-   the only copy of the number outside tokens.css itself. */
-test("the head's owner-chosen values are the ones in the stylesheet", () => {
-  assert.deepEqual(colourToken("color-thread-core"), [0xff, 0x79, 0x00]);
-  assert.equal(pxToken("stroke-thread-head"), 3.2);
+/* Chosen on live renders: pinned so a fitting step or a stray edit cannot move them unseen. The code
+   reads every one of these from the built stylesheet, so this is the only copy of the number outside
+   tokens.css itself. The head is the sheen's look at the ink's own width. */
+test("the head's chosen values are the ones in the stylesheet", () => {
+  assert.deepEqual(colourToken("color-thread-sheen"), [0xcd, 0x4a, 0x3f]);
+  assert.deepEqual(colourToken("color-thread-sheen-mid"), [0xb8, 0x35, 0x2d]);
   assert.equal(pxToken("stroke-thread"), 2.2);
 });
 
@@ -338,8 +338,8 @@ const shadows = (name: string) =>
    the thread off the paper unseen. */
 test("the thread's contact shadow falls straight down in the paper's own shadow tint", () => {
   assert.deepEqual(shadows("bleed-thread"), [
-    { x: 0, y: 0.5, blur: 0.75, colour: "--color-shadow-warm", alpha: 40 },
-    { x: 0, y: 3, blur: 5, colour: "--color-shadow-warm", alpha: 14 },
+    { x: 0, y: 1, blur: 1.25, colour: "--color-shadow-warm", alpha: 65 },
+    { x: 0, y: 4, blur: 6, colour: "--color-shadow-warm", alpha: 30 },
   ]);
 });
 
@@ -352,8 +352,7 @@ test("the head's halo keeps the radii FITTED_GLOW was fitted to", () => {
   );
 });
 
-/* TRIPWIRE, not a design value. The two literals below (`3.2px`, `#ff7900`) are the owner's current
-   head values, repeated here only because the assertion is about the BUILT artifact. When the owner
+/* TRIPWIRE, not a design value. The literals below (`2.2px`, `#cd4a3f`) are the current head values, repeated here only because the assertion is about the BUILT artifact. When the owner
    retunes either, this test failing is expected: update the literal to the new token value, do not
    delete the test. The other half of it, that the built script reads every token by name and carries
    no copy, is the part that must keep holding. */
@@ -362,8 +361,8 @@ test("the built page reads the head's values from the built stylesheet rather th
   const css = builtChunks(".css");
   const script = builtChunks(".js");
   for (const token of [
-    "--stroke-thread-head:3.2px",
-    "--color-thread-core:#ff7900",
+    "--stroke-thread:2.2px",
+    "--color-thread-sheen:#cd4a3f",
     "--halo-thread-head:drop-shadow(",
   ]) {
     assert.ok(
@@ -373,10 +372,9 @@ test("the built page reads the head's values from the built stylesheet rather th
   }
   for (const token of [
     "--stroke-thread",
-    "--stroke-thread-head",
     "--color-thread-red",
-    "--color-thread-vermilion",
-    "--color-thread-core",
+    "--color-thread-sheen-mid",
+    "--color-thread-sheen",
   ]) {
     assert.ok(
       script.includes(`"${token}"`),

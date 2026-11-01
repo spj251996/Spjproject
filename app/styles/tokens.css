@@ -17,6 +17,8 @@
   --color-accent-gold: #b88528;
   --color-thread-red: #a31f1b;
   --color-thread-twist: #e25d51;
+  --color-thread-sheen: #cd4a3f;
+  --color-thread-sheen-mid: #b8352d;
   --color-thread-vermilion: #e2502c;
   --color-thread-core: #ff7900;
   --color-shadow-warm: #3a301e;
@@ -201,7 +203,6 @@
      `sprig-ornament`). At dpr 1 it paints as a fainter full pixel rather than a thinner one. */
   --stroke-hairline: 0.5px;
   --stroke-thread: 2.2px;
-  --stroke-thread-head: 3.2px;
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
      ends). */
   --length-thread-taper: 24px;
@@ -215,7 +216,7 @@
      interval, before everything stops until the next scroll. A count, not a time, so the pace can
      change without changing how long the page stays busy; every shorter stretch fits whole loops into
      the same window (`page-thread.tsx` -> `periodFor`). */
-  --retrace-loops: 2;
+  --retrace-loops: 5;
   /* THE RE-TRACE'S SPEED, in px of thread per second, so every lit stretch moves at one rate: a
      fixed-duration loop makes a long stretch travel several times faster than a short one. 0 keeps
      the fixed-duration behaviour. 845 is the invite's speed at `wide` under a 3.2s loop, the pace the
@@ -235,6 +236,9 @@
      (`thread-catch-up.ts`). 0 paints immediately. */
   --thread-catchup: 0.6s;
   --thread-catchup-ease: ease-out-cubic;
+  /* How long the page may go untouched, in view, before the sway and the re-trace stop together; any
+     scroll, tap, click or key starts both again. */
+  --thread-idle: 60s;
   --thread-terminal-span: 0.2;
   --thread-terminal-finish: 0.08;
   --stroke-rim-offset: 2px;
@@ -246,15 +250,14 @@
      gradual scaling (55 dropped frames over a 5s scrub at 33px against 4 at 8.25px), so do not widen
      the blur without re-measuring. */
   --bleed-thread: drop-shadow(
-      0 0.5px 0.75px
-        color-mix(in srgb, var(--color-shadow-warm) 40%, transparent)
+      0 1px 1.25px color-mix(in srgb, var(--color-shadow-warm) 65%, transparent)
     )
     drop-shadow(
-      0 3px 5px color-mix(in srgb, var(--color-shadow-warm) 14%, transparent)
+      0 4px 6px color-mix(in srgb, var(--color-shadow-warm) 30%, transparent)
     );
 
-  /* THE DRAWING HEAD'S HALO — the bleed's own shape at 4x, as one value on one group wrapping the
-     whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
+  /* THE DRAWING HEAD'S HALO — at half strength, as the re-trace's glow is: the head and the sheen are one
+     look (DESIGN.md -> Thread -> The drawing head). One value on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
      every piece of a static line they cost 55 dropped frames over a 5s scrub at 393x700; as one
      filter over the moving head's tight silhouette they cost 6 as built (3 above the bleed alone).
      What was isolated is that geometry dominated: dashed copies of whole pieces under the same
@@ -262,15 +265,15 @@
      / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). */
   --halo-thread-head: drop-shadow(
       0 0 3.5px
-        color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)
+        color-mix(in srgb, var(--color-thread-vermilion) 34%, transparent)
     )
     drop-shadow(
       0 0 12px
-        color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)
+        color-mix(in srgb, var(--color-thread-vermilion) 22%, transparent)
     )
     drop-shadow(
       0 0 33px
-        color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
+        color-mix(in srgb, var(--color-thread-vermilion) 15%, transparent)
     );
 
   /* Every texture is one SVG drawn at three times its tile's CSS size and rasterised once by

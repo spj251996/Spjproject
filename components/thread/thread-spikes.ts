@@ -33,6 +33,9 @@ type Sway = {
   gustShare: number;
 };
 
+/* The shipped sway: 8px, a 4s sway, a gust every 8s carrying half the motion. */
+const SHIPPED_SWAY = "sg-8-p4-e8-g50";
+
 /* The panel's sway option ids carry their own values: `sg-<px>-p<sway s>-e<gust every s>-g<gust %>`. */
 export function parseSway(id: string | undefined): Sway | undefined {
   const match = id?.match(
@@ -56,6 +59,16 @@ const TAU = Math.PI * 2;
 /* A gust travels the viewport's height in GUST_TRAVEL seconds. */
 const GUST_TRAVEL = 3;
 const GUST_WIDTH = 180;
+
+/* Whether the page is awake: the sway moves only while it is, and stops with the re-trace once the page
+   has gone idle (`PageThread` owns the lifecycle and calls `setSwayAwake`). Page-wide, like the clock,
+   so the trunk and the card thread stop and start as one line. */
+let swayAwake = true;
+const swayWakers = new Set<() => void>();
+export function setSwayAwake(awake: boolean) {
+  swayAwake = awake;
+  if (awake) for (const wake of swayWakers) wake();
+}
 
 /* One clock and one phase for the page, so every `<svg>` sways as one line. */
 let pageClock: { start: number; phase: number } | null = null;
@@ -399,7 +412,15 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     });
   observe();
 
+  function wake() {
+    frame ??= window.requestAnimationFrame(tick);
+  }
+
   function tick() {
+    if (!swayAwake) {
+      frame = null;
+      return;
+    }
     swayDiagnostics.ticks += 1;
     try {
       const t = seconds();
@@ -434,7 +455,8 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         const entry = tracked.get(path);
         if (entry !== undefined) entry.weights = null;
       }
-      frame ??= window.requestAnimationFrame(tick);
+      swayWakers.add(wake);
+      if (swayAwake) frame ??= window.requestAnimationFrame(tick);
     },
     /* Synchronous, so a caller that has just written a new `d` reads it as the base before the
        observer has run. */
@@ -444,6 +466,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     stop() {
       if (frame !== null) window.cancelAnimationFrame(frame);
       frame = null;
+      swayWakers.delete(wake);
       observer.disconnect();
     },
   };
@@ -494,7 +517,10 @@ export function createThreadSpikes(
   /* The rope twist is committed (`thread-twist.ts`) and always on; it is built here only because it
      reads each piece's unswayed path from the sway below. */
   const twist = createTwistPainter(svg, before, cutId, taperPiece);
-  const swayValues = reduced ? undefined : parseSway(readVariant("sway"));
+  /* The faster sway ships; the panel's "off" parses to nothing, so it is the one way to stop it. */
+  const swayValues = reduced
+    ? undefined
+    : parseSway(readVariant("sway") ?? SHIPPED_SWAY);
   const sway =
     swayValues === undefined ? undefined : createSway(svg, swayValues);
   const baseOf = (path: SVGPathElement) =>

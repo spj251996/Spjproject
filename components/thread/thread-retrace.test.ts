@@ -348,8 +348,8 @@ test("the built page reads the re-trace's loop cadence, settle interval and loop
   assert.match(tokenValue("retrace-settle"), /^[\d.]+m?s$/);
   assert.equal(
     parseCssCount(tokenValue("retrace-loops")),
-    2,
-    "--retrace-loops is 2 on the LONGEST stretch (DESIGN.md -> Motion); every shorter one runs more",
+    5,
+    "--retrace-loops is at least 5 on the LONGEST stretch (DESIGN.md -> Motion); every shorter one runs more",
   );
   if (!labExport(t)) return;
   const css = builtChunks(".css");

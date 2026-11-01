@@ -30,31 +30,25 @@ export type VariantAxis = {
 /* One axis per decision; the shipped value is the absence of a choice, never an option here, so the
    panel cannot show a stale "shipped" that differs from what ships. */
 export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
-  /* The sway spike: the 7s sway and a faster 4s one. The twist (long lay, rounder strands) and the
-     2.2px width are fixed, not offered. */
+  /* The faster sway (4s) ships; the panel offers it off, or the slower 7s one. The twist (long lay,
+     rounder strands) and the 2.2px width are fixed, not offered. */
   {
     id: "sway",
-    label: "Sway (spike)",
+    label: "Sway (shipped: 4s)",
     options: [
-      { id: "sg-8-p7-e8-g50", label: "Sway + gust · 8px (as picked)" },
-      { id: "sg-8-p4-e8-g50", label: "Faster sway (4s)" },
+      { id: "off", label: "No sway" },
+      { id: "sg-8-p7-e8-g50", label: "Slower sway (7s)" },
     ],
   },
-  /* The shadow, stronger: the shipped contact shadow (`--bleed-thread`, a tight contact plus a
-     soft lift) read as too faint on a laptop and not at all on a phone. Each step darkens both layers
-     and drops the lift further; the old red bleed is here only to tell a missing filter on the phone
-     apart from a faint one. */
+  /* The deep contact shadow ships (`--bleed-thread`); the panel offers one step lighter, one deeper,
+     and the old red bleed, which only tells a missing filter on a phone apart from a faint one. */
   {
     id: "shadow",
-    label: "Shadow under the line",
+    label: "Shadow under the line (shipped: deep)",
     options: [
-      contactShadow("deeper", "Deeper", [
+      contactShadow("lighter", "Lighter", [
         [0.75, 1, 55],
         [3, 5, 24],
-      ]),
-      contactShadow("deep", "Deep", [
-        [1, 1.25, 65],
-        [4, 6, 30],
       ]),
       contactShadow("deepest", "Deepest", [
         [1, 1.5, 75],
@@ -70,45 +64,39 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
       },
     ],
   },
-  /* The light, as ONE pair: the drawing head while a piece draws and the
-     re-trace at rest always take the same look, so the two can never be judged apart. `sheen-<L>-<glow>`
-     lifts the tip L hundredths of OKLCH lightness over the thread's red, the middle half that, at the
-     ink's own width (`thread-tokens.ts`); the glow is the head's halo and the re-trace's glow strokes
-     together. The shipped pair (the orange head and re-trace) is the absence of a choice. */
+  /* The light, as ONE pair: the drawing head while a piece draws and the re-trace at rest always take
+     the same look, so the two can never be judged apart. The sheen ships (lighter red, half glow);
+     `sheen-<L>-<glow>` lifts the tip L hundredths of OKLCH lightness over the thread's red, the middle
+     half that, at the ink's own width (`thread-tokens.ts`), and `orange` is the earlier pen-like head. */
   {
     id: "light",
-    label: "Light · drawing head and re-trace together",
+    label: "Light · head and re-trace (shipped: sheen, half glow)",
     options: [
-      {
-        id: "sheen-12-half",
-        label: "Sheen · lighter red, half glow",
-        properties: { "--halo-thread-head": headHalo(50) },
-        css: "[data-thread-retrace-glow]{opacity:.5}",
-      },
-      {
-        id: "sheen-20-half",
-        label: "Brighter sheen · half glow",
-        properties: { "--halo-thread-head": headHalo(50) },
-        css: "[data-thread-retrace-glow]{opacity:.5}",
-      },
+      { id: "sheen-20-half", label: "Brighter sheen · half glow" },
       {
         id: "sheen-12-none",
         label: "Sheen · no glow",
         properties: { "--halo-thread-head": "none" },
         css: "[data-thread-retrace-glow]{display:none}",
       },
+      {
+        id: "orange",
+        label: "Orange tip, full glow (the earlier head)",
+        properties: { "--halo-thread-head": headHalo(200) },
+        css: "[data-thread-retrace-glow]{opacity:1}",
+      },
     ],
   },
 ];
 
-/* The head's shipped halo (3.5 / 12 / 33px at 68 / 44 / 30%, `--halo-thread-head`) at `percent` of
-   its strength, as the sheen's glow is drawn at half. */
+/* The head's halo (3.5 / 12 / 33px at 34 / 22 / 15%, `--halo-thread-head`) at `percent` of its shipped
+   strength; 200 is the earlier full halo. */
 function headHalo(percent: number): string {
   return (
     [
-      [3.5, 68],
-      [12, 44],
-      [33, 30],
+      [3.5, 34],
+      [12, 22],
+      [33, 15],
     ] as const
   )
     .map(

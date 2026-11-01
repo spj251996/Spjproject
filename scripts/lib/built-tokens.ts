@@ -39,7 +39,9 @@ export function pxToken(name: string): number {
 export const BASE_WIDTH = pxToken("stroke-thread");
 export const OPTIONS: HeadOptions = {
   length: HEAD_LENGTH_RATIO * BASE_WIDTH,
-  tipWidth: pxToken("stroke-thread-head"),
+  /* A head wider at its tip than the ink, so the stack math is exercised on a real taper; the shipped
+     head is at the ink's own width (`thread-tokens.ts`). */
+  tipWidth: 2 * BASE_WIDTH,
   baseWidth: BASE_WIDTH,
   tailColor: colourToken("color-thread-red"),
   midColor: colourToken("color-thread-vermilion"),
