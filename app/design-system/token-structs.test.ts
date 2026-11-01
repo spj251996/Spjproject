@@ -144,7 +144,7 @@ test("every layout cap the gallery states matches tokens.css", () => {
 /* The thread's loop and budget rows state each value as `--token · value ·`, the shape the caps use. The
    speed carries its unit in prose (`845 px/s`) where the token is the bare number. */
 test("every loop-cadence value the gallery states matches tokens.css", () => {
-  assert.equal(LOOP_CADENCE_USES.length, 8, "the loop-cadence rows");
+  assert.equal(LOOP_CADENCE_USES.length, 9, "the loop-cadence rows");
   for (const line of LOOP_CADENCE_USES) {
     const match = line.match(/^(--[a-z0-9-]+) · ([^·]+?) · /);
     assert.ok(match, `"${line}" does not open with "--token · value · "`);

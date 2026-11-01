@@ -106,19 +106,37 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp and of the re-trace's; the start of the scroll-progress line's fill.",
+          "The thread's ink, tapered ends included, and the tail of the drawing head's and the re-trace's sheen; the start of the scroll-progress line's fill.",
       },
       {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
         usage:
-          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp, and the re-trace's ramp and glow strokes; the scroll-progress line's fill and glow; the focus ring, on every surface. Never the ink, never text.",
+          "The drawing head's halo; the scroll-progress line's fill and glow; the focus ring, on every surface. Never the ink, never text.",
       },
       {
         token: "--color-thread-core",
         name: "thread-core",
         usage:
-          "The tip of the drawing head's colour ramp and of the re-trace's, the hottest the thread gets, and the leading edge of the scroll-progress line's fill. Never the ink, never text.",
+          "The leading edge of the scroll-progress line's fill, its hottest colour. Never the thread's ink, never text.",
+      },
+      {
+        token: "--color-thread-sheen",
+        name: "thread-sheen",
+        usage:
+          "The tip of the drawing head and of the re-trace's sheen: the thread's red lifted 0.12 in OKLCH lightness, the light the line catches. Never the ink, never text.",
+      },
+      {
+        token: "--color-thread-sheen-mid",
+        name: "thread-sheen-mid",
+        usage:
+          "The sheen's middle stop, half its lift, and the colour of the re-trace's glow strokes. Never text.",
+      },
+      {
+        token: "--color-thread-twist",
+        name: "thread-twist",
+        usage:
+          "The twist's gaps across the ink: the thread's red lifted 0.18, so the cord reads as strands with light between them. Never text.",
       },
     ],
   },
@@ -296,7 +314,7 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own three: red ink, vermilion light and the head's orange tip."
+        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own: red ink, the sheen's two lighter reds, the twist's gap red, and the vermilion and orange the progress line carries."
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"
