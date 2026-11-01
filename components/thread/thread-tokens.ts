@@ -60,12 +60,13 @@ function tokenColour(token: string): Rgb {
 /* Both option builders resolve their tokens once per load and hand back the same object (`stackFor`
    keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
    specimens included, not on a hot update. */
+let resolvedShippedHead: HeadOptions | undefined;
 let resolvedHeadOptions: HeadOptions | undefined;
 
-export function headOptions(): HeadOptions {
-  if (resolvedHeadOptions !== undefined) return resolvedHeadOptions;
+function shippedHead(): HeadOptions {
+  if (resolvedShippedHead !== undefined) return resolvedShippedHead;
   const baseWidth = tokenLength("--stroke-thread");
-  resolvedHeadOptions = {
+  resolvedShippedHead = {
     length: HEAD_LENGTH_RATIO * baseWidth,
     tipWidth: tokenLength("--stroke-thread-head"),
     baseWidth,
@@ -73,31 +74,40 @@ export function headOptions(): HeadOptions {
     midColor: tokenColour("--color-thread-vermilion"),
     tipColor: tokenColour("--color-thread-core"),
   };
+  return resolvedShippedHead;
+}
+
+/* The head as shipped, or the review panel's `light` candidate over it. The re-trace builds on the
+   same options, so the drawing head and the re-trace always carry one look as a pair. */
+export function headOptions(): HeadOptions {
+  resolvedHeadOptions ??= {
+    ...shippedHead(),
+    ...sheenFor(readVariant("light")),
+  };
   return resolvedHeadOptions;
 }
 
-/* The drawing head's own settled values (the owner's ruling, 2026-10-02) with the re-trace's peak
-   length: the head's options, read once from the same tokens, not a second copy of any of them. */
+/* The drawing head's own values with the re-trace's peak length: the head's options, read once from
+   the same tokens, not a second copy of any of them. */
 let resolvedRetraceOptions: HeadOptions | undefined;
 
 export function retraceOptions(): HeadOptions {
   resolvedRetraceOptions ??= {
     ...headOptions(),
     length: RETRACE_LENGTH_RATIO * tokenLength("--stroke-thread"),
-    ...sheenFor(readVariant("rest")),
   };
   return resolvedRetraceOptions;
 }
 
-/* The review panel's at-rest candidates (Task 4): `sheen-<L>-<glow>-<length>` lightens the tip by L
-   hundredths of OKLCH lightness over the thread's own red (the middle by half that) and sets the lit
-   length in stroke widths. The glow is the panel's stylesheet, not a value here. */
+/* The review panel's light candidates (Task 4): `sheen-<L>-<glow>` paints the head and the re-trace
+   in a lighter stretch of the thread's own red — the tip L hundredths of OKLCH lightness over it, the
+   middle half that — at the ink's own width. The glow is the panel's property and stylesheet. */
 function sheenFor(id: string | undefined): Partial<HeadOptions> {
-  const match = /^sheen-(\d+)-\w+-(\d+)$/.exec(id ?? "");
+  const match = /^sheen-(\d+)-\w+$/.exec(id ?? "");
   if (match === null) return {};
   const lift = Number(match[1]) / 100;
   return {
-    length: Number(match[2]) * tokenLength("--stroke-thread"),
+    tipWidth: tokenLength("--stroke-thread"),
     midColor: resolvedColour(
       `oklch(from var(--color-thread-red) calc(l + ${lift / 2}) c h)`,
     ),

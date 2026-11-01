@@ -30,136 +30,72 @@ export type VariantAxis = {
 /* One axis per decision; the shipped value is the absence of a choice, never an option here, so the
    panel cannot show a stale "shipped" that differs from what ships. */
 export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
-  /* Task 3's twist: the long lay the owner liked best (2026-10-30), as measured off the reference
-     and one change from it per option (`ROPES`). Ticks on mechanism (b) are still parsed, not offered. */
-  {
-    id: "twist",
-    label: "Twist · long lay (spike)",
-    options: [
-      { id: "long-ref", label: "Long lay · as the reference" },
-      { id: "long-tight", label: "Tighter lay (more strands, steeper)" },
-      { id: "long-loose", label: "Looser lay (fewer strands, flatter)" },
-      { id: "long-gaps", label: "Wider gaps" },
-      { id: "long-soft", label: "Softer gaps (less light)" },
-      { id: "long-bright", label: "Brighter gaps" },
-      { id: "long-round", label: "Rounder strands (more bow)" },
-    ],
-  },
-  /* The owner picked 2.2px from laptop up (2026-10-30); the phone candidates scale it toward the same
-     ratio (1.6 -> 2.2 is x1.375). A stylesheet, not an inline property, so each width follows the
-     window across the 64rem line. */
-  {
-    id: "width",
-    label: "Line width (laptop up: 2.2px, picked)",
-    options: [
-      {
-        id: "2.2",
-        label: "Phone 1.6px (as shipped)",
-        css: "@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
-      },
-      {
-        id: "2.2-p1.8",
-        label: "Phone 1.8px",
-        css: ":root{--stroke-thread:1.8px}@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
-      },
-      {
-        id: "2.2-p2.0",
-        label: "Phone 2.0px",
-        css: ":root{--stroke-thread:2px}@media (width >= 64rem){:root{--stroke-thread:2.2px}}",
-      },
-      {
-        id: "2.2-p2.2",
-        label: "Phone 2.2px (same ratio as laptop)",
-        css: ":root{--stroke-thread:2.2px}",
-      },
-    ],
-  },
-  /* Task 3's sway spike: the owner's pick, sway + gust at 8px, and one change from it per option
-     (`parseSway`). */
+  /* Task 3's sway spike: the owner's pick and the faster sway they preferred (2026-11-01); the twist
+     (long lay, rounder strands) and the 2.2px width are fixed, not offered. */
   {
     id: "sway",
     label: "Sway (spike)",
     options: [
       { id: "sg-8-p7-e8-g50", label: "Sway + gust · 8px (as picked)" },
-      { id: "sg-8-p11-e8-g50", label: "Slower sway (11s)" },
       { id: "sg-8-p4-e8-g50", label: "Faster sway (4s)" },
-      { id: "sg-8-p7-e5-g50", label: "Gusts more often (every 5s)" },
-      { id: "sg-8-p7-e13-g50", label: "Gusts rarer (every 13s)" },
-      { id: "sg-8-p7-e8-g70", label: "More gust, less sway" },
-      { id: "sg-8-p7-e8-g30", label: "More sway, less gust" },
-      { id: "sg-10-p7-e8-g50", label: "Bigger · 10px" },
-      { id: "sg-12-p7-e8-g50", label: "Bigger · 12px" },
     ],
   },
-  /* Task 4's shadow: the bleed's filter re-valued as a contact shadow in the warm shadow ink, so the
-     thread reads as laid on the paper rather than soaked into it. One-layer contact shadows, then
-     two-layer "elevated" ones (a tight contact plus a softer ambient further off), then the smallest
-     contact shadow under the current bleed's first layer. */
+  /* Task 4's shadow, stronger: the shipped contact shadow (`--bleed-thread`, a tight contact plus a
+     soft lift) read as too faint on a laptop and not at all on a phone. Each step darkens both layers
+     and drops the lift further; the old red bleed is here only to tell a missing filter on the phone
+     apart from a faint one. */
   {
     id: "shadow",
     label: "Shadow under the line",
     options: [
-      contactShadow("contact-s", "Contact · small", [[0.5, 0.75, 45]]),
-      contactShadow("contact-m", "Contact · medium", [[0.75, 1.25, 35]]),
-      contactShadow("contact-l", "Contact · large", [[1, 2, 28]]),
-      contactShadow("lift-s", "Lifted · slightly", [
-        [0.5, 0.75, 40],
-        [2, 3, 18],
+      contactShadow("deeper", "Deeper", [
+        [0.75, 1, 55],
+        [3, 5, 24],
       ]),
-      contactShadow("lift-m", "Lifted · more", [
-        [0.5, 0.75, 40],
-        [3, 5, 14],
+      contactShadow("deep", "Deep", [
+        [1, 1.25, 65],
+        [4, 6, 30],
       ]),
-      contactShadow("lift-l", "Lifted · most", [
-        [0.5, 0.75, 40],
-        [4, 7, 12],
+      contactShadow("deepest", "Deepest", [
+        [1, 1.5, 75],
+        [5, 8, 36],
       ]),
       {
-        id: "blend",
-        label: "Small contact + the bleed's tightest layer",
+        id: "red-bleed",
+        label: "Old red bleed (to compare on the phone)",
         properties: {
-          "--bleed-thread": `${shadowLayer(0.5, 0.75, 45)} drop-shadow(0 0 0.875px color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent))`,
+          "--bleed-thread":
+            "drop-shadow(0 0 0.875px color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)) drop-shadow(0 0 3px color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)) drop-shadow(0 0 8.25px color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent))",
         },
       },
     ],
   },
-  /* Task 4's live end: the drawing head as shipped, or none, so the line's own round cap is its end. */
+  /* Task 4's light, as ONE pair (owner, 2026-11-01): the drawing head while a piece draws and the
+     re-trace at rest always take the same look, so the two can never be judged apart. `sheen-<L>-<glow>`
+     lifts the tip L hundredths of OKLCH lightness over the thread's red, the middle half that, at the
+     ink's own width (`thread-tokens.ts`); the glow is the head's halo and the re-trace's glow strokes
+     together. The shipped pair (the orange head and re-trace) is the absence of a choice. */
   {
-    id: "end",
-    label: "Live end of the line",
+    id: "light",
+    label: "Light · drawing head and re-trace together",
     options: [
       {
-        id: "none",
-        label: "No head (the ink's own round end)",
-        css: "[data-thread-head]{display:none}",
-      },
-    ],
-  },
-  /* Task 4's at-rest re-trace as a silk sheen: a lighter tip of the thread's own red rather than the
-     head's hot core, then one change from that base per option (`sheenFor` in `thread-tokens.ts`). */
-  {
-    id: "rest",
-    label: "At rest (re-trace)",
-    options: [
-      {
-        id: "sheen-12-half-89",
-        label: "Sheen · tip lighter red, half glow",
+        id: "sheen-12-half",
+        label: "Sheen · lighter red, half glow",
+        properties: { "--halo-thread-head": headHalo(50) },
         css: "[data-thread-retrace-glow]{opacity:.5}",
       },
       {
-        id: "sheen-20-half-89",
-        label: "Brighter sheen",
+        id: "sheen-20-half",
+        label: "Brighter sheen · half glow",
+        properties: { "--halo-thread-head": headHalo(50) },
         css: "[data-thread-retrace-glow]{opacity:.5}",
       },
       {
-        id: "sheen-12-none-89",
-        label: "Sheen with no glow",
+        id: "sheen-12-none",
+        label: "Sheen · no glow",
+        properties: { "--halo-thread-head": "none" },
         css: "[data-thread-retrace-glow]{display:none}",
-      },
-      {
-        id: "sheen-12-half-40",
-        label: "Shorter sheen",
-        css: "[data-thread-retrace-glow]{opacity:.5}",
       },
     ],
   },
@@ -195,6 +131,23 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
     ],
   },
 ];
+
+/* The head's shipped halo (3.5 / 12 / 33px at 68 / 44 / 30%, `--halo-thread-head`) at `percent` of
+   its strength, as the sheen's glow is drawn at half. */
+function headHalo(percent: number): string {
+  return (
+    [
+      [3.5, 68],
+      [12, 44],
+      [33, 30],
+    ] as const
+  )
+    .map(
+      ([blur, alpha]) =>
+        `drop-shadow(0 0 ${blur}px color-mix(in srgb, var(--color-thread-vermilion) ${(alpha * percent) / 100}%, transparent))`,
+    )
+    .join(" ");
+}
 
 function shadowLayer(offsetY: number, blur: number, alpha: number): string {
   return `drop-shadow(0 ${offsetY}px ${blur}px color-mix(in srgb, var(--color-shadow-warm) ${alpha}%, transparent))`;

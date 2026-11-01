@@ -708,7 +708,9 @@ export function createThreadSpikes(
   taperPiece: (count: number) => number,
   reduced: boolean,
 ) {
-  const twistValues = parseTwist(readVariant("twist"));
+  /* The rope with rounder strands is fixed (owner, 2026-11-01), so it is on with no choice stored; the
+     ids stay parseable for a stale stored choice. */
+  const twistValues = parseTwist(readVariant("twist") ?? "long-round");
   const twist =
     twistValues === undefined
       ? undefined

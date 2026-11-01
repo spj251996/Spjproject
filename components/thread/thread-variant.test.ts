@@ -135,14 +135,14 @@ test("an option with a stylesheet adds it, so a value can follow a media query",
   });
 });
 
-test("every twist option id parses to a rope shape", () => {
-  const twist = THREAD_VARIANT_AXES.find((axis) => axis.id === "twist");
-  assert.ok(twist !== undefined, "the panel offers no twist axis");
-  for (const option of twist.options) {
-    const parsed = parseTwist(option.id);
-    assert.ok(parsed !== undefined, `${option.id} does not parse`);
-    assert.ok(parsed.kind === "rope", `${option.id} is not a rope`);
-  }
+/* The twist is fixed and offered on no axis (owner, 2026-11-01); a stale stored id still parses. */
+test("the fixed rope parses, and the panel offers no twist or width axis", () => {
+  const ids = THREAD_VARIANT_AXES.map((axis) => axis.id);
+  assert.ok(!ids.includes("twist") && !ids.includes("width"));
+  assert.deepEqual(parseTwist("long-round"), {
+    kind: "rope",
+    shape: { pitch: 1.94, gap: 0.2, slant: 28, bow: 0.4, lighter: 0.18 },
+  });
   assert.deepEqual(parseTwist("s4.5-clear"), { kind: "ticks", spacing: 4.5 });
   assert.deepEqual(parseTwist("long-loose"), {
     kind: "rope",
@@ -169,15 +169,25 @@ test("a cubic flattens into short chords that start and end where the curve does
 
 /* Task 4's code-read axes: an id the reader cannot parse would offer a candidate that paints the
    shipped value under a new label. */
-test("every at-rest option id names a lift and a length, and every easing option sets a duration", () => {
+test("every light option names a lift and pairs the head with the re-trace, and every easing option sets a duration", () => {
   const axis = (id: string) => {
     const found = THREAD_VARIANT_AXES.find((candidate) => candidate.id === id);
     assert.ok(found, `no ${id} axis`);
     return found;
   };
-  for (const option of axis("rest").options) {
-    assert.match(option.id, /^sheen-\d+-(half|none)-\d+$/);
+  for (const option of axis("light").options) {
+    assert.match(option.id, /^sheen-\d+-(half|none)$/);
+    assert.ok(
+      option.properties?.["--halo-thread-head"],
+      `${option.id} sets no head halo`,
+    );
+    assert.match(option.css ?? "", /data-thread-retrace-glow/);
   }
+  const ids = THREAD_VARIANT_AXES.map((candidate) => candidate.id);
+  assert.ok(
+    !ids.includes("end") && !ids.includes("rest"),
+    "the head and re-trace are one axis",
+  );
   for (const option of axis("easing").options) {
     assert.match(
       option.properties?.["--thread-catchup"] ?? "",
