@@ -14,6 +14,8 @@
    in, not read here, because this ticks every frame and `getComputedStyle` would force a style
    recalc. A duration of 0 paints immediately and starts no loop. The opening draw does not go through
    this; it calls `seen` so the follower never replays it. */
+import { readVariant } from "./thread-variant.ts";
+
 /* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
    exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
    0.4s time constant the card thread still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
@@ -28,6 +30,20 @@ function easeOutQuad(t: number): number {
   return 1 - (1 - t) * (1 - t);
 }
 
+/* The review panel's draw-easing candidates (Task 4); the shipped curve is the absence of a choice. */
+const EASINGS: Readonly<Record<string, (t: number) => number>> = {
+  "out-cubic-0.6": (t) => 1 - (1 - t) ** 3,
+  "in-out-sine-0.7": (t) => -(Math.cos(Math.PI * t) - 1) / 2,
+  "out-quart-0.9": (t) => 1 - (1 - t) ** 4,
+};
+
+/* Asked on the first `to`, never at creation: the follower is created during render, which also runs
+   on the server, where there is no document to read the choice from. */
+function chosenEasing(): (t: number) => number {
+  if (typeof document === "undefined") return easeOutQuad;
+  return EASINGS[readVariant("easing") ?? ""] ?? easeOutQuad;
+}
+
 export function createCatchUp(paint: (drawn: number) => void) {
   let from = 0;
   let target = 0;
@@ -35,6 +51,7 @@ export function createCatchUp(paint: (drawn: number) => void) {
   let startedAt = 0;
   let duration = 0;
   let raf: number | null = null;
+  let ease: ((t: number) => number) | undefined;
 
   function stop() {
     if (raf !== null) window.cancelAnimationFrame(raf);
@@ -44,7 +61,7 @@ export function createCatchUp(paint: (drawn: number) => void) {
   function tick(now: number) {
     raf = null;
     const t = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-    shown = from + (target - from) * easeOutQuad(t);
+    shown = from + (target - from) * (ease ?? easeOutQuad)(t);
     if (t >= 1) shown = target;
     paint(shown);
     if (t < 1) raf = window.requestAnimationFrame(tick);
@@ -53,6 +70,7 @@ export function createCatchUp(paint: (drawn: number) => void) {
   return {
     /* Monotonic, like the ratchet it follows: scrolling back up never un-draws. */
     to(next: number, seconds: number) {
+      ease ??= chosenEasing();
       if (next <= shown) return;
       if (!(seconds > 0)) {
         shown = next;

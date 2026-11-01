@@ -91,7 +91,130 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
       { id: "sg-12-p7-e8-g50", label: "Bigger · 12px" },
     ],
   },
+  /* Task 4's shadow: the bleed's filter re-valued as a contact shadow in the warm shadow ink, so the
+     thread reads as laid on the paper rather than soaked into it. One-layer contact shadows, then
+     two-layer "elevated" ones (a tight contact plus a softer ambient further off), then the smallest
+     contact shadow under the current bleed's first layer. */
+  {
+    id: "shadow",
+    label: "Shadow under the line",
+    options: [
+      contactShadow("contact-s", "Contact · small", [[0.5, 0.75, 45]]),
+      contactShadow("contact-m", "Contact · medium", [[0.75, 1.25, 35]]),
+      contactShadow("contact-l", "Contact · large", [[1, 2, 28]]),
+      contactShadow("lift-s", "Lifted · slightly", [
+        [0.5, 0.75, 40],
+        [2, 3, 18],
+      ]),
+      contactShadow("lift-m", "Lifted · more", [
+        [0.5, 0.75, 40],
+        [3, 5, 14],
+      ]),
+      contactShadow("lift-l", "Lifted · most", [
+        [0.5, 0.75, 40],
+        [4, 7, 12],
+      ]),
+      {
+        id: "blend",
+        label: "Small contact + the bleed's tightest layer",
+        properties: {
+          "--bleed-thread": `${shadowLayer(0.5, 0.75, 45)} drop-shadow(0 0 0.875px color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent))`,
+        },
+      },
+    ],
+  },
+  /* Task 4's live end: the drawing head as shipped, or none, so the line's own round cap is its end. */
+  {
+    id: "end",
+    label: "Live end of the line",
+    options: [
+      {
+        id: "none",
+        label: "No head (the ink's own round end)",
+        css: "[data-thread-head]{display:none}",
+      },
+    ],
+  },
+  /* Task 4's at-rest re-trace as a silk sheen: a lighter tip of the thread's own red rather than the
+     head's hot core, then one change from that base per option (`sheenFor` in `thread-tokens.ts`). */
+  {
+    id: "rest",
+    label: "At rest (re-trace)",
+    options: [
+      {
+        id: "sheen-12-half-89",
+        label: "Sheen · tip lighter red, half glow",
+        css: "[data-thread-retrace-glow]{opacity:.5}",
+      },
+      {
+        id: "sheen-20-half-89",
+        label: "Brighter sheen",
+        css: "[data-thread-retrace-glow]{opacity:.5}",
+      },
+      {
+        id: "sheen-12-none-89",
+        label: "Sheen with no glow",
+        css: "[data-thread-retrace-glow]{display:none}",
+      },
+      {
+        id: "sheen-12-half-40",
+        label: "Shorter sheen",
+        css: "[data-thread-retrace-glow]{opacity:.5}",
+      },
+    ],
+  },
+  /* Task 4's draw easing: the curve is chosen in `thread-catch-up.ts`, the duration here. */
+  {
+    id: "easing",
+    label: "Draw catch-up",
+    options: [
+      {
+        id: "out-cubic-0.6",
+        label: "Ease-out cubic · 0.6s",
+        properties: { "--thread-catchup": "0.6s" },
+      },
+      {
+        id: "in-out-sine-0.7",
+        label: "Ease-in-out sine · 0.7s",
+        properties: { "--thread-catchup": "0.7s" },
+      },
+      {
+        id: "out-quart-0.9",
+        label: "Ease-out quart · 0.9s",
+        properties: { "--thread-catchup": "0.9s" },
+      },
+    ],
+  },
+  /* Task 4's loop budget for the re-trace (the shipped 4 is the absence of a choice). */
+  {
+    id: "loops",
+    label: "Re-trace loops when still",
+    options: [
+      { id: "2", label: "2 loops", properties: { "--retrace-loops": "2" } },
+      { id: "1", label: "1 loop", properties: { "--retrace-loops": "1" } },
+    ],
+  },
 ];
+
+function shadowLayer(offsetY: number, blur: number, alpha: number): string {
+  return `drop-shadow(0 ${offsetY}px ${blur}px color-mix(in srgb, var(--color-shadow-warm) ${alpha}%, transparent))`;
+}
+
+function contactShadow(
+  id: string,
+  label: string,
+  layers: readonly (readonly [number, number, number])[],
+): VariantOption {
+  return {
+    id,
+    label,
+    properties: {
+      "--bleed-thread": layers
+        .map(([offsetY, blur, alpha]) => shadowLayer(offsetY, blur, alpha))
+        .join(" "),
+    },
+  };
+}
 
 export const THREAD_VARIANT_STORAGE_KEY = "thread-review";
 

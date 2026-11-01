@@ -166,3 +166,25 @@ test("a cubic flattens into short chords that start and end where the curve does
   );
   assert.equal(flatten("M1 2L3 4 5 6"), "M1.00 2.00L3.00 4.00L5.00 6.00");
 });
+
+/* Task 4's code-read axes: an id the reader cannot parse would offer a candidate that paints the
+   shipped value under a new label. */
+test("every at-rest option id names a lift and a length, and every easing option sets a duration", () => {
+  const axis = (id: string) => {
+    const found = THREAD_VARIANT_AXES.find((candidate) => candidate.id === id);
+    assert.ok(found, `no ${id} axis`);
+    return found;
+  };
+  for (const option of axis("rest").options) {
+    assert.match(option.id, /^sheen-\d+-(half|none)-\d+$/);
+  }
+  for (const option of axis("easing").options) {
+    assert.match(
+      option.properties?.["--thread-catchup"] ?? "",
+      /^\d+(\.\d+)?s$/,
+    );
+  }
+  for (const option of axis("shadow").options) {
+    assert.match(option.properties?.["--bleed-thread"] ?? "", /^drop-shadow\(/);
+  }
+});

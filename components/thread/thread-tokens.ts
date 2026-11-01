@@ -16,6 +16,7 @@ import {
   parseCssTime,
   RETRACE_LENGTH_RATIO,
 } from "./thread-retrace.ts";
+import { readVariant } from "./thread-variant.ts";
 
 /* Read from the built stylesheet rather than copied, so a token edit cannot leave the head behind. */
 export function tokenLength(token: string): number {
@@ -83,8 +84,44 @@ export function retraceOptions(): HeadOptions {
   resolvedRetraceOptions ??= {
     ...headOptions(),
     length: RETRACE_LENGTH_RATIO * tokenLength("--stroke-thread"),
+    ...sheenFor(readVariant("rest")),
   };
   return resolvedRetraceOptions;
+}
+
+/* The review panel's at-rest candidates (Task 4): `sheen-<L>-<glow>-<length>` lightens the tip by L
+   hundredths of OKLCH lightness over the thread's own red (the middle by half that) and sets the lit
+   length in stroke widths. The glow is the panel's stylesheet, not a value here. */
+function sheenFor(id: string | undefined): Partial<HeadOptions> {
+  const match = /^sheen-(\d+)-\w+-(\d+)$/.exec(id ?? "");
+  if (match === null) return {};
+  const lift = Number(match[1]) / 100;
+  return {
+    length: Number(match[2]) * tokenLength("--stroke-thread"),
+    midColor: resolvedColour(
+      `oklch(from var(--color-thread-red) calc(l + ${lift / 2}) c h)`,
+    ),
+    tipColor: resolvedColour(
+      `oklch(from var(--color-thread-red) calc(l + ${lift}) c h)`,
+    ),
+  };
+}
+
+/* A colour in any CSS form as RGB, by painting it: the computed value of a relative colour comes back
+   in its own space (`oklch(...)`), whose numbers are not channels. */
+function resolvedColour(css: string): Rgb {
+  const probe = document.createElement("span");
+  probe.style.position = "absolute";
+  probe.style.color = css;
+  document.body.append(probe);
+  const computed = getComputedStyle(probe).color;
+  probe.remove();
+  const context = document.createElement("canvas").getContext("2d");
+  if (context === null) return [0, 0, 0];
+  context.fillStyle = computed;
+  context.fillRect(0, 0, 1, 1);
+  const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
+  return [r, g, b];
 }
 
 export function tokenTime(token: string): number | undefined {
