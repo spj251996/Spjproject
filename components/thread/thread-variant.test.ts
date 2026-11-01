@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { flatten, parseSway, parseTwist } from "./thread-spikes.ts";
+import { flatten, parseSway } from "./thread-spikes.ts";
 import {
   THREAD_VARIANT_AXES,
   THREAD_VARIANT_STORAGE_KEY,
@@ -135,21 +135,10 @@ test("an option with a stylesheet adds it, so a value can follow a media query",
   });
 });
 
-/* The twist is fixed and offered on no axis (owner, 2026-11-01); a stale stored id still parses. */
-test("the fixed rope parses, and the panel offers no twist or width axis", () => {
+/* The twist and the width are fixed (`thread-twist.ts`, `--stroke-thread`), offered on no axis. */
+test("the panel offers no twist or width axis", () => {
   const ids = THREAD_VARIANT_AXES.map((axis) => axis.id);
   assert.ok(!ids.includes("twist") && !ids.includes("width"));
-  assert.deepEqual(parseTwist("long-round"), {
-    kind: "rope",
-    shape: { pitch: 1.94, gap: 0.2, slant: 28, bow: 0.4, lighter: 0.18 },
-  });
-  assert.deepEqual(parseTwist("s4.5-clear"), { kind: "ticks", spacing: 4.5 });
-  assert.deepEqual(parseTwist("long-loose"), {
-    kind: "rope",
-    shape: { pitch: 2.5, gap: 0.2, slant: 22, bow: 0.18, lighter: 0.18 },
-  });
-  assert.equal(parseTwist("braid-8"), undefined);
-  assert.equal(parseTwist("s4.5-soft"), undefined);
 });
 
 /* The sway moves points, so a cubic it moved only at its control points could not follow the field

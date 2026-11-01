@@ -1,12 +1,8 @@
-/* TEMPORARY SPIKES — candidates for the thread's twist and sway, switched by the review panel
+/* TEMPORARY SPIKES — the thread's sway candidates, switched by the review panel
    (`thread-variant.ts`). Nothing here does anything unless the panel's axis is set, and the whole file
    leaves with the panel, or is replaced by a real build if a candidate is picked.
 
-   TWIST: a pattern along the ink so the line reads as fibre rather than ink. Two families:
-   - TICKS, the owner's pick (b) of three mechanisms spiked (2026-10-26): one lighter dashed copy of
-     each piece, whose dash list only ever changes for the piece being drawn;
-   - ROPE and BRAID, drawn marks across the line (a slant all one way; a chevron), as a braided cord is
-     drawn. They are geometry, so they reveal in short chunks once the ink has passed each chunk's end.
+   TWIST: committed in `thread-twist.ts`; the entry point below only builds it beside the sway.
 
    SWAY: the line moves, as a thread in moving air. A smooth displacement FIELD over `<main>`'s
    coordinates moves every point of every path in the `<svg>` — ink, marks, taper, re-trace — so the
@@ -19,11 +15,8 @@
    type it does not already touch. Only paths near the viewport move. */
 
 import type { ThreadPiece } from "./thread-line.ts";
-import { pieceProgress } from "./thread-progress.ts";
-import { type PieceSamples, samplePath } from "./thread-samples.ts";
+import { createTwistPainter } from "./thread-twist.ts";
 import { readVariant } from "./thread-variant.ts";
-
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 /* ---------------------------------------------------------------------------------------------
    SWAY */
@@ -487,218 +480,6 @@ function obstacleBoxes(main: Element, mainRect: DOMRect): Rect[] {
 }
 
 /* ---------------------------------------------------------------------------------------------
-   TWIST */
-
-/* A rope's look, measured off the owner's reference (2026-10-30) and varied from it: the strand
-   pitch as a multiple of the cord's width, the gap as a share of the pitch, the gap's slant to the
-   line, how far each gap bows, and how much lighter than the ink the gap is (OKLCH lightness). */
-type RopeShape = {
-  pitch: number;
-  gap: number;
-  slant: number;
-  bow: number;
-  lighter: number;
-};
-type Twist =
-  | { kind: "ticks"; spacing: number }
-  | { kind: "rope"; shape: RopeShape };
-
-const TWIST_TICK = 1.5;
-const TWIST_LIGHTER = 0.18;
-const MARK_CHUNK = 12;
-/* At the reference's own ratios a gap on a 1.6px line is below a pixel, so it painted almost nothing.
-   A shape keeps its measured pitch and slant; only the gap's width is held at least this, about two
-   device pixels on a phone. */
-const GAP_FLOOR = 0.6;
-
-/* The long lay the owner liked best, as measured, and one change from it per candidate. */
-const LONG_LAY: RopeShape = {
-  pitch: 1.94,
-  gap: 0.2,
-  slant: 28,
-  bow: 0.18,
-  lighter: 0.18,
-};
-export const ROPES: Readonly<Record<string, RopeShape>> = {
-  "long-ref": LONG_LAY,
-  "long-tight": { ...LONG_LAY, pitch: 1.5, slant: 34 },
-  "long-loose": { ...LONG_LAY, pitch: 2.5, slant: 22 },
-  "long-gaps": { ...LONG_LAY, gap: 0.32 },
-  "long-soft": { ...LONG_LAY, lighter: 0.1 },
-  "long-bright": { ...LONG_LAY, lighter: 0.26 },
-  "long-round": { ...LONG_LAY, bow: 0.4 },
-};
-
-/* The panel's twist option ids: `s4.5-clear` for ticks, or a key of ROPES. */
-export function parseTwist(id: string | undefined): Twist | undefined {
-  const ticks = id?.match(/^s(\d+(?:\.\d+)?)-clear$/);
-  if (ticks) return { kind: "ticks", spacing: Number(ticks[1]) };
-  const shape = id === undefined ? undefined : ROPES[id];
-  return shape === undefined ? undefined : { kind: "rope", shape };
-}
-
-/* A point, and the unit tangent there, at `s` px along a piece's samples. */
-function frameAt({ xy, length }: PieceSamples, s: number) {
-  const i = Math.max(0, Math.min(Math.floor(s), Math.floor(length) - 1));
-  const x = xy[2 * i];
-  const y = xy[2 * i + 1];
-  const dx = xy[2 * i + 2] - x;
-  const dy = xy[2 * i + 3] - y;
-  const run = Math.hypot(dx, dy) || 1;
-  return { x, y, tx: dx / run, ty: dy / run };
-}
-
-/* One gap between two strands, centred at `s`, from `fromAcross` to `toAcross` (offsets across the
-   line, -half..half), leaning `lean` px along the line over that span. Bowed a little, as the
-   reference's gaps are: a strand's end is rounded, so the gap between two is a shallow crescent. */
-function gapAt(
-  samples: PieceSamples,
-  s: number,
-  half: number,
-  lean: number,
-  bow: number,
-) {
-  const { x, y, tx, ty } = frameAt(samples, s);
-  const nx = -ty;
-  const ny = tx;
-  const p = (along: number, across: number) =>
-    `${(x + tx * along + nx * across).toFixed(2)} ${(y + ty * along + ny * across).toFixed(2)}`;
-  return `M${p(-lean / 2, -half)}Q${p(bow * half * 2, 0)} ${p(lean / 2, half)}`;
-}
-
-/* Every gap of one rope shape whose centre lies in [from, to). */
-function ropeGaps(
-  shape: RopeShape,
-  samples: PieceSamples,
-  from: number,
-  to: number,
-  length: number,
-  half: number,
-) {
-  const pitch = shape.pitch * half * 2;
-  const lean = (half * 2) / Math.tan((shape.slant * Math.PI) / 180);
-  let d = "";
-  for (let at = Math.ceil(from / pitch) * pitch; at < to; at += pitch) {
-    if (at < half * 2 || at > length - half * 2) continue;
-    d += gapAt(samples, at, half, lean, shape.bow);
-  }
-  return d;
-}
-
-/* How wide a gap's stroke is, ACROSS the gap: its share of the pitch, measured along the line,
-   projected onto the gap's own normal. */
-function gapWidth(shape: RopeShape, half: number) {
-  const along = shape.gap * shape.pitch * half * 2;
-  return Math.max(GAP_FLOOR, along * Math.sin((shape.slant * Math.PI) / 180));
-}
-
-function createTwist(
-  svg: SVGSVGElement,
-  before: Element | null,
-  twist: Twist,
-  cutId: string,
-  taperPiece: (count: number) => number,
-) {
-  const layer = document.createElementNS(SVG_NS, "g");
-  layer.dataset.threadTwist = twist.kind;
-  svg.insertBefore(layer, before);
-  const lighter = twist.kind === "rope" ? twist.shape.lighter : TWIST_LIGHTER;
-  const stroke = `oklch(from var(--color-thread-red) calc(l + ${lighter}) c h)`;
-  const pattern =
-    twist.kind === "ticks" ? `${TWIST_TICK} ${twist.spacing - TWIST_TICK}` : "";
-  let pieces: readonly ThreadPiece[] = [];
-  let copies: SVGPathElement[] = [];
-  let chunks: { element: SVGPathElement; end: number }[][] = [];
-
-  return {
-    measured(
-      inks: readonly (SVGPathElement | null)[],
-      next: readonly ThreadPiece[],
-      baseOf: (p: SVGPathElement) => string,
-    ) {
-      layer.replaceChildren();
-      pieces = next;
-      copies = [];
-      chunks = [];
-      const width = Number.parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue(
-          "--stroke-thread",
-        ),
-      );
-      const half = (Number.isFinite(width) ? width : 1.6) / 2;
-      next.forEach((piece, index) => {
-        const ink = inks[index];
-        if (ink === null || ink === undefined) return;
-        const length = piece.end - piece.start;
-        /* A tapered end is cut by the taper's mask, as its ink is; full-width marks there would
-           stand wider than the line they sit on. */
-        const holder = document.createElementNS(SVG_NS, "g");
-        if (index === taperPiece(next.length))
-          holder.setAttribute("mask", `url(#${cutId})`);
-        layer.append(holder);
-        if (twist.kind === "ticks") {
-          const copy = document.createElementNS(SVG_NS, "path");
-          copy.setAttribute("fill", "none");
-          copy.setAttribute("stroke-linecap", "butt");
-          copy.style.stroke = stroke;
-          copy.style.strokeWidth = "var(--stroke-thread)";
-          copy.setAttribute("d", baseOf(ink));
-          copy.style.display = "none";
-          holder.append(copy);
-          copies[index] = copy;
-          return;
-        }
-        const samples = samplePath(baseOf(ink), length);
-        const own: { element: SVGPathElement; end: number }[] = [];
-        for (let from = 0; from < length; from += MARK_CHUNK) {
-          const end = Math.min(length, from + MARK_CHUNK);
-          const d = ropeGaps(twist.shape, samples, from, end, length, half);
-          if (d === "") continue;
-          const element = document.createElementNS(SVG_NS, "path");
-          element.setAttribute("fill", "none");
-          element.setAttribute("stroke-linecap", "butt");
-          element.style.stroke = stroke;
-          element.style.strokeWidth = `${gapWidth(twist.shape, half).toFixed(2)}px`;
-          element.setAttribute("d", d);
-          element.style.display = "none";
-          holder.append(element);
-          own.push({ element, end });
-        }
-        chunks[index] = own;
-      });
-    },
-    painted(drawn: number) {
-      pieces.forEach((piece, index) => {
-        const length = piece.end - piece.start;
-        const reached = Math.min(length, pieceProgress(drawn, piece) * length);
-        if (twist.kind !== "ticks") {
-          for (const chunk of chunks[index] ?? []) {
-            const value = reached >= chunk.end - 0.01 ? "" : "none";
-            if (chunk.element.style.display !== value)
-              chunk.element.style.display = value;
-          }
-          return;
-        }
-        const copy = copies[index];
-        if (copy === undefined || twist.kind !== "ticks") return;
-        const whole = Math.floor((reached - TWIST_TICK) / twist.spacing) + 1;
-        if (reached <= 0 || whole <= 0) {
-          if (copy.style.display !== "none") copy.style.display = "none";
-          return;
-        }
-        if (copy.style.display !== "") copy.style.display = "";
-        const dashes =
-          reached >= length
-            ? pattern
-            : `${`${pattern} `.repeat(whole)}0 ${length * 2}`;
-        if (copy.style.strokeDasharray !== dashes)
-          copy.style.strokeDasharray = dashes;
-      });
-    },
-  };
-}
-
-/* ---------------------------------------------------------------------------------------------
    ONE ENTRY POINT PER `<svg>` */
 
 export function createThreadSpikes(
@@ -708,13 +489,9 @@ export function createThreadSpikes(
   taperPiece: (count: number) => number,
   reduced: boolean,
 ) {
-  /* The rope with rounder strands is fixed (owner, 2026-11-01), so it is on with no choice stored; the
-     ids stay parseable for a stale stored choice. */
-  const twistValues = parseTwist(readVariant("twist") ?? "long-round");
-  const twist =
-    twistValues === undefined
-      ? undefined
-      : createTwist(svg, before, twistValues, cutId, taperPiece);
+  /* The rope twist is committed (`thread-twist.ts`) and always on; it is built here only because it
+     reads each piece's unswayed path from the sway below. */
+  const twist = createTwistPainter(svg, before, cutId, taperPiece);
   const swayValues = reduced ? undefined : parseSway(readVariant("sway"));
   const sway =
     swayValues === undefined ? undefined : createSway(svg, swayValues);
@@ -740,10 +517,10 @@ export function createThreadSpikes(
           mainRect.top + window.scrollY,
         );
       }
-      twist?.measured(inks, pieces, baseOf);
+      twist.measured(inks, pieces, baseOf);
     },
     painted(drawn: number) {
-      twist?.painted(drawn);
+      twist.painted(drawn);
     },
     stop() {
       sway?.stop();
