@@ -5,6 +5,7 @@
 import {
   HEAD_LENGTH_RATIO,
   type HeadOptions,
+  lighter,
   type Rgb,
 } from "./thread-head.ts";
 import {
@@ -57,8 +58,8 @@ function tokenColour(token: string): Rgb {
   return [r, g, b];
 }
 
-/* Both option builders resolve their tokens once per load and hand back the same object (`stackFor`
-   keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
+/* The shipped head, the head with any review choice over it, and the re-trace each resolve their tokens
+   once per load and hand back the same object (`stackFor` keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
    specimens included, not on a hot update. */
 let resolvedShippedHead: HeadOptions | undefined;
 let resolvedHeadOptions: HeadOptions | undefined;
@@ -92,46 +93,42 @@ export function headOptions(): HeadOptions {
 let resolvedRetraceOptions: HeadOptions | undefined;
 
 export function retraceOptions(): HeadOptions {
-  resolvedRetraceOptions ??= {
-    ...headOptions(),
-    length: RETRACE_LENGTH_RATIO * tokenLength("--stroke-thread"),
-  };
+  resolvedRetraceOptions ??= retraceFrom(
+    headOptions(),
+    tokenLength("--stroke-thread"),
+  );
   return resolvedRetraceOptions;
 }
 
-/* The review panel's light candidates (Task 4): `sheen-<L>-<glow>` paints the head and the re-trace
-   in a lighter stretch of the thread's own red — the tip L hundredths of OKLCH lightness over it, the
-   middle half that — at the ink's own width. The glow is the panel's property and stylesheet. */
+/* The re-trace is the head's look at its own peak length: everything but the length comes from the
+   head, so the two can never be judged apart. */
+export function retraceFrom(head: HeadOptions, stroke: number): HeadOptions {
+  return { ...head, length: RETRACE_LENGTH_RATIO * stroke };
+}
+
+/* The review panel's light candidates: `sheen-<L>-<glow>` paints the head and the re-trace in a lighter
+   stretch of the thread's own red — the tip L hundredths of OKLCH lightness over it, the middle half
+   that — at the ink's own width. The glow is the panel's property and stylesheet. */
 function sheenFor(id: string | undefined): Partial<HeadOptions> {
   const match = /^sheen-(\d+)-\w+$/.exec(id ?? "");
   if (match === null) return {};
-  const lift = Number(match[1]) / 100;
-  return {
-    tipWidth: tokenLength("--stroke-thread"),
-    midColor: resolvedColour(
-      `oklch(from var(--color-thread-red) calc(l + ${lift / 2}) c h)`,
-    ),
-    tipColor: resolvedColour(
-      `oklch(from var(--color-thread-red) calc(l + ${lift}) c h)`,
-    ),
-  };
+  return sheenColours(
+    tokenColour("--color-thread-red"),
+    Number(match[1]) / 100,
+    tokenLength("--stroke-thread"),
+  );
 }
 
-/* A colour in any CSS form as RGB, by painting it: the computed value of a relative colour comes back
-   in its own space (`oklch(...)`), whose numbers are not channels. */
-function resolvedColour(css: string): Rgb {
-  const probe = document.createElement("span");
-  probe.style.position = "absolute";
-  probe.style.color = css;
-  document.body.append(probe);
-  const computed = getComputedStyle(probe).color;
-  probe.remove();
-  const context = document.createElement("canvas").getContext("2d");
-  if (context === null) return [0, 0, 0];
-  context.fillStyle = computed;
-  context.fillRect(0, 0, 1, 1);
-  const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
-  return [r, g, b];
+export function sheenColours(
+  red: Rgb,
+  lift: number,
+  stroke: number,
+): Partial<HeadOptions> {
+  return {
+    tipWidth: stroke,
+    midColor: lighter(red, lift / 2),
+    tipColor: lighter(red, lift),
+  };
 }
 
 export function tokenTime(token: string): number | undefined {

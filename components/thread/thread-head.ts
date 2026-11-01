@@ -143,6 +143,13 @@ function oklch(rgb: Rgb): Oklch {
   };
 }
 
+/* `rgb` lifted `lift` in OKLCH lightness at its own hue and chroma, as CSS `oklch(from … calc(l + lift)
+   c h)` does, computed here so it never depends on the browser supporting relative colours. */
+export function lighter(rgb: Rgb, lift: number): Rgb {
+  const colour = oklch(rgb);
+  return toRgb({ ...colour, l: colour.l + lift });
+}
+
 /* OKLab distance x100 — the unit the spike and the owner's reference were compared in. */
 export function deltaE(from: Rgb, to: Rgb): number {
   const [l1, a1, b1] = oklab(from);
