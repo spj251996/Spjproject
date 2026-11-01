@@ -6,6 +6,10 @@
  * It also discharges the `[lab]`-matches-reality claim for the thread: asserting `/` carries zero thread
  * roots IS the assertion that its subject is absent from the published page. It does NOT state how many
  * `[lab]` entries the doc has -- that count lives in the doc.
+ *
+ * `/thread` is built for Vercel previews and dev only, never for production. The gate states that rule itself
+ * rather than reading the config's: by default `/thread` is FORBIDDEN, and run with `VERCEL_ENV=preview` exactly
+ * (as the preview build was) it is EXPECTED. Run in the wrong mode for the export, the gate fails.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,11 +26,29 @@ const LAB_ROOTS = 3;
 
 const FIVE_FRAMES = ["invite", "event-info", "family", "wishes", "tall"];
 
+const PREVIEW = process.env.VERCEL_ENV === "preview";
+
+/** @typedef {{ path: string, roots: number, label: string, frames: string[], robots: string, sections?: boolean, progress?: number }} ExportRow */
+
+/* MEASURED on a preview export before writing: a static route emits `out/thread.html` with a sibling
+ * `out/thread/` directory of RSC payload `.txt` files only. */
+/** @type {ExportRow} */
+const LAB_ROW = {
+  sections: true,
+  path: "out/thread.html",
+  roots: LAB_ROOTS,
+  label: "/thread (lab)",
+  progress: 0,
+  frames: FIVE_FRAMES,
+  robots: "noindex, nofollow",
+};
+
 /* `sections: true` marks a route that composes `app/_sections/index.tsx`. The not-found rows below do
  * NOT: that screen is its own route with its own frame, botanical, eyebrow, heading and action, and it
  * composes none of the five sections. The flag lives on the row rather than in a parallel list so that
  * adding a route sets it in the same object literal -- and it is a flag rather than a filter on the
  * path, because a filter would silently re-include the next not-found-shaped route. */
+/** @type {ExportRow[]} */
 const EXPECTED = [
   {
     path: "out/index.html",
@@ -37,17 +59,7 @@ const EXPECTED = [
     frames: FIVE_FRAMES,
     robots: "noindex, nofollow",
   },
-  {
-    sections: true,
-    /* MEASURED on this export before writing: a static route emits
-     * `out/thread.html` with a sibling `out/thread/` directory of RSC payload `.txt` files only. */
-    path: "out/thread.html",
-    roots: LAB_ROOTS,
-    label: "/thread (lab)",
-    progress: 0,
-    frames: FIVE_FRAMES,
-    robots: "noindex, nofollow",
-  },
+  ...(PREVIEW ? [LAB_ROW] : []),
   /* The not-found screen. Its thread was retired, so what is asserted is that the route exists and
    * carries none.
    *
@@ -84,6 +96,7 @@ const FORBIDDEN = [
   /* A stray copy left by a half-done removal would otherwise fail nothing: nothing here enumerates
      `out/`'s root. */
   "out/preview.html",
+  ...(PREVIEW ? [] : ["out/thread.html", "out/thread"]),
 ];
 
 /* THE OTHER HALF OF THE DOC PARITY GATE: every non-`[lab]` section is present in the export. A missing
@@ -121,6 +134,9 @@ const splitSupports = (/** @type {string} */ css) =>
   splitAtRuleBlocks(css, SUPPORTS_PRELUDE);
 
 let failed = false;
+console.log(
+  `mode: ${PREVIEW ? "preview (VERCEL_ENV=preview) -- /thread expected" : "production (default) -- /thread forbidden"}`,
+);
 
 if (SECTION_COMPONENTS.length !== 5) {
   console.error(

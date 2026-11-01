@@ -6,7 +6,8 @@
 
    The URL carries `.html` deliberately: a plain static server serves literal paths, and under
    `output: "export"` the static route emits `out/thread.html`, with the sibling directory holding only
-   RSC payload `.txt` files. */
+   RSC payload `.txt` files. `/thread` is built only for Vercel previews and dev, so serve an export built with
+   `VERCEL_ENV=preview npm run build`; a default build has no `out/thread.html`. */
 import { chromium } from "playwright";
 
 const PORT = process.argv[2] ?? "4931";

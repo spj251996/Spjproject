@@ -19,7 +19,6 @@
     "verify:section": "node scripts/gates/verify-section.mjs",
     "measure:fit": "node scripts/generators/measure-section-fit.mjs",
     "check:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-export-routes.mjs",
-    "check:retire": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/gates/retire-register.test.mjs",
     "check:thread": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-thread-clearance.mjs",
     "check:thread-joins": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-thread-joins.mjs",
     "check:thread-layout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-thread-layout-impact.mjs"
