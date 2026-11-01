@@ -356,6 +356,12 @@
   --z-modal: 50;
 }
 
+/* DESIGN.md's `{breakpoints.reflow}` (20rem). Only browser zoom, or a screen narrower than 320px, lays
+   the page out below it — so `max-reflow:` never reaches a page viewed at 100% (DESIGN.md →
+   Accessibility Rules). A custom variant rather than a breakpoint token: a token would add a `:root`
+   variable and min-width steps that reach a page viewed at 100%. */
+@custom-variant max-reflow (@media (width < 20rem));
+
 /* Two phone-only values, both the owner's picks on a phone (2026-10-14): the progress line is 2px
    (3px from the tablet up — DESIGN.md → Components → UI → `scroll-progress`), and the card paper takes
    half its tooth (DESIGN.md → Paper Grain). */
