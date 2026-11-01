@@ -41,8 +41,8 @@ const sans = Libre_Baskerville({
    whole `wght` axis) rather than two static instances, which more than doubles the bytes on every
    route's critical path. One weight returns a single static cut.
 
-   Subsetting to the ~19 codepoints the five titles use would reach 3-6KB and was REJECTED: it
-   breaks silently the day a title changes or a sixth ritual lands, and a missing glyph renders as
+   Subsetting to the 17 codepoints the four titles use would reach 3-6KB and was REJECTED: it
+   breaks silently the day a title changes or a fifth ritual lands, and a missing glyph renders as
    a box on a title nobody re-checked. */
 const malayalam = Noto_Serif_Malayalam({
   variable: "--font-malayalam",
