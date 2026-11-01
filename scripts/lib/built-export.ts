@@ -48,3 +48,21 @@ export function freshExport(
   }
   return true;
 }
+
+/** Whether a test that reads the thread lab's export may run. `/thread` is built only for Vercel previews and dev,
+    so a default build has no `out/thread.html` and no thread script in its chunks: skipped, naming the build
+    that has them. Otherwise the same freshness rule as `freshExport`. */
+export function labExport(
+  t: Pick<TestContext, "skip">,
+  page = "out/thread.html",
+  roots: readonly string[] = SOURCE_ROOTS,
+  excluded: readonly string[] = EXCLUDED,
+): boolean {
+  if (!existsSync(page)) {
+    t.skip(
+      "the export has no /thread: build it with `VERCEL_ENV=preview npm run build`",
+    );
+    return false;
+  }
+  return freshExport(t, page, roots, excluded);
+}

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/lib/built-export.ts";
+import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -96,7 +96,7 @@ const BANDS = [
 ];
 
 test("the drawing head is lit while drawing and gone once the whole thread is drawn", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   /* Not wrapped: with an export present, a missing browser must fail rather than quietly skip, or
      the only guard this behaviour has would disappear without a sound. */
   const { chromium } = await import("playwright");

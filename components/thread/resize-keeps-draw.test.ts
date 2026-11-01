@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/lib/built-export.ts";
+import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -154,7 +154,7 @@ const TALLER = { width: 393, height: 912 };
 const SETTLE = 1200;
 
 test("a height-only resize that reflows the page does not un-draw the thread (slow path)", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   /* Not wrapped: with an export present, a missing browser must fail rather than quietly skip, or
      the only guard this behaviour has would disappear without a sound. */
   const { chromium } = await import("playwright");
@@ -245,7 +245,7 @@ test("a height-only resize that reflows the page does not un-draw the thread (sl
    guard on a reflowing resize not erasing the opening draw by any mechanism, not as proof that the
    floor is what holds it. */
 test("a height-only resize that reflows the page does not erase what the opening draw drew (slow path)", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -299,7 +299,7 @@ test("a height-only resize that reflows the page does not erase what the opening
    A dash-length assertion cannot see that: the drawn LENGTH is correct, it is the box that is wrong.
    So this asserts the box. */
 test("a resize that reflows the page re-measures rather than taking the cheap path", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -384,7 +384,7 @@ const WATCH_MEASURES = `(() => {
    resize event over an unchanged layout is the URL-bar case the cheap path exists for: on a phone
    `svh` does not follow the toolbar, so the window changes and the layout does not. */
 test("a resize event with an unchanged layout takes the cheap path and keeps the draw", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -460,7 +460,7 @@ test("a resize event with an unchanged layout takes the cheap path and keeps the
 const MUCH_TALLER = { width: 393, height: 1100 };
 
 test("the second layout event of one viewport change does not paint against the old layout", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();

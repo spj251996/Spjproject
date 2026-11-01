@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
-import { freshExport } from "../../scripts/lib/built-export.ts";
+import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -77,7 +77,7 @@ const READ = `(() => {
 })()`;
 
 test("reduced motion builds no re-trace, stops a running one, and leaves the thread undashed; with motion it builds both", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   /* Not wrapped: with an export present, a missing browser or a launch error must fail this test,
      not skip it, or the only protection reduced motion has would disappear without a sound. */
   const { chromium } = await import("playwright");
@@ -191,7 +191,7 @@ const DASHES = `(() => {
    by the draw's next frame unless the draw is stopped with it. Each case switches while a piece is
    visibly mid-draw, then waits out the draw's whole remaining time before reading. */
 test("a change to reduced motion during the opening draw or a catch-up leaves no piece dashed", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -308,7 +308,7 @@ const LIFECYCLE = `(() => {
 })()`;
 
 test("the re-trace stops when its budget of loops is spent, suspends in a hidden tab without spending any, and a scroll starts it again", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -400,7 +400,7 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
 });
 
 test("Wishes' closing stretch loops, painted by the one card thread and nowhere else", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -451,7 +451,7 @@ test("Wishes' closing stretch loops, painted by the one card thread and nowhere 
 });
 
 test("on a finished thread a scroll clears the loop at once, and it lights again once the page is still", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -503,7 +503,7 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
    scroll. Loading reduced, rather than switching mid-load, keeps the case deterministic: a switch that
    lands after the draw has begun leaves part of it on the ratchet either way. */
 test("motion arriving at the top runs the opening that reduced motion held back", async (t) => {
-  if (!freshExport(t)) return;
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { freshExport } from "./built-export.ts";
+import { freshExport, labExport } from "./built-export.ts";
 
 /* A source tree and an export page, each file stamped with its own time (seconds since the epoch). */
 function tree(files: Record<string, number>): string {
@@ -92,5 +92,43 @@ test("a file under an excluded root is ignored", () => {
       excluded,
     ),
     true,
+  );
+});
+
+test("with no lab page, labExport skips naming the preview build", () => {
+  const root = tree({ "app/page.tsx": 1000, "out/index.html": 2000 });
+  const t = fakeContext();
+  assert.equal(
+    labExport(t, join(root, "out/thread.html"), [join(root, "app")], []),
+    false,
+  );
+  assert.equal(t.skips.length, 1);
+  assert.match(t.skips[0], /VERCEL_ENV=preview npm run build/);
+});
+
+test("with a fresh lab page, labExport returns true", () => {
+  const root = tree({ "app/page.tsx": 1000, "out/thread.html": 2000 });
+  const t = fakeContext();
+  assert.equal(
+    labExport(t, join(root, "out/thread.html"), [join(root, "app")], []),
+    true,
+  );
+  assert.equal(t.skips.length, 0);
+});
+
+test("with a stale lab page, labExport throws naming the file", () => {
+  const root = tree({
+    "app/late.tsx": 3000,
+    "out/thread.html": 2000,
+  });
+  assert.throws(
+    () =>
+      labExport(
+        fakeContext(),
+        join(root, "out/thread.html"),
+        [join(root, "app")],
+        [],
+      ),
+    (error: Error) => error.message.includes("late.tsx"),
   );
 });

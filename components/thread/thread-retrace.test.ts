@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
 import test from "node:test";
+import { labExport } from "../../scripts/lib/built-export.ts";
 import {
   BASE_WIDTH,
   builtChunks,
@@ -337,10 +337,7 @@ test("the built page reads the re-trace's loop cadence, settle interval and loop
     4,
     "--retrace-loops is the owner's pick, 4 on the LONGEST stretch (2026-10-05), superseding the 5 of 2026-10-02 for that stretch alone -- every shorter one now runs more than five",
   );
-  if (!existsSync("out/_next/static/chunks")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   const css = builtChunks(".css");
   const script = builtChunks(".js");
   for (const token of [
@@ -429,10 +426,7 @@ test("the re-trace has no filter of its own, its glow being strokes, and no look
     /--retrace-(tip|mid|width|halo)\s*:/,
     "a second copy of a head value",
   );
-  if (!existsSync("out/_next/static/chunks")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   const css = builtChunks(".css").replace(/\s+/g, "");
   const rules = css.match(/\.[^{}]*pageRetrace[^{}]*\{[^}]*\}/g) ?? [];
   assert.ok(

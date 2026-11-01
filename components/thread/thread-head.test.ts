@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
 import test from "node:test";
+import { labExport } from "../../scripts/lib/built-export.ts";
 import {
   BASE_WIDTH,
   builtChunks,
@@ -351,10 +351,7 @@ test("the head's halo is the bleed's own shape at four times the radii", () => {
    delete the test. The other half of it, that the built script reads every token by name and carries
    no copy, is the part that must keep holding. */
 test("the built page reads the head's values from the built stylesheet rather than carrying copies", (t) => {
-  if (!existsSync("out/_next/static/chunks")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   const css = builtChunks(".css");
   const script = builtChunks(".js");
   for (const token of [
