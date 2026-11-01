@@ -95,7 +95,7 @@
   overflow: visible;
 }
 
-/* The bleed sits on the INK rather than the svg root. With the full-strength filter, one run on the
+/* The contact shadow sits on the INK rather than the svg root. With the old full-strength bleed, one run on the
    root took 22.1ms mean frame time / 74 dropped frames over a 5s scrub against 20.39ms / 55 (median
    of three) with it on each piece; the two were never compared at the shipped strength. Filtered
    pieces cost frames even while only one was drawing, which points to the filter being re-run on
@@ -109,7 +109,7 @@
   stroke-width: var(--stroke-thread);
 }
 
-/* A piece that carries a taper takes its bleed on a group around the masked path (`ThreadInk`), so
+/* A piece that carries a taper takes its shadow on a group around the masked path (`ThreadInk`), so
    the ink is cut before the filter runs. */
 .pageInk,
 .pageBleed {
@@ -117,9 +117,9 @@
 }
 
 /* A tapered end (`thread-taper.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
-   takes the thread's own colour and its bleed: a taper that did not bleed would read as a different
-   material from the line it ends. The bleed is ONE filter on the group, as the head's halo is, over
-   geometry that never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
+   takes the thread's own colour and its contact shadow: a taper with no shadow would read as a
+   different material from the line it ends. The shadow is ONE filter on the group, over geometry that
+   never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
    past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
    compounds across the stack. The painter hides it with `display: none` once it has run and no run has
    been reached; before that (the shipped markup, and for a reader with no script) the group is simply

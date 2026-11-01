@@ -317,28 +317,31 @@ test("the head's owner-chosen values are the ones in the stylesheet", () => {
 /* Any failure here is also a prompt to re-fit `FITTED_GLOW` (`thread-retrace.ts`): the re-trace's eight
    glow alphas were fitted to the falloff of exactly these radii and alphas, so retuning the halo
    leaves them describing a halo that no longer exists. */
-test("the head's halo is the bleed's own shape at four times the radii", () => {
-  const shadows = (name: string) =>
-    [
-      ...tokenValue(name).matchAll(
-        /0 0 ([\d.]+)px color-mix\(in srgb, var\(([\w-]+)\) (\d+)%/g,
-      ),
-    ].map((match) => ({
-      radius: Number(match[1]),
-      colour: match[2],
-      alpha: Number(match[3]),
-    }));
-  const bleed = shadows("bleed-thread");
-  const halo = shadows("halo-thread-head");
-  assert.equal(bleed.length, 3);
-  assert.equal(halo.length, 3);
-  bleed.forEach((shadow, index) => {
-    assert.equal(halo[index].colour, shadow.colour);
-    assert.equal(halo[index].alpha, shadow.alpha);
-    assert.equal(halo[index].radius, shadow.radius * 4);
-  });
+const shadows = (name: string) =>
+  [
+    ...tokenValue(name).matchAll(
+      /([\d.]+)(?:px)? ([\d.]+)(?:px)? ([\d.]+)px color-mix\(in srgb, var\(([\w-]+)\) (\d+)%/g,
+    ),
+  ].map((match) => ({
+    x: Number(match[1]),
+    y: Number(match[2]),
+    blur: Number(match[3]),
+    colour: match[4],
+    alpha: Number(match[5]),
+  }));
+
+/* Chosen on a render (DESIGN.md -> Thread -> The contact shadow): pinned so a stray edit cannot move
+   the thread off the paper unseen. */
+test("the thread's contact shadow falls straight down in the paper's own shadow tint", () => {
+  assert.deepEqual(shadows("bleed-thread"), [
+    { x: 0, y: 0.5, blur: 0.75, colour: "--color-shadow-warm", alpha: 40 },
+    { x: 0, y: 3, blur: 5, colour: "--color-shadow-warm", alpha: 14 },
+  ]);
+});
+
+test("the head's halo keeps the radii FITTED_GLOW was fitted to", () => {
   assert.deepEqual(
-    halo.map((shadow) => shadow.radius),
+    shadows("halo-thread-head").map((shadow) => shadow.blur),
     [3.5, 12, 33],
     "the halo's radii changed: FITTED_GLOW's eight alphas were fitted to the falloff of THESE radii " +
       "and alphas, so re-fit them and re-measure MEASURED_HALO before updating this expectation",

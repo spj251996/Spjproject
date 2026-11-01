@@ -236,23 +236,18 @@
   --thread-terminal-finish: 0.08;
   --stroke-rim-offset: 2px;
 
-  /* THE THREAD'S BLEED — three stacked shadows, as one value so tuning touches one line (the same
-     shape `--crease-fill` below uses for a whole gradient). Vermilion is lighter than the thread's
-     own red but much darker than the ivory ground, which is what makes this an ink bleed that
-     DARKENS the paper rather than light added to the stroke.
-     The radii are a quarter of the retired glow's 3.5 / 12 / 33px, the strength the owner chose on a
-     render. The full radii cost 55 dropped frames over a 5s scrub and these cost 4 (DESIGN.md →
-     Thread). */
+  /* THE THREAD'S CONTACT SHADOW — the line lying on the paper casts it, so it takes the paper's own
+     shadow tint and falls straight down: a tight contact layer and a softer lift, which seat the
+     thread a little above the paper rather than soaking it in. One value so tuning touches one line
+     (DESIGN.md → Thread → The contact shadow). Wide radii on every piece's ink cost a cliff, not a
+     gradual scaling (55 dropped frames over a 5s scrub at 33px against 4 at 8.25px), so do not widen
+     the blur without re-measuring. */
   --bleed-thread: drop-shadow(
-      0 0 0.875px
-        color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)
+      0 0.5px 0.75px
+        color-mix(in srgb, var(--color-shadow-warm) 40%, transparent)
     )
     drop-shadow(
-      0 0 3px color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)
-    )
-    drop-shadow(
-      0 0 8.25px
-        color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent)
+      0 3px 5px color-mix(in srgb, var(--color-shadow-warm) 14%, transparent)
     );
 
   /* THE DRAWING HEAD'S HALO — the bleed's own shape at 4x, as one value on one group wrapping the
