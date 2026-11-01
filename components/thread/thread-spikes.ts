@@ -1,8 +1,10 @@
 /* TEMPORARY SPIKES — the thread's sway candidates, switched by the review panel
-   (`thread-variant.ts`). Nothing here does anything unless the panel's axis is set, and the whole file
-   leaves with the panel, or is replaced by a real build if a candidate is picked.
+   (`thread-variant.ts`). The sway does nothing unless the panel's axis is set, and it leaves with the
+   panel, or is replaced by a real build if a candidate is picked.
 
-   TWIST: committed in `thread-twist.ts`; the entry point below only builds it beside the sway.
+   TWIST: committed in `thread-twist.ts` and always on, but built by this file's entry point, because it
+   reads each piece's unswayed path from the sway. Removing this file moves that call into `PageThread`
+   and `CardThread`; deleting it with the panel would take the twist off the thread.
 
    SWAY: the line moves, as a thread in moving air. A smooth displacement FIELD over `<main>`'s
    coordinates moves every point of every path in the `<svg>` — ink, marks, taper, re-trace — so the

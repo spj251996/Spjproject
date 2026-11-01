@@ -23,11 +23,12 @@
 
    `--thread-catchup` is therefore how long the thread takes to ARRIVE, which is also what the owner
    is setting when they dial it. Re-targeting mid-flight eases from wherever it has got to, so a
-   continuous scroll trails smoothly rather than restarting with a jerk. */
-/* The curve is named by `--thread-catchup-ease`, so the line is pulled into place fast and settles
+   continuous scroll trails smoothly rather than restarting with a jerk.
+
+   The curve is named by `--thread-catchup-ease`, so the line is pulled into place fast and settles
    slowly (DESIGN.md -> Motion). Every curve here starts at 0, arrives at exactly 1 and never overshoots:
    the draw never runs backwards, so an overshooting ease is forbidden, and the test holds every entry
-   to that. An unknown keyword falls back to the first. */
+   to that. An unknown keyword falls back to ease-out cubic. */
 export const CATCH_UP_EASES: Readonly<Record<string, (t: number) => number>> = {
   "ease-out-cubic": (t) => 1 - (1 - t) ** 3,
   "ease-out-quad": (t) => 1 - (1 - t) * (1 - t),

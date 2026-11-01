@@ -7,6 +7,7 @@
 import type { ThreadPiece } from "./thread-line.ts";
 import { pieceProgress } from "./thread-progress.ts";
 import { type PieceSamples, samplePath } from "./thread-samples.ts";
+import { tokenLength } from "./thread-tokens.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -112,12 +113,7 @@ export function createTwistPainter(
       layer.replaceChildren();
       pieces = next;
       chunks = [];
-      const width = Number.parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue(
-          "--stroke-thread",
-        ),
-      );
-      const half = (Number.isFinite(width) ? width : 2.2) / 2;
+      const half = tokenLength("--stroke-thread") / 2;
       next.forEach((piece, index) => {
         const ink = inks[index];
         if (ink === null || ink === undefined) return;

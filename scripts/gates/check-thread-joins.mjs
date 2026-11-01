@@ -89,8 +89,10 @@ const onlyViewport = flag("viewport");
 /* Thread red against ivory, with its antialiased edge: red-dominant and not pale. Both bounds are
    calibrated on the real page, not guessed: `g < 105` sits inside the measured safe band 94-110
    (below it a faint near-horizontal connector in `celebrations` splits; above it Family's portraits
-   admit skin-tone fragments), and `r - g > 80` inside 75-99 (looser reads Family's skin as ink; from
-   100 `celebrations` breaks). Recalibrate if the thread colour or the portraits change. */
+   admitted skin-tone fragments), and `r - g > 80` inside 75-99 (looser read Family's skin as ink; from
+   100 `celebrations` breaks). The portrait bounds were measured with the page's content showing; the
+   shot now hides everything but the thread, so only the `celebrations` bounds still bind. Recalibrate if
+   the thread's colour changes. */
 /** @param {number} r @param {number} g @param {number} b */
 function isInk(r, g, b) {
   return g < 105 && r - g > 80 && r - b > 60;
@@ -232,6 +234,16 @@ try {
         });
       }
 
+      /* The question is whether the thread is DRAWN in one piece, not whether anything covers it:
+         Wishes' type is raised over the card thread at every width, so a line passing behind the
+         names reads as two runs of ink with the type shown. Everything in `<main>` but the thread's
+         own `<svg>`s and the sections themselves (an element screenshot needs a visible element) is
+         hidden for the shot; `visibility` hides an element's own paint and leaves its box, so
+         nothing reflows and a visible descendant still paints. */
+      await page.addStyleTag({
+        content: `main * { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg], [data-thread-svg] * { visibility: visible !important; }`,
+      });
+
       for (const id of SECTIONS) {
         if (only !== null && id !== only) continue;
         measured += 1;
@@ -265,15 +277,6 @@ try {
           )) {
             portal.style.display = "none";
           }
-        });
-        /* The question is whether the thread is DRAWN in one piece, not whether anything covers it:
-           Wishes' type is raised over the card thread at every width, so a line passing behind the
-           names reads as two runs of ink with the type shown. Everything in `<main>` but the thread's
-           own `<svg>`s and the sections themselves (an element screenshot needs a visible element) is
-           hidden for the shot; `visibility` hides an element's own paint and leaves its box, so
-           nothing reflows and a visible descendant still paints. */
-        await page.addStyleTag({
-          content: `main * { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg], [data-thread-svg] * { visibility: visible !important; }`,
         });
         await section.evaluate((node, at) => {
           node.scrollIntoView();

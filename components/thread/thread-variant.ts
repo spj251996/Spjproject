@@ -30,8 +30,8 @@ export type VariantAxis = {
 /* One axis per decision; the shipped value is the absence of a choice, never an option here, so the
    panel cannot show a stale "shipped" that differs from what ships. */
 export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
-  /* Task 3's sway spike: the owner's pick and the faster sway they preferred (2026-11-01); the twist
-     (long lay, rounder strands) and the 2.2px width are fixed, not offered. */
+  /* The sway spike: the 7s sway and a faster 4s one. The twist (long lay, rounder strands) and the
+     2.2px width are fixed, not offered. */
   {
     id: "sway",
     label: "Sway (spike)",
@@ -40,7 +40,7 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
       { id: "sg-8-p4-e8-g50", label: "Faster sway (4s)" },
     ],
   },
-  /* Task 4's shadow, stronger: the shipped contact shadow (`--bleed-thread`, a tight contact plus a
+  /* The shadow, stronger: the shipped contact shadow (`--bleed-thread`, a tight contact plus a
      soft lift) read as too faint on a laptop and not at all on a phone. Each step darkens both layers
      and drops the lift further; the old red bleed is here only to tell a missing filter on the phone
      apart from a faint one. */
@@ -70,7 +70,7 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
       },
     ],
   },
-  /* Task 4's light, as ONE pair (owner, 2026-11-01): the drawing head while a piece draws and the
+  /* The light, as ONE pair: the drawing head while a piece draws and the
      re-trace at rest always take the same look, so the two can never be judged apart. `sheen-<L>-<glow>`
      lifts the tip L hundredths of OKLCH lightness over the thread's red, the middle half that, at the
      ink's own width (`thread-tokens.ts`); the glow is the head's halo and the re-trace's glow strokes
