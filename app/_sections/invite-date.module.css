@@ -56,3 +56,16 @@
   top: calc(var(--spacing-space-3xs) - var(--rule-date-bracket));
   width: var(--stroke-divider);
 }
+
+/* Below a 320px layout (browser zoom) the page breaks and hyphenates words; the date's stay whole, as a label broken letter by letter is unreadable. */
+@media (width < 20rem) {
+  .block {
+    column-gap: var(--spacing-space-3xs);
+  }
+
+  .block,
+  .block * {
+    overflow-wrap: normal;
+    hyphens: manual;
+  }
+}

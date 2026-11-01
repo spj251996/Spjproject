@@ -116,3 +116,15 @@
     width: 29.375rem;
   }
 }
+
+/* Below the reflow width, browser zoom can make the card narrower than the drawing's fixed square;
+   it scales down with its column rather than push the page sideways (DESIGN.md → Accessibility Rules). */
+@media (width < 20rem) {
+  .figureCol {
+    max-width: 100%;
+  }
+
+  .figure {
+    max-width: 100%;
+  }
+}

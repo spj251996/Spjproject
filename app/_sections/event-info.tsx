@@ -82,15 +82,18 @@ function markFor(segmentId: string) {
   return mark;
 }
 
-/* Everything after the first comma is unbreakable, so a wrap falls after the locality and the
-   state is never alone on a line. */
+/* Below the reflow width every `nowrap` span wraps — DESIGN.md → Accessibility Rules. */
+const NOWRAP_UNTIL_REFLOW = "whitespace-nowrap max-reflow:whitespace-normal";
+
+/* From the reflow width up, everything after the first comma is unbreakable, so a wrap falls after
+   the locality and the state is never alone on a line. */
 function AddressLine({ address }: { address: string }) {
   const { head, tail } = splitAddress(address);
   if (tail === null) return head;
   return (
     <>
       {head}
-      <span className="whitespace-nowrap">{tail}</span>
+      <span className={NOWRAP_UNTIL_REFLOW}>{tail}</span>
     </>
   );
 }
@@ -173,7 +176,7 @@ function Diamond() {
   );
 }
 
-/* The only break is the `<wbr>` after the time, so the diamond never ends a line. The time's gap is
+/* From the reflow width up the only break is the `<wbr>` after the time, so the diamond never ends a line. The time's gap is
    its own trailing margin, so a wrapped line starts flush with the diamond. The hidden comma is
    what a screen reader hears in the diamond's place. */
 function SegmentLine({ segment }: { segment: EventSegment }) {
@@ -182,11 +185,11 @@ function SegmentLine({ segment }: { segment: EventSegment }) {
     <p className="type-heading-sm text-ink text-balance">
       {time !== null && (
         <>
-          <span className="me-space-2xs whitespace-nowrap">{time}</span>
+          <span className={`me-space-2xs ${NOWRAP_UNTIL_REFLOW}`}>{time}</span>
           <wbr />
         </>
       )}
-      <span className="whitespace-nowrap">
+      <span className={NOWRAP_UNTIL_REFLOW}>
         {spokenSeparator !== null && (
           <span className="sr-only">{spokenSeparator}</span>
         )}
@@ -197,13 +200,13 @@ function SegmentLine({ segment }: { segment: EventSegment }) {
   );
 }
 
-/* Keeps hyphenated words whole. The venue line is `text-pretty`, not balanced, because balancing
+/* Keeps hyphenated words whole from the reflow width up. The venue line is `text-pretty`, not balanced, because balancing
    broke them. */
 function VenueName({ venue }: { venue: string }) {
   return venueRuns(venue).map(({ text, nowrap }, index) =>
     nowrap ? (
       // biome-ignore lint/suspicious/noArrayIndexKey: the runs are derived from one fixed string
-      <span className="whitespace-nowrap" key={index}>
+      <span className={NOWRAP_UNTIL_REFLOW} key={index}>
         {text}
       </span>
     ) : (
@@ -222,11 +225,11 @@ function VenueName({ venue }: { venue: string }) {
    INK there — measured, not derived, because a line box carries air its glyphs never use: 2.5 above
    the date (on the date group below), 2 above the list and 2 between the events.
 
-   Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
+   Two columns at every tier from the reflow width up (owner, 2026-10-11): the mark beside its details, the details
    left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group, and a
    wrapped venue narrows to its widest line so that group centres on its ink (DESIGN.md → Event Info). */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-[calc(var(--spacing-space-lg)+2px)] grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-[calc(var(--spacing-space-md)+2px)] text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
+  "mx-auto mt-[calc(var(--spacing-space-lg)+2px)] grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-[calc(var(--spacing-space-md)+2px)] text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto max-reflow:w-full max-reflow:grid-cols-1";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
@@ -239,7 +242,7 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
           className="col-span-full grid grid-cols-subgrid items-start"
           key={segment.id}
         >
-          <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold">
+          <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold max-reflow:justify-start">
             <PlateMark segmentId={segment.id} />
           </div>
           <div className="flex min-w-0 flex-col items-start text-left">

@@ -223,8 +223,8 @@ export function CoupleNames({
         <Lockup
           className={
             layout === "orientation"
-              ? "mx-auto block h-auto w-[2.59em] md:w-[2.513em] text-ink-muted [@media(orientation:landscape)]:hidden"
-              : "mx-auto block h-auto w-[2.59em] md:w-[2.513em] text-ink-muted"
+              ? "mx-auto block h-auto w-[2.59em] md:w-[2.513em] text-ink-muted max-reflow:max-w-full [@media(orientation:landscape)]:hidden"
+              : "mx-auto block h-auto w-[2.59em] md:w-[2.513em] text-ink-muted max-reflow:max-w-full"
           }
           layout="stacked"
           strokeUnits={strokeUnits}
@@ -234,8 +234,8 @@ export function CoupleNames({
         <Lockup
           className={
             layout === "orientation"
-              ? "mx-auto hidden h-auto w-[3.65em] md:w-[4.656em] text-ink-muted [@media(orientation:landscape)]:block [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em]"
-              : "mx-auto block h-auto w-[3.65em] md:w-[4.656em] text-ink-muted [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em]"
+              ? "mx-auto hidden h-auto w-[3.65em] md:w-[4.656em] text-ink-muted [@media(orientation:landscape)]:block [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em] max-reflow:max-w-full"
+              : "mx-auto block h-auto w-[3.65em] md:w-[4.656em] text-ink-muted [@media(64rem<=width<100rem)_and_(orientation:landscape)]:w-[5.3em] [@media(width>=100rem)_and_(orientation:landscape)]:w-[5.8em] max-reflow:max-w-full"
           }
           layout="line"
           strokeUnits={strokeUnits}

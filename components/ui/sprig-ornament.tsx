@@ -26,7 +26,12 @@ export const FLOOR_DIAGONAL = 23;
    device pixel and is rounded by where it sits on the page, so on a phone two eyebrows painted two
    different weights. A border width snaps to whole device pixels, so every eyebrow paints one. */
 const RULE =
-  "h-0 w-space-lg shrink-0 border-t-(length:--stroke-hairline) border-current";
+  "h-0 w-space-lg shrink-0 border-t-(length:--stroke-hairline) border-current max-reflow:hidden";
+
+/* Below 20rem the whole ornament gives way and only the words remain, because a sprig wraps onto a
+   line of its own — DESIGN.md → Accessibility Rules. */
+const SPRIG = "shrink-0 max-reflow:hidden";
+const WRAPPER = "inline-flex items-center justify-center gap-space-2xs";
 
 export function SprigOrnament({
   children,
@@ -34,11 +39,11 @@ export function SprigOrnament({
   children: ReactNode;
 }): ReactElement {
   return (
-    <span className="inline-flex items-center justify-center gap-space-2xs">
+    <span className={WRAPPER}>
       <span aria-hidden className={RULE} />
-      <SprigIcon className="shrink-0 -scale-x-100" size={FLOOR_DIAGONAL} />
+      <SprigIcon className={`${SPRIG} -scale-x-100`} size={FLOOR_DIAGONAL} />
       {children}
-      <SprigIcon className="shrink-0" size={FLOOR_DIAGONAL} />
+      <SprigIcon className={SPRIG} size={FLOOR_DIAGONAL} />
       <span aria-hidden className={RULE} />
     </span>
   );

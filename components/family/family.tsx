@@ -46,7 +46,7 @@ const OVERRUN = {
    one line — the ignore comment above `role="list"` only suppresses the line right after it. */
 const ROW_LIST_CLASS = "flex list-none flex-wrap items-start justify-center";
 const COUPLE_LIST_CLASS =
-  "grid w-max auto-cols-fr list-none grid-flow-col justify-items-center gap-(--couple-gap)";
+  "grid w-max auto-cols-fr list-none grid-flow-col justify-items-center gap-(--couple-gap) max-reflow:w-auto max-reflow:grid-flow-row";
 
 export function Family({ group, eyebrow }: FamilyProps) {
   const { parents, children } = splitRoster(group.members);
