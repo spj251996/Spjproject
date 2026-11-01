@@ -20,7 +20,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     home: "components/thread/page-thread.tsx",
     composes:
       "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s), --retrace-settle (1500ms), --retrace-loops (4) and --retrace-speed (845), Foundations · Motion",
-    note: "Live at /thread, not on the published page — the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+    note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
 ];
 

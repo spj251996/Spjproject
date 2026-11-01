@@ -9,11 +9,11 @@ import {
 } from "@/app/design-system/_kit";
 import { Z_LAYERS } from "@/app/design-system/_sections/token-tables";
 
-/* The published route and the lab in one list. /thread carries [lab] in the doc — built and verified
-   but not on the published page. */
+/* The published route and the lab in one list. /thread carries [lab] in the doc — built for preview
+   deploys and dev only, never in the production export. */
 const VARIANT_ROUTES = [
   "/ · five sections · no thread · the hero unpainted, the other four mounted",
-  "/thread · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
+  "/thread · preview deploys and dev only, never production · the same five · the thread · card paint identical to / · Event Info joined to Family in code where Contact was, until the redraw",
 ];
 
 const TRY_IT = [
@@ -126,7 +126,7 @@ export function TechnicalSections() {
         id="variant-routes"
         intro="Two routes compose from one section module. What differs between them is whether the thread mounts — never the card paint, which follows each card's role, and never the geometry, which is identical for every section the two share."
         mapsTo="Technical Conventions → Variant Routes"
-        source="app/_sections/index.tsx · app/thread/page.tsx"
+        source="app/_sections/index.tsx · app/thread/page.lab.tsx"
         title="Technical · Variant Routes"
       >
         <RuleList rules={VARIANT_ROUTES} />
