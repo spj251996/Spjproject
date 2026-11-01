@@ -10,7 +10,7 @@ const SECTION_NAMES = [
   "WishesSection",
 ];
 
-const ROUTES = ["app/page.tsx", "app/thread/page.lab.tsx"];
+const ROUTES = ["app/page.tsx", "app/thread/page.dev.tsx"];
 
 /* `app/_sections/index.tsx` is the ONE list of sections. A route that names a section instead of
    composing `Sections` is how the published page and the lab drift the first time a sixth section
@@ -49,7 +49,7 @@ test("the published route neither imports the thread nor sets the flag", () => {
 });
 
 test("the lab route sets the thread", () => {
-  const source = readFileSync("app/thread/page.lab.tsx", "utf8");
+  const source = readFileSync("app/thread/page.dev.tsx", "utf8");
   /* The CLAIM, that `thread` is among the props the lab route hands `Sections`, rather than a
      spelling, which would fail a correct reordering of props. The element's prop list is bounded by
      its own `>`. */
@@ -67,12 +67,12 @@ test("the lab route sets the thread", () => {
    directory coming back is the regression. */
 test("the thread lab is one static route, painted as / is", () => {
   assert.ok(
-    existsSync("app/thread/page.lab.tsx"),
-    "app/thread/page.lab.tsx is missing",
+    existsSync("app/thread/page.dev.tsx"),
+    "app/thread/page.dev.tsx is missing",
   );
   assert.ok(!existsSync("app/thread/[variant]"), "the variant routes are back");
   /* Comments stripped: the page's own header comment talks ABOUT paint. */
-  const lab = readFileSync("app/thread/page.lab.tsx", "utf8").replace(
+  const lab = readFileSync("app/thread/page.dev.tsx", "utf8").replace(
     /\/\*[\s\S]*?\*\//g,
     "",
   );

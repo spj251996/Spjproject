@@ -7,9 +7,10 @@
  * roots IS the assertion that its subject is absent from the published page. It does NOT state how many
  * `[lab]` entries the doc has -- that count lives in the doc.
  *
- * `/thread` is built for Vercel previews and dev only, never for production. The gate states that rule itself
- * rather than reading the config's: by default `/thread` is FORBIDDEN, and run with `VERCEL_ENV=preview` exactly
- * (as the preview build was) it is EXPECTED. Run in the wrong mode for the export, the gate fails.
+ * The thread lab (`/thread`) and the design-system gallery (`/design-system`) are built for dev and Vercel previews
+ * only, never for production. The gate states that rule itself rather than reading the config's: by default both
+ * are FORBIDDEN, and run with `VERCEL_ENV=preview` exactly (as the preview build was) both are EXPECTED. Run in the
+ * wrong mode for the export, the gate fails.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -88,7 +89,6 @@ const EXPECTED = [
   },
 ];
 const FORBIDDEN = [
-  "out/design-system/index.html",
   "out/lab-scratch",
   "out/thread/current.html",
   "out/thread/mount.html",
@@ -96,8 +96,25 @@ const FORBIDDEN = [
   /* A stray copy left by a half-done removal would otherwise fail nothing: nothing here enumerates
      `out/`'s root. */
   "out/preview.html",
-  ...(PREVIEW ? [] : ["out/thread.html", "out/thread"]),
+  ...(PREVIEW
+    ? []
+    : [
+        "out/thread.html",
+        "out/thread.txt",
+        "out/thread",
+        "out/design-system.html",
+        "out/design-system",
+      ]),
 ];
+
+/* The gallery composes no section and carries no frame, so it is not an EXPECTED row. What a preview build must
+ * show is that the page is the gallery and not a 404 body in its place: a page that calls `notFound()` still
+ * exports a file at its path. */
+const GALLERY = {
+  path: "out/design-system.html",
+  heading: /<h1[^>]*>Design System<\/h1>/,
+  robots: "noindex, nofollow",
+};
 
 /* THE OTHER HALF OF THE DOC PARITY GATE: every non-`[lab]` section is present in the export. A missing
  * section is exactly what a bundler can lose without erroring, which is why a green build is not
@@ -135,8 +152,25 @@ const splitSupports = (/** @type {string} */ css) =>
 
 let failed = false;
 console.log(
-  `mode: ${PREVIEW ? "preview (VERCEL_ENV=preview) -- /thread expected" : "production (default) -- /thread forbidden"}`,
+  `mode: ${PREVIEW ? "preview (VERCEL_ENV=preview) -- /thread and /design-system expected" : "production (default) -- /thread and /design-system forbidden"}`,
 );
+
+if (PREVIEW) {
+  const html = existsSync(GALLERY.path)
+    ? readFileSync(GALLERY.path, "utf8")
+    : "";
+  const robots = [
+    ...html.matchAll(/<meta name="robots" content="([^"]*)"/g),
+  ].map((m) => m[1]);
+  const ok =
+    GALLERY.heading.test(html) &&
+    robots.length === 1 &&
+    robots[0] === GALLERY.robots;
+  console.log(
+    `${ok ? "ok  " : "FAIL"} /design-system (gallery): ${html ? `heading ${GALLERY.heading.test(html) ? "found" : "MISSING"}, robots [${robots}]` : "missing from the export"}`,
+  );
+  if (!ok) failed = true;
+}
 
 if (SECTION_COMPONENTS.length !== 5) {
   console.error(

@@ -30,7 +30,7 @@ test("the bar sits beside <main>, never inside it, so no section's box can move"
 });
 
 test("the lab route carries no bar", () => {
-  const lab = readFileSync("app/thread/page.lab.tsx", "utf8");
+  const lab = readFileSync("app/thread/page.dev.tsx", "utf8");
   assert.equal(lab.includes("ScrollProgress"), false);
 });
 

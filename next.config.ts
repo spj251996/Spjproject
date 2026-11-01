@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
-/* Two page extensions keep routes out of production. `.dev.tsx` (the design-system gallery) is a page only
-   outside production. `.lab.tsx` (the thread lab, `/thread`) is a page outside production and on Vercel
-   preview deploys, so the owner can open it on a phone from a preview link. `VERCEL_ENV` must be exactly
-   "preview": unset or anything else builds no lab, so a production build fails closed. */
+/* The `.dev.tsx` page extension keeps the lab routes -- the design-system gallery and the thread lab (`/thread`) --
+   out of production. They are pages outside production and on Vercel preview deploys, so the owner can open them on
+   a phone from a preview link. `VERCEL_ENV` must be exactly "preview": unset or anything else builds neither, so a
+   production build fails closed. */
 export function pageExtensionsFor(env: {
   NODE_ENV?: string;
   VERCEL_ENV?: string;
 }): string[] {
-  if (env.NODE_ENV !== "production") return ["dev.tsx", "lab.tsx", "tsx", "ts"];
-  if (env.VERCEL_ENV === "preview") return ["lab.tsx", "tsx", "ts"];
+  if (env.NODE_ENV !== "production" || env.VERCEL_ENV === "preview")
+    return ["dev.tsx", "tsx", "ts"];
   return ["tsx", "ts"];
 }
 

@@ -2,22 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { pageExtensionsFor } from "../../next.config.ts";
 
-/* `/thread` (`page.lab.tsx`) is built for Vercel previews and dev only, and the gallery (`page.dev.tsx`) for dev
-   only. A production build is the default: anything but the exact string "preview" builds neither. */
+/* The gallery and the thread lab (both `page.dev.tsx`) are built for dev and Vercel previews only. A production
+   build is the default: anything but the exact string "preview" builds neither. */
 
-test("dev builds both the gallery and the lab", () => {
+test("dev builds both lab routes", () => {
   assert.deepEqual(pageExtensionsFor({ NODE_ENV: "development" }), [
     "dev.tsx",
-    "lab.tsx",
     "tsx",
     "ts",
   ]);
 });
 
-test("a preview build carries the lab but never the gallery", () => {
+test("a preview build carries both lab routes", () => {
   assert.deepEqual(
     pageExtensionsFor({ NODE_ENV: "production", VERCEL_ENV: "preview" }),
-    ["lab.tsx", "tsx", "ts"],
+    ["dev.tsx", "tsx", "ts"],
   );
 });
 
