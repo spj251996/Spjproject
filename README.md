@@ -4,8 +4,8 @@ A single-page wedding invitation for Flemy and Sebastian, covering a betrothal a
 wedding. Venues, dates and times live in the content modules, not here.
 
 Guests get event facts up front, with zero interaction cost, plus a growing photo record of the
-celebration as each ritual completes. The red thread is an exploration at `/thread`, not part of the
-invitation.
+celebration as each ritual completes. The red thread is an exploration at `/thread`, built for preview
+deploys and `next dev` only — never part of the invitation or the production build.
 
 ## Stack
 
