@@ -99,23 +99,3 @@ export function DemoViewOnly({ className, children }: GuardProps) {
     </article>
   );
 }
-
-/* Per-specimen guard for buttons that would fire real state changes. Nested inside DemoViewOnly;
-   stopPropagation keeps the outer guard from showing a second tip. */
-export function InertDemo({ className, children }: GuardProps) {
-  const { position, show } = useSuppressionTip();
-
-  return (
-    <div
-      className={className}
-      onClickCapture={(event) => {
-        event.stopPropagation();
-        event.preventDefault();
-        show(event.clientX, event.clientY);
-      }}
-    >
-      {children}
-      <SuppressionTip position={position} />
-    </div>
-  );
-}

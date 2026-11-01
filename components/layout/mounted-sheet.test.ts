@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { inviteFit } from "../../app/_frame/invite-fit.ts";
+import {
+  BREAKPOINT_REM,
+  revealFor,
+  type WidthTier,
+  windowClasses,
+} from "./mounted-sheet-frame.ts";
+import { SPACING_TOKEN } from "./mounted-sheet-frame-css.ts";
 
 /* Comments are stripped: the constants' own comments name the very utilities these assertions
    search for, so an unstripped read would let a comment satisfy an assertion about the code. */
@@ -9,11 +17,12 @@ const source = readFileSync(
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
 
-/* A card's paint follows its role (DESIGN.md -> Foundations -> Layout -> mounted-sheet -> The card's two
-   states), and the paint lives in THIS file's utility strings rather than in the generated frame
-   stylesheet: `mountRules` only ever STRIPS a fill where the mount does not show. So the role selects
-   the paint here, and a framed branch that named a paint utility INLINE would go on painting the hero
-   while every other assertion below still passed.
+/* A card's paint follows its role (DESIGN.md -> Foundations -> Layout -> mounted-sheet -> The card's
+   two states), and the paint lives in THIS file's utility strings rather than in the generated frame
+   stylesheet: the generated stylesheet only ever STRIPS a section's fill where its mount does not
+   show, and emits nothing for the hero's mount. So the role selects the paint here, and a framed
+   branch that named a paint utility INLINE would go on painting the hero while every other
+   assertion below still passed.
 
    Asserted on the framed branches rather than by counting occurrences file-wide: `MOUNT_REVEAL_FILL`
    legitimately names `bg-surface-mount` of its own, for the unfitted specimen path's reveal ladder, and
@@ -36,7 +45,7 @@ test("a framed branch takes its paint only from the gated constants", () => {
   }
 });
 
-/* PAINT FOLLOWS FROM ROLE (owner, 2026-10-14): the hero is always unpainted, every other card always mounted. The
+/* PAINT FOLLOWS FROM ROLE: the hero is always unpainted, every other card always mounted. The
    records are keyed by role, read by walking braces from each header, and the hero arm must be EMPTY -- the
    unpainted card is a subtraction, so any utility in a hero arm is paint leaking onto the invitation's first screen. */
 function roleRecords(src: string): Record<string, Record<string, string>> {
@@ -138,4 +147,103 @@ test("no branch names a fill outside a gated paint constant", () => {
       `a branch names a fill inline, so the role cannot gate it: ${line.trim()}`,
     );
   }
+});
+
+/* THE FITTED HERO'S REVEAL IS THE UTILITY LADDER, and the ladder must equal the arithmetic. The frame
+   generator emits no mount rule for the hero, so `MOUNT_REVEAL.hero` is what paints
+   the hero's reveal, while `revealFor` is what every threshold, tier line and padding chain assumed it
+   to be. Walked over every window class the real hero produces, touchscreen classes included — a
+   width-keyed ladder and a width-tier-keyed reveal agree only while the tiers are cut at the same
+   breakpoints Tailwind's `md:`/`lg:`/`xl:` read, so that is asserted too. */
+test("the hero's reveal ladder equals revealFor in every window the hero can be in", () => {
+  const block = source.match(/const MOUNT_REVEAL = \{[\s\S]*?\} as const;/);
+  assert.ok(block, "no `MOUNT_REVEAL` declaration found");
+  const heroArm = block[0].match(/hero:\s*"([^"]+)"/);
+  assert.ok(heroArm, "no hero arm in `MOUNT_REVEAL`");
+
+  const pxOfStep = Object.fromEntries(
+    Object.entries(SPACING_TOKEN).map(([px, token]) => [
+      token.replace(/^--spacing-/, ""),
+      Number(px),
+    ]),
+  );
+  const tierOfPrefix: Record<string, WidthTier> = {
+    "": "phone",
+    "md:": "tablet",
+    "lg:": "laptop",
+    "xl:": "desktop",
+  };
+  const ladder: Partial<Record<WidthTier, number>> = {};
+  // The one addition below the reflow width, which this ladder (>= 20rem) does not read.
+  const reflowRung = `${["max", "reflow"].join("-")}:p-0`;
+  const rungs = heroArm[1].split(/\s+/);
+  assert.ok(
+    rungs.includes(reflowRung),
+    "the hero's reveal drops to zero below the reflow width",
+  );
+  for (const utility of rungs.filter((rung) => rung !== reflowRung)) {
+    const parts = utility.match(/^(md:|lg:|xl:)?p-(.+)$/);
+    assert.ok(parts, `not an all-sides padding utility: ${utility}`);
+    const px = pxOfStep[parts[2]];
+    assert.ok(px !== undefined, `not a spacing step: ${utility}`);
+    ladder[tierOfPrefix[parts[1] ?? ""]] = px;
+  }
+  assert.deepStrictEqual(
+    Object.keys(ladder).sort(),
+    ["desktop", "laptop", "phone", "tablet"],
+    "the ladder must have one rung per width tier",
+  );
+
+  const tokens = readFileSync("app/styles/tokens.css", "utf8");
+  for (const key of ["md", "lg", "xl"] as const) {
+    assert.match(
+      tokens,
+      new RegExp(`--breakpoint-${key}:\\s*${BREAKPOINT_REM[key]}rem;`),
+      `Tailwind's ${key}: is not cut where the frame's width tiers are`,
+    );
+  }
+
+  assert.match(
+    tokens,
+    new RegExp(
+      `@custom-variant\\s+max-reflow\\s+\\(\\s*@media\\s*\\(\\s*width\\s*<\\s*${BREAKPOINT_REM.reflow}rem\\s*\\)\\s*\\)\\s*;`,
+    ),
+    "Tailwind's max-reflow: is not cut where the frame's reflow tier is",
+  );
+
+  let checked = 0;
+  for (const windowClass of windowClasses(inviteFit, "single", true)) {
+    const orientations: boolean[] = [];
+    if (windowClass.portraitPossible) orientations.push(false);
+    if (windowClass.landscapePossible) orientations.push(true);
+    for (const landscape of orientations) {
+      assert.strictEqual(
+        ladder[windowClass.widthTier],
+        revealFor(windowClass, true, landscape),
+        `${windowClass.media} landscape=${landscape}`,
+      );
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 4, `only ${checked} hero windows walked`);
+});
+
+/* The fitted branch must actually USE the ladder for the hero, and only for the hero: a section's
+   reveal stays the generator's, which strips its fill where its mount does not show. The ladder test
+   above pins the values; this pins the wiring against a later edit. */
+test("the fitted hero's mount carries the reveal ladder, and a section's does not", () => {
+  const fitted = source.slice(source.indexOf("\n  if (fit !== undefined)"));
+  const list = fitted.match(
+    /className=\{\[([\s\S]*?FRAME_CLASS\.mount[\s\S]*?)\]\s*\.filter\(Boolean\)\s*\.join\(" "\)\}/,
+  );
+  assert.ok(list, "no joined mount class list in the fitted branch");
+  const parts = list[1]
+    .split(",")
+    .map((part) => part.trim().replace(/\s+/g, " "))
+    .filter((part) => part !== "");
+  assert.deepStrictEqual(parts, [
+    "FRAME_CLASS.mount",
+    "MOUNT_PAINT[role]",
+    'hero ? MOUNT_REVEAL.hero : ""',
+  ]);
 });

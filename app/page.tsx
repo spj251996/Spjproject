@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { Sections } from "@/app/_sections";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
+
+/* Shared by link only: robots.txt stops the crawl, and this states the same intent to anything that
+   fetches the page regardless. It lives on the page, not the root layout, because a layout-level tag
+   duplicated Next's own injected `noindex` on the not-found page; `check:export` holds every exported
+   page to exactly one robots tag. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /* The published invitation carries no thread -- the couple did not want it, and it lives at the lab
    route instead (DESIGN.md -> Technical Conventions -> Variant Routes). `relative` stays: it is what

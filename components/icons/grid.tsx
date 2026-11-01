@@ -1,7 +1,8 @@
 import { IconBase } from "./icon-base";
 
 /* The viewer's All photos mark — four tiles, for the grid it returns to (DESIGN.md → Components →
-   `photo-viewer`). Stroked at the set's gallery weight, matching Close and the chevrons. */
+   `photo-viewer`). Stroked in the same style as Close and the chevrons, not at an exact matching
+   rendered weight. */
 
 export function GridIcon({
   size,

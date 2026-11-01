@@ -19,8 +19,8 @@ const THREAD_ENTRIES: InlineEntry[] = [
     name: "Thread",
     home: "components/thread/page-thread.tsx",
     composes:
-      "one page-length SVG over main · ink at --stroke-thread (1.6px) in thread-red, one path per piece · bleed --bleed-thread on the ink · drawing head: 96px (60× the ink), --stroke-thread-head (3.2px) at the tip tapering to the ink's width, thread-red → thread-vermilion → thread-core, halo --halo-thread-head · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own stack at 89× the ink, glow as eight translucent strokes, --retrace-duration (3.2s), --retrace-settle (1500ms), --retrace-loops (4) and --retrace-speed (845), Foundations · Motion",
-    note: "Live at /thread, not on the published page — the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+      "one page-length SVG over main · ink at --stroke-thread (2.2px) in thread-red, one path per piece · contact shadow --bleed-thread on the ink, shadow-warm straight down · twist: rope gaps in thread-twist across the ink · drawing head: 132px (60× the ink) at the ink's width, thread-red → thread-sheen-mid → thread-sheen, halo --halo-thread-head at half strength · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own look at 89× the ink, glow as eight translucent strokes in thread-sheen-mid at half opacity, --retrace-duration (3.2s), --retrace-settle (1500ms), at least --retrace-loops (5) and --retrace-speed (845), then until --thread-idle (60s) untouched · sway: 8px, a 4s sway with gusts, stopping with the re-trace, Foundations · Motion",
+    note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
 ];
 
@@ -29,14 +29,14 @@ const INVITE_ENTRIES: InlineEntry[] = [
     name: "Invite",
     home: "app/_sections/invite.tsx",
     composes:
-      "mounted-sheet with the hero setting, unpainted — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone held upright the names, the sentence, the date and the gold rule sit one 22px ink gap apart, the rule's spacer fixed so the card's slack goes to its top and bottom, and the invite still fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where from 1024px up the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 takes --text-display-name as its font size and nothing else, the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — desktop is the one exception, where the space below the mark holds at a flat 32px instead — a floor derived from the split, not a step on the spacing scale; on a phone the split's floors are 17.345px above and 7.845px below, a 47.5px block · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
-    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — its resting tip sits at the lower edge and loops for --retrace-loops (4) once the opening draw has ended, then stops until the next scroll (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
+      "mounted-sheet with the hero setting, unpainted — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone held upright the names, the sentence, the date and the gold rule sit one 22px ink gap apart, the rule's spacer fixed so the card's slack goes to its top and bottom, and the invite still fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where on the laptop and desktop landscape bands the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 takes --text-display-name as its font size and nothing else, the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — except at desktop, where the space below the mark holds at a flat 32px, and on a phone held upright, where the rule holds the 22px gap below the place over a 13px spacer; the split's floors are derived from it, not steps on the spacing scale (17.345px above and 7.845px below on a phone held sideways) · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
+    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — its resting tip sits at the lower edge and loops at least --retrace-loops (5) times once the opening draw has ended, and keeps looping until the page has gone --thread-idle (60s) untouched (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/_sections/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
   },
   {
     name: "date-block",
     home: "app/_sections/invite.tsx",
     composes:
-      "a two-row grid, 1fr | hairline | auto | hairline | 1fr · the weekday, month and year in date-label, the day in date-day in accent-gold, the labels at weight 700 and the day at 400, with lining figures · hairlines --rule-date-bracket (42px) tall at --stroke-divider (1px) in accent-gold, ending space-3xs (4px) below the day's baseline · labels lifted --date-label-lift (13px) off that baseline · both inner gaps opened by --date-open (4px) on a phone — 8px from the tablet, 7px at laptop (owner, 2026-10-11 and 10-14) — the weekday's row pulled to 5px less than it and the place's margin taking the rest · space-sm (16px) either side of a hairline · the block dropped --date-place-pull (14px) toward the place, which takes it back off a space-3xs + --date-open margin (8px on a phone), so the day-to-place ink gap matches the weekday-to-day one",
+      "a two-row grid, 1fr | hairline | auto | hairline | 1fr · the weekday, month and year in date-label, the day in date-day in accent-gold, the labels at weight 700 and the day at 400, with lining figures · hairlines --rule-date-bracket (42px) tall at --stroke-divider (1px) in accent-gold, ending space-3xs (4px) below the day's baseline · labels lifted --date-label-lift (13px) off that baseline · both inner gaps opened by --date-open (4px) on a phone — 8px from the tablet, 7px at laptop — the weekday's row pulled to 5px less than it and the place's margin taking the rest · space-sm (16px) either side of a hairline · the block dropped --date-place-pull (14px) toward the place, which takes it back off a space-3xs + --date-open margin (8px on a phone), so the day-to-place ink gap matches the weekday-to-day one",
     note: "Live at /, inside the invite. NOT rendered here: it is composed inside the invite section rather than exported, and the gallery does not reach into production code to extract a component for a specimen — so its gold hairline is visible nowhere in this gallery. Every value above is the phone tier: the bracket, the lift, both type roles, --date-open and the weekday pull derived from it step at each breakpoint, and only the overshoot and --date-place-pull hold at one value. The proportions are ratios to the label's cap height rather than steps on the spacing scale — the figure's parts hold a fixed relation to each other, so resizing it means moving date-label and letting the rest follow (Cross-Cutting Rules states the exception).",
   },
 ];
@@ -46,18 +46,18 @@ const EVENT_INFO_ENTRIES: InlineEntry[] = [
     name: "Event Info",
     home: "app/_sections/event-info.tsx",
     composes:
-      "mounted-pair · per sheet: eyebrow bracketed by the sprig ornament, heading-xl heading, date line, address, a divider rule after the heading block (tablet band only), segment plates · per plate, two columns at every tier: the mark beside its details, the details left-aligned so both entries start at one edge, the pair of columns centred as one group · segment line, venue, then button-action with map space-2xs below the venue, its disc's left edge on the venue's first letter · on a phone, four clusters in a natural rhythm — eyebrow and title, date and place, the first event, the second — ink gaps header → date 30, date → events 48, event → event 48 · a venue that wraps narrows to its widest line + 1px, so the group centres on its ink; its line count never changes, a venue that fits one line is untouched (so it acts on phones in practice), and it is measured once the fonts load",
-    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI. The phone layout is decided (owner and couple, 2026-10-11): the two columns above at every tier, chosen on /preview, its fit re-measured.",
+      "mounted-pair · per sheet: eyebrow bracketed by the sprig ornament, heading-xl heading, date line, address, a divider rule after the heading block (tablet band only), segment plates · per plate, two columns at every tier: the mark beside its details, the details left-aligned so both entries start at one edge, the pair of columns centred as one group · segment line, venue, then button-action in its pill ground with map, reading Get directions, space-2xs below the venue, the pill's left edge on the venue's first letter · on a phone, four clusters in a natural rhythm — eyebrow and title, date and place, the first event, the second — ink gaps header → date 30, date → events 48, event → event 48 · a venue that wraps narrows to its widest line + 1px, so the group centres on its ink; its line count never changes, a venue that fits one line is untouched (so it acts on phones in practice), and it is measured once the fonts load",
+    note: "Live at /. Two things an unframed specimen cannot show: at desktop the sheet overrides the frame's largest side padding down to 64px so the venue holds one line — a bounded override, not a change to the ladder in Foundations · Layout — and the events list sits a fixed gap below the heading block rather than centred in the space left over, since a centred list closes to a few pixels of the place line as soon as the venue wraps. Marks → Foundations · Iconography; the map action → Components · UI.",
   },
 ];
 
-const TIMELINE_ENTRIES: InlineEntry[] = [
+const CELEBRATIONS_ENTRIES: InlineEntry[] = [
   {
-    name: "Timeline",
+    name: "Celebrations",
     home: "app/_sections/celebrations.tsx",
     composes:
       "mounted-sheet in tall mode · eyebrow ('Our traditions') · heading in heading-xl ('The Celebrations') · intro in body · promise line in body-italic · an ordered list of rituals, one left-aligned full-width column at every tier with space-xl (48px) between them, closing to space-md (24px) after a ritual that carries photographs from lg, each opened by one header line — the sprig from lg only, a heading-md English title and its Malayalam on one baseline, the Malayalam at the line's right end on a phone — then a body-italic tagline and a body description, and a photo-row at the block's right edge only when the ritual has photographs · the card's sides 36px (--tall-inline-phone) on a phone",
-    note: "Live at /. The rituals are LEFT-ALIGNED at every width, the owner's and the couple's pick on /preview over justified (2026-10-11); the centred column of 2026-10-10 and the alternating band before it are both retired. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Timeline).",
+    note: "Live at /. The rituals are left-aligned at every width. The photographs lean the other way on purpose, to the block's right edge with their action under them. The section's own height is a stated constant plus a constant per ritual that gains photographs; the 36px phone sides and the 24px close after a photographed ritual moved the increment as well as the base (DESIGN.md → Celebrations).",
   },
 ];
 
@@ -99,48 +99,43 @@ const GROOM_SHEET = {
 };
 const FAMILY_SHEETS = [BRIDE_SHEET, GROOM_SHEET];
 
-/* Family's rows never reflow, so its unframed specimen always stacks (Layout → mounted-pair →
-   Without a fit) rather than toggling to a side-by-side form at lg. `MountedPair` takes no
-   breakpoint, so this hand-built stacked sheet is the specimen's only form; the side-by-side pair
-   is the framed page composition, not reproduced here. */
-
 export function DomainSections() {
   return (
     <>
       <GallerySection
         id="thread"
         intro="The page's one spine: a single red line from the invite to the closing wishes."
-        mapsTo="Domain Components → Thread → thread-overlay"
+        mapsTo="Domain Components → Thread → page-thread"
         title="Domain · Thread"
       >
         <InlineList entries={THREAD_ENTRIES} />
 
         <Specimen
-          description="The ink: one line in thread-red at the ink's width, with the bleed round it."
+          description="The ink: one line in thread-red at the ink's width, with its contact shadow beneath it."
           id="thread-ink"
-          name="ink and bleed"
-          note="Both panels are one mid-page connector in the wide band's own geometry, at its own size. The bleed is present in every state the page has; the left panel switches it off only to show what it adds."
+          name="ink and contact shadow"
+          note="Both panels are one mid-page connector in the wide band's own geometry, at its own size. The shadow is present in every state the page has; the left panel switches it off only to show what it adds. The twist and the sway are not shown: both are built from the page's own measured pieces."
           source="components/thread/thread.module.css · .pageInk"
           spec={[
-            "ink · --color-thread-red at --stroke-thread (1.6px), round caps",
-            "bleed · --bleed-thread, three drop-shadows of thread-vermilion at 68% / 44% / 30% and 0.875px / 3px / 8.25px, offset on neither axis, on each piece's ink",
+            "ink · --color-thread-red at --stroke-thread (2.2px), round caps",
+            "contact shadow · --bleed-thread, two drop-shadows of shadow-warm straight down — 1px at 1.25px blur, 65%; 4px at 6px blur, 30% — on each piece's ink",
           ]}
         >
           <ThreadInkSpecimen />
         </Specimen>
 
         <Specimen
-          description="The drawing head: while a piece draws, its leading end carries light that fades from the ink's red at its tail to a hot orange at its tip, wider at the tip, with a halo round it."
+          description="The drawing head: while a piece draws, its leading end carries the sheen's light — the thread's red lightening toward its tip, at the ink's own width, with a faint halo. It is the re-trace's look; the two are one pair."
           id="thread-head"
           name="drawing head"
           note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
-          source="components/thread/thread-light.ts · headSegments"
+          source="components/thread/thread-head.ts · headSegments"
           spec={[
-            "length · 60× the ink, 96px",
-            "colour · thread-red at the tail, thread-vermilion in the middle, thread-core at the tip, interpolated in OKLCH",
-            "width · --stroke-thread-head (3.2px) at the tip, tapering to --stroke-thread at the tail",
-            "steps · max(ceil(length / 8), ceil(rampSpan / 2)), capped at 48 — 14 at the shipped values",
-            "halo · --halo-thread-head, thread-vermilion at 4× the bleed's shape: 68% / 44% / 30% at 3.5px / 12px / 33px",
+            "length · 60× the ink, 132px",
+            "colour · thread-red at the tail, thread-sheen-mid in the middle, thread-sheen at the tip, interpolated in OKLCH",
+            "width · --stroke-thread (2.2px) throughout",
+            "steps · max(ceil(length / 8), ceil(rampSpan / 2)), capped at 48",
+            "halo · --halo-thread-head, thread-vermilion at half strength: 34% / 22% / 15% at 3.5px / 12px / 33px",
           ]}
         >
           <ThreadHeadSpecimen />
@@ -150,27 +145,27 @@ export function DomainSections() {
           description="The tapered ends: the thread's two static free ends, the invite's top terminal and Wishes' closing end, narrow to a point instead of stopping at a round cap."
           id="thread-taper"
           name="tapered ends"
-          note="Each end is shown at its own size and magnified 4×; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
-          source="components/thread/thread-light.ts · taperSegments"
+          note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
+          source="components/thread/thread-taper.ts · taperSegments"
           spec={[
             "length · --length-thread-taper (24px)",
             "mechanism · 16 butt-capped runs, each a little narrower than the one inside it, from --stroke-thread down to a 0.2px floor, with the ink cut away beneath them",
-            "colour · thread-red, with the bleed on one filter over the group of runs",
+            "colour · thread-red, with the contact shadow on one filter over the group of runs",
           ]}
         >
           <ThreadTaperSpecimen />
         </Specimen>
 
         <Specimen
-          description="The re-trace: a lit segment runs along the thread once it is already drawn, on a loop. It is the page's resting motion and its scroll cue."
+          description="The re-trace: a lit segment runs along the thread once it is already drawn, on a loop. It is the lab route's resting motion and its scroll cue."
           id="thread-retrace"
           name="re-trace"
-          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on three or four stretches at once and a filter that wide does not survive that."
-          source="components/thread/thread-light.ts · retraceSegments, retraceGlow"
+          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on several stretches at once and a filter that wide does not survive that."
+          source="components/thread/thread-retrace.ts · retraceSegments, retraceGlow"
           spec={[
-            "core · the head's own stack and values, at a peak of 89× the ink (142px), growing from nothing and shrinking back to nothing over a loop",
-            "glow · eight thread-vermilion strokes under the core, 100 / 56 / 38 / 26 / 18 / 13 / 9 and 6px wide, widest and faintest first, scaled by 0.77",
-            "cadence · --retrace-speed (845) px of thread per second, so every stretch moves at one rate whatever its length · --retrace-settle (1500ms) of stillness before it loops · --retrace-loops (4) whole loops of the LONGEST stretch sets the budget, and every shorter stretch fits whole loops into the same window, so they all stop together · --retrace-duration (3.2s) is the fallback cadence when no speed is set",
+            "core · the head's own stack and values, at a peak of 89× the ink (196px), growing from nothing and shrinking back to nothing over a loop",
+            "glow · eight thread-sheen-mid strokes under the core, 100 / 56 / 38 / 26 / 18 / 13 / 9 and 6px wide, widest and faintest first, scaled by 0.77, the group at half opacity",
+            "cadence · --retrace-speed (845) px of thread per second, so every stretch moves at one rate whatever its length · --retrace-settle (1500ms) of stillness before it loops · at least --retrace-loops (5) whole loops of the LONGEST stretch, then on until --thread-idle (60s) untouched, sets the budget, and every shorter stretch fits whole loops into the same window, so they all stop together · --retrace-duration (3.2s) is the fallback cadence when no speed is set",
           ]}
         >
           <ThreadRetraceSpecimen />
@@ -205,7 +200,7 @@ export function DomainSections() {
           description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, then one row for each child who has a family of their own carrying that whole family, then a last row for the children with none."
           id="domain-family"
           name="family"
-          note="Unframed, as every specimen box is; its rows never reflow, so the gallery's own pair always stacks (Layout → mounted-pair) rather than going side by side. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
+          note="Unframed, as every specimen box is: the sheet reproduces the unfitted pair's sheet by hand and always stacks, since its rows never reflow (Layout → mounted-pair) and MountedPair has no always-stacked form. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
             "eyebrow bracketed by the sprig ornament · heading-xl family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
@@ -214,6 +209,11 @@ export function DomainSections() {
           ]}
         >
           <div className="flex flex-col gap-space-md">
+            {/* Family's rows never reflow, so its unframed specimen always stacks (Layout →
+                mounted-pair → Without a fit) rather than toggling to a side-by-side form at lg.
+                `MountedPair` takes no breakpoint, so this hand-built stacked sheet is the
+                specimen's only form; the side-by-side pair is the framed page composition, not
+                reproduced here. */}
             {FAMILY_SHEETS.map(({ eyebrow, group }) => (
               <div
                 className="rounded-card bg-surface-elevated p-space-lg shadow-mount md:p-space-2xl lg:p-space-3xl"
@@ -227,12 +227,12 @@ export function DomainSections() {
       </GallerySection>
 
       <GallerySection
-        id="timeline"
+        id="celebrations"
         intro="The one section that scrolls to its natural length."
-        mapsTo="Domain Components → Timeline"
-        title="Domain · Timeline"
+        mapsTo="Domain Components → Celebrations"
+        title="Domain · Celebrations"
       >
-        <InlineList entries={TIMELINE_ENTRIES} />
+        <InlineList entries={CELEBRATIONS_ENTRIES} />
       </GallerySection>
 
       <GallerySection

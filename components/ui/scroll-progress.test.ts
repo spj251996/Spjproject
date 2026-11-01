@@ -8,9 +8,8 @@ const css = strip(
   readFileSync("components/ui/scroll-progress.module.css", "utf8"),
 );
 const page = readFileSync("app/page.tsx", "utf8");
-const lab = readFileSync("app/thread/page.tsx", "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
-const invite = strip(readFileSync("app/invite.css", "utf8"));
+const invite = strip(readFileSync("app/_sections/invite.css", "utf8"));
 
 const z = (name: string) => {
   const m = tokens.match(new RegExp(`--z-${name}:\\s*(\\d+);`));
@@ -31,6 +30,7 @@ test("the bar sits beside <main>, never inside it, so no section's box can move"
 });
 
 test("the lab route carries no bar", () => {
+  const lab = readFileSync("app/thread/page.dev.tsx", "utf8");
   assert.equal(lab.includes("ScrollProgress"), false);
 });
 
@@ -76,4 +76,13 @@ test("the fill re-reads when the page's own height changes", () => {
   assert.match(component, /new ResizeObserver\(schedule\)/);
   assert.match(component, /\.observe\(document\.body\)/);
   assert.match(component, /\.disconnect\(\)/);
+});
+
+test("the 2026-10-14 picks: the progress line — 2px on a phone, 3px up, the soft glow", () => {
+  assert.match(tokens, /--progress-height: 3px;/);
+  assert.match(tokens, /@variant max-md \{[^}]*--progress-height: 2px;[^}]*\}/);
+  assert.match(
+    tokens,
+    /--progress-glow: drop-shadow\(\s*0 0 2px color-mix\(in srgb, var\(--color-thread-vermilion\) 55%, transparent\)\s*\);/,
+  );
 });

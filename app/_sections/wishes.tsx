@@ -1,19 +1,17 @@
-import wishesStyles from "@/app/wishes.module.css";
-import { wishesFit } from "@/app/wishes-fit";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import wishesStyles from "./wishes.module.css";
+import "@/app/_frame/sheets/wishes.css";
+import { wishesFit } from "@/app/_frame/wishes-fit";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { CardThread } from "@/components/thread/page-thread";
+import { CardThread } from "@/components/thread/card-thread";
 import { CoupleNames } from "@/components/ui/couple-names";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { wishes } from "@/content";
 
 /* The page's close. The illustration's size and bleed
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
-   illustration is static — Phase 4 renders no motion, and its entrance is decided in Phase 5 with
-   the thread. */
+   illustration is static and takes no entrance. */
 export function WishesSection({ thread = false }: { thread?: boolean }) {
   return (
     <section className="relative" id="wishes">
@@ -58,13 +56,6 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
             ))}
           </div>
 
-          {/* Wishes' own stretch of the thread, and the one reason it is mounted inside a card rather
-              than drawn by the page's trunk: the card's `mounted-sheet-frame__box` is a stacking
-              context at `{z.content}` and the thread's trunk is at `{z.thread}`, so a trunk-level
-              stretch would paint over Wishes' type, where this one, carrying no z-index of its own,
-              paints behind it. Its containing block is that same `__box`, the nearest positioned
-              ancestor inside the stacking context. It sits after the illustration, so it paints in
-              front of it. */}
           <div className={wishesStyles.figureCol}>
             <div aria-hidden className={wishesStyles.figure}>
               {/* A lazy <img> rather than a CSS background: a background is fetched at first paint
@@ -95,6 +86,12 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
               />
             </div>
           </div>
+          {/* Wishes' own stretch of the thread (lab only), mounted inside the card rather than drawn
+              by the page's trunk: the card's `mounted-sheet-frame__box` is a stacking context at
+              `{z.content}` and the trunk is at `{z.thread}`, so a trunk-level stretch would paint
+              over Wishes' type. Its containing block is that same `__box`. It mounts after the
+              figure and before the names, so by document order it paints over the illustration
+              and, at `tall`, over the type above it. */}
           {thread ? <CardThread /> : null}
 
           {/* The same drawn names on ONE line — one source, two layouts, placement arithmetic
@@ -102,14 +99,13 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
               size and nothing else: it is the `em` the asset's width resolves against, so the signature keeps the size it
               ships at today (260.8px at 56px, 335.2 at 72, 298 at 64 — 4.656em at every one). */}
           <p className="text-(length:--text-heading-script) mt-space-sm md:mt-space-lg [@media(64rem<=width<100rem)_and_(orientation:landscape)]:mt-space-xl [@media(width>=100rem)_and_(orientation:landscape)]:mt-space-2xl">
-            {/* 2.2 units, kept where the owner settled it on the render. Note it lands this lockup's
-                thinnest stroke at 0.95px on a phone, a hair UNDER the one-device-pixel floor the
-                figures above derive — their eye governs over the floor, and 2.5 is the number if it
-                ever reads washed out on a monitor. */}
+            {/* 3.2 units, picked by eye on a render: it lands this lockup's thinnest stroke at 0.90px
+                on a phone, a hair UNDER the one-device-pixel floor the figures above derive; 3.8 is
+                the number that reaches it. */}
             <CoupleNames
               layout="line"
               names={wishes.coupleNames}
-              strokeUnits={2.2}
+              strokeUnits={3.2}
             />
           </p>
 

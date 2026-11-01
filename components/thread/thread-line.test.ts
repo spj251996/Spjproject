@@ -2,14 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { authoredCard } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
+import { authoredMeasuredSections } from "./thread-fallback.ts";
 import {
-  clamp01,
-  createDrawRatchet,
-  dashForPiece,
-  drawnLength,
   PORTRAIT_LOOP_TRIM_FRACTION,
-  pieceProgress,
-  sectionProgressAt,
+  splitSubpaths,
+  subpathRange,
   threadLine,
 } from "./thread-line.ts";
 import { MOTIFS } from "./thread-motifs.ts";
@@ -19,6 +16,13 @@ import {
   THREAD_IDS,
   THREAD_PATHS,
 } from "./thread-paths.ts";
+import {
+  createDrawRatchet,
+  dashForPiece,
+  drawnLength,
+  pieceProgress,
+  sectionProgressAt,
+} from "./thread-progress.ts";
 import { type MeasuredSection, warpPlacement } from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
@@ -174,7 +178,7 @@ test("a motif's own aspect is preserved to 0.1% after baking onto a warped, non-
 });
 
 /* ------------------------------------------------------------------------------------------------
-   PORTRAIT LOOP TAIL TRIM (Task 3) — the owner's ask, "trim the entry/exit tails of the motif so
+   PORTRAIT LOOP TAIL TRIM — the owner's ask, "trim the entry/exit tails of the motif so
    connectors don't do weird turns there". Every helper below is an INDEPENDENT re-implementation of
    `thread-line.ts`'s own arc-length math (same convention as `unrotatedAspect`/`parseAllPoints`
    above), so these tests cannot pass by sharing a bug with the code they verify. */
@@ -414,7 +418,6 @@ test("family's portraitLoop entry and exit sit further along the motif's own arc
     authoredPlacement,
     authoredCard("family", band),
     sections[familyIndex],
-    bandBox,
   );
 
   const points = parseAllPoints(subpaths[motifIndex]);
@@ -684,57 +687,6 @@ test("length is a positive number roughly on the order of the page's own pixel h
 });
 
 /* ------------------------------------------------------------------------------------------------
-   TASK 1 REPRODUCTION -- the finding this task exists to fix, pinned as a test before anything
-   else. `stroke-dasharray` restarting at every `M` subpath (proven in isolation, `task-1-brief.md`)
-   is a RENDERING behaviour with no unit-testable surface of its own in `thread-line.ts` -- this
-   file's pure functions never touched a `<path>` before this task, so there was no "old formula" to
-   contrast against. What this test pins instead is the ARITHMETIC that behaviour is equivalent to,
-   independently derived here: with one dash covering the WHOLE concatenated path and one shared
-   `dashoffset = totalLength - drawn` applied to every subpath, a subpath of its own length `Lk`
-   renders `min(Lk, max(0, drawn))` of ITSELF -- every piece measuring its own progress from its own
-   start against the SAME global `drawn`, with no offset for how far into the page that piece sits.
-   That is "all parts of thread starting to draw at same time" exactly. Contrast: `pieceProgress`
-   (the fix) measures `drawn` against `piece.start`, so a piece cannot begin until every piece before
-   it has finished. */
-function oldSingleDashPieceProgress(
-  drawn: number,
-  piece: { readonly start: number; readonly end: number },
-): number {
-  const length = piece.end - piece.start;
-  return length <= 0 ? 1 : clamp01(drawn / length);
-}
-
-test("REPRODUCTION: the old single-dash-per-page arithmetic draws every piece from its own start at once; pieceProgress (the fix) draws exactly one at a time", () => {
-  const band = "wide";
-  const sections = measuredSections(band);
-  const { pieces } = threadLine(band, sections);
-  assert.ok(pieces.length > 5, "need several real pieces to show simultaneity");
-
-  // A `drawn` partway through the page's very first piece is tiny relative to every later piece's
-  // own (much longer) length, so under the OLD arithmetic every piece with `length > drawn` reads
-  // partially drawn AT THE SAME TIME -- the bug, reproduced without touching a DOM.
-  const drawn = pieces[0].end / 2;
-  const oldMidDrawCount = pieces.filter((piece) => {
-    const progress = oldSingleDashPieceProgress(drawn, piece);
-    return progress > 1e-9 && progress < 1 - 1e-9;
-  }).length;
-  assert.ok(
-    oldMidDrawCount > 1,
-    `expected the OLD arithmetic to show several pieces mid-draw at once, found ${oldMidDrawCount} -- the reproduction itself is wrong if this fails`,
-  );
-
-  const newMidDrawCount = pieces.filter((piece) => {
-    const progress = pieceProgress(drawn, piece);
-    return progress > 1e-9 && progress < 1 - 1e-9;
-  }).length;
-  assert.equal(
-    newMidDrawCount,
-    1,
-    `expected pieceProgress to show exactly one piece mid-draw, found ${newMidDrawCount}`,
-  );
-});
-
-/* ------------------------------------------------------------------------------------------------
    drawnLength — the per-section progress map `pieceProgress` above is driven from. Synthetic
    sections and ranges below, never real THREAD_IDS/measured data, so each behaviour (not-reached,
    held-past, the crossing rule, a section too short for the model, the page's own end) can be
@@ -744,7 +696,7 @@ test("REPRODUCTION: the old single-dash-per-page arithmetic draws every piece fr
    - the FIRST section (`i === 0`) has no predecessor to inherit ramp room from, so it keeps this
      file's own PRE-crossing rule (ramp across `FIRST_SECTION_DRAW_FRACTION` of its own
      `[top, top + height]` window, hold for the rest) -- `firstSectionProgress`'s own header in
-     `thread-line.ts` walks through why applying the crossing formula there instead collapses the
+     `thread-progress.ts` walks through why applying the crossing formula there instead collapses the
      ENTIRE page to complete at scrollY 0.
    - `wishes` is the page's own terminal stretch and the owner's stated exception -- a single ramp
      across its own remaining window to completion, no crossing anchor.
@@ -1015,8 +967,7 @@ test("drawnLength: at scrollY 0 nothing has started; at the page's max scroll ev
 });
 
 /* ------------------------------------------------------------------------------------------------
-   AT MOST ONE PIECE IS MID-DRAW -- the property this whole task exists to establish, and the
-   assertion whose absence let the defect survive three rounds of review (`task-1-brief.md`). Not
+   AT MOST ONE PIECE IS MID-DRAW -- the property the per-piece dash exists to establish. Not
    "one section" -- one PIECE, swept across the real page shape at all three bands, reading each
    section's own progress directly off `sectionProgressAt` (section-level) and each piece's own off
    `pieceProgress` against the shared `drawn` scalar (piece-level) -- never by hand-zeroing a
@@ -1138,9 +1089,9 @@ test("every piece of a real band's thread is blank before the draw reaches it", 
 });
 
 /* ------------------------------------------------------------------------------------------------
-   CARD/ROW GROUPING — the owner's decision `session.md` 2026-09-28: a stacked pair is two windows,
+   CARD/ROW GROUPING: a stacked pair is two windows,
    not one, and a long ritual list is several. `subdivisions` never comes from real DOM in this file
-   (that measurement lives in `page-thread.tsx`, untestable off a browser) — every test below hands
+   (that measurement lives in `thread-measure.ts`, untestable off a browser) — every test below hands
    `threadLine` a synthetic, but geometrically plausible, top-to-bottom split of a section's own
    measured rect, exactly the shape `measureSubdivisions` produces from real leaf/row elements. */
 
@@ -1175,6 +1126,58 @@ function subdivisionsFor(
   };
 }
 
+/* The pair laid out side by side, as `wide` lays it: both card rects share the section's top and
+   height, so one scroll window covers both. The ritual rows stay stacked -- a list never sits side
+   by side. */
+function sideBySideSubdivisionsFor(
+  sections: MeasuredSection[],
+): Partial<
+  Record<(typeof THREAD_IDS)[number], { top: number; height: number }[]>
+> {
+  const byId = new Map(THREAD_IDS.map((id, i) => [id, sections[i]]));
+  const sideBySide = (rect: { top: number; height: number }) => [
+    { top: rect.top, height: rect.height },
+    { top: rect.top, height: rect.height },
+  ];
+  const eventInfo = byId.get("event-info");
+  const family = byId.get("family");
+  const celebrations = byId.get("celebrations");
+  return {
+    ...(eventInfo && { "event-info": sideBySide(eventInfo) }),
+    ...(family && { family: sideBySide(family) }),
+    ...(celebrations && { celebrations: splitRect(celebrations, 6) }),
+  };
+}
+
+function piecesInGroup(
+  line: ReturnType<typeof threadLine>,
+  group: ReturnType<typeof threadLine>["sections"][number],
+) {
+  return line.pieces.filter(
+    (piece) =>
+      piece.id === group.id &&
+      piece.start >= group.start &&
+      piece.end <= group.end,
+  );
+}
+
+function groupHolding(
+  line: ReturnType<typeof threadLine>,
+  id: (typeof THREAD_IDS)[number],
+  kind: string,
+  occurrence = 0,
+): number {
+  const piece = line.pieces.filter((p) => p.id === id && p.kind === kind)[
+    occurrence
+  ];
+  if (piece === undefined)
+    throw new Error(`no ${kind} #${occurrence} in ${id}`);
+  return line.sections.findIndex(
+    (group) =>
+      group.id === id && piece.start >= group.start && piece.end <= group.end,
+  );
+}
+
 test("with no subdivisions given, every group is exactly one section, its rect the section's own -- unchanged from before this file supported splitting", () => {
   const band = "wide";
   const sections = measuredSections(band);
@@ -1194,30 +1197,81 @@ test("with no subdivisions given, every group is exactly one section, its rect t
   }
 });
 
-test("event-info and family split into exactly two groups each when given two real card rects; celebrations splits when given real row rects", () => {
+test("no group is ever empty -- every group spans length and holds at least one piece, at every band, stacked or side by side", () => {
+  for (const band of ["tall", "upright", "wide"] as const) {
+    const sections = measuredSections(band);
+    for (const [shape, subdivisions] of [
+      ["stacked", subdivisionsFor(sections)],
+      ["side by side", sideBySideSubdivisionsFor(sections)],
+    ] as const) {
+      const line = threadLine(band, sections, undefined, subdivisions);
+      line.sections.forEach((group, i) => {
+        assert.ok(
+          group.end > group.start,
+          `${band} (${shape}): ${group.id}'s group ${i} spans no length`,
+        );
+        assert.ok(
+          piecesInGroup(line, group).length > 0,
+          `${band} (${shape}): ${group.id}'s group ${i} holds no piece`,
+        );
+      });
+    }
+  }
+});
+
+test("at a stacked band, event-info and family split into two groups each, with each card's motif in its own group; celebrations splits one group per piece", () => {
+  for (const band of ["tall", "upright"] as const) {
+    const sections = measuredSections(band);
+    const line = threadLine(
+      band,
+      sections,
+      undefined,
+      subdivisionsFor(sections),
+    );
+    const countFor = (id: (typeof THREAD_IDS)[number]) =>
+      line.sections.filter((group) => group.id === id).length;
+
+    assert.equal(countFor("event-info"), 2, `${band}: event-info`);
+    assert.notEqual(
+      groupHolding(line, "event-info", "rings"),
+      groupHolding(line, "event-info", "knot"),
+      `${band}: rings and knot sit in different cards, so they must fall in different groups`,
+    );
+    assert.equal(countFor("family"), 2, `${band}: family`);
+    assert.notEqual(
+      groupHolding(line, "family", "portraitLoop", 0),
+      groupHolding(line, "family", "portraitLoop", 1),
+      `${band}: the two portraitLoop placements sit in different cards, so they must fall in different groups`,
+    );
+    // Six equal row slices put the midpoints of celebrations' three pieces in three different rows.
+    assert.equal(countFor("celebrations"), 3, `${band}: celebrations`);
+    for (const id of THREAD_IDS) {
+      if (id === "event-info" || id === "family" || id === "celebrations")
+        continue;
+      assert.equal(
+        countFor(id),
+        1,
+        `${band}: ${id} was not asked to split and must not`,
+      );
+    }
+  }
+});
+
+test("at wide, a side-by-side pair shares one scroll window, so event-info and family each stay one group", () => {
   const band = "wide";
   const sections = measuredSections(band);
-  const subdivisions = subdivisionsFor(sections);
-  const line = threadLine(band, sections, undefined, subdivisions);
-
+  const line = threadLine(
+    band,
+    sections,
+    undefined,
+    sideBySideSubdivisionsFor(sections),
+  );
   const countFor = (id: (typeof THREAD_IDS)[number]) =>
     line.sections.filter((group) => group.id === id).length;
 
-  assert.equal(
-    countFor("event-info"),
-    2,
-    "rings and knot sit in different cards, so event-info's own piece-run must split there",
-  );
-  assert.equal(
-    countFor("family"),
-    2,
-    "the two portraitLoop placements sit in different cards, so family must split there too",
-  );
-  assert.ok(
-    countFor("celebrations") >= 1,
-    "celebrations has only one motif (wishesLoop), so it can split into at most as many groups as it has pieces (3) -- but must produce at least one",
-  );
-  // Every OTHER section keeps exactly one group -- nothing outside the three the owner named splits.
+  assert.equal(countFor("event-info"), 1);
+  assert.equal(countFor("family"), 1);
+  assert.equal(countFor("celebrations"), 3);
   for (const id of THREAD_IDS) {
     if (id === "event-info" || id === "family" || id === "celebrations")
       continue;
@@ -1278,25 +1332,26 @@ test("each group's rect is one of the rects it was given -- the section's own wh
 });
 
 test("event-info's two groups are ordered card 1 then card 2 -- the first group's rect sits above the second's", () => {
-  const band = "wide";
-  const sections = measuredSections(band);
-  const subdivisions = subdivisionsFor(sections);
-  const { sections: groups, groupRects } = threadLine(
-    band,
-    sections,
-    undefined,
-    subdivisions,
-  );
+  for (const band of ["tall", "upright"] as const) {
+    const sections = measuredSections(band);
+    const subdivisions = subdivisionsFor(sections);
+    const { sections: groups, groupRects } = threadLine(
+      band,
+      sections,
+      undefined,
+      subdivisions,
+    );
 
-  const indices = groups
-    .map((group, i) => ({ group, i }))
-    .filter(({ group }) => group.id === "event-info")
-    .map(({ i }) => i);
-  assert.equal(indices.length, 2);
-  assert.ok(
-    groupRects[indices[0]].top < groupRects[indices[1]].top,
-    "card 1's group must be drawn before card 2's",
-  );
+    const indices = groups
+      .map((group, i) => ({ group, i }))
+      .filter(({ group }) => group.id === "event-info")
+      .map(({ i }) => i);
+    assert.equal(indices.length, 2, band);
+    assert.ok(
+      groupRects[indices[0]].top < groupRects[indices[1]].top,
+      `${band}: card 1's group must be drawn before card 2's`,
+    );
+  }
 });
 
 test("AT MOST ONE PIECE IS MID-DRAW at any scroll position with card/row subdivisions active, swept across the whole page at all three bands", () => {
@@ -1366,7 +1421,7 @@ test("with event-info split into two card groups, card 2's pieces (knot and its 
   }
 });
 
-/* THE RATCHET (`thread-draw-behaviour.md` Task 2) -- the owner's "and then stay drawn". These
+/* THE RATCHET -- the owner's "and then stay drawn". These
    assert BEHAVIOUR, not the source's spelling: `drawnLength` is a pure function of `scrollY` with
    no memory, so without a ratchet at the call site the thread unravels on the way back up and is
    gone again at scroll 0. */
@@ -1451,4 +1506,33 @@ test("two ratchets hold their own maximum", () => {
   trunk.advance(900);
   assert.equal(weave.advance(10), 10);
   assert.equal(trunk.advance(0), 900);
+});
+
+test("splitSubpaths returns one entry per M", () => {
+  const parts = splitSubpaths("M 0 0 C 1 1 2 2 3 3 M 4 4 C 5 5 6 6 7 7 M 8 8");
+  assert.equal(parts.length, 3);
+  for (const part of parts) assert.match(part, /^M /);
+});
+
+test("each band emits one subpath per piece, and its section ranges are contiguous and cover them all", () => {
+  for (const band of THREAD_BANDS) {
+    const { d, pieces } = threadLine(
+      band.id,
+      authoredMeasuredSections(band.id),
+    );
+    const total = splitSubpaths(d).length;
+    assert.equal(pieces.length, total, `${band.id}: one subpath per piece`);
+    let next = 0;
+    for (const id of THREAD_IDS) {
+      const { start, end } = subpathRange(band.id, id);
+      assert.equal(start, next, `${band.id}/${id} starts where the last ended`);
+      assert.ok(end > start, `${band.id}/${id} owns at least one subpath`);
+      next = end;
+    }
+    assert.equal(
+      next,
+      total,
+      `${band.id}: the ranges cover all ${total} subpaths`,
+    );
+  }
 });

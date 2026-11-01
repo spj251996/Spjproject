@@ -8,22 +8,16 @@ import { test } from "node:test";
    paints a solid rectangle rather than a line. ONE `<svg>` in this directory lives in that
    coordinate system: `page-thread.tsx`'s no-JS fallback, fixed on its first real render.
 
-   It had a second member until 2026-10-07 -- `not-found-thread.tsx`'s whole thread, which shipped
-   WITHOUT the attribute and painted the 404 screen 99.7% red for a month. That screen's thread was
-   retired rather than repaired (DESIGN.md -> Not found), so this gate is down to one member. Keep
-   it: the surviving member is the one a reader with no JS sees, and it is still the arrangement
-   that failed.
-
    The rule is asserted GENERALLY rather than on those two files, so a path written into this
    coordinate system later is covered the day it is written rather than the day someone renders it.
 
-   THE SCAN IS PER-`<svg>`, NOT PER-FILE, and that is the whole difficulty: `page-thread.tsx` also
-   renders four paths in REAL PIXEL space, which correctly omit the attribute (that file's own
-   header comment says why), so a file-level scan fails on correct code. Comments are stripped
+   THE SCAN IS PER-`<svg>`, NOT PER-FILE: `page-thread.tsx` also renders its live paths in REAL PIXEL
+   space, which correctly omit the attribute (that file's own header comment says why), so a
+   file-level scan fails on correct code. Comments are stripped
    first because this directory's prose quotes `<path>` in several places, and a quoted tag is not
    an element. The count assertion at the end is what stops the gate passing vacuously if the
    markup is reformatted or a slice stops matching -- a regex that matches nothing reads exactly
-   like a regex whose every match passed (`lessons.md`, 2026-10-05). */
+   like a regex whose every match passed. */
 
 const EXPECTED_STRETCHED_PATHS = 1;
 

@@ -15,16 +15,9 @@ const SECTIONS: readonly ThreadId[] = [
 test("celebrations is measured taller than the band's own nominal box, at wide", () => {
   const box = sectionBox("celebrations", "wide");
   assert.equal(box.width, 1536);
-  /* Re-measured three times: when the five-ritual section replaced the placeholder (1320 was the
-     placeholder's), when the first two rituals gained their temporary photographs, and on
-     2026-10-10 when each Malayalam moved onto its own line and the alternating band gave way to
-     one full-width column at every tier, and again on 2026-10-11 when the rituals went left-aligned
-     on one header line with a smaller title. The photo-free base is 1513 at this band and each
-     ritual with photographs adds a constant +190 since a photographed ritual closes to 24px from
-     64rem (2026-10-11). The test photographs came out on 2026-10-14, so this is the base; each
-     ritual's first real upload adds 190.
-     It is still the point of this test that it exceeds the band's 695. */
-  assert.equal(box.height, 1513);
+  /* The photo-free base at this band; each photographed ritual adds +190. The point of this test
+     is that it exceeds the band's 695. */
+  assert.equal(box.height, 1339);
   assert.ok(box.height > 695);
 });
 
@@ -44,15 +37,6 @@ test("every band carries a measured box for all five sections", () => {
   }
 });
 
-test("not-found resolves to the invite's box in every band", () => {
-  for (const band of THREAD_BANDS) {
-    assert.deepEqual(
-      sectionBox("not-found", band.id),
-      sectionBox("invite", band.id),
-    );
-  }
-});
-
 test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("invite", "tall"), { width: 393, height: 700 });
   assert.deepEqual(sectionBox("event-info", "tall"), {
@@ -62,7 +46,7 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("family", "tall"), { width: 393, height: 1400 });
   assert.deepEqual(sectionBox("celebrations", "tall"), {
     width: 393,
-    height: 2173,
+    height: 1895,
   });
   assert.deepEqual(sectionBox("wishes", "tall"), { width: 393, height: 700 });
 
@@ -80,7 +64,7 @@ test("the measured heights match the render exactly", () => {
   });
   assert.deepEqual(sectionBox("celebrations", "upright"), {
     width: 820,
-    height: 2262,
+    height: 1968,
   });
   assert.deepEqual(sectionBox("wishes", "upright"), {
     width: 820,
@@ -95,7 +79,34 @@ test("the measured heights match the render exactly", () => {
   assert.deepEqual(sectionBox("family", "wide"), { width: 1536, height: 695 });
   assert.deepEqual(sectionBox("celebrations", "wide"), {
     width: 1536,
-    height: 1513,
+    height: 1339,
   });
   assert.deepEqual(sectionBox("wishes", "wide"), { width: 1536, height: 695 });
+});
+
+/* A one-screen section is exactly its band's nominal box, so `invite` and `wishes` tie each box's
+   height here as the width does for every section. */
+test("every section box is its band's width, and a one-screen section its band's height", () => {
+  for (const band of THREAD_BANDS) {
+    for (const id of [
+      "invite",
+      "event-info",
+      "family",
+      "celebrations",
+      "wishes",
+    ] as const) {
+      assert.equal(
+        sectionBox(id, band.id).width,
+        band.box.width,
+        `${id}/${band.id} width`,
+      );
+    }
+    for (const id of ["invite", "wishes"] as const) {
+      assert.equal(
+        sectionBox(id, band.id).height,
+        band.box.height,
+        `${id}/${band.id} height`,
+      );
+    }
+  }
 });

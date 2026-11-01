@@ -3,13 +3,12 @@ import type { SectionBox } from "./thread-geometry.ts";
 export type BandId = "tall" | "upright" | "wide";
 
 /* `min`/`max` bound the section's aspect ratio (`width / height`), inclusive at `min` and exclusive
-   at `max`, so no aspect can match two bands. The alternative — open-ended ranges that both match —
-   silently lets whichever rule the stylesheet emits later win, which this project has been bitten
-   by (Tailwind orders arbitrary variants by string, so `>=64rem` beat `>=100rem`). */
+   at `max`, so no aspect can match two bands; open-ended ranges that both match let whichever rule
+   is emitted later win. */
 export type Band = { id: BandId; box: SectionBox; min: number; max: number };
 
 /* ────────────────────────────────────────────────────────────────────────────────────────────────
-   AN ESTIMATE, NOT A MEASUREMENT. A real reading replaces it.
+   AN ESTIMATE, NOT A MEASUREMENT, and it stays one: the thread never ships to guests.
 
    A page section is `100svh`, so the band's shape is the VIEWPORT's, not the phone's screen. The
    owner's iPhone 16 is 393x852 CSS px, and iOS Safari's small viewport subtracts its top and bottom
@@ -28,7 +27,7 @@ export type Band = { id: BandId; box: SectionBox; min: number; max: number };
      The `wide` band is already accepted at 40% off at its own worst member, so this sits well
      inside tolerance the design already carries.
    ──────────────────────────────────────────────────────────────────────────────────────────────── */
-export const TALL_BOX_HEIGHT = 700;
+const TALL_BOX_HEIGHT = 700;
 
 const TALL_BOX: SectionBox = { width: 393, height: TALL_BOX_HEIGHT };
 const UPRIGHT_BOX: SectionBox = { width: 820, height: 1180 };
@@ -36,15 +35,15 @@ const UPRIGHT_BOX: SectionBox = { width: 820, height: 1180 };
 /* The GEOMETRIC mean of the two bands' nominal aspects (0.5614 and 0.6949), not the arithmetic one.
    A section drawn away from its band's nominal is stretched by the RATIO of the two aspects, so the
    geometric mean is the aspect that costs both neighbours the same factor — 1.1125 either side. */
-export const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
+const TALL_UPRIGHT_BOUNDARY = Math.sqrt(
   (TALL_BOX.width / TALL_BOX.height) * (UPRIGHT_BOX.width / UPRIGHT_BOX.height),
 );
 
-/* A 4:3 landscape window. This is the edge Task 1's Q4 swept the anisotropy against (`wide` as
-   `[1.33, oo)`, worst factor 40%, the worst case a landscape tablet), so its verdict — three bands,
-   not four — is a verdict about THIS edge. Moving it voids that measurement, which is why this one
-   is authored where its neighbour above is the geometric mean of two nominals. */
-export const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
+/* A 4:3 landscape window. The anisotropy sweep that settled on three bands rather than four (`wide`
+   as `[1.33, oo)`, worst factor 40%, a landscape tablet) was taken against this edge, so moving it
+   voids that verdict; that is why this one is authored where its neighbour above is the geometric
+   mean of two nominals. */
+const UPRIGHT_WIDE_BOUNDARY = 4 / 3;
 
 /* Thread geometry is emitted per ASPECT BAND, not per width tier: a motif is a square while a
    section is not, so it is the section's aspect that decides where a connector's ends land. Each
@@ -77,3 +76,19 @@ export const THREAD_BANDS = [
     max: Number.POSITIVE_INFINITY,
   },
 ] as const satisfies readonly Band[];
+
+function round(value: number): string {
+  const fixed = value.toFixed(5).replace(/\.?0+$/, "");
+  return fixed === "-0" ? "0" : fixed;
+}
+
+/* Bounded ranges, never open-ended, so no aspect can match two bands — the same rule
+   `Band` states above and the same one a stale rule in this project once got bitten by
+   (Tailwind orders arbitrary variants by string, so an open `>=64rem` beat an open `>=100rem`). */
+export function aspectQuery(min: number, max: number): string {
+  if (min === 0) return `(aspect-ratio < ${round(max)})`;
+  if (max === Number.POSITIVE_INFINITY) {
+    return `(${round(min)} <= aspect-ratio)`;
+  }
+  return `(${round(min)} <= aspect-ratio < ${round(max)})`;
+}

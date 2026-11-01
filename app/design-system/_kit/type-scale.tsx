@@ -11,6 +11,8 @@ export interface TypeToken {
   token: string;
   family: string;
   weight: number;
+  /** The role uses the face's italic cut. */
+  italic?: boolean;
   /** The role's use, from DESIGN.md → Typography → The scale → Use. Rendered in the role itself. */
   sample: string;
   /** Size and line height in px at each width tier. */
@@ -46,6 +48,7 @@ export function TypeScaleList({ tokens }: TypeScaleListProps) {
             <span className="type-body text-ink">.{token.token}</span>
             <span className="type-eyebrow">
               {token.family} · {token.weight}
+              {token.italic ? " italic" : ""}
             </span>
             <dl className="grid grid-cols-[auto_auto] justify-start gap-x-space-sm">
               {tiersOf(token).map((tier) => (

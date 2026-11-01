@@ -2,27 +2,26 @@
   "name": "sf-wedding",
   "version": "0.1.0",
   "private": true,
-  "description": "SF Wedding — a single-page, red-thread wedding invitation for Flemy and Sebastian, built with Next.js.",
+  "description": "SF Wedding — a single-page wedding invitation for Sebastian and Flemy, built with Next.js.",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON content/verify.ts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-images.mjs --only=rituals",
+    "prebuild": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON content/verify.ts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generators/generate-images.mjs --only=rituals",
     "build": "next build",
-    "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "images": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-images.mjs",
-    "og:card": "node scripts/build-og-card.mjs",
-    "trace:motif": "node scripts/trace-motif.mjs",
-    "thread:import": "node scripts/import-thread-drawing.mjs",
+    "frames": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generators/build-frame-css.ts",
+    "images": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generators/generate-images.mjs",
+    "og:card": "node scripts/generators/build-og-card.mjs",
+    "trace:motif": "node scripts/thread/trace-motif.mjs",
+    "thread:import": "node scripts/thread/import-thread-drawing.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test content/*.test.ts 'components/**/*.test.ts' 'app/**/*.test.ts' 'scripts/**/*.test.mjs' 'scripts/**/*.test.ts'",
     "validate:content": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON content/verify.ts",
-    "verify:section": "node scripts/verify-section.mjs",
-    "measure:fit": "node scripts/measure-section-fit.mjs",
-    "check:export": "node scripts/check-export-routes.mjs",
-    "check:retire": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/retire-register.test.mjs",
-    "check:thread": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-thread-clearance.mjs",
-    "check:thread-joins": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-thread-joins.mjs",
-    "check:thread-layout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-thread-layout-impact.mjs"
+    "verify:section": "node scripts/gates/verify-section.mjs",
+    "measure:fit": "node scripts/generators/measure-section-fit.mjs",
+    "check:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-export-routes.mjs",
+    "check:thread": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-thread-clearance.mjs",
+    "check:thread-joins": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-thread-joins.mjs",
+    "check:thread-layout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gates/check-thread-layout-impact.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -35,13 +34,14 @@
     "@biomejs/biome": "^2",
     "@playwright/cli": "^0.1.17",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "playwright": "1.62.0-alpha-1783623505000",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22.18 <23"
   }
 }

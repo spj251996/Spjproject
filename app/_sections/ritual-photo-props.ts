@@ -1,7 +1,7 @@
 import type { Ritual, RitualPhoto } from "../../content/types.ts";
 
 /* Every ritual's set, keyed by id, is handed WHOLE to each strip: `photoFit` must be solved across all
-   of them or the section's height stops being a constant (`components/ui/photo-fit.ts`). Everything
+   of them or the section's height stops being a constant (`components/ui/gallery/photo-fit.ts`). Everything
    is keyed on the DISPLAY path, the photograph's identity — the thumbnail and the viewer copy are
    further deliveries of the same photograph, not further photographs.
 

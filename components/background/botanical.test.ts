@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { botanicalCss, pieceOverrideCss } from "./botanical-css.ts";
+import { botanicalCss, pieceRule } from "./botanical-css.ts";
+import { SECTION_PLACEMENT } from "./botanical-placement.ts";
 import {
   ANCHORS,
   type BotanicalPiece,
@@ -68,25 +69,42 @@ test("every botanical clip rule clips by overflow alone and creates no stacking 
    every build, lint and test run there has ever been, because nothing asserted a size at all. */
 
 /* The widest a piece may be tuned at any tier, as a fraction of the viewport. Stated here rather
-   than clamped in CSS — a clamp would silently contradict a tuned value, and the point is to fail
-   loudly.
-
-   The meadow band's two halves carry their own, looser ceiling: they span the section's bottom edge
-   by design, so each half reaches most of the way across on a phone. The exemption had been stated
-   in prose here while the check applied one number to every piece — which held only while the band
-   was a single piece sized under it. */
-/* 85, raised from 60 once the phone tier was tuned (owner, 2026-09-24): a phone is narrow enough
-   that a piece reading as a corner spray there is a large fraction of the window — `horizontal-
-   garland` is tuned to 84.2vw. The number is a tripwire, not a design value: it exists to catch the
-   failure that started this pass, a piece rendering at 181% of a phone screen. Raised to 95 when
-   `corner-trail` was tuned to 90.2vw on a phone (owner, 2026-10-14): a corner frame whose empty
-   interior holds the eyebrow is meant to span most of a phone's width. */
+   than clamped in CSS: a clamp would silently contradict a tuned value, and the point is to fail
+   loudly. A tripwire, not a design value. 95 because `corner-trail`, a corner frame whose empty
+   interior holds the eyebrow, spans most of a phone's width (90.2vw). The meadow band's two halves
+   carry their own looser ceiling: they span the section's bottom edge by design, so each half
+   reaches most of the way across on a phone. */
 const SIZE_CEILING = 95;
 const BAND_SIZE_CEILING = 100;
 const BAND_PIECES: readonly BotanicalPiece[] = [
   "meadow-band-left",
   "meadow-band-right",
 ];
+
+/* Every rule in the module, not only `.clip`: the header's list of blend-isolating properties holds
+   for the whole layer. Matched as property NAMES, so `background-size: contain` is not mistaken for
+   `contain`. */
+test("no rule in botanical.module.css declares a blend-isolating property", () => {
+  const css = readFileSync(
+    path.join(import.meta.dirname, "botanical.module.css"),
+    "utf8",
+  ).replace(/\/\*[\s\S]*?\*\//g, "");
+  const bodies = [...css.matchAll(/[^{}]+\{([^{}]*)\}/g)].map((m) => m[1]);
+  const atRules = (css.match(/@[\w-]+[^{;]*\{/g) ?? []).length;
+  assert.equal(
+    bodies.length,
+    (css.match(/\{/g) ?? []).length - atRules,
+    "every rule body was parsed",
+  );
+  const isolating =
+    /(^|;)\s*(z-index|isolation|contain|content-visibility|transform|filter|opacity|box-shadow|will-change|perspective)\s*:/;
+  for (const body of bodies) {
+    assert.ok(
+      !isolating.test(body),
+      `a botanical.module.css rule declares a blend-isolating property: ${body.trim()}`,
+    );
+  }
+});
 
 test("every piece carries a complete, well-formed record at every tier", () => {
   const pieces = Object.keys(TUNING);
@@ -191,14 +209,14 @@ test("a positive nudge moves a piece right and down by exactly that many vw, at 
   const expected = (nudge / 100) * box.width;
 
   for (const anchor of ANCHORS) {
-    const base = pieceOverrideCss("corner-trail", {
+    const base = pieceRule("corner-trail", {
       anchor,
       x: 0,
       y: 0,
       size: 20,
       rotation: 0,
     });
-    const moved = pieceOverrideCss("corner-trail", {
+    const moved = pieceRule("corner-trail", {
       anchor,
       x: nudge,
       y: nudge,
@@ -282,32 +300,21 @@ test("every piece the section carries gets a rule at every tier, and no other pi
 });
 
 /* The invite and the not-found screen share one botanical layout (DESIGN.md → Botanical Edge), so
-   both keys must name the SAME list — a copy would let the two drift apart one swap at a time. Read
-   from source because `botanical.tsx` imports a CSS module, which `node --test` cannot load. */
+   both keys must name the SAME list — a copy would let the two drift apart one swap at a time. */
 test("not-found reuses the invite's own piece list, and that list is corner-trail then corner-spray", () => {
-  const source = readFileSync(
-    path.join(import.meta.dirname, "botanical.tsx"),
-    "utf8",
+  assert.equal(
+    SECTION_PLACEMENT["not-found"],
+    SECTION_PLACEMENT.invite,
+    "not-found must reuse the invite's list",
   );
-  const invite = source.match(/^\s*invite: (\w+),$/m)?.[1];
-  const notFound = source.match(/^\s*"not-found": (\w+),$/m)?.[1];
-  assert.ok(
-    invite,
-    "invite's placement must be a named list, not an inline copy",
-  );
-  assert.equal(notFound, invite, "not-found must reuse the invite's list");
-  const declaration = source.match(
-    new RegExp(`const ${invite} = \\[([\\s\\S]*?)\\] as const`),
-  )?.[1];
-  assert.ok(declaration, `no declaration found for ${invite}`);
   assert.deepEqual(
-    [...declaration.matchAll(/piece: "([\w-]+)"/g)].map((m) => m[1]),
+    SECTION_PLACEMENT.invite.map((placement) => placement.piece),
     ["corner-trail", "corner-spray"],
   );
 });
 
-/* `corner-trail`'s placement is the owner's, settled on /preview's tuning panel (2026-10-14), and
-   is the shape this project pins: a later conversion or tidy-up could overwrite it and nothing else
+/* `corner-trail`'s placement is the owner's, settled on a render, and is the shape this project
+   pins: a later conversion or tidy-up could overwrite it and nothing else
    would notice. Its clearance comes from the drawing's empty interior, not from an offset, so every
    tier sits flush in the corner (x 0, y 0); only the size was tuned. Measured against the invite's
    eyebrow at these values, nearest ink 24px at 390x664 and wider everywhere else. */
@@ -327,8 +334,7 @@ test("corner-trail's placement is the value settled on a render", () => {
   });
 });
 
-test("the set is nineteen pieces and falling-spray and cosmos-arc are retired from it", () => {
-  assert.equal(Object.keys(TUNING).length, 19);
+test("retired pieces stay retired", () => {
   assert.ok(!("falling-spray" in TUNING));
   assert.ok(!("cosmos-arc" in TUNING));
 });
@@ -349,4 +355,40 @@ test("poppy-spread is a phone-only piece, dropped from the tablet tier up", () =
       `poppy-spread must be dropped at ${tier}`,
     );
   }
+});
+
+test("every image the generated sheet names exists in public/botanical", () => {
+  const css = botanicalCss(Object.keys(TUNING) as BotanicalPiece[]);
+  const urls = [...css.matchAll(/url\("?(\/botanical\/[^")]+)"?\)/g)].map(
+    (m) => m[1],
+  );
+  let pairs = 0;
+  for (const record of Object.values(TUNING)) {
+    for (const tier of TIERS) if (!record[tier].drop) pairs += 1;
+  }
+  assert.equal(
+    urls.length,
+    2 * pairs,
+    "one AVIF and one WebP per shown piece and tier",
+  );
+  for (const url of urls) {
+    assert.ok(
+      existsSync(path.join("public", url)),
+      `${url} is not in public/ — run npm run images`,
+    );
+  }
+});
+
+/* DESIGN.md → Botanical Edge: no piece appears twice in one scroll. */
+test("no piece appears twice in one scroll, and the scroll carries all nineteen", () => {
+  const { "not-found": _notFound, ...scrollSections } = SECTION_PLACEMENT;
+  const scroll = Object.values(scrollSections).flatMap((placements) =>
+    placements.map((placement) => placement.piece),
+  );
+  assert.equal(
+    new Set(scroll).size,
+    scroll.length,
+    `a piece repeats: ${scroll}`,
+  );
+  assert.deepEqual([...scroll].sort(), Object.keys(TUNING).sort());
 });

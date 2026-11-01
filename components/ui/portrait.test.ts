@@ -3,8 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 /* Comments are stripped defensively, so a future comment that names one of these mechanisms cannot
-   satisfy an assertion looking for it. No comment in the file does so today -- every test below
-   passes identically without the strip. */
+   satisfy an assertion looking for it. */
 const portrait = readFileSync("components/ui/portrait.tsx", "utf8").replace(
   /\/\*[\s\S]*?\*\//g,
   "",
@@ -16,8 +15,7 @@ const portrait = readFileSync("components/ui/portrait.tsx", "utf8").replace(
 const OVERLAY_OPEN = '<span aria-hidden="true"';
 
 /* Bounded at the tag's own `>`, not at `/>`: a `<span ...></span>` overlay is behaviourally
-   identical, and an earlier version of this file failed that correct rewrite while reporting a
-   misleading message about the wrong property. */
+   identical to a self-closing one, and must not fail the test. */
 function openingTag(from: number, what: string) {
   assert.notStrictEqual(from, -1, `no ${what} found`);
   const end = portrait.indexOf(">", from);
@@ -106,16 +104,14 @@ test("the hit-test overlay's parent is the positioned clipping div", () => {
   const clip = portrait.lastIndexOf("<div", clipAttr);
   assert.notStrictEqual(clip, -1, "the clipping attribute has no opening tag");
 
-  /* CONTAINMENT, not "the nearest preceding `<div`". The first version of this test took
-     `lastIndexOf("<div")` before the overlay and passed the mutation it was written for: moving the
-     overlay out to the `figure` still leaves the clipping div as the nearest PRECEDING `<div`,
-     because `figcaption` holds only spans. Walk the div depth from the clipping tag instead and
-     require the overlay inside its span. */
+  /* CONTAINMENT, not "the nearest preceding `<div`": moving the overlay out to the `figure` still
+     leaves the clipping div as the nearest preceding `<div` (`figcaption` holds only spans), so walk
+     the div depth from the clipping tag and require the overlay inside its span. */
   /* A self-closing `<div ... />` opens and closes in one tag, so it must not increment the depth --
      counting it as an opener leaves the depth permanently above 0 and the test fails on CORRECT
-     code. This component has none today, but `app/_sections/invite.tsx` and `mounted-pair.tsx` both do, so
-     the
-     construct is normal here. Matched by taking each `<div`'s whole tag and asking how it ends. */
+     code. This component has none today, but `app/_sections/invite.tsx` and `mounted-pair.tsx` both
+     do, so the construct is normal here. Matched by taking each `<div`'s whole tag and asking how it
+     ends. */
   let depth = 0;
   let closesAt = -1;
   for (const match of portrait.slice(clip).matchAll(/<div\b[^>]*>|<\/div>/g)) {

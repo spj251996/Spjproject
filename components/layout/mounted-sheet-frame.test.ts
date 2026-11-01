@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { FRAME_SHEETS } from "../../app/_frame/frame-sheets.ts";
 import {
   CAPS,
   type FitRegime,
   fitPadding,
   fitRectangles,
+  GROUND_HALVING,
+  lowerBoundPx,
   type MeasuredFit,
   type Orientation,
   pairsSideBySide,
@@ -93,20 +96,19 @@ test("a fit missing the desktop regimes is rejected", () => {
   );
 });
 
-test("a compact window takes the compact ground tier and its smallest padding", () => {
+test("a laptop window takes the laptop ground tier and its smallest padding", () => {
   const classes = windowClasses(makeFit(), "single");
-  const compact = classes.find(
+  const laptop = classes.find(
     (c) => c.widthTier === "laptop" && c.media.includes("64rem"),
   );
-  assert.equal(compact?.groundTier.ground, 64);
-  assert.deepEqual(compact?.groundTier.paddingSteps, [64, 48, 32, 24]);
+  assert.equal(laptop?.groundTier.ground, 64);
+  assert.deepEqual(laptop?.groundTier.paddingSteps, [64, 48, 32, 24]);
 });
 
-/* Every step above the floor is gated on the window's HEIGHT, and the smallest of those conditions
-   needs about 804px — taller than the phones this site meets. So on a phone the floor is the only
-   step ever reached, and what it is set to IS what a short phone's card looks like. 16 was what the
-   couple saw as "too filled" (2026-10-02); 32 measures the invite at 1.05 viewports at 375x667 and
-   breaks its one-screen requirement. */
+/* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`); at 390
+   wide the 32 step is reached from about 608px tall for Wishes up to about 683px for Family, so a
+   short phone keeps the floor. 32 as the floor measures the invite and Wishes at 1.05 viewports at
+   375x667, breaking `Fits the first viewport`; 24 keeps both at exactly 1.00. */
 test("the phone tier's padding ladder has no step below 24", () => {
   const classes = windowClasses(makeFit(), "single");
   const phone = classes.find((c) => c.widthTier === "phone");
@@ -136,11 +138,8 @@ test("a phone sheet is emitted at 24px unconditionally, and 16px appears nowhere
   }
 });
 
-/* The ladder's floor used to do two jobs: set what a card SHOWS, and tell the fit arithmetic what it
-   may ASSUME when asking "does this window hold the card?". Raising the floor to 24 silently answered
-   the second question differently — the halving condition then failed both ways at phone heights
-   693-804, so Event Info stopped taking its pressed ground band and gained 176px of page. Owner's
-   decision, 2026-10-02: keep 16 available to the arithmetic as a last resort, while never emitting it. */
+/* What a card SHOWS and what the fit arithmetic may ASSUME are separate: the phone keeps 16 available
+   to the pressed-fit question as a last resort, while never emitting it as a card's padding. */
 test("the phone tier shows 24 but lets the fit arithmetic assume 16", () => {
   const classes = windowClasses(makeFit(), "single");
   const phone = classes.find((c) => c.widthTier === "phone");
@@ -176,7 +175,7 @@ test("the phone halving condition is computed at the rescue padding, not the flo
 });
 
 /* The rescue value answers whether the PRESSED card fits, and nothing else. Whether the full-ground
-   card fits is asked at the floor the card actually shows (owner, 2026-10-14): asked at 16, the frame
+   card fits is asked at the floor the card actually shows: asked at 16, the frame
    believed a window held a full-ground card it did not, kept the full ground there, and the section ran
    past one screen — 1px at 390x844, 18px at 360x780, 11px at 430x739 — where pressing would have fitted. */
 test("the phone halving condition asks the full-ground fit at the floor the card shows", () => {
@@ -232,11 +231,11 @@ test("a landscape phone asks the full-ground fit at the floor the card shows", (
   );
 });
 
-test("a wide window keeps the laptop ground tier", () => {
+test("a desktop window keeps the desktop ground tier", () => {
   const classes = windowClasses(makeFit(), "single");
-  const wide = classes.find((c) => c.widthTier === "desktop");
-  assert.equal(wide?.groundTier.ground, 96);
-  assert.deepEqual(wide?.groundTier.paddingSteps, [96, 64, 48, 32]);
+  const desktop = classes.find((c) => c.widthTier === "desktop");
+  assert.equal(desktop?.groundTier.ground, 96);
+  assert.deepEqual(desktop?.groundTier.paddingSteps, [96, 64, 48, 32]);
 });
 
 test("the caps differ by tier, and tablet keeps the full cap", () => {
@@ -261,8 +260,8 @@ test("regimesFor picks the orientation named", () => {
 
 test("a valid two-orientation fit frames without throwing", () => {
   const classes = windowClasses(makeFit());
-  /* Mobile 1 + tablet 2 + desktop (compact) pointer 2 + desktop touchscreen 2 + wide pointer 2 +
-     wide touchscreen 2 = 11, now that the frame carries a fourth width tier. */
+  /* Phone 1 + tablet 2 + laptop pointer 2 + laptop touchscreen 2 + desktop pointer 2 + desktop
+     touchscreen 2 = 11. */
   assert.equal(classes.length, 11);
   for (const windowClass of classes) {
     assert.equal(windowClass.regimes.portrait, TINY);
@@ -314,14 +313,14 @@ test("a landscape rectangle taller than the height cap is dropped, not thrown", 
 });
 
 test("a landscape rectangle wider than the height cap is decided below the centring band", () => {
-  /* 700 + 2 x 24 + 2 x 12 = 772px wide at the compact tier's smallest padding: wider than its
+  /* 700 + 2 x 24 + 2 x 16 = 780px wide at the laptop tier's smallest padding: wider than its
      576px height cap, so it counts only up to cap + 4 x ground, the height past which the
-     centring gap could bind — 832px at full compact ground, 672px at halved touchscreen ground. */
+     centring gap could bind — 832px at full laptop ground, 672px at halved touchscreen ground. */
   const wide = makeFit({
     laptop: { landscape: [{ minContentWidth: 700, contentHeight: 100 }] },
   });
   const css = mountedSheetFrameCss(wide, false);
-  assert.ok(css.includes("(height <= 832px)"), "full compact ground band");
+  assert.ok(css.includes("(height <= 832px)"), "full laptop ground band");
   assert.ok(
     css.includes("(height <= 672px)"),
     "halved touchscreen ground band",
@@ -330,6 +329,47 @@ test("a landscape rectangle wider than the height cap is decided below the centr
     !mountedSheetFrameCss(makeFit(), false).includes("height <="),
     "a fit with no wide rectangle carries no band",
   );
+});
+
+/* A card never grows past its tier's width cap, so a rectangle wider than the cap is a card the box
+   can never be; a tier line set by one admits windows too short for every card the box can be.
+   Checked against the shipped fits, because a synthetic fit only proves the case it was built for. */
+test("no tier line sits below a width-capped card's real minimum", () => {
+  let checked = 0;
+  for (const sheet of FRAME_SHEETS) {
+    if (sheet.fit === null || sheet.layout === "tall") continue;
+    for (const windowClass of windowClasses(
+      sheet.fit,
+      sheet.layout,
+      sheet.hero,
+    )) {
+      const line = windowClass.media.match(/\(height >= ([\d.]+)px\)/)?.[1];
+      if (line === undefined) continue;
+      const cap = CAPS[windowClass.widthTier];
+      const halved = windowClass.groundTier.ground * GROUND_HALVING;
+      const reachable = fitRectangles(
+        regimesFor(windowClass.regimes, "landscape"),
+        revealFor(windowClass, sheet.hero, true),
+        fitPadding(windowClass.groundTier),
+        pairsSideBySide(sheet.layout, windowClass, true),
+      )
+        .filter(
+          (rectangle) =>
+            rectangle.minCardWidth <= cap.width &&
+            rectangle.minCardHeight <= cap.height,
+        )
+        .map((rectangle) => rectangle.minCardHeight + 2 * halved);
+      const label = `${sheet.name} ${windowClass.media}`;
+      assert.ok(reachable.length > 0, `${label}: no card fits both caps`);
+      const floor = Number.parseFloat(lowerBoundPx(Math.min(...reachable)));
+      assert.ok(
+        Number(line) >= floor,
+        `${label}: the tier line ${line}px sits below ${floor}px, the shortest card within both caps`,
+      );
+      checked++;
+    }
+  }
+  assert.equal(checked, 25, "five tier lines for each of five fitted sheets");
 });
 
 /* Every rule body written directly against a scope selector (never one of its descendants — the
@@ -396,10 +436,10 @@ test("a pair is never the hero", () => {
   );
 });
 
-test("a pair's compact tier lines are worked out at 1280px", () => {
-  /* A pair's compact and touchscreen tier lines start at 80rem, at the compact ground tier's
+test("a pair's laptop tier lines are worked out at 1280px", () => {
+  /* A pair's laptop and touchscreen tier lines start at 80rem, at the laptop ground tier's
      smallest padding (24) and reveal (16). Content 550 side by side is
-     2 x (550 + 48) + 64 = 1260px, and 1260 + 4 x 32 (halved compact ground) = 1388 — over 1280, so
+     2 x (550 + 48) + 64 = 1260px, and 1260 + 4 x 32 (halved laptop ground) = 1388 — over 1280, so
      it still cannot be framed even at the 1280px line. A single card keeps 1024: 550 + 48 + 32 =
      630, well inside 1024 - 128 = 896. */
   const tooWide = makeFit({
@@ -411,17 +451,19 @@ test("a pair's compact tier lines are worked out at 1280px", () => {
     /cannot be framed[\s\S]*laptop ground tier fit its laptop content[\s\S]*1280px/,
   );
 
-  /* Content 320 frames regardless of which narrowest window the compact line is worked out at. */
+  /* Content 320 frames regardless of which narrowest window the laptop line is worked out at. */
   const framable = makeFit({
     laptop: { landscape: [{ minContentWidth: 320, contentHeight: 100 }] },
   });
   assert.doesNotThrow(() => windowClasses(framable, "pair"));
 
-  /* Content 400 side by side is 2 x (400 + 48) + 48 = 944px: with 4 x 32 halved-ground clearance
-     that is 1072 — over a hypothetical 1024px line, but inside the 1280px line's clearance
-     (1072 <= 1280), so it frames only because the pair's line is worked out at 1280. */
+  /* Content 380 side by side is 2 x (380 + 48) + 64 = 920px: with 4 x 32 halved-ground clearance
+     that is 1048 — over a hypothetical 1024px line, but inside the 1280px line's clearance
+     (1048 <= 1280), so it frames only because the pair's line is worked out at 1280. At the
+     touchscreen line's 32 padding it is 2 x (380 + 64) + 64 = 952px, inside the 960px laptop width
+     cap that any wider content would break. */
   const onlyFromWide = makeFit({
-    laptop: { landscape: [{ minContentWidth: 400, contentHeight: 100 }] },
+    laptop: { landscape: [{ minContentWidth: 380, contentHeight: 100 }] },
   });
   assert.doesNotThrow(() => windowClasses(onlyFromWide, "pair"));
 
@@ -433,8 +475,8 @@ test("a pair's compact tier lines are worked out at 1280px", () => {
   assert.doesNotThrow(() => windowClasses(tabletFit, "pair"));
 });
 
-test("a pair gives landscape compact-width windows under 80rem the phone ground tier", () => {
-  /* Mobile 1 + tablet 2 + desktop (narrow band, mid band) x 2 pointers x 2 + wide x 2 pointers x
+test("a pair gives landscape laptop-width windows under 80rem the phone ground tier", () => {
+  /* Mobile 1 + tablet 2 + laptop (narrow band, mid band) x 2 pointers x 2 + desktop x 2 pointers x
      2 = 1 + 2 + 8 + 4 = 15. */
   const pair = windowClasses(makeFit(), "pair");
   assert.equal(pair.length, 15);
@@ -454,7 +496,7 @@ test("a pair gives landscape compact-width windows under 80rem the phone ground 
     assert.equal(windowClass.portraitPossible, false);
     assert.equal(windowClass.landscapePossible, true);
   }
-  /* The compact tier's own band, bounded above by the wide tier's 100rem: (80rem <= width < 100rem). */
+  /* The laptop tier's own band, bounded above by the desktop tier's 100rem: (80rem <= width < 100rem). */
   const midBand = pair.filter((windowClass) =>
     windowClass.media.includes("(80rem <= width < 100rem)"),
   );
@@ -475,7 +517,7 @@ test("a pair gives landscape compact-width windows under 80rem the phone ground 
   );
 });
 
-test("a pair's portrait compact-width windows under 80rem take a single card's ground", () => {
+test("a pair's portrait laptop-width windows under 80rem take a single card's ground", () => {
   const narrowPortrait = windowClasses(makeFit(), "pair").filter(
     (windowClass) =>
       windowClass.media.includes("(64rem <= width < 80rem)") &&
@@ -509,10 +551,10 @@ test("a pair's portrait compact-width windows under 80rem take a single card's g
   }
 });
 
-test("a pair's compact tier lines stay below 64rem", () => {
-  /* A portrait narrow class takes compact or tablet ground with no height condition, which holds
+test("a pair's laptop tier lines stay below 64rem", () => {
+  /* A portrait narrow class takes laptop or tablet ground with no height condition, which holds
      only while every pair tier line sits below 1024px. The height cap bounds a line at 576 plus the
-     halved ground top and bottom — 640 at compact ground, 624 at tablet — so no fit reaches 1024;
+     halved ground top and bottom — 640 at laptop ground, 624 at tablet — so no fit reaches 1024;
      `windowClasses` still checks it, so a change to the caps or ground tiers fails the build.
      Content 320 at 400 tall, comfortably framable, makes a 472px card. */
   assert.doesNotThrow(() =>
@@ -525,13 +567,13 @@ test("a pair's compact tier lines stay below 64rem", () => {
   );
 });
 
-test("side by side in every landscape compact-width or wide window", () => {
+test("side by side in every landscape laptop-width or desktop window", () => {
   const classes = windowClasses(makeFit(), "pair");
   const sideBySide = classes.filter((windowClass) =>
     pairsSideBySide("pair", windowClass, true),
   );
-  /* The two narrow-band landscape classes, the four compact mid-band classes and the four wide
-     classes — every desktop or wide class with a landscape window, now that the tier splits in
+  /* The two narrow-band landscape classes, the four laptop mid-band classes and the four desktop
+     classes — every laptop or desktop class with a landscape window, now that the tier splits in
      two. */
   assert.equal(sideBySide.length, 10);
   for (const windowClass of sideBySide) {
@@ -540,7 +582,7 @@ test("side by side in every landscape compact-width or wide window", () => {
       windowClass.media,
     );
   }
-  /* Below each pointer's tier line (desktop and wide alike), plus the two narrow-band landscape
+  /* Below each pointer's tier line (laptop and desktop alike), plus the two narrow-band landscape
      classes, which always take phone ground. */
   const phoneGround = sideBySide.filter(
     (windowClass) => windowClass.groundTier.name === "phone",
@@ -554,13 +596,13 @@ test("side by side in every landscape compact-width or wide window", () => {
 
 test("a pair's landscape padding chain uses side-by-side widths", () => {
   /* Desktop content 200, desktop reveal 16, side by side = 2 x (200 + 2p) + 4 x 16.
-     - Compact ground (>= 80rem, above the line), steps 64/48/32/24: 592 at 32, 656 at 48, 720 at 64.
+     - Laptop ground (>= 80rem, above the line), steps 64/48/32/24: 592 at 32, 656 at 48, 720 at 64.
      - Tablet ground (touchscreen, >= 80rem, above the line), steps 64/48/32: 656, 720 — the same
        numbers, since the two ground tiers share the 48 and 64 steps at this reveal.
      - Phone ground (64-80rem narrow band, and >= 80rem below a line), steps 32/24: 592 at 32. Its
        24 is the ladder's FLOOR and is emitted unconditionally, so it carries no container rule —
        which is why 560 is asserted absent below rather than present.
-     Stacked portrait carries no reveal, so 200 + 2p: 328 at the compact tier's largest step (64);
+     Stacked portrait carries no reveal, so 200 + 2p: 328 at the laptop tier's largest step (64);
      248 and 264 in the narrow classes' portrait chains at 24 and 32. None of the stacked numbers is
      pair-only, because a single card reads 200 + 2p + 32 and its 48 step lands on 328 as well — so
      the side-by-side widths carry the whole of this test's evidence, and the stacked ones are
@@ -586,9 +628,7 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
      a pair-only width has leaked into the single-card stylesheet.
      These two are DOCUMENTATION of the pair-only set rather than independent guards — assertions run
      in order and any leak this mechanism can produce trips the 592 rule above first, so 656 and 720
-     fire only if a leak ever reaches the larger padding steps without the smaller one. Kept because
-     stating all three in one place is what the review asked for; do not read them as three
-     independent checks. */
+     fire only if a leak ever reaches the larger padding steps without the smaller one. */
   assert.ok(!single.includes("@container (width >= 656px)"));
   assert.ok(!single.includes("@container (width >= 720px)"));
 
@@ -607,7 +647,7 @@ test("a pair's landscape padding chain uses side-by-side widths", () => {
 
 test("every pair window and orientation gets exactly one layout block", () => {
   const pair = mountedSheetFrameCss(makeFit(), false, "pair");
-  /* 15 classes, ten of which are a landscape orientation side by side (desktop and wide alike,
+  /* 15 classes, ten of which are a landscape orientation side by side (laptop and desktop alike,
      now that the tier splits in two): 21 blocks total, 10 row and 11 stacked. */
   assert.equal((pair.match(/flex-direction: row;/g) ?? []).length, 10);
   assert.equal(
@@ -662,21 +702,21 @@ function mountExpected(
   );
 }
 
-/* Every (width tier, orientation) a fitted single's stylesheet can put a window in, with the one
+/* Every (width tier, orientation) a fitted non-hero single's stylesheet can put a window in, with the one
    mount rule that window gets. Fails on a class-wide mount rule, which would paint both
    orientations alike, and on a class and orientation with no mount rule or with two. */
-function fittedMountRules(hero: boolean): {
+function fittedMountRules(): {
   windowClass: ReturnType<typeof windowClasses>[number];
   orientation: Orientation;
   rule: string;
 }[] {
   const fit = makeFit();
-  const css = mountedSheetFrameCss(fit, hero);
+  const css = mountedSheetFrameCss(fit, false);
   const blocks = topLevelBlocks(css);
   const mountRule = (block: string) =>
     block.match(/mounted-sheet-frame__mount \{ padding:[^}]*\}/)?.[0];
   const found = [];
-  for (const windowClass of windowClasses(fit, "single", hero)) {
+  for (const windowClass of windowClasses(fit, "single", false)) {
     assert.equal(
       blocks.filter(
         (block) =>
@@ -727,7 +767,7 @@ function assertMounted(rule: string, label: string): void {
 
 test("a non-hero single has no mount in any portrait window, at every width tier", () => {
   const tiers = new Set<WidthTier>();
-  for (const { windowClass, orientation, rule } of fittedMountRules(false)) {
+  for (const { windowClass, orientation, rule } of fittedMountRules()) {
     if (orientation !== "portrait") continue;
     tiers.add(windowClass.widthTier);
     assertBare(rule, `${windowClass.media} portrait`);
@@ -741,7 +781,7 @@ test("a non-hero single has no mount in any portrait window, at every width tier
 
 test("a non-hero single shows its mount in landscape at the laptop and desktop tiers alone", () => {
   const mounted = new Set<string>();
-  for (const { windowClass, orientation, rule } of fittedMountRules(false)) {
+  for (const { windowClass, orientation, rule } of fittedMountRules()) {
     if (orientation !== "landscape") continue;
     const label = `${windowClass.media} landscape`;
     if (mountExpected(false, windowClass.widthTier, orientation)) {
@@ -764,12 +804,44 @@ test("a non-hero single shows its mount in landscape at the laptop and desktop t
   ]);
 });
 
-test("the hero shows its mount in every window and orientation", () => {
-  const rules = fittedMountRules(true);
-  assert.ok(rules.length > 0);
-  for (const { windowClass, orientation, rule } of rules) {
-    assertMounted(rule, `${windowClass.media} ${orientation}`);
+test("the hero keeps a reveal in every window and orientation", () => {
+  let checked = 0;
+  for (const windowClass of windowClasses(makeFit(), "single", true)) {
+    const orientations: boolean[] = [];
+    if (windowClass.portraitPossible) orientations.push(false);
+    if (windowClass.landscapePossible) orientations.push(true);
+    for (const landscape of orientations) {
+      assert.ok(
+        revealFor(windowClass, true, landscape) > 0,
+        `${windowClass.media} landscape=${landscape}: the hero lost its reveal`,
+      );
+      checked += 1;
+    }
   }
+  assert.ok(checked > 0, "no hero window class walked");
+});
+
+/* The hero's reveal is geometry and rides on `MountedSheet`'s utility ladder (owner, 2026-10-14), so the
+   frame emits no mount rule for it — the stylesheet is unlayered, and any rule left here would beat the
+   ladder. A non-hero card still needs its rules, to strip the fill where its mount does not show. */
+test("the hero's stylesheet emits no mount rule; a section's still does", () => {
+  const mountPaddingRules = (css: string) =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(
+      ([, selectors, body]) =>
+        selectors
+          .split(",")
+          .some((selector) =>
+            selector.trim().endsWith(".mounted-sheet-frame__mount"),
+          ) && /(^|;)\s*padding(-[a-z]+)?\s*:/.test(body),
+    );
+  assert.equal(
+    mountPaddingRules(mountedSheetFrameCss(makeFit(), true)).length,
+    0,
+  );
+  assert.ok(
+    mountPaddingRules(mountedSheetFrameCss(makeFit(), false)).length > 0,
+    "no mount rule parsed from the section's stylesheet",
+  );
 });
 
 test("the tier line and padding chain read the reveal the mount shows", () => {
@@ -820,8 +892,7 @@ test("the tier line and padding chain read the reveal the mount shows", () => {
   const shortLaptop = chainWidths(false, "laptop", "phone", "landscape");
   assert.ok(shortLaptop.includes("@container (width >= 216px)"), shortLaptop);
   /* 184 is this step's own bare-card counterfactual — the width an emitter that ignored the mount's
-     reveal would write. 168 was the RETIRED 24 step's, so asserting it absent became vacuous when
-     that step became the floor. */
+     reveal would write. */
   assert.ok(!shortLaptop.includes("@container (width >= 184px)"));
 });
 
@@ -1000,8 +1071,8 @@ test("allows equal consecutive heights", () => {
 
 /* Tall mode exists because the fitted frame refuses a section taller than its tier's height cap:
    `tierLine` keeps only rectangles clearing `CAPS[tier].height`, and a tall section has none. The
-   compact tier's 576px cap binds first. If this ever stops throwing, tall mode's premise is gone. */
-test("a section taller than the compact height cap cannot be framed", () => {
+   laptop tier's 576px cap binds first. If this ever stops throwing, tall mode's premise is gone. */
+test("a section taller than the laptop height cap cannot be framed", () => {
   const tall = makeFit({
     phone: {
       portrait: [{ minContentWidth: 120, contentHeight: 600 }],
@@ -1030,7 +1101,7 @@ test("a section taller than the compact height cap cannot be framed", () => {
    directly, because a regression here is invisible on screen until someone compares two sections
    side by side. */
 test("tall mode gives each tier its full ground and one padding step above its fitted largest", () => {
-  const byTier = new Map(tallWindowClasses(false).map((c) => [c.media, c]));
+  const byTier = new Map(tallWindowClasses().map((c) => [c.media, c]));
   const phone = [...byTier.values()].find((c) => c.widthTier === "phone");
   assert.equal(phone?.ground, 16);
   assert.equal(phone?.padding, 48);
@@ -1039,23 +1110,23 @@ test("tall mode gives each tier its full ground and one padding step above its f
   assert.equal(tablet?.ground, 48);
   assert.equal(tablet?.padding, 96);
 
-  const compact = [...byTier.values()].find(
+  const laptop = [...byTier.values()].find(
     (c) =>
       c.widthTier === "laptop" && c.media.includes("not (pointer: coarse)"),
   );
-  assert.equal(compact?.ground, 64);
-  assert.equal(compact?.padding, 96);
+  assert.equal(laptop?.ground, 64);
+  assert.equal(laptop?.padding, 96);
 
-  const wide = [...byTier.values()].find(
+  const desktop = [...byTier.values()].find(
     (c) =>
       c.widthTier === "desktop" && c.media.includes("not (pointer: coarse)"),
   );
-  assert.equal(wide?.ground, 96);
-  assert.equal(wide?.padding, 128);
+  assert.equal(desktop?.ground, 96);
+  assert.equal(desktop?.padding, 128);
 });
 
-test("a touchscreen from the compact tier up takes the tablet ground", () => {
-  const coarse = tallWindowClasses(false).filter(
+test("a touchscreen from the laptop tier up takes the tablet ground", () => {
+  const coarse = tallWindowClasses().filter(
     (c) =>
       c.media.includes("(pointer: coarse)") &&
       !c.media.includes("not (pointer: coarse)"),
@@ -1065,20 +1136,18 @@ test("a touchscreen from the compact tier up takes the tablet ground", () => {
 });
 
 test("a tall card's mount follows the fitted rule, per orientation", () => {
-  for (const hero of [false, true]) {
-    for (const windowClass of tallWindowClasses(hero)) {
-      for (const orientation of ["portrait", "landscape"] as const) {
-        assert.equal(
-          windowClass.mountShows[orientation],
-          mountExpected(hero, windowClass.widthTier, orientation),
-          `hero=${hero} ${windowClass.media} ${orientation}`,
-        );
-      }
+  for (const windowClass of tallWindowClasses()) {
+    for (const orientation of ["portrait", "landscape"] as const) {
+      assert.equal(
+        windowClass.mountShows[orientation],
+        mountExpected(false, windowClass.widthTier, orientation),
+        `${windowClass.media} ${orientation}`,
+      );
     }
   }
-  const phone = tallWindowClasses(true).find((c) => c.widthTier === "phone");
-  assert.deepEqual(phone?.reveal, { portrait: 16, landscape: 16 });
-  const laptop = tallWindowClasses(false).find((c) => c.widthTier === "laptop");
+  const phone = tallWindowClasses().find((c) => c.widthTier === "phone");
+  assert.deepEqual(phone?.reveal, { portrait: 0, landscape: 0 });
+  const laptop = tallWindowClasses().find((c) => c.widthTier === "laptop");
   assert.deepEqual(laptop?.reveal, { portrait: 0, landscape: 16 });
 });
 
@@ -1090,9 +1159,9 @@ test("tall mode states no height threshold and no container query", () => {
   assert.equal(/min-height:\s*min\(/.test(css), false);
 });
 
-/* Ground and padding pixel values tall mode actually emits (phone 16/48, tablet 48/96, compact
-   64/96, laptop 96/128), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
-   (private) `SPACING_TOKEN` does. Kept separate from that map, as every other CSS-content assertion
+/* Ground and padding pixel values tall mode actually emits (phone 16/48, tablet 48/96, laptop
+   64/96, desktop 96/128), mapped to their spacing tokens the way `mounted-sheet-frame-css.ts`'s own
+   `SPACING_TOKEN` does. Kept separate from that map, as every other CSS-content assertion
    in this file states its expected literal by hand rather than importing the generator's internals. */
 const GROUND_TOKEN: Readonly<Record<number, string>> = {
   16: "--spacing-space-sm",
@@ -1108,7 +1177,7 @@ const PADDING_TOKEN: Readonly<Record<number, string>> = {
 
 test("each tall window class's own block binds its ground and sheet padding, never another class's", () => {
   const css = tallFrameCss();
-  for (const windowClass of tallWindowClasses(false)) {
+  for (const windowClass of tallWindowClasses()) {
     const block = tallBlockFor(css, windowClass.media);
     assert.ok(block, `no block for "${windowClass.media}"`);
     assert.ok(
@@ -1145,7 +1214,7 @@ test("each tall window class's own block binds its ground and sheet padding, nev
 test("a tall card strips its mount per orientation, exactly where the mount does not show", () => {
   const css = tallFrameCss();
   const blocks = topLevelBlocks(css);
-  for (const windowClass of tallWindowClasses(false)) {
+  for (const windowClass of tallWindowClasses()) {
     assert.ok(
       !tallBlockFor(css, windowClass.media)?.includes(
         "mounted-sheet-frame__mount { padding",
@@ -1172,7 +1241,7 @@ test("a tall card strips its mount per orientation, exactly where the mount does
   }
 });
 
-test("the width cap binds only in landscape, and only the compact band takes the compact-cap token", () => {
+test("the width cap binds only in landscape, and only the laptop band takes the laptop-cap token", () => {
   const css = tallFrameCss();
   const blocks = topLevelBlocks(css);
 
@@ -1183,19 +1252,19 @@ test("the width cap binds only in landscape, and only the compact band takes the
   );
   assert.ok(baseCap, "a plain landscape rule sets the base width cap");
   assert.ok(
-    !baseCap?.includes("--container-content-compact"),
-    "the base cap rule never carries the compact token",
+    !baseCap?.includes("--container-content-laptop"),
+    "the base cap rule never carries the laptop token",
   );
 
-  const compactCap = blocks.find(
+  const laptopCap = blocks.find(
     (block) =>
       block.startsWith(
         "@media (orientation: landscape) and (64rem <= width < 100rem) {",
-      ) && block.includes("width: min(var(--container-content-compact), 100%)"),
+      ) && block.includes("width: min(var(--container-content-laptop), 100%)"),
   );
   assert.ok(
-    compactCap,
-    "the compact-width band overrides with the compact-cap token",
+    laptopCap,
+    "the laptop-width band overrides with the laptop-cap token",
   );
 
   /* No rule anywhere sets either width-cap token outside a landscape-gated prelude — catches the
@@ -1250,6 +1319,44 @@ test("SPACING_TOKEN agrees with app/styles/tokens.css's --spacing-* scale, in bo
   /* The reachable-through-the-generator path, kept as a sanity check on `spacing()`'s own throw
      behavior rather than as scale coverage — the loops above are what proves the scale. */
   assert.doesNotThrow(() => spacingTokenFor(172));
+});
+
+test("CAPS agrees with the --container-content / --card-height-cap tokens in app/styles/tokens.css", () => {
+  const tokensCss = readFileSync(
+    fileURLToPath(new URL("../../app/styles/tokens.css", import.meta.url)),
+    "utf8",
+  );
+  const token = (name: string): number => {
+    const found = tokensCss.match(
+      new RegExp(`^\\s*${name}:\\s*(\\d+)px;`, "m"),
+    );
+    assert.ok(found, `tokens.css declares no ${name}`);
+    return Number(found[1]);
+  };
+  const plain = {
+    width: token("--container-content"),
+    height: token("--card-height-cap"),
+  };
+  const laptop = {
+    width: token("--container-content-laptop"),
+    height: token("--card-height-cap-laptop"),
+  };
+  assert.deepEqual(CAPS.phone, plain);
+  assert.deepEqual(CAPS.tablet, plain);
+  assert.deepEqual(CAPS.laptop, laptop);
+  assert.deepEqual(CAPS.desktop, plain);
+});
+
+test("an unknown width tier names every real tier and none of the retired ones", () => {
+  const fit = makeFit();
+  const regimes = { ...fit.regimes, compact: fit.regimes.laptop };
+  assert.throws(
+    () => windowClasses({ ...fit, regimes } as MeasuredFit),
+    (error: Error) =>
+      error.message.includes('unknown width tier "compact"') &&
+      Object.keys(CAPS).every((tier) => error.message.includes(tier)) &&
+      !/\b(mobile|wide)\b/.test(error.message),
+  );
 });
 
 /* Every `--ground-block` / `--ground-inline` pair one window class declares for one orientation.
@@ -1408,7 +1515,7 @@ test("every emitted ground is on the spacing scale, pressed values included", ()
 
 test("a tall portrait window takes its tier's two bands", () => {
   const css = tallFrameCss();
-  const phone = tallWindowClasses(false)[0];
+  const phone = tallWindowClasses()[0];
   const band = bandFor(css, phone.media, "portrait", false);
   assert.equal(band.block, "--spacing-space-3xl");
   assert.equal(band.inline, "--spacing-space-md");
@@ -1490,14 +1597,12 @@ test("the mat is 16 / 12 / 16 / 24 across the width tiers", () => {
   );
 });
 
-/* The built page carries this exact string in two inlined stylesheets (the frame's and the botanical layer's), so
-   changing it moves `/`'s bytes. A tall card is never the hero (`mounted-sheet` throws on both), so the tall frame
-   takes no role argument at all -- a hero variant would be CSS nothing can reach. */
-test("the tall scope class keeps its shipped string, and the tall frame has no hero form", () => {
-  assert.strictEqual(
-    tallScopeClass(),
-    "mounted-sheet-frame--tall-section-mount",
-  );
+/* The string is carried by the generated tall sheet (`app/_frame/sheets/tall.css`) and by the botanical layer's
+   inline stylesheet, so changing it moves both. A tall card is never the hero (`mounted-sheet` throws on
+   both), so the tall frame takes no role argument at all -- a hero variant would be CSS nothing can
+   reach. */
+test("the tall scope class is named for its sheet, and the tall frame has no hero form", () => {
+  assert.strictEqual(tallScopeClass(), "mounted-sheet-frame--tall");
   assert.strictEqual(
     tallScopeClass.length,
     0,

@@ -1,12 +1,11 @@
 import { ritualPhotoProps } from "@/app/_sections/ritual-photo-props";
-import celebrations from "@/app/celebrations.module.css";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import celebrations from "./celebrations.module.css";
+import "@/app/_frame/sheets/tall.css";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { SprigIcon } from "@/components/icons";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
-import { PhotoStrip } from "@/components/ui/photo-strip";
+import { PhotoStrip } from "@/components/ui/gallery/photo-strip";
 import { FLOOR_DIAGONAL, SprigOrnament } from "@/components/ui/sprig-ornament";
 import { rituals } from "@/content";
 import { ritualPhotos } from "@/content/ritual-photos.generated";
@@ -74,7 +73,7 @@ export function CelebrationsSection() {
           <ol className={CELEBRATIONS_LIST_CLASS} role="list">
             {rituals.map((ritual) => (
               // `data-thread-row` is the one hook the thread's per-row scroll split needs
-              // (`components/thread/page-thread.tsx`'s `measureSubdivisions`) -- nothing else here
+              // (`components/thread/thread-measure.ts`'s `measureSubdivisions`) -- nothing else here
               // identifies a single ritual row, and celebrations carries no `.mounted-sheet-frame__
               // leaf` (it is one tall card, not a stacked pair) for that mechanism to reuse.
               <li className={celebrations.row} data-thread-row key={ritual.id}>

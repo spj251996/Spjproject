@@ -11,12 +11,9 @@
 /* The hairlines take whatever the mark leaves, so the ornament centres at any card width without
    either line carrying a length of its own.
 
-   Height comes from the mark and is NOT set here. A fixed height would put the drawing back inside
-   a box that scales it to fit, which is the defect this layout replaced: the box was bound by its
-   WIDTH, so the mark rendered at 7.75px on a laptop and smaller still on a phone. The rule that
-   still holds is the one that box was protecting — a framed section's measured fit refuses content
-   that grows taller in a wider column — and a px-sized mark satisfies it outright, since it is the
-   same height at every width inside a tier. */
+   Height comes from the mark and is NOT set here: a fixed height would put the drawing back inside
+   a box that scales it to fit its width. A px-sized mark is the same height at every width inside a
+   tier, which is what a framed section's measured fit requires. */
 .hairline {
   flex: 1;
   height: var(--stroke-divider);

@@ -1,12 +1,18 @@
 import type { ComponentType } from "react";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
-import "@/app/event-info.css";
-import { eventById, PrimaryDate } from "@/app/_sections/shared";
-import { eventInfoFit } from "@/app/event-info-fit";
+import "./event-info.css";
+import "@/app/_frame/sheets/event-info.css";
+import { eventInfoFit } from "@/app/_frame/event-info-fit";
 import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+  mapLabel,
+  segmentLineParts,
+  sharedAddress,
+  splitAddress,
+  venueRuns,
+} from "@/app/_sections/event-info-text";
+import { eventById, PrimaryDate } from "@/app/_sections/shared";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import {
   BetrothalIcon,
   LunchIcon,
@@ -17,12 +23,12 @@ import {
 import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { ButtonAction } from "@/components/ui/button-action";
-import { ShrinkToWidestLine } from "@/components/ui/shrink-to-widest-line";
 import {
   type EventSegment,
   formatEventDate,
   type WeddingEvent,
 } from "@/content";
+import { ShrinkToWidestLine } from "./shrink-to-widest-line";
 
 /* The eyebrow names the occasion plainly; the heading is the couple's phrase for it. Both are fixed
    chrome at the composition site, like Family's and Wishes' eyebrows, rather than content fields. */
@@ -76,31 +82,18 @@ function markFor(segmentId: string) {
   return mark;
 }
 
-function sharedAddress(event: WeddingEvent): string {
-  const addresses = new Set(event.segments.map((segment) => segment.address));
-  if (addresses.size !== 1) {
-    throw new Error(
-      `sections: event "${event.id}" has segments at different addresses; the sheet header can only name one.`,
-    );
-  }
-  const [address] = addresses;
-  if (address === undefined || address === null) {
-    throw new Error(
-      `sections: event "${event.id}" has no address; the sheet header needs one.`,
-    );
-  }
-  return address;
-}
+/* Below the reflow width every `nowrap` span wraps — DESIGN.md → Accessibility Rules. */
+const NOWRAP_UNTIL_REFLOW = "whitespace-nowrap max-reflow:whitespace-normal";
 
-/* Everything after the first comma is unbreakable, so a wrap falls after the locality and the
-   state is never alone on a line. */
+/* From the reflow width up, everything after the first comma is unbreakable, so a wrap falls after
+   the locality and the state is never alone on a line. */
 function AddressLine({ address }: { address: string }) {
-  const comma = address.indexOf(", ");
-  if (comma === -1) return address;
+  const { head, tail } = splitAddress(address);
+  if (tail === null) return head;
   return (
     <>
-      {address.slice(0, comma + 2)}
-      <span className="whitespace-nowrap">{address.slice(comma + 2)}</span>
+      {head}
+      <span className={NOWRAP_UNTIL_REFLOW}>{tail}</span>
     </>
   );
 }
@@ -126,9 +119,9 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
         <p className="type-date-primary text-ink">
           <PrimaryDate date={date} />
         </p>
-        <address className="type-heading-sm font-medium text-ink not-italic">
+        <p className="type-heading-sm font-medium text-ink">
           <AddressLine address={sharedAddress(event)} />
-        </address>
+        </p>
       </div>
     </>
   );
@@ -138,7 +131,7 @@ function EventSheetHeading({ event }: { event: WeddingEvent }) {
    Tailwind emits the landscape variant after `md:` and `xl:`, so it overrides them; each class is
    written out whole because Tailwind finds classes by scanning source.
 
-   Size 72 covers both the phone plate and the compact-laptop side-by-side plate, in one entry
+   Size 72 covers both the phone plate and the narrow-laptop side-by-side plate, in one entry
    because a size may render only once per `PlateMark` (the array is keyed by size). */
 const PLATE_MARKS = [
   {
@@ -183,64 +176,60 @@ function Diamond() {
   );
 }
 
-/* The only break is the `<wbr>` after the time, so the diamond never ends a line. The time's gap is
+/* From the reflow width up the only break is the `<wbr>` after the time, so the diamond never ends a line. The time's gap is
    its own trailing margin, so a wrapped line starts flush with the diamond. The hidden comma is
    what a screen reader hears in the diamond's place. */
 function SegmentLine({ segment }: { segment: EventSegment }) {
+  const { time, spokenSeparator, label } = segmentLineParts(segment);
   return (
     <p className="type-heading-sm text-ink text-balance">
-      <span className="me-space-2xs whitespace-nowrap">{segment.time}</span>
-      <wbr />
-      <span className="whitespace-nowrap">
-        <span className="sr-only">, </span>
+      {time !== null && (
+        <>
+          <span className={`me-space-2xs ${NOWRAP_UNTIL_REFLOW}`}>{time}</span>
+          <wbr />
+        </>
+      )}
+      <span className={NOWRAP_UNTIL_REFLOW}>
+        {spokenSeparator !== null && (
+          <span className="sr-only">{spokenSeparator}</span>
+        )}
         <Diamond />
-        {segment.label}
+        {label}
       </span>
     </p>
   );
 }
 
-/* Keeps hyphenated words whole. The venue line is `text-pretty`, not balanced, because balancing
+/* Keeps hyphenated words whole from the reflow width up. The venue line is `text-pretty`, not balanced, because balancing
    broke them. */
 function VenueName({ venue }: { venue: string }) {
-  const hyphenated = venue.match(/\S+-\S+/);
-  if (hyphenated?.index === undefined) return venue;
-  const end = hyphenated.index + hyphenated[0].length;
-  return (
-    <>
-      {venue.slice(0, hyphenated.index)}
-      <span className="whitespace-nowrap">{hyphenated[0]}</span>
-      <VenueName venue={venue.slice(end)} />
-    </>
+  return venueRuns(venue).map(({ text, nowrap }, index) =>
+    nowrap ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: the runs are derived from one fixed string
+      <span className={NOWRAP_UNTIL_REFLOW} key={index}>
+        {text}
+      </span>
+    ) : (
+      text
+    ),
   );
 }
 
-function mapLabel(segment: EventSegment): string {
-  if (segment.venue === null) {
-    throw new Error(
-      `sections: segment "${segment.id}" has a map link but no venue; its map action is named for the venue.`,
-    );
-  }
-  return `Map, ${segment.venue}`;
-}
-
-/* Centred in the space left below the heading block instead, the list closes to a few pixels of the
-   place line as soon as the venue takes a second line.
-
-   Above the list: `space-sm` on a phone, none in the tablet band, `space-lg` on a landscape laptop
-   or wider. BETWEEN the two entries the gap
-   went one step wider at every tier (owner, 2026-10-11: `space-sm`, `space-md` from `md` up) so the
-   two read as two clusters; `eventInfoFit` is re-measured for it. */
+/* Above the list: `space-lg` + 2px on a phone, none in the tablet band, `space-lg` on a landscape
+   window from 64rem. Between the two entries: `space-md` + 2px on a phone and `space-md` from `md`
+   up, so the two read as two clusters. The list sits a fixed gap below the heading block rather than
+   centred in the space left over: centred, it closes to a few pixels of the place line as soon as
+   the venue takes a second line. */
 /* ON A PHONE THE SHEET READS IN A NATURAL RHYTHM (owner, 2026-10-14): header → date 30, date → the
    events 48, event → event 48, ink to ink. Each margin is the scale step plus the few px that land the
    INK there — measured, not derived, because a line box carries air its glyphs never use: 2.5 above
    the date (on the date group below), 2 above the list and 2 between the events.
 
-   Two columns at every tier (owner, 2026-10-11): the mark beside its details, the details
+   Two columns at every tier from the reflow width up (owner, 2026-10-11): the mark beside its details, the details
    left-aligned. `w-fit` with `auto` tracks keeps the pair centred in the sheet as one group, and a
    wrapped venue narrows to its widest line so that group centres on its ink (DESIGN.md → Event Info). */
 const PLATE_LIST_CLASS =
-  "mx-auto mt-[calc(var(--spacing-space-lg)+2px)] grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-[calc(var(--spacing-space-md)+2px)] text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto";
+  "mx-auto mt-[calc(var(--spacing-space-lg)+2px)] grid w-fit max-w-full list-none grid-cols-[auto_minmax(0,auto)] gap-x-space-sm gap-y-[calc(var(--spacing-space-md)+2px)] text-left md:mt-0 md:gap-x-space-md md:gap-y-space-md [@media(width>=64rem)_and_(orientation:landscape)]:mt-space-lg [@media(width>=100rem)_and_(orientation:landscape)]:mb-auto max-reflow:w-full max-reflow:grid-cols-1";
 
 /* Each entry is a column subgrid, so side by side both entries share the `auto` mark column and
    their text starts at one edge. */
@@ -253,14 +242,13 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
           className="col-span-full grid grid-cols-subgrid items-start"
           key={segment.id}
         >
-          <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold">
+          <div className="flex shrink-0 justify-center pt-space-xs text-accent-gold max-reflow:justify-start">
             <PlateMark segmentId={segment.id} />
           </div>
           <div className="flex min-w-0 flex-col items-start text-left">
             <SegmentLine segment={segment} />
-            {/* The action sits under the venue with its disc's left edge on the venue's first letter
-                (owner, 2026-10-11): the mark sits `space-sm` inside its target, so the target is
-                pulled back by it. */}
+            {/* The action sits under the venue with its pill's left edge on the venue's first letter
+                (owner, 2026-10-30): the pill is the target's own edge, so nothing pulls it back. */}
             <div className="flex flex-col items-start">
               {segment.venue !== null && (
                 <ShrinkToWidestLine className="type-body text-ink text-pretty">
@@ -270,11 +258,12 @@ function PlateSegments({ segments }: { segments: EventSegment[] }) {
               {segment.mapUrl !== null && (
                 <ButtonAction
                   aria-label={mapLabel(segment)}
-                  className="mt-space-2xs -ms-space-sm"
+                  className="mt-space-2xs"
+                  ground="pill"
                   href={segment.mapUrl}
                   mark={<MapIcon size={24} />}
                 >
-                  Meet us here
+                  Get directions
                 </ButtonAction>
               )}
             </div>

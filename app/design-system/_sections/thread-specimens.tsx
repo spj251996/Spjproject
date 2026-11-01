@@ -7,40 +7,51 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  headOptions,
-  retraceOptions,
-  TaperCutMask,
-  tokenLength,
-} from "@/components/thread/page-thread";
 import styles from "@/components/thread/thread.module.css";
 import {
   type HeadOptions,
   type HeadSegment,
   headSegments,
-  type PieceSamples,
   type PieceSpan,
-  polylineBetween,
+} from "@/components/thread/thread-head";
+import { TaperCutMask } from "@/components/thread/thread-ink";
+import { THREAD_PATHS } from "@/components/thread/thread-paths";
+import {
+  dashForPiece,
+  pieceProgress,
+} from "@/components/thread/thread-progress";
+import {
   retraceFade,
   retraceGlow,
   retraceSegments,
   retraceSpan,
+} from "@/components/thread/thread-retrace";
+import {
+  type PieceSamples,
+  polylineBetween,
   samplePath,
+} from "@/components/thread/thread-samples";
+import {
   TAPER_STEPS,
   taperCut,
   taperSegments,
-} from "@/components/thread/thread-light";
-import { dashForPiece, pieceProgress } from "@/components/thread/thread-line";
-import { THREAD_PATHS } from "@/components/thread/thread-paths";
+} from "@/components/thread/thread-taper";
+import {
+  headOptions,
+  retraceOptions,
+  tokenLength,
+} from "@/components/thread/thread-tokens";
 
 /* Four specimens of the thread's light, each laid on a stretch of the page's own authored geometry
    (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
-   `thread-light.ts`'s, imported; the classes are the page's own (`thread.module.css`), so the filters
-   are the same ones, not copies. Static: a pose of each layer, never a loop. */
+   `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
+   imported; the classes are the page's own (`thread.module.css`), so the filters are the same ones,
+   not copies. Static: a pose of each layer, never a loop. */
 
 /* A connector from the middle of the page, so neither of its ends is a free end and the ink, the head
    and the re-trace show on a line that is not tapered. The two tapered ends are the pieces the page
-   itself tapers (`page-thread.tsx`): the invite's first, at its start, and Wishes' last, at its end. */
+   itself tapers: the invite's first, at its start (`PageThread`), and Wishes' last, at its end
+   (`CardThread`). */
 const WIDE = THREAD_PATHS.wide;
 const MID_PAGE = WIDE.family[1].d;
 const INVITE_START = WIDE.invite[0].d;
@@ -106,7 +117,7 @@ interface Crop {
   readonly zoom: number;
 }
 
-interface FragmentProps {
+interface PathFragmentProps {
   readonly d: string;
   readonly label: string;
   readonly crop?: Crop;
@@ -118,7 +129,13 @@ interface FragmentProps {
 
 /* One `<svg>` at 1:1 CSS pixels: the page draws the thread in pixels, so its strokes and filters are
    the size they are on the page. A crop shows one end of the stretch, and may magnify it. */
-function Fragment({ d, label, crop, drawnTo = 1, children }: FragmentProps) {
+function PathFragment({
+  d,
+  label,
+  crop,
+  drawnTo = 1,
+  children,
+}: PathFragmentProps) {
   const [ref, measured] = useMeasured(d);
   let view = { x: 0, y: 0, width: 0, height: 0, zoom: 1 };
   if (measured !== undefined) {
@@ -204,32 +221,26 @@ function Runs({
     ));
 }
 
-/* ---------------------------------------------------------------------------------------------
-   1. THE INK AND ITS BLEED */
-
 export function ThreadInkSpecimen() {
   return (
     <div className="flex flex-wrap gap-space-lg">
       <Panel caption="The ink alone, with the bleed switched off. A comparison, not a state the page is ever in.">
-        <Fragment d={MID_PAGE} label="The thread's ink without its bleed">
+        <PathFragment d={MID_PAGE} label="The thread's ink without its bleed">
           {() => <path className={styles.pageInkBare} d={MID_PAGE} />}
-        </Fragment>
+        </PathFragment>
       </Panel>
       <Panel caption="The ink as the page draws it, with --bleed-thread.">
-        <Fragment d={MID_PAGE} label="The thread's ink with its bleed">
+        <PathFragment d={MID_PAGE} label="The thread's ink with its bleed">
           {() => <path className={styles.pageInk} d={MID_PAGE} />}
-        </Fragment>
+        </PathFragment>
       </Panel>
     </div>
   );
 }
 
-/* ---------------------------------------------------------------------------------------------
-   2. THE DRAWING HEAD */
-
 export function ThreadHeadSpecimen() {
   return (
-    <Fragment
+    <PathFragment
       d={MID_PAGE}
       drawnTo={HEAD_POSED_AT}
       label="The drawing head at the tip of a part-drawn stretch"
@@ -257,12 +268,9 @@ export function ThreadHeadSpecimen() {
           </>
         );
       }}
-    </Fragment>
+    </PathFragment>
   );
 }
-
-/* ---------------------------------------------------------------------------------------------
-   3. A TAPERED END */
 
 interface TaperedEndProps {
   readonly d: string;
@@ -272,12 +280,12 @@ interface TaperedEndProps {
 }
 
 /* The ink is cut under the taper by a mask on its own path and bled as a group, so the halo is the
-   halo of the ink that is left (`page-thread.tsx`, `ThreadInk`); the runs take the bleed on a group
+   halo of the ink that is left (`thread-ink.tsx`, `ThreadInk`); the runs take the bleed on a group
    of their own, as the page's do. */
 function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
   const maskId = `ds-thread-taper-cut-${useId().replaceAll(":", "")}`;
   return (
-    <Fragment crop={{ at, span: TAPER_CROP, zoom }} d={d} label={label}>
+    <PathFragment crop={{ at, span: TAPER_CROP, zoom }} d={d} label={label}>
       {(m) => {
         const endAt = at === "start" ? 0 : m.length;
         const direction = at === "start" ? -1 : 1;
@@ -323,14 +331,16 @@ function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
           </>
         );
       }}
-    </Fragment>
+    </PathFragment>
   );
 }
 
 export function ThreadTaperSpecimen() {
   return (
     <div className="flex flex-wrap items-start gap-space-lg">
-      <Panel caption="The invite's top terminal, at its own size and magnified 4x.">
+      <Panel
+        caption={`The invite's top terminal, at its own size and magnified ${TAPER_ZOOM}x.`}
+      >
         <div className="flex flex-wrap items-start gap-space-md">
           <TaperedEnd
             at="start"
@@ -346,7 +356,9 @@ export function ThreadTaperSpecimen() {
           />
         </div>
       </Panel>
-      <Panel caption="Wishes' closing end, at its own size and magnified 4x.">
+      <Panel
+        caption={`Wishes' closing end, at its own size and magnified ${TAPER_ZOOM}x.`}
+      >
         <div className="flex flex-wrap items-start gap-space-md">
           <TaperedEnd
             at="end"
@@ -366,14 +378,11 @@ export function ThreadTaperSpecimen() {
   );
 }
 
-/* ---------------------------------------------------------------------------------------------
-   4. THE RE-TRACE */
-
 export function ThreadRetraceSpecimen() {
   return (
     <div className="flex flex-wrap gap-space-lg">
       <Panel caption="The glow alone: eight translucent strokes under the segment, no filter.">
-        <Fragment d={MID_PAGE} label="The re-trace's glow strokes alone">
+        <PathFragment d={MID_PAGE} label="The re-trace's glow strokes alone">
           {(m) => {
             const { tail, tip } = retraceSpan(
               RETRACE_POSED_AT,
@@ -397,10 +406,10 @@ export function ThreadRetraceSpecimen() {
               </>
             );
           }}
-        </Fragment>
+        </PathFragment>
       </Panel>
       <Panel caption="The re-trace: the glow strokes under the head's own stack, over the drawn thread.">
-        <Fragment d={MID_PAGE} label="The re-trace over the drawn thread">
+        <PathFragment d={MID_PAGE} label="The re-trace over the drawn thread">
           {(m) => {
             const { tail, tip } = retraceSpan(
               RETRACE_POSED_AT,
@@ -431,7 +440,7 @@ export function ThreadRetraceSpecimen() {
               </>
             );
           }}
-        </Fragment>
+        </PathFragment>
       </Panel>
     </div>
   );

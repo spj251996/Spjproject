@@ -1,18 +1,25 @@
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 
-const nextConfig: NextConfig = {
-  // Dev-only routes use a `.dev.tsx` page extension, which is only treated as a
-  // page outside production — so the design-system gallery is never emitted.
-  pageExtensions:
-    process.env.NODE_ENV === "production"
-      ? ["tsx", "ts"]
-      : ["dev.tsx", "tsx", "ts"],
-  output: "export",
-  // `output: "export"` has no runtime image optimizer. Without this, images fail at request time
-  // while every build gate stays green.
-  images: {
-    unoptimized: true,
-  },
-};
+/* `.dev.tsx` pages (the gallery and `/thread`) build on the dev server and Vercel previews only. Keyed on the phase,
+   not NODE_ENV, because `next build` keeps a NODE_ENV that is already set. */
+export function pageExtensionsFor(
+  phase: string,
+  env: { NODE_ENV?: string; VERCEL_ENV?: string },
+): string[] {
+  if (phase === PHASE_DEVELOPMENT_SERVER || env.VERCEL_ENV === "preview")
+    return ["dev.tsx", "tsx", "ts"];
+  return ["tsx", "ts"];
+}
 
-export default nextConfig;
+export default function nextConfig(phase: string): NextConfig {
+  return {
+    pageExtensions: pageExtensionsFor(phase, process.env),
+    output: "export",
+    // `output: "export"` has no runtime image optimizer. Without this, images fail at request time
+    // while every build gate stays green.
+    images: {
+      unoptimized: true,
+    },
+  };
+}

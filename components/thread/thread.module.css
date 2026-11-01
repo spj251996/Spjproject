@@ -1,28 +1,13 @@
-/* Everything about a thread that is the same on every screen — one page-length measured line
-   (`page-thread.tsx`) and `not-found`'s own closed, timed replay of `invite`'s route
-   (`not-found-thread.tsx`). The retired per-section, CSS-generated grid model (`section-thread.tsx`,
-   `thread-css.ts`) is gone as of the cutover that mounted this — `page-thread.tsx`'s own header
-   comment covers why the live `<path>` here deliberately does NOT carry `vector-effect:
-   non-scaling-stroke`, unlike that retired model's `.ink`. */
+/* Everything about the page thread (`page-thread.tsx`) that is the same on every screen.
+   The live `<path>` deliberately does NOT carry `vector-effect: non-scaling-stroke`; only the
+   fallback's paths do. */
 
-/* Zero layout in EVERY layout mode this mounts inside, not just the flex-column ones: `relative`
-   kept this an in-flow box, and an in-flow box is still a CSS Grid item at `height: 0` -- inside
-   Wishes' `>=64rem` landscape grid (`app/wishes.module.css`) the two `CardThread` copies it then had were
-   auto-placing into two of its four EXPLICIT rows, pushing `names` and `signoff` out into new
-   IMPLICIT ones. `.figureCol`'s `grid-row: 1 / -1` still spanned the same four tracks throughout --
-   `-1` resolves against the explicit grid only, so the span never moved -- but two of those tracks
-   now held a zero-height weave copy instead of a 112px row, which is what collapsed the column
-   384px -> 160px and spilled the illustration ~87px each way. Measured with `getComputedStyle`:
-   `20px 140px 112px 112px` fixed against `20px 140px 0px 0px 112px 112px` broken
-   (`session.md`, 2026-09-27). `absolute` removes it from flow entirely, so it can
-   never be a grid item, whatever size it renders at -- an absolutely positioned box never
-   participates in a flex or grid parent's layout, regardless of `inset`. `inset: 0` here (rather
-   than the `height: 0` this carried through the Wishes fix) is what lets this wrapper actually cover
-   `<main>` for the no-JS fallback below, which cannot self-measure and has no other way to size
-   itself (`page-thread.tsx`'s closing comment). `<main>` (`app/page.tsx`) already carries Tailwind's
-   `relative`, so this wrapper's containing block is `<main>`'s own box, not the viewport or some
-   further ancestor -- confirmed on a real `javaScriptEnabled: false` render
-   (`final-review-fixes.md`). */
+/* `absolute`, so the wrapper takes zero layout in every layout mode it mounts inside: an in-flow box
+   is still a CSS Grid item at `height: 0`, and inside Wishes' `>=64rem` landscape grid an in-flow
+   thread wrapper auto-places into the explicit rows and collapses the figure column. `inset: 0` is
+   what lets this wrapper cover `<main>` for the no-JS fallback, which cannot self-measure
+   (`page-thread.tsx`'s closing comment); `<main>` carries `relative`, so the containing block is
+   `<main>`'s own box. */
 .pageWrapper {
   position: absolute;
   display: block;
@@ -54,12 +39,12 @@
   overflow: visible;
 }
 
-/* THE OPENING SEQUENCE's last step (DESIGN.md → Motion → "The opening sequence"; `app/invite.css`
+/* THE OPENING SEQUENCE's last step (DESIGN.md → Motion → "The opening sequence"; `app/_sections/invite.css`
    carries the steps ahead of it). The thread fades in once those have each completed in turn — the
    ground carries no step at all, it is present from the first frame — so the two files describe one
    discrete-beat sequence without sharing a keyframe across a module boundary.
 
-   It starts at `--opening-type-end` (`app/invite.css`, 1800ms under Bloom) — the moment the type
+   It starts at `--opening-type-end` (`app/_sections/invite.css`, 1800ms under Bloom) — the moment the type
    lands, the owner's rule, to leave no dead air between the names appearing and the line starting —
    and runs one base, ending at 2200ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. It reads
    the custom property rather than restating its value, so a new sequence moves it with the type.
@@ -93,25 +78,24 @@
   }
 }
 
-/* The static, authored fallback lives in a normalised 0-1 square (`page-thread.tsx`'s `normalise`)
+/* The static, authored fallback lives in a normalised 0-1 square (`thread-fallback.ts`'s `normalise`)
    so all three bands can share one `viewBox` and CSS alone decides which one paints -- the
    hide-all-then-show-one rule pair lives entirely in `page-thread.tsx`'s own generated `<style>`, not
    here, because both halves must carry the SAME specificity and rely on SOURCE ORDER to pick a
-   winner (the exact mechanism `thread-css.ts` used for its own band toggle above). Splitting them
+   winner. Splitting them
    across this CSS-module class and an inline `<style>` would let the module rule's higher
    specificity always win regardless of `@media` -- the standing lesson this project keeps
    re-learning about a bare utility losing to a scoped one, the other way round. JS hides the whole
    fallback layer once it has measured and taken over. */
 
-/* The card thread's own SVG carries no `z-index` -- `page-thread.tsx`'s header comment covers why it must
-   take its place from the card's stacking context, behind the type, and a z-index would lift it out
-   of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
+/* The card thread's own SVG carries no `z-index`: it takes its place from the card's stacking context
+   by document order (`card-thread.tsx` → `CardThread`), and a z-index would lift it out of that. `overflow: visible` because a cubic control point or a round cap can reach past the card's
    own edge; it is a drawn line, not content clipped to a box. */
 .cardRoot {
   overflow: visible;
 }
 
-/* The bleed sits on the INK rather than the svg root. With the full-strength filter, one run on the
+/* The contact shadow sits on the INK rather than the svg root. With the old full-strength bleed, one run on the
    root took 22.1ms mean frame time / 74 dropped frames over a 5s scrub against 20.39ms / 55 (median
    of three) with it on each piece; the two were never compared at the shipped strength. Filtered
    pieces cost frames even while only one was drawing, which points to the filter being re-run on
@@ -125,17 +109,17 @@
   stroke-width: var(--stroke-thread);
 }
 
-/* A piece that carries a taper takes its bleed on a group around the masked path (`ThreadInk`), so
+/* A piece that carries a taper takes its shadow on a group around the masked path (`ThreadInk`), so
    the ink is cut before the filter runs. */
 .pageInk,
 .pageBleed {
   filter: var(--bleed-thread);
 }
 
-/* A tapered end (`thread-light.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
-   takes the thread's own colour and its bleed: a taper that did not bleed would read as a different
-   material from the line it ends. The bleed is ONE filter on the group, as the head's halo is, over
-   geometry that never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
+/* A tapered end (`thread-taper.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
+   takes the thread's own colour and its contact shadow: a taper with no shadow would read as a
+   different material from the line it ends. The shadow is ONE filter on the group, over geometry that
+   never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
    past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
    compounds across the stack. The painter hides it with `display: none` once it has run and no run has
    been reached; before that (the shipped markup, and for a reader with no script) the group is simply
@@ -152,10 +136,10 @@
   stroke-linejoin: round;
 }
 
-/* The drawing head (`thread-light.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
+/* The drawing head (`thread-head.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
    filter on this ONE group, never on the steps inside it: per path it cost 141 dropped frames over
    these tight polylines, against 10 for the group in the same comparison (6 as built). The steps' own colour, width and cap are set per
-   element by `page-thread.tsx`; only what is the same for all of them lives here. Hidden with
+   element by `thread-painters.ts`; only what is the same for all of them lives here. Hidden with
    `display: none` once a painter has run and nothing draws; before that (the shipped markup, and for a
    reader with no script) the group is simply empty, and an empty group's bounding box is empty, so it
    is INFERRED, not measured, that its filter costs nothing. */
@@ -168,13 +152,13 @@
   stroke-linejoin: round;
 }
 
-/* The re-trace (`thread-light.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
+/* The re-trace (`thread-retrace.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
    drawn line, one `<g>` per stretch that is animating, laid by script beneath the head. It takes NO
    FILTER, and that is the point: the head's 4x halo as a filter over these segments cost 77 dropped
    frames at three stretches at `wide` and the bleed's quarter-radius one still cost a buffer per
    stretch, so its glow is `.pageRetraceGlow` below instead, a stack of translucent strokes (geometry,
    which has been free every time a cost finding came down to a buffer). Colour, width and opacity
-   are set per element by `page-thread.tsx`. There is no CSS animation and so no media query: the loop
+   are set per element by `thread-painters.ts`. There is no CSS animation and so no media query: the loop
    is script, and script does not start under reduced motion (the same gate the draw already has),
    which leaves the group empty rather than overridden. */
 .pageRetrace path {
@@ -186,6 +170,12 @@
    filter): eight translucent vermilion strokes on the segment's own path, fitted to the 4x halo's
    measured falloff. One `<g>` per stretch, set by script, below `.pageRetrace` in paint order so the
    core lies over it. */
+/* At half strength, as the head's halo is: the sheen glows faintly rather than burns. One opacity on
+   the group, so the strokes composite inside it before it fades. */
+.pageRetraceGlow {
+  opacity: 0.5;
+}
+
 .pageRetraceGlow path {
   fill: none;
   stroke-linejoin: round;

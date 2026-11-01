@@ -1,8 +1,7 @@
-import { familyFit } from "@/app/family-fit";
-import {
-  Botanical,
-  SECTION_PLACEMENT,
-} from "@/components/background/botanical";
+import "@/app/_frame/sheets/family.css";
+import { familyFit } from "@/app/_frame/family-fit";
+import { Botanical } from "@/components/background/botanical";
+import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { Family } from "@/components/family/family";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { type FamilyGroup, familyGroups } from "@/content";

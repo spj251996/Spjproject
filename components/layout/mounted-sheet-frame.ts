@@ -6,8 +6,8 @@
 
 /* The four width bands, named the same here, in `GroundTierName`, in the generated fits and in
    `DESIGN.md`: phone below `{breakpoints.md}`, tablet to `{breakpoints.lg}`, laptop to
-   `{breakpoints.xl}` (1024-1599), desktop from `{breakpoints.xl}` (1600+). The `--*-compact` CSS
-   tokens still carry the tier's former name; they are token identifiers, not tier names. */
+   `{breakpoints.xl}` (1024-1599), desktop from `{breakpoints.xl}` (1600+). The `--*-laptop` CSS
+   tokens carry the laptop tier's caps. */
 export type WidthTier = "phone" | "tablet" | "laptop" | "desktop";
 
 export type Orientation = "portrait" | "landscape";
@@ -99,11 +99,11 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
     name: "phone",
     ground: 16,
     portrait: { block: 96, blockPressed: 48, inline: 24, inlinePressed: 16 },
-    /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`), and
-       the smallest of those conditions needs ~804px — taller than the phones this site meets — so on
-       a phone the floor is the only step ever reached. 32 as the floor measures the invite and
-       Wishes at 1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at
-       exactly 1.00 (couple, 2026-10-02: the cards read as too filled). */
+    /* No 16 step. Every step above the floor is gated on the window's HEIGHT (`paddingRules`); at
+       390 wide the 32 step is reached from about 608px tall for Wishes up to about 683px for
+       Family, so a short phone keeps the floor. 32 as the floor measures the invite and Wishes at
+       1.05 viewports at 375x667, breaking `Fits the first viewport`; 24 keeps both at exactly
+       1.00. */
     paddingSteps: [32, 24],
     /* Never emitted as a card's padding; available to `windowFits` alone, so a short phone keeps
        its pressed ground band instead of gaining 176px of page. */
@@ -115,7 +115,7 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
     portrait: { block: 172, blockPressed: 96, inline: 128, inlinePressed: 64 },
     paddingSteps: [64, 48, 32],
   },
-  /* Compact and laptop take a square band DERIVED from their landscape ground, never a literal:
+  /* Laptop and desktop take a square band DERIVED from their landscape ground, never a literal:
      DESIGN.md gives their band as "Its `Ground, landscape`" and says it follows that ground wherever
      it moves, which a copied number would silently stop doing. Halving is safe on these two alone —
      both halves are on the spacing scale, where the tablet's 172 / 2 = 86 is not. */
@@ -133,12 +133,19 @@ const GROUND_TIERS: Readonly<Record<GroundTierName, GroundTier>> = {
   },
 };
 
-/* `{breakpoints.md}`, `{breakpoints.lg}` and `{breakpoints.xl}`. The media queries use rem, as the
-   type's breakpoint variants do, so ground and type change at the same width; the arithmetic needs
-   pixels, which agree at the default 16px root. Held as numbers because a media query cannot read
-   a custom property — change `--breakpoint-*` in app/styles/tokens.css and these together. */
+/* `{breakpoints.reflow}`, `{breakpoints.md}`, `{breakpoints.lg}` and `{breakpoints.xl}`. The media
+   queries use rem, as the type's breakpoint variants do, so ground and type change at the same
+   width; the arithmetic needs pixels, which agree at the default 16px root. Held as numbers because
+   a media query cannot read a custom property. `md`, `lg` and `xl` are `--breakpoint-*` tokens in
+   app/styles/tokens.css, tied by mounted-sheet.test.ts; `reflow` is the `max-reflow` `@custom-variant`
+   there, tied to this value by the same test. Change each with its counterpart. */
 const DEFAULT_ROOT_FONT_SIZE = 16;
-export const BREAKPOINT_REM = { md: 48, lg: 64, xl: 100 } as const;
+export const BREAKPOINT_REM = {
+  reflow: 20,
+  md: 48,
+  lg: 64,
+  xl: 100,
+} as const;
 
 function breakpointPx(rem: number): number {
   return rem * DEFAULT_ROOT_FONT_SIZE;
@@ -150,12 +157,7 @@ const PAIR_TIER_LINE_WIDTH_REM = 80;
 /* The reveal ladder, one rung per width tier: `{reveal.base}` below `{breakpoints.md}`,
    `{reveal.md}` from there to `{breakpoints.lg}`, `{reveal.lg}` to `{breakpoints.xl}`, `{reveal.xl}`
    above it. The phone and tablet rungs reach the hero alone — every other section shows its mount
-   only where a pair can stand side by side (`mountShows`).
-
-   The tablet rung is the narrowest deliberately, and it is the one value here that is not a
-   preference: the invite's landscape card in a `{breakpoints.md}`-to-`{breakpoints.lg}` window
-   stands 717px against a 720px cap, and the reveal is taken out of the card, so 14 or more leaves
-   that tier no line and `tierLine` refuses at build time. */
+   only where a pair can stand side by side (`mountShows`). */
 const REVEAL: Readonly<Record<WidthTier, number>> = {
   phone: 16,
   tablet: 12,
@@ -163,8 +165,8 @@ const REVEAL: Readonly<Record<WidthTier, number>> = {
   desktop: 24,
 };
 
-/* `--container-content` / `--card-height-cap` (phone, tablet and desktop) and their `-compact`
-   siblings (the laptop tier — the token keeps the tier's former name). The stylesheet reads the tokens themselves; every
+/* `--container-content` / `--card-height-cap` (phone, tablet and desktop) and their `-laptop`
+   siblings (the laptop tier). The stylesheet reads the tokens themselves; every
    threshold derived from a cap needs it as a number, because a media query cannot read a custom
    property. Change the tokens and this together. */
 export const CAPS: Readonly<
@@ -203,19 +205,59 @@ export function formatPx(value: number): string {
   return `${Number(value.toFixed(6))}px`;
 }
 
+/* Next's CSS minifier keeps six significant digits (Lightning CSS), so a value from 1000 up keeps
+   two decimals and one from 100 keeps three. The generator emits boundaries already at that
+   precision, capped at three decimals, so the minifier has nothing left to round. The rounding is
+   directed, because layout lands on a 1/64px grid: flooring a `>=` or `<` bound, or ceiling a `<=`
+   or `>` bound, keeps every grid value's verdict when the bound is itself on the grid. A media
+   bound faces viewports that need not be on the grid, so an off-grid one moves by less than 0.001px
+   below 1000px and less than 0.01px from 1000px; a container bound is snapped first
+   (`containerLowerBoundPx`), so it is exact in engines that lay out on the 1/64px grid (Blink,
+   WebKit); Gecko lays out in 1/60px units, where a width inside the snap takes the next-smaller
+   padding step, a safe miss with no overflow. The 6dp normalisation first strips float noise, so a
+   value already at the target precision comes back unchanged. */
+function roundBoundPx(value: number, direction: "down" | "up"): string {
+  const decimals =
+    value > 0 ? Math.max(0, Math.min(3, 5 - Math.floor(Math.log10(value)))) : 3;
+  const unit = 10 ** decimals;
+  const scaled = (Math.round(value * 1e6) / 1e6) * unit;
+  const rounded =
+    direction === "down" ? Math.floor(scaled + 1e-6) : Math.ceil(scaled - 1e-6);
+  return `${rounded / unit}px`;
+}
+
+export function lowerBoundPx(value: number): string {
+  return roundBoundPx(value, "down");
+}
+
+const LAYOUT_GRID_STEPS_PER_PX = 64;
+
+/* A container's size is a layout value, so it lands on the 1/64px grid; a viewport on a
+   fractional-dpr device need not. A container bound is first raised to the next grid step -- a `>=`
+   against grid values is unchanged by that -- and only then rounded down for the minifier, so its
+   verdict is exact for every container width in a 1/64px engine (Blink, WebKit). Gecko's 1/60px
+   units can land a width inside the snap, which takes the next-smaller padding step: a safe miss,
+   never an overflow. A bound within float noise (1e-6 of a step) of a grid step is
+   taken as on it. */
+export function containerLowerBoundPx(value: number): string {
+  return lowerBoundPx(
+    Math.ceil(value * LAYOUT_GRID_STEPS_PER_PX - 1e-6) /
+      LAYOUT_GRID_STEPS_PER_PX,
+  );
+}
+
+export function upperBoundPx(value: number): string {
+  return roundBoundPx(value, "up");
+}
+
 export function smallestPadding(groundTier: GroundTier): number {
   return groundTier.paddingSteps[groundTier.paddingSteps.length - 1];
 }
 
-/* What the fit arithmetic may ASSUME, which is not always what a card SHOWS. The two were one number
-   until the phone floor rose to 24 (couple, 2026-10-02), and that silently answered a second
-   question: `windowFits` asks "does this window hold the card?" at the smallest padding, so raising
-   the floor made the halving condition fail BOTH ways at phone heights 693-804 — the card no longer
-   fit even on the halved ground, the press was lost, and Event Info gained 176px of page.
-
-   A tier declaring `rescuePadding` keeps the old number for that question alone: the frame may still
-   reach for 16 when deciding whether a window can hold a card, while never emitting it as a card's
-   padding. Owner's decision, 2026-10-02 — "keep the gated 16 step as last resort". */
+/* What the fit arithmetic may ASSUME, which is not always what a card SHOWS. The rescue padding
+   answers only the pressed fit; the full-ground fit is asked at the padding the card shows, because
+   the two questions differ. A tier declaring `rescuePadding` may reach for it when deciding whether a
+   window can hold a pressed card, while never emitting it as a card's padding. */
 export function fitPadding(groundTier: GroundTier): number {
   return groundTier.rescuePadding ?? smallestPadding(groundTier);
 }
@@ -313,6 +355,7 @@ function tierLine(
   )
     .filter(
       (rectangle) =>
+        rectangle.minCardWidth <= CAPS[widthTier].width &&
         rectangle.minCardHeight <= CAPS[widthTier].height &&
         rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * halved <=
           narrowestWindow,
@@ -391,7 +434,7 @@ function assertValidFit(fit: MeasuredFit): void {
   for (const key of Object.keys(byTier)) {
     if (!(WIDTH_TIERS as readonly string[]).includes(key)) {
       throw new Error(
-        `mounted-sheet-frame: ${label} has an unknown width tier "${key}". The width tiers are mobile, tablet, desktop and wide.`,
+        `mounted-sheet-frame: ${label} has an unknown width tier "${key}". The width tiers are ${WIDTH_TIERS.slice(0, -1).join(", ")} and ${WIDTH_TIERS.at(-1)}.`,
       );
     }
   }
@@ -469,9 +512,9 @@ function assertValidFit(fit: MeasuredFit): void {
 interface TierLines {
   tablet: number;
   laptop: number;
-  compactTouchscreen: number;
+  laptopTouchscreen: number;
   desktop: number;
-  wideTouchscreen: number;
+  desktopTouchscreen: number;
 }
 
 function tierLines(
@@ -482,28 +525,28 @@ function tierLines(
   assertValidFit(fit);
   const md = breakpointPx(BREAKPOINT_REM.md);
   const lg = breakpointPx(BREAKPOINT_REM.lg);
-  const compactNarrowest = breakpointPx(
+  const laptopNarrowest = breakpointPx(
     layout === "pair" ? PAIR_TIER_LINE_WIDTH_REM : BREAKPOINT_REM.lg,
   );
-  /* The wide tier's narrowest window is always `{breakpoints.xl}`: `PAIR_TIER_LINE_WIDTH_REM` sits
-     entirely inside the compact tier (1024-1599), so it never reaches up to 1600 and a pair's wide
+  /* The desktop tier's narrowest window is always `{breakpoints.xl}`: `PAIR_TIER_LINE_WIDTH_REM` sits
+     entirely inside the laptop tier (1024-1599), so it never reaches up to 1600 and a pair's desktop
      tier line is worked out the same way a single card's is. */
-  const wideNarrowest = breakpointPx(BREAKPOINT_REM.xl);
+  const desktopNarrowest = breakpointPx(BREAKPOINT_REM.xl);
   const lines = {
     tablet: tierLine(fit, "tablet", GROUND_TIERS.tablet, md, layout, hero),
     laptop: tierLine(
       fit,
       "laptop",
       GROUND_TIERS.laptop,
-      compactNarrowest,
+      laptopNarrowest,
       layout,
       hero,
     ),
-    compactTouchscreen: tierLine(
+    laptopTouchscreen: tierLine(
       fit,
       "laptop",
       GROUND_TIERS.tablet,
-      compactNarrowest,
+      laptopNarrowest,
       layout,
       hero,
     ),
@@ -511,29 +554,29 @@ function tierLines(
       fit,
       "desktop",
       GROUND_TIERS.desktop,
-      wideNarrowest,
+      desktopNarrowest,
       layout,
       hero,
     ),
-    wideTouchscreen: tierLine(
+    desktopTouchscreen: tierLine(
       fit,
       "desktop",
       GROUND_TIERS.tablet,
-      wideNarrowest,
+      desktopNarrowest,
       layout,
       hero,
     ),
   };
   /* A portrait pair window from `{breakpoints.lg}` to `PAIR_TIER_LINE_WIDTH_REM` is taller than its
-     1024px or more of width, so it stands above a compact tier line only while the line sits below
-     `{breakpoints.lg}`. The compact cap and ground keep every line at 640px or less; this guards a
-     change to the caps or ground tiers. Only the compact tier line moves for a pair — the wide line
+     1024px or more of width, so it stands above a laptop tier line only while the line sits below
+     `{breakpoints.lg}`. The laptop cap and ground keep every line at 640px or less; this guards a
+     change to the caps or ground tiers. Only the laptop tier line moves for a pair — the desktop line
      always sits at `{breakpoints.xl}`, so it needs no such guard. */
   if (layout === "pair") {
-    for (const line of [lines.laptop, lines.compactTouchscreen]) {
+    for (const line of [lines.laptop, lines.laptopTouchscreen]) {
       if (!(line < lg)) {
         throw new Error(
-          `mounted-sheet-frame: section "${fit.section}" cannot be framed. Its pair tier line ${formatPx(line)} is not below ${formatPx(lg)}, so a portrait window from ${formatPx(lg)} to ${formatPx(compactNarrowest)} wide could stand below it.`,
+          `mounted-sheet-frame: section "${fit.section}" cannot be framed. Its pair tier line ${formatPx(line)} is not below ${formatPx(lg)}, so a portrait window from ${formatPx(lg)} to ${formatPx(laptopNarrowest)} wide could stand below it.`,
         );
       }
     }
@@ -542,13 +585,13 @@ function tierLines(
 }
 
 /* Every window falls in exactly one class: four width tiers, split by height at each tier line,
-   and at `{breakpoints.lg}` and wider split by primary pointer as well. A pair's compact-width
+   and at `{breakpoints.lg}` and wider split by primary pointer as well. A pair's laptop-width
    windows under `PAIR_TIER_LINE_WIDTH_REM` are split by orientation instead of height: landscape
    ones sit side by side at the phone ground tier, and portrait ones stack at the ground a single
    card takes there, which needs no height test because `tierLines` keeps every pair line below
    `{breakpoints.lg}`. Each pointer gains two classes, and its tier line applies only from
-   `PAIR_TIER_LINE_WIDTH_REM` up. `PAIR_TIER_LINE_WIDTH_REM` sits inside the compact tier alone, so
-   the wide tier never gets that narrow-band split. */
+   `PAIR_TIER_LINE_WIDTH_REM` up. `PAIR_TIER_LINE_WIDTH_REM` sits inside the laptop tier alone, so
+   the desktop tier never gets that narrow-band split. */
 export function windowClasses(
   fit: MeasuredFit,
   layout: FrameLayout = "single",
@@ -560,18 +603,18 @@ export function windowClasses(
   const xl = `${BREAKPOINT_REM.xl}rem`;
   const pairLine = `${PAIR_TIER_LINE_WIDTH_REM}rem`;
   const tabletWidth = `(${md} <= width < ${lg})`;
-  const compactWidth =
+  const laptopWidth =
     layout === "pair"
       ? `(${pairLine} <= width < ${xl})`
       : `(${lg} <= width < ${xl})`;
-  const wideWidth = `(width >= ${xl})`;
+  const desktopWidth = `(width >= ${xl})`;
   const pointer = `(not ${TOUCHSCREEN_QUERY})`;
-  const atOrAbove = (line: number) => `(height >= ${formatPx(line)})`;
-  const below = (line: number) => `(height < ${formatPx(line)})`;
+  const atOrAbove = (line: number) => `(height >= ${lowerBoundPx(line)})`;
+  const below = (line: number) => `(height < ${lowerBoundPx(line)})`;
 
   /* One width tier's classes, from its own width query and tier line. `narrowBand` supplies the
      pair's orientation-split classes under `PAIR_TIER_LINE_WIDTH_REM`, and is passed only for the
-     compact tier — the wide tier has no such band. */
+     laptop tier — the desktop tier has no such band. */
   const widthTierClasses = (
     widthTier: "laptop" | "desktop",
     widthQuery: string,
@@ -618,7 +661,7 @@ export function windowClasses(
     },
   ];
 
-  const compactNarrowBand = `(${lg} <= width < ${pairLine})`;
+  const laptopNarrowBand = `(${lg} <= width < ${pairLine})`;
 
   return [
     {
@@ -647,33 +690,33 @@ export function windowClasses(
     },
     ...widthTierClasses(
       "laptop",
-      compactWidth,
+      laptopWidth,
       pointer,
       GROUND_TIERS.laptop,
       lines.laptop,
-      compactNarrowBand,
+      laptopNarrowBand,
     ),
     ...widthTierClasses(
       "laptop",
-      compactWidth,
+      laptopWidth,
       TOUCHSCREEN_QUERY,
       GROUND_TIERS.tablet,
-      lines.compactTouchscreen,
-      compactNarrowBand,
+      lines.laptopTouchscreen,
+      laptopNarrowBand,
     ),
     ...widthTierClasses(
       "desktop",
-      wideWidth,
+      desktopWidth,
       pointer,
       GROUND_TIERS.desktop,
       lines.desktop,
     ),
     ...widthTierClasses(
       "desktop",
-      wideWidth,
+      desktopWidth,
       TOUCHSCREEN_QUERY,
       GROUND_TIERS.tablet,
-      lines.wideTouchscreen,
+      lines.desktopTouchscreen,
     ),
   ];
 }
@@ -702,7 +745,7 @@ export interface TallWindowClass {
 }
 
 /* One step above each ground tier's own largest (`paddingSteps[0]`), read off the spacing scale:
-   phone 32 → 48, tablet and compact 64 → 96, laptop 96 → 128 (owner, 2026-09-18). */
+   phone 32 → 48, tablet and laptop 64 → 96, desktop 96 → 128. */
 const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   phone: 48,
   tablet: 96,
@@ -710,14 +753,14 @@ const TALL_PADDING: Readonly<Record<GroundTierName, number>> = {
   desktop: 128,
 };
 
-/* The phone's sides are the one exception (owner, 2026-10-11): 36px, off the spacing scale, so a
+/* The phone's sides are the one exception: 36px, off the spacing scale, so a
    ritual's measure gains 24px where it is shortest. A token rather than a number because `spacing()`
    admits only the scale. */
 const TALL_INLINE: Readonly<Partial<Record<WidthTier, string>>> = {
   phone: "--tall-inline-phone",
 };
 
-export function tallWindowClasses(hero: boolean): TallWindowClass[] {
+export function tallWindowClasses(): TallWindowClass[] {
   const md = `${BREAKPOINT_REM.md}rem`;
   const lg = `${BREAKPOINT_REM.lg}rem`;
   const xl = `${BREAKPOINT_REM.xl}rem`;
@@ -728,8 +771,8 @@ export function tallWindowClasses(hero: boolean): TallWindowClass[] {
     widthTier: WidthTier,
     groundTier: GroundTier,
   ): TallWindowClass => {
-    const showsPortrait = hero || sideBySideWindow(widthTier, false);
-    const showsLandscape = hero || sideBySideWindow(widthTier, true);
+    const showsPortrait = sideBySideWindow(widthTier, false);
+    const showsLandscape = sideBySideWindow(widthTier, true);
     return {
       media,
       widthTier,

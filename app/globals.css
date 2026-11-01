@@ -12,12 +12,19 @@ body {
    opting in, and so a component added later cannot become selectable by omission. iOS Safari needs
    the prefixed property, and the long-press menu needs the callout suppression as well.
 
-   A round on 2026-10-03 briefly scoped this to chrome and let content select; the owner restated the
-   rule and it was reverted. Do not re-scope it without them saying so. */
+   This overrides the usual rule that content stays selectable, by the owner's decision; do not
+   re-scope it without them.
+
+   TEXT-ONLY SCALING IS SWITCHED OFF (owner, 2026-10-31): a phone browser's own text scaling grows
+   type inside the fixed compositions, so zoom is the one way to enlarge the page. Each engine reads
+   only its own spelling; never `none`, which has blocked zoom in Safari. */
 html {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
 }
 
 /* THE SCROLLBAR IS THIN AND IN THE SITE'S COLOURS (owner, 2026-10-14) — DESIGN.md → Interaction
@@ -28,8 +35,19 @@ html {
   scrollbar-width: thin;
 }
 
-/* A component on a dark scrim rebinds `--focus-ring-color` on its subtree rather than adding a
-   second ring rule. */
+/* Below the reflow width a long word may break anywhere (DESIGN.md → Accessibility Rules). `anywhere`,
+   not `break-word`: only `anywhere` lowers a flex or grid item's min-content, so the item can shrink.
+   A long word hyphenates before it breaks (Safari ships the dictionary; an engine without one falls
+   back to the plain break). */
+@media (width < 20rem) {
+  html {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+}
+
+/* One ring on every surface: vermilion clears 3:1 on the ground, the mount, the card and the scrim,
+   so no subtree rebinds it. */
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

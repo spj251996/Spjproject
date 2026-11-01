@@ -1,19 +1,18 @@
 /* The per-tier placement table — DESIGN.md → Background → Botanical Edge.
 
    One record per piece per width tier: where it sits, how wide it is, how far it is nudged from
-   that anchor, how far it is turned, and whether the tier carries it at all. Sizes and offsets are
-   a fraction of the viewport's width, so a value means the same thing at every window within its
-   tier; they were band-relative until this pass, and a band that inverts between tiers cannot carry
-   one number per piece.
+   that anchor, how far it is turned, and whether the tier carries it at all. Sizes and offsets are a
+   fraction of the viewport's width, so a value means the same thing at every window within its tier;
+   a band-relative value cannot carry one number per piece across a band that inverts between
+   tiers.
 
    Plain `.ts` and no JSX, so `node --test` can run against it and the image generator can import it
    rather than parsing it out of a component.
 
    Every value here is the owner's, settled on a real render of the tier it belongs to: a phone, a
-   tablet, a laptop and an external monitor. The laptop rows began as a conversion of the approved
-   laptop render rather than a derivation — and a conversion, not an arithmetic one: the browser
-   quantises layout to 1/64px, so the values were converged against the render until it stopped
-   moving. */
+   tablet, a laptop and an external monitor. The laptop rows are a conversion of the approved laptop
+   render, converged against that render rather than computed, because the browser quantises layout
+   to 1/64px. */
 
 export type BotanicalPiece =
   | "corner-trail"

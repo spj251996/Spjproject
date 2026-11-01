@@ -1,10 +1,9 @@
 /* Warps the owner's hand-drawn thread from the box it was AUTHORED against onto the box the
-   browser actually laid out. Pure arithmetic — no DOM, no React — because Task 4's component reads
+   browser actually laid out. Pure arithmetic — no DOM, no React — because the component reads
    real measurements and this module only needs to know how to map one box onto another; testing it
    needs no render at all.
 
-   THE MODEL (owner decision, on measured evidence — `thread-and-motion.md`'s Task-11 review):
-   x is anchored to the CARD, not the viewport. Across the `wide` band the viewport ranges roughly
+   THE MODEL (owner decision, on measured evidence): x is anchored to the CARD, not the viewport. Across the `wide` band the viewport ranges roughly
    1024-2560px while the card only grows ~768-1200px, so a viewport-stretched thread drifts off the
    content it was drawn around (anisotropy 1.66 viewport-anchored against 1.00-1.38 card-anchored).
    y has no separate "card" concept — a section's height is its own measured height, full stop.
@@ -12,14 +11,10 @@
      x_page = cardLeft + (x_authored - authoredCardLeft) * (cardWidth / authoredCardWidth)
      y_page = sectionTop + y_authored * (sectionHeight / authoredSectionHeight)
 
-   `from` is `AuthoredCard` (Task 1, `thread-authored-layout.ts`) rather than the generic
-   `SectionBox` a first reading of the plan suggests: the formula needs `authoredCardLeft` and
-   `authoredCardWidth`, and `AuthoredCard` is exactly the record Task 1 built to carry them —
-   `SectionBox` (`thread-geometry.ts`) is only `{ width, height }` and cannot express a card offset
-   at all. Task 1's own brief for this task says as much: "it is the `from` side of your warp". */
+   `from` is `AuthoredCard` (`thread-authored-layout.ts`) rather than `SectionBox`, because the
+   formula needs `authoredCardLeft`/`authoredCardWidth` and `SectionBox` is only `{ width, height }`. */
 
 import type { AuthoredCard } from "./thread-authored-layout.ts";
-import type { SectionBox } from "./thread-geometry.ts";
 import type { Placement } from "./thread-paths.ts";
 
 export type MeasuredSection = {
@@ -30,7 +25,7 @@ export type MeasuredSection = {
 };
 
 /* A DOMRect-shaped anchor, in the same page-absolute pixel space as `MeasuredSection` — the caller
-   (Task 4) hands this in from `getBoundingClientRect()` on a real portrait/illustration element. */
+   hands this in from `getBoundingClientRect()` on a real portrait or illustration element. */
 export type Rect = { left: number; top: number; width: number; height: number };
 
 type Point = { x: number; y: number };
@@ -118,51 +113,25 @@ export function warpSection(
 }
 
 /* A motif's own drawing must never shear, or its aspect stops holding across viewports — the exact
-   property Task 1's spike measured at 0.0% spread for a uniform scale against 82.9% for either
+   property measured at 0.0% spread for a uniform scale against 82.9% for either
    axis-independent alternative. So position warps per-axis like a path point, but SIZE resolves to
    ONE factor.
 
-   THE BASIS IS THE BAND'S NOMINAL BOX, NEVER THE CARD OR THE SECTION HEIGHT — read directly off the
-   code this warp replaces, because the wrong basis is invisible at the identity point and wrong
-   everywhere else. `thread-css.ts:497` computes a motif's AUTHORED side as
-     authoredSide = place.scale * Math.min(band.box.width, band.box.height)
-   off `band.box` — the band's nominal viewport (`thread-bands.ts`), a constant for every section in
-   that band, never a section's own card width or measured height. `thread-css.ts:1190-1199` then
-   expresses that side as a fraction of the card, so a motif tracks the card at runtime:
-     pageSide = authoredSide * (to.cardWidth / from.cardWidth)
-   An earlier version of this function substituted `Math.min(from.cardWidth, from.sectionHeight)` —
-   a per-SECTION quantity — for the authored unit. That silently swaps bands for cards: at `upright`
-   (`thread-bands.ts`'s `UPRIGHT_BOX`, 820x1180) every section's authored card is 564
-   (`thread-authored-layout.ts`'s `UPRIGHT_CARDS`), so the substitution undersized every motif in the
-   band 31% at the identity point, where `from` and `to` are equal and nothing has reflowed yet.
-   `bandBox` is threaded in and used explicitly, computed the same way as the source formula it
-   mirrors, rather than assumed constant and derived from the card — that assumption is exactly the
-   mistake being corrected. Task 3 bakes the resulting `scale` into the motif's own transform; this
-   only resolves the number. */
-function uniformScaleFactor(
-  from: AuthoredCard,
-  to: MeasuredSection,
-  bandBox: SectionBox,
-): number {
-  const nominalUnit = Math.min(bandBox.width, bandBox.height);
-  const authoredSide = nominalUnit; // `place.scale` multiplies this in the caller
-  const pageSide = authoredSide * (to.cardWidth / from.cardWidth);
-  /* `nominalUnit` cancels out of this ratio (`pageSide / authoredSide` reduces to
-     `to.cardWidth / from.cardWidth`), so `bandBox` is not load-bearing for the RATIO returned here —
-     do not "fix" the apparent unused-parameter smell by letting `from` and `to` resolve against
-     different band boxes, which would silently reintroduce cross-band scaling. It is threaded
-     through anyway so this derivation traces exactly against `thread-css.ts:497`/`:1190-1199`'s
-     two-step formula (authored side, then page side), and so the caller has the same `bandBox` in
-     scope to recover the motif's ABSOLUTE pixel side afterwards: `warped.scale * Math.min(bandBox.width,
-     bandBox.height)`. */
-  return pageSide / authoredSide;
+   THE BASIS IS THE BAND'S NOMINAL BOX, NEVER THE CARD OR THE SECTION HEIGHT, because the wrong basis
+   is invisible at the identity point and wrong everywhere else. A motif's authored side is
+   `place.scale * Math.min(band.box.width, band.box.height)`, a constant for every section in the band,
+   and its page side is that times `to.cardWidth / from.cardWidth`, so the motif tracks the card; the
+   band unit cancels out of the factor, which is the card-width ratio alone. A per-section unit
+   (`Math.min(from.cardWidth, from.sectionHeight)`) undersizes every motif in `upright` by 31% at the
+   identity point. The caller resolves the absolute side against its own band box. */
+function uniformScaleFactor(from: AuthoredCard, to: MeasuredSection): number {
+  return to.cardWidth / from.cardWidth;
 }
 
 export function warpPlacement(
   placement: Placement,
   from: AuthoredCard,
   to: MeasuredSection,
-  bandBox: SectionBox,
   anchor?: Rect,
 ): Placement {
   const warped = warpPoint({ x: placement.x, y: placement.y }, from, to);
@@ -182,6 +151,6 @@ export function warpPlacement(
     ...placement,
     x: centre.x,
     y: centre.y,
-    scale: placement.scale * uniformScaleFactor(from, to, bandBox),
+    scale: placement.scale * uniformScaleFactor(from, to),
   };
 }

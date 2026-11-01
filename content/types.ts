@@ -1,5 +1,5 @@
 /** One ritual photograph's three deliveries and the display copy's post-rotation dimensions.
-    Written by `scripts/generate-images.mjs` into `content/ritual-photos.generated.ts`, which is
+    Written by `scripts/generators/generate-images.mjs` into `content/ritual-photos.generated.ts`, which is
     gitignored — this type is committed so a fresh clone still typechecks the shape.
 
     The dimensions are the EMITTED file's own, straight off sharp's `toFile`, so they are
@@ -38,7 +38,6 @@ export interface EventSegment {
 /** Named WeddingEvent because `Event` collides with the DOM global. */
 export interface WeddingEvent {
   id: string;
-  cityTown: string;
   /** The state the event is held in. Read by the invite, printed beneath the date. */
   state: string;
   date: string;

@@ -5,6 +5,7 @@ import {
   type AssetReference,
   collectAssetPaths,
   MissingAssetError,
+  splitRitualEntries,
   UnknownRitualDirectoryError,
   unknownRitualDirectories,
   verifyAssetPaths,
@@ -234,4 +235,20 @@ test("a photograph uploaded beside the ritual folders, not into one, fails namin
     },
   );
   assert.doesNotThrow(() => verifyRitualRootFiles([".gitkeep"], ["wedding"]));
+});
+
+test("splits a ritual-source listing into root files and ritual directories, skipping dot-directories", () => {
+  const entry = (name: string, directory: boolean) => ({
+    name,
+    isDirectory: () => directory,
+  });
+  assert.deepEqual(
+    splitRitualEntries([
+      entry(".gitkeep", false),
+      entry("notes.txt", false),
+      entry(".cache", true),
+      entry("minnukettu", true),
+    ]),
+    { rootFiles: [".gitkeep", "notes.txt"], directories: ["minnukettu"] },
+  );
 });

@@ -12,8 +12,8 @@ import test from "node:test";
      RENDERED HEIGHT. For this mark those are different numbers — its viewBox is not square — so a
      literal 16 would ship a mark under the floor while reading as if it honoured it. The floor is
      asserted as a derivation from the mark's own viewBox rather than as a remembered constant.
-   - Two eyebrows deliberately take no ornament. An absence is indistinguishable from an oversight,
-     so both are asserted with their reason, or a later consistency pass "fixes" them back. */
+   - One eyebrow (the invite's) deliberately takes no ornament. An absence is indistinguishable from
+     an oversight, so it is asserted with its reason, or a later consistency pass "fixes" it back. */
 
 const SOURCE = readFileSync("components/ui/sprig-ornament.tsx", "utf8");
 const SPRIG = readFileSync("components/icons/sprig.tsx", "utf8");
@@ -44,9 +44,9 @@ test("the ornament sets no colour of its own", () => {
 });
 
 test("the mark clears the iconography floor on its RENDERED height", () => {
-  /* The size is FIXED rather than a prop as of 2026-10-11 — eight call sites, none ever passed
-     one — so what this has to assert is that both marks are given the named constant, not that a
-     default exists. A literal here would be the drift this file exists to catch. */
+  /* The size is FIXED rather than a prop — no call site ever passed one — so what this has to
+     assert is that both marks are given the named constant, not that a default exists. A literal
+     here would be the drift this file exists to catch. */
   assert.doesNotMatch(
     SOURCE,
     /size\?:\s*number/,

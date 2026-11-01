@@ -4,14 +4,13 @@ import { validateEvents } from "./validate.ts";
 export const events: WeddingEvent[] = validateEvents([
   {
     id: "engagement",
-    cityTown: "Kozhikode",
     state: "Kerala",
     date: "2027-01-04",
     segments: [
       {
         id: "engagement-church",
         label: "Betrothal",
-        time: "10:00 AM",
+        time: "10:30 AM",
         venue: "St. Antony's Syro-Malabar Church",
         address: "Paroppadi, Kozhikode, Kerala",
         mapUrl: "https://maps.app.goo.gl/zgM9uq5vf8B5RD7Q9",
@@ -19,7 +18,7 @@ export const events: WeddingEvent[] = validateEvents([
       {
         id: "engagement-reception",
         label: "Reception",
-        time: "12:00 PM",
+        time: "12:30 PM",
         venue: "St. Antony's Church Parish Hall",
         address: "Paroppadi, Kozhikode, Kerala",
         mapUrl: "https://maps.app.goo.gl/zGrd6SAFTZk3gAEx9",
@@ -28,25 +27,24 @@ export const events: WeddingEvent[] = validateEvents([
   },
   {
     id: "wedding",
-    cityTown: "Koothattukulam",
     state: "Kerala",
     date: "2027-01-09",
     segments: [
       {
         id: "wedding-church",
         label: "Wedding",
-        time: "10:00 AM",
-        venue: "St. John The Baptist Catholic Church",
+        time: "10:30 AM",
+        venue: "St. John the Baptist Catholic Church, Vadakara",
         address: "Koothattukulam, Ernakulam, Kerala",
         mapUrl: "https://maps.app.goo.gl/Js7xUDTPfWqoeTc18",
       },
       {
         id: "wedding-reception",
         label: "Reception",
-        time: "12:00 PM",
-        venue: "Chinnas Auditorium",
+        time: "12:30 PM",
+        venue: "Thuvampallil Convention Centre",
         address: "Koothattukulam, Ernakulam, Kerala",
-        mapUrl: "https://maps.app.goo.gl/Pg9yYASjETXhZcA28",
+        mapUrl: "https://maps.app.goo.gl/uHGeZVh5jYNtpMZC9",
       },
     ],
   },

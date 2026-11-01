@@ -7,7 +7,7 @@ const source = readFileSync(
   "utf8",
 );
 const rowSource = readFileSync(
-  new URL("../../components/ui/photo-row.tsx", import.meta.url),
+  new URL("../../components/ui/gallery/photo-row.tsx", import.meta.url),
   "utf8",
 );
 

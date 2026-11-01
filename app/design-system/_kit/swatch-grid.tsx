@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/* The whole card is the kit panel; the swatch is inset so the sheet's top highlight stays visible,
+/* The whole card is `bg-surface-elevated shadow-stock`; the swatch is inset so the sheet's top highlight stays visible,
    and outlined in the mount tone so the ivory swatches still show against the paper. */
 
 export interface SwatchToken {

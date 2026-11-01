@@ -5,7 +5,7 @@ import test from "node:test";
 const source = readFileSync("components/thread/page-thread.tsx", "utf8");
 const moduleCss = readFileSync("components/thread/thread.module.css", "utf8");
 const tokens = readFileSync("app/styles/tokens.css", "utf8");
-const inviteCss = readFileSync("app/invite.css", "utf8");
+const inviteCss = readFileSync("app/_sections/invite.css", "utf8");
 const layout = readFileSync("app/layout.tsx", "utf8");
 
 function constant(name: string) {
@@ -35,13 +35,13 @@ function calcMs(expression: string, what: string) {
   );
 }
 
-/* THE ONE SOURCE. `--opening-type-end` in `app/invite.css` says when the type has landed; the
+/* THE ONE SOURCE. `--opening-type-end` in `app/_sections/invite.css` says when the type has landed; the
    thread's fade and the progress bar's track read it, and the timed draw is derived from it. */
 function typeEndMs() {
   const match = stripComments(inviteCss).match(
     /--opening-type-end:\s*(calc\([^;]*\));/,
   );
-  assert.ok(match, "--opening-type-end not found in app/invite.css");
+  assert.ok(match, "--opening-type-end not found in app/_sections/invite.css");
   return calcMs(match[1], "--opening-type-end");
 }
 
@@ -85,11 +85,8 @@ test("the opening draw runs 1200ms and holds back a quarter of the last connecto
   assert.equal(constant("CROSSING_HOLD_BACK"), 0.25);
 });
 
-/* THE SEQUENCE'S GATE (`thread-draw-behaviour.md` Task 4) — a page that loads already scrolled is
-   not an arrival, so no step runs. The guard SUBTRACTS each rule rather than overriding it, which is
-   the same place reduced motion and a no-JS reader land, so these assert that no step escapes it.
-   `not-found`'s own timed thread is deliberately not gated: that screen has one card and no scroll,
-   so there is no scrolled state for it to load into. */
+/* A page that loads already scrolled is not an arrival, so no step runs. The guard subtracts each
+   rule, which is where reduced motion and a no-JS reader land; these assert no step escapes it. */
 const GATE = ":root:not([data-opening-skipped])";
 
 /* The selector of every rule that declares `animation:` — walk back from the declaration to its own
@@ -170,8 +167,8 @@ test("no mount or stock step remains", () => {
 
 /* THE FLOWERS NEVER FADE, AND THAT IS WORTH A GUARD BECAUSE IT IS A MEASURED CHOICE. They are the
    largest painted element on the opening screen, so starting them at opacity 0 delays the largest
-   paint: measured on the static export at 390x844, **a fade 808ms (784-836) against a translate's
-   248ms (228-264)**. No other gate in this repo would see the swap. Transform only also means the
+   paint: measured on the static export at 390x844, **a fade 808ms (784-836) against the unfurl's
+   ~218ms (152-236)**. No other gate in this repo would see the swap. Transform only also means the
    gesture can never isolate the multiply blend. */
 test("the flowers' gesture is transform only, which keeps the largest paint early", () => {
   const css = stripComments(inviteCss);
@@ -208,18 +205,13 @@ test("the beat targets the class the pieces actually carry", () => {
   );
 });
 
-/* Opacity on the PIECE, never on an ancestor: sub-1 opacity anywhere in a bloom's ancestor chain
-   isolates `mix-blend-mode: multiply` and paints the piece's opaque white backing rectangle, with no
-   error and every gate green (`botanical.module.css`'s header). `.layer` and `.clip` are that chain. */
 /* A gesture on a bloom must sit on the PIECE. On any ancestor it isolates `mix-blend-mode: multiply`
    and the piece paints its opaque backing rectangle instead of blending (`botanical.module.css`).
 
    The ancestor that actually matters is `.mounted-sheet-frame--invite` ITSELF: `Botanical` stamps
    that class on its own wrapper (`frameScopeClass`), so a rule animating the bare scope class would
-   isolate every bloom under it. An earlier version of this test forbade `.layer` and `.clip`, which
-   are HASHED CSS-module classes a global stylesheet could never name — it guarded an impossible
-   mutation while the reachable one passed untouched. Each animated selector must therefore reach
-   something BEYOND the scope class. */
+   isolate every bloom under it. Each animated selector must reach something beyond
+   `.mounted-sheet-frame--invite`. */
 test("every beat animates a descendant, never the scope class a bloom hangs from", () => {
   const SCOPE = ".mounted-sheet-frame--invite";
   for (const selector of animatedSelectors(inviteCss)) {
@@ -267,5 +259,63 @@ test("the flowers are the sequence's first beat", () => {
   assert.match(
     inviteCss,
     /\.botanical-piece\s*\{[\s\S]{0,160}var\(--duration-fast\) backwards/,
+  );
+});
+
+/* While the invite's pieces animate on the compositor, WebKit — every iPhone browser — paints any
+   multiply-blended piece that paints after them as its opaque white backing rectangle (reproduced in
+   recorded WebKit frames, 2026-10-31). Lifted above every other piece and below every card, they leave
+   nothing botanical after them, so no piece has to wait out the opening. On the piece itself, never an
+   ancestor: a piece's own stacking context isolates only its children. Ungated, so every visitor gets
+   one paint order. */
+test("the invite's pieces paint last, below every card", () => {
+  const css = stripComments(inviteCss);
+  const rules = [...css.matchAll(/([^{}]*)\{[^{}]*z-index\s*:\s*([^;]+);/g)];
+  assert.equal(rules.length, 1, "invite.css sets z-index in exactly one rule");
+  const [, selector, value] = rules[0];
+  assert.equal(value.trim(), "var(--z-invite-bloom)");
+  assert.equal(
+    selector.replace(/\s+/g, " ").trim(),
+    ".mounted-sheet-frame--invite .botanical-piece",
+    "the lift is on the invite's own pieces only, ungated",
+  );
+
+  /* Top level, outside every `@media` and `@supports`: inside any of them, some visitors would paint in
+     another order. */
+  const before = css.slice(0, rules[0].index);
+  assert.equal(
+    (before.match(/\{/g) ?? []).length - (before.match(/\}/g) ?? []).length,
+    0,
+    "the lift sits inside an at-rule block, so some visitors would paint in another order",
+  );
+
+  /* The lift belongs to the invite alone, so no Tailwind `z-*` utility may reach a Bloom either;
+     `botanical.test.ts` already refuses a `z-index` in every rule of `botanical.module.css`. */
+  const bloomMarkup = stripComments(
+    readFileSync("components/background/botanical.tsx", "utf8"),
+  );
+  assert.doesNotMatch(
+    bloomMarkup,
+    /(?:^|[\s"'`])-?z-(?:\d|\[|\()/m,
+    "botanical.tsx carries a z-* utility",
+  );
+
+  assert.ok(
+    !inviteCss.includes("opening-hold"),
+    "the hold is still in invite.css",
+  );
+
+  const level = (name: string) => {
+    const match = tokens.match(new RegExp(`--${name}:\\s*(\\d+);`));
+    assert.ok(match, `--${name} not found`);
+    return Number(match[1]);
+  };
+  assert.ok(
+    level("z-invite-bloom") > 0,
+    "the lift must put the pieces above the unlayered page",
+  );
+  assert.ok(
+    level("z-invite-bloom") < level("z-content"),
+    "the lift must stay below every card",
   );
 });

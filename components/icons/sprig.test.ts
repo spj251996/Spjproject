@@ -3,17 +3,18 @@ import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const icon = readFileSync("components/icons/sprig.tsx", "utf8");
-const symbol = readFileSync("components/icons/sprig-symbol.tsx", "utf8");
+const symbol = readFileSync("components/shell/sprig-symbol.tsx", "utf8");
 const tracedPath = symbol.match(/<path d="([^"]+)"/)?.[1] ?? "";
 
 test("the traced path lives in exactly one file", () => {
   assert.ok(tracedPath.length > 2000, "the symbol must carry the whole trace");
-  const holders = readdirSync("components/icons")
-    .filter((name) => name.endsWith(".tsx"))
-    .filter((name) =>
-      readFileSync(`components/icons/${name}`, "utf8").includes(tracedPath),
-    );
-  assert.deepEqual(holders, ["sprig-symbol.tsx"]);
+  const holders = ["components/icons", "components/shell"]
+    .flatMap((directory) =>
+      readdirSync(directory).map((name) => `${directory}/${name}`),
+    )
+    .filter((path) => path.endsWith(".tsx"))
+    .filter((path) => readFileSync(path, "utf8").includes(tracedPath));
+  assert.deepEqual(holders, ["components/shell/sprig-symbol.tsx"]);
 });
 
 test("the symbol carries the traced viewBox, not a re-fitted one", () => {

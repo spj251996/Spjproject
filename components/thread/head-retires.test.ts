@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
+import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -18,12 +19,12 @@ const LAB_ROUTE = "/thread.html";
    sufficient: what the owner sees depends on the drawn length actually REACHING every piece's end at
    a resting scroll position, which is a property of the page's scroll budget
    (`--thread-terminal-finish`) and of the follower that eases toward it (`--thread-catchup`) — and
-   the follower is exactly where this broke, because an exponential never arrives and left the weave
-   99.69% drawn with the head lit (`page-thread.tsx` -> `createCatchUp`). So this runs a real page.
+   the follower is exactly where this broke, because an exponential never arrives and left the card thread
+   99.69% drawn with the head lit (`thread-catch-up.ts` -> `createCatchUp`). So this runs a real page.
 
    THE MID-DRAW ASSERTION IS NOT DECORATION. A test that only checked "no head at the end" would pass
    just as well if the head never rendered at all, which is the vacuous shape this project has already
-   shipped once (`lessons.md` -> Verification). Each band must show the head WHILE drawing before its
+   shipped once. Each band must show the head WHILE drawing before its
    absence at the end means anything.
 
    The head is retired by hiding its GROUP, not by hiding each path, so that is what is asserted —
@@ -95,10 +96,7 @@ const BANDS = [
 ];
 
 test("the drawing head is lit while drawing and gone once the whole thread is drawn", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   /* Not wrapped: with an export present, a missing browser must fail rather than quietly skip, or
      the only guard this behaviour has would disappear without a sound. */
   const { chromium } = await import("playwright");

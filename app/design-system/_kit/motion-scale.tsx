@@ -3,9 +3,7 @@
    Gold marks the measurement (bar fill, curve); the mount colour marks the scaffolding (track,
    diagonal, handles). Gold on both would render every duration bar as one solid bar. */
 
-/* Gallery layout constants and plot geometry. */
-const TRACK_W = 280;
-const LABEL_W = 160;
+/* Plot geometry. */
 const CANVAS = 180;
 const PLOT_PAD = 12;
 
@@ -27,47 +25,35 @@ interface DurationScaleProps {
 export function DurationScale({ items }: DurationScaleProps) {
   const maxMs = Math.max(...items.map((item) => item.ms));
 
+  /* Gallery layout constants: a 160px token label and a 280px track from md; below md the label sits
+     above a track that takes the row's width. The value cell is fixed so every track ends together. */
   return (
     <div className="overflow-x-auto">
-      <div className="flex w-fit flex-col gap-space-md p-space-md">
-        {items.map(({ token, ms }) => {
-          const barPx = Math.round((ms / maxMs) * TRACK_W);
+      <div className="flex flex-col gap-space-md p-space-md md:w-fit">
+        {items.map(({ token, ms }) => (
+          <div
+            className="flex flex-col items-start gap-space-3xs md:flex-row md:items-center md:gap-space-sm"
+            key={token}
+          >
+            <span className="type-body shrink-0 text-ink md:w-[160px]">
+              {token}
+            </span>
 
-          return (
-            <div className="flex items-center gap-space-sm" key={token}>
-              <span
-                className="type-body shrink-0 text-ink"
-                style={{ width: LABEL_W }}
-              >
-                {token}
-              </span>
-
-              <div className="relative shrink-0" style={{ width: TRACK_W }}>
-                <span
-                  className="type-eyebrow -translate-x-1/2 absolute bottom-[calc(100%+var(--spacing-space-3xs))] whitespace-nowrap"
-                  style={{ left: barPx }}
-                >
-                  {ms}ms
-                </span>
-
-                {/* 6px track height: plot geometry. */}
-                <div className="h-[6px] w-full bg-surface-mount">
-                  <div
-                    className="h-full bg-accent-gold"
-                    style={{ width: barPx }}
-                  />
-                </div>
-
-                <span className="type-eyebrow absolute top-[calc(100%+var(--spacing-space-3xs))] left-0">
-                  0ms
-                </span>
-                <span className="type-eyebrow absolute top-[calc(100%+var(--spacing-space-3xs))] right-0">
-                  {maxMs}ms
-                </span>
+            <div className="flex w-full items-center gap-space-sm md:w-auto">
+              {/* 6px track height: plot geometry. */}
+              <div className="h-[6px] min-w-0 flex-1 bg-surface-mount md:w-[280px] md:flex-none">
+                <div
+                  className="h-full bg-accent-gold"
+                  style={{ width: `${(ms / maxMs) * 100}%` }}
+                />
               </div>
+
+              <span className="type-eyebrow w-[4.5em] shrink-0 whitespace-nowrap">
+                {ms}ms
+              </span>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

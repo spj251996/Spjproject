@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { withClasses } from "../../scripts/lib/source-classes.ts";
 
-/* The drawn names replace two script type roles. Five things can go wrong here and only one of them
+const read = (path: string) => readFileSync(path, "utf8");
+const tokens = readFileSync("app/styles/tokens.css", "utf8");
+
+/* The drawn names replace two script type roles. Three things can go wrong here and only one of them
    shows on screen:
 
    - the `<h1>` loses its accessible name, so the page's one meaningful heading announces nothing
@@ -10,10 +14,7 @@ import test from "node:test";
      from real text, and exactly once — a second copy stutters.
    - the traced `#000000` survives, and no colour token can reach the asset.
    - the two layouts' placement arithmetic drifts from the measured ink, which no render would flag
-     because a wrong gap still draws three words in a row.
-   - today's script markup is deleted rather than kept, which removes `/preview`'s lever-2
-     alternate before the couple have chosen.
-   - the alternate is left visible, so `/` paints the asset AND the script text at once. */
+     because a wrong gap still draws three words in a row. */
 
 /* COMMENTS ARE STRIPPED BEFORE ANY SOURCE MATCH, and that is not tidiness. Every claim below
    names the thing it forbids in order to explain itself — `#000000`, a second `sr-only` — so a
@@ -27,7 +28,7 @@ function code(path: string): string {
     .replace(/^\s*\/\/.*$/gm, "");
 }
 
-const SYMBOL = code("components/icons/couple-names-symbol.tsx");
+const SYMBOL = code("components/shell/couple-names-symbol.tsx");
 const NAMES = code("components/ui/couple-names.tsx");
 const INVITE = code("app/_sections/invite.tsx");
 
@@ -110,8 +111,8 @@ test("the asset is sized in em of the role it replaces, at the measured ratios",
     "the single line's width literal drifted",
   );
   /* NO CONTAINER CAP, AND THAT IS A RULING RATHER THAN AN OVERSIGHT. `w-[min(2.513em,100%)]` was
-     built and reverted: it fixes a real overflow — the invite's stacked lockup is 236.2px at the
-     phone tier against a content box that measures 176px at 320x844 — but it makes the lockup's
+     built and reverted: it fixes a real overflow — the invite's stacked lockup (2.59em at the phone
+     tier) is wider than a content box that measures 176px at 320x844 — but it makes the lockup's
      height GROW with the window over the capped range, and `measure:fit` throws on exactly that
      ("phone portrait regime 1 stands taller than regime 0 at a wider width"), because the frame's
      model requires content height to FALL as width rises. A media query cannot rescue it either:
@@ -139,13 +140,13 @@ test("the asset is sized in em of the role it replaces, at the measured ratios",
 const SITES = [
   {
     file: "app/_sections/invite.tsx",
-    pxPerUnit: 0.3939,
-    where: "the invite's stacked lockup at phone, 236.2px across 599.68 units",
+    pxPerUnit: 0.3996,
+    where: "the invite's stacked lockup at phone, 243.45px across 609.28 units",
   },
   {
     file: "app/_sections/wishes.tsx",
-    pxPerUnit: 0.2253,
-    where: "Wishes' line at phone, 260.7px across 1156.94 units",
+    pxPerUnit: 0.1738,
+    where: "Wishes' line at phone, 204.39px across 1176.14 units",
   },
 ];
 
@@ -173,10 +174,10 @@ test("every call site sets its own dilation, between its pixel floor and the tap
     assert.notStrictEqual(m, null, `${site.file} does not set strokeUnits`);
     const units = Number((m as RegExpExecArray)[1]);
     const hairline = (2.0 + units) * site.pxPerUnit;
-    /* 0.9 rather than 1.0, and the gap is recorded rather than tuned away: Wishes ships 2.2 by the
-       owner's eye on a render, which lands it at 0.95px — a hair under the floor the figures
-       derive. Their judgement governs; this bound exists to catch a REGRESSION below it, not to
-       restate the floor. 2.5 is the number if Wishes ever reads washed out on a monitor. */
+    /* 0.9 rather than 1.0, and the gap is recorded rather than tuned away: Wishes ships 3.2, picked
+       by eye on a render, which lands it at 0.90px, a hair under the floor the figures derive. That
+       judgement governs; this bound exists to catch a REGRESSION below it, not to restate the
+       floor. 3.8 is the number that reaches one device pixel at dpr 1. */
     assert.ok(
       hairline >= 0.9,
       `${site.where}: ${units} units leaves the thinnest stroke at ${hairline.toFixed(2)}px — it greys out there`,
@@ -231,5 +232,32 @@ test("the invite's h1 holds the asset and is still the page's only h1", () => {
   assert.ok(
     asset !== -1 && asset < close,
     "the asset must sit INSIDE the h1, not beside it",
+  );
+});
+
+test("the stacked ampersand is lifted above centre", () => {
+  assert.match(
+    read("components/ui/couple-names.tsx"),
+    /const AMPERSAND_LIFT = 24;/,
+  );
+});
+
+test("the phone names are 40% larger than the tier's 1.85em, both layouts", () => {
+  const names = read("components/ui/couple-names.tsx");
+  assert.equal(
+    withClasses(names, "w-[2.59em]", "md:w-[2.513em]").length,
+    2,
+    "the stacked lockup's phone width — 1.85em x 1.40 — in both its layout arms",
+  );
+});
+
+test("the 2026-10-10 picks: the ritual title's size and the ampersand's scale", () => {
+  assert.deepStrictEqual(
+    [...tokens.matchAll(/--text-heading-md:\s*(\d+)px/g)].map((m) => m[1]),
+    ["18", "20", "18", "21"],
+  );
+  assert.match(
+    readFileSync("components/ui/couple-names.tsx", "utf8"),
+    /const AMPERSAND_SCALE = 0\.65;/,
   );
 });

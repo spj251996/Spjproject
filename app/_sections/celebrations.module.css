@@ -1,0 +1,74 @@
+/* This rule is a plain, unlayered module stylesheet, so its own `margin: 0` always wins over a
+   `mt-*` Tailwind utility (inside the framework's `utilities` layer) on the same element —
+   setting the intro-to-list gap as a margin utility on this element would silently do nothing, so
+   it lives here as `margin-block-start` instead. */
+.list {
+  list-style: none;
+  margin: 0;
+  margin-block-start: var(--celebrations-intro-gap);
+  padding: 0;
+  width: 100%;
+
+  /* ONE COLUMN, FULL WIDTH, AT EVERY TIER, so the gap between rituals is one value: offset rows
+     needed less vertical room than stacked ones, which is the only reason the gap was ever two
+     values, so do not reinstate one without the other. The photo height stays per tier and is read
+     back out by `photo-strip`, so this is the single place the 1024px threshold is written and no
+     JavaScript restates it. */
+  --celebrations-block-width: 100%;
+  --celebrations-photo-height: 120px;
+  gap: var(--spacing-space-xl);
+}
+
+@media (width >= 64rem) {
+  .list {
+    --celebrations-photo-height: 150px;
+  }
+}
+
+/* The row is never REVERSED: that would reverse the sprig too and render `മധുരംവെപ്പ് Wedding Eve 🌿`. */
+.row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.block {
+  width: var(--celebrations-block-width);
+}
+
+/* Every ritual is left-aligned at every tier; the photographs lean the other way on purpose (their
+   wrapper is `text-end` in the section file).
+
+   JUSTIFIED WAS OFFERED AGAIN AND NOT CHOSEN. Its measured cost stands: at 24-37 characters a line
+   and a 3.23-3.75px natural word space, the widest gap stretched to 14.75px on two of nine lines. */
+/* A ritual with photographs closes up to the next on a laptop and wider (owner, 2026-10-11): the
+   strip's action already carries its own touch-target air below it, so the full `space-xl` read
+   as a gap. `space-md` from the strip's foot to the next ritual. */
+@media (width >= 64rem) {
+  .row:has([data-photo-ready]) {
+    margin-block-end: calc(var(--spacing-space-md) - var(--spacing-space-xl));
+  }
+}
+
+.text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: start;
+}
+
+/* Sprig · title · Malayalam on one baseline; the Malayalam wraps under the title where all three do
+   not fit. 8px between items, and 24px between the title and the Malayalam from 64rem up, where the
+   line has room to set them apart (owner, 2026-10-11). */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--spacing-space-2xs);
+}
+
+@media (width >= 64rem) {
+  .title {
+    margin-inline-end: var(--spacing-space-sm);
+  }
+}

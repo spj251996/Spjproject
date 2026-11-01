@@ -33,7 +33,9 @@ function TextLine({
   children: ReactNode;
 }) {
   return (
-    <span className="-mx-(--portrait-overrun,0px) flex w-[calc(var(--portrait-diameter)+2*var(--portrait-overrun,0px))] justify-center">
+    // Below the reflow width a stacked portrait has no neighbour to run past, and the overrun pushed the
+    // page sideways (DESIGN.md → Accessibility Rules).
+    <span className="-mx-(--portrait-overrun,0px) flex w-[calc(var(--portrait-diameter)+2*var(--portrait-overrun,0px))] justify-center max-reflow:mx-0 max-reflow:w-(--portrait-diameter)">
       <span className={`${className} text-balance text-center`}>
         {children}
       </span>

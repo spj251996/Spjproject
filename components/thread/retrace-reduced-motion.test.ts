@@ -3,6 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
+import { labExport } from "../../scripts/lib/built-export.ts";
+
+/* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
+   own and re-shapes every path: the panel's "off" turns it off for them. */
+const SWAY_OFF = `localStorage.setItem("thread-review", JSON.stringify({ sway: "off" }))`;
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -76,10 +81,7 @@ const READ = `(() => {
 })()`;
 
 test("reduced motion builds no re-trace, stops a running one, and leaves the thread undashed; with motion it builds both", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   /* Not wrapped: with an export present, a missing browser or a launch error must fail this test,
      not skip it, or the only protection reduced motion has would disappear without a sound. */
   const { chromium } = await import("playwright");
@@ -92,6 +94,7 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
         reducedMotion,
       });
       const page = await context.newPage();
+      await page.addInitScript(SWAY_OFF);
       await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
         waitUntil: "load",
       });
@@ -169,6 +172,102 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
   }
 });
 
+interface Dashes {
+  pieces: number;
+  dashed: number;
+  midDraw: number;
+}
+
+const DASHES = `(() => {
+  const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
+  return {
+    pieces: pieces.length,
+    dashed: pieces.filter((p) => p.style.strokeDasharray !== "" || p.style.strokeDashoffset !== "").length,
+    midDraw: pieces.filter((p) => {
+      const offset = parseFloat(p.style.strokeDashoffset);
+      return offset > 0 && offset < parseFloat(p.style.strokeDasharray);
+    }).length,
+  };
+})()`;
+
+/* The two draws that run on their own clock rather than on a scroll frame: the opening's timed draw
+   and the catch-up follower easing toward a fling's target. Both paint dashes frame by frame, so a
+   change to reduce that lands while one is in flight is cleared by the re-measure and then re-dashed
+   by the draw's next frame unless the draw is stopped with it. Each case switches while a piece is
+   visibly mid-draw, then waits out the draw's whole remaining time before reading. */
+test("a change to reduced motion during the opening draw or a catch-up leaves no piece dashed", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const open = async () => {
+      const page = await (
+        await browser.newContext({ viewport: { width: 393, height: 700 } })
+      ).newPage();
+      await page.addInitScript(SWAY_OFF);
+      await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+        waitUntil: "load",
+      });
+      return page;
+    };
+    const switchToReduce = async (page: Awaited<ReturnType<typeof open>>) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      assert.equal(
+        await page.evaluate(
+          "matchMedia('(prefers-reduced-motion: reduce)').matches",
+        ),
+        true,
+        "the media query flipped",
+      );
+    };
+
+    const opening = await open();
+    await opening.waitForFunction(
+      `(${DASHES}).midDraw > 0 && performance.now() > 2000`,
+      null,
+      { timeout: 10000, polling: 10 },
+    );
+    await switchToReduce(opening);
+    /* The opening draw lasts 1200ms from its first frame; this outlasts all of it. */
+    await opening.waitForTimeout(2000);
+    const afterOpening = (await opening.evaluate(DASHES)) as Dashes;
+    assert.ok(afterOpening.pieces > 0, "the thread is on the page");
+    assert.equal(
+      afterOpening.dashed,
+      0,
+      "no piece is re-dashed by the opening draw after the change",
+    );
+
+    const catchUp = await open();
+    /* The opening draw has ended and its loop is lit, so nothing but the follower is drawing. */
+    await catchUp.waitForFunction(
+      "document.querySelector('[data-thread-retrace-group]') !== null",
+      null,
+      { timeout: 15000 },
+    );
+    const inFlight = (await catchUp.evaluate(
+      `new Promise((resolve) => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve((${DASHES}).midDraw)));
+      })`,
+    )) as number;
+    assert.ok(inFlight > 0, "the follower is mid-draw when the change lands");
+    await switchToReduce(catchUp);
+    /* `--thread-catchup` is 0.4s; this outlasts it several times over. */
+    await catchUp.waitForTimeout(1500);
+    const afterCatchUp = (await catchUp.evaluate(DASHES)) as Dashes;
+    assert.equal(
+      afterCatchUp.dashed,
+      0,
+      "no piece, on the page thread or the card's, is re-dashed by a follower after the change",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 /* The bounded loop's lifecycle, which only a real page can show: what is scheduled and what is painted.
    The loop's tokens are overridden with a shorter pace so a whole budget fits inside a test: they are
    read by name from the stylesheet, which is what is being relied on. `requestAnimationFrame` is
@@ -180,9 +279,10 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
 const FAST_TOKENS =
   /* `--retrace-speed:0` pins the FIXED-DURATION path deliberately: with a speed set, a loop lasts as
    long as the stretch needs and the injected `--retrace-duration` no longer governs, so these cases
-   could not state a budget in milliseconds at all. The speed model's own arithmetic is covered
-   without a browser in `thread-light.test.ts`. */
-  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0}";
+   could not state a budget in milliseconds at all. `--thread-idle:1ms` makes the page idle at once (0 is no time at all, so no clock), so
+   the budget is the loop's last, as the stop it tests needs. The speed model's own arithmetic is covered
+   without a browser in `thread-retrace.test.ts`. */
+  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0;--thread-idle:1ms}";
 
 const WRAP_RAF = `(() => {
   const pending = new Set();
@@ -215,10 +315,7 @@ const LIFECYCLE = `(() => {
 })()`;
 
 test("the re-trace stops when its budget of loops is spent, suspends in a hidden tab without spending any, and a scroll starts it again", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -227,11 +324,14 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
       viewport: { width: 393, height: 700 },
     });
     const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
     await page.addStyleTag({ content: FAST_TOKENS });
+    /* The page read `--thread-idle` when it woke at load; a key wakes it again so it reads the 1ms here. */
+    await page.keyboard.press("Shift");
     const read = async () => (await page.evaluate(LIFECYCLE)) as Lifecycle;
     const waitFor = (condition: string, timeout = 15000) =>
       page.waitForFunction(condition, null, { timeout, polling: 25 });
@@ -310,10 +410,7 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
 });
 
 test("Wishes' closing stretch loops, painted by the one card thread and nowhere else", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -321,6 +418,7 @@ test("Wishes' closing stretch loops, painted by the one card thread and nowhere 
     const page = await (
       await browser.newContext({ viewport: { width: 393, height: 700 } })
     ).newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
@@ -364,10 +462,7 @@ test("Wishes' closing stretch loops, painted by the one card thread and nowhere 
 });
 
 test("on a finished thread a scroll clears the loop at once, and it lights again once the page is still", async (t) => {
-  if (!existsSync("out/index.html")) {
-    t.skip("no static export: run `npm run build` first");
-    return;
-  }
+  if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
   const { server, port } = await serveExport();
@@ -375,6 +470,7 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
     const page = await (
       await browser.newContext({ viewport: { width: 393, height: 700 } })
     ).newPage();
+    await page.addInitScript(SWAY_OFF);
     await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
@@ -408,6 +504,52 @@ test("on a finished thread a scroll clears the loop at once, and it lights again
       "and leaves no frame scheduled",
     );
     await page.waitForFunction(lit, null, { timeout: 4000, polling: 25 });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* A page that loads under reduced motion never starts the opening; turned off while the reader is still
+   at the top, the opening then runs, rather than leaving the invite's stretch undrawn until the first
+   scroll. Loading reduced, rather than switching mid-load, keeps the case deterministic: a switch that
+   lands after the draw has begun leaves part of it on the ratchet either way. */
+test("motion arriving at the top runs the opening that reduced motion held back", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await (
+      await browser.newContext({
+        viewport: { width: 393, height: 700 },
+        reducedMotion: "reduce",
+      })
+    ).newPage();
+    await page.addInitScript(SWAY_OFF);
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForTimeout(500);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    assert.equal(
+      await page.evaluate("window.scrollY"),
+      0,
+      "the reader is still at the top",
+    );
+    /* A re-armed draw starts at once and lasts 1200ms; this outlasts it. */
+    await page.waitForTimeout(3000);
+    const drawn = (await page.evaluate(`(() => {
+      const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
+      return pieces.filter((p) => {
+        const offset = parseFloat(p.style.strokeDashoffset);
+        return Number.isFinite(offset) && offset < parseFloat(p.style.strokeDasharray) - 1;
+      }).length;
+    })()`)) as number;
+    assert.ok(
+      drawn > 0,
+      "the opening drew the invite's stretch once motion came back",
+    );
   } finally {
     await browser.close();
     server.close();

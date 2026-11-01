@@ -1,13 +1,11 @@
 import Image from "next/image";
+import { PrimaryDate } from "@/app/_sections/shared";
 import {
-  type BarItem,
   BarScale,
   DepthGrid,
   type DepthLevel,
   DurationScale,
-  type DurationToken,
   EasingCurves,
-  type EasingToken,
   GallerySection,
   RuleList,
   type ShapeItem,
@@ -17,8 +15,15 @@ import {
   SwatchGrid,
   type SwatchGroup,
   TypeScaleList,
-  type TypeToken,
 } from "@/app/design-system/_kit";
+import {
+  DURATION_TOKENS,
+  EASING_TOKENS,
+  LAYOUT_CAPS,
+  LOOP_CADENCE_USES,
+  SPACING_STEPS,
+  TYPE_TOKENS,
+} from "@/app/design-system/_sections/token-tables";
 import {
   BetrothalIcon,
   LunchIcon,
@@ -31,6 +36,10 @@ import { Divider } from "@/components/layout/divider";
 import { MountedPair } from "@/components/layout/mounted-pair";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { OrnamentalDivider } from "@/components/layout/ornamental-divider";
+import { formatEventDate } from "@/content";
+
+/* A first-of-the-month date, so the specimen shows the raised ordinal on a real baseline. */
+const SAMPLE_DATE = formatEventDate("2000-01-01");
 
 const COLOR_GROUPS: SwatchGroup[] = [
   {
@@ -61,7 +70,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink",
         name: "ink",
         usage:
-          "Body text, names, dates (the invite's day numeral is gold), venues and addresses; the focus ring on light surfaces.",
+          "Body text, names, dates (the invite's day numeral is gold), venues and addresses.",
       },
       {
         token: "--color-ink-muted",
@@ -73,13 +82,13 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-ink-inverse",
         name: "ink-inverse",
         usage:
-          "Light text and marks on the scrim — the photo grid and viewer's title, counter, failure message and every control, and the design-system gallery's own preview modal.",
+          "Light text and marks on the scrim — the photo grid and viewer's title, counter, failure message and every control.",
       },
     ],
   },
   {
     label: "Accent",
-    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam and the marks only. It falls below 3:1 on the mount (2.56:1), so the focus ring and a mark that carries meaning without a label stay ink on light surfaces; on the scrim the ring takes the inverse ring colour.",
+    note: "Recorded AA exception: 3.19:1 on the paper stock, 3.11:1 on the page — the eyebrow, an action's label, a ritual's Malayalam, the date-block day numeral and the marks only. It falls below 3:1 on the mount (2.56:1), so a mark that carries meaning without a label stays ink.",
     tokens: [
       {
         token: "--color-accent-gold",
@@ -91,25 +100,43 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
   {
     label: "Thread",
-    note: "Reserved for the thread and the seal mark.",
+    note: "Reserved for the thread, the seal mark, the scroll-progress line and the focus ring, which takes thread-vermilion alone.",
     tokens: [
       {
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's colour ramp and of the re-trace's.",
+          "The thread's ink, tapered ends included, and the tail of the drawing head's and the re-trace's sheen; the start of the scroll-progress line's fill.",
       },
       {
         token: "--color-thread-vermilion",
         name: "thread-vermilion",
         usage:
-          "The thread's light: its bleed, the drawing head's halo and the middle of the head's colour ramp, and the re-trace's ramp and glow strokes. Never the ink, never text.",
+          "The drawing head's halo; the scroll-progress line's fill and glow; the focus ring, on every surface. Never the ink, never text.",
       },
       {
         token: "--color-thread-core",
         name: "thread-core",
         usage:
-          "The tip of the drawing head's colour ramp and of the re-trace's, the hottest the thread gets. Never the ink, never text.",
+          "The leading edge of the scroll-progress line's fill, its hottest colour. Never the thread's ink, never text.",
+      },
+      {
+        token: "--color-thread-sheen",
+        name: "thread-sheen",
+        usage:
+          "The tip of the drawing head and of the re-trace's sheen: the thread's red lifted 0.12 in OKLCH lightness, the light the line catches. Never the ink, never text.",
+      },
+      {
+        token: "--color-thread-sheen-mid",
+        name: "thread-sheen-mid",
+        usage:
+          "The sheen's middle stop, half its lift, and the colour of the re-trace's glow strokes. Never text.",
+      },
+      {
+        token: "--color-thread-twist",
+        name: "thread-twist",
+        usage:
+          "The twist's gaps across the ink: the thread's red lifted 0.18, so the cord reads as strands with light between them. Never text.",
       },
     ],
   },
@@ -137,163 +164,14 @@ const COLOR_GROUPS: SwatchGroup[] = [
   },
 ];
 
-const TYPE_TOKENS: TypeToken[] = [
-  {
-    token: "type-heading-xl",
-    family: "Playfair Display",
-    weight: 700,
-    sample: "Section-level H1.",
-    phone: { size: 26, lh: 40 },
-    tablet: { size: 32, lh: 48 },
-    laptop: { size: 30, lh: 44 },
-    desktop: { size: 38, lh: 56 },
-  },
-  {
-    token: "type-heading-md",
-    family: "Playfair Display",
-    weight: 700,
-    sample: "Each ritual's English title.",
-    phone: { size: 18, lh: 32 },
-    tablet: { size: 20, lh: 34 },
-    laptop: { size: 18, lh: 32 },
-    desktop: { size: 21, lh: 36 },
-  },
-  {
-    token: "type-heading-sm",
-    family: "Playfair Display",
-    weight: 700,
-    sample:
-      "Serif sub-headings; the event sheets' address line and segment line.",
-    phone: { size: 14, lh: 28 },
-    tablet: { size: 15, lh: 30 },
-    laptop: { size: 14, lh: 28 },
-    desktop: { size: 17, lh: 32 },
-  },
-  {
-    token: "type-date-primary",
-    family: "Playfair Display",
-    weight: 700,
-    sample:
-      "The event sheets' date line, and the invite's place beneath its date block.",
-    phone: { size: 14, lh: 28 },
-    tablet: { size: 15, lh: 30 },
-    laptop: { size: 14, lh: 28 },
-    desktop: { size: 17, lh: 32 },
-  },
-  {
-    token: "type-date-label",
-    family: "Playfair Display",
-    weight: 700,
-    sample: "Saturday · Jan · 2027",
-    phone: { size: 12, lh: 12 },
-    tablet: { size: 13, lh: 13 },
-    laptop: { size: 12, lh: 12 },
-    desktop: { size: 14, lh: 14 },
-  },
-  {
-    token: "type-date-day",
-    family: "Playfair Display",
-    weight: 400,
-    sample: "9",
-    phone: { size: 44, lh: 44 },
-    tablet: { size: 48, lh: 48 },
-    laptop: { size: 44, lh: 44 },
-    desktop: { size: 51, lh: 51 },
-  },
-  {
-    token: "type-body",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample: "Descriptions, addresses, wishes, all long-form copy.",
-    phone: { size: 13, lh: 26 },
-    tablet: { size: 14, lh: 28 },
-    laptop: { size: 13, lh: 26 },
-    desktop: { size: 16, lh: 32 },
-  },
-  {
-    token: "type-body-italic",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample: "The timeline's promise line and a ritual's tagline.",
-    phone: { size: 13, lh: 26 },
-    tablet: { size: 14, lh: 28 },
-    laptop: { size: 13, lh: 26 },
-    desktop: { size: 16, lh: 32 },
-  },
-  {
-    token: "type-caption",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample:
-      "Secondary text accompanying something else — an attribution beneath a passage, a reference beneath a heading, a relationship beneath a name. Never long-form.",
-    phone: { size: 11, lh: 22 },
-    tablet: { size: 13, lh: 24 },
-    laptop: { size: 12, lh: 22 },
-    desktop: { size: 14, lh: 24 },
-  },
-  {
-    token: "type-caption-italic",
-    family: "Libre Baskerville",
-    weight: 400,
-    sample:
-      "A citation set beneath its caption-styled parent — the invite's citation beneath its passage.",
-    phone: { size: 11, lh: 22 },
-    tablet: { size: 13, lh: 24 },
-    laptop: { size: 12, lh: 22 },
-    desktop: { size: 14, lh: 24 },
-  },
-  {
-    token: "type-eyebrow",
-    family: "Libre Baskerville",
-    weight: 700,
-    sample: "Small labels above headings and sheet fields.",
-    phone: { size: 10, lh: 20 },
-    tablet: { size: 11, lh: 20 },
-    laptop: { size: 10, lh: 20 },
-    desktop: { size: 12, lh: 22 },
-  },
-  {
-    token: "type-action",
-    family: "Libre Baskerville",
-    weight: 700,
-    sample: "Buttons and calls to action.",
-    phone: { size: 13, lh: 26 },
-    tablet: { size: 14, lh: 28 },
-    laptop: { size: 13, lh: 26 },
-    desktop: { size: 16, lh: 32 },
-  },
-];
-
-const SPACING_STEPS: BarItem[] = [
-  { token: "0", px: 0 },
-  { token: "space-3xs", px: 4 },
-  { token: "space-2xs", px: 8 },
-  { token: "space-xs", px: 12 },
-  { token: "space-sm", px: 16 },
-  { token: "space-md", px: 24 },
-  { token: "space-lg", px: 32 },
-  { token: "space-xl", px: 48 },
-  { token: "space-2xl", px: 64 },
-  { token: "space-3xl", px: 96 },
-  { token: "space-4xl", px: 128 },
-  { token: "space-5xl", px: 172 },
-];
-
 const SPACING_USES = [
   "0 · flush edges, collapsed gaps",
   "space-2xs to space-sm · tight grouping",
   "space-sm to space-md · component padding",
-  "space-md · viewport edge for sections without a frame",
-  "space-2xl to space-3xl · between two unframed sections back to back",
-  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame) — a tall card's sides below md take --tall-inline-phone (36px) instead",
-];
-
-const LAYOUT_CAPS = [
-  "--container-content · 1200px · all content; a framed card's width from xl, landscape windows only",
-  "--container-content-compact · 960px · a framed card's width, lg to xl, landscape windows only",
-  "--container-text · 600px · text blocks",
-  "--card-height-cap · 720px · a framed card's height from xl, landscape windows only",
-  "--card-height-cap-compact · 576px · a framed card's height, lg to xl, landscape windows only",
+  "space-md · the frame's minimum edge padding",
+  "space-2xl to space-3xl · the frame's ground and padding steps, not a between-sections step",
+  "space-4xl · the tablet ground tier's portrait inline band, and a tall section's desktop padding (Layout → mounted-sheet → The frame)",
+  "space-5xl · the tablet portrait block band",
 ];
 
 const FRAME_GROUND_TIERS = [
@@ -312,35 +190,19 @@ const FRAME_PORTRAIT_BAND = [
 const IMAGERY_POINTERS = [
   "Family portraits · circular crops → Components · UI → portrait",
   "A delivered portrait · at least 3× its rendered diameter, never upscaled",
-  "Gallery images · masonry, inside the modal only → Components · UI → gallery-modal; one photograph full screen → photo-viewer",
-  "Couple illustration · held back behind the closing text → Domain · Wishes",
-];
-
-const DURATION_TOKENS: DurationToken[] = [
-  { token: "--duration-fast", ms: 200 },
-  { token: "--duration-base", ms: 400 },
+  "Gallery images · masonry, inside the modal only → Components · UI → Gallery → gallery-modal; one photograph full screen → Components · UI → Gallery → photo-viewer",
+  "Couple illustration · minimal and elegant, never cartoonish → Domain · Wishes",
 ];
 
 const DURATION_USES = [
-  "fast · the action press and hover, and the opening sequence beat",
-  "base · section and sheet reveals, the modal",
+  "fast · the action press and hover, the opening sequence beat, gallery-modal's layer change and tile hover, photo-viewer's slide",
+  "base · gallery-modal's open and close, photo-viewer's swipe nudge, the lab thread's fade-in",
   "--opening-type-end · 9 × fast (1800ms) · when the Bloom opening's last row of type has landed — the scroll progress bar's track arrives here and the lab thread fades in from here; a new sequence changes this one value",
-];
-
-const EASING_TOKENS: EasingToken[] = [
-  { token: "--ease-entrance", curve: [0, 0, 0.2, 1] },
-  { token: "--ease-settle", curve: [0.4, 0, 0.2, 1] },
 ];
 
 const EASING_USES = [
   "entrance · anything appearing",
-  "settle · the action button's press and hover transition",
-];
-
-const LOOP_CADENCE_USES = [
-  "--retrace-duration · 3.2s · one loop of the thread's re-trace, the page's one sanctioned loop · set against the thread, not a step on the duration scale · the owner's pick",
-  "--retrace-settle · 1500ms · how long the page must be still before the re-trace loops · a delay of the same kind, the owner's pick",
-  "--retrace-loops · 4 · how many whole loops the LONGEST stretch runs before everything stops until the next scroll · a count, so a slower pace never keeps the page busy longer · every shorter stretch fits whole loops into the same window and they quiet together · the owner's pick",
+  "settle · the action's press and hover, the opening's flower unfurl, gallery-modal's tile hover and round controls, photo-viewer's nudge — retuning it moves all of them",
 ];
 
 const SHAPE_ITEMS: ShapeItem[] = [
@@ -355,7 +217,7 @@ const SHAPE_ITEMS: ShapeItem[] = [
     token: "circle",
     radius: "9999px",
     value: "—",
-    usage: "portrait's crop; button-action's disc.",
+    usage: "portrait's crop; button-action's pill.",
   },
 ];
 
@@ -384,7 +246,7 @@ const DEPTH_LEVELS: DepthLevel[] = [
   {
     name: "The couple's glow · the bride's and the groom's portraits",
     spec: "surface-elevated · shadow-glow-couple",
-    className: "bg-surface-elevated shadow-glow-couple rounded-full",
+    className: "bg-surface-elevated shadow-glow-couple rounded-card",
     usage:
       "A soft gold light, 14px blur and 3px spread at 60%, laid under a portrait's paper ring and rim so it shows only outward of the rim. The couple's two portraits alone.",
   },
@@ -394,28 +256,28 @@ const ICONS = [
   {
     name: "wedding",
     marks: "the church ceremony",
-    nudge: "1",
+    nudge: "1.01",
     stroke: "added stroke",
     Icon: WeddingIcon,
   },
   {
     name: "betrothal",
     marks: "the betrothal",
-    nudge: "0.97",
+    nudge: "0.98",
     stroke: "added stroke",
     Icon: BetrothalIcon,
   },
   {
     name: "reception",
     marks: "the reception",
-    nudge: "1.02",
+    nudge: "1.03",
     stroke: "",
     Icon: ReceptionIcon,
   },
   {
     name: "lunch",
     marks: "the betrothal lunch",
-    nudge: "0.92",
+    nudge: "0.93",
     stroke: "",
     Icon: LunchIcon,
   },
@@ -452,7 +314,7 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own three: red ink, vermilion light and the head's orange tip."
+        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own: red ink, the sheen's two lighter reds, the twist's gap red, and the vermilion and orange the progress line carries."
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"
@@ -462,7 +324,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Timeline."
+        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Celebrations."
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
@@ -471,13 +333,13 @@ export function FoundationsSections() {
           description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use."
           id="typography-scale"
           name="The scale"
-          note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role: the script face and its two roles were retired on 2026-10-14, and only their two SIZE tokens remain — --text-display-name and --text-heading-script — as the em the drawn lockups are measured in."
+          note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role; only the two SIZE tokens --text-display-name and --text-heading-script remain, as the em the drawn lockups are measured in."
         >
           <TypeScaleList tokens={TYPE_TOKENS} />
         </Specimen>
 
         <Specimen
-          description="A separate visual because the scale's own rows sample each role as one flat line — this composes the real multi-span markup, which is what shows the ordinal's zero-height superscript."
+          description="A separate visual because the scale's own rows sample each role as one flat line — this renders Event Info's own date line, PrimaryDate, which is what shows the ordinal's zero-height superscript."
           id="typography-names-and-date"
           name="Date line"
           note="The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
@@ -485,11 +347,7 @@ export function FoundationsSections() {
         >
           <div className="flex flex-col items-center gap-space-lg bg-surface-elevated p-space-md text-center shadow-stock">
             <p className="type-date-primary text-ink">
-              Saturday, 1
-              <span className="type-caption type-date-ordinal align-super">
-                st
-              </span>{" "}
-              January 2000
+              <PrimaryDate date={SAMPLE_DATE} />
             </p>
           </div>
         </Specimen>
@@ -582,7 +440,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Thin rule separating grouped content within a section. Its only consumer is Event Info's event sheet, after the heading block — the sprig mark was tried there and reverted, since the rule shows only in Event Info's tightest band and a mark that size earns nothing there."
+          description="Thin rule separating grouped content within a section. Its only consumer is Event Info's event sheet, after the heading block. It carries no mark: it shows only in Event Info's tablet band, its tightest, where a mark that size earns nothing."
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
@@ -619,7 +477,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace is the one exception, and takes its own cadence."
+        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace and its catch-up and closing-stretch budgets are the exceptions, and take their own values."
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
@@ -634,7 +492,7 @@ export function FoundationsSections() {
           <RuleList rules={EASING_USES} />
         </SpecimenGroup>
 
-        <SpecimenGroup title="Loop cadence — the one exception to both scales">
+        <SpecimenGroup title="Loop cadence and thread budgets — exceptions to both scales">
           <RuleList rules={LOOP_CADENCE_USES} />
         </SpecimenGroup>
       </GallerySection>
@@ -695,7 +553,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of six marks, plus the seal mark that serves as the site's icon, all traced from drawings made for this invitation."
+        intro="A closed set of six marks, plus the seal mark that serves as the site's icon and three control glyphs (chevron, close, grid) shown on photo-viewer in Components · UI → Gallery, all drawn for this invitation."
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -757,7 +615,7 @@ export function FoundationsSections() {
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"
-          spec="nudge 1 · no added stroke · filled around its contour, the one exception to the set's centreline-stroke rule · never below 16px"
+          spec="nudge 1 · no added stroke · filled around its contour, the one exception to the set's centreline-stroke rule · never below 16px of rendered height, not the diagonal size prop"
         >
           <div className="flex flex-wrap items-end gap-space-lg bg-surface-elevated p-space-md">
             {[

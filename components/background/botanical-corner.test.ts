@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { botanicalCss } from "./botanical-css.ts";
 import { type BotanicalPiece, TIERS, TUNING } from "./botanical-tuning.ts";
@@ -54,22 +54,14 @@ test("a mirrored piece's corner is flipped into its own local frame, per tier", 
 });
 
 test("only the invite section asks for corners", () => {
-  const sections = [
-    "event-info",
-    "family",
-    "celebrations",
-    "wishes",
-    "contact",
-  ];
+  const sections = readdirSync("app/_sections")
+    .filter((name) => name.endsWith(".tsx") && name !== "index.tsx")
+    .map((name) => name.slice(0, -".tsx".length));
+  assert.ok(sections.includes("invite"), `no invite among ${sections}`);
   const invite = readFileSync("app/_sections/invite.tsx", "utf8");
   assert.match(invite, /<Botanical[^>]*\bcorners\b/);
-  for (const id of sections) {
-    let src = "";
-    try {
-      src = readFileSync(`app/_sections/${id}.tsx`, "utf8");
-    } catch {
-      continue; /* a retired section has no file */
-    }
+  for (const id of sections.filter((section) => section !== "invite")) {
+    const src = readFileSync(`app/_sections/${id}.tsx`, "utf8");
     assert.equal(
       /<Botanical[^>]*\bcorners\b/.test(src),
       false,

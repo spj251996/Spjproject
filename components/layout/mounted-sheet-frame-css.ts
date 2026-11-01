@@ -4,12 +4,14 @@ import {
   BREAKPOINT_REM,
   CAPS,
   type CardRectangle,
+  containerLowerBoundPx,
   type FitRegime,
   type FrameLayout,
   fitPadding,
   fitRectangles,
   formatPx,
   GROUND_HALVING,
+  lowerBoundPx,
   type MeasuredFit,
   mountShows,
   type Orientation,
@@ -19,6 +21,7 @@ import {
   SIDE_GROUND_MULTIPLE,
   smallestPadding,
   tallWindowClasses,
+  upperBoundPx,
   type WindowClass,
   windowClasses,
 } from "./mounted-sheet-frame.ts";
@@ -75,8 +78,23 @@ const GROUND_INLINE = "--ground-inline";
    everywhere else (phone, tablet, desktop). */
 const CARD_HEIGHT = `calc(100svh - 2 * var(${GROUND_BLOCK}))`;
 const CAPPED_CARD_HEIGHT = `min(var(--card-height-cap), ${CARD_HEIGHT})`;
-const COMPACT_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-compact), ${CARD_HEIGHT})`;
-const COMPACT_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
+const LAPTOP_CAPPED_CARD_HEIGHT = `min(var(--card-height-cap-laptop), ${CARD_HEIGHT})`;
+const LAPTOP_WIDTH_QUERY = `(${BREAKPOINT_REM.lg}rem <= width < ${BREAKPOINT_REM.xl}rem)`;
+
+/* Below `{breakpoints.reflow}` the layout is narrower than any unzoomed phone the site supports, so
+   only browser zoom (or a screen under 320px) reaches it. There the frame gives up ground and
+   padding so the card's text keeps its width. The block is emitted LAST in every sheet: each rule it
+   overrides has the same selector, so it wins by order alone and changes nothing at 20rem and up. */
+const REFLOW_WIDTH_QUERY = `(width < ${BREAKPOINT_REM.reflow}rem)`;
+export const REFLOW_FRAME = { ground: 4, padding: 12 } as const;
+
+function reflowRules(scope: string, sheet: string): string {
+  const ground = spacingTokenFor(REFLOW_FRAME.ground);
+  return `@media ${REFLOW_WIDTH_QUERY} {
+${scope} { ${GROUND}: ${ground}; ${GROUND_BLOCK}: ${ground}; ${GROUND_INLINE}: ${ground}; }
+${sheet} { padding: ${spacingTokenFor(REFLOW_FRAME.padding)}; }
+}`;
+}
 
 /* An emitted value off the spacing scale fails generation instead of shipping. Keyed by pixel
    value, because the arithmetic needs the number a media query cannot read from the token — a
@@ -144,7 +162,7 @@ function clears(
   return any(
     ...rectangles.map(
       (rectangle) =>
-        `((width >= ${formatPx(rectangle.minCardWidth + widthOffset)}) and (height >= ${formatPx(rectangle.minCardHeight + heightOffset)}))`,
+        `((width >= ${lowerBoundPx(rectangle.minCardWidth + widthOffset)}) and (height >= ${lowerBoundPx(rectangle.minCardHeight + heightOffset)}))`,
     ),
   );
 }
@@ -215,7 +233,7 @@ function windowFits(
     ? windowClass.groundTier.ground * GROUND_HALVING
     : windowClass.groundTier.ground;
   const cap = CAPS[windowClass.widthTier];
-  const band = `(height <= ${formatPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
+  const band = `(height <= ${upperBoundPx(cap.height + 2 * SIDE_GROUND_MULTIPLE * ground)})`;
   return any(
     ...rectangles
       .filter(
@@ -225,8 +243,8 @@ function windowFits(
       )
       .map((rectangle) =>
         all(
-          `(width >= ${formatPx(rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * ground)})`,
-          `(height >= ${formatPx(rectangle.minCardHeight + 2 * ground)})`,
+          `(width >= ${lowerBoundPx(rectangle.minCardWidth + 2 * SIDE_GROUND_MULTIPLE * ground)})`,
+          `(height >= ${lowerBoundPx(rectangle.minCardHeight + 2 * ground)})`,
           rectangle.minCardWidth > cap.height ? band : true,
         ),
       ),
@@ -295,20 +313,16 @@ function groundRules(
    `background-image` removes it; a grain drawn any other way would need a matching change here.
 
    One rule per orientation, because a class above its tier line holds both and a non-hero card
-   shows its mount in landscape alone. */
-function mountRules(
-  windowClass: WindowClass,
-  hero: boolean,
-  scope: string,
-): string {
+   shows its mount in landscape alone. The hero takes none: its reveal rides on `MountedSheet`'s
+   utility ladder, which a test holds equal to `revealFor`, and an unlayered rule here would beat it. */
+function mountRules(windowClass: WindowClass, scope: string): string {
   const mount = `${scope} > .${FRAME_CLASS.box} > .${FRAME_CLASS.mount}`;
   return orientationsOf(windowClass)
     .map((landscape) => {
-      /* The unpainted hero gates its paint at the component, not here. */
-      const fill = mountShows(windowClass, hero, landscape)
+      const fill = mountShows(windowClass, false, landscape)
         ? ""
         : " background-color: transparent; background-image: none;";
-      return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, hero, landscape))};${fill} }\n}`;
+      return `@media ${windowClass.media} and ${orientationQuery(landscape)} {\n${mount} { padding: ${spacing(revealFor(windowClass, false, landscape))};${fill} }\n}`;
     })
     .join("\n");
 }
@@ -409,7 +423,7 @@ function paddingRules(
         )
           continue;
         rules.push(
-          `@media (height >= ${formatPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${formatPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
+          `@media (height >= ${lowerBoundPx(rectangle.minCardHeight + 2 * blockBand)}) {\n@container (width >= ${containerLowerBoundPx(rectangle.minCardWidth)}) {\n${declare(padding)}\n}\n}`,
         );
       }
     }
@@ -441,17 +455,27 @@ function paddingRules(
   return rules.join("\n");
 }
 
+/* Centring is written as plain `center` in the rule, with `safe center` in a separate `@supports`
+   block after it. `safe` keeps content that outgrows its box on the side the page can scroll to, and an
+   engine without it in flex alignment drops the declaration, so plain `center` must stay in force there.
+   The pair cannot live in one rule: the CSS minifier merges `center; safe center` into `safe center`
+   alone, discarding the fallback. */
+const PLAIN_CENTRE = `justify-content: center;
+  align-items: center;`;
+
+function safeCentreBlock(...selectors: string[]): string {
+  return `@supports (justify-content: safe center) {
+${selectors.join(",\n")} {
+  justify-content: safe center;
+  align-items: safe center;
+}
+}`;
+}
+
 function frameRules(scope: string, layout: FrameLayout): string {
   const box = `${scope} > .${FRAME_CLASS.box}`;
   const mount = `${box} > .${FRAME_CLASS.mount}`;
   const sheet = sheetSelector(scope, layout);
-
-  /* Plain `center` first is the fallback for an engine that drops the `safe` declaration. `safe`
-     keeps content that outgrows its box on the side the page can scroll to. */
-  const safeCentre = `justify-content: center;
-  justify-content: safe center;
-  align-items: center;
-  align-items: safe center;`;
 
   const pairBase =
     layout === "pair"
@@ -469,7 +493,7 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
 
      `--ring-cap` carries whichever height-cap token the current width band reads, so the landscape
      side-padding formula (`max(...)`) is written once, on the general landscape rule, and the
-     compact-width rule only swaps the token `--ring-cap` resolves to — the `max(...)` expression
+     laptop-width rule only swaps the token `--ring-cap` resolves to — the `max(...)` expression
      itself is never repeated. */
   return `${scope} {
   display: flex;
@@ -479,13 +503,13 @@ ${mount} > .${FRAME_CLASS.crease} { display: none; }`
   ${RING_SIDE}: var(${GROUND_INLINE});
   padding-block: var(${RING_BLOCK});
   padding-inline: var(${RING_SIDE});
-  ${safeCentre}
+  ${PLAIN_CENTRE}
 }
 @media (orientation: landscape) {
 ${scope} { ${RING_CAP}: var(--card-height-cap); ${RING_SIDE}: max(calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}), calc((100svh - var(${RING_CAP})) / 2)); }
 }
-@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
-${scope} { ${RING_CAP}: var(--card-height-cap-compact); }
+@media (orientation: landscape) and ${LAPTOP_WIDTH_QUERY} {
+${scope} { ${RING_CAP}: var(--card-height-cap-laptop); }
 }
 ${box} {
   container-type: inline-size;
@@ -503,10 +527,10 @@ ${box} {
   min-height: ${CAPPED_CARD_HEIGHT};
 }
 }
-@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
+@media (orientation: landscape) and ${LAPTOP_WIDTH_QUERY} {
 ${box} {
-  width: min(var(--container-content-compact), 100%);
-  min-height: ${COMPACT_CAPPED_CARD_HEIGHT};
+  width: min(var(--container-content-laptop), 100%);
+  min-height: ${LAPTOP_CAPPED_CARD_HEIGHT};
 }
 }
 ${mount} {
@@ -518,8 +542,9 @@ ${sheet} {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  ${safeCentre}
-}${pairBase}`;
+  ${PLAIN_CENTRE}
+}${pairBase}
+${safeCentreBlock(scope, sheet)}`;
 }
 
 /* Throws, failing the build, when the section cannot be framed as specified: an invalid fit, no
@@ -543,22 +568,24 @@ export function mountedSheetFrameCss(
     frameRules(scope, layout),
     ...classes.flatMap((windowClass) => [
       groundRules(windowClass, hero, layout, scope),
-      layout === "pair"
-        ? pairLayoutRules(windowClass, scope)
-        : mountRules(windowClass, hero, scope),
+      ...(layout === "pair"
+        ? [pairLayoutRules(windowClass, scope)]
+        : hero
+          ? []
+          : [mountRules(windowClass, scope)]),
       paddingRules(windowClass, hero, layout, scope),
     ]),
+    reflowRules(scope, sheetSelector(scope, layout)),
   ].join("\n");
 }
 
 /* Tall mode has no per-section threshold to scope, so tall sections share their stylesheets. A tall card
    is never the hero (`mounted-sheet` throws on both), so there is one tall form and one class.
 
-   The built page carries this exact string in two inlined stylesheets (the frame's and the botanical
-   layer's), so changing it moves `/`'s bytes. Its `-section-mount` suffix is the role and paint the key
-   once carried, kept so the bytes do not move. */
+   The string is carried by the generated tall sheet (`app/_frame/sheets/tall.css`) and by the botanical
+   layer's inline stylesheet, so changing it moves both. */
 export function tallScopeClass(): string {
-  return "mounted-sheet-frame--tall-section-mount";
+  return "mounted-sheet-frame--tall";
 }
 
 /* A section that scrolls rather than fitting one window. No height query, no container query and no
@@ -579,10 +606,7 @@ export function tallFrameCss(): string {
   ${RING_SIDE}: var(${GROUND_INLINE});
   padding-block: var(${RING_BLOCK});
   padding-inline: var(${RING_SIDE});
-  justify-content: center;
-  justify-content: safe center;
-  align-items: center;
-  align-items: safe center;
+  ${PLAIN_CENTRE}
 }
 @media (orientation: landscape) {
 ${scope} { ${RING_SIDE}: calc(${SIDE_GROUND_MULTIPLE} * ${GROUND_VALUE}); }
@@ -598,8 +622,8 @@ ${box} {
 @media (orientation: landscape) {
 ${box} { width: min(var(--container-content), 100%); }
 }
-@media (orientation: landscape) and ${COMPACT_WIDTH_QUERY} {
-${box} { width: min(var(--container-content-compact), 100%); }
+@media (orientation: landscape) and ${LAPTOP_WIDTH_QUERY} {
+${box} { width: min(var(--container-content-laptop), 100%); }
 }
 ${mount} {
   flex: 1 0 auto;
@@ -610,13 +634,11 @@ ${sheet} {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  justify-content: safe center;
-  align-items: center;
-  align-items: safe center;
-}`;
+  ${PLAIN_CENTRE}
+}
+${safeCentreBlock(scope, sheet)}`;
 
-  const perClass = tallWindowClasses(false).map((windowClass) => {
+  const perClass = tallWindowClasses().map((windowClass) => {
     const mountRule = (orientation: Orientation) => {
       const fill = windowClass.mountShows[orientation]
         ? ""
@@ -637,5 +659,5 @@ ${mountRule("landscape")}
 }`;
   });
 
-  return [base, ...perClass].join("\n");
+  return [base, ...perClass, reflowRules(scope, sheet)].join("\n");
 }

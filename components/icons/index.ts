@@ -1,11 +1,9 @@
 export { BetrothalIcon } from "./betrothal";
 export { ChevronIcon } from "./chevron";
 export { CloseIcon } from "./close";
-export { CoupleNamesSymbol } from "./couple-names-symbol";
 export { GridIcon } from "./grid";
 export { LunchIcon } from "./lunch";
 export { MapIcon } from "./map";
 export { ReceptionIcon } from "./reception";
 export { SprigIcon } from "./sprig";
-export { SprigSymbol } from "./sprig-symbol";
 export { WeddingIcon } from "./wedding";

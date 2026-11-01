@@ -1,0 +1,464 @@
+#!/usr/bin/env node
+/* Measures how a section's content stack fits its card, for the `mounted-sheet` frame in
+   `components/layout/mounted-sheet-frame.ts`. Drives the `playwright-cli` devDependency, as
+   `scripts/gates/verify-section.mjs` does, never `playwright-core` directly.
+
+   Method: for each width tier the window is set in both orientations, so content that differs by
+   orientation is measured as it renders. Web fonts are confirmed loaded, every stack the selector
+   matches is cloned into its own detached flex-column host, and each host's width is swept from 120
+   to 1300px; the height at a width is the tallest stack's. Height is a step function of width, so
+   every width where it changes is a regime boundary, bisected to 1/1024px. **One integer pixel can
+   hold several boundaries** — two lines can unwrap within the same pixel — so each pixel that
+   changes is bisected repeatedly until the height reached matches the height at the next whole
+   pixel, and every boundary found on the way is emitted. Bisecting such a pixel only once records
+   an intermediate height, drops the real one, and still passes validation. The sweep runs inside
+   the page in one `page.evaluate` call per tier and orientation, with no per-pixel round trip.
+
+   Usage:
+     node scripts/generators/measure-section-fit.mjs --route=/ --selector="[data-invite-stack]" \
+       --section=invite --out=app/_frame/invite-fit.ts
+
+   `--out` goes in `app/_frame/`, beside the other fits and `frame-sheets.ts`, which reads them, e.g.
+   `app/_frame/invite-fit.ts` for the invite -- the section components themselves live in `app/_sections/`.
+
+   Writes a `MeasuredFit` (mounted-sheet-frame.ts) as a typed TS module, with a portrait and a
+   landscape set of regimes under each width tier. The frame's own `assertValidFit` — ascending
+   regime widths, non-rising heights, both orientations present — validates the file at the point
+   of use; this script performs the same check before writing, so a malformed sweep is caught here
+   rather than at render time. */
+
+import { spawn, spawnSync } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, relative, resolve } from "node:path";
+import { contentHashLine } from "../lib/fit-content.ts";
+
+const ORIGIN = "http://localhost:3000";
+const SESSION = "measure-fit";
+const CLI_TIMEOUT_MS = 120_000;
+
+const MIN_WIDTH = 120;
+const MAX_WIDTH = 1300;
+
+/* How many regime boundaries one integer pixel is allowed to hold. Twelve is far above anything
+   measured — the densest collision found is two — and a sweep that reaches it stops and says so
+   rather than recording an unresolved ladder. */
+const MAX_BOUNDARIES_PER_PIXEL = 12;
+
+/** @typedef {{ minContentWidth: number, contentHeight: number }} Regime */
+
+/* One width safely inside each width tier, away from the 768/1024/1600 breakpoints. Each is swept at
+   both orientations' heights below — irrelevant to the clone, which is measured off-screen in a
+   detached host, but the window itself must actually be portrait or landscape for the section's
+   own on-screen layout (and so `document.fonts.ready`, loaded before the clone is taken) to
+   resolve as a guest would see it. */
+const TIERS = [
+  { key: "phone", width: 400 },
+  { key: "tablet", width: 900 },
+  { key: "laptop", width: 1280 },
+  { key: "desktop", width: 1700 },
+];
+
+/* Heights that set the orientation without pretending to be a real device; the sweep only needs
+   the section's type resolved at that tier and orientation. */
+const ORIENTATIONS = [
+  {
+    key: "portrait",
+    heightFor: (/** @type {number} */ width) => Math.round(width * 1.5),
+  },
+  {
+    key: "landscape",
+    heightFor: (/** @type {number} */ width) => Math.round(width * 0.6),
+  },
+];
+
+/** @param {string[]} argv */
+function parseArgs(argv) {
+  /** @type {Record<string, string | undefined>} */
+  const flags = {};
+  for (const arg of argv) {
+    const match = arg.match(/^--([a-z]+)=(.*)$/s);
+    if (match) {
+      flags[match[1]] = match[2];
+      continue;
+    }
+    if (arg === "--falsify") {
+      flags.falsify = "true";
+    }
+  }
+  return flags;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const route = args.route ?? "/";
+const selector = args.selector;
+const section = args.section;
+const outPath = args.out;
+const falsify = args.falsify === "true";
+const exportName =
+  args.var ??
+  `${section ? section.replace(/-([a-z])/g, (/** @type {string} */ _, /** @type {string} */ c) => c.toUpperCase()) : "section"}Fit`;
+
+if (!selector || !section || !outPath) {
+  console.error(
+    "usage: node scripts/generators/measure-section-fit.mjs --route=/ --selector=<css> --section=<name> --out=<path.ts> [--var=<exportName>] [--falsify] (--falsify: --section=invite only, and --out under tmp/; it never writes to app/)",
+  );
+  process.exit(2);
+}
+/* `--falsify` mutates the invite's own sentence, so for any other section it changes content outside
+   the measured stack and proves nothing; and the fit it writes is a mutated one. */
+if (falsify && section !== "invite") {
+  console.error(
+    `measure-section-fit: --falsify mutates [data-invite-line], so it measures --section=invite only (got "${section}")`,
+  );
+  process.exit(2);
+}
+if (falsify && relative(resolve("tmp"), resolve(outPath)).startsWith("..")) {
+  console.error(
+    `measure-section-fit: --falsify writes a mutated fit, so --out must be under tmp/ (got "${outPath}")`,
+  );
+  process.exit(2);
+}
+
+/* Resolved before the browser opens, so a section missing from FIT_CONTENT fails in a second
+   rather than after the sweep. */
+const contentLine = contentHashLine(section);
+
+/**
+ * @param {number} pid
+ * @param {string} label
+ */
+function safeKill(pid, label) {
+  try {
+    process.kill(-pid);
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "ESRCH") {
+      console.error(
+        `cleanup: ${label} kill failed — ${/** @type {Error} */ (error).message}`,
+      );
+    }
+  }
+}
+
+/** @param {string[]} cliArgs */
+function cli(...cliArgs) {
+  const result = spawnSync(
+    "npx",
+    ["playwright-cli", `-s=${SESSION}`, ...cliArgs],
+    { encoding: "utf8", timeout: CLI_TIMEOUT_MS },
+  );
+  if (result.status !== 0) {
+    throw new Error(
+      `playwright-cli ${cliArgs[0]} failed:\n${result.error?.message ?? (result.stderr || result.stdout)}`,
+    );
+  }
+  return result.stdout.trim();
+}
+
+async function isUp() {
+  try {
+    const response = await fetch(ORIGIN, { signal: AbortSignal.timeout(1000) });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureDevServer() {
+  if (await isUp()) {
+    return null;
+  }
+  const child = spawn("npm", ["run", "dev"], {
+    stdio: "ignore",
+    detached: true,
+  });
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (await isUp()) {
+      return child;
+    }
+  }
+  safeKill(/** @type {number} */ (child.pid), "startup dev server");
+  throw new Error("dev server did not answer within 60s");
+}
+
+/** Built as a plain JS string, not through page.evaluate's argument-passing, so the selector and
+   the falsify flag are interpolated as JS literals directly into the evaluated source. Runs the
+   entire sweep — clone, resize the host, bisect every boundary — inside the page in one call, so
+   the round trip to the CLI happens once per tier rather than once per width.
+ * @param {string} cssSelector
+ * @param {boolean} mutateContent */
+function sweepScript(cssSelector, mutateContent) {
+  const selectorLiteral = JSON.stringify(cssSelector);
+  /* Mutates the invite's own sentence, not the couple's names: the drawn names' width is `em` of the
+     heading's size token, so a name's length cannot reach the layout, while the sentence's length
+     drives wrapping and so the card's height. An empty read throws: a zero-match mutation is
+     indistinguishable from success. */
+  const mutate = mutateContent
+    ? `const line = document.querySelector("[data-invite-line]"); if (!line) throw new Error("--falsify found no [data-invite-line] to mutate; the sweep would have passed while changing nothing"); line.textContent += " — and a much longer rendering of this sentence, added only to falsify the measuring script";`
+    : "";
+  return `async () => await page.evaluate(async () => {
+  const SELECTOR = ${selectorLiteral};
+  await document.fonts.ready;
+  ${mutate}
+  const sources = [...document.querySelectorAll(SELECTOR)];
+  if (sources.length === 0) {
+    return { error: "selector not found: " + SELECTOR };
+  }
+
+  /* Each stack gets its own host and the sweep reads the tallest. A maximum of non-rising step
+     functions is itself non-rising, so validation still holds. */
+  const measured = sources.map((source) => {
+    const host = document.createElement("div");
+    host.style.cssText =
+      "position:fixed;top:-100000px;left:-100000px;visibility:hidden;display:flex;flex-direction:column;pointer-events:none;";
+    const clone = source.cloneNode(true);
+    clone.style.width = "100%";
+    clone.style.maxWidth = "none";
+    /* A wrapped venue's narrowed width is the LIVE window's answer; the sweep re-wraps the clone
+       at every width, so the clone must start from the unnarrowed paragraph or it measures a venue
+       capped at the wrong width. */
+    for (const shrunk of clone.querySelectorAll("[data-shrink-to-line]")) {
+      shrunk.style.removeProperty("max-width");
+    }
+    host.appendChild(clone);
+    document.body.appendChild(host);
+    return { host, clone };
+  });
+
+  function heightAt(width) {
+    let tallest = 0;
+    for (const { host, clone } of measured) {
+      host.style.width = width + "px";
+      tallest = Math.max(tallest, clone.getBoundingClientRect().height);
+    }
+    return tallest;
+  }
+
+  const MIN_WIDTH = ${MIN_WIDTH};
+  const MAX_WIDTH = ${MAX_WIDTH};
+  const STEP_EPSILON = 0.05;
+  const MAX_BOUNDARIES_PER_PIXEL = ${MAX_BOUNDARIES_PER_PIXEL};
+
+  const heights = [];
+  for (let w = MIN_WIDTH; w <= MAX_WIDTH; w += 1) {
+    heights.push(heightAt(w));
+  }
+
+  const regimes = [{ minContentWidth: MIN_WIDTH, contentHeight: heights[0] }];
+  for (let i = 1; i < heights.length; i += 1) {
+    if (Math.abs(heights[i] - heights[i - 1]) > STEP_EPSILON) {
+      /* An integer step can hide MORE THAN ONE boundary: two lines can unwrap within the same
+         pixel, and bisecting once then stops at the first, recording its intermediate height and
+         losing the real one. */
+      const top = MIN_WIDTH + i;
+      let lo = MIN_WIDTH + i - 1;
+      let loHeight = heights[i - 1];
+      let pass = 0;
+      while (Math.abs(loHeight - heights[i]) > STEP_EPSILON) {
+        /* MAX_BOUNDARIES_PER_PIXEL is a ceiling on how many boundaries one pixel may hold, NOT a
+           consequence of the bisection advancing — that exits at hi - lo <= 1/1024, so a pass can
+           move lo by barely over 1/2048 and the interval alone would allow far more passes than
+           this. The ceiling only stops a pathological pixel spinning, and reaching it is reported
+           rather than swallowed: breaking out here would leave an intermediate height recorded and
+           validation would still pass, which is exactly the silent truncation this loop exists to
+           remove. */
+        if (pass >= MAX_BOUNDARIES_PER_PIXEL) {
+          return {
+            error:
+              "more than " + MAX_BOUNDARIES_PER_PIXEL + " regime boundaries inside the pixel at " +
+              top + "px: the ladder cannot be resolved there without dropping one. Raise " +
+              "MAX_BOUNDARIES_PER_PIXEL.",
+          };
+        }
+        pass += 1;
+        const from = lo;
+        let hi = top;
+        while (hi - lo > 1 / 1024) {
+          const mid = (lo + hi) / 2;
+          const h = heightAt(mid);
+          if (Math.abs(h - loHeight) <= STEP_EPSILON) {
+            lo = mid;
+          } else {
+            hi = mid;
+          }
+        }
+        const boundary = Math.round(hi * 1024) / 1024;
+        const height = heightAt(hi);
+        const previous = regimes[regimes.length - 1];
+        if (boundary > previous.minContentWidth) {
+          regimes.push({ minContentWidth: boundary, contentHeight: height });
+        } else {
+          /* Two boundaries closer together than the recorded precision: the later height is the
+             one that holds from here on, so it replaces rather than adds. */
+          previous.contentHeight = height;
+        }
+        if (!(hi > from)) {
+          /* The interval stopped shrinking with the ladder still unresolved — two boundaries closer
+             together than the sweep can separate. Reported for the same reason as the ceiling. */
+          return {
+            error:
+              "regime boundaries at " + top + "px are closer together than the sweep can " +
+              "separate, so the ladder there cannot be resolved.",
+          };
+        }
+        lo = hi;
+        loHeight = height;
+      }
+    }
+  }
+
+  for (const { host } of measured) {
+    document.body.removeChild(host);
+  }
+  return { regimes };
+})`;
+}
+
+/** @param {number} value */
+function round6(value) {
+  return Math.round(value * 1e6) / 1e6;
+}
+
+/** The same shape mounted-sheet-frame.ts's assertValidFit checks at the point of use: ascending
+   widths, and a height that never rises as width grows. Checked here too so a malformed sweep is
+   caught at generation time, not at first render.
+ * @param {string} tier
+ * @param {Regime[]} regimes */
+function validateRegimes(tier, regimes) {
+  if (regimes.length === 0) {
+    throw new Error(`measure-section-fit: no regimes measured for ${tier}`);
+  }
+  for (let i = 1; i < regimes.length; i += 1) {
+    if (!(regimes[i].minContentWidth > regimes[i - 1].minContentWidth)) {
+      throw new Error(
+        `measure-section-fit: ${tier} regime ${i} does not start wider than regime ${i - 1}`,
+      );
+    }
+    if (regimes[i].contentHeight > regimes[i - 1].contentHeight) {
+      throw new Error(
+        `measure-section-fit: ${tier} regime ${i} stands taller than regime ${i - 1} at a wider width`,
+      );
+    }
+  }
+}
+
+/**
+ * @param {(typeof TIERS)[number]} tier
+ * @param {(typeof ORIENTATIONS)[number]} orientation
+ * @param {boolean} mutateContent
+ * @returns {Promise<Regime[]>}
+ */
+async function measureTierOrientation(tier, orientation, mutateContent) {
+  const label = `${tier.key} ${orientation.key}`;
+  cli("resize", String(tier.width), String(orientation.heightFor(tier.width)));
+  cli("reload");
+  const raw = cli(
+    "run-code",
+    "--raw",
+    sweepScript(/** @type {string} */ (selector), mutateContent),
+  );
+  const result = JSON.parse(raw);
+  if (result.error) {
+    throw new Error(`measure-section-fit: ${label} — ${result.error}`);
+  }
+  const regimes = result.regimes.map((/** @type {Regime} */ regime) => ({
+    minContentWidth: round6(regime.minContentWidth),
+    contentHeight: round6(regime.contentHeight),
+  }));
+  validateRegimes(label, regimes);
+  return regimes;
+}
+
+/** @param {Regime[]} regimes */
+function formatRegimes(regimes) {
+  return regimes
+    .map(
+      (regime) =>
+        `      { minContentWidth: ${regime.minContentWidth}, contentHeight: ${regime.contentHeight} },`,
+    )
+    .join("\n");
+}
+
+/** @param {Record<string, Regime[]>} byOrientation */
+function formatOrientation(byOrientation) {
+  return ORIENTATIONS.map(
+    (orientation) => `      ${orientation.key}: [
+${formatRegimes(byOrientation[orientation.key])}
+      ],`,
+  ).join("\n");
+}
+
+/** @param {Record<string, Record<string, Regime[]>>} fit */
+function renderFile(fit) {
+  return `/* Generated by \`npm run measure:fit\` — DO NOT hand-edit; re-run the script instead.
+   Source: ${route}, selector ${JSON.stringify(selector)}.
+${contentLine}
+   DESIGN.md → Foundations → Layout → \`mounted-sheet\` → Measured per section. */
+
+import type { MeasuredFit } from "@/components/layout/mounted-sheet-frame";
+
+export const ${exportName}: MeasuredFit = {
+  section: ${JSON.stringify(section)},
+  regimes: {
+    phone: {
+${formatOrientation(fit.phone)}
+    },
+    tablet: {
+${formatOrientation(fit.tablet)}
+    },
+    laptop: {
+${formatOrientation(fit.laptop)}
+    },
+    desktop: {
+${formatOrientation(fit.desktop)}
+    },
+  },
+};
+`;
+}
+
+const server = await ensureDevServer();
+
+try {
+  cli("open", `${ORIGIN}${route}`);
+
+  /** @type {Record<string, Record<string, Regime[]>>} */
+  const fit = {};
+  for (const tier of TIERS) {
+    fit[tier.key] = {};
+    for (const orientation of ORIENTATIONS) {
+      /* Falsified on phone only: enough to prove the bisection catches a real content change. */
+      const mutateContent = falsify && tier.key === "phone";
+      fit[tier.key][orientation.key] = await measureTierOrientation(
+        tier,
+        orientation,
+        mutateContent,
+      );
+    }
+  }
+
+  console.log(`\nMeasured fit for "${section}" (${route}, ${selector}):`);
+  for (const tier of TIERS) {
+    for (const orientation of ORIENTATIONS) {
+      console.log(`  ${tier.key} ${orientation.key}:`);
+      for (const regime of fit[tier.key][orientation.key]) {
+        console.log(`    ${regime.minContentWidth} -> ${regime.contentHeight}`);
+      }
+    }
+  }
+
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(outPath, renderFile(fit), "utf8");
+  console.log(`\nWrote ${outPath}`);
+} finally {
+  try {
+    cli("close");
+  } catch (error) {
+    console.error(
+      `cleanup: close failed — ${/** @type {Error} */ (error).message}`,
+    );
+  }
+  if (server !== null) {
+    safeKill(/** @type {number} */ (server.pid), "dev server");
+  }
+}
