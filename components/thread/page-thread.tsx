@@ -5,6 +5,7 @@ import styles from "./thread.module.css";
 import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
 import { PAGE_FALLBACKS } from "./thread-fallback";
+import { ThreadFilters } from "./thread-filters";
 import { paintedLength } from "./thread-head";
 import { TaperCutMask, ThreadInk, TRUNK_CUT_ID } from "./thread-ink";
 import {
@@ -56,8 +57,13 @@ import {
 } from "./thread-retrace";
 import type { PieceSamples } from "./thread-samples";
 import {
+  createThreadShadows,
+  type ThreadShadows,
+} from "./thread-shadow-regions";
+import {
   createThreadSpikes,
   setSwayAwake,
+  swayAmplitude,
   type ThreadSpikes,
 } from "./thread-spikes";
 import {
@@ -210,6 +216,8 @@ export function PageThread() {
   const taperGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
   const taperRef = useRef<TaperPainter | null>(null);
+  const shadowDefsRef = useRef<SVGDefsElement>(null);
+  const shadowsRef = useRef<ThreadShadows | null>(null);
   const retraceGroupRef = useRef<SVGGElement>(null);
   const retraceGlowRef = useRef<SVGGElement>(null);
   const retraceRef = useRef<RetracePainter | null>(null);
@@ -266,6 +274,13 @@ export function PageThread() {
     return (
       spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
     );
+  }, []);
+
+  const shadows = useCallback((): ThreadShadows | null => {
+    const defs = shadowDefsRef.current;
+    if (defs === null) return null;
+    shadowsRef.current ??= createThreadShadows(defs, swayAmplitude());
+    return shadowsRef.current;
   }, []);
 
   const head = useCallback((): HeadPainter | null => {
@@ -496,10 +511,12 @@ export function PageThread() {
       applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
       spikesRef.current?.painted(drawn);
       head()?.paint(drawn, chainRef.current, headOptions());
+      if (headGroupRef.current !== null)
+        shadows()?.headPainted(headGroupRef.current);
       const first = piecesRef.current[0];
       if (first !== undefined) taper()?.paint(paintedLength(drawn, first));
     },
-    [head, taper],
+    [head, shadows, taper],
   );
 
   /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
@@ -615,6 +632,14 @@ export function PageThread() {
             direction: -1,
           },
       taperOptions(),
+    );
+    const taperGroup = taperGroupRef.current;
+    const invitePath = pathsRef.current[0];
+    shadows()?.measured(
+      pathsRef.current,
+      taperGroup === null || invitePath === null || invitePath === undefined
+        ? undefined
+        : { group: taperGroup, piece: invitePath },
     );
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
@@ -861,6 +886,8 @@ export function PageThread() {
   return (
     <span aria-hidden="true" className={styles.pageWrapper} ref={wrapperRef}>
       <style>{FALLBACK_STYLE}</style>
+      {/* The page's one copy of the shadow and halo filters; Wishes' card thread names them too. */}
+      <ThreadFilters />
       <svg
         className={styles.pageRoot}
         data-thread-svg="true"
@@ -900,6 +927,7 @@ export function PageThread() {
             (structural, band-invariant -- `MAIN_PIECE_COUNT`'s own header), so index and identity
             never diverge here. */}
         <TaperCutMask cutRef={cutRef} id={TRUNK_CUT_ID} />
+        <defs ref={shadowDefsRef} />
         {Array.from({ length: MAIN_PIECE_COUNT }, (_, index) => (
           <ThreadInk
             cutId={index === 0 ? TRUNK_CUT_ID : undefined}

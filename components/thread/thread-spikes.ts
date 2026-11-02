@@ -36,6 +36,12 @@ type Sway = {
 /* The shipped sway: 8px, a 4s sway, a gust every 8s carrying half the motion. */
 const SHIPPED_SWAY = "sg-8-p4-e8-g50";
 
+/* The most the chosen sway moves any point, whether or not it is running now (reduced motion can be
+   switched off later): a region read from an unswayed path must still hold the swayed one. */
+export function swayAmplitude(): number {
+  return parseSway(readVariant("sway") ?? SHIPPED_SWAY)?.amplitude ?? 0;
+}
+
 /* The panel's sway option ids carry their own values: `sg-<px>-p<sway s>-e<gust every s>-g<gust %>`. */
 export function parseSway(id: string | undefined): Sway | undefined {
   const match = id?.match(

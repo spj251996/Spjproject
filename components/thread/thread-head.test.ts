@@ -9,7 +9,6 @@ import {
   colourToken,
   OPTIONS,
   pxToken,
-  tokenValue,
 } from "../../scripts/lib/built-tokens.ts";
 import {
   deltaE,
@@ -318,40 +317,6 @@ test("the head's chosen values are the ones in the stylesheet", () => {
   assert.equal(pxToken("stroke-thread"), 2.2);
 });
 
-/* Any failure here is also a prompt to re-fit `FITTED_GLOW` (`thread-retrace.ts`): the re-trace's eight
-   glow alphas were fitted to the falloff of exactly these radii and alphas, so retuning the halo
-   leaves them describing a halo that no longer exists. */
-const shadows = (name: string) =>
-  [
-    ...tokenValue(name).matchAll(
-      /([\d.]+)(?:px)? ([\d.]+)(?:px)? ([\d.]+)px color-mix\(in srgb, var\(([\w-]+)\) (\d+)%/g,
-    ),
-  ].map((match) => ({
-    x: Number(match[1]),
-    y: Number(match[2]),
-    blur: Number(match[3]),
-    colour: match[4],
-    alpha: Number(match[5]),
-  }));
-
-/* Chosen on a render (DESIGN.md -> Thread -> The contact shadow): pinned so a stray edit cannot move
-   the thread off the paper unseen. */
-test("the thread's contact shadow falls straight down in the paper's own shadow tint", () => {
-  assert.deepEqual(shadows("bleed-thread"), [
-    { x: 0, y: 1, blur: 1.25, colour: "--color-shadow-warm", alpha: 65 },
-    { x: 0, y: 4, blur: 6, colour: "--color-shadow-warm", alpha: 30 },
-  ]);
-});
-
-test("the head's halo keeps the radii FITTED_GLOW was fitted to", () => {
-  assert.deepEqual(
-    shadows("halo-thread-head").map((shadow) => shadow.blur),
-    [3.5, 12, 33],
-    "the halo's radii changed: FITTED_GLOW's eight alphas were fitted to the falloff of THESE radii " +
-      "and alphas, so re-fit them and re-measure MEASURED_HALO before updating this expectation",
-  );
-});
-
 /* TRIPWIRE, not a design value. The literals below (`2.2px`, `#cd4a3f`) are the current head values, repeated here only because the assertion is about the BUILT artifact. When the owner
    retunes either, this test failing is expected: update the literal to the new token value, do not
    delete the test. The other half of it, that the built script reads every token by name and carries
@@ -363,7 +328,7 @@ test("the built page reads the head's values from the built stylesheet rather th
   for (const token of [
     "--stroke-thread:2.2px",
     "--color-thread-sheen:#cd4a3f",
-    "--halo-thread-head:drop-shadow(",
+    "--halo-thread-head:url(#thread-head-halo)",
   ]) {
     assert.ok(
       css.replace(/\s+/g, "").includes(token),

@@ -43,7 +43,15 @@ import {
   totalLength,
 } from "./thread-progress";
 import type { PieceSamples } from "./thread-samples";
-import { createThreadSpikes, type ThreadSpikes } from "./thread-spikes";
+import {
+  createThreadShadows,
+  type ThreadShadows,
+} from "./thread-shadow-regions";
+import {
+  createThreadSpikes,
+  swayAmplitude,
+  type ThreadSpikes,
+} from "./thread-spikes";
 import {
   headOptions,
   readTerminalWindow,
@@ -98,6 +106,8 @@ export function CardThread() {
   const taperGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
   const taperRef = useRef<TaperPainter | null>(null);
+  const shadowDefsRef = useRef<SVGDefsElement>(null);
+  const shadowsRef = useRef<ThreadShadows | null>(null);
   const retraceGroupRef = useRef<SVGGElement>(null);
   const retraceGlowRef = useRef<SVGGElement>(null);
   const retraceRef = useRef<RetracePainter | null>(null);
@@ -153,6 +163,13 @@ export function CardThread() {
     return retraceRef.current;
   }
 
+  function shadows(): ThreadShadows | null {
+    const defs = shadowDefsRef.current;
+    if (defs === null) return null;
+    shadowsRef.current ??= createThreadShadows(defs, swayAmplitude());
+    return shadowsRef.current;
+  }
+
   function taper(): TaperPainter | null {
     const group = taperGroupRef.current;
     const cut = cutRef.current;
@@ -165,6 +182,8 @@ export function CardThread() {
     applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
     spikesRef.current?.painted(drawn);
     head()?.paint(drawn, chainRef.current, headOptions());
+    if (headGroupRef.current !== null)
+      shadows()?.headPainted(headGroupRef.current);
     const last = piecesRef.current[piecesRef.current.length - 1];
     if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
   }
@@ -294,6 +313,14 @@ export function CardThread() {
           },
       taperOptions(),
     );
+    const taperGroup = taperGroupRef.current;
+    const closingPath = pathsRef.current[pathsRef.current.length - 1];
+    shadows()?.measured(
+      pathsRef.current,
+      taperGroup === null || closingPath === null || closingPath === undefined
+        ? undefined
+        : { group: taperGroup, piece: closingPath },
+    );
 
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
@@ -369,6 +396,7 @@ export function CardThread() {
         role="presentation"
       >
         <TaperCutMask cutRef={cutRef} id={CARD_CUT_ID} />
+        <defs ref={shadowDefsRef} />
         {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
           <ThreadInk
             cutId={index === WISHES_PIECE_COUNT - 1 ? CARD_CUT_ID : undefined}

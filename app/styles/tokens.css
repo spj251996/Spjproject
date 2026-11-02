@@ -245,36 +245,20 @@
 
   /* THE THREAD'S CONTACT SHADOW — the line lying on the paper casts it, so it takes the paper's own
      shadow tint and falls straight down: a tight contact layer and a softer lift, which seat the
-     thread a little above the paper rather than soaking it in. One value so tuning touches one line
-     (DESIGN.md → Thread → The contact shadow). Wide radii on every piece's ink cost a cliff, not a
-     gradual scaling (55 dropped frames over a 5s scrub at 33px against 4 at 8.25px), so do not widen
-     the blur without re-measuring. */
-  --bleed-thread: drop-shadow(
-      0 1px 1.25px color-mix(in srgb, var(--color-shadow-warm) 65%, transparent)
-    )
-    drop-shadow(
-      0 4px 6px color-mix(in srgb, var(--color-shadow-warm) 30%, transparent)
-    );
+     thread a little above the paper rather than soaking it in (DESIGN.md → Thread → The contact
+     shadow). An SVG filter, never a CSS drop-shadow, which no iPhone paints on the thread's paths; its
+     layers and the reason they cannot widen cheaply live with it in `thread-filters.tsx`. */
+  --bleed-thread: url(#thread-contact-shadow);
 
   /* THE DRAWING HEAD'S HALO — at half strength, as the re-trace's glow is: the head and the sheen are one
-     look (DESIGN.md -> Thread -> The drawing head). One value on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
+     look (DESIGN.md -> Thread -> The drawing head). One filter on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
      every piece of a static line they cost 55 dropped frames over a 5s scrub at 393x700; as one
      filter over the moving head's tight silhouette they cost 6 as built (3 above the bleed alone).
      What was isolated is that geometry dominated: dashed copies of whole pieces under the same
      filter cost 54 against 10. Radius matters too (the bleed alone went 55 -> 9 -> 4 at 1.0x / 0.5x
-     / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). */
-  --halo-thread-head: drop-shadow(
-      0 0 3.5px
-        color-mix(in srgb, var(--color-thread-vermilion) 34%, transparent)
-    )
-    drop-shadow(
-      0 0 12px
-        color-mix(in srgb, var(--color-thread-vermilion) 22%, transparent)
-    )
-    drop-shadow(
-      0 0 33px
-        color-mix(in srgb, var(--color-thread-vermilion) 15%, transparent)
-    );
+     / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). An SVG filter, as the
+     contact shadow is; its layers live in `thread-filters.tsx`. */
+  --halo-thread-head: url(#thread-head-halo);
 
   /* Every texture is one SVG drawn at three times its tile's CSS size and rasterised once by
      the browser, then tiled — at 1:1 a high-density display upscales the tile into blotches, and a

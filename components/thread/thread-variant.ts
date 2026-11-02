@@ -10,6 +10,8 @@
    runs from the page's HTML ahead of `<main>`, and a change in the panel reloads the page. With nothing
    stored, or storage blocked, it sets nothing, and `/thread` is exactly the shipped thread. */
 
+import type { ThreadFilter } from "./thread-shadows.ts";
+
 export type VariantOption = {
   readonly id: string;
   readonly label: string;
@@ -27,6 +29,69 @@ export type VariantAxis = {
   readonly options: readonly VariantOption[];
 };
 
+/* The panel's own filters, rendered beside the shipped ones by `ThreadFilters`. */
+function shadowFilter(
+  id: string,
+  layers: readonly (readonly [number, number, number])[],
+): ThreadFilter {
+  return {
+    id,
+    layers: layers.map(([offsetY, blur, percent]) => ({
+      offsetY,
+      blur,
+      colour: "--color-shadow-warm",
+      alpha: percent / 100,
+    })),
+  };
+}
+
+const LIGHTER_SHADOW = shadowFilter("thread-contact-shadow-lighter", [
+  [0.75, 1, 55],
+  [3, 5, 24],
+]);
+const DEEPEST_SHADOW = shadowFilter("thread-contact-shadow-deepest", [
+  [1, 1.5, 75],
+  [5, 8, 36],
+]);
+const RED_BLEED: ThreadFilter = {
+  id: "thread-red-bleed",
+  layers: [
+    {
+      offsetY: 0,
+      blur: 0.875,
+      colour: "--color-thread-vermilion",
+      alpha: 0.68,
+    },
+    { offsetY: 0, blur: 3, colour: "--color-thread-vermilion", alpha: 0.44 },
+    { offsetY: 0, blur: 8.25, colour: "--color-thread-vermilion", alpha: 0.3 },
+  ],
+};
+/* The earlier full halo: the shipped halo's radii (3.5 / 12 / 33px) at twice its strength. */
+const FULL_HALO: ThreadFilter = {
+  id: "thread-head-halo-full",
+  layers: [
+    { offsetY: 0, blur: 3.5, colour: "--color-thread-vermilion", alpha: 0.68 },
+    { offsetY: 0, blur: 12, colour: "--color-thread-vermilion", alpha: 0.44 },
+    { offsetY: 0, blur: 33, colour: "--color-thread-vermilion", alpha: 0.3 },
+  ],
+};
+
+export const VARIANT_FILTERS: readonly ThreadFilter[] = [
+  LIGHTER_SHADOW,
+  DEEPEST_SHADOW,
+  RED_BLEED,
+  FULL_HALO,
+];
+
+function filterOption(
+  id: string,
+  label: string,
+  property: "--bleed-thread" | "--halo-thread-head",
+  filter: ThreadFilter,
+): VariantOption {
+  return { id, label, properties: { [property]: `url(#${filter.id})` } };
+}
+
 /* One axis per decision; the shipped value is the absence of a choice, never an option here, so the
    panel cannot show a stale "shipped" that differs from what ships. */
 export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
@@ -41,27 +106,20 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
     ],
   },
   /* The deep contact shadow ships (`--bleed-thread`); the panel offers one step lighter, one deeper,
-     and the old red bleed, which only tells a missing filter on a phone apart from a faint one. */
+     and the old red bleed, which only tells a missing filter on a phone apart from a faint one. Each
+     names its own SVG filter (`thread-filters.tsx`), rendered from `VARIANT_FILTERS` below. */
   {
     id: "shadow",
     label: "Shadow under the line (shipped: deep)",
     options: [
-      contactShadow("lighter", "Lighter", [
-        [0.75, 1, 55],
-        [3, 5, 24],
-      ]),
-      contactShadow("deepest", "Deepest", [
-        [1, 1.5, 75],
-        [5, 8, 36],
-      ]),
-      {
-        id: "red-bleed",
-        label: "Old red bleed (to compare on the phone)",
-        properties: {
-          "--bleed-thread":
-            "drop-shadow(0 0 0.875px color-mix(in srgb, var(--color-thread-vermilion) 68%, transparent)) drop-shadow(0 0 3px color-mix(in srgb, var(--color-thread-vermilion) 44%, transparent)) drop-shadow(0 0 8.25px color-mix(in srgb, var(--color-thread-vermilion) 30%, transparent))",
-        },
-      },
+      filterOption("lighter", "Lighter", "--bleed-thread", LIGHTER_SHADOW),
+      filterOption("deepest", "Deepest", "--bleed-thread", DEEPEST_SHADOW),
+      filterOption(
+        "red-bleed",
+        "Old red bleed (to compare on the phone)",
+        "--bleed-thread",
+        RED_BLEED,
+      ),
     ],
   },
   /* The light, as ONE pair: the drawing head while a piece draws and the re-trace at rest always take
@@ -80,51 +138,17 @@ export const THREAD_VARIANT_AXES: readonly VariantAxis[] = [
         css: "[data-thread-retrace-glow]{display:none}",
       },
       {
-        id: "orange",
-        label: "Orange tip, full glow (the earlier head)",
-        properties: { "--halo-thread-head": headHalo(200) },
+        ...filterOption(
+          "orange",
+          "Orange tip, full glow (the earlier head)",
+          "--halo-thread-head",
+          FULL_HALO,
+        ),
         css: "[data-thread-retrace-glow]{opacity:1}",
       },
     ],
   },
 ];
-
-/* The head's halo (3.5 / 12 / 33px at 34 / 22 / 15%, `--halo-thread-head`) at `percent` of its shipped
-   strength; 200 is the earlier full halo. */
-function headHalo(percent: number): string {
-  return (
-    [
-      [3.5, 34],
-      [12, 22],
-      [33, 15],
-    ] as const
-  )
-    .map(
-      ([blur, alpha]) =>
-        `drop-shadow(0 0 ${blur}px color-mix(in srgb, var(--color-thread-vermilion) ${(alpha * percent) / 100}%, transparent))`,
-    )
-    .join(" ");
-}
-
-function shadowLayer(offsetY: number, blur: number, alpha: number): string {
-  return `drop-shadow(0 ${offsetY}px ${blur}px color-mix(in srgb, var(--color-shadow-warm) ${alpha}%, transparent))`;
-}
-
-function contactShadow(
-  id: string,
-  label: string,
-  layers: readonly (readonly [number, number, number])[],
-): VariantOption {
-  return {
-    id,
-    label,
-    properties: {
-      "--bleed-thread": layers
-        .map(([offsetY, blur, alpha]) => shadowLayer(offsetY, blur, alpha))
-        .join(" "),
-    },
-  };
-}
 
 export const THREAD_VARIANT_STORAGE_KEY = "thread-review";
 
