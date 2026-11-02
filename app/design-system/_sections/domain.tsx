@@ -12,6 +12,7 @@ import {
   ThreadTaperSpecimen,
 } from "@/app/design-system/_sections/thread-specimens";
 import { Family } from "@/components/family/family";
+import { ThreadFilters } from "@/components/thread/thread-filters";
 import type { FamilyGroup } from "@/content/types";
 
 const THREAD_ENTRIES: InlineEntry[] = [
@@ -109,6 +110,8 @@ export function DomainSections() {
         title="Domain · Thread"
       >
         <InlineList entries={THREAD_ENTRIES} />
+        {/* The specimens name the page's shadow and halo filters, which only `PageThread` renders. */}
+        <ThreadFilters />
 
         <Specimen
           description="The ink: one line in thread-red at the ink's width, with its contact shadow beneath it."
@@ -118,7 +121,7 @@ export function DomainSections() {
           source="components/thread/thread.module.css · .pageInk"
           spec={[
             "ink · --color-thread-red at --stroke-thread (2.2px), round caps",
-            "contact shadow · --bleed-thread, two drop-shadows of shadow-warm straight down — 1px at 1.25px blur, 65%; 4px at 6px blur, 30% — on each piece's ink",
+            "contact shadow · --bleed-thread, one SVG filter of two drop-shadows of shadow-warm straight down — 1px at 1.25px blur, 65%; 4px at 6px blur, 30% — on each piece's ink",
           ]}
         >
           <ThreadInkSpecimen />
@@ -135,7 +138,7 @@ export function DomainSections() {
             "colour · thread-red at the tail, thread-sheen-mid in the middle, thread-sheen at the tip, interpolated in OKLCH",
             "width · --stroke-thread (2.2px) throughout",
             "steps · max(ceil(length / 8), ceil(rampSpan / 2)), capped at 48",
-            "halo · --halo-thread-head, thread-vermilion at half strength: 34% / 22% / 15% at 3.5px / 12px / 33px",
+            "halo · --halo-thread-head, an SVG filter of thread-vermilion at half strength: 34% / 22% / 15% at 3.5px / 12px / 33px",
           ]}
         >
           <ThreadHeadSpecimen />
