@@ -129,7 +129,7 @@ export function CardThread() {
      ratchet to do it: this component's maximum is a length along the card thread's path, which is not the
      trunk's (`PageThread`'s own `ratchetRef`). */
   const ratchetRef = useRef(createDrawRatchet());
-  /* TEMPORARY: the review panel's twist and sway spikes (`thread-spikes.ts`). */
+  /* The twist and the sway (`thread-spikes.ts`). */
   const spikesRef = useRef<ThreadSpikes | null>(null);
 
   /* The `d` of a chain piece that lives in THIS `<svg>`, or nothing for the trunk's. */
@@ -137,7 +137,7 @@ export function CardThread() {
     if (index < firstPieceRef.current) return undefined;
     const path = pathsRef.current[index - firstPieceRef.current];
     if (path === null || path === undefined) return undefined;
-    /* TEMPORARY (review panel): a swaying `d` is not the geometry; the spike holds the unswayed one. */
+    /* A swaying `d` is not the geometry; the sway holds the unswayed one. */
     return (
       spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
     );

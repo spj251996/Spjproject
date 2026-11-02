@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { tokenValue } from "../../scripts/lib/built-tokens.ts";
-import { CONTACT_SHADOW, HEAD_HALO, THREAD_FILTERS } from "./thread-shadows.ts";
-import { THREAD_VARIANT_AXES } from "./thread-variant.ts";
+import { CONTACT_SHADOW, HEAD_HALO } from "./thread-shadows.ts";
 
 /* Chosen on a render (DESIGN.md -> Thread -> The contact shadow): pinned so a stray edit cannot move
    the thread off the paper unseen. */
@@ -39,17 +38,4 @@ test("the head's halo keeps the radii and strengths FITTED_GLOW was fitted to", 
 test("the shadow and halo tokens name the SVG filters rather than carrying a CSS drop-shadow", () => {
   assert.equal(tokenValue("bleed-thread"), `url(#${CONTACT_SHADOW.id})`);
   assert.equal(tokenValue("halo-thread-head"), `url(#${HEAD_HALO.id})`);
-});
-
-test("every filter the panel names is rendered, once", () => {
-  const ids = THREAD_FILTERS.map((filter) => filter.id);
-  assert.equal(new Set(ids).size, ids.length, "a filter id is rendered twice");
-  const named = THREAD_VARIANT_AXES.flatMap((axis) => axis.options)
-    .flatMap((option) => Object.values(option.properties ?? {}))
-    .flatMap((value) =>
-      [...value.matchAll(/url\(#([\w-]+)\)/g)].map((m) => m[1]),
-    );
-  assert.ok(named.length > 0, "the panel names no filter");
-  for (const id of named)
-    assert.ok(ids.includes(id), `#${id} is named but not rendered`);
 });

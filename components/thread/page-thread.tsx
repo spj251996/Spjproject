@@ -262,7 +262,7 @@ export function PageThread() {
      line where it was, never unravel it. `CardThread` owns its own; the two maxima are in
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
-  /* TEMPORARY: the review panel's twist and sway spikes (`thread-spikes.ts`). */
+  /* The twist and the sway (`thread-spikes.ts`). */
   const spikesRef = useRef<ThreadSpikes | null>(null);
 
   /* The `d` of a chain piece that lives in this `<svg>`, or nothing for the card thread's. */
@@ -270,7 +270,7 @@ export function PageThread() {
     if (index >= piecesRef.current.length) return undefined;
     const path = pathsRef.current[index];
     if (path === null || path === undefined) return undefined;
-    /* TEMPORARY (review panel): a swaying `d` is not the geometry; the spike holds the unswayed one. */
+    /* A swaying `d` is not the geometry; the sway holds the unswayed one. */
     return (
       spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
     );

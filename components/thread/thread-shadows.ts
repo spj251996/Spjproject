@@ -1,5 +1,3 @@
-import { VARIANT_FILTERS } from "./thread-variant.ts";
-
 /* The thread's contact shadow and the drawing head's halo, as SVG filters (DESIGN.md -> Thread ->
    The contact shadow, The drawing head). `--bleed-thread` and `--halo-thread-head` name them by id.
 
@@ -49,5 +47,4 @@ export const HEAD_HALO: ThreadFilter = {
 export const THREAD_FILTERS: readonly ThreadFilter[] = [
   CONTACT_SHADOW,
   HEAD_HALO,
-  ...VARIANT_FILTERS,
 ];

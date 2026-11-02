@@ -1,6 +1,5 @@
-/* TEMPORARY SPIKES — the thread's sway candidates, switched by the review panel
-   (`thread-variant.ts`). The sway does nothing unless the panel's axis is set, and it leaves with the
-   panel, or is replaced by a real build if a candidate is picked.
+/* THE SWAY, and the entry point that builds the twist beside it. The owner finalised the 4s sway
+   (2026-11-02), so it is committed; nothing switches it but reduced motion and the tests' sway-off seam.
 
    TWIST: committed in `thread-twist.ts` and always on, but built by this file's entry point, because it
    reads each piece's unswayed path from the sway. Removing this file moves that call into `PageThread`
@@ -18,14 +17,11 @@
 
 import type { ThreadPiece } from "./thread-line.ts";
 import { createTwistPainter } from "./thread-twist.ts";
-import { readVariant } from "./thread-variant.ts";
 
 /* ---------------------------------------------------------------------------------------------
    SWAY */
 
-/* The owner's pick (2026-10-30): a slow sway with gusts passing through it. Each candidate varies
-   one thing from the 8px baseline — the sway's period, how often a gust comes, how much of the motion
-   is gust, or the size. */
+/* The owner's pick (2026-10-30, finalised 2026-11-02): a slow sway with gusts passing through it. */
 type Sway = {
   amplitude: number;
   swayPeriod: number;
@@ -33,27 +29,26 @@ type Sway = {
   gustShare: number;
 };
 
-/* The shipped sway: 8px, a 4s sway, a gust every 8s carrying half the motion. */
-const SHIPPED_SWAY = "sg-8-p4-e8-g50";
+/* The shipped sway: 8px, a 4s sway, a gust every 8s carrying half the motion (DESIGN.md -> Thread ->
+   The sway). */
+export const SHIPPED_SWAY: Sway = {
+  amplitude: 8,
+  swayPeriod: 4,
+  gustEvery: 8,
+  gustShare: 0.5,
+};
 
-/* The most the chosen sway moves any point, whether or not it is running now (reduced motion can be
-   switched off later): a region read from an unswayed path must still hold the swayed one. */
-export function swayAmplitude(): number {
-  return parseSway(readVariant("sway") ?? SHIPPED_SWAY)?.amplitude ?? 0;
+/* The tests of the draw and the re-trace measure without the sway, which keeps a frame loop of its own
+   and re-shapes every path: they set `data-thread-sway="off"` on `<html>` before the page's code runs.
+   Nothing on the page sets it. */
+export function swayIsOff(): boolean {
+  return document.documentElement.dataset.threadSway === "off";
 }
 
-/* The panel's sway option ids carry their own values: `sg-<px>-p<sway s>-e<gust every s>-g<gust %>`. */
-export function parseSway(id: string | undefined): Sway | undefined {
-  const match = id?.match(
-    /^sg-(\d+(?:\.\d+)?)-p(\d+(?:\.\d+)?)-e(\d+(?:\.\d+)?)-g(\d+)$/,
-  );
-  if (match === null || match === undefined) return undefined;
-  return {
-    amplitude: Number(match[1]),
-    swayPeriod: Number(match[2]),
-    gustEvery: Number(match[3]),
-    gustShare: Number(match[4]) / 100,
-  };
+/* The most the sway moves any point, whether or not it is running now (reduced motion can be
+   switched off later): a region read from an unswayed path must still hold the swayed one. */
+export function swayAmplitude(): number {
+  return swayIsOff() ? 0 : SHIPPED_SWAY.amplitude;
 }
 
 const TYPE_FADE = 24;
@@ -228,12 +223,13 @@ function parse(
   return { parts, numbers, top, bottom, length0, length: length0 };
 }
 
-/* DIAGNOSTICS for a device this repo cannot run (an iPhone): the review panel prints these, so a
-   screenshot says whether the sway's loop runs there and what it threw. */
-export const swayDiagnostics = { ticks: 0, errors: [] as string[] };
+/* A throw inside the frame loop must not stop the loop, nor flood the console at 60 a second: the first
+   few are reported, the rest dropped. */
+let reportedErrors = 0;
 function recordError(where: string, error: unknown) {
-  if (swayDiagnostics.errors.length < 5)
-    swayDiagnostics.errors.push(`${where}: ${String(error)}`);
+  if (reportedErrors >= 5) return;
+  reportedErrors += 1;
+  console.error(`thread sway (${where})`, error);
 }
 
 function createSway(svg: SVGSVGElement, sway: Sway) {
@@ -427,7 +423,6 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       frame = null;
       return;
     }
-    swayDiagnostics.ticks += 1;
     try {
       const t = seconds();
       const band = view();
@@ -495,8 +490,7 @@ function obstacleBoxes(main: Element, mainRect: DOMRect): Rect[] {
   const range = document.createRange();
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
     if (!node.textContent?.trim()) continue;
-    if (node.parentElement?.closest("[data-thread-review], style, script"))
-      continue;
+    if (node.parentElement?.closest("style, script")) continue;
     range.selectNodeContents(node);
     for (const r of range.getClientRects()) add(r);
   }
@@ -523,12 +517,8 @@ export function createThreadSpikes(
   /* The rope twist is committed (`thread-twist.ts`) and always on; it is built here only because it
      reads each piece's unswayed path from the sway below. */
   const twist = createTwistPainter(svg, before, cutId, taperPiece);
-  /* The faster sway ships; the panel's "off" parses to nothing, so it is the one way to stop it. */
-  const swayValues = reduced
-    ? undefined
-    : parseSway(readVariant("sway") ?? SHIPPED_SWAY);
   const sway =
-    swayValues === undefined ? undefined : createSway(svg, swayValues);
+    reduced || swayIsOff() ? undefined : createSway(svg, SHIPPED_SWAY);
   const baseOf = (path: SVGPathElement) =>
     sway?.baseOf(path) ?? path.getAttribute("d") ?? "";
 

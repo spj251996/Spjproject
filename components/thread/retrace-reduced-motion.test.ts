@@ -7,7 +7,14 @@ import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
    own and re-shapes every path: the panel's "off" turns it off for them. */
-const SWAY_OFF = `localStorage.setItem("thread-review", JSON.stringify({ sway: "off" }))`;
+const SWAY_OFF = `(() => {
+  const off = () => {
+    if (!document.documentElement) return false;
+    document.documentElement.dataset.threadSway = "off";
+    return true;
+  };
+  if (!off()) new MutationObserver((_, watcher) => off() && watcher.disconnect()).observe(document, { childList: true });
+})()`;
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions

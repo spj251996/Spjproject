@@ -17,7 +17,6 @@ import {
   parseCssTime,
   RETRACE_LENGTH_RATIO,
 } from "./thread-retrace.ts";
-import { readVariant } from "./thread-variant.ts";
 
 /* Read from the built stylesheet rather than copied, so a token edit cannot leave the head behind. */
 export function tokenLength(token: string): number {
@@ -58,11 +57,10 @@ function tokenColour(token: string): Rgb {
   return [r, g, b];
 }
 
-/* The shipped head, the head with any review choice over it, and the re-trace each resolve their tokens
-   once per load and hand back the same object (`stackFor` keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
+/* The head and the re-trace each resolve their tokens once per load and hand back the same object
+   (`stackFor` keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
    specimens included, not on a hot update. */
 let resolvedShippedHead: HeadOptions | undefined;
-let resolvedHeadOptions: HeadOptions | undefined;
 
 function shippedHead(): HeadOptions {
   if (resolvedShippedHead !== undefined) return resolvedShippedHead;
@@ -78,14 +76,10 @@ function shippedHead(): HeadOptions {
   return resolvedShippedHead;
 }
 
-/* The head as shipped, or the review panel's `light` candidate over it. The re-trace builds on the
-   same options, so the drawing head and the re-trace always carry one look as a pair. */
+/* The re-trace builds on the head's options, so the drawing head and the re-trace always carry one look
+   as a pair. */
 export function headOptions(): HeadOptions {
-  resolvedHeadOptions ??= {
-    ...shippedHead(),
-    ...sheenFor(readVariant("light")),
-  };
-  return resolvedHeadOptions;
+  return shippedHead();
 }
 
 /* The drawing head's own values with the re-trace's peak length: the head's options, read once from
@@ -106,25 +100,9 @@ export function retraceFrom(head: HeadOptions, stroke: number): HeadOptions {
   return { ...head, length: RETRACE_LENGTH_RATIO * stroke };
 }
 
-/* The review panel's light candidates: `sheen-<L>-<glow>` paints the head and the re-trace in a lighter
-   stretch of the thread's own red — the tip L hundredths of OKLCH lightness over it, the middle half
-   that — at the ink's own width; `orange` is the earlier head's colours, vermilion and the hot core, at the same width. The glow
-   is the panel's property and stylesheet. */
-function sheenFor(id: string | undefined): Partial<HeadOptions> {
-  if (id === "orange")
-    return {
-      midColor: tokenColour("--color-thread-vermilion"),
-      tipColor: tokenColour("--color-thread-core"),
-    };
-  const match = /^sheen-(\d+)-\w+$/.exec(id ?? "");
-  if (match === null) return {};
-  return sheenColours(
-    tokenColour("--color-thread-red"),
-    Number(match[1]) / 100,
-    tokenLength("--stroke-thread"),
-  );
-}
-
+/* The sheen's two colours as a lift of the thread's red: the tip L of OKLCH lightness over it, the middle
+   half that, at the ink's own width. The registry's `thread-sheen` and `thread-sheen-mid` are this at
+   0.12, which `thread-tokens.test.ts` holds them to. */
 export function sheenColours(
   red: Rgb,
   lift: number,
