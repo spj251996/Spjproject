@@ -180,6 +180,51 @@ export function flatten(d: string): string {
   return out;
 }
 
+/* A flattened path's numbers back into its text, two decimals a coordinate. */
+function joinPolyline(numbers: readonly number[], parts: readonly string[]) {
+  let out = parts[0];
+  for (let i = 0; i < numbers.length; i += 2)
+    out += `${numbers[i].toFixed(2)}${parts[i + 1]}${numbers[i + 1].toFixed(2)}${parts[i + 2] ?? ""}`;
+  return out;
+}
+
+/* The flattened path from its start to `fraction` of its length, ending on the point there: nothing past it
+   is in the path. At 0 it is empty, and from 1 it is the whole path. */
+export function cutPolyline(
+  numbers: readonly number[],
+  parts: readonly string[],
+  fraction: number,
+): string {
+  if (!(fraction > 0)) return "";
+  if (fraction >= 1) return joinPolyline(numbers, parts);
+  let total = 0;
+  for (let i = 2; i < numbers.length; i += 2)
+    total += Math.hypot(
+      numbers[i] - numbers[i - 2],
+      numbers[i + 1] - numbers[i - 1],
+    );
+  const target = fraction * total;
+  let out = parts[0];
+  let walked = 0;
+  for (let i = 0; i < numbers.length; i += 2) {
+    let x = numbers[i];
+    let y = numbers[i + 1];
+    let last = i + 2 >= numbers.length;
+    if (i > 0) {
+      const step = Math.hypot(x - numbers[i - 2], y - numbers[i - 1]);
+      if (walked + step >= target) {
+        const share = step > 0 ? (target - walked) / step : 1;
+        x = numbers[i - 2] + (x - numbers[i - 2]) * share;
+        y = numbers[i - 1] + (y - numbers[i - 1]) * share;
+        last = true;
+      } else walked += step;
+    }
+    out += `${x.toFixed(2)}${parts[i + 1]}${y.toFixed(2)}${last ? "" : parts[i + 2]}`;
+    if (last) break;
+  }
+  return out;
+}
+
 type Tracked = {
   base: string;
   written: string;
@@ -188,17 +233,11 @@ type Tracked = {
   weights: Float32Array | null;
   top: number;
   bottom: number;
-  /* The flattened path's length unswayed, and as last written. */
-  length0: number;
-  length: number;
 };
 
 function parse(
   d: string,
-): Pick<
-  Tracked,
-  "parts" | "numbers" | "top" | "bottom" | "length0" | "length"
-> {
+): Pick<Tracked, "parts" | "numbers" | "top" | "bottom"> {
   const numbers = (d.match(NUMBER) ?? []).map(Number);
   const parts = d.split(NUMBER);
   let top = Number.POSITIVE_INFINITY;
@@ -207,14 +246,7 @@ function parse(
     top = Math.min(top, numbers[i]);
     bottom = Math.max(bottom, numbers[i]);
   }
-  let length0 = 0;
-  for (let i = 2; i < numbers.length; i += 2) {
-    length0 += Math.hypot(
-      numbers[i] - numbers[i - 2],
-      numbers[i + 1] - numbers[i - 1],
-    );
-  }
-  return { parts, numbers, top, bottom, length0, length: length0 };
+  return { parts, numbers, top, bottom };
 }
 
 /* A throw inside the frame loop must not stop the loop, nor flood the console at 60 a second: the first
@@ -277,29 +309,27 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     return { top: window.scrollY - mainTop, height: window.innerHeight };
   }
 
-  function displaced(entry: Tracked, t: number, band: View) {
+  /* Every point of the flattened path moved by the field: the same list, the same order. */
+  function displaced(entry: Tracked, t: number, band: View): number[] {
     entry.weights ??= weightsFor(entry);
-    const { numbers, parts, weights } = entry;
-    let out = parts[0];
-    let length = 0;
-    let px = 0;
-    let py = 0;
+    const { numbers, weights } = entry;
+    const moved = numbers.slice();
     for (let i = 0; i < numbers.length; i += 2) {
       const w = weights[i / 2] * sway.amplitude;
-      let x = numbers[i];
-      let y = numbers[i + 1];
       if (w > 0) {
-        const [fx, fy] = field(sway, x, y, t, phase, band);
-        x += w * fx;
-        y += w * fy;
+        const [fx, fy] = field(
+          sway,
+          numbers[i],
+          numbers[i + 1],
+          t,
+          phase,
+          band,
+        );
+        moved[i] += w * fx;
+        moved[i + 1] += w * fy;
       }
-      if (i > 0) length += Math.hypot(x - px, y - py);
-      px = x;
-      py = y;
-      out += `${x.toFixed(2)}${parts[i + 1]}${y.toFixed(2)}${parts[i + 2] ?? ""}`;
     }
-    entry.length = length;
-    return out;
+    return moved;
   }
 
   function track(path: SVGPathElement): Tracked | undefined {
@@ -318,67 +348,59 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     return entry;
   }
 
+  /* THE PIECE BEING DRAWN IS CUT AT ITS TIP, NEVER DASHED, WHILE THE LINE SWAYS. On an iPhone a dashed
+     piece whose `d` is rewritten every frame painted ink past its tip — "the stretch from motif to next
+     motif all start drawing at same time" (the owner, 2026-11-01 and 2026-11-02). Two fixes to the dash
+     did not cure it, and the engine's mechanism was never established, so no piece carries a dash at all
+     while the sway runs and the defect has nothing to paint. The painter still writes its dash, in the
+     piece's unswayed length; this reads the drawn fraction off it, then clears it: a piece not yet started
+     is hidden, a finished one is whole, and the one between is its swayed path cut at that fraction. The
+     fraction is the painter's own, so the sway, which lengthens a piece by a few pixels, cannot move the
+     tip along it. */
+  const progresses = new WeakMap<
+    SVGPathElement,
+    { progress: number; wroteArray: string; wroteOffset: string }
+  >();
+  function progressOf(path: SVGPathElement): number {
+    if (path.dataset.threadPiece === undefined) return 1;
+    const array = path.style.strokeDasharray;
+    const offset = path.style.strokeDashoffset;
+    let known = progresses.get(path);
+    if (
+      known === undefined ||
+      array !== known.wroteArray ||
+      offset !== known.wroteOffset
+    ) {
+      const period = Number.parseFloat(array);
+      known = {
+        progress:
+          period > 0 ? 1 - (Number.parseFloat(offset) || 0) / period : 1,
+        wroteArray: array,
+        wroteOffset: offset,
+      };
+    }
+    if (array !== "none") path.style.strokeDasharray = "none";
+    if (offset !== "0" && offset !== "") path.style.strokeDashoffset = "0";
+    known.wroteArray = path.style.strokeDasharray;
+    known.wroteOffset = path.style.strokeDashoffset;
+    progresses.set(path, known);
+    return known.progress;
+  }
+
   function write(path: SVGPathElement, entry: Tracked, t: number, band: View) {
-    const next = displaced(entry, t, band);
+    const progress = progressOf(path);
+    const hidden = progress <= 0 ? "hidden" : "";
+    if (path.style.visibility !== hidden) path.style.visibility = hidden;
+    if (hidden !== "") return;
+    const moved = displaced(entry, t, band);
+    const next =
+      progress >= 1
+        ? joinPolyline(moved, entry.parts)
+        : cutPolyline(moved, entry.parts, progress);
     if (next !== entry.written) {
       entry.written = next;
       path.setAttribute("d", next);
     }
-    rescaleDash(path, entry);
-  }
-
-  /* THE INK'S DASH FOLLOWS THE SWAY. The painter writes each piece's dash in its unswayed length, and
-     a swaying piece is longer (by 2-3.4px measured at 8-12px), so a finished piece stopped short of
-     its end and every join showed a gap. `pathLength` would rescale it for free, but WebKit then drew
-     pieces ahead of the tip, several at once (bug 258897, seen on an iPhone). So the dash the painter
-     wrote is kept as the base and scaled by the piece's own swayed-to-unswayed length: the drawn
-     fraction is unchanged and a finished piece reaches its end. */
-  const dashes = new WeakMap<
-    SVGPathElement,
-    { array: number; offset: number; wroteArray: string; wroteOffset: string }
-  >();
-  function rescaleDash(path: SVGPathElement, entry: Tracked) {
-    if (path.dataset.threadPiece === undefined) return;
-    const currentArray = path.style.strokeDasharray;
-    const currentOffset = path.style.strokeDashoffset;
-    if (currentArray === "") return;
-    let dash = dashes.get(path);
-    if (
-      dash === undefined ||
-      currentArray !== dash.wroteArray ||
-      currentOffset !== dash.wroteOffset
-    ) {
-      dash = {
-        array: Number.parseFloat(currentArray),
-        offset: Number.parseFloat(currentOffset) || 0,
-        wroteArray: currentArray,
-        wroteOffset: currentOffset,
-      };
-      dashes.set(path, dash);
-    }
-    /* ONLY THE PIECE BEING DRAWN DEPENDS ON ITS DASH. On an iPhone (WebKit), with the sway rewriting
-       each piece's `d` every frame, pieces the dash should have hidden were drawn ahead of the tip;
-       shipped, twist alone and width alone were clean (the owner's isolation on the device). The
-       engine's mechanism is not established — no WebKit here — so the fix does not depend on it: a
-       piece not yet started is hidden outright, a finished one carries no dash at all, and only
-       the one mid-draw piece is masked, with its dash scaled to its swayed length. */
-    const progress = dash.array > 0 ? 1 - dash.offset / dash.array : 1;
-    const hidden = progress <= 0 ? "hidden" : "";
-    if (path.style.visibility !== hidden) {
-      path.style.visibility = hidden;
-      /* The tick skips a hidden piece, so one starting now still carries a stale shape: sway it
-         before this frame paints, or its first ink misses the swayed end of the piece before. */
-      if (hidden === "") write(path, entry, seconds(), view());
-    }
-    const k = entry.length0 > 0 ? entry.length / entry.length0 : 1;
-    const array = progress >= 1 ? "none" : String(dash.array * k);
-    const offset = progress >= 1 ? "0" : String(dash.offset * k);
-    if (path.style.strokeDasharray !== array)
-      path.style.strokeDasharray = array;
-    if (path.style.strokeDashoffset !== offset)
-      path.style.strokeDashoffset = offset;
-    dash.wroteArray = path.style.strokeDasharray;
-    dash.wroteOffset = path.style.strokeDashoffset;
   }
 
   const seconds = () => (performance.now() - start) / 1000;
@@ -393,7 +415,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         const path = record.target as SVGPathElement;
         const entry = track(path);
         if (entry === undefined) continue;
-        if (record.attributeName === "style") rescaleDash(path, entry);
+        if (record.attributeName === "style") write(path, entry, t, band);
         else if (entry.written === entry.base) write(path, entry, t, band);
       }
     } catch (error) {

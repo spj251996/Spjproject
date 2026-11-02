@@ -52,8 +52,8 @@ export function filteredElementOf(path: SVGPathElement): SVGGraphicsElement {
 let fittedCount = 0;
 
 /* One fitter per `<svg>` and token. `defs` holds the copies; `sway` is the most the sway moves a
-   point, since a piece's box is read from its unswayed `d`. A token naming no known filter (`none`,
-   or a panel option without one) fits nothing, and the element keeps what its class gives it. */
+   point, since a piece's box is read from its unswayed `d`. A token naming no known filter (`none`)
+   fits nothing, and the element keeps what its class gives it. */
 export function createShadowFitter(
   defs: SVGDefsElement,
   property: ShadowProperty,

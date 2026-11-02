@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { flatten } from "./thread-sway.ts";
+import { cutPolyline, flatten } from "./thread-sway.ts";
 
 /* The sway moves points, so a cubic it moved only at its control points could not follow the field
    between them the way the 1px re-trace laid on it does. Flattened, both are polylines. */
@@ -15,4 +15,37 @@ test("a cubic flattens into short chords that start and end where the curve does
     `a 30px curve took only ${points.length} points`,
   );
   assert.equal(flatten("M1 2L3 4 5 6"), "M1.00 2.00L3.00 4.00L5.00 6.00");
+});
+
+/* While the line sways, the piece being drawn is cut at its tip rather than dashed, so nothing past the tip
+   exists to paint. The parts are the path's text between its numbers, as the sway splits it. */
+const LINE = {
+  numbers: [0, 0, 10, 0, 20, 0],
+  parts: ["M", " ", "L", " ", "L", " ", ""],
+};
+
+test("a path cut at half its length ends on the point there", () => {
+  assert.equal(
+    cutPolyline(LINE.numbers, LINE.parts, 0.5),
+    "M0.00 0.00L10.00 0.00",
+  );
+});
+
+test("a path cut between its points ends on an interpolated point", () => {
+  assert.equal(
+    cutPolyline(LINE.numbers, LINE.parts, 0.25),
+    "M0.00 0.00L5.00 0.00",
+  );
+  assert.equal(
+    cutPolyline(LINE.numbers, LINE.parts, 0.75),
+    "M0.00 0.00L10.00 0.00L15.00 0.00",
+  );
+});
+
+test("a path cut at its whole length is whole, and at nothing is empty", () => {
+  assert.equal(
+    cutPolyline(LINE.numbers, LINE.parts, 1),
+    "M0.00 0.00L10.00 0.00L20.00 0.00",
+  );
+  assert.equal(cutPolyline(LINE.numbers, LINE.parts, 0), "");
 });
