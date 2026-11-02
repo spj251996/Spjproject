@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { flatten } from "./thread-spikes.ts";
+import { flatten } from "./thread-sway.ts";
 
 /* The sway moves points, so a cubic it moved only at its control points could not follow the field
    between them the way the 1px re-trace laid on it does. Flattened, both are polylines. */

@@ -1,11 +1,8 @@
-/* THE SWAY, and the entry point that builds the twist beside it. The owner finalised the 4s sway
-   (2026-11-02), so it is committed; nothing switches it but reduced motion and the tests' sway-off seam.
+/* THE SWAY (DESIGN.md -> Thread -> The sway). The owner finalised it on 2026-11-02; nothing switches it but
+   reduced motion and the tests' sway-off seam. The twist (`thread-twist.ts`) reads each piece's unswayed path
+   from here through `baseOf`.
 
-   TWIST: committed in `thread-twist.ts` and always on, but built by this file's entry point, because it
-   reads each piece's unswayed path from the sway. Removing this file moves that call into `PageThread`
-   and `CardThread`; deleting it with the panel would take the twist off the thread.
-
-   SWAY: the line moves, as a thread in moving air. A smooth displacement FIELD over `<main>`'s
+   The line moves, as a thread in moving air. A smooth displacement FIELD over `<main>`'s
    coordinates moves every point of every path in the `<svg>` — ink, marks, taper, re-trace — so the
    layers stay on one another. The field is one for the page: the trunk's `<svg>` and the card thread's
    share its clock and phase, so the two move as one line at the Wishes join. Curves are flattened into
@@ -14,9 +11,6 @@
    nothing is pinned at a join. It is pinned near every box of type and every portrait: a chord that
    comes within 1.1 x the amplitude of one does not move at all, so the sway cannot carry the line onto
    type it does not already touch. Only paths near the viewport move. */
-
-import type { ThreadPiece } from "./thread-line.ts";
-import { createTwistPainter } from "./thread-twist.ts";
 
 /* ---------------------------------------------------------------------------------------------
    SWAY */
@@ -507,44 +501,22 @@ function obstacleBoxes(main: Element, mainRect: DOMRect): Rect[] {
 /* ---------------------------------------------------------------------------------------------
    ONE ENTRY POINT PER `<svg>` */
 
-export function createThreadSpikes(
-  svg: SVGSVGElement,
-  before: Element | null,
-  cutId: string,
-  taperPiece: (count: number) => number,
-  reduced: boolean,
-) {
-  /* The rope twist is committed (`thread-twist.ts`) and always on; it is built here only because it
-     reads each piece's unswayed path from the sway below. */
-  const twist = createTwistPainter(svg, before, cutId, taperPiece);
+export function createThreadSway(svg: SVGSVGElement, reduced: boolean) {
   const sway =
     reduced || swayIsOff() ? undefined : createSway(svg, SHIPPED_SWAY);
-  const baseOf = (path: SVGPathElement) =>
-    sway?.baseOf(path) ?? path.getAttribute("d") ?? "";
 
   return {
-    baseOf,
-    measured(
-      inks: readonly (SVGPathElement | null)[],
-      pieces: readonly ThreadPiece[],
-      main: Element,
-    ) {
-      if (sway !== undefined) {
-        /* NO `pathLength`. The ink's dash is in its unswayed length, and a swaying piece is a hair
-           longer, so pinning `pathLength` to the unswayed length looked right — but WebKit (Safari,
-           and every iOS browser) then drew pieces ahead of the tip, several at once (WebKit bug
-           258897, seen on an iPhone). The sway lengthens a piece by far less than a pixel; the round
-           cap covers the difference. */
-        const mainRect = main.getBoundingClientRect();
-        sway.measured(
-          obstacleBoxes(main, mainRect),
-          mainRect.top + window.scrollY,
-        );
-      }
-      twist.measured(inks, pieces, baseOf);
+    /* A piece's unswayed `d`: its geometry, which every painter that measures along it must read. */
+    baseOf(path: SVGPathElement): string {
+      return sway?.baseOf(path) ?? path.getAttribute("d") ?? "";
     },
-    painted(drawn: number) {
-      twist.painted(drawn);
+    measured(main: Element) {
+      if (sway === undefined) return;
+      const mainRect = main.getBoundingClientRect();
+      sway.measured(
+        obstacleBoxes(main, mainRect),
+        mainRect.top + window.scrollY,
+      );
     },
     stop() {
       sway?.stop();
@@ -552,4 +524,4 @@ export function createThreadSpikes(
   };
 }
 
-export type ThreadSpikes = ReturnType<typeof createThreadSpikes>;
+export type ThreadSway = ReturnType<typeof createThreadSway>;

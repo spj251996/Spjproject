@@ -6,7 +6,8 @@ import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
-   own and re-shapes every path: the panel's "off" turns it off for them. */
+   own and re-shapes every path: `data-thread-sway="off"` on `<html>`, set the moment the element exists, turns it
+   off for them. */
 const SWAY_OFF = `(() => {
   const off = () => {
     if (!document.documentElement) return false;
@@ -557,6 +558,43 @@ test("motion arriving at the top runs the opening that reduced motion held back"
       drawn > 0,
       "the opening drew the invite's stretch once motion came back",
     );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* Reduced motion keeps the material and drops the motion (DESIGN.md -> Thread -> The twist): the rope's
+   chunks are present and hold still. The sway is not seeded off here — under reduce it never starts, and
+   that is part of what this pins. */
+test("under reduced motion the twist is present and static", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await (
+      await browser.newContext({
+        viewport: { width: 393, height: 700 },
+        reducedMotion: "reduce",
+      })
+    ).newPage();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-twist] path", {
+      state: "attached",
+      timeout: 15000,
+    });
+    const shapes = `Array.from(document.querySelectorAll("[data-thread-twist] path")).map((p) => p.getAttribute("d") + "|" + p.style.display).join("\\n")`;
+    const first = (await page.evaluate(shapes)) as string;
+    await page.waitForTimeout(1000);
+    const second = (await page.evaluate(shapes)) as string;
+    assert.ok(
+      first.split("\n").length > 0 && first !== "",
+      "the twist has chunks",
+    );
+    assert.equal(second, first, "the twist moved under reduced motion");
   } finally {
     await browser.close();
     server.close();
