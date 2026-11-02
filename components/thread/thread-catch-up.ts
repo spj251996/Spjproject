@@ -61,7 +61,13 @@ export function createCatchUp(paint: (drawn: number) => void) {
 
   function tick(now: number) {
     raf = null;
-    const t = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+    /* A frame's timestamp is when the frame began, which can be before a re-target made mid-frame:
+       that is no time passed, not negative time, which the eased curve would carry below 0 and step
+       the draw backwards. */
+    const t =
+      duration <= 0
+        ? 1
+        : Math.min(1, Math.max(0, (now - startedAt) / duration));
     shown = from + (target - from) * (ease ?? FALLBACK_EASE)(t);
     if (t >= 1) shown = target;
     paint(shown);

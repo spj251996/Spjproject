@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { tokenValue } from "../../scripts/lib/built-tokens.ts";
-import { CATCH_UP_EASES } from "./thread-catch-up.ts";
+import { CATCH_UP_EASES, createCatchUp } from "./thread-catch-up.ts";
 
 /* The follower must ARRIVE, never approach (an exponential leaves the card thread short of complete),
    and never overshoot (the draw never runs backwards). */
@@ -25,4 +25,41 @@ test("the catch-up is 0.6s on a curve the follower knows", () => {
   assert.equal(tokenValue("thread-catchup"), "0.6s");
   assert.equal(tokenValue("thread-catchup-ease"), "ease-out-cubic");
   assert.ok(tokenValue("thread-catchup-ease") in CATCH_UP_EASES);
+});
+
+/* A frame's timestamp is when the frame began, so the first frame after a re-target can carry a time
+   EARLIER than the re-target itself. The follower must treat that as no time passed, never as negative
+   time: the eased curve dips below 0 there, and the draw stepped back along the line for one frame. */
+test("a frame timestamped before a re-target never moves the draw backwards", () => {
+  let queued: ((now: number) => void) | null = null;
+  const painted: number[] = [];
+  Object.assign(globalThis, {
+    window: {
+      requestAnimationFrame: (callback: (now: number) => void) => {
+        queued = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {},
+    },
+  });
+  try {
+    const follower = createCatchUp((drawn) => painted.push(drawn));
+    const flush = (now: number) => {
+      const callback = queued;
+      queued = null;
+      callback?.(now);
+    };
+    follower.to(100, 0.6);
+    flush(performance.now() + 300);
+    const before = painted[painted.length - 1];
+    const frameBegan = performance.now() - 8;
+    follower.to(200, 0.6);
+    flush(frameBegan);
+    assert.ok(
+      painted[painted.length - 1] >= before,
+      `the draw stepped back from ${before} to ${painted[painted.length - 1]}`,
+    );
+  } finally {
+    Reflect.deleteProperty(globalThis, "window");
+  }
 });
