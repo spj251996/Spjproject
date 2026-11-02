@@ -41,8 +41,9 @@ import {
   retraceOptions,
   tokenLength,
 } from "@/components/thread/thread-tokens";
+import { gapWidth, ropeGaps } from "@/components/thread/thread-twist";
 
-/* Four specimens of the thread's light, each laid on a stretch of the page's own authored geometry
+/* The thread's layers — ink, twist, head, tapered ends, re-trace — each laid on a stretch of the page's own authored geometry
    (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
    `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
    imported; the classes are the page's own (`thread.module.css`), so the filters are the same ones,
@@ -63,7 +64,7 @@ const MARGIN = 48;
    where the stretch bends; the loop position (0 to 1) puts the re-trace near its peak length. */
 const HEAD_POSED_AT = 0.33;
 const RETRACE_POSED_AT = 0.42;
-/* The tapered ends are 24px long: a crop this wide holds one with its halo, at 1x and at TAPER_ZOOM. */
+/* The tapered ends are 24px long: a crop this wide holds one with its contact shadow, at 1x and at TAPER_ZOOM. */
 const TAPER_CROP = 96;
 const TAPER_ZOOM = 4;
 
@@ -158,7 +159,7 @@ function PathFragment({
         zoom: 1,
       };
     } else {
-      /* Centred on the middle of the taper, so the whole of it and its bleed lie inside the crop. */
+      /* Centred on the middle of the taper, so the whole of it and its contact shadow lie inside the crop. */
       const middle = Math.round(taperLength / 2);
       const index = crop.at === "start" ? middle : Math.floor(length) - middle;
       view = {
@@ -224,15 +225,62 @@ function Runs({
 export function ThreadInkSpecimen() {
   return (
     <div className="flex flex-wrap gap-space-lg">
-      <Panel caption="The ink alone, with the bleed switched off. A comparison, not a state the page is ever in.">
-        <PathFragment d={MID_PAGE} label="The thread's ink without its bleed">
+      <Panel caption="The ink alone, with the contact shadow switched off. A comparison, not a state the page is ever in.">
+        <PathFragment
+          d={MID_PAGE}
+          label="The thread's ink without its contact shadow"
+        >
           {() => <path className={styles.pageInkBare} d={MID_PAGE} />}
         </PathFragment>
       </Panel>
       <Panel caption="The ink as the page draws it, with --bleed-thread.">
-        <PathFragment d={MID_PAGE} label="The thread's ink with its bleed">
+        <PathFragment
+          d={MID_PAGE}
+          label="The thread's ink with its contact shadow"
+        >
           {() => <path className={styles.pageInk} d={MID_PAGE} />}
         </PathFragment>
+      </Panel>
+    </div>
+  );
+}
+
+/* The twist's gaps over the ink, as the painter lays them (`thread-twist.ts`), on one end of a mid-page
+   connector at 1x and magnified: whole, as the page shows them once the ink has drawn past. */
+function TwistedEnd({ zoom }: { zoom: number }) {
+  return (
+    <PathFragment
+      crop={{ at: "start", span: TAPER_CROP, zoom }}
+      d={MID_PAGE}
+      label={`The twist on the thread's ink${zoom > 1 ? `, magnified ${zoom}×` : ""}`}
+    >
+      {(m) => {
+        const half = m.strokeWidth / 2;
+        return (
+          <>
+            <path className={styles.pageInk} d={MID_PAGE} />
+            <path
+              d={ropeGaps(m.samples, 0, m.length, m.length, half)}
+              fill="none"
+              stroke="var(--color-thread-twist)"
+              strokeLinecap="butt"
+              strokeWidth={gapWidth(half)}
+            />
+          </>
+        );
+      }}
+    </PathFragment>
+  );
+}
+
+export function ThreadTwistSpecimen() {
+  return (
+    <div className="flex flex-wrap items-end gap-space-lg">
+      <Panel caption="At its own size.">
+        <TwistedEnd zoom={1} />
+      </Panel>
+      <Panel caption={`Magnified ${TAPER_ZOOM}×.`}>
+        <TwistedEnd zoom={TAPER_ZOOM} />
       </Panel>
     </div>
   );
@@ -279,9 +327,9 @@ interface TaperedEndProps {
   readonly zoom: number;
 }
 
-/* The ink is cut under the taper by a mask on its own path and bled as a group, so the halo is the
-   halo of the ink that is left (`thread-ink.tsx`, `ThreadInk`); the runs take the bleed on a group
-   of their own, as the page's do. */
+/* The ink is cut under the taper by a mask on its own path and shadowed as a group, so the contact
+   shadow is the shadow of the ink that is left (`thread-ink.tsx`, `ThreadInk`); the runs take the
+   contact shadow on a group of their own, as the page's do. */
 function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
   const maskId = `ds-thread-taper-cut-${useId().replaceAll(":", "")}`;
   return (

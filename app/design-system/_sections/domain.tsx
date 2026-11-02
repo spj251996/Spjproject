@@ -10,6 +10,7 @@ import {
   ThreadInkSpecimen,
   ThreadRetraceSpecimen,
   ThreadTaperSpecimen,
+  ThreadTwistSpecimen,
 } from "@/app/design-system/_sections/thread-specimens";
 import { Family } from "@/components/family/family";
 import { ThreadFilters } from "@/components/thread/thread-filters";
@@ -20,8 +21,15 @@ const THREAD_ENTRIES: InlineEntry[] = [
     name: "Thread",
     home: "components/thread/page-thread.tsx",
     composes:
-      "one page-length SVG over main · ink at --stroke-thread (2.2px) in thread-red, one path per piece · contact shadow --bleed-thread on the ink, shadow-warm straight down · twist: rope gaps in thread-twist across the ink · drawing head: 132px (60× the ink) at the ink's width, thread-red → thread-sheen-mid → thread-sheen, halo --halo-thread-head at half strength · tapered ends: --length-thread-taper (24px) at the invite's top and Wishes' close, 16 runs down to 0.2px · re-trace: the head's own look at 89× the ink, glow as eight translucent strokes in thread-sheen-mid at half opacity, --retrace-duration (3.2s), --retrace-settle (1500ms), at least --retrace-loops (5) and --retrace-speed (845), then until --thread-idle (60s) untouched · sway: 8px, a 4s sway with gusts, stopping with the re-trace, Foundations · Motion",
-    note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. A page-length thread measures <main> and cannot render in a specimen frame, so what is shown below is its light — each layer on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo · tapered ends at the invite's top and Wishes' close · the re-trace, the head's own look on a loop · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping with the re-trace (Foundations · Motion)",
+    note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. Below, each layer is laid on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+  },
+  {
+    name: "card-thread",
+    home: "components/thread/card-thread.tsx",
+    composes:
+      "Wishes' stretch of the thread, drawn once inside the Wishes card — after the couple illustration, so in front of it and behind the type that follows · no z-index of its own: the card is already a stacking context at z-index.content · everything else is the trunk's: its head, twist, sway, re-trace, contact shadow and tapered end",
+    note: "Live at /thread on preview deploys and in dev, inside the Wishes card.",
   },
 ];
 
@@ -31,7 +39,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     home: "app/_sections/invite.tsx",
     composes:
       "mounted-sheet with the hero setting, unpainted — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone held upright the names, the sentence, the date and the gold rule sit one 22px ink gap apart, the rule's spacer fixed so the card's slack goes to its top and bottom, and the invite still fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where on the laptop and desktop landscape bands the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 takes --text-display-name as its font size and nothing else, the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — except at desktop, where the space below the mark holds at a flat 32px, and on a phone held upright, where the rule holds the 22px gap below the place over a 13px spacer; the split's floors are derived from it, not steps on the spacing scale (17.345px above and 7.845px below on a phone held sideways) · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
-    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — its resting tip sits at the lower edge and loops at least --retrace-loops (5) times once the opening draw has ended, and keeps looping until the page has gone --thread-idle (60s) untouched (DESIGN.md → Thread → scroll-cue). A page-length thread cannot render in a specimen frame, so none is shown here. The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/_sections/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
+    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — its resting tip sits at the lower edge and loops at least --retrace-loops (5) times once the opening draw has ended, and keeps looping until the page has gone --thread-idle (60s) untouched (DESIGN.md → Thread → scroll-cue). The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/_sections/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
   },
   {
     name: "date-block",
@@ -117,7 +125,7 @@ export function DomainSections() {
           description="The ink: one line in thread-red at the ink's width, with its contact shadow beneath it."
           id="thread-ink"
           name="ink and contact shadow"
-          note="Both panels are one mid-page connector in the wide band's own geometry, at its own size. The shadow is present in every state the page has; the left panel switches it off only to show what it adds. The twist and the sway are not shown: both are built from the page's own measured pieces."
+          note="Both panels are one mid-page connector in the wide band's own geometry, at its own size. The shadow is present in every state the page has; the left panel switches it off only to show what it adds."
           source="components/thread/thread.module.css · .pageInk"
           spec={[
             "ink · --color-thread-red at --stroke-thread (2.2px), round caps",
@@ -128,6 +136,21 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
+          description="The twist: the ink carries the lay of a long-lay rope — lighter gaps slanting across it at a steady pitch — so the line reads as twisted fibre rather than a pen stroke."
+          id="thread-twist"
+          name="twist"
+          note="One end of a mid-page connector, at its own size and magnified; the magnified view is a crop, not a different drawing. On the page a gap shows only once the ink has drawn past it."
+          source="components/thread/thread-twist.ts · ropeGaps"
+          spec={[
+            "pitch · one gap every 1.94× the stroke's width",
+            "gap · 0.2 of the pitch wide, never under 0.6px, slanted 28° to the line and bowed 0.4",
+            "colour · thread-twist, the ink's own surface: no filter of its own, inside the ink's contact shadow",
+          ]}
+        >
+          <ThreadTwistSpecimen />
+        </Specimen>
+
+        <Specimen
           description="The drawing head: while a piece draws, its leading end carries the sheen's light — the thread's red lightening toward its tip, at the ink's own width, with a faint halo. It is the re-trace's look; the two are one pair."
           id="thread-head"
           name="drawing head"
@@ -135,9 +158,8 @@ export function DomainSections() {
           source="components/thread/thread-head.ts · headSegments"
           spec={[
             "length · 60× the ink, 132px",
-            "colour · thread-red at the tail, thread-sheen-mid in the middle, thread-sheen at the tip, interpolated in OKLCH",
+            "colour · thread-red at the tail, thread-sheen-mid in the middle, thread-sheen at the tip",
             "width · --stroke-thread (2.2px) throughout",
-            "steps · max(ceil(length / 8), ceil(rampSpan / 2)), capped at 48",
             "halo · --halo-thread-head, an SVG filter of thread-vermilion at half strength: 34% / 22% / 15% at 3.5px / 12px / 33px",
           ]}
         >
@@ -148,7 +170,7 @@ export function DomainSections() {
           description="The tapered ends: the thread's two static free ends, the invite's top terminal and Wishes' closing end, narrow to a point instead of stopping at a round cap."
           id="thread-taper"
           name="tapered ends"
-          note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the halo and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
+          note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the contact shadow and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
           source="components/thread/thread-taper.ts · taperSegments"
           spec={[
             "length · --length-thread-taper (24px)",
@@ -163,7 +185,7 @@ export function DomainSections() {
           description="The re-trace: a lit segment runs along the thread once it is already drawn, on a loop. It is the lab route's resting motion and its scroll cue."
           id="thread-retrace"
           name="re-trace"
-          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, because the re-trace can run on several stretches at once and a filter that wide does not survive that."
+          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, so there is no blur buffer re-rendered each frame."
           source="components/thread/thread-retrace.ts · retraceSegments, retraceGlow"
           spec={[
             "core · the head's own stack and values, at a peak of 89× the ink (196px), growing from nothing and shrinking back to nothing over a loop",
