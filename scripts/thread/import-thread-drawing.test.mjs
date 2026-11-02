@@ -20,9 +20,11 @@ import test from "node:test";
 import sharp from "sharp";
 import {
   assignConnectors,
+  CROSS_INSET,
   extract,
   importDrawing,
   relaxOffType,
+  SECTION_ORDER,
   typeClearanceReport,
 } from "./import-thread-drawing.mjs";
 
@@ -206,9 +208,9 @@ test("recovers a hand-drawn thread from a rescaled, re-encoded JPEG", async () =
 });
 
 test("relaxes a drawn connector clear of a glyph it crosses, without moving its pinned ends", () => {
-  /* One real section ("invite", floor 8px) big enough to hold the whole stroke; the other five are
+  /* One real section ("invite", floor 8px) big enough to hold the whole stroke; the other four are
    * degenerate placeholders — `relaxOffType` and `typeClearanceReport` both index sections by
-   * position against the fixed six-section order, so a synthetic geometry still needs all six. */
+   * position against the fixed five-section order, so a synthetic geometry still needs all five. */
   const geometry = {
     width: 1000,
     sections: [
@@ -217,7 +219,6 @@ test("relaxes a drawn connector clear of a glyph it crosses, without moving its 
       { top: 1001, height: 1 },
       { top: 1002, height: 1 },
       { top: 1003, height: 1 },
-      { top: 1004, height: 1 },
     ],
   };
   const glyphs = [
@@ -272,7 +273,7 @@ test("relaxes a drawn connector clear of a glyph it crosses, without moving its 
 });
 
 /* The CLI end to end, in a temp sheet directory, with the live page read injected so no browser
- * runs. The sheet's six sections match `SECTION_ORDER`; only the first holds the drawing. */
+ * runs. The sheet's five sections match `SECTION_ORDER`; only the first holds the drawing. */
 const SHEET_GEOMETRY = {
   width: PAGE.width,
   sections: [
@@ -281,7 +282,6 @@ const SHEET_GEOMETRY = {
     { top: 896, height: 1 },
     { top: 897, height: 1 },
     { top: 898, height: 1 },
-    { top: 899, height: 1 },
   ],
 };
 const EARLIER_CONNECTORS = '[{"connector":0,"points":[{"x":1,"y":2}]}]\n';
@@ -391,7 +391,12 @@ test("a sheet whose section count differs from the live page's is refused, and w
     sections: SHEET_GEOMETRY.sections.length - 1,
   });
   assert.notEqual(run.code, 0);
-  assert.match(run.errors, /REFUSED: .* the live page has 5\./);
+  assert.match(
+    run.errors,
+    new RegExp(
+      `REFUSED: .* the live page has ${SHEET_GEOMETRY.sections.length - 1}\\.`,
+    ),
+  );
   assert.equal(run.connectors, EARLIER_CONNECTORS);
   assert.equal(run.joins, EARLIER_JOINS);
 });
@@ -408,8 +413,28 @@ test("a sheet whose section count differs from SECTION_ORDER is refused before t
     geometry,
   );
   assert.notEqual(run.code, 0);
-  assert.match(run.errors, /REFUSED: .* SECTION_ORDER names 6\./);
+  assert.match(
+    run.errors,
+    new RegExp(`REFUSED: .* SECTION_ORDER names ${SECTION_ORDER.length}\\.`),
+  );
   assert.equal(run.reads, 0, "refused before reading the live page");
   assert.equal(run.connectors, EARLIER_CONNECTORS);
   assert.equal(run.joins, EARLIER_JOINS);
+});
+
+/* The final motif sheets (2026-11-01) are drawn on the page as it ships: five sections, Contact retired. */
+test("the importer expects the five sections the page has", () => {
+  assert.deepEqual(SECTION_ORDER, [
+    "invite",
+    "event-info",
+    "family",
+    "celebrations",
+    "wishes",
+  ]);
+});
+
+/* The final sheets carry their registration crosses at one inset on every band; a cross clipped by the canvas
+   edge biases its own centroid, which reads as a scale error. */
+test("every band's crosses sit at the final sheets' 64px inset", () => {
+  assert.deepEqual(CROSS_INSET, { wide: 64, tall: 64, upright: 64 });
 });

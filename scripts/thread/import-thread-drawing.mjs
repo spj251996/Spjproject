@@ -42,22 +42,23 @@ import { pruneSpurs, thin, walk } from "./trace-motif.mjs";
  * @typedef {{ glyphs: Glyph[], sections: number }} LivePage
  */
 
-/* The inset the registration crosses were drawn at is a property of the SHEET, not a constant: the
- * `wide` sheet inset them only 20px, so a cross sat half-clipped by the canvas edge, and a clipped
- * cross biases its own centroid inward, which reads as a scale error rather than as damage. */
-const CROSS_INSET = { wide: 20, tall: 64, upright: 64 };
+/* The inset the registration crosses are drawn at is a property of the SHEET. The final motif sheets
+ * (2026-11-01) inset them 64px on every band; an earlier `wide` sheet inset them only 20px, where a
+ * cross sat half-clipped by the canvas edge, and a clipped cross biases its own centroid inward, which
+ * reads as a scale error rather than as damage. */
+export const CROSS_INSET = { wide: 64, tall: 64, upright: 64 };
 const VIEWPORT = {
   wide: { width: 1536, height: 695 },
   tall: { width: 393, height: 700 },
   upright: { width: 820, height: 1180 },
 };
-/* The SHEETS' section order, which still carries Contact: the drawn sheets predate its retirement
- * (2026-10-14), and this indexes their own `geometry.json`. A sheet drawn against the five-section
- * page drops it here. `build-thread-paths.mjs` removes Contact from the imported data in code. */
-const SECTION_ORDER = [
+/* The SHEETS' section order, which indexes their own `geometry.json`. The final motif sheets
+ * (2026-11-01) are drawn against the five-section page, with Contact retired (2026-10-14); the
+ * sheets already in `assets/thread/` predate that and still carry it, which `build-thread-paths.mjs`
+ * removes in code, and they are not imported again. */
+export const SECTION_ORDER = [
   "invite",
   "event-info",
-  "contact",
   "family",
   "celebrations",
   "wishes",
