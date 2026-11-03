@@ -61,14 +61,32 @@ const GUST_WIDTH = 180;
 let swayAwake = true;
 const swayWakers = new Set<() => void>();
 export function setSwayAwake(awake: boolean) {
+  /* The clock pauses while the sway sleeps, so it carries on from the shape it stopped at rather than jumping
+     to wherever the time ran on to: up to the whole 8px at the end of every rest. */
+  const page = clock();
+  if (!awake && swayAwake) page.pausedAt = performance.now();
+  if (awake && !swayAwake && page.pausedAt !== null) {
+    page.paused += performance.now() - page.pausedAt;
+    page.pausedAt = null;
+  }
   swayAwake = awake;
   if (awake) for (const wake of swayWakers) wake();
 }
 
 /* One clock and one phase for the page, so every `<svg>` sways as one line. */
-let pageClock: { start: number; phase: number } | null = null;
+let pageClock: {
+  start: number;
+  phase: number;
+  paused: number;
+  pausedAt: number | null;
+} | null = null;
 function clock() {
-  pageClock ??= { start: performance.now(), phase: Math.random() * TAU };
+  pageClock ??= {
+    start: performance.now(),
+    phase: Math.random() * TAU,
+    paused: 0,
+    pausedAt: null,
+  };
   return pageClock;
 }
 
@@ -277,7 +295,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   let obstacles: Rect[] = [];
   let mainTop = 0;
   let frame: number | null = null;
-  const { start, phase } = clock();
+  const { phase } = clock();
   const reach = sway.amplitude * 1.1;
 
   function nearest(x: number, y: number): number {
@@ -417,9 +435,14 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     }
   }
 
-  const seconds = () => (performance.now() - start) / 1000;
-  /* The moment of the last frame the sway drew. */
+  const seconds = () => {
+    const page = clock();
+    return (performance.now() - page.start - page.paused) / 1000;
+  };
+  /* The moment of the last frame the sway drew, and the window it drew against, which a gust travels: both held
+     while the sway sleeps, so a scroll then carries no gust across the line. */
   let stoppedAt = 0;
+  let stoppedBand: View | null = null;
 
   /* A painter that writes a new `d` mid-frame (the head, the taper) is displaced in the same
      frame: the observer runs at the end of that callback, before the frame paints. */
@@ -428,7 +451,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       /* While the sway is stopped, a piece rewritten (a redraw on resize, a new tip) keeps the moment
          the line stopped at: the twist, the head and the tapered ends hold that moment too. */
       const t = swayAwake ? seconds() : stoppedAt;
-      const band = view();
+      const band = swayAwake ? view() : (stoppedBand ?? view());
       for (const record of records) {
         const path = record.target as SVGPathElement;
         const entry = track(path);
@@ -461,6 +484,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       const t = seconds();
       stoppedAt = t;
       const band = view();
+      stoppedBand = band;
       const top = band.top - VIEW_MARGIN;
       const bottom = band.top + band.height + VIEW_MARGIN;
       for (const path of svg.querySelectorAll("path")) {

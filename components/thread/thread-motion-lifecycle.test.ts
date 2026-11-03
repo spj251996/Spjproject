@@ -375,6 +375,8 @@ test("a tab hidden past the idle interval comes back still, and a tap starts the
     await page.evaluate("window.__setHidden(true)");
     await page.waitForTimeout(2500);
     await page.evaluate("window.__setHidden(false)");
+    /* Past the return's own 1s rest, so the stillness read is the idle state's, not the rest's. */
+    await page.waitForTimeout(1200);
     assert.equal(
       await page.evaluate(SWAYING(800)),
       false,
@@ -451,6 +453,161 @@ test("reduced motion turned on mid-visit stops the sway, restores every piece, a
       await page.evaluate(SWAYING(800)),
       true,
       "turning reduced motion off starts the sway again",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* The sway's frame loop shares the main thread with the page's own work, and on a phone it held a scroll near 24 fps
+   and starved the lazy images and the first frames after a return (DESIGN.md -> Thread -> The sway). So it rests
+   while the page scrolls and for a moment after the tab comes back: a drawn piece on screen holds its shape then. */
+const FINISHED_PIECE = `(() => {
+  const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
+  const pieces = [...svg.querySelectorAll("path[data-thread-piece]")].filter((p) => p.style.visibility !== "hidden");
+  const onScreen = pieces.slice(0, -2).filter((p) => { const r = p.getBoundingClientRect(); return r.bottom > 50 && r.top < innerHeight - 50; });
+  return pieces.indexOf(onScreen[0]);
+})()`;
+const SHAPE_OF = (index: number) => `(() => {
+  const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
+  return [...svg.querySelectorAll("path[data-thread-piece]")].filter((p) => p.style.visibility !== "hidden")[${index}].getAttribute("d");
+})()`;
+
+test("the sway rests while the page scrolls, and sways again once it stops", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.evaluate("window.scrollTo(0, 900)");
+    await page.waitForTimeout(1500);
+    const index = (await page.evaluate(FINISHED_PIECE)) as number;
+    assert.ok(index >= 0, "a drawn piece is on screen");
+    /* Short scrolls with the sway awake between them, over more than a gust's 8s cycle, so some scroll begins
+       while a gust is passing: a gust travels the window, and a rest must not let it follow the scroll. */
+    const bursts = (await page.evaluate(`(async () => {
+      const bursts = [];
+      for (let b = 0; b < 24; b += 1) {
+        const shapes = [];
+        for (let k = 0; k < 8; k += 1) {
+          window.scrollBy(0, 1);
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          shapes.push(${SHAPE_OF(index)});
+        }
+        bursts.push(shapes);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+      return bursts;
+    })()`)) as string[][];
+    bursts.forEach((shapes, b) => {
+      assert.equal(
+        new Set(shapes.slice(2)).size,
+        1,
+        `a drawn piece holds its shape while the page scrolls (scroll ${b})`,
+      );
+    });
+    await page.waitForTimeout(400);
+    assert.equal(
+      await page.evaluate(SWAYING(600)),
+      true,
+      "and sways again once the scroll stops",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* A rest pauses the sway's clock with it, so the line carries on from the shape it held rather than jumping to
+   wherever the clock reached in the meantime. Read just before and just after the return's 1s rest ends: the line
+   may move as far as a few frames carry it, never the several pixels a jump would. */
+const POINTS = (index: number) =>
+  `(${SHAPE_OF(index)}).match(/-?\\d+\\.\\d+/g).map(Number)`;
+
+test("after a rest the line carries on from where it stopped, without a jump", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.addInitScript(HIDDEN_TAB);
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.waitForTimeout(800);
+    const index = (await page.evaluate(FINISHED_PIECE)) as number;
+    assert.ok(index >= 0, "a drawn piece is on screen");
+    await page.evaluate("window.__setHidden(true)");
+    await page.waitForTimeout(2000);
+    await page.evaluate("window.__setHidden(false)");
+    await page.waitForTimeout(900);
+    const held = (await page.evaluate(POINTS(index))) as number[];
+    await page.waitForTimeout(150);
+    const after = (await page.evaluate(POINTS(index))) as number[];
+    assert.equal(after.length, held.length);
+    const jump = Math.max(
+      ...held.map((value, i) => Math.abs(after[i] - value)),
+    );
+    assert.ok(jump > 0, "the line moves again once the rest ends");
+    assert.ok(
+      jump < 2,
+      `the line jumped ${jump.toFixed(2)}px when the rest ended`,
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test("coming back to the tab, the sway waits a second before it moves", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.addInitScript(HIDDEN_TAB);
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.waitForTimeout(500);
+    await page.evaluate("window.__setHidden(true)");
+    await page.waitForTimeout(300);
+    await page.evaluate("window.__setHidden(false)");
+    assert.equal(
+      await page.evaluate(SWAYING(600)),
+      false,
+      "the first moments after a return are the page's",
+    );
+    await page.waitForTimeout(600);
+    assert.equal(
+      await page.evaluate(SWAYING(600)),
+      true,
+      "then the sway carries on",
     );
   } finally {
     await browser.close();

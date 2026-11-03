@@ -156,6 +156,11 @@ function openingFloor(
 /* ---------------------------------------------------------------------------------------------
    THE COMPONENT */
 
+/* The sway's rests (DESIGN.md -> Thread -> The sway): from a scroll until this long after the last one, and
+   this long after the tab comes back. Its own timings, outside the motion tokens. */
+const SCROLL_REST_MS = 150;
+const RETURN_REST_MS = 1000;
+
 export function PageThread() {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const fallbackSvgRef = useRef<SVGSVGElement>(null);
@@ -182,6 +187,9 @@ export function PageThread() {
      interaction wakes it. The clock starts at load. */
   const idleRef = useRef(false);
   const idleTimerRef = useRef<number | null>(null);
+  /* RESTING: the sway holds its shape while the page scrolls and for a moment after the tab comes back, so the
+     page's own work has the main thread (DESIGN.md -> Thread -> The sway). Non-null while a rest is running. */
+  const restTimerRef = useRef<number | null>(null);
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
      as `measured.sections` itself, never re-measured on scroll. `groupRectsRef` is `threadLine`'s own
      per-GROUP window rects (a stacked pair's own two card rects, a ritual list's own row rects, or a
@@ -223,11 +231,34 @@ export function PageThread() {
     return headRef.current;
   }, [pathOf]);
 
+  /* The one place the sway is woken or stopped: it moves only while the page is touched, in view and not
+     resting. */
+  const syncSway = useCallback(() => {
+    setSwayAwake(
+      !idleRef.current &&
+        document.visibilityState !== "hidden" &&
+        restTimerRef.current === null,
+    );
+  }, []);
+
+  const restSway = useCallback(
+    (ms: number) => {
+      if (restTimerRef.current !== null)
+        window.clearTimeout(restTimerRef.current);
+      restTimerRef.current = window.setTimeout(() => {
+        restTimerRef.current = null;
+        syncSway();
+      }, ms);
+      syncSway();
+    },
+    [syncSway],
+  );
+
   const goIdle = useCallback(() => {
     idleTimerRef.current = null;
     idleRef.current = true;
-    setSwayAwake(false);
-  }, []);
+    syncSway();
+  }, [syncSway]);
 
   /* Any scroll, tap, click or key: the idle clock starts over, and a page that had gone idle sways again. */
   const wake = useCallback(() => {
@@ -238,8 +269,8 @@ export function PageThread() {
       idle === undefined ? null : window.setTimeout(goIdle, idle);
     if (!idleRef.current) return;
     idleRef.current = false;
-    setSwayAwake(true);
-  }, [goIdle]);
+    syncSway();
+  }, [goIdle, syncSway]);
 
   const taper = useCallback((): TaperPainter | null => {
     const group = taperGroupRef.current;
@@ -540,6 +571,7 @@ export function PageThread() {
     let rafId: number | null = null;
 
     function onScroll() {
+      restSway(SCROLL_REST_MS);
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
@@ -559,17 +591,22 @@ export function PageThread() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [commitScrolled]);
+  }, [commitScrolled, restSway]);
 
-  /* A hidden tab stops the sway; coming back resumes it unless the page has gone idle, since a tab coming
-     back is not an interaction. */
+  /* A hidden tab stops the sway; coming back resumes it after a rest unless the page has gone idle, since a tab
+     coming back is not an interaction. */
   useEffect(() => {
     function onVisibility() {
-      setSwayAwake(document.visibilityState !== "hidden" && !idleRef.current);
+      if (document.visibilityState === "hidden") syncSway();
+      else restSway(RETURN_REST_MS);
     }
     document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (restTimerRef.current !== null)
+        window.clearTimeout(restTimerRef.current);
+    };
+  }, [restSway, syncSway]);
 
   /* A tap, click or key wakes the page as a scroll does. The idle clock starts at load. */
   useEffect(() => {
