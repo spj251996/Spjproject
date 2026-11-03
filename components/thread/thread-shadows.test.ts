@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { tokenValue } from "../../scripts/lib/built-tokens.ts";
 import { CONTACT_SHADOW, HEAD_HALO } from "./thread-shadows.ts";
@@ -12,10 +13,10 @@ test("the thread's contact shadow falls straight down in the paper's own shadow 
   ]);
 });
 
-/* Any failure here is also a prompt to re-fit `FITTED_GLOW` (`thread-retrace.ts`): the re-trace's eight
-   glow alphas were fitted to the falloff of exactly these radii and alphas, so retuning the halo
-   leaves them describing a halo that no longer exists. */
-test("the head's halo keeps the radii and strengths FITTED_GLOW was fitted to", () => {
+/* The owner's pick off an iPhone render (2026-11-03, DESIGN.md -> Thread -> The drawing head): three-quarter
+   strength, the radii unchanged. Wide radii cost a cliff on every piece's ink but are cheap over the head's own
+   tight silhouette, which is all this filter covers; its cost was re-measured at this strength. */
+test("the head's halo is thread-vermilion at three-quarter strength", () => {
   assert.deepEqual(
     HEAD_HALO.layers.map(({ blur, alpha, offsetY, colour }) => [
       blur,
@@ -24,13 +25,28 @@ test("the head's halo keeps the radii and strengths FITTED_GLOW was fitted to", 
       colour,
     ]),
     [
-      [3.5, 0.34, 0, "--color-thread-vermilion"],
-      [12, 0.22, 0, "--color-thread-vermilion"],
-      [33, 0.15, 0, "--color-thread-vermilion"],
+      [3.5, 0.51, 0, "--color-thread-vermilion"],
+      [12, 0.33, 0, "--color-thread-vermilion"],
+      [33, 0.225, 0, "--color-thread-vermilion"],
     ],
-    "the halo changed: FITTED_GLOW's eight alphas were fitted to the falloff of THESE radii " +
-      "and alphas, so re-fit them and re-measure MEASURED_HALO before updating this expectation",
   );
+});
+
+/* Both heads take the one halo: the trunk's and the Wishes card thread's head groups carry the class whose filter
+   is the halo token, so the three-quarter strength reaches both. */
+test("both heads name the one halo filter", () => {
+  const css = readFileSync("components/thread/thread.module.css", "utf8");
+  assert.match(css, /\.pageHead\s*\{[^}]*filter:\s*var\(--halo-thread-head\)/);
+  for (const file of [
+    "components/thread/page-thread.tsx",
+    "components/thread/card-thread.tsx",
+  ]) {
+    assert.match(
+      readFileSync(file, "utf8"),
+      /className=\{styles\.pageHead\}/,
+      `${file} renders its head group with .pageHead`,
+    );
+  }
 });
 
 /* The CSS drop-shadow never paints on an iPhone; a token that went back to one would pass every

@@ -11,7 +11,7 @@
 
    Wide radii on every piece's ink cost a cliff, not a gradual scaling (55 dropped frames over a 5s
    scrub at 33px against 4 at 8.25px), so do not widen the contact shadow's blur without re-measuring.
-   The halo's radii are the ones the re-trace's glow strokes were fitted to (`FITTED_GLOW`).
+   The halo is the owner's three-quarter strength (2026-11-03); it covers only the head's own silhouette.
    `ThreadFilters` (`thread-filters.tsx`) renders them. */
 
 export interface ShadowLayer {
@@ -38,9 +38,9 @@ export const CONTACT_SHADOW: ThreadFilter = {
 export const HEAD_HALO: ThreadFilter = {
   id: "thread-head-halo",
   layers: [
-    { offsetY: 0, blur: 3.5, colour: "--color-thread-vermilion", alpha: 0.34 },
-    { offsetY: 0, blur: 12, colour: "--color-thread-vermilion", alpha: 0.22 },
-    { offsetY: 0, blur: 33, colour: "--color-thread-vermilion", alpha: 0.15 },
+    { offsetY: 0, blur: 3.5, colour: "--color-thread-vermilion", alpha: 0.51 },
+    { offsetY: 0, blur: 12, colour: "--color-thread-vermilion", alpha: 0.33 },
+    { offsetY: 0, blur: 33, colour: "--color-thread-vermilion", alpha: 0.225 },
   ],
 };
 
