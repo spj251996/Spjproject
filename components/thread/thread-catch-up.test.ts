@@ -64,6 +64,54 @@ test("a frame timestamped before a re-target never moves the draw backwards", ()
   }
 });
 
+/* On a busy page a frame runs past the next vsync, so a scroll's re-target, made late in one frame, is stamped
+   AFTER the timestamp the next frame carries. A slow scroll re-targets every frame, and when that read as no time
+   passed the draw held still on every late frame — the owner's slow scroll in chunks (iPhone, 2026-11-03). */
+test("a re-target made late in a frame still moves the draw on the next frame", () => {
+  let clock = 0;
+  let queued: ((now: number) => void) | null = null;
+  const painted: number[] = [];
+  const originalNow = performance.now;
+  performance.now = () => clock;
+  Object.assign(globalThis, {
+    window: {
+      requestAnimationFrame: (callback: (now: number) => void) => {
+        queued = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {},
+    },
+  });
+  try {
+    const follower = createCatchUp((drawn) => painted.push(drawn));
+    const flush = (now: number) => {
+      const callback = queued;
+      queued = null;
+      callback?.(now);
+    };
+    let frameBegan = 0;
+    let target = 100;
+    follower.to(target, 0.6);
+    for (let frame = 0; frame < 20; frame += 1) {
+      frameBegan += 16;
+      clock = Math.max(clock, frameBegan) + 1;
+      flush(frameBegan);
+      clock = frameBegan + 20;
+      target += 5;
+      follower.to(target, 0.6);
+    }
+    const still = painted.slice(1).filter((value, i) => value <= painted[i]);
+    assert.equal(
+      still.length,
+      0,
+      `the draw held still on ${still.length} of ${painted.length - 1} frames`,
+    );
+  } finally {
+    performance.now = originalNow;
+    Reflect.deleteProperty(globalThis, "window");
+  }
+});
+
 /* A driven follower: a clock the test sets, and frames it flushes at that clock, every 16ms. */
 function drive() {
   let clock = 0;
@@ -181,4 +229,25 @@ test("a target at or below what is shown changes nothing", () => {
     }
   };
   assert.deepEqual(run(true), run(false));
+});
+
+/* A follower at rest still holds the timestamp of the last frame it painted. Two re-targets before a new leg's first
+   frame must not time that leg from the old frame, or the line jumps to its target in one frame. */
+test("a second re-target before a resting follower's first frame never jumps the draw", () => {
+  const { follower, painted, advance, restore } = drive();
+  try {
+    follower.to(1000, 0.6);
+    advance(800);
+    advance(5000);
+    follower.to(2000, 0.6);
+    follower.to(2100, 0.6);
+    advance(16);
+    const step = painted[painted.length - 1] - 1000;
+    assert.ok(
+      step < 200,
+      `the draw jumped ${step.toFixed(0)}px in its first frame`,
+    );
+  } finally {
+    restore();
+  }
 });

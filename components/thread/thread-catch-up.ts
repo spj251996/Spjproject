@@ -67,6 +67,8 @@ export function createCatchUp(paint: (drawn: number) => void) {
   /* The leg's start speed, in px per ms. */
   let startSpeed = 0;
   let raf: number | null = null;
+  /* The timestamp of the frame that painted `shown`. */
+  let paintedAt: number | null = null;
   let ease: ((t: number) => number) | undefined;
 
   /* The leg's cubic Hermite at `u` (0 to 1): from `from` at `startSpeed` to `target` at rest. */
@@ -98,15 +100,15 @@ export function createCatchUp(paint: (drawn: number) => void) {
 
   function tick(now: number) {
     raf = null;
-    /* A frame's timestamp is when the frame began, which can be before a re-target made mid-frame:
-       that is no time passed, not negative time, which the eased curve would carry below 0 and step
-       the draw backwards. */
+    /* Only a leg started from rest can begin after the frame it is first drawn in (see `to`): that frame is no
+       time passed, not negative time, which the eased curve would carry below 0 and step the draw backwards. */
     const t =
       duration <= 0
         ? 1
         : Math.min(1, Math.max(0, (now - startedAt) / duration));
     shown = Math.max(shown, Math.min(target, at(t)));
     if (t >= 1) shown = target;
+    paintedAt = now;
     paint(shown);
     if (t < 1) raf = window.requestAnimationFrame(tick);
   }
@@ -123,8 +125,18 @@ export function createCatchUp(paint: (drawn: number) => void) {
         stop();
         return;
       }
-      const now = performance.now();
-      const moving = raf !== null && duration > 0 && now - startedAt < duration;
+      /* A re-target mid-chase starts its leg at the frame that painted `shown`, on the frames' own clock. Stamped
+         with `performance.now()` instead, a re-target made late in a busy frame fell after the next frame's
+         timestamp, which read as no time passed: a slow scroll re-targets every frame, and the draw held still on
+         every late one and drew in chunks (the owner's iPhone, 2026-11-03). */
+      const moving =
+        raf !== null &&
+        paintedAt !== null &&
+        duration > 0 &&
+        paintedAt - startedAt < duration;
+      const now = moving && paintedAt !== null ? paintedAt : performance.now();
+      /* A leg from rest is timed from now; the last frame painted belongs to the leg before it. */
+      if (!moving) paintedAt = null;
       const speed = moving
         ? speedAt(Math.min(1, Math.max(0, (now - startedAt) / duration)))
         : 0;
