@@ -160,3 +160,25 @@ test("it arrives exactly at the target one duration after the last re-target, an
     restore();
   }
 });
+
+/* Monotonic like the ratchet it follows: a target at or below what is already drawn — scrolling back up — leaves the
+   chase exactly as it was. */
+test("a target at or below what is shown changes nothing", () => {
+  const run = (retarget: boolean) => {
+    const { follower, painted, advance, restore } = drive();
+    try {
+      follower.to(5000, 0.6);
+      advance(300);
+      if (retarget) {
+        const shown = painted[painted.length - 1];
+        follower.to(shown - 10, 0.6);
+        follower.to(shown, 0.6);
+      }
+      advance(800);
+      return [...painted];
+    } finally {
+      restore();
+    }
+  };
+  assert.deepEqual(run(true), run(false));
+});
