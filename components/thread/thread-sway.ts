@@ -217,6 +217,17 @@ function joinPolyline(numbers: readonly number[], parts: readonly string[]) {
   return out;
 }
 
+/* The shape a stopped sway leaves on a path: its base, unless a painter wrote a newer path since the sway last wrote
+   it, which the stop never saw because it disconnects the observer first; that newer path is the base, and stays.
+   Exported for its test. */
+export function restoredShape(
+  current: string | null,
+  written: string,
+  base: string,
+): string {
+  return current !== null && current !== written ? current : base;
+}
+
 /* The flattened path from its start to `fraction` of its length, ending on the point there: nothing past it
    is in the path. At 0 it is empty, and from 1 it is the whole path. The fraction is found along
    `measuredOn` — the same points before they moved, by default the path itself — and laid on `numbers`. */
@@ -591,8 +602,9 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       for (const path of svg.querySelectorAll("path")) {
         const entry = tracked.get(path);
         if (entry === undefined) continue;
-        if (path.getAttribute("d") !== entry.base)
-          path.setAttribute("d", entry.base);
+        const current = path.getAttribute("d");
+        const shape = restoredShape(current, entry.written, entry.base);
+        if (current !== shape) path.setAttribute("d", shape);
         if (path.style.visibility === "hidden") path.style.visibility = "";
         tracked.delete(path);
       }

@@ -601,10 +601,14 @@ export function PageThread() {
       else restSway(RETURN_REST_MS);
     }
     document.addEventListener("visibilitychange", onVisibility);
+    /* A remount mid-rest (a fast refresh, a navigation back) inherits the page-wide sleeping sway: the cleanup drops
+       the rest it cancels, and the mount settles the sway from this page's own state. */
+    syncSway();
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       if (restTimerRef.current !== null)
         window.clearTimeout(restTimerRef.current);
+      restTimerRef.current = null;
     };
   }, [restSway, syncSway]);
 

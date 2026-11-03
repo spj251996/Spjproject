@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cutPolyline, flatten } from "./thread-sway.ts";
+import { cutPolyline, flatten, restoredShape } from "./thread-sway.ts";
 
 /* The sway moves points, so a cubic it moved only at its control points could not follow the field
    between them the way a polyline laid on it does. Flattened, both are polylines. */
@@ -79,4 +79,11 @@ test("a cut is placed by the unswayed line's lengths and laid on the moved point
     cutPolyline(moved, LINE.parts, 0.75, LINE.numbers),
     "M0.00 0.00L15.00 0.00L17.50 0.00",
   );
+});
+
+/* Stopping puts each piece back to its unswayed shape, but a painter can have written a new one since the sway last
+   wrote it, unseen because the stop disconnects the observer first: that newer path is the base, and stays. */
+test("stopping keeps a path a painter rewrote since the sway last wrote it", () => {
+  assert.equal(restoredShape("M5 5L6 6", "M1 1L2 2", "M0 0L2 2"), "M5 5L6 6");
+  assert.equal(restoredShape("M1 1L2 2", "M1 1L2 2", "M0 0L2 2"), "M0 0L2 2");
 });
