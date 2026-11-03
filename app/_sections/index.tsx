@@ -10,15 +10,24 @@ import { WishesSection } from "./wishes";
 
    `thread` gates `PageThread` here rather than at the route, so a route cannot set the thread on the
    sections and forget the page-length one, or the reverse. The emitted DOM is unchanged: the thread
-   stays the last child of `<main>`. */
-export function Sections({ thread = false }: { thread?: boolean }) {
+   stays the last child of `<main>`.
+
+   `credit` puts the designer's credit at Wishes' foot. Only the lab passes it until the couple agree
+   (PROJECT.md → Content Model → DesignerCredit). */
+export function Sections({
+  thread = false,
+  credit = false,
+}: {
+  thread?: boolean;
+  credit?: boolean;
+}) {
   return (
     <>
       <InviteSection />
       <EventInfoSection />
       <FamilySection />
       <CelebrationsSection />
-      <WishesSection thread={thread} />
+      <WishesSection credit={credit} thread={thread} />
       {thread ? <PageThread /> : null}
     </>
   );

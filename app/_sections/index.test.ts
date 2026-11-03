@@ -128,3 +128,37 @@ test("the thread render gates sweep exactly the sections the module composes, in
 test("/preview is retired", () => {
   assert.ok(!existsSync("app/preview"), "app/preview is back");
 });
+
+/* The credit is on the lab alone until the couple agree (owner, 2026-11-03), so `/` must never pass it. */
+test("only the thread lab passes credit", () => {
+  assert.match(readFileSync("app/page.tsx", "utf8"), /<Sections\s*\/>/);
+  assert.match(
+    readFileSync("app/thread/page.dev.tsx", "utf8"),
+    /<Sections\b[^>]*\bcredit\b[^>]*\/>/,
+  );
+  const sections = readFileSync("app/_sections/index.tsx", "utf8");
+  assert.match(sections, /credit = false/);
+  assert.match(sections, /<WishesSection\b[^>]*credit=\{credit\}/);
+
+  const wishes = readFileSync("app/_sections/wishes.tsx", "utf8");
+  const sheetEnd = wishes.indexOf("</MountedSheet>");
+  const credit = wishes.match(
+    /\{credit \? \(\s*<div className="([^"]+)">\s*<DesignerCredit layout="line" \/>\s*<\/div>\s*\) : null\}/,
+  );
+  assert.ok(credit, "no credit-gated DesignerCredit line in wishes.tsx");
+  assert.ok(
+    wishes.indexOf(credit[0]) > sheetEnd,
+    "the credit sits outside the card",
+  );
+  const classes = credit[1].split(" ");
+  for (const name of [
+    "absolute",
+    "inset-x-0",
+    "bottom-0",
+    "px-space-md",
+    "pb-space-xs",
+    "pointer-events-auto",
+  ]) {
+    assert.ok(classes.includes(name), `the credit's wrapper lacks ${name}`);
+  }
+});
