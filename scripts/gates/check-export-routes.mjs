@@ -246,8 +246,9 @@ for (const {
     if (!ok) failed = true;
   }
 
-  /* The designer's visible credit: counted as anchors to the designer's site, required on every row
-   * like robots, so a route that gains or loses it fails rather than passing by omission. */
+  /* The designer's visible credit: counted as ANCHORS to the designer's site, required on every row
+   * like robots, so a route that gains or loses it fails rather than passing by omission. Anchors only:
+   * the metadata's `authors` url emits `<link rel="author" href=…>` on every route. */
   if (typeof credit !== "number") {
     console.error(
       `FAIL ${label}: no expected credit count on this EXPECTED row`,
@@ -255,7 +256,9 @@ for (const {
     failed = true;
   } else {
     const links = (
-      html.match(new RegExp(`href="${escapeRegExp(DESIGNER_URL)}"`, "g")) ?? []
+      html.match(
+        new RegExp(`<a\\b[^>]*\\bhref="${escapeRegExp(DESIGNER_URL)}"`, "g"),
+      ) ?? []
     ).length;
     const ok = links === credit;
     console.log(
