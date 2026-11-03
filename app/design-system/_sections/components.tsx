@@ -19,6 +19,7 @@ import {
 import { MapIcon, SprigIcon } from "@/components/icons";
 import { ButtonAction } from "@/components/ui/button-action";
 import { CoupleNames } from "@/components/ui/couple-names";
+import { DesignerCredit } from "@/components/ui/designer-credit";
 import { GalleryModalPanel } from "@/components/ui/gallery/gallery-modal-panel";
 import { PhotoStrip } from "@/components/ui/gallery/photo-strip";
 import { PhotoViewerPanel } from "@/components/ui/gallery/photo-viewer";
@@ -101,7 +102,7 @@ export function ComponentsSections() {
 
       <GallerySection
         id="ui"
-        intro="The UI primitives: the action, portraits, the gallery's preview row, overlay and full-screen viewer, the image stand-in, the sprig ornament and the scroll progress line — plus the couple's drawn names, which are not portable but shared by two sections."
+        intro="The UI primitives: the action, portraits, the gallery's preview row, overlay and full-screen viewer, the image stand-in, the sprig ornament, the designer's credit and the scroll progress line — plus the couple's drawn names, which are not portable but shared by two sections."
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
@@ -285,6 +286,29 @@ export function ComponentsSections() {
                   strokeUnits={NAMES_STROKE_UNITS.wishes}
                 />
               </div>
+            </Variant>
+          </div>
+        </Specimen>
+
+        <Specimen
+          description="The site's credit to its designer: the lead Design and the designer's name, which is the one link. Two layouts — one line at Wishes' foot on /thread, and a sign-off at the foot of the not-found card. / carries none until the couple agree; every route names the designer in its metadata."
+          id="ui-designer-credit"
+          name="designer-credit"
+          note="It places nothing: each call site positions it — absolute at Wishes' foot, in the not-found stack's last track. The link is live and leaves the gallery. In line, the name's weight follows this window: bold below md, regular from md up."
+          source="@/components/ui/designer-credit"
+          spec={[
+            "lead in caption-italic, name in caption, both ink-muted",
+            "line · one centred line, lead · name · the name's weight steps at md, since botanical ink sits behind it on phones",
+            "signoff · one accent-gold sprig at 23px on the diagonal (the sprig ornament's floor), then the lead space-2xs below it, then the name space-3xs below that",
+            "the name alone is the link, same tab · underline 1px at a 4px offset, currentColor at 35% · hit area --touch-target (44px) tall at no layout cost · the site focus ring",
+          ]}
+        >
+          <div className="flex flex-wrap items-end gap-space-2xl">
+            <Variant label="line · Wishes' foot on /thread">
+              <DesignerCredit layout="line" />
+            </Variant>
+            <Variant label="signoff · the not-found card">
+              <DesignerCredit layout="signoff" />
             </Variant>
           </div>
         </Specimen>

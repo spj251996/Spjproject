@@ -453,7 +453,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows, through sprig-ornament (Components · UI), each ritual's header line from lg up, set once as drawn, plus the link preview card, which sets it inline."
+          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; its other places are listed at Foundations · Iconography → sprig."
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -610,7 +610,7 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), closes the link preview card's text column, signs off the not-found card through designer-credit. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

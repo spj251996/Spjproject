@@ -75,8 +75,8 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/_sections/wishes.tsx",
     composes:
-      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p taking --text-heading-script as its font size for the same em reason · sign-off lead in caption-italic · sign-off names in caption",
-    note: "Live at /. The couple illustration is a lazy <picture> — AVIF, then WebP, at 1x and 2x — fetched only as Wishes nears the screen, under the portraits' save cover.",
+      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p taking --text-heading-script as its font size for the same em reason · sign-off lead in caption-italic · sign-off names in caption · [lab] on /thread only, designer-credit's line absolute at the section's foot, space-xs above its bottom with space-md side padding, out of the card's flow",
+    note: "Live at /. The credit line shows on /thread alone until the couple agree, so / has no foot line. The couple illustration is a lazy <picture> — AVIF, then WebP, at 1x and 2x — fetched only as Wishes nears the screen, under the portraits' save cover.",
   },
 ];
 
@@ -85,7 +85,7 @@ const NOT_FOUND_ENTRIES: InlineEntry[] = [
     name: "Not found",
     home: "app/not-found.tsx",
     composes:
-      "mounted-sheet, the invite's own botanical placement · eyebrow bracketed by the sprig ornament · the page's h1 in heading-xl · button-action with no mark",
+      "mounted-sheet, the invite's own botanical placement · eyebrow bracketed by the sprig ornament · the page's h1 in heading-xl · button-action with no mark · designer-credit's sign-off in the stack's flow at the card's foot, at least space-2xl below the action, the name's line box 32px above the card's inner bottom edge on phones and 48px from laptop up, with the eyebrow, heading and action still centred in the card",
     note: "Live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit.",
   },
 ];
@@ -224,13 +224,13 @@ export function DomainSections() {
         title="Domain · Family"
       >
         <Specimen
-          description="Each sheet is one Family: its side as an eyebrow, the family name, then rows of portraits — the parents, then one row for each child who has a family of their own carrying that whole family, then a last row for the children with none."
+          description="Each sheet is one Family: its side as an eyebrow, the family name, where the family is from beneath it, then rows of portraits — the parents, then one row for each child who has a family of their own carrying that whole family, then a last row for the children with none."
           id="domain-family"
           name="family"
           note="Unframed, as every specimen box is: the sheet reproduces the unfitted pair's sheet by hand and always stacks, since its rows never reflow (Layout → mounted-pair) and MountedPair has no always-stacked form. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
           source="@/components/family/family"
           spec={[
-            "eyebrow bracketed by the sprig ornament · heading-xl family name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
+            "eyebrow bracketed by the sprig ornament · heading-xl family name · its origin in caption-italic, ink-muted, space-3xs under the name · rows centred, never reflowing (the page wraps the groom's second row below 375px wide; this narrower specimen box may wrap it at 375 too)",
             "portrait uniform, the bride's and the groom's alone adding the couple glow · name and relationship each on one line, wrapping within the column where that cannot hold",
             "no line drawn between people — grouping and the labels alone carry every relationship",
           ]}
