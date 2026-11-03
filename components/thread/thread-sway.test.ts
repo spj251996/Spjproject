@@ -17,6 +17,22 @@ test("a cubic flattens into short chords that start and end where the curve does
   assert.equal(flatten("M1 2L3 4 5 6"), "M1.00 2.00L3.00 4.00L5.00 6.00");
 });
 
+/* The twist's gaps are quadratics, laid in the same swayed `<svg>`: read as straight lines through their control
+   point, each gap bent into a chevron bowing twice as far as its curve. Flattened, a quadratic passes through
+   its own midpoint, halfway to the control point. */
+test("a quadratic flattens into chords that start and end where the curve does", () => {
+  const flat = flatten("M0 0Q10 10 20 0");
+  assert.ok(flat.startsWith("M0.00 0.00L"), flat);
+  assert.ok(flat.endsWith("L20.00 0.00"), flat);
+  assert.doesNotMatch(flat, /Q/);
+  assert.doesNotMatch(
+    flat,
+    /10\.00 10\.00/,
+    "the control point is not a vertex",
+  );
+  assert.match(flat, /L10\.00 5\.00/, "the curve's midpoint is");
+});
+
 /* While the line sways, the piece being drawn is cut at its tip rather than dashed, so nothing past the tip
    exists to paint. The parts are the path's text between its numbers, as the sway splits it. */
 const LINE = {

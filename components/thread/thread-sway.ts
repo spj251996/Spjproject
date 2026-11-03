@@ -121,11 +121,11 @@ function field(
   return [fx, fy];
 }
 
-/* A path in the thread's own form (absolute M, L, C) as a polyline: every cubic flattened into chords
-   of about CHORD px, so a displacement applied point by point bends the line exactly as it bends a
-   1px polyline laid on it. Exported for its test. */
+/* A path in the thread's own form (absolute M, L, C, and the twist's Q) as a polyline: every curve
+   flattened into chords of about CHORD px, so a displacement applied point by point bends the line
+   exactly as it bends a 1px polyline laid on it. Exported for its test. */
 export function flatten(d: string): string {
-  const tokens = d.match(/[MLC]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? [];
+  const tokens = d.match(/[MLCQ]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? [];
   let out = "";
   let command = "";
   let x = 0;
@@ -134,7 +134,7 @@ export function flatten(d: string): string {
   const num = () => Number(tokens[i++]);
   while (i < tokens.length) {
     const token = tokens[i];
-    if (token === "M" || token === "L" || token === "C") {
+    if (token === "M" || token === "L" || token === "C" || token === "Q") {
       command = token;
       i += 1;
       continue;
@@ -170,6 +170,17 @@ export function flatten(d: string): string {
       }
       x = x3;
       y = y3;
+      continue;
+    }
+    /* The twist's gaps: a few pixels long and bowed under a pixel, so two chords through the curve's middle
+       hold its shape, and the hundreds of gaps on screen add one point each, not several. */
+    if (command === "Q") {
+      const [x1, y1, x2, y2] = [num(), num(), num(), num()];
+      const mx = 0.25 * x + 0.5 * x1 + 0.25 * x2;
+      const my = 0.25 * y + 0.5 * y1 + 0.25 * y2;
+      out += `L${mx.toFixed(2)} ${my.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}`;
+      x = x2;
+      y = y2;
       continue;
     }
     x = num();
@@ -453,7 +464,9 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       const top = band.top - VIEW_MARGIN;
       const bottom = band.top + band.height + VIEW_MARGIN;
       for (const path of svg.querySelectorAll("path")) {
-        const entry = track(path);
+        /* A known path is not re-read: reading back every path's `d` each frame was a measured share of the
+           sway's cost, and a painter's rewrite reaches `tracked` through the observer before this runs. */
+        const entry = tracked.get(path) ?? track(path);
         if (entry === undefined) continue;
         if (entry.bottom < top || entry.top > bottom) continue;
         /* A piece not yet started paints nothing, so it is never re-shaped. On an iPhone, re-shaping
