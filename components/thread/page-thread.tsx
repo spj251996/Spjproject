@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import styles from "./thread.module.css";
 import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
+import { cueSpike, TIP_LOOP_MS, TIP_SPAN } from "./thread-cue-spike";
 import { PAGE_FALLBACKS } from "./thread-fallback";
 import { ThreadFilters } from "./thread-filters";
 import { paintedLength } from "./thread-head";
@@ -312,6 +313,7 @@ export function PageThread() {
     if (retraceStartRef.current === null) return;
     retraceStartRef.current = null;
     retraceSuspendedAtRef.current = null;
+    headGroupRef.current?.removeAttribute("data-cue-pulse");
     retrace()?.hide();
     for (const card of cardRetraces) card.hide();
   }, [retrace]);
@@ -328,8 +330,8 @@ export function PageThread() {
      clock's zero by the time spent hidden), and a loop that is suspended starts no frame. */
   const syncRetrace = useCallback(() => {
     const painter = retrace();
-    const state = reducedMotion()
-      ? { phase: "drawing" as const, targets: [] }
+    let state = reducedMotion()
+      ? { phase: "drawing" as const, targets: [] as number[] }
       : retraceNow(
           rangesRef.current,
           groupRectsRef.current,
@@ -337,6 +339,18 @@ export function PageThread() {
           movingRef.current,
           { scrollY: window.scrollY, height: viewportHeightRef.current },
         );
+    /* SPIKE: every cue but the current re-trace acts only at the tip of an unfinished line. */
+    const cue = cueSpike();
+    if (cue !== "trace") {
+      const tip = tipGroupIndex(rangesRef.current, drawnRef.current);
+      state = {
+        phase: state.phase,
+        targets:
+          cue === "none" || state.phase === "complete"
+            ? []
+            : state.targets.filter((index) => index === tip),
+      };
+    }
     retraceNowRef.current = state;
     if (
       painter === null ||
@@ -409,6 +423,11 @@ export function PageThread() {
         setSwayAwake(false);
         return;
       }
+      if (cue === "pulse") {
+        headGroupRef.current?.setAttribute("data-cue-pulse", "");
+        retraceFrameRef.current = window.requestAnimationFrame(frame);
+        return;
+      }
       const { phase, targets } = retraceNowRef.current;
       const options = retraceOptions();
       const frames = new Map<number, RetraceFrame>();
@@ -418,20 +437,25 @@ export function PageThread() {
           phase === "drawing"
             ? Math.min(range.end, drawnRef.current)
             : range.end;
-        const extent = end - range.start;
+        const from =
+          cue === "tip" ? Math.max(range.start, end - TIP_SPAN) : range.start;
+        const extent = end - from;
         if (extent <= 0) continue;
         /* Each stretch reads its own clock when a speed is set: same rate, its own loop length.
            It is NOT given its own BUDGET: a short stretch would spend a few quick loops and go dark
            while a long one beside it was still on its first, trading one incoherence for another.
            Every lit stretch keeps looping until the page's single budget -- the LONGEST stretch's
            `--retrace-loops` loops -- runs out, so they all quiet together. */
-        const own = byLength
-          ? { loop: ((now - start) / periodFor(extent)) % 1 }
-          : { loop };
+        const own =
+          cue === "tip"
+            ? { loop: ((now - start) / TIP_LOOP_MS) % 1 }
+            : byLength
+              ? { loop: ((now - start) / periodFor(extent)) % 1 }
+              : { loop };
         const span = retraceSpan(own.loop, extent, options.length);
         frames.set(index, {
-          tail: range.start + span.tail,
-          tip: range.start + span.tip,
+          tail: from + span.tail,
+          tip: from + span.tip,
         });
       }
       painter.paint(frames, chainRef.current, options);
