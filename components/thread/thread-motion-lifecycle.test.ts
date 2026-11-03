@@ -577,6 +577,81 @@ test("after a rest the line carries on from where it stopped, without a jump", a
   }
 });
 
+/* Every twist mark on screen whose midpoint lies off the ink it sits on. The sway reshapes only the paths near the
+   window, each culled by its own box: a long piece of ink stays in range while a twist mark on its far end does not,
+   so the two can hold different moments, and a rest lets the page scroll onto both before either is redrawn. */
+const TWIST_OFF_INK = `(() => {
+  const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
+  const inks = [...svg.querySelectorAll("path[data-thread-piece]")].filter((p) => p.style.visibility !== "hidden");
+  const marks = [...svg.querySelectorAll("[data-thread-twist] path")].filter((p) => p.style.display !== "none");
+  const point = svg.createSVGPoint();
+  let checked = 0;
+  const off = [];
+  for (const mark of marks) {
+    const box = mark.getBoundingClientRect();
+    if (box.bottom < 0 || box.top > innerHeight) continue;
+    for (const gap of mark.getAttribute("d").split("M").slice(1)) {
+      const numbers = gap.match(/-?\\d+(?:\\.\\d+)?/g).map(Number);
+      const middle = Math.floor(numbers.length / 4) * 2;
+      point.x = numbers[middle];
+      point.y = numbers[middle + 1];
+      checked += 1;
+      if (!inks.some((ink) => ink.isPointInStroke(point))) off.push(point.x.toFixed(1) + "," + point.y.toFixed(1));
+    }
+  }
+  return { checked, off };
+})()`;
+
+test("a rest never shows the twist apart from the ink, after a long scroll back up the drawn line", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    for (let y = 300; y <= 3000; y += 300) {
+      await page.evaluate(`window.scrollTo(0, ${y})`);
+      await page.waitForTimeout(250);
+    }
+    /* Swaying long enough down here that everything above has stood still at older moments. */
+    await page.waitForTimeout(2500);
+    const awake = (await page.evaluate(TWIST_OFF_INK)) as {
+      checked: number;
+      off: string[];
+    };
+    assert.ok(awake.checked > 0, "twist marks are on screen while swaying");
+    assert.deepEqual(
+      awake.off,
+      [],
+      "swaying, every twist mark sits on its ink",
+    );
+    /* Read inside the scroll's 150ms rest, two frames after the jump has painted. */
+    const rested = (await page.evaluate(`(async () => {
+      window.scrollTo(0, 900);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return ${TWIST_OFF_INK};
+    })()`)) as { checked: number; off: string[] };
+    assert.ok(rested.checked > 0, "twist marks are on screen after the scroll");
+    assert.deepEqual(
+      rested.off,
+      [],
+      "resting, every twist mark on screen still sits on its ink",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("coming back to the tab, the sway waits a second before it moves", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");

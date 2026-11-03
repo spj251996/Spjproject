@@ -265,6 +265,8 @@ type Tracked = {
   weights: Float32Array | null;
   top: number;
   bottom: number;
+  /* The moment its shape was last written at; null while it keeps the unswayed shape it was given. */
+  at: number | null;
 };
 
 function parse(
@@ -373,6 +375,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         base: current,
         written: current,
         weights: null,
+        at: null,
         ...parse(flatten(current)),
       };
       tracked.set(path, entry);
@@ -425,6 +428,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     if (path.style.visibility !== hidden) path.style.visibility = hidden;
     if (hidden !== "") return;
     const moved = displaced(entry, t, band);
+    entry.at = t;
     const next =
       progress >= 1
         ? joinPolyline(moved, entry.parts)
@@ -475,6 +479,35 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     frame ??= window.requestAnimationFrame(tick);
   }
 
+  /* While the sway rests, the page can scroll onto paths last reshaped at an older moment, or never: each path is
+     culled by its own box, so a long piece of ink stays in range while a twist mark on its far end freezes, and the
+     mark showed apart from its ink (the owner's iPhone, 2026-11-03). Each such path is brought to the moment the line
+     stopped at as it comes into range, so nothing on screen holds two moments; the paths already there cost nothing.
+     Scheduled for the frame rather than run in the scroll event, which can arrive before the rest begins. */
+  let catchingUp: number | null = null;
+  function catchUp() {
+    catchingUp = null;
+    if (swayAwake || stoppedBand === null) return;
+    try {
+      const band = view();
+      const top = band.top - VIEW_MARGIN;
+      const bottom = band.top + band.height + VIEW_MARGIN;
+      for (const path of svg.querySelectorAll("path")) {
+        const entry = tracked.get(path) ?? track(path);
+        if (entry === undefined || entry.at === stoppedAt) continue;
+        if (entry.bottom < top || entry.top > bottom) continue;
+        if (path.style.visibility === "hidden" || path.style.display === "none")
+          continue;
+        write(path, entry, stoppedAt, stoppedBand);
+      }
+    } catch (error) {
+      recordError("catch-up", error);
+    }
+  }
+  const onScroll = () => {
+    catchingUp ??= window.requestAnimationFrame(catchUp);
+  };
+
   function tick() {
     if (!swayAwake) {
       frame = null;
@@ -518,6 +551,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         if (entry !== undefined) entry.weights = null;
       }
       swayWakers.add(wake);
+      window.addEventListener("scroll", onScroll, { passive: true });
       if (swayAwake) frame ??= window.requestAnimationFrame(tick);
     },
     /* Synchronous, so a caller that has just written a new `d` reads it as the base before the
@@ -530,6 +564,9 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     stop() {
       if (frame !== null) window.cancelAnimationFrame(frame);
       frame = null;
+      if (catchingUp !== null) window.cancelAnimationFrame(catchingUp);
+      catchingUp = null;
+      window.removeEventListener("scroll", onScroll);
       swayWakers.delete(wake);
       observer.disconnect();
       for (const path of svg.querySelectorAll("path")) {
