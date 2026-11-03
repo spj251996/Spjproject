@@ -2,6 +2,7 @@
 
 import {
   type ReactNode,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -31,6 +32,7 @@ import {
   polylineBetween,
   samplePath,
 } from "@/components/thread/thread-samples";
+import { createThreadSway } from "@/components/thread/thread-sway";
 import {
   TAPER_STEPS,
   taperCut,
@@ -47,7 +49,8 @@ import { gapWidth, ropeGaps } from "@/components/thread/thread-twist";
    (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
    `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
    imported; the classes are the page's own (`thread.module.css`), so the filters are the same ones,
-   not copies. Static: a pose of each layer, never a loop. */
+   not copies. Static: a pose of each layer, never a loop — except the sway, which is motion or nothing,
+   and runs on the page's own `createThreadSway`. */
 
 /* A connector from the middle of the page, so neither of its ends is a free end and the ink, the head
    and the re-trace show on a line that is not tapered. The two tapered ends are the pieces the page
@@ -491,5 +494,86 @@ export function ThreadRetraceSpecimen() {
         </PathFragment>
       </Panel>
     </div>
+  );
+}
+
+/* The sway reads its `<svg>`'s user units as pixels from the top of the element it is measured against
+   (on the page, `<main>`), so the stretch is moved to that frame's origin: the svg sits at the host's
+   top-left at 1:1, and the gust travels the window down it as it does down the page. */
+function atOrigin(d: string, margin: number) {
+  const numbers = (d.match(/-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? []).map(Number);
+  const xs = numbers.filter((_, i) => i % 2 === 0);
+  const ys = numbers.filter((_, i) => i % 2 === 1);
+  const dx = margin - Math.min(...xs);
+  const dy = margin - Math.min(...ys);
+  let index = 0;
+  const moved = d.replace(/-?\d*\.?\d+(?:[eE][-+]?\d+)?/g, (n) => {
+    const value = Number(n) + (index % 2 === 0 ? dx : dy);
+    index += 1;
+    return String(Math.round(value * 100) / 100);
+  });
+  return {
+    d: moved,
+    width: Math.max(...xs) + dx + margin,
+    height: Math.max(...ys) + dy + margin,
+  };
+}
+
+const SWAYING = atOrigin(MID_PAGE, MARGIN);
+
+/* The host holds no type, so no stretch here is held still, as one near type is on the page. */
+export function ThreadSwaySpecimen() {
+  const host = useRef<HTMLDivElement>(null);
+  const [ref, measured] = useMeasured(SWAYING.d);
+  useEffect(() => {
+    const frame = host.current;
+    const svg = frame?.querySelector("svg");
+    if (frame == null || svg == null) return;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const sway = createThreadSway(svg, reduced);
+    /* The sway moves only the stretch it reads as near the window, from where the host sat when it was
+       measured; the specimens above grow as they measure themselves, so it is measured again whenever
+       the gallery's height changes, as the page re-measures on a resize. */
+    const resized = new ResizeObserver(() => sway.measured(frame));
+    resized.observe(document.body);
+    return () => {
+      resized.disconnect();
+      sway.stop();
+    };
+  }, []);
+  const half = (measured?.strokeWidth ?? 0) / 2;
+  return (
+    <Panel caption="Moving, at its own size; still under reduced motion.">
+      <div className="max-w-full" ref={host}>
+        <svg
+          aria-label="The sway, on the thread's ink and twist"
+          /* Marks it as the thread, which the sway never treats as type to hold still beside. */
+          data-thread-svg="true"
+          height={SWAYING.height}
+          role="img"
+          viewBox={`0 0 ${SWAYING.width} ${SWAYING.height}`}
+          width={SWAYING.width}
+        >
+          <path className={styles.pageInk} d={SWAYING.d} ref={ref} />
+          {measured === undefined ? null : (
+            <path
+              d={ropeGaps(
+                measured.samples,
+                0,
+                measured.length,
+                measured.length,
+                half,
+              )}
+              fill="none"
+              stroke="var(--color-thread-twist)"
+              strokeLinecap="butt"
+              strokeWidth={gapWidth(half)}
+            />
+          )}
+        </svg>
+      </div>
+    </Panel>
   );
 }

@@ -9,6 +9,7 @@ import {
   ThreadHeadSpecimen,
   ThreadInkSpecimen,
   ThreadRetraceSpecimen,
+  ThreadSwaySpecimen,
   ThreadTaperSpecimen,
   ThreadTwistSpecimen,
 } from "@/app/design-system/_sections/thread-specimens";
@@ -148,6 +149,22 @@ export function DomainSections() {
           ]}
         >
           <ThreadTwistSpecimen />
+        </Specimen>
+
+        <Specimen
+          description="The sway: the whole line moves a little, as a thread in moving air — a slow sway with gusts passing through it — so the thread is alive at rest."
+          id="thread-sway"
+          name="sway"
+          note="One mid-page connector with its twist, at its own size, moved by the page's own sway."
+          source="components/thread/thread-sway.ts · createThreadSway"
+          spec={[
+            "movement · at most 8px",
+            "sway · a 4s period",
+            "gust · one every 8s, carrying half the motion",
+            "reduced motion · absent; the line stands still",
+          ]}
+        >
+          <ThreadSwaySpecimen />
         </Specimen>
 
         <Specimen
