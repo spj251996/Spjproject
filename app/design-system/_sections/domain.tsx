@@ -85,7 +85,7 @@ const NOT_FOUND_ENTRIES: InlineEntry[] = [
     name: "Not found",
     home: "app/not-found.tsx",
     composes:
-      "mounted-sheet, the invite's own botanical placement · eyebrow bracketed by the sprig ornament · the page's h1 in heading-xl · button-action with no mark · designer-credit's sign-off in the stack's flow at the card's foot, at least space-2xl below the action, the name's line box 32px above the card's inner bottom edge on phones and 48px from laptop up, with the eyebrow, heading and action still centred in the card",
+      "mounted-sheet, the invite's own botanical placement · eyebrow bracketed by the sprig ornament · the page's h1 in heading-xl · button-action with no mark · designer-credit's sign-off in the stack's flow at the card's foot, at least space-2xl below the action, nothing below it but the card's padding (and from md the mount's reveal), so at the full ground the name sits 32px above the card's outer edge on a phone and 48px from laptop up, with the eyebrow, heading and action still centred in the card",
     note: "Live at any unmatched path, e.g. /not-a-page. Nothing redirects — the action is the only way out, which is what keeps the screen clear of a time limit.",
   },
 ];
