@@ -477,7 +477,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace and its catch-up and closing-stretch budgets are the exceptions, and take their own values."
+        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace and the sway that lives and stops with it, and the thread's catch-up and closing-stretch budgets, are the exceptions, and take their own values."
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
