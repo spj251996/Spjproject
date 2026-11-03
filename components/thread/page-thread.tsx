@@ -66,7 +66,6 @@ import {
   swayAmplitude,
   type ThreadSway,
 } from "./thread-sway";
-import { createTwistPainter } from "./thread-twist";
 import {
   headOptions,
   readTerminalWindow,
@@ -77,6 +76,7 @@ import {
   tokenLength,
   tokenTime,
 } from "./thread-tokens";
+import { createTwistPainter } from "./thread-twist";
 
 /* THE MODEL.
 
@@ -322,10 +322,10 @@ export function PageThread() {
      tab coming back to the foreground.
 
      The loop is bounded, and all of the bounds are this one lifecycle: movement clears the loop, the
-     settle interval after it starts one, it runs `--retrace-loops` whole loops and stops, and the next
-     movement is what starts it again. A hidden tab suspends it WITHOUT spending any of the budget
-     (`onVisibility` below shifts the clock's zero by the time spent hidden), and a loop that is
-     suspended starts no frame. */
+     settle interval after it starts one, it runs at least `--retrace-loops` whole loops and keeps
+     looping until the page has gone `--thread-idle` untouched, and the next movement is what starts it
+     again. A hidden tab suspends it WITHOUT spending any of the budget (`onVisibility` below shifts the
+     clock's zero by the time spent hidden), and a loop that is suspended starts no frame. */
   const syncRetrace = useCallback(() => {
     const painter = retrace();
     const state = reducedMotion()

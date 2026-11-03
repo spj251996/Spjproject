@@ -52,13 +52,13 @@ import {
   swayAmplitude,
   type ThreadSway,
 } from "./thread-sway";
-import { createTwistPainter } from "./thread-twist";
 import {
   headOptions,
   readTerminalWindow,
   taperOptions,
   tokenTime,
 } from "./thread-tokens";
+import { createTwistPainter } from "./thread-twist";
 
 /* ---------------------------------------------------------------------------------------------
    THE CARD THREAD — a stretch of the thread drawn INSIDE a card's own stacking context, so it paints
