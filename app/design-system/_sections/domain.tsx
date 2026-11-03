@@ -21,7 +21,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     name: "Thread",
     home: "components/thread/page-thread.tsx",
     composes:
-      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo · tapered ends at the invite's top and Wishes' close · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping once the page has gone --thread-idle (60s) untouched (Foundations · Motion)",
+      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo · tapered ends at the invite's top and Wishes' close · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping once the page has gone --thread-idle (60s) untouched and resting while the page scrolls (Foundations · Motion)",
     note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. Below, each layer is laid on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
   {
@@ -160,6 +160,7 @@ export function DomainSections() {
             "movement · at most 8px",
             "sway · a 4s period",
             "gust · one every 8s, carrying half the motion",
+            "lifecycle · stops after --thread-idle (60s) untouched or in a hidden tab; rests from a scroll until 150ms after it, and for 1s after the tab comes back",
             "reduced motion · absent; the line stands still",
           ]}
         >
