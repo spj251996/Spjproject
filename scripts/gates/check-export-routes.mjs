@@ -30,7 +30,11 @@ const FIVE_FRAMES = ["invite", "event-info", "family", "wishes", "tall"];
 
 const PREVIEW = process.env.VERCEL_ENV === "preview";
 
-/** @typedef {{ path: string, roots: number, label: string, frames: string[], robots: string, sections?: boolean, progress?: number }} ExportRow */
+/* Stated here rather than imported from `content/credit.ts`: a gate states what it checks on its own. */
+const DESIGNER_NAME = "Aishwarya Ganesan";
+const DESIGNER_URL = "https://aishwaryaganesan.vercel.app/";
+
+/** @typedef {{ path: string, roots: number, label: string, frames: string[], robots: string, credit: number, sections?: boolean, progress?: number }} ExportRow */
 
 /* MEASURED on a preview export before writing: a static route emits `out/thread.html` with a sibling
  * `out/thread/` directory of RSC payload `.txt` files only. */
@@ -43,6 +47,7 @@ const LAB_ROW = {
   progress: 0,
   frames: FIVE_FRAMES,
   robots: "noindex, nofollow",
+  credit: 1,
 };
 
 /* `sections: true` marks a route that composes `app/_sections/index.tsx`. The not-found rows below do
@@ -60,6 +65,8 @@ const EXPECTED = [
     progress: 1,
     frames: FIVE_FRAMES,
     robots: "noindex, nofollow",
+    /* The visible credit waits for the couple's yes (owner, 2026-11-03); the lab carries it meanwhile. */
+    credit: 0,
   },
   ...(PREVIEW ? [LAB_ROW] : []),
   /* The not-found screen. Its thread was retired, so what is asserted is that the route exists and
@@ -80,6 +87,7 @@ const EXPECTED = [
     label: "/404 (not found, served)",
     frames: ["not-found"],
     robots: "noindex",
+    credit: 1,
   },
   {
     path: "out/_not-found.html",
@@ -87,6 +95,7 @@ const EXPECTED = [
     label: "/_not-found (route-named)",
     frames: ["not-found"],
     robots: "noindex",
+    credit: 1,
   },
 ];
 const FORBIDDEN = [
@@ -195,6 +204,7 @@ for (const {
   progress,
   frames,
   robots,
+  credit,
 } of EXPECTED) {
   if (!existsSync(path)) {
     console.error(`FAIL ${label}: ${path} is missing from the export`);
@@ -235,6 +245,34 @@ for (const {
     );
     if (!ok) failed = true;
   }
+
+  /* The designer's visible credit: counted as anchors to the designer's site, required on every row
+   * like robots, so a route that gains or loses it fails rather than passing by omission. */
+  if (typeof credit !== "number") {
+    console.error(
+      `FAIL ${label}: no expected credit count on this EXPECTED row`,
+    );
+    failed = true;
+  } else {
+    const links = (
+      html.match(new RegExp(`href="${escapeRegExp(DESIGNER_URL)}"`, "g")) ?? []
+    ).length;
+    const ok = links === credit;
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${label}: ${links} designer credit link(s), expected ${credit}`,
+    );
+    if (!ok) failed = true;
+  }
+
+  /* The root layout's metadata names the designer on every route, visible credit or not. */
+  const authors = [
+    ...html.matchAll(/<meta name="author" content="([^"]*)"\s*\/?>/g),
+  ].map((m) => m[1]);
+  const authorOk = authors.length === 1 && authors[0] === DESIGNER_NAME;
+  console.log(
+    `${authorOk ? "ok  " : "FAIL"} ${label}: ${authors.length} author tag(s) [${authors.join(" | ")}], expected one "${DESIGNER_NAME}"`,
+  );
+  if (!authorOk) failed = true;
 
   /* `.mounted-sheet-frame__box` after a child combinator appears only inside frame CSS, never in a class
    * attribute, in its literal or its JSON-escaped (`\u003e`) form. */
@@ -359,6 +397,17 @@ for (const path of FORBIDDEN) {
     failed = true;
   }
 }
+
+const humans = existsSync("out/humans.txt")
+  ? readFileSync("out/humans.txt", "utf8")
+  : null;
+const humansOk = [DESIGNER_NAME, DESIGNER_URL].every((text) =>
+  humans?.includes(text),
+);
+console.log(
+  `${humansOk ? "ok  " : "FAIL"} out/humans.txt ${humans === null ? "is missing from the export" : `names the designer and the site: ${humansOk}`}`,
+);
+if (!humansOk) failed = true;
 
 /* The lab is ONE route. Its sibling directory holds RSC payloads only, so any `.html` in it is a retired variant
  * route left behind -- which `next build` should never leave, since it rewrites `out/` whole. */
