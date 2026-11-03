@@ -56,6 +56,8 @@ export interface FamilyGroup {
   id: string;
   side: "bride" | "groom";
   familyName: string;
+  /** Where the family is from or based, in the couple's words — rendered beneath the family name. */
+  origin: string;
   members: FamilyMember[];
 }
 

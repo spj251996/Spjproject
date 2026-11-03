@@ -199,6 +199,7 @@ export function validateFamilyGroups(groups: FamilyGroup[]): FamilyGroup[] {
     const at = `familyGroups[${index}]`;
     claimId(group.id, `${at}.id`, groupIds);
     required(group.familyName, `${at}.familyName`);
+    required(group.origin, `${at}.origin`);
     if (group.members.length === 0) {
       throw new ContentValidationError(
         `${at}.members`,

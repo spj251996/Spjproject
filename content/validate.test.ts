@@ -57,6 +57,7 @@ const group = (over: Partial<FamilyGroup> = {}): FamilyGroup => ({
   id: "g",
   side: "bride",
   familyName: "A Family",
+  origin: "A Place",
   members: [member()],
   ...over,
 });
@@ -224,6 +225,13 @@ test("rejects a family set that is not exactly one bride and one groom", () => {
   assert.throws(
     () => validateFamilyGroups([group(), group({ id: "g2" })]),
     /exactly one "bride" group and one "groom" group \(got: bride, bride\)/,
+  );
+});
+
+test("a family group without an origin is refused", () => {
+  assert.throws(
+    () => validateFamilyGroups(pair({ origin: "" })),
+    /familyGroups\[0\]\.origin/,
   );
 });
 
