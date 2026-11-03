@@ -91,6 +91,7 @@ const READ = `(() => {
       cut,
       lastShown,
       shownCount: shown.filter(Boolean).length,
+      pieces: pieces.length,
     };
   });
 })()`;
@@ -101,6 +102,7 @@ type Reading = {
   cut: number[];
   lastShown: number;
   shownCount: number;
+  pieces: number;
 };
 
 test("while the line sways, no piece is dashed, and only the piece at the tip is drawn short", async (t) => {
@@ -152,6 +154,20 @@ test("while the line sways, no piece is dashed, and only the piece at the tip is
       })(${JSON.stringify(positions)})`,
     )) as Reading[][];
 
+    /* A reading of nothing passes every check below, so the run must have read the thread and caught it
+       mid-draw at least once. */
+    assert.ok(readings.length > 0, "no frame was read");
+    assert.ok(
+      readings.every(
+        (frame) => frame.reduce((n, svg) => n + svg.pieces, 0) > 0,
+      ),
+      "a frame read no thread pieces",
+    );
+    assert.ok(
+      readings.some((frame) => frame.some((svg) => svg.cut.length === 1)),
+      "no frame caught a piece mid-draw, so the fling proved nothing",
+    );
+
     const peak: number[] = [];
     readings.forEach((frame, index) => {
       frame.forEach((svg, s) => {
@@ -194,6 +210,131 @@ test("while the line sways, no piece is dashed, and only the piece at the tip is
       assert.deepEqual(svg.cut, [], `svg ${s}: a finished piece is still cut`);
       assert.equal(svg.dashed, 0, `svg ${s}: a finished piece is dashed`);
     }
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* The share of the twist's chunks shown: the draw's own progress, untouched by the sway (see
+   `resize-keeps-draw.test.ts`). */
+const TWIST_SHARE = `(() => {
+  const chunks = Array.from(document.querySelectorAll("[data-thread-twist] path"));
+  return chunks.length === 0 ? 0 : chunks.filter((c) => c.style.display !== "none").length / chunks.length;
+})()`;
+
+/* Scrolling back up WHILE a piece is still being drawn: the tip keeps its place — no shown piece hides
+   again, the tip piece never moves back, and the draw's progress never falls. */
+test("with the sway on, scrolling back up mid-draw never un-draws the line", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    const samples = (await page.evaluate(
+      `(async () => {
+        const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+        const max = document.documentElement.scrollHeight - innerHeight;
+        window.scrollTo(0, max * 0.3);
+        for (let f = 0; f < 60; f += 1) await frame();
+        window.scrollTo(0, max * 0.6);
+        for (let f = 0; f < 4; f += 1) await frame();
+        const out = [];
+        for (const back of [0.5, 0.4, 0.3]) {
+          window.scrollTo(0, max * back);
+          for (let f = 0; f < 15; f += 1) {
+            await frame();
+            out.push({ svgs: ${READ}, share: ${TWIST_SHARE} });
+          }
+        }
+        return out;
+      })()`,
+    )) as { svgs: Reading[]; share: number }[];
+    assert.ok(
+      samples.some((sample) => sample.svgs.some((svg) => svg.cut.length === 1)),
+      "no frame on the way back up had a piece mid-draw, so this proved nothing",
+    );
+    let share = 0;
+    const tip: number[] = [];
+    samples.forEach((sample, index) => {
+      assert.ok(
+        sample.share >= share,
+        `frame ${index}: the draw fell back from ${share} to ${sample.share}`,
+      );
+      share = sample.share;
+      sample.svgs.forEach((svg, s) => {
+        assert.ok(
+          svg.lastShown >= (tip[s] ?? -1),
+          `frame ${index}, svg ${s}: the tip moved back from piece ${tip[s]} to ${svg.lastShown}`,
+        );
+        tip[s] = svg.lastShown;
+      });
+    });
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* While the page is idle the sway has stopped, and the line stays where it stopped: a draw that writes the
+   pieces again (a resize, with the layout unchanged) must not move the ink to a new moment of the sway,
+   or the ink parts from the twist, the head and the tapered ends, which do not move. The page's clock is
+   driven so the idle timeout arrives without a minute's wait. */
+test("while the page is idle, a redraw leaves the swayed ink where it stopped", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.clock.install();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.evaluate(
+      "window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.4)",
+    );
+    await page.waitForTimeout(1500);
+    /* Only the pieces on screen: the sway leaves a path more than its margin beyond the window unmoved, so one
+       off screen still holds an older moment and is brought to the stopped one by the redraw — unseen. */
+    const shapes = `Array.from(document.querySelectorAll("[data-thread-svg] path[data-thread-piece]")).filter((p) => { const r = p.getBoundingClientRect(); return p.style.visibility !== "hidden" && r.bottom > 0 && r.top < innerHeight; }).map((p) => p.dataset.threadPiece + ":" + p.getAttribute("d")).join("|")`;
+    await page.clock.fastForward(65_000);
+    await page.waitForTimeout(500);
+    const idle = (await page.evaluate(shapes)) as string;
+    assert.notEqual(
+      idle,
+      "",
+      "no piece of the line is on screen, so this proves nothing",
+    );
+    await page.waitForTimeout(500);
+    assert.equal(
+      await page.evaluate(shapes),
+      idle,
+      "the sway is still moving after the idle timeout, so this proves nothing",
+    );
+    await page.evaluate("window.dispatchEvent(new Event('resize'))");
+    await page.waitForTimeout(1000);
+    assert.equal(
+      await page.evaluate(shapes),
+      idle,
+      "a redraw while idle moved the swayed ink",
+    );
   } finally {
     await browser.close();
     server.close();

@@ -49,3 +49,18 @@ test("a path cut at its whole length is whole, and at nothing is empty", () => {
   );
   assert.equal(cutPolyline(LINE.numbers, LINE.parts, 0), "");
 });
+
+/* The tip is where the draw has reached along the UNSWAYED line, which is where the twist and the head
+   put it too: so the cut is found on the line's own lengths and laid on its moved points, never measured
+   along the swayed line, which the sway stretches unevenly. */
+test("a cut is placed by the unswayed line's lengths and laid on the moved points", () => {
+  const moved = [0, 0, 15, 0, 20, 0];
+  assert.equal(
+    cutPolyline(moved, LINE.parts, 0.5, LINE.numbers),
+    "M0.00 0.00L15.00 0.00",
+  );
+  assert.equal(
+    cutPolyline(moved, LINE.parts, 0.75, LINE.numbers),
+    "M0.00 0.00L15.00 0.00L17.50 0.00",
+  );
+});

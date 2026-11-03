@@ -189,20 +189,20 @@ function joinPolyline(numbers: readonly number[], parts: readonly string[]) {
 }
 
 /* The flattened path from its start to `fraction` of its length, ending on the point there: nothing past it
-   is in the path. At 0 it is empty, and from 1 it is the whole path. */
+   is in the path. At 0 it is empty, and from 1 it is the whole path. The fraction is found along
+   `measuredOn` — the same points before they moved, by default the path itself — and laid on `numbers`. */
 export function cutPolyline(
   numbers: readonly number[],
   parts: readonly string[],
   fraction: number,
+  measuredOn: readonly number[] = numbers,
 ): string {
   if (!(fraction > 0)) return "";
   if (fraction >= 1) return joinPolyline(numbers, parts);
+  const along = measuredOn;
   let total = 0;
-  for (let i = 2; i < numbers.length; i += 2)
-    total += Math.hypot(
-      numbers[i] - numbers[i - 2],
-      numbers[i + 1] - numbers[i - 1],
-    );
+  for (let i = 2; i < along.length; i += 2)
+    total += Math.hypot(along[i] - along[i - 2], along[i + 1] - along[i - 1]);
   const target = fraction * total;
   let out = parts[0];
   let walked = 0;
@@ -211,7 +211,10 @@ export function cutPolyline(
     let y = numbers[i + 1];
     let last = i + 2 >= numbers.length;
     if (i > 0) {
-      const step = Math.hypot(x - numbers[i - 2], y - numbers[i - 1]);
+      const step = Math.hypot(
+        along[i] - along[i - 2],
+        along[i + 1] - along[i - 1],
+      );
       if (walked + step >= target) {
         const share = step > 0 ? (target - walked) / step : 1;
         x = numbers[i - 2] + (x - numbers[i - 2]) * share;
@@ -396,7 +399,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     const next =
       progress >= 1
         ? joinPolyline(moved, entry.parts)
-        : cutPolyline(moved, entry.parts, progress);
+        : cutPolyline(moved, entry.parts, progress, entry.numbers);
     if (next !== entry.written) {
       entry.written = next;
       path.setAttribute("d", next);
@@ -404,12 +407,16 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   }
 
   const seconds = () => (performance.now() - start) / 1000;
+  /* The moment of the last frame the sway drew. */
+  let stoppedAt = 0;
 
   /* A painter that writes a new `d` mid-frame (the re-trace, the taper) is displaced in the same
      frame: the observer runs at the end of that callback, before the frame paints. */
   const observer = new MutationObserver((records) => {
     try {
-      const t = seconds();
+      /* While the sway is stopped, a piece rewritten (a redraw on resize, a new tip) keeps the moment
+         the line stopped at: the twist, the head and the tapered ends hold that moment too. */
+      const t = swayAwake ? seconds() : stoppedAt;
       const band = view();
       for (const record of records) {
         const path = record.target as SVGPathElement;
@@ -441,6 +448,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     }
     try {
       const t = seconds();
+      stoppedAt = t;
       const band = view();
       const top = band.top - VIEW_MARGIN;
       const bottom = band.top + band.height + VIEW_MARGIN;
