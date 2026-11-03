@@ -63,3 +63,100 @@ test("a frame timestamped before a re-target never moves the draw backwards", ()
     Reflect.deleteProperty(globalThis, "window");
   }
 });
+
+/* A driven follower: a clock the test sets, and frames it flushes at that clock, every 16ms. */
+function drive() {
+  let clock = 0;
+  let queued: ((now: number) => void) | null = null;
+  const painted: number[] = [];
+  const originalNow = performance.now;
+  performance.now = () => clock;
+  Object.assign(globalThis, {
+    window: {
+      requestAnimationFrame: (callback: (now: number) => void) => {
+        queued = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {
+        queued = null;
+      },
+    },
+  });
+  const follower = createCatchUp((drawn) => painted.push(drawn));
+  const advance = (ms: number) => {
+    for (let elapsed = 0; elapsed < ms; elapsed += 16) {
+      clock += 16;
+      const callback = queued;
+      queued = null;
+      callback?.(clock);
+    }
+  };
+  const restore = () => {
+    performance.now = originalNow;
+    Reflect.deleteProperty(globalThis, "window");
+  };
+  return {
+    follower,
+    painted,
+    advance,
+    restore,
+    pending: () => queued !== null,
+  };
+}
+
+/* A scroll re-targets the follower many times a second, so a re-target that restarts the curve from rest speed
+   makes the line surge at each new scroll position — the owner's "catch up in parts". The speed carries across. */
+test("a re-target mid-chase keeps the speed: no frame steps faster at the re-target", () => {
+  const { follower, painted, advance, restore } = drive();
+  try {
+    follower.to(1000, 0.6);
+    advance(208);
+    const before = painted[painted.length - 1] - painted[painted.length - 2];
+    follower.to(2000, 0.6);
+    advance(16);
+    const after = painted[painted.length - 1] - painted[painted.length - 2];
+    assert.ok(
+      after <= before * 1.05,
+      `the draw sped up at the re-target: ${before.toFixed(2)} → ${after.toFixed(2)} px a frame`,
+    );
+  } finally {
+    restore();
+  }
+});
+
+test("a re-target never overshoots its target or runs backwards", () => {
+  const { follower, painted, advance, restore } = drive();
+  try {
+    follower.to(5000, 0.6);
+    advance(48);
+    const shown = painted[painted.length - 1];
+    follower.to(shown + 1, 0.6);
+    advance(800);
+    for (let i = 1; i < painted.length; i += 1) {
+      assert.ok(
+        painted[i] >= painted[i - 1],
+        `the draw ran backwards at frame ${i}`,
+      );
+    }
+    assert.ok(
+      Math.max(...painted) <= shown + 1 + 1e-9,
+      `the draw passed its target ${shown + 1}: ${Math.max(...painted)}`,
+    );
+  } finally {
+    restore();
+  }
+});
+
+test("it arrives exactly at the target one duration after the last re-target, and stops", () => {
+  const { follower, painted, advance, restore, pending } = drive();
+  try {
+    follower.to(1000, 0.6);
+    advance(208);
+    follower.to(2000, 0.6);
+    advance(608);
+    assert.equal(painted[painted.length - 1], 2000);
+    assert.equal(pending(), false, "no frame is left scheduled");
+  } finally {
+    restore();
+  }
+});
