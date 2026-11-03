@@ -239,9 +239,11 @@ try {
          names reads as two runs of ink with the type shown. Everything in `<main>` but the thread's
          own `<svg>`s and the sections themselves (an element screenshot needs a visible element) is
          hidden for the shot; `visibility` hides an element's own paint and leaves its box, so
-         nothing reflows and a visible descendant still paints. */
+         nothing reflows and a visible descendant still paints. Inside the `<svg>`s nothing is
+         forced: while the line sways, a piece the draw has not reached is hidden by the page itself,
+         and forcing it visible would shoot ink the page never paints. */
       await page.addStyleTag({
-        content: `main * { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg], [data-thread-svg] * { visibility: visible !important; }`,
+        content: `main *:not([data-thread-svg], [data-thread-svg] *) { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg] { visibility: visible !important; }`,
       });
 
       for (const id of SECTIONS) {
