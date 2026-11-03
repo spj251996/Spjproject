@@ -31,9 +31,9 @@ test("the not-found stack keeps its group centred and signs off at the foot", ()
   );
   assert.ok(group.includes("row-start-2"));
   const groupStart = SOURCE.indexOf(group.join(" "));
-  const signoffStart = SOURCE.indexOf('<DesignerCredit layout="signoff" />');
-  assert.ok(signoffStart > 0, "no signoff credit");
-  const groupBody = SOURCE.slice(groupStart, signoffStart);
+  const lastTrack = SOURCE.indexOf("row-start-3");
+  assert.ok(lastTrack > groupStart, "no last track after the group");
+  const groupBody = SOURCE.slice(groupStart, lastTrack);
   for (const piece of ["type-eyebrow", "<h1", "<ButtonAction"]) {
     assert.ok(groupBody.includes(piece), `${piece} is not in the middle track`);
   }

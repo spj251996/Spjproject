@@ -34,21 +34,37 @@ test("in each layout the name is the only link, to the credit's url, in the same
   }
 });
 
-test("the link is underlined 1px at 4px in currentColor at 35%, with a touch-target hit area", () => {
+/* The hit area is a pseudo-element, not padding on the link: padding grows the box the focus ring draws round, and
+   at the page's foot that box reaches past `main`'s clip, cutting the ring's bottom edge. */
+test("the link is underlined 1px at 4px in currentColor at 35%, its hit area a touch-target pseudo-element", () => {
   const link = SOURCE.match(/const LINK =\s*"([^"]+)"/)?.[1];
   assert.ok(link, "no LINK class constant");
+  const classes = link.split(" ");
   for (const name of [
     "underline",
     "decoration-1",
     "underline-offset-4",
     "[text-decoration-color:color-mix(in_srgb,currentColor_35%,transparent)]",
     "[--credit-hit:calc((var(--touch-target)-1lh)/2)]",
+    "relative",
     "inline-block",
-    "py-(--credit-hit)",
-    "-my-(--credit-hit)",
+    "before:absolute",
+    "before:inset-x-0",
+    "before:-inset-y-(--credit-hit)",
   ]) {
-    assert.ok(link.split(" ").includes(name), `LINK lacks ${name}`);
+    assert.ok(classes.includes(name), `LINK lacks ${name}`);
   }
+  for (const name of classes) {
+    assert.doesNotMatch(
+      name,
+      /^-?(p|py|pb|pt|m|my|mb|mt)-/,
+      `LINK pads or margins its own box: ${name}`,
+    );
+  }
+});
+
+test("the separator in line is hidden from screen readers", () => {
+  assert.match(layout("line"), /<span aria-hidden="true">\s*·\s*<\/span>/);
 });
 
 test("the line layout reads lead · name, the name bold below md", () => {
@@ -77,8 +93,18 @@ test("the signoff layout stacks a gold floor-size sprig, the lead, then the name
 });
 
 test("the credit carries no positioning of its own", () => {
-  assert.doesNotMatch(
-    SOURCE,
-    /\b(absolute|fixed|sticky|inset-|bottom-|top-)\S*/,
-  );
+  /* Its call sites place it. The link's \`before:\` hit area is positioned inside the link and places nothing. */
+  const classes = [
+    ...SOURCE.matchAll(/className=\{?[`"]([^`"]+)[`"]/g),
+    ...SOURCE.matchAll(/const LINK =\s*"([^"]+)"/g),
+  ]
+    .flatMap((m) => m[1].split(" "))
+    .filter((name) => !name.startsWith("before:"));
+  for (const name of classes) {
+    assert.doesNotMatch(
+      name,
+      /^(absolute|fixed|sticky)$|^-?(inset|top|bottom|left|right)-/,
+      `positions itself: ${name}`,
+    );
+  }
 });
