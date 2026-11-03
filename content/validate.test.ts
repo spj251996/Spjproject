@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type {
+  DesignerCredit,
   EventSegment,
   FamilyGroup,
   InviteContent,
@@ -10,6 +11,7 @@ import type {
   WishesContent,
 } from "./types.ts";
 import {
+  validateDesignerCredit,
   validateEvents,
   validateFamilyGroups,
   validateInvite,
@@ -424,5 +426,37 @@ test("rejects a duplicate family group id", () => {
   assert.throws(
     () => validateFamilyGroups([group(), group({ side: "groom" })]),
     /familyGroups\[1\]\.id duplicates an earlier id \("g"\)/,
+  );
+});
+
+const credit: DesignerCredit = {
+  lead: "Design",
+  name: "A Designer",
+  url: "https://example.com/",
+};
+
+test("a complete credit passes unchanged", () => {
+  assert.deepEqual(validateDesignerCredit(credit), credit);
+});
+
+test("the credit's link is an https URL", () => {
+  assert.throws(
+    () => validateDesignerCredit({ ...credit, url: "http://example.com/" }),
+    /credit\.url/,
+  );
+  assert.throws(
+    () => validateDesignerCredit({ ...credit, url: "example.com" }),
+    /credit\.url/,
+  );
+});
+
+test("a credit without a lead or a name is refused", () => {
+  assert.throws(
+    () => validateDesignerCredit({ ...credit, lead: "" }),
+    /credit\.lead/,
+  );
+  assert.throws(
+    () => validateDesignerCredit({ ...credit, name: " " }),
+    /credit\.name/,
   );
 });

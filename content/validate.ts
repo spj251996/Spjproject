@@ -1,5 +1,6 @@
 import { parseIsoDate } from "./format.ts";
 import type {
+  DesignerCredit,
   EventSegment,
   FamilyGroup,
   FamilyMember,
@@ -238,4 +239,16 @@ export function validateWishes(wishes: WishesContent): WishesContent {
   required(wishes.wishesLead, "wishes.wishesLead");
   required(wishes.wishesLine, "wishes.wishesLine");
   return wishes;
+}
+
+export function validateDesignerCredit(credit: DesignerCredit): DesignerCredit {
+  required(credit.lead, "credit.lead");
+  required(credit.name, "credit.name");
+  absoluteUrl(credit.url, "credit.url");
+  if (new URL(credit.url).protocol !== "https:")
+    throw new ContentValidationError(
+      "credit.url",
+      `must be https ("${credit.url}")`,
+    );
+  return credit;
 }
