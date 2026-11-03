@@ -267,6 +267,8 @@ type Tracked = {
   bottom: number;
   /* The moment its shape was last written at; null while it keeps the unswayed shape it was given. */
   at: number | null;
+  /* The drawn fraction its shape was last written for; null until then. */
+  progress: number | null;
 };
 
 function parse(
@@ -376,6 +378,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         written: current,
         weights: null,
         at: null,
+        progress: null,
         ...parse(flatten(current)),
       };
       tracked.set(path, entry);
@@ -422,13 +425,25 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     return known.progress;
   }
 
-  function write(path: SVGPathElement, entry: Tracked, t: number, band: View) {
+  /* `always` false: a piece whose dash was rewritten but whose drawn fraction did not move keeps its shape. Every
+     catch-up frame rewrites every piece's dash, and re-shaping each of them at a fresh moment, far off screen too,
+     repainted the whole page-length line every frame while the page's images loaded; moving the line is the frame
+     loop's job, within its range. */
+  function write(
+    path: SVGPathElement,
+    entry: Tracked,
+    t: number,
+    band: View,
+    always = true,
+  ) {
     const progress = progressOf(path);
     const hidden = progress <= 0 ? "hidden" : "";
     if (path.style.visibility !== hidden) path.style.visibility = hidden;
     if (hidden !== "") return;
+    if (!always && progress === entry.progress) return;
     const moved = displaced(entry, t, band);
     entry.at = t;
+    entry.progress = progress;
     const next =
       progress >= 1
         ? joinPolyline(moved, entry.parts)
@@ -460,7 +475,8 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         const path = record.target as SVGPathElement;
         const entry = track(path);
         if (entry === undefined) continue;
-        if (record.attributeName === "style") write(path, entry, t, band);
+        if (record.attributeName === "style")
+          write(path, entry, t, band, path.dataset.threadPiece === undefined);
         else if (entry.written === entry.base) write(path, entry, t, band);
       }
     } catch (error) {

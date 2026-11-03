@@ -652,6 +652,108 @@ test("a rest never shows the twist apart from the ink, after a long scroll back 
   }
 });
 
+/* Each catch-up frame rewrites every piece's dash. A piece whose drawn fraction did not change has nothing new to
+   show, and re-shaping it — far off screen, at a fresh moment — invalidated the whole page-length line every frame
+   while the page's images were loading. Moving the line is the sway's own frame's job, within its range. */
+const FAR_PIECE_RESHAPES = (ms: number) => `(async () => {
+  const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
+  const far = (path) => { const r = path.getBoundingClientRect(); return r.bottom < -400 || r.top > innerHeight + 400; };
+  const reshaped = new Set();
+  const watch = new MutationObserver((records) => {
+    for (const record of records) {
+      const path = record.target;
+      if (path.dataset.threadPiece !== undefined && far(path)) reshaped.add(path.dataset.threadPiece);
+    }
+  });
+  watch.observe(svg, { subtree: true, attributes: true, attributeFilter: ["d"] });
+  await new Promise((resolve) => setTimeout(resolve, ${ms}));
+  watch.disconnect();
+  return [...reshaped];
+})()`;
+
+test("a catch-up frame never re-shapes a drawn piece far off screen", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    for (let y = 300; y <= 1800; y += 300) {
+      await page.evaluate(`window.scrollTo(0, ${y})`);
+      await page.waitForTimeout(250);
+    }
+    await page.waitForTimeout(1500);
+    /* The scroll's rest is over by 200ms; the 0.6s catch-up is still running. */
+    await page.evaluate("window.scrollBy(0, 300)");
+    await page.waitForTimeout(200);
+    assert.deepEqual(
+      await page.evaluate(FAR_PIECE_RESHAPES(300)),
+      [],
+      "pieces far off screen were re-shaped during a catch-up",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test("a piece finished during a fling is whole when scrolled back to", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.evaluate(`(async () => {
+      for (let k = 1; k <= 8; k += 1) {
+        window.scrollTo(0, (3000 * k) / 8);
+        await new Promise((resolve) => setTimeout(resolve, 300 / 8));
+      }
+    })()`);
+    await page.waitForTimeout(1000);
+    await page.evaluate("window.scrollTo(0, 900)");
+    await page.waitForTimeout(400);
+    const cut = (await page.evaluate(`(() => {
+      const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
+      const pieces = [...svg.querySelectorAll("path[data-thread-piece]")];
+      const last = pieces.findLastIndex((p) => p.style.visibility !== "hidden");
+      return pieces.slice(0, last).filter((p) => {
+        const r = p.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > innerHeight) return false;
+        const end = p.getPointAtLength(p.getTotalLength());
+        const next = pieces[pieces.indexOf(p) + 1].getPointAtLength(0);
+        return Math.hypot(end.x - next.x, end.y - next.y) > 2;
+      }).map((p) => p.dataset.threadPiece);
+    })()`)) as string[];
+    assert.deepEqual(
+      cut,
+      [],
+      "a passed piece on screen stops short of the next",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("coming back to the tab, the sway waits a second before it moves", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
