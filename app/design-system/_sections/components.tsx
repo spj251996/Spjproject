@@ -291,7 +291,7 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="The site's credit to its designer: the lead Design and the designer's name, which is the one link. Two layouts — one line at Wishes' foot on /thread, and a sign-off at the foot of the not-found card. / carries none until the couple agree; every route names the designer in its metadata."
+          description="The site's credit to its designer: the lead Design and the designer's name, which is the one link. Two layouts — one line at Wishes' foot, and a sign-off at the foot of the not-found card; every route also names the designer in its metadata."
           id="ui-designer-credit"
           name="designer-credit"
           note="It places nothing: each call site positions it — absolute at Wishes' foot, in the not-found stack's last track. The link is live and leaves the gallery. In line, the name's weight follows this window: bold below md, regular from md up."
@@ -304,7 +304,7 @@ export function ComponentsSections() {
           ]}
         >
           <div className="flex flex-wrap items-end gap-space-2xl">
-            <Variant label="line · Wishes' foot on /thread">
+            <Variant label="line · Wishes' foot">
               <DesignerCredit layout="line" />
             </Variant>
             <Variant label="signoff · the not-found card">

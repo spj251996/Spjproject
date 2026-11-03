@@ -75,8 +75,8 @@ const WISHES_ENTRIES: InlineEntry[] = [
     name: "Wishes",
     home: "app/_sections/wishes.tsx",
     composes:
-      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p taking --text-heading-script as its font size for the same em reason · sign-off lead in caption-italic · sign-off names in caption · [lab] on /thread only, designer-credit's line absolute at the section's foot, space-xs above its bottom with space-md side padding, out of the card's flow",
-    note: "Live at /. The credit line shows on /thread alone until the couple agree, so / has no foot line. The couple illustration is a lazy <picture> — AVIF, then WebP, at 1x and 2x — fetched only as Wishes nears the screen, under the portraits' save cover.",
+      "eyebrow bracketed by the sprig ornament · passage in body — Ecclesiastes 4:9–10 below lg, 1 Corinthians 13:4–5 from lg, one rendered at a time · citation in caption-italic · couple illustration · the couple's names as the drawn couple-names asset on one line, in ink-muted, the p taking --text-heading-script as its font size for the same em reason · sign-off lead in caption-italic · sign-off names in caption · designer-credit's line absolute at the section's foot, space-xs above its bottom with space-md side padding, out of the card's flow",
+    note: "Live at /. The couple illustration is a lazy <picture> — AVIF, then WebP, at 1x and 2x — fetched only as Wishes nears the screen, under the portraits' save cover.",
   },
 ];
 
