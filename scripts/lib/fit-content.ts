@@ -1,12 +1,18 @@
 import { createHash } from "node:crypto";
-import { events, familyGroups, invite, wishes } from "../../content/index.ts";
+import {
+  credit,
+  events,
+  familyGroups,
+  invite,
+  wishes,
+} from "../../content/index.ts";
 
 /* Each measured fit → the `content/` exports its section renders, so a fit whose content has
    changed since it was measured can be detected without a browser. Whole exports rather than the
    fields a section reads: re-measuring a fit that did not need it costs minutes, and a field the
    map forgot would let a stale fit through.
 
-   Not found renders no content export; its copy is literals in `app/not-found.tsx`. */
+   Not found's own copy is literals in `app/not-found.tsx`; its one content export is the credit. */
 export const FIT_CONTENT: Readonly<
   Record<string, Readonly<Record<string, unknown>>>
 > = {
@@ -14,7 +20,7 @@ export const FIT_CONTENT: Readonly<
   "event-info": { events },
   family: { familyGroups },
   wishes: { wishes },
-  "not-found": {},
+  "not-found": { credit },
 };
 
 function canonical(value: unknown): unknown {
