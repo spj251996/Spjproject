@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { cutPolyline, flatten } from "./thread-sway.ts";
 
 /* The sway moves points, so a cubic it moved only at its control points could not follow the field
-   between them the way the 1px re-trace laid on it does. Flattened, both are polylines. */
+   between them the way a polyline laid on it does. Flattened, both are polylines. */
 test("a cubic flattens into short chords that start and end where the curve does", () => {
   const flat = flatten("M0 0C0 10 10 10 10 0L20 0");
   assert.ok(flat.startsWith("M0.00 0.00L"), flat);

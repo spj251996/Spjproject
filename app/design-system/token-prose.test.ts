@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 /* A specimen caption that restates a token value is a second copy and drifts silently, so assert the
-   claim, not a spelling. Captions write pairs like `--retrace-duration (3.2s)` so a reader sees the
+   claim, not a spelling. Captions write pairs like `--thread-catchup (0.6s)` so a reader sees the
    shipped number beside the name; this holds the GENERAL rule rather than today's pairs, so a pair
    added later is covered the day it is written. */
 
@@ -54,7 +54,7 @@ test("every token value the gallery quotes in prose matches tokens.css", () => {
       value !== undefined,
       `${file} quotes ${token}, which tokens.css does not declare`,
     );
-    /* `--retrace-loops (4)` against a declared `4`, and `(3.2s)` against `3.2s`: the prose carries
+    /* `--stroke-thread (2.2px)` against a declared `2.2px`, and `(0.6s)` against `0.6s`: the prose carries
        the bare value, so compare on the value alone rather than parsing units per token. */
     assert.equal(
       quoted,

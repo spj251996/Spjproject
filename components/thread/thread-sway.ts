@@ -3,11 +3,11 @@
    from here through `baseOf`.
 
    The line moves, as a thread in moving air. A smooth displacement FIELD over `<main>`'s
-   coordinates moves every point of every path in the `<svg>` — ink, marks, taper, re-trace — so the
+   coordinates moves every point of every path in the `<svg>` — ink, marks, taper, head — so the
    layers stay on one another. The field is one for the page: the trunk's `<svg>` and the card thread's
    share its clock and phase, so the two move as one line at the Wishes join. Curves are flattened into
-   short chords before they move, so the ink follows the field point for point exactly as the re-trace
-   (a 1px polyline) does. Two pieces meeting at one point always move together, so no join opens and
+   short chords before they move, so the ink follows the field point for point exactly as the head's
+   polylines do. Two pieces meeting at one point always move together, so no join opens and
    nothing is pinned at a join. It is pinned near every box of type and every portrait: a chord that
    comes within 1.1 x the amplitude of one does not move at all, so the sway cannot carry the line onto
    type it does not already touch. Only paths near the viewport move. */
@@ -32,7 +32,7 @@ export const SHIPPED_SWAY: Sway = {
   gustShare: 0.5,
 };
 
-/* The tests of the draw and the re-trace measure without the sway, which keeps a frame loop of its own
+/* The tests of the draw measure without the sway, which keeps a frame loop of its own
    and re-shapes every path: they set `data-thread-sway="off"` on `<html>` before the page's code runs.
    Nothing on the page sets it. */
 export function swayIsOff(): boolean {
@@ -55,8 +55,8 @@ const TAU = Math.PI * 2;
 const GUST_TRAVEL = 3;
 const GUST_WIDTH = 180;
 
-/* Whether the page is awake: the sway moves only while it is, and stops with the re-trace once the page
-   has gone idle (`PageThread` owns the lifecycle and calls `setSwayAwake`). Page-wide, like the clock,
+/* Whether the page is awake: the sway moves only while it is, and stops once the page has gone idle
+   (`PageThread` owns the lifecycle and calls `setSwayAwake`). Page-wide, like the clock,
    so the trunk and the card thread stop and start as one line. */
 let swayAwake = true;
 const swayWakers = new Set<() => void>();
@@ -410,7 +410,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   /* The moment of the last frame the sway drew. */
   let stoppedAt = 0;
 
-  /* A painter that writes a new `d` mid-frame (the re-trace, the taper) is displaced in the same
+  /* A painter that writes a new `d` mid-frame (the head, the taper) is displaced in the same
      frame: the observer runs at the end of that callback, before the frame paints. */
   const observer = new MutationObserver((records) => {
     try {
@@ -473,7 +473,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
       obstacles = nextObstacles;
       mainTop = top;
       /* React's development mode runs every effect's cleanup once on mount, which calls `stop`; the
-         loop restarts below, and the observer has to come back with it, or every re-trace segment is
+         loop restarts below, and the observer has to come back with it, or every head segment is
          painted unswayed beside a swaying line. Observing again is a no-op when already observing. */
       observe();
       for (const path of svg.querySelectorAll("path")) {

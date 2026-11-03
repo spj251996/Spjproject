@@ -1,9 +1,8 @@
 /* THE THREAD'S DRAWING HEAD — the arithmetic, with no DOM and no React.
 
    `thread-line.ts` answers WHERE the thread is; this module answers HOW ITS LEADING END IS LIT, and
-   owns the colour ramp and the stack of steps the re-trace (`thread-retrace.ts`) lays its own segment
-   with. The component that owns the SVG turns these numbers into elements through
-   `thread-painters.ts` (`createHeadPainter`); a piece's points come from `thread-samples.ts`, which
+   owns the colour ramp and the stack of steps it is laid with. The component that owns the SVG turns
+   these numbers into elements through `thread-painters.ts` (`createHeadPainter`); a piece's points come from `thread-samples.ts`, which
    reads its own path data and asks the browser for nothing.
 
    WHY A STACK OF STEPS. A dash follows a curve because it is geometry; an SVG gradient lives in
@@ -320,11 +319,9 @@ export function headSegments(
 }
 
 /* The runs of one lit segment whose tip is at `tip`, in the chain's own scale, and which spans
-   `span` back from it, laid as the head lays them: the stack's colours stretched over however long
-   the segment is. The drawing head always spans its full length; the re-trace's segment grows and
-   shrinks, so the step length follows `span` rather than the stack's own. `tipPiece` is the piece
-   the tip lies in. */
-export function stackRuns(
+   `span` back from it: the stack's colours stretched over the segment. `tipPiece` is the piece the tip
+   lies in. */
+function stackRuns(
   tip: number,
   span: number,
   pieces: readonly PieceSpan[],

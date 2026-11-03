@@ -1,6 +1,6 @@
 /* THE THREAD'S PAINTERS — what turns the arithmetic into the DOM: each piece's dash, and the
-   elements of the drawing head, the re-trace and the tapered ends. `PageThread` and `CardThread`
-   each build their own painters; `cardRetraces` is the one registry both share. */
+   elements of the drawing head and the tapered ends. `PageThread` and `CardThread` each build their
+   own painters. */
 
 import {
   HEAD_STEP_OVERLAP,
@@ -10,7 +10,6 @@ import {
 } from "./thread-head.ts";
 import type { ThreadPiece } from "./thread-line.ts";
 import { dashForPiece, pieceProgress } from "./thread-progress.ts";
-import { retraceFade, retraceGlow, retraceSegments } from "./thread-retrace.ts";
 import {
   type PieceSamples,
   polylineBetween,
@@ -164,126 +163,15 @@ export function createHeadPainter(
     paint(drawn: number, pieces: readonly ThreadPiece[], options: HeadOptions) {
       paintSegments(headSegments(drawn, pieces, options), pieces);
     },
-    paintSegments,
     /* A re-measure replaces every piece's `d`, so what was sampled describes a path that is gone. */
     reset() {
       samples.clear();
       hide();
     },
-    hide,
   };
 }
 
 export type HeadPainter = ReturnType<typeof createHeadPainter>;
-
-/* ---------------------------------------------------------------------------------------------
-   THE RE-TRACE — a lit segment that runs a stretch of the thread once it is already drawn
-   (`thread-retrace.ts`; DESIGN.md -> Thread -> The re-trace). The arithmetic is `thread-retrace.ts`'s;
-   what is here is what needs a DOM: the painters. The loop that drives them is `PageThread`'s, and
-   the tokens are `thread-tokens.ts`'s.
-
-   It is the head's own stack, laid again, so each stretch that is animating gets a `<g>` and the head's
-   painter inside it. The painters share the head's samples, so a piece is sampled once whichever
-   layer reaches it first. A second `<g>` per stretch, beneath it, holds the glow as translucent strokes
-   (`thread-retrace.ts`); there is no filter on either. */
-
-export interface RetraceFrame {
-  readonly tail: number;
-  readonly tip: number;
-}
-
-export function createRetracePainter(
-  container: SVGGElement,
-  glowContainer: SVGGElement,
-  pathOf: (piece: number) => string | undefined,
-  samples: Map<number, PieceSamples>,
-) {
-  const stretches = new Map<
-    number,
-    {
-      element: SVGGElement;
-      painter: HeadPainter;
-      glowElement: SVGGElement;
-      glowPainter: HeadPainter;
-    }
-  >();
-
-  function stretchFor(index: number) {
-    const existing = stretches.get(index);
-    if (existing !== undefined) return existing;
-    const element = document.createElementNS(SVG_NS, "g");
-    element.dataset.threadRetraceGroup = String(index);
-    container.append(element);
-    const glowElement = document.createElementNS(SVG_NS, "g");
-    glowElement.dataset.threadRetraceGlow = String(index);
-    glowContainer.append(glowElement);
-    const made = {
-      element,
-      painter: createHeadPainter(element, pathOf, samples),
-      glowElement,
-      glowPainter: createHeadPainter(glowElement, pathOf, samples),
-    };
-    stretches.set(index, made);
-    return made;
-  }
-
-  return {
-    /* One frame: the segment of each animating stretch, and every other stretch hidden. A stretch
-       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and the card thread are
-       handed the same frames and each paints the share that lies in its own pieces, which is how the
-       terminal's stretch reaches the card thread and the others reach the trunk. */
-    paint(
-      frames: ReadonlyMap<number, RetraceFrame>,
-      pieces: readonly ThreadPiece[],
-      options: HeadOptions,
-    ) {
-      const painted = new Set<number>();
-      for (const [index, { tail, tip }] of frames) {
-        const holdsAPiece = pieces.some(
-          (piece, at) =>
-            piece.end > tail && piece.start < tip && pathOf(at) !== undefined,
-        );
-        if (!holdsAPiece) continue;
-        painted.add(index);
-        const { element, painter, glowElement, glowPainter } =
-          stretchFor(index);
-        painter.paintSegments(
-          retraceSegments(tail, tip, pieces, options),
-          pieces,
-        );
-        glowPainter.paintSegments(
-          retraceGlow(tail, tip, pieces, options.midColor),
-          pieces,
-        );
-        const opacity = retraceFade(tip - tail, options.length);
-        const value = opacity >= 1 ? "" : opacity.toFixed(3);
-        if (element.style.opacity !== value) element.style.opacity = value;
-        if (glowElement.style.opacity !== value) {
-          glowElement.style.opacity = value;
-        }
-      }
-      for (const [index, { painter, glowPainter }] of stretches) {
-        if (painted.has(index)) continue;
-        painter.hide();
-        glowPainter.hide();
-      }
-    },
-    hide() {
-      for (const { painter, glowPainter } of stretches.values()) {
-        painter.hide();
-        glowPainter.hide();
-      }
-    },
-  };
-}
-
-export type RetracePainter = ReturnType<typeof createRetracePainter>;
-
-/* The re-trace is one loop for the whole page, driven by `PageThread`, but Wishes' stretch is drawn in
-   `CardThread`'s own `<svg>`, whose pieces `PageThread`'s painter cannot reach. The card thread registers its
-   painter here and the loop hands every registered painter the same frames: one clock, one budget and
-   one thing to stop. */
-export const cardRetraces = new Set<RetracePainter>();
 
 /* ---------------------------------------------------------------------------------------------
    THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is

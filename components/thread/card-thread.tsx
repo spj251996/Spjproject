@@ -26,13 +26,10 @@ import {
 } from "./thread-measure";
 import {
   applyPieceDashes,
-  cardRetraces,
   clearPieceDashes,
   createHeadPainter,
-  createRetracePainter,
   createTaperPainter,
   type HeadPainter,
-  type RetracePainter,
   type TaperPainter,
 } from "./thread-painters";
 import { THREAD_IDS } from "./thread-paths";
@@ -109,10 +106,7 @@ export function CardThread() {
   const taperRef = useRef<TaperPainter | null>(null);
   const shadowDefsRef = useRef<SVGDefsElement>(null);
   const shadowsRef = useRef<ThreadShadows | null>(null);
-  const retraceGroupRef = useRef<SVGGElement>(null);
-  const retraceGlowRef = useRef<SVGGElement>(null);
-  const retraceRef = useRef<RetracePainter | null>(null);
-  /* The head's and the re-trace's painters share what they sample, as the trunk's do. */
+  /* One sampling of each piece, made the first time the head reaches it, as the trunk's are. */
   const samplesRef = useRef(new Map<number, PieceSamples>());
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
      `CardThread` measures independently (see the header comment), so it keeps its own.
@@ -147,19 +141,6 @@ export function CardThread() {
     if (group === null) return null;
     headRef.current ??= createHeadPainter(group, pathOf, samplesRef.current);
     return headRef.current;
-  }
-
-  function retrace(): RetracePainter | null {
-    const group = retraceGroupRef.current;
-    const glow = retraceGlowRef.current;
-    if (group === null || glow === null) return null;
-    retraceRef.current ??= createRetracePainter(
-      group,
-      glow,
-      pathOf,
-      samplesRef.current,
-    );
-    return retraceRef.current;
   }
 
   function shadows(): ThreadShadows | null {
@@ -302,7 +283,6 @@ export function CardThread() {
       swayRef.current.baseOf,
     );
     head()?.reset();
-    retrace()?.hide();
     const closingPiece = wishesPieces[wishesPieces.length - 1];
     const closingLength =
       closingPiece === undefined ? 0 : closingPiece.end - closingPiece.start;
@@ -342,7 +322,7 @@ export function CardThread() {
   /* The cheap half, as in `PageThread`: a viewport-height change moves the draw window and nothing
      else, so this re-reads the two window values and re-paints. `reveal` is already the no-travel
      painter ("a re-measure paints where the page already is" -- its own header), which is exactly
-     what a URL bar moving needs; `revealScrolled` would ease it. No head reset, no re-trace stop, no
+     what a URL bar moving needs; `revealScrolled` would ease it. No head reset, no
      rebase. The card thread takes no `openingFloor`: the opening sequence draws the INVITE's pieces, which
      live in `PageThread`'s `<svg>`, not this one. */
   function refreshWindow() {
@@ -354,19 +334,7 @@ export function CardThread() {
 
   useLayoutTriggers(measureLayout, refreshWindow);
 
-  /* Joins the page's one re-trace loop (`cardRetraces`'s header): `PageThread` drives it, and this
-     paints Wishes' stretch of it into its own `<svg>`. */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `retrace` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
-  useEffect(() => {
-    const painter = retrace();
-    if (painter === null) return;
-    cardRetraces.add(painter);
-    return () => {
-      cardRetraces.delete(painter);
-      painter.hide();
-      swayRef.current?.stop();
-    };
-  }, []);
+  useEffect(() => () => swayRef.current?.stop(), []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `reveal` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
   useEffect(() => {
@@ -413,8 +381,6 @@ export function CardThread() {
           />
         ))}
         <g className={styles.pageTaper} data-thread-taper ref={taperGroupRef} />
-        <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
-        <g className={styles.pageRetrace} ref={retraceGroupRef} />
         <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
       </svg>
     </span>

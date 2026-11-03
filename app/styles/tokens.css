@@ -206,22 +206,6 @@
   /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
      ends). */
   --length-thread-taper: 24px;
-  /* THE RE-TRACE'S CADENCE (DESIGN.md -> Thread -> The re-trace): how long one loop of the lit
-     segment takes when no speed is set, and how long the thread must have been still before its cue
-     loops. Exceptions to the motion scale, read by name from script because the segment's length and
-     gradient change every frame. */
-  --retrace-duration: 3.2s;
-  --retrace-settle: 1500ms;
-  /* How many whole loops the LONGEST stretch runs once the page has been still for the settle
-     interval, before everything stops until the next scroll. A count, not a time, so the pace can
-     change without changing how long the page stays busy; every shorter stretch fits whole loops into
-     the same window (`page-thread.tsx` -> `periodFor`). */
-  --retrace-loops: 5;
-  /* THE RE-TRACE'S SPEED, in px of thread per second, so every lit stretch moves at one rate: a
-     fixed-duration loop makes a long stretch travel several times faster than a short one. 0 keeps
-     the fixed-duration behaviour. 845 is the invite's speed at `wide` under a 3.2s loop, the pace the
-     owner judged by eye. */
-  --retrace-speed: 845;
   /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. `wishes.top` equals the page's maximum scroll, so
      Wishes' card is never scrolled through and would otherwise draw only what the previous section
      left over. Both values are fractions of the viewport's height, so one value holds at every band:
@@ -236,8 +220,8 @@
      (`thread-catch-up.ts`). 0 paints immediately. */
   --thread-catchup: 0.6s;
   --thread-catchup-ease: ease-out-cubic;
-  /* How long the page may go untouched, in view, before the sway and the re-trace stop together; any
-     scroll, tap, click or key starts both again. */
+  /* How long the page may go untouched, in view, before the sway stops; any scroll, tap, click or key
+     starts it again. */
   --thread-idle: 60s;
   --thread-terminal-span: 0.2;
   --thread-terminal-finish: 0.08;
@@ -250,8 +234,7 @@
      layers and the reason they cannot widen cheaply live with it in `thread-filters.tsx`. */
   --bleed-thread: url(#thread-contact-shadow);
 
-  /* THE DRAWING HEAD'S HALO — at half strength, as the re-trace's glow is: the head and the sheen are one
-     look (DESIGN.md -> Thread -> The drawing head). One filter on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
+  /* THE DRAWING HEAD'S HALO — at three-quarter strength (DESIGN.md -> Thread -> The drawing head). One filter on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
      every piece of a static line they cost 55 dropped frames over a 5s scrub at 393x700; as one
      filter over the moving head's tight silhouette they cost 6 as built (3 above the bleed alone).
      What was isolated is that geometry dominated: dashed copies of whole pieces under the same

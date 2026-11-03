@@ -5,9 +5,9 @@ import { extname, join } from "node:path";
 import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
 
-/* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
-   own and re-shapes every path: `data-thread-sway="off"` on `<html>`, set the moment the element exists, turns it
-   off for them. */
+/* The draw's cases measure without the sway, which ships on and keeps a frame loop of its own and re-shapes
+   every path: `data-thread-sway="off"` on `<html>`, set the moment the element exists, turns it off for them.
+   The sway's own lifecycle cases leave it on. */
 const SWAY_OFF = `(() => {
   const off = () => {
     if (!document.documentElement) return false;
@@ -23,13 +23,9 @@ const SWAY_OFF = `(() => {
    `out/thread.html`, so the URL carries `.html`. */
 const LAB_ROUTE = "/thread.html";
 
-/* Reduced motion collapses the re-trace to nothing, and only a real page can show it: the whole
-   collapse hangs on one `reducedMotion()` check in `syncRetrace`, and the loop is script, so
-   `document.getAnimations()` is no longer evidence either way (it reads 0 whether or not a loop runs).
-   What distinguishes the two states is the re-trace's own DOM: how many stretches were built, how many
-   glow paths are showing, and whether the thread's pieces are dashed. Run against the static export,
-   as the built-artifact tests are, and skipped, saying so, without one; a browser that will not
-   launch fails it. */
+/* What reduced motion, idleness and a hidden tab do to the thread can only be shown on a real page, run
+   against the static export as the built-artifact tests are, and skipped, saying so, without one; a browser
+   that will not launch fails it. */
 
 const TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -70,9 +66,6 @@ function serveExport(): Promise<{ server: Server; port: number }> {
 }
 
 interface Reading {
-  stretches: number;
-  runPathsShown: number;
-  glowPathsShown: number;
   pieces: number;
   undashed: number;
 }
@@ -80,15 +73,12 @@ interface Reading {
 const READ = `(() => {
   const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
   return {
-    stretches: document.querySelectorAll("[data-thread-retrace-group]").length,
-    runPathsShown: Array.from(document.querySelectorAll("[data-thread-retrace-group] path")).filter((p) => p.style.display !== "none").length,
-    glowPathsShown: Array.from(document.querySelectorAll("[data-thread-retrace-glow] path")).filter((p) => p.style.display !== "none").length,
     pieces: pieces.length,
     undashed: pieces.filter((p) => p.style.strokeDasharray === "").length,
   };
 })()`;
 
-test("reduced motion builds no re-trace, stops a running one, and leaves the thread undashed; with motion it builds both", async (t) => {
+test("reduced motion leaves the thread complete and undashed at the top and the bottom, and a change to reduce completes a drawing thread", async (t) => {
   if (!labExport(t)) return;
   /* Not wrapped: with an export present, a missing browser or a launch error must fail this test,
      not skip it, or the only protection reduced motion has would disappear without a sound. */
@@ -112,13 +102,10 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
       open("reduce"),
       open("no-preference"),
     ]);
-    /* The opening draw ends at 3400ms and the first re-trace frame follows it, so by 5s a loop that
-       was going to start has started. */
-    await moving.waitForFunction(
-      "document.querySelector('[data-thread-retrace-group]') !== null",
-      null,
-      { timeout: 15000 },
-    );
+    await moving.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
     await reduced.waitForTimeout(5000);
     const reducedAtTop = (await reduced.evaluate(READ)) as Reading;
     await reduced.evaluate(
@@ -127,9 +114,6 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
     await reduced.waitForTimeout(1500);
     const reducedAtBottom = (await reduced.evaluate(READ)) as Reading;
     const movingReading = (await moving.evaluate(READ)) as Reading;
-    /* The preference can change under a running loop. Nothing else stops it then: the scroll and the
-       opening draw gate themselves, and a loop already going is stopped only by the check in
-       `syncRetrace`, which the page's re-measure on the change reaches. */
     await moving.emulateMedia({ reducedMotion: "reduce" });
     await moving.waitForTimeout(1500);
     const switchedToReduce = (await moving.evaluate(READ)) as Reading;
@@ -138,12 +122,6 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
       ["at the top", reducedAtTop],
       ["at the bottom", reducedAtBottom],
     ] as const) {
-      assert.equal(
-        reading.stretches,
-        0,
-        `no stretch is built ${where} under reduced motion`,
-      );
-      assert.equal(reading.glowPathsShown, 0, `no glow path shows ${where}`);
       assert.ok(reading.pieces > 0, "the thread is on the page");
       assert.equal(
         reading.undashed,
@@ -151,28 +129,14 @@ test("reduced motion builds no re-trace, stops a running one, and leaves the thr
         `every piece is complete ${where}`,
       );
     }
-    assert.ok(movingReading.stretches >= 1, "with motion a stretch is built");
     assert.ok(
-      movingReading.runPathsShown >= 8,
-      "with motion the core's runs show",
-    );
-    assert.equal(
-      switchedToReduce.runPathsShown + switchedToReduce.glowPathsShown,
-      0,
-      "a loop already running stops when the preference changes to reduce",
+      movingReading.undashed < movingReading.pieces,
+      "with motion the thread is still being drawn, so some piece is dashed",
     );
     assert.equal(
       switchedToReduce.undashed,
       switchedToReduce.pieces,
-      "and the thread is left complete",
-    );
-    assert.ok(
-      movingReading.glowPathsShown >= 8,
-      "with motion the glow's strokes show",
-    );
-    assert.ok(
-      movingReading.undashed < movingReading.pieces,
-      "with motion the thread is still being drawn, so some piece is dashed",
+      "a change to reduce leaves the thread complete",
     );
   } finally {
     await browser.close();
@@ -248,12 +212,11 @@ test("a change to reduced motion during the opening draw or a catch-up leaves no
     );
 
     const catchUp = await open();
-    /* The opening draw has ended and its loop is lit, so nothing but the follower is drawing. */
-    await catchUp.waitForFunction(
-      "document.querySelector('[data-thread-retrace-group]') !== null",
-      null,
-      { timeout: 15000 },
-    );
+    /* The opening draw has ended, so nothing but the follower is drawing. */
+    await catchUp.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
     const inFlight = (await catchUp.evaluate(
       `new Promise((resolve) => {
         window.scrollTo(0, document.documentElement.scrollHeight);
@@ -276,53 +239,34 @@ test("a change to reduced motion during the opening draw or a catch-up leaves no
   }
 });
 
-/* The bounded loop's lifecycle, which only a real page can show: what is scheduled and what is painted.
-   The loop's tokens are overridden with a shorter pace so a whole budget fits inside a test: they are
-   read by name from the stylesheet, which is what is being relied on. `requestAnimationFrame` is
-   wrapped to keep a count of callbacks still scheduled, because "nothing is running" has to mean no
-   chain is left behind painting nothing, not only that nothing is visible; and the page's visibility
-   is driven by overriding what `document.visibilityState` reads, since a headless page is always
-   visible. The only other rAF user is the opening draw, which has ended by the time a stretch is lit. */
+/* The sway's lifecycle (DESIGN.md -> Thread -> The sway): it moves while the page is touched and stops once the
+   page has gone `--thread-idle` untouched, with no loop minimum; a scroll or interaction starts it again, and a
+   tab coming back is not an interaction. `--thread-idle` is shortened so the stop fits inside a test: it is read
+   by name from the stylesheet, which is what is being relied on, and a key makes the page read it again.
+   `document.visibilityState` is overridden to drive a hidden tab, since a headless page is always visible. */
 
-const FAST_TOKENS =
-  /* `--retrace-speed:0` pins the FIXED-DURATION path deliberately: with a speed set, a loop lasts as
-   long as the stretch needs and the injected `--retrace-duration` no longer governs, so these cases
-   could not state a budget in milliseconds at all. `--thread-idle:1ms` makes the page idle at once (0 is no time at all, so no clock), so
-   the budget is the loop's last, as the stop it tests needs. The speed model's own arithmetic is covered
-   without a browser in `thread-retrace.test.ts`. */
-  ":root{--retrace-duration:600ms;--retrace-loops:2;--retrace-settle:300ms;--retrace-speed:0;--thread-idle:1ms}";
+const SHORT_IDLE = ":root{--thread-idle:1500ms}";
 
-const WRAP_RAF = `(() => {
-  const pending = new Set();
-  const raf = window.requestAnimationFrame.bind(window);
-  const caf = window.cancelAnimationFrame.bind(window);
-  window.requestAnimationFrame = (cb) => {
-    const id = raf((t) => { pending.delete(id); cb(t); });
-    pending.add(id);
-    return id;
-  };
-  window.cancelAnimationFrame = (id) => { pending.delete(id); caf(id); };
-  window.__pending = () => pending.size;
+const HIDDEN_TAB = `(() => {
   let hidden = false;
   Object.defineProperty(document, "visibilityState", { get: () => (hidden ? "hidden" : "visible"), configurable: true });
   window.__setHidden = (value) => { hidden = value; document.dispatchEvent(new Event("visibilitychange")); };
 })()`;
 
-interface Lifecycle {
-  pending: number;
-  lit: number;
-}
-
-const LIFECYCLE = `(() => {
-  const lit = (root) => Array.from(root.querySelectorAll("[data-thread-retrace-group] path, [data-thread-retrace-glow] path"))
-    .filter((p) => p.style.display !== "none" && p.getAttribute("d")).length;
-  return {
-    pending: window.__pending(),
-    lit: lit(document),
-  };
+/* Whether any of the trunk's shown pieces changes shape over `ms`: the sway is the only thing that re-shapes a
+   piece while the page is still. */
+const SWAYING = (ms: number) => `(async () => {
+  const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
+  const shown = [...svg.querySelectorAll("path[data-thread-piece]")].filter((p) => p.style.visibility !== "hidden");
+  const before = shown.map((p) => p.getAttribute("d"));
+  await new Promise((resolve) => setTimeout(resolve, ${ms}));
+  return shown.some((p, i) => p.getAttribute("d") !== before[i]);
 })()`;
 
-test("the re-trace stops when its budget of loops is spent, suspends in a hidden tab without spending any, and a scroll starts it again", async (t) => {
+const RETRACE_ELEMENTS =
+  "document.querySelectorAll('[data-thread-retrace-group], [data-thread-retrace-glow]').length";
+
+test("no re-trace is ever painted: after the opening, at rest, scrolled back up a finished thread, and in the card", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
@@ -333,185 +277,116 @@ test("the re-trace stops when its budget of loops is spent, suspends in a hidden
     });
     const page = await context.newPage();
     await page.addInitScript(SWAY_OFF);
-    await page.addInitScript(WRAP_RAF);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    await page.addStyleTag({ content: FAST_TOKENS });
-    /* The page read `--thread-idle` when it woke at load; a key wakes it again so it reads the 1ms here. */
-    await page.keyboard.press("Shift");
-    const read = async () => (await page.evaluate(LIFECYCLE)) as Lifecycle;
-    const waitFor = (condition: string, timeout = 15000) =>
-      page.waitForFunction(condition, null, { timeout, polling: 25 });
-
-    await waitFor(
-      "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.waitForTimeout(3000);
+    assert.equal(
+      await page.evaluate(RETRACE_ELEMENTS),
+      0,
+      "nothing lights the line at rest after the opening",
     );
-    const running = await read();
-    assert.ok(running.lit > 0, "the loop is lit");
-    assert.ok(running.pending >= 1, "and a frame is scheduled");
+    await page.evaluate(
+      "window.scrollTo(0, document.documentElement.scrollHeight)",
+    );
+    await page.waitForTimeout(2500);
+    await page.evaluate(
+      "window.scrollTo(0, document.documentElement.scrollHeight * 0.3)",
+    );
+    await page.waitForTimeout(3000);
+    assert.equal(
+      await page.evaluate(RETRACE_ELEMENTS),
+      0,
+      "nothing lights a finished line scrolled back up, the card thread's included",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
 
-    await page.evaluate("window.__setHidden(true)");
-    await page.waitForTimeout(300);
-    assert.equal((await read()).pending, 0, "a hidden tab schedules no frame");
-    /* Far longer than the whole budget (two 600ms loops): were hidden time counted against it, the
-       loop would be spent on return and would never light again. */
+test("the sway stops once the page goes idle, with no loop minimum, and a scroll starts it again", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 393, height: 700 },
+    });
+    const page = await context.newPage();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.addStyleTag({ content: SHORT_IDLE });
+    await page.keyboard.press("Shift");
+    assert.equal(
+      await page.evaluate(SWAYING(500)),
+      true,
+      "the line sways while the page is touched",
+    );
     await page.waitForTimeout(2500);
     assert.equal(
-      (await read()).pending,
-      0,
-      "and stays unscheduled while hidden",
+      await page.evaluate(SWAYING(800)),
+      false,
+      "once idle the line is still, with nothing holding it moving for a number of loops",
     );
-    await page.evaluate("window.__setHidden(false)");
-    await waitFor(
-      "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",
-      1500,
-    );
-    assert.ok(
-      (await read()).pending >= 1,
-      "a visible tab resumes the remainder",
-    );
-
-    /* The remainder is at most two loops, 1.2s; it has ended well inside four. */
-    await waitFor("window.__pending() === 0", 4000);
-    const spent = await read();
-    assert.equal(spent.lit, 0, "a spent budget leaves nothing painted");
-    assert.equal(spent.pending, 0, "and no frame scheduled");
-    await page.waitForTimeout(1500);
-    const stillQuiet = await read();
-    assert.equal(stillQuiet.lit + stillQuiet.pending, 0, "and it stays quiet");
-
-    /* Things that are not movement reach the same sync: a tab coming back and a re-measure on resize.
-       A spent budget has to survive them, or any of them would start another budget. */
-    await page.evaluate("window.__setHidden(true)");
-    await page.evaluate("window.__setHidden(false)");
-    await page.evaluate("window.dispatchEvent(new Event('resize'))");
-    /* Sampled across the whole window rather than read at its end: a loop wrongly restarted would
-       spend its own short budget and be quiet again by then. The resize is debounced by 150ms. */
-    let loudest = 0;
-    for (let i = 0; i < 30; i++) {
-      const sample = await read();
-      loudest = Math.max(loudest, sample.lit + sample.pending);
-      await page.waitForTimeout(30);
-    }
-    assert.equal(
-      loudest,
-      0,
-      "a tab flip and a resize do not bring a spent loop back",
-    );
-
     await page.evaluate("window.scrollBy(0, 40)");
-    await waitFor(
-      "[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))",
-      4000,
-    );
-    assert.ok(
-      (await read()).pending >= 1,
-      "a scroll starts it again once the page has been still",
-    );
-    await waitFor("window.__pending() === 0", 4000);
-    assert.equal((await read()).lit, 0, "and it spends its budget again");
-  } finally {
-    await browser.close();
-    server.close();
-  }
-});
-
-test("Wishes' closing stretch loops, painted by the one card thread and nowhere else", async (t) => {
-  if (!labExport(t)) return;
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ channel: "chromium" });
-  const { server, port } = await serveExport();
-  try {
-    const page = await (
-      await browser.newContext({ viewport: { width: 393, height: 700 } })
-    ).newPage();
-    await page.addInitScript(SWAY_OFF);
-    await page.addInitScript(WRAP_RAF);
-    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
-      waitUntil: "load",
-    });
-    await page.addStyleTag({
-      content:
-        ":root{--retrace-duration:1000ms;--retrace-loops:6;--retrace-settle:300ms;--retrace-speed:0}",
-    });
-    await page.waitForTimeout(3600);
-    await page.evaluate(
-      "window.scrollTo(0, document.documentElement.scrollHeight)",
-    );
-    /* The loop is seen lit by polling across it: a segment is empty at each loop's edges, so one
-       reading can miss it. */
-    let lit = 0;
-    for (let i = 0; i < 120 && !lit; i++) {
-      lit = (await page.evaluate(
-        "Array.from(document.querySelectorAll('[data-thread-card] [data-thread-retrace-group] path, [data-thread-card] [data-thread-retrace-glow] path')).filter((p) => p.style.display !== 'none' && p.getAttribute('d')).length",
-      )) as number;
-      await page.waitForTimeout(50);
-    }
-    assert.ok(lit > 0, "the card thread's stretch is lit");
+    await page.waitForTimeout(200);
     assert.equal(
-      await page.evaluate(
-        "document.querySelectorAll('[data-thread-card]').length",
-      ),
-      1,
-      "Wishes carries one card thread, not a copy either side of the illustration",
-    );
-    assert.equal(
-      await page.evaluate(
-        "document.querySelectorAll('[data-thread-card] [data-thread-retrace-group]').length",
-      ),
-      1,
-      "and it holds one re-trace group",
-    );
-  } finally {
-    await browser.close();
-    server.close();
-  }
-});
-
-test("on a finished thread a scroll clears the loop at once, and it lights again once the page is still", async (t) => {
-  if (!labExport(t)) return;
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ channel: "chromium" });
-  const { server, port } = await serveExport();
-  try {
-    const page = await (
-      await browser.newContext({ viewport: { width: 393, height: 700 } })
-    ).newPage();
-    await page.addInitScript(SWAY_OFF);
-    await page.addInitScript(WRAP_RAF);
-    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
-      waitUntil: "load",
-    });
-    await page.addStyleTag({
-      content:
-        ":root{--retrace-duration:1000ms;--retrace-loops:8;--retrace-settle:600ms;--retrace-speed:0}",
-    });
-    await page.waitForTimeout(3600);
-    /* Complete the thread, then rest mid-page, where only phase 2 can light a stretch. */
-    await page.evaluate(
-      "window.scrollTo(0, document.documentElement.scrollHeight)",
-    );
-    await page.waitForTimeout(800);
-    await page.evaluate("window.scrollTo(0, 2000)");
-    const lit = `[...document.querySelectorAll('[data-thread-retrace-group] path')].some((p) => p.style.display !== 'none' && p.getAttribute('d'))`;
-    await page.waitForFunction(lit, null, { timeout: 4000, polling: 25 });
-    await page.evaluate("window.scrollBy(0, 10)");
-    /* Two frames: the scroll handler is rAF-throttled, so a reading in the same task is the old state. */
-    await page.evaluate(
-      "new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))",
-    );
-    assert.equal(
-      await page.evaluate(`!(${lit})`),
+      await page.evaluate(SWAYING(500)),
       true,
-      "a scroll on a finished thread clears the loop",
+      "a scroll starts it again",
     );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test("a tab hidden past the idle interval comes back still, and a tap starts the sway", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 393, height: 700 },
+    });
+    const page = await context.newPage();
+    await page.addInitScript(HIDDEN_TAB);
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.addStyleTag({ content: SHORT_IDLE });
+    await page.keyboard.press("Shift");
+    await page.evaluate("window.__setHidden(true)");
+    await page.waitForTimeout(2500);
+    await page.evaluate("window.__setHidden(false)");
     assert.equal(
-      ((await page.evaluate(LIFECYCLE)) as Lifecycle).pending,
-      0,
-      "and leaves no frame scheduled",
+      await page.evaluate(SWAYING(800)),
+      false,
+      "coming back is not an interaction: an idle page stays still",
     );
-    await page.waitForFunction(lit, null, { timeout: 4000, polling: 25 });
+    await page.mouse.click(5, 5);
+    await page.waitForTimeout(200);
+    assert.equal(
+      await page.evaluate(SWAYING(500)),
+      true,
+      "a tap starts the sway",
+    );
   } finally {
     await browser.close();
     server.close();

@@ -5,7 +5,7 @@ import { extname, join } from "node:path";
 import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
 
-/* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
+/* These cases test the draw, not the sway, which ships on and keeps a frame loop of its
    own and re-shapes every path: `data-thread-sway="off"` on `<html>`, set the moment the element exists, turns it
    off for them. */
 const SWAY_OFF = `(() => {

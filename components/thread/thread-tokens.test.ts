@@ -3,8 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { BASE_WIDTH, OPTIONS } from "../../scripts/lib/built-tokens.ts";
 import type { Rgb } from "./thread-head.ts";
-import { RETRACE_LENGTH_RATIO } from "./thread-retrace.ts";
-import { retraceFrom, sheenColours } from "./thread-tokens.ts";
+import { parseCssTime, sheenColours } from "./thread-tokens.ts";
 
 const hex = ([r, g, b]: Rgb) =>
   `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
@@ -18,15 +17,13 @@ test("the sheen lifts the thread's red to the registry's two colours, at the ink
   assert.equal(sheen.tipWidth, BASE_WIDTH);
 });
 
-/* The head and the re-trace are one look as a pair: the re-trace differs only in its length. */
-test("the re-trace takes every look value from the head and only its own length", () => {
-  const head = {
-    ...OPTIONS,
-    ...sheenColours(OPTIONS.tailColor, 0.2, BASE_WIDTH),
-  };
-  const retrace = retraceFrom(head, BASE_WIDTH);
-  assert.deepEqual({ ...retrace, length: head.length }, head);
-  assert.equal(retrace.length, RETRACE_LENGTH_RATIO * BASE_WIDTH);
+test("a CSS time is read in milliseconds, and anything else is refused rather than defaulted", () => {
+  assert.equal(parseCssTime("2s"), 2000);
+  assert.equal(parseCssTime(" 800ms "), 800);
+  assert.equal(parseCssTime("0.5s"), 500);
+  for (const bad of ["", "fast", "2", "-1s", "0s", "2 s", "NaNs"]) {
+    assert.equal(parseCssTime(bad), undefined, `"${bad}"`);
+  }
 });
 
 /* The owner finalised the sheen with half glow (2026-11-02), so the head reads only the thread's red and the sheen
