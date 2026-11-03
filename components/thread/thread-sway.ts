@@ -546,6 +546,9 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
            those hidden pieces every frame left their stale pixels on screen ahead of the tip — gone
            on a forced repaint and with the line layer hidden (the owner's device test). */
         if (path.style.visibility === "hidden") continue;
+        /* A twist mark not yet reached, or a head step not in use, paints nothing either: the observer shapes it
+           the moment it is shown. */
+        if (path.style.display === "none") continue;
         write(path, entry, t, band);
       }
     } catch (error) {

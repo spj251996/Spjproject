@@ -754,6 +754,51 @@ test("a piece finished during a fling is whole when scrolled back to", async (t)
   }
 });
 
+/* A twist mark not yet reached and a head step not in use are kept with `display: none`: the sway's frame shapes
+   only what is shown, and a mark takes its shape the moment it is shown. */
+test("the sway never re-shapes a hidden twist mark or head step", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.waitForTimeout(1500);
+    const reshaped = (await page.evaluate(`(async () => {
+      const hidden = new Set();
+      let watched = 0;
+      const watch = new MutationObserver((records) => {
+        for (const record of records) if (record.target.style.display === "none") hidden.add(record.target);
+      });
+      for (const svg of document.querySelectorAll("[data-thread-svg]")) {
+        watched += [...svg.querySelectorAll("path")].filter((p) => p.style.display === "none").length;
+        watch.observe(svg, { subtree: true, attributes: true, attributeFilter: ["d"] });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      watch.disconnect();
+      return { watched, reshaped: hidden.size };
+    })()`)) as { watched: number; reshaped: number };
+    assert.ok(reshaped.watched > 0, "hidden marks exist to watch");
+    assert.equal(
+      reshaped.reshaped,
+      0,
+      "hidden marks were re-shaped while the sway moved",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("coming back to the tab, the sway waits a second before it moves", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
