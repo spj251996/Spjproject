@@ -65,8 +65,7 @@ const EXPECTED = [
     progress: 1,
     frames: FIVE_FRAMES,
     robots: "noindex, nofollow",
-    /* The visible credit waits for the couple's yes (owner, 2026-11-03); the lab carries it meanwhile. */
-    credit: 0,
+    credit: 1,
   },
   ...(PREVIEW ? [LAB_ROW] : []),
   /* The not-found screen. Its thread was retired, so what is asserted is that the route exists and

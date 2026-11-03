@@ -129,23 +129,28 @@ test("/preview is retired", () => {
   assert.ok(!existsSync("app/preview"), "app/preview is back");
 });
 
-/* The credit is on the lab alone until the couple agree (owner, 2026-11-03), so `/` must never pass it. */
-test("only the thread lab passes credit", () => {
-  assert.match(readFileSync("app/page.tsx", "utf8"), /<Sections\s*\/>/);
-  assert.match(
-    readFileSync("app/thread/page.dev.tsx", "utf8"),
-    /<Sections\b[^>]*\bcredit\b[^>]*\/>/,
-  );
-  const sections = readFileSync("app/_sections/index.tsx", "utf8");
-  assert.match(sections, /credit = false/);
-  assert.match(sections, /<WishesSection\b[^>]*credit=\{credit\}/);
+/* The credit closes Wishes on every route that composes the sections (owner, 2026-11-03), so nothing may
+   switch it off: no route passes a credit prop and the section takes none. */
+test("Wishes closes on the credit on every route", () => {
+  for (const file of [
+    "app/page.tsx",
+    "app/thread/page.dev.tsx",
+    "app/_sections/index.tsx",
+    "app/_sections/wishes.tsx",
+  ]) {
+    assert.doesNotMatch(
+      readFileSync(file, "utf8"),
+      /\bcredit\s*(=|\?:|:\s*boolean)|<Sections\b[^>]*\bcredit\b|credit=\{/,
+      `${file} still switches the credit`,
+    );
+  }
 
   const wishes = readFileSync("app/_sections/wishes.tsx", "utf8");
   const sheetEnd = wishes.indexOf("</MountedSheet>");
   const credit = wishes.match(
-    /\{credit \? \(\s*<div className="([^"]+)">\s*<DesignerCredit layout="line" \/>\s*<\/div>\s*\) : null\}/,
+    /<div className="([^"]+)">\s*<DesignerCredit layout="line" \/>\s*<\/div>/,
   );
-  assert.ok(credit, "no credit-gated DesignerCredit line in wishes.tsx");
+  assert.ok(credit, "no DesignerCredit line in wishes.tsx");
   assert.ok(
     wishes.indexOf(credit[0]) > sheetEnd,
     "the credit sits outside the card",

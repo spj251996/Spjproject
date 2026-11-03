@@ -13,13 +13,7 @@ import { wishes } from "@/content";
 /* The page's close. The illustration's size and bleed
    distance are settled in DESIGN.md → Wishes; it takes no crop, mask or edge fade of its own. The
    illustration is static and takes no entrance. */
-export function WishesSection({
-  thread = false,
-  credit = false,
-}: {
-  thread?: boolean;
-  credit?: boolean;
-}) {
+export function WishesSection({ thread = false }: { thread?: boolean }) {
   return (
     <section className="relative" id="wishes">
       <Botanical fit={wishesFit} pieces={SECTION_PLACEMENT.wishes} />
@@ -128,11 +122,9 @@ export function WishesSection({
       {/* At the screen's foot, out of the card's flow so no fit moves and the page gains no scroll
           (DESIGN.md → Domain Components → Wishes). After the botanical in document order, so it
           paints over the pieces it meets. */}
-      {credit ? (
-        <div className="pointer-events-auto absolute inset-x-0 bottom-0 px-space-md pb-space-xs">
-          <DesignerCredit layout="line" />
-        </div>
-      ) : null}
+      <div className="pointer-events-auto absolute inset-x-0 bottom-0 px-space-md pb-space-xs">
+        <DesignerCredit layout="line" />
+      </div>
     </section>
   );
 }

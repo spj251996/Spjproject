@@ -11,7 +11,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 export default function ThreadLabPage() {
   return (
     <main className="relative flex flex-1 flex-col overflow-y-clip">
-      <Sections credit thread />
+      <Sections thread />
     </main>
   );
 }
