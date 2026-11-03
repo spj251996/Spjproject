@@ -488,11 +488,21 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     baseOf(path: SVGPathElement): string | undefined {
       return track(path)?.base;
     },
+    /* Every piece goes back to its unswayed shape and shows, so whatever paints next — the draw, or reduced
+       motion's complete line — starts from the geometry, not from a swayed or cut copy of it. */
     stop() {
       if (frame !== null) window.cancelAnimationFrame(frame);
       frame = null;
       swayWakers.delete(wake);
       observer.disconnect();
+      for (const path of svg.querySelectorAll("path")) {
+        const entry = tracked.get(path);
+        if (entry === undefined) continue;
+        if (path.getAttribute("d") !== entry.base)
+          path.setAttribute("d", entry.base);
+        if (path.style.visibility === "hidden") path.style.visibility = "";
+        tracked.delete(path);
+      }
     },
   };
 }
@@ -536,6 +546,8 @@ export function createThreadSway(svg: SVGSVGElement, reduced: boolean) {
     reduced || swayIsOff() ? undefined : createSway(svg, SHIPPED_SWAY);
 
   return {
+    /* Whether this sway was built for reduced motion, so a change of preference builds the other kind. */
+    reduced,
     /* A piece's unswayed `d`: its geometry, which every painter that measures along it must read. */
     baseOf(path: SVGPathElement): string {
       return sway?.baseOf(path) ?? path.getAttribute("d") ?? "";

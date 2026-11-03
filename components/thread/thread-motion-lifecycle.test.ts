@@ -393,6 +393,71 @@ test("a tab hidden past the idle interval comes back still, and a tap starts the
   }
 });
 
+/* The sway is built once per page, so reduced motion turned on mid-visit has to reach it: the line stops and every
+   piece goes back to its own unswayed shape — the shape a page with the sway off draws at the same size — with
+   nothing left hidden; turned off again, the sway comes back. Read mid-scroll, so a piece was being cut at its tip. */
+test("reduced motion turned on mid-visit stops the sway, restores every piece, and turning it off starts it again", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  const PIECES = `[...[...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0].querySelectorAll("path[data-thread-piece]")].map((p) => ({ d: p.getAttribute("d"), hidden: p.style.visibility === "hidden" }))`;
+  try {
+    const open = async (swayOff: boolean) => {
+      const context = await browser.newContext({
+        viewport: { width: 393, height: 700 },
+      });
+      const page = await context.newPage();
+      if (swayOff) await page.addInitScript(SWAY_OFF);
+      await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+        waitUntil: "load",
+      });
+      await page.waitForSelector("[data-thread-opened]", {
+        state: "attached",
+        timeout: 15000,
+      });
+      await page.evaluate("window.scrollTo(0, 900)");
+      await page.waitForTimeout(1500);
+      return page;
+    };
+    const unswayed = (await (await open(true)).evaluate(PIECES)) as {
+      d: string;
+    }[];
+    const page = await open(false);
+    assert.equal(await page.evaluate(SWAYING(500)), true, "the line sways");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.waitForTimeout(800);
+    assert.equal(
+      await page.evaluate(SWAYING(800)),
+      false,
+      "reduced motion stops the sway",
+    );
+    const pieces = (await page.evaluate(PIECES)) as {
+      d: string;
+      hidden: boolean;
+    }[];
+    assert.equal(pieces.length, unswayed.length);
+    pieces.forEach((piece, index) => {
+      assert.equal(
+        piece.d,
+        unswayed[index].d,
+        `piece ${index} is back to its unswayed shape`,
+      );
+      assert.equal(piece.hidden, false, `piece ${index} is not left hidden`);
+    });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.waitForTimeout(500);
+    assert.equal(
+      await page.evaluate(SWAYING(800)),
+      true,
+      "turning reduced motion off starts the sway again",
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 /* A page that loads under reduced motion never starts the opening; turned off while the reader is still
    at the top, the opening then runs, rather than leaving the invite's stretch undrawn until the first
    scroll. Loading reduced, rather than switching mid-load, keeps the case deterministic: a switch that

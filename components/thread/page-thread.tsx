@@ -357,7 +357,12 @@ export function PageThread() {
       TRUNK_CUT_ID,
       () => 0,
     );
-    swayRef.current ??= createThreadSway(liveSvg, reducedMotion());
+    /* Built once, and again when the reader's motion preference changes, which re-measures. */
+    const reduced = reducedMotion();
+    if (swayRef.current?.reduced !== reduced) {
+      swayRef.current?.stop();
+      swayRef.current = createThreadSway(liveSvg, reduced);
+    }
     swayRef.current.measured(main);
     twistRef.current.measured(
       pathsRef.current,

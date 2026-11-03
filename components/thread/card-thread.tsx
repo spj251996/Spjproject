@@ -275,7 +275,12 @@ export function CardThread() {
       CARD_CUT_ID,
       (count) => count - 1,
     );
-    swayRef.current ??= createThreadSway(svg, reducedMotion());
+    /* Built once, and again when the reader's motion preference changes, which re-measures. */
+    const reduced = reducedMotion();
+    if (swayRef.current?.reduced !== reduced) {
+      swayRef.current?.stop();
+      swayRef.current = createThreadSway(svg, reduced);
+    }
     swayRef.current.measured(main);
     twistRef.current.measured(
       pathsRef.current,
