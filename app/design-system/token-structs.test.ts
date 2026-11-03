@@ -6,8 +6,8 @@ import {
   DURATION_TOKENS,
   EASING_TOKENS,
   LAYOUT_CAPS,
-  LOOP_CADENCE_USES,
   SPACING_STEPS,
+  THREAD_TIMING_USES,
   TYPE_TOKENS,
   Z_LAYERS,
 } from "./_sections/token-tables.ts";
@@ -141,13 +141,12 @@ test("every layout cap the gallery states matches tokens.css", () => {
   }
 });
 
-/* The thread's loop and budget rows state each value as `--token · value ·`, the shape the caps use. The
-   speed carries its unit in prose (`845 px/s`) where the token is the bare number. */
-test("every loop-cadence value the gallery states matches tokens.css", () => {
-  assert.equal(LOOP_CADENCE_USES.length, 9, "the loop-cadence rows");
-  for (const line of LOOP_CADENCE_USES) {
+/* The thread's timing and budget rows state each value as `--token · value ·`, the shape the caps use. */
+test("every thread timing value the gallery states matches tokens.css", () => {
+  assert.equal(THREAD_TIMING_USES.length, 5, "the thread timing rows");
+  for (const line of THREAD_TIMING_USES) {
     const match = line.match(/^(--[a-z0-9-]+) · ([^·]+?) · /);
     assert.ok(match, `"${line}" does not open with "--token · value · "`);
-    assert.equal(match[2].replace(/ px\/s$/, ""), base.get(match[1]), match[1]);
+    assert.equal(match[2], base.get(match[1]), match[1]);
   }
 });

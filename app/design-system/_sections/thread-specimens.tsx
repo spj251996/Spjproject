@@ -22,12 +22,6 @@ import {
   pieceProgress,
 } from "@/components/thread/thread-progress";
 import {
-  retraceFade,
-  retraceGlow,
-  retraceSegments,
-  retraceSpan,
-} from "@/components/thread/thread-retrace";
-import {
   type PieceSamples,
   polylineBetween,
   samplePath,
@@ -38,22 +32,18 @@ import {
   taperCut,
   taperSegments,
 } from "@/components/thread/thread-taper";
-import {
-  headOptions,
-  retraceOptions,
-  tokenLength,
-} from "@/components/thread/thread-tokens";
+import { headOptions, tokenLength } from "@/components/thread/thread-tokens";
 import { gapWidth, ropeGaps } from "@/components/thread/thread-twist";
 
-/* The thread's layers — ink, twist, head, tapered ends, re-trace — each laid on a stretch of the page's own authored geometry
-   (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
-   `thread-head.ts`'s, `thread-retrace.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
+/* The thread's layers — ink, twist, head, tapered ends, sway — each laid on a stretch of the page's own authored
+   geometry (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
+   `thread-head.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
    imported; the classes are the page's own (`thread.module.css`), so the filters are the same ones,
    not copies. Static: a pose of each layer, never a loop — except the sway, which is motion or nothing,
    and runs on the page's own `createThreadSway`. */
 
-/* A connector from the middle of the page, so neither of its ends is a free end and the ink, the head
-   and the re-trace show on a line that is not tapered. The two tapered ends are the pieces the page
+/* A connector from the middle of the page, so neither of its ends is a free end and the ink and the head
+   show on a line that is not tapered. The two tapered ends are the pieces the page
    itself tapers: the invite's first, at its start (`PageThread`), and Wishes' last, at its end
    (`CardThread`). */
 const WIDE = THREAD_PATHS.wide;
@@ -63,10 +53,8 @@ const WISHES_CLOSE = WIDE.wishes[WIDE.wishes.length - 1].d;
 
 /* Gallery layout constants. The margin clears the halo's widest shadow (33px) so no panel clips it. */
 const MARGIN = 48;
-/* How far along its stretch the head's tip, and the re-trace's segment, are posed. The head's tip sits
-   where the stretch bends; the loop position (0 to 1) puts the re-trace near its peak length. */
+/* How far along its stretch the head's tip is posed: where the stretch bends. */
 const HEAD_POSED_AT = 0.33;
-const RETRACE_POSED_AT = 0.42;
 /* The tapered ends are 24px long: a crop this wide holds one with its contact shadow, at 1x and at TAPER_ZOOM. */
 const TAPER_CROP = 96;
 const TAPER_ZOOM = 4;
@@ -77,7 +65,6 @@ interface Measured {
   readonly pieces: readonly PieceSpan[];
   readonly box: DOMRect;
   readonly head: HeadOptions;
-  readonly retrace: HeadOptions;
   readonly taperLength: number;
   readonly strokeWidth: number;
 }
@@ -96,7 +83,6 @@ function useMeasured(d: string) {
       pieces: [{ start: 0, end: length }],
       box: path.getBBox(),
       head: headOptions(),
-      retrace: retraceOptions(),
       taperLength: tokenLength("--length-thread-taper"),
       strokeWidth,
     });
@@ -424,74 +410,6 @@ export function ThreadTaperSpecimen() {
             zoom={TAPER_ZOOM}
           />
         </div>
-      </Panel>
-    </div>
-  );
-}
-
-export function ThreadRetraceSpecimen() {
-  return (
-    <div className="flex flex-wrap gap-space-lg">
-      <Panel caption="The glow alone: eight translucent strokes under the segment, no filter.">
-        <PathFragment d={MID_PAGE} label="The re-trace's glow strokes alone">
-          {(m) => {
-            const { tail, tip } = retraceSpan(
-              RETRACE_POSED_AT,
-              m.length,
-              m.retrace.length,
-            );
-            return (
-              <>
-                <path className={styles.pageInk} d={MID_PAGE} />
-                <g className={styles.pageRetraceGlow}>
-                  <Runs
-                    samples={m.samples}
-                    segments={retraceGlow(
-                      tail,
-                      tip,
-                      m.pieces,
-                      m.retrace.midColor,
-                    )}
-                  />
-                </g>
-              </>
-            );
-          }}
-        </PathFragment>
-      </Panel>
-      <Panel caption="The re-trace: the glow strokes under the head's own stack, over the drawn thread.">
-        <PathFragment d={MID_PAGE} label="The re-trace over the drawn thread">
-          {(m) => {
-            const { tail, tip } = retraceSpan(
-              RETRACE_POSED_AT,
-              m.length,
-              m.retrace.length,
-            );
-            const opacity = retraceFade(tip - tail, m.retrace.length);
-            return (
-              <>
-                <path className={styles.pageInk} d={MID_PAGE} />
-                <g className={styles.pageRetraceGlow} opacity={opacity}>
-                  <Runs
-                    samples={m.samples}
-                    segments={retraceGlow(
-                      tail,
-                      tip,
-                      m.pieces,
-                      m.retrace.midColor,
-                    )}
-                  />
-                </g>
-                <g className={styles.pageRetrace} opacity={opacity}>
-                  <Runs
-                    samples={m.samples}
-                    segments={retraceSegments(tail, tip, m.pieces, m.retrace)}
-                  />
-                </g>
-              </>
-            );
-          }}
-        </PathFragment>
       </Panel>
     </div>
   );

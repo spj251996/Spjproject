@@ -20,8 +20,8 @@ import {
   DURATION_TOKENS,
   EASING_TOKENS,
   LAYOUT_CAPS,
-  LOOP_CADENCE_USES,
   SPACING_STEPS,
+  THREAD_TIMING_USES,
   TYPE_TOKENS,
 } from "@/app/design-system/_sections/token-tables";
 import {
@@ -106,7 +106,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's and the re-trace's sheen; the start of the scroll-progress line's fill.",
+          "The thread's ink, tapered ends included, and the tail of the drawing head's sheen; the start of the scroll-progress line's fill.",
       },
       {
         token: "--color-thread-vermilion",
@@ -124,13 +124,12 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-sheen",
         name: "thread-sheen",
         usage:
-          "The tip of the drawing head and of the re-trace's sheen: the thread's red lifted 0.12 in OKLCH lightness, the light the line catches. Never the ink, never text.",
+          "The tip of the drawing head's sheen: the thread's red lifted 0.12 in OKLCH lightness, the light the line catches. Never the ink, never text.",
       },
       {
         token: "--color-thread-sheen-mid",
         name: "thread-sheen-mid",
-        usage:
-          "The sheen's middle stop, half its lift, and the colour of the re-trace's glow strokes. Never text.",
+        usage: "The sheen's middle stop, half its lift. Never text.",
       },
       {
         token: "--color-thread-twist",
@@ -477,7 +476,7 @@ export function FoundationsSections() {
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace and the sway that lives and stops with it, and the thread's catch-up and closing-stretch budgets, are the exceptions, and take their own values."
+        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's sway, its catch-up and its closing-stretch budgets are the exceptions, and take their own values."
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
@@ -492,8 +491,8 @@ export function FoundationsSections() {
           <RuleList rules={EASING_USES} />
         </SpecimenGroup>
 
-        <SpecimenGroup title="Loop cadence and thread budgets — exceptions to both scales">
-          <RuleList rules={LOOP_CADENCE_USES} />
+        <SpecimenGroup title="Thread timing and budgets — exceptions to both scales">
+          <RuleList rules={THREAD_TIMING_USES} />
         </SpecimenGroup>
       </GallerySection>
 

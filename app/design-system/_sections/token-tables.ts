@@ -186,7 +186,7 @@ export const Z_LAYERS: LayerItem[] = [
   {
     token: "--z-thread",
     value: "40",
-    role: "Thread · the page-length thread and its head, re-trace and tapered ends",
+    role: "Thread · the page-length thread and its head and tapered ends",
   },
   {
     token: "--z-progress",
@@ -196,14 +196,10 @@ export const Z_LAYERS: LayerItem[] = [
   { token: "--z-modal", value: "50", role: "Modal · the gallery modal" },
 ];
 
-export const LOOP_CADENCE_USES = [
-  "--retrace-duration · 3.2s · one loop of the thread's re-trace, governing only when no speed is set · set against the thread, not a step on the duration scale · the owner's pick",
-  "--retrace-settle · 1500ms · how long the page must be still before the re-trace loops · a delay of the same kind, the owner's pick",
-  "--retrace-loops · 5 · the fewest whole loops the LONGEST stretch runs before the page may go quiet · a count, so a slower pace never keeps the page busy longer · every shorter stretch fits whole loops into the same window and they quiet together",
-  "--retrace-speed · 845 px/s · the one speed every lit stretch of the re-trace moves at, so a stretch's length never sets its pace · the owner's pick",
+export const THREAD_TIMING_USES = [
   "--thread-catchup · 0.6s · how long the drawn length takes to arrive at the length the scroll position means · a fixed-duration ease that converges exactly, never an exponential",
   "--thread-catchup-ease · ease-out-cubic · the catch-up's curve, so the line is pulled into place fast and settles slowly · it never overshoots, since the draw never runs backwards",
-  "--thread-idle · 60s · how long the page may go untouched, in view, before the sway and the re-trace stop together · any scroll, tap, click or key starts both again",
+  "--thread-idle · 60s · how long the page may go untouched, in view, before the sway stops · any scroll, tap, click or key starts it again",
   "--thread-terminal-span · 0.2 · the closing stretch's own scroll budget, a fraction of the viewport's height, because Wishes fills exactly the last viewport and is never scrolled through · the owner's pick",
   "--thread-terminal-finish · 0.08 · also a fraction of the viewport's height · completes the closing stretch that far before the page's last pixel, so a reader who rests short of the bottom sees the thread finished and the drawing head retired · the owner's pick",
 ];

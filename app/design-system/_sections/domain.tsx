@@ -8,7 +8,6 @@ import {
 import {
   ThreadHeadSpecimen,
   ThreadInkSpecimen,
-  ThreadRetraceSpecimen,
   ThreadSwaySpecimen,
   ThreadTaperSpecimen,
   ThreadTwistSpecimen,
@@ -22,14 +21,14 @@ const THREAD_ENTRIES: InlineEntry[] = [
     name: "Thread",
     home: "components/thread/page-thread.tsx",
     composes:
-      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo · tapered ends at the invite's top and Wishes' close · the re-trace, the head's own look on a loop · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping with the re-trace (Foundations · Motion)",
+      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo · tapered ends at the invite's top and Wishes' close · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping once the page has gone --thread-idle (60s) untouched (Foundations · Motion)",
     note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. Below, each layer is laid on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
   {
     name: "card-thread",
     home: "components/thread/card-thread.tsx",
     composes:
-      "Wishes' stretch of the thread, drawn once inside the Wishes card — after the couple illustration, so in front of it and behind the type that follows · no z-index of its own: the card is already a stacking context at z-index.content · everything else is the trunk's: its head, twist, sway, re-trace, contact shadow and tapered end",
+      "Wishes' stretch of the thread, drawn once inside the Wishes card — after the couple illustration, so in front of it and behind the type that follows · no z-index of its own: the card is already a stacking context at z-index.content · everything else is the trunk's: its head, twist, sway, contact shadow and tapered end",
     note: "Live at /thread on preview deploys and in dev, inside the Wishes card.",
   },
 ];
@@ -40,7 +39,7 @@ const INVITE_ENTRIES: InlineEntry[] = [
     home: "app/_sections/invite.tsx",
     composes:
       "mounted-sheet with the hero setting, unpainted — the type sits on the page's ground with no mount, stock, shadow or cut corner · three beats, space-md between them and space-3xs within — on a phone held upright the names, the sentence, the date and the gold rule sit one 22px ink gap apart, the rule's spacer fixed so the card's slack goes to its top and bottom, and the invite still fits one screen with the browser's bars showing · eyebrow, 'By God’s Grace' · the couple's names as the drawn couple-names asset in ink-muted, 2.59em on a phone, stacked in portrait and on one line in landscape, where on the laptop and desktop landscape bands the names block also takes space-xl above and space-lg below · --invite-names-gap (4px) below the names on a phone · the invitation's own line in body, ink-muted, in the families' voice, two lines on a phone and a portrait tablet · the h1 takes --text-display-name as its font size and nothing else, the em the lockup resolves against · date-block, dropped --date-place-pull (14px) toward the place line · place line in date-primary at weight 500, centred on the block's own axis · ornamental-divider with the sprig mark, sitting at 60 : 40 between the place line and the passage — except at desktop, where the space below the mark holds at a flat 32px, and on a phone held upright, where the rule holds the 22px gap below the place over a 13px spacer; the split's floors are derived from it, not steps on the spacing scale (17.345px above and 7.845px below on a phone held sideways) · passage in caption — Song of Solomon 3:4 below lg, Ephesians 4:2 from lg, one rendered at a time · citation in caption-italic",
-    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — its resting tip sits at the lower edge and loops at least --retrace-loops (5) times once the opening draw has ended, and keeps looping until the page has gone --thread-idle (60s) untouched (DESIGN.md → Thread → scroll-cue). The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/_sections/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
+    note: "Live at /. The thread is NOT: the published invitation carries none, and its scroll cue is the scroll progress bar's track at the top of the screen (Components · UI → scroll-progress). At /thread the thread is that cue — once the opening draw has ended, its resting tip sits at the lower edge (DESIGN.md → Thread → scroll-cue). The opening is Bloom: the ground is already there, the invite's two botanical pieces unfurl from their own corners, then each line of type rises with a slight bounce, top to bottom, landing at 1800ms — the value of --opening-type-end in app/_sections/invite.css. The progress line's track and, on the lab route, the thread fade in from there.",
   },
   {
     name: "date-block",
@@ -168,7 +167,7 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="The drawing head: while a piece draws, its leading end carries the sheen's light — the thread's red lightening toward its tip, at the ink's own width, with a faint halo. It is the re-trace's look; the two are one pair."
+          description="The drawing head: while a piece draws, its leading end carries the sheen's light — the thread's red lightening toward its tip, at the ink's own width, with a faint halo."
           id="thread-head"
           name="drawing head"
           note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
@@ -177,7 +176,7 @@ export function DomainSections() {
             "length · 60× the ink, 132px",
             "colour · thread-red at the tail, thread-sheen-mid in the middle, thread-sheen at the tip",
             "width · --stroke-thread (2.2px) throughout",
-            "halo · --halo-thread-head, an SVG filter of thread-vermilion at half strength: 34% / 22% / 15% at 3.5px / 12px / 33px",
+            "halo · --halo-thread-head, an SVG filter of thread-vermilion at three-quarter strength: 51% / 33% / 22.5% at 3.5px / 12px / 33px",
           ]}
         >
           <ThreadHeadSpecimen />
@@ -196,21 +195,6 @@ export function DomainSections() {
           ]}
         >
           <ThreadTaperSpecimen />
-        </Specimen>
-
-        <Specimen
-          description="The re-trace: a lit segment runs along the thread once it is already drawn, on a loop. It is the lab route's resting motion and its scroll cue."
-          id="thread-retrace"
-          name="re-trace"
-          note="A single frame partway through a loop, posed on a mid-page connector; the page loops it, the gallery does not. Its glow is not the head's: the head's halo is one filter, the re-trace's is eight translucent strokes with no filter at all, so there is no blur buffer re-rendered each frame."
-          source="components/thread/thread-retrace.ts · retraceSegments, retraceGlow"
-          spec={[
-            "core · the head's own stack and values, at a peak of 89× the ink (196px), growing from nothing and shrinking back to nothing over a loop",
-            "glow · eight thread-sheen-mid strokes under the core, 100 / 56 / 38 / 26 / 18 / 13 / 9 and 6px wide, widest and faintest first, scaled by 0.77, the group at half opacity",
-            "cadence · --retrace-speed (845) px of thread per second, so every stretch moves at one rate whatever its length · --retrace-settle (1500ms) of stillness before it loops · at least --retrace-loops (5) whole loops of the LONGEST stretch, then on until --thread-idle (60s) untouched, sets the budget, and every shorter stretch fits whole loops into the same window, so they all stop together · --retrace-duration (3.2s) is the fallback cadence when no speed is set",
-          ]}
-        >
-          <ThreadRetraceSpecimen />
         </Specimen>
       </GallerySection>
 
