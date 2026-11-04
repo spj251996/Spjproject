@@ -6,10 +6,11 @@ import {
   Specimen,
 } from "@/app/design-system/_kit";
 import {
+  ThreadCrossingsSpecimen,
+  ThreadFrayedEndsSpecimen,
   ThreadHeadSpecimen,
   ThreadInkSpecimen,
   ThreadSwaySpecimen,
-  ThreadTaperSpecimen,
   ThreadTwistSpecimen,
 } from "@/app/design-system/_sections/thread-specimens";
 import { Family } from "@/components/family/family";
@@ -21,14 +22,14 @@ const THREAD_ENTRIES: InlineEntry[] = [
     name: "Thread",
     home: "components/thread/page-thread.tsx",
     composes:
-      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo · tapered ends at the invite's top and Wishes' close · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping once the page has gone --thread-idle (60s) untouched and resting while the page scrolls (Foundations · Motion)",
+      "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo and frayed tip · frayed ends at the invite's top and Wishes' close · crossings, one strand over the other · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping once the page has gone --thread-idle (60s) untouched and resting while the page scrolls (Foundations · Motion)",
     note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. Below, each layer is laid on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
   },
   {
     name: "card-thread",
     home: "components/thread/card-thread.tsx",
     composes:
-      "Wishes' stretch of the thread, drawn once inside the Wishes card — after the couple illustration, so in front of it and behind the type that follows · no z-index of its own: the card is already a stacking context at z-index.content · everything else is the trunk's: its head, twist, sway, contact shadow and tapered end",
+      "Wishes' stretch of the thread, drawn once inside the Wishes card — after the couple illustration, so in front of it and behind the type that follows · no z-index of its own: the card is already a stacking context at z-index.content · everything else is the trunk's: its head, twist, sway, contact shadow, crossings and frayed end",
     note: "Live at /thread on preview deploys and in dev, inside the Wishes card.",
   },
 ];
@@ -171,31 +172,48 @@ export function DomainSections() {
           description="The drawing head: while a piece draws, its leading end carries the sheen's light — the thread's red lightening toward its tip, at the ink's own width, with a faint halo."
           id="thread-head"
           name="drawing head"
-          note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
+          note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry, with the page's own tip painter laying the fibres. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
           source="components/thread/thread-head.ts · headSegments"
           spec={[
             "length · 60× the ink, 132px",
             "colour · thread-red at the tail, thread-sheen-mid in the middle, thread-sheen at the tip",
             "width · --stroke-thread (2.2px) throughout",
             "halo · --halo-thread-head, an SVG filter of thread-vermilion at three-quarter strength: 51% / 33% / 22.5% at 3.5px / 12px / 33px",
+            "tip · the frayed end's five fibres in thread-sheen, with the contact shadow; the ink and the sheen are drawn the fray's length behind the drawn length, so the fibre tips sit at it",
           ]}
         >
           <ThreadHeadSpecimen />
         </Specimen>
 
         <Specimen
-          description="The tapered ends: the thread's two static free ends, the invite's top terminal and Wishes' closing end, narrow to a point instead of stopping at a round cap."
-          id="thread-taper"
-          name="tapered ends"
-          note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the contact shadow and the line at its own edge, which is the crop's and not the taper's shape. The live drawing end does not taper, so nothing here appears under the head."
-          source="components/thread/thread-taper.ts · taperSegments"
+          description="The frayed ends: the thread's two free ends at rest, the invite's top terminal and Wishes' closing end, end as cut cord does — full width and twist up to a square cut, then five fibres leaving it."
+          id="thread-fray"
+          name="frayed ends"
+          note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the contact shadow and the line at its own edge. Both are laid by the page's own end painter on the page's own cut mask. The moving tip is the same end in thread-sheen, under the drawing head above."
+          source="components/thread/thread-fray.ts · frayShape · endCut"
           spec={[
-            "length · --length-thread-taper (24px)",
-            "mechanism · 16 butt-capped runs, each a little narrower than the one inside it, from --stroke-thread down to a 0.2px floor, with the ink cut away beneath them",
-            "colour · thread-red, with the contact shadow on one filter over the group of runs",
+            "fibres · five, each 0.34× the cord's width within a quarter, of its own length, splay and curl, the same on every load and band",
+            "reach · 3.6× the cord's width past the cut, each fibre 45–120% of it",
+            "splay · 0.9, the outer fibres leaning out most and the middle one not at all",
+            "cut · the ink and its twist are cut back under the fray by a mask on the piece's own path, so the fibre tips sit at the line's end",
+            "colour · thread-red, with the contact shadow on one filter over the group of fibres",
           ]}
         >
-          <ThreadTaperSpecimen />
+          <ThreadFrayedEndsSpecimen />
+        </Specimen>
+
+        <Specimen
+          description="Crossings: where the line crosses itself, one strand lies over the other and casts a small lift shadow onto the strand beneath."
+          id="thread-crossings"
+          name="crossings"
+          note="Laid on Wishes' bow at the wide band's nominal size, unrotated, by the page's own crossing painter. Along the route, and wherever only one pass lies inside a motif, the later pass lies on top; inside a motif the crossings follow that motif's own woven order. An earlier pass on top lies over the drawing head, so the tip passes under it."
+          source="components/thread/thread-crossings.ts · lineCrossings"
+          spec={[
+            "upper strand · redrawn 3× the cord's width either side of the crossing, butt-capped, with its own twist",
+            "lift shadow · shadow-warm at 70%, 0.9px down at 0.9px blur, cast onto the strand beneath only, never onto the paper",
+          ]}
+        >
+          <ThreadCrossingsSpecimen />
         </Specimen>
       </GallerySection>
 

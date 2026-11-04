@@ -106,7 +106,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's sheen; the start of the scroll-progress line's fill.",
+          "The thread's ink — including the fibres of its two frayed ends and the upper strand at a crossing — and the tail of the drawing head's sheen; the start of the scroll-progress line's fill.",
       },
       {
         token: "--color-thread-vermilion",

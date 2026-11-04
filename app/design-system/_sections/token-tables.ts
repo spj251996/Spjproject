@@ -186,7 +186,7 @@ export const Z_LAYERS: LayerItem[] = [
   {
     token: "--z-thread",
     value: "40",
-    role: "Thread · the page-length thread and its head and tapered ends",
+    role: "Thread · the page-length thread and its twist, frayed ends and crossings",
   },
   {
     token: "--z-progress",

@@ -5,10 +5,21 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import styles from "@/components/thread/thread.module.css";
+import { THREAD_BANDS } from "@/components/thread/thread-bands";
+import {
+  lineCrossings,
+  type OrderedCrossing,
+} from "@/components/thread/thread-crossings";
+import {
+  cordDrawn,
+  type FrayShape,
+  frayShape,
+} from "@/components/thread/thread-fray";
 import {
   type HeadOptions,
   type HeadSegment,
@@ -16,7 +27,16 @@ import {
   type PieceSpan,
 } from "@/components/thread/thread-head";
 import { TaperCutMask } from "@/components/thread/thread-ink";
-import { THREAD_PATHS } from "@/components/thread/thread-paths";
+import { MOTIFS } from "@/components/thread/thread-motifs";
+import {
+  createCrossingPainter,
+  createEndFrayPainter,
+  createTipFrayPainter,
+} from "@/components/thread/thread-painters";
+import {
+  MOTIF_PLACEMENTS,
+  THREAD_PATHS,
+} from "@/components/thread/thread-paths";
 import {
   dashForPiece,
   pieceProgress,
@@ -26,38 +46,36 @@ import {
   polylineBetween,
   samplePath,
 } from "@/components/thread/thread-samples";
+import { createThreadShadows } from "@/components/thread/thread-shadow-regions";
 import { createThreadSway } from "@/components/thread/thread-sway";
-import {
-  TAPER_STEPS,
-  taperCut,
-  taperSegments,
-} from "@/components/thread/thread-taper";
 import { headOptions, tokenLength } from "@/components/thread/thread-tokens";
 import { gapWidth, ropeGaps } from "@/components/thread/thread-twist";
 
-/* The thread's layers — ink, twist, head, tapered ends, sway — each laid on a stretch of the page's own authored
-   geometry (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic is
-   `thread-head.ts`'s, `thread-taper.ts`'s and `thread-samples.ts`'s,
-   imported; the classes are the page's own (`thread.module.css`), so the filters are the same ones,
-   not copies. Static: a pose of each layer, never a loop — except the sway, which is motion or nothing,
-   and runs on the page's own `createThreadSway`. */
+/* The thread's layers — ink, twist, head, frayed ends, crossings, sway — each laid on the page's own
+   authored geometry (`thread-paths.ts`, `wide` band) rather than on a stand-in drawing. The arithmetic
+   is `thread-head.ts`'s, `thread-fray.ts`'s, `thread-crossings.ts`'s and `thread-samples.ts`'s, and
+   the frayed ends, the tip and the crossings are built by the page's own painters
+   (`thread-painters.ts`); the classes are the page's own (`thread.module.css`), so the filters are the
+   same ones, not copies. Static: a pose of each layer, never a loop — except the sway, which is motion
+   or nothing, and runs on the page's own `createThreadSway`. */
 
 /* A connector from the middle of the page, so neither of its ends is a free end and the ink and the head
-   show on a line that is not tapered. The two tapered ends are the pieces the page
-   itself tapers: the invite's first, at its start (`PageThread`), and Wishes' last, at its end
-   (`CardThread`). */
+   show on a line with no frayed end. The two frayed ends at rest are the pieces the page itself ends:
+   the invite's first, at its start (`PageThread`), and Wishes' last, at its end (`CardThread`). */
 const WIDE = THREAD_PATHS.wide;
 const MID_PAGE = WIDE.family[1].d;
 const INVITE_START = WIDE.invite[0].d;
 const WISHES_CLOSE = WIDE.wishes[WIDE.wishes.length - 1].d;
 
-/* Gallery layout constants. The margin clears the halo's widest shadow (33px) so no panel clips it. */
+/* Gallery layout constants. The margin holds the halo's 33px blur at most of its strength, so a panel clips only
+   its faintest reach. */
 const MARGIN = 48;
 /* How far along its stretch the head's tip is posed: where the stretch bends. */
 const HEAD_POSED_AT = 0.33;
-/* The tapered ends are 24px long: a crop this wide holds one with its contact shadow, at 1x and at TAPER_ZOOM. */
-const TAPER_CROP = 96;
-const TAPER_ZOOM = 4;
+/* A frayed end reaches about 8px past its cut: a crop this wide holds one with its contact shadow, at 1x
+   and at END_ZOOM. */
+const END_CROP = 96;
+const END_ZOOM = 4;
 
 interface Measured {
   readonly length: number;
@@ -65,7 +83,7 @@ interface Measured {
   readonly pieces: readonly PieceSpan[];
   readonly box: DOMRect;
   readonly head: HeadOptions;
-  readonly taperLength: number;
+  readonly fray: FrayShape;
   readonly strokeWidth: number;
 }
 
@@ -83,7 +101,7 @@ function useMeasured(d: string) {
       pieces: [{ start: 0, end: length }],
       box: path.getBBox(),
       head: headOptions(),
-      taperLength: tokenLength("--length-thread-taper"),
+      fray: frayShape(strokeWidth),
       strokeWidth,
     });
   }, [d]);
@@ -129,7 +147,7 @@ function PathFragment({
   const [ref, measured] = useMeasured(d);
   let view = { x: 0, y: 0, width: 0, height: 0, zoom: 1 };
   if (measured !== undefined) {
-    const { box, samples, length, taperLength } = measured;
+    const { box, samples, length, fray } = measured;
     if (crop === undefined) {
       const { left, top, right, bottom } =
         drawnTo >= 1
@@ -148,8 +166,8 @@ function PathFragment({
         zoom: 1,
       };
     } else {
-      /* Centred on the middle of the taper, so the whole of it and its contact shadow lie inside the crop. */
-      const middle = Math.round(taperLength / 2);
+      /* Centred on the middle of the fray, so the whole of it and its contact shadow lie inside the crop. */
+      const middle = Math.round(fray.length / 2);
       const index = crop.at === "start" ? middle : Math.floor(length) - middle;
       view = {
         x: samples.xy[2 * index] - crop.span / 2,
@@ -239,7 +257,7 @@ export function ThreadInkSpecimen() {
 function TwistedEnd({ zoom }: { zoom: number }) {
   return (
     <PathFragment
-      crop={{ at: "start", span: TAPER_CROP, zoom }}
+      crop={{ at: "start", span: END_CROP, zoom }}
       d={MID_PAGE}
       label={`The twist on the thread's ink${zoom > 1 ? `, magnified ${zoom}×` : ""}`}
     >
@@ -268,10 +286,55 @@ export function ThreadTwistSpecimen() {
       <Panel caption="At its own size.">
         <TwistedEnd zoom={1} />
       </Panel>
-      <Panel caption={`Magnified ${TAPER_ZOOM}×.`}>
-        <TwistedEnd zoom={TAPER_ZOOM} />
+      <Panel caption={`Magnified ${END_ZOOM}×.`}>
+        <TwistedEnd zoom={END_ZOOM} />
       </Panel>
     </div>
+  );
+}
+
+/* The tip is posed as the page draws it: the cord — ink and sheen — the fray's length behind the drawn
+   length (`cordDrawn`), and the page's own tip painter laying the fibres at the cord's end in the
+   sheen's tip colour, their contact shadow fitted to them as the page fits it. */
+function PosedHead({ measured: m }: { measured: Measured }) {
+  const defsRef = useRef<SVGDefsElement>(null);
+  const tipRef = useRef<SVGGElement>(null);
+  const drawn = m.length * HEAD_POSED_AT;
+  const cord = cordDrawn(drawn, m.length, m.fray.length);
+  useLayoutEffect(() => {
+    const defs = defsRef.current;
+    const group = tipRef.current;
+    if (defs === null || group === null) return;
+    createTipFrayPainter(group, () => MID_PAGE, new Map()).paint(
+      cord,
+      drawn,
+      [{ id: "family", kind: "connector", start: 0, end: m.length }],
+      m.fray,
+      `rgb(${m.head.tipColor.join(",")})`,
+    );
+    createThreadShadows(defs, 0).tipPainted(group);
+  }, [cord, drawn, m]);
+  const { dasharray, dashoffset } = dashForPiece(
+    m.length,
+    pieceProgress(cord, m.pieces[0]),
+  );
+  return (
+    <>
+      <defs ref={defsRef} />
+      <path
+        className={styles.pageInk}
+        d={MID_PAGE}
+        strokeDasharray={dasharray}
+        strokeDashoffset={dashoffset}
+      />
+      <g className={styles.pageTip} ref={tipRef} />
+      <g className={styles.pageHead}>
+        <Runs
+          samples={m.samples}
+          segments={headSegments(cord, m.pieces, m.head)}
+        />
+      </g>
+    </>
   );
 }
 
@@ -282,134 +345,267 @@ export function ThreadHeadSpecimen() {
       drawnTo={HEAD_POSED_AT}
       label="The drawing head at the tip of a part-drawn stretch"
     >
-      {(m) => {
-        const drawn = m.length * HEAD_POSED_AT;
-        const { dasharray, dashoffset } = dashForPiece(
-          m.length,
-          pieceProgress(drawn, m.pieces[0]),
-        );
-        return (
-          <>
-            <path
-              className={styles.pageInk}
-              d={MID_PAGE}
-              strokeDasharray={dasharray}
-              strokeDashoffset={dashoffset}
-            />
-            <g className={styles.pageHead}>
-              <Runs
-                samples={m.samples}
-                segments={headSegments(drawn, m.pieces, m.head)}
-              />
-            </g>
-          </>
-        );
-      }}
+      {(m) => <PosedHead measured={m} />}
     </PathFragment>
   );
 }
 
-interface TaperedEndProps {
+interface FrayedEndProps {
   readonly d: string;
   readonly label: string;
   readonly at: "start" | "end";
   readonly zoom: number;
 }
 
-/* The ink is cut under the taper by a mask on its own path and shadowed as a group, so the contact
-   shadow is the shadow of the ink that is left (`thread-ink.tsx`, `ThreadInk`); the runs take the
-   contact shadow on a group of their own, as the page's do. */
-function TaperedEnd({ d, label, at, zoom }: TaperedEndProps) {
-  const maskId = `ds-thread-taper-cut-${useId().replaceAll(":", "")}`;
+/* The page's own end painter on the page's own cut mask: the ink is cut back under the fray and
+   shadowed as a group, so the contact shadow is the shadow of the ink that is left (`thread-ink.tsx`,
+   `ThreadInk`), and the twist's gaps take the same cut; the fibres take the contact shadow on a group of their own, fitted to the piece's box
+   by the page's own fitter, as the page's are. */
+function FrayedEndBody({
+  d,
+  at,
+  measured: m,
+}: {
+  d: string;
+  at: "start" | "end";
+  measured: Measured;
+}) {
+  const maskId = `ds-thread-end-cut-${useId().replaceAll(":", "")}`;
+  const defsRef = useRef<SVGDefsElement>(null);
+  const cutRef = useRef<SVGPathElement>(null);
+  const inkRef = useRef<SVGPathElement>(null);
+  const fibresRef = useRef<SVGGElement>(null);
+  useLayoutEffect(() => {
+    const defs = defsRef.current;
+    const cut = cutRef.current;
+    const ink = inkRef.current;
+    const fibres = fibresRef.current;
+    if (defs === null || cut === null || ink === null || fibres === null)
+      return;
+    const painter = createEndFrayPainter(fibres, cut);
+    painter.set(
+      {
+        d,
+        length: m.length,
+        endAt: at === "start" ? 0 : m.length,
+        direction: at === "start" ? -1 : 1,
+      },
+      m.fray,
+    );
+    painter.paint(Number.POSITIVE_INFINITY);
+    createThreadShadows(defs, 0).measured([], { group: fibres, piece: ink });
+  }, [d, at, m]);
   return (
-    <PathFragment crop={{ at, span: TAPER_CROP, zoom }} d={d} label={label}>
-      {(m) => {
-        const endAt = at === "start" ? 0 : m.length;
-        const direction = at === "start" ? -1 : 1;
-        const cut = taperCut(endAt, m.length, direction, m.taperLength);
-        const runs = taperSegments(endAt, m.length, direction, {
-          steps: TAPER_STEPS,
-          taperLength: m.taperLength,
-          strokeWidth: m.strokeWidth,
-        });
-        return (
-          <>
-            <TaperCutMask
-              cutRef={(cutPath) =>
-                cutPath?.setAttribute(
-                  "d",
-                  polylineBetween(m.samples, cut.from, cut.to),
-                )
-              }
-              id={maskId}
-              region={{
-                x: m.box.x - MARGIN,
-                y: m.box.y - MARGIN,
-                width: m.box.width + 2 * MARGIN,
-                height: m.box.height + 2 * MARGIN,
-              }}
-            />
-            <g className={styles.pageBleed}>
-              <path
-                className={styles.pageInkBare}
-                d={d}
-                mask={`url(#${maskId})`}
-              />
-            </g>
-            <g className={styles.pageTaper}>
-              {runs.map((run) => (
-                <path
-                  d={polylineBetween(m.samples, run.start, run.end)}
-                  key={run.index}
-                  strokeWidth={run.width}
-                />
-              ))}
-            </g>
-          </>
-        );
-      }}
+    <>
+      <TaperCutMask
+        cutRef={cutRef}
+        id={maskId}
+        region={{
+          x: m.box.x - MARGIN,
+          y: m.box.y - MARGIN,
+          width: m.box.width + 2 * MARGIN,
+          height: m.box.height + 2 * MARGIN,
+        }}
+      />
+      <defs ref={defsRef} />
+      <g className={styles.pageBleed}>
+        <path
+          className={styles.pageInkBare}
+          d={d}
+          mask={`url(#${maskId})`}
+          ref={inkRef}
+        />
+      </g>
+      <path
+        d={ropeGaps(m.samples, 0, m.length, m.length, m.strokeWidth / 2)}
+        fill="none"
+        mask={`url(#${maskId})`}
+        stroke="var(--color-thread-twist)"
+        strokeLinecap="butt"
+        strokeWidth={gapWidth(m.strokeWidth / 2)}
+      />
+      <g className={styles.pageFray} ref={fibresRef} />
+    </>
+  );
+}
+
+function FrayedEnd({ d, label, at, zoom }: FrayedEndProps) {
+  return (
+    <PathFragment crop={{ at, span: END_CROP, zoom }} d={d} label={label}>
+      {(m) => <FrayedEndBody at={at} d={d} measured={m} />}
     </PathFragment>
   );
 }
 
-export function ThreadTaperSpecimen() {
+export function ThreadFrayedEndsSpecimen() {
   return (
     <div className="flex flex-wrap items-start gap-space-lg">
       <Panel
-        caption={`The invite's top terminal, at its own size and magnified ${TAPER_ZOOM}x.`}
+        caption={`The invite's top terminal, at its own size and magnified ${END_ZOOM}x.`}
       >
         <div className="flex flex-wrap items-start gap-space-md">
-          <TaperedEnd
+          <FrayedEnd
             at="start"
             d={INVITE_START}
-            label="The invite's top terminal, tapered, at its own size"
+            label="The invite's top terminal, frayed, at its own size"
             zoom={1}
           />
-          <TaperedEnd
+          <FrayedEnd
             at="start"
             d={INVITE_START}
-            label="The invite's top terminal, tapered, magnified"
-            zoom={TAPER_ZOOM}
+            label="The invite's top terminal, frayed, magnified"
+            zoom={END_ZOOM}
           />
         </div>
       </Panel>
       <Panel
-        caption={`Wishes' closing end, at its own size and magnified ${TAPER_ZOOM}x.`}
+        caption={`Wishes' closing end, at its own size and magnified ${END_ZOOM}x.`}
       >
         <div className="flex flex-wrap items-start gap-space-md">
-          <TaperedEnd
+          <FrayedEnd
             at="end"
             d={WISHES_CLOSE}
-            label="Wishes' closing end, tapered, at its own size"
+            label="Wishes' closing end, frayed, at its own size"
             zoom={1}
           />
-          <TaperedEnd
+          <FrayedEnd
             at="end"
             d={WISHES_CLOSE}
-            label="Wishes' closing end, tapered, magnified"
-            zoom={TAPER_ZOOM}
+            label="Wishes' closing end, frayed, magnified"
+            zoom={END_ZOOM}
           />
         </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* Wishes' bow at the wide band's nominal size — its square is its placement's scale of the band box's
+   shorter side, as `thread-line.ts` composes it — unrotated, so its crossings are where the motif's own
+   weave names them. */
+const WIDE_BOX = THREAD_BANDS.find((band) => band.id === "wide")?.box;
+const BOW_SIDE =
+  MOTIF_PLACEMENTS.wide.wishes[0].scale *
+  Math.min(WIDE_BOX?.width ?? 0, WIDE_BOX?.height ?? 0);
+const BOW = atOrigin(scaled(MOTIFS.bow.d, BOW_SIDE / 100), MARGIN);
+/* A crossing's crop: the upper strand's reach either side (3x the ink) and its lift shadow fit inside. */
+const CROSSING_CROP = 40;
+
+type CrossingView = "whole" | ((crossing: OrderedCrossing) => boolean);
+
+/* The bow's ink and twist with the page's own crossing painter laid over them: every crossing it finds in the
+   motif, ordered by its own weave, with the lift shadow on the filter `ThreadFilters` renders. */
+function BowCrossings({
+  view,
+  zoom,
+  label,
+}: {
+  view: CrossingView;
+  zoom: number;
+  label: string;
+}) {
+  const [ref, measured] = useMeasured(BOW.d);
+  const defsRef = useRef<SVGDefsElement>(null);
+  const underRef = useRef<SVGGElement>(null);
+  const overRef = useRef<SVGGElement>(null);
+  const line = useMemo(
+    () =>
+      measured === undefined
+        ? undefined
+        : lineCrossings(
+            [BOW.d],
+            [{ id: "wishes", kind: "bow", start: 0, end: measured.length }],
+            measured.strokeWidth,
+          ),
+    [measured],
+  );
+  useLayoutEffect(() => {
+    const defs = defsRef.current;
+    const under = underRef.current;
+    const over = overRef.current;
+    if (line === undefined || measured === undefined) return;
+    if (defs === null || under === null || over === null) return;
+    const painter = createCrossingPainter(defs, under, over);
+    painter.measured(
+      line.crossings,
+      (piece) => line.samples[piece],
+      (piece) => (piece === 0 ? 0 : undefined),
+      measured.strokeWidth / 2,
+      0,
+    );
+    painter.painted(() => Number.POSITIVE_INFINITY);
+  }, [line, measured]);
+  const shown =
+    view === "whole" ? undefined : line?.crossings.find((c) => view(c));
+  const box =
+    shown === undefined
+      ? { x: 0, y: 0, width: BOW.width, height: BOW.height }
+      : {
+          x: shown.x - CROSSING_CROP / 2,
+          y: shown.y - CROSSING_CROP / 2,
+          width: CROSSING_CROP,
+          height: CROSSING_CROP,
+        };
+  const half = (measured?.strokeWidth ?? 0) / 2;
+  return (
+    <svg
+      aria-label={label}
+      className="max-w-full"
+      height={box.height * zoom}
+      role="img"
+      viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`}
+      width={box.width * zoom}
+    >
+      <defs ref={defsRef} />
+      <path className={styles.pageInk} d={BOW.d} ref={ref} />
+      {measured === undefined ? null : (
+        <path
+          d={ropeGaps(
+            measured.samples,
+            0,
+            measured.length,
+            measured.length,
+            half,
+          )}
+          fill="none"
+          stroke="var(--color-thread-twist)"
+          strokeLinecap="butt"
+          strokeWidth={gapWidth(half)}
+        />
+      )}
+      <g className={styles.pageCrossings} ref={underRef} />
+      <g className={styles.pageCrossings} ref={overRef} />
+    </svg>
+  );
+}
+
+export function ThreadCrossingsSpecimen() {
+  return (
+    <div className="flex flex-wrap items-start gap-space-lg">
+      <Panel caption="Wishes' bow at its own size: the loops and the knot's outer turns lie later over earlier; the four innermost crossings are woven.">
+        <BowCrossings
+          label="The bow motif with its crossings laid, at its own size"
+          view="whole"
+          zoom={1}
+        />
+      </Panel>
+      <Panel
+        caption={`The later pass on top, as on the route. Magnified ${END_ZOOM}x.`}
+      >
+        <BowCrossings
+          label="A crossing with the later pass on top, magnified"
+          view={(crossing) => crossing.over === "second"}
+          zoom={END_ZOOM}
+        />
+      </Panel>
+      <Panel
+        caption={`Woven: the earlier pass on top. Magnified ${END_ZOOM}x.`}
+      >
+        <BowCrossings
+          label="A woven crossing with the earlier pass on top, magnified"
+          view={(crossing) => crossing.over === "first"}
+          zoom={END_ZOOM}
+        />
       </Panel>
     </div>
   );
@@ -435,6 +631,13 @@ function atOrigin(d: string, margin: number) {
     width: Math.max(...xs) + dx + margin,
     height: Math.max(...ys) + dy + margin,
   };
+}
+
+/* A motif's `d`, drawn in its own 0-100 square, at `factor` px to the unit. */
+function scaled(d: string, factor: number) {
+  return d.replace(/-?\d*\.?\d+(?:[eE][-+]?\d+)?/g, (n) =>
+    String(Math.round(Number(n) * factor * 100) / 100),
+  );
 }
 
 const SWAYING = atOrigin(MID_PAGE, MARGIN);
