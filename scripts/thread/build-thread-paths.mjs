@@ -21,6 +21,8 @@
  *
  * RUN ONCE PER DRAWING UPDATE. Its sources are `assets/thread/{wide,tall,upright}/`; the owner's
  * drawn sheets stay out of the repo (about 18MB of PNG) and the extracted JSON is what this reads.
+ * A band's `retouch.json`, when it has one, holds the owner's nudges made on the rendered page
+ * (`retouch.mjs`); they are applied to each section's piece of line before it is fit.
  *
  *   node scripts/thread/build-thread-paths.mjs    # -> components/thread/thread-paths.ts
  *
@@ -28,16 +30,19 @@
  * sides AFTER the formatter has run on both, or the raw output reads as hundreds of changed lines.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { THREAD_BANDS } from "../../components/thread/thread-bands.ts";
 import { MOTIFS } from "../../components/thread/thread-motifs.ts";
 import { adaptCelebrations, BAND_SMOOTHING } from "./adapt-photo-states.mjs";
+import { checkEdits, editsFor, retouchPiece } from "./retouch.mjs";
 import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
 
 /**
  * @import { BandId } from "../../components/thread/thread-bands.ts"
  * @import { MotifId, Tangent } from "../../components/thread/thread-geometry.ts"
  * @import { EndTangents } from "./thread-spline.ts"
+ * @import { Edit } from "./retouch.mjs"
  * @typedef {{ x: number, y: number }} Point
  * @typedef {{ motif: string, x: number, y: number, scale: number, turn: number, mirror?: true }} Placement
  * @typedef {{ section: string, motifId: MotifId, mirror: boolean, turn: number, x: number, y: number, entryHeadingVector: Point, exitHeadingVector: Point, drawnEntryHeading: number, drawnExitHeading: number, entryPointGlobal: Point, exitPointGlobal: Point }} Fitted
@@ -169,7 +174,7 @@ function easedIntoMotifs(points, startHeading, endHeading) {
 /* No drawn vertex is kept nearer a section boundary than this. */
 const SPLIT_CLEARANCE = 4;
 
-const DIRS = {
+export const DIRS = {
   wide: "assets/thread/wide",
   tall: "assets/thread/tall",
   upright: "assets/thread/upright",
@@ -575,6 +580,7 @@ function buildBand(
   { geometry, attachments, connectors },
   fits = null,
   rings = new Map(),
+  /** @type {Edit[]} */ retouch = [],
 ) {
   const sections = geometry.sections;
   if (sections.length !== SECTION_ORDER.length)
@@ -715,6 +721,8 @@ function buildBand(
       sections.findIndex((x) => y >= x.top && y < x.top + x.height),
     );
 
+  /** @type {Set<Edit>} */
+  const applied = new Set();
   for (let k = 0; k < connectors.length; k += 1) {
     const before = k > 0 ? fitted[k - 1] : null;
     const after = k < fitted.length ? fitted[k] : null;
@@ -753,6 +761,15 @@ function buildBand(
     }
     pieces.push(rest);
 
+    /* The owner's retouch lands on each piece by its index in its section's list — the index the
+       piece is about to take there, since a connector leaves at most one piece in a section. */
+    for (let i = 0; i < pieces.length; i += 1) {
+      const id = SECTION_ORDER[first + i];
+      const edits = editsFor(retouch, id, bySectionConnectors[id].length);
+      for (const edit of edits) applied.add(edit);
+      pieces[i] = retouchPiece(pieces[i], edits);
+    }
+
     /* Fit the WHOLE stroke once and slice at each join (see the emitted header): pieces fitted
        separately each size their Catmull-Rom arm from their own adjacent span, which reads as a
        small kink even with a shared tangent. The slice index counts CUBICS in the fitted path, one
@@ -779,6 +796,13 @@ function buildBand(
       d = sliced.after;
     }
   }
+
+  retouch.forEach((edit, i) => {
+    if (!applied.has(edit))
+      throw new Error(
+        `${band}: retouch edit ${i} names ${edit.section} piece ${edit.piece}, which this band does not have`,
+      );
+  });
 
   /** @type {Record<string, { d: string }[]>} */
   const paths = {};
@@ -815,7 +839,13 @@ const COMBINATIONS = Array.from({ length: 2 ** RITUALS }, (_, n) =>
  * @param {BandId} band
  * @param {string} dir
  */
-function buildPhotoStates(band, dir) {
+/**
+ * Everything about a band's photo states that the owner's retouch cannot change, worked out once:
+ * the portrait rings, and each combination's page with Celebrations re-shaped — which is nearly all
+ * of the build's time, so the retouch helper keeps this and rebuilds only from here on.
+ * @param {BandId} band @param {string} dir
+ */
+export function preparePhotoStates(band, dir) {
   const read = (/** @type {string} */ name) =>
     JSON.parse(readFileSync(`${dir}/${name}`, "utf8"));
   /** @type {Geometry} */
@@ -869,19 +899,53 @@ function buildPhotoStates(band, dir) {
     ];
   };
 
-  /** @type {Record<string, BandResult>} */
-  const states = {};
-  /* Motifs are fitted once, on the page the owner drew; a combination only re-shapes Celebrations,
-     which holds none, and raises everything below it. */
-  /** @type {Fitted[] | null} */
-  let drawnFits = null;
-  for (const combination of [...COMBINATIONS].reverse()) {
+  const inputs = [...COMBINATIONS].reverse().map((combination) => {
     const removed = [...combination].flatMap((c, k) => (c === "0" ? [k] : []));
     const total = removed.length * layout.strip;
     const below = (/** @type {number} */ y) =>
       y >= celebrations.top + celebrations.height;
     /** @template {Point} P @param {P} p @returns {P} */
     const rise = (p) => ({ ...p, y: below(p.y) ? p.y - total : p.y });
+    return {
+      combination,
+      rise,
+      geometry: {
+        width: geometry.width,
+        sections: geometry.sections.map((s, i) => {
+          const id = SECTION_ORDER[i];
+          if (id === "celebrations") return { ...s, height: s.height - total };
+          return below(s.top) ? { ...s, top: s.top - total } : s;
+        }),
+      },
+      attachments: attachments.map((a) => rise(a)),
+      connectors: ringed.map((c, k) => ({
+        points: (k === through ? reshaped(c.points, removed) : c.points).map(
+          rise,
+        ),
+      })),
+    };
+  });
+  return { band, rings, inputs, strip: layout.strip };
+}
+
+/**
+ * Every combination's band, built from the prepared pages with the owner's retouch applied.
+ * @param {ReturnType<typeof preparePhotoStates>} prepared @param {Edit[]} retouch
+ */
+export function buildPhotoStates({ band, rings, inputs, strip }, retouch) {
+  /** @type {Record<string, BandResult>} */
+  const states = {};
+  /* Motifs are fitted once, on the page the owner drew; a combination only re-shapes Celebrations,
+     which holds none, and raises everything below it. */
+  /** @type {Fitted[] | null} */
+  let drawnFits = null;
+  for (const {
+    combination,
+    rise,
+    geometry,
+    attachments,
+    connectors,
+  } of inputs) {
     const fits =
       drawnFits?.map((f) =>
         SECTION_ORDER.indexOf(f.section) > SECTION_ORDER.indexOf("celebrations")
@@ -894,33 +958,30 @@ function buildPhotoStates(band, dir) {
       ) ?? null;
     states[combination] = buildBand(
       band,
-      {
-        geometry: {
-          width: geometry.width,
-          sections: geometry.sections.map((s, i) => {
-            const id = SECTION_ORDER[i];
-            if (id === "celebrations")
-              return { ...s, height: s.height - total };
-            return below(s.top) ? { ...s, top: s.top - total } : s;
-          }),
-        },
-        attachments: attachments.map((a) => rise(a)),
-        connectors: ringed.map((c, k) => ({
-          points: (k === through ? reshaped(c.points, removed) : c.points).map(
-            rise,
-          ),
-        })),
-      },
+      { geometry, attachments, connectors },
       fits,
       rings,
+      retouch,
     );
     drawnFits ??= states[combination].fitted;
   }
-  return { states, strip: layout.strip };
+  return { states, strip };
+}
+
+/**
+ * The band's retouch file, or no edits when it has none.
+ * @param {BandId} band @param {string} dir @returns {Edit[]}
+ */
+export function readRetouch(band, dir) {
+  const file = `${dir}/retouch.json`;
+  if (!existsSync(file)) return [];
+  const edits = JSON.parse(readFileSync(file, "utf8"));
+  checkEdits(band, edits, SECTION_ORDER);
+  return edits;
 }
 
 /** @param {Record<string, { states: Record<string, BandResult>, strip: number }>} results */
-function emit(results) {
+export function emit(results) {
   const bandOrder = ["tall", "upright", "wide"];
   const DRAWN = COMBINATIONS[COMBINATIONS.length - 1];
   /* A section is emitted per combination only where some combination changes it; placements never
@@ -1072,24 +1133,30 @@ ${perBand((band) => results[band].strip)}
 `;
 }
 
-/** @type {Record<string, { states: Record<string, BandResult>, strip: number }>} */
-const results = {};
-for (const [band, dir] of Object.entries(DIRS)) {
-  results[band] = buildPhotoStates(/** @type {BandId} */ (band), dir);
-}
-
-writeFileSync("components/thread/thread-paths.ts", emit(results));
-
-console.log(
-  `\n=== fitted turn, all ${Object.keys(MOTIFS).length} motifs x 3 bands ===`,
-);
-for (const band of Object.keys(DIRS)) {
-  console.log(`\n-- ${band} --`);
-  for (const f of results[band].states[COMBINATIONS[COMBINATIONS.length - 1]]
-    .fitted) {
-    console.log(
-      `  ${f.section.padEnd(13)} ${f.motifId.padEnd(13)} turn ${f.turn.toFixed(2).padStart(8)}` +
-        `${f.mirror ? "  (mirrored)" : ""}`,
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  /** @type {Record<string, { states: Record<string, BandResult>, strip: number }>} */
+  const results = {};
+  for (const [band, dir] of Object.entries(DIRS)) {
+    const id = /** @type {BandId} */ (band);
+    results[band] = buildPhotoStates(
+      preparePhotoStates(id, dir),
+      readRetouch(id, dir),
     );
+  }
+
+  writeFileSync("components/thread/thread-paths.ts", emit(results));
+
+  console.log(
+    `\n=== fitted turn, all ${Object.keys(MOTIFS).length} motifs x 3 bands ===`,
+  );
+  for (const band of Object.keys(DIRS)) {
+    console.log(`\n-- ${band} --`);
+    for (const f of results[band].states[COMBINATIONS[COMBINATIONS.length - 1]]
+      .fitted) {
+      console.log(
+        `  ${f.section.padEnd(13)} ${f.motifId.padEnd(13)} turn ${f.turn.toFixed(2).padStart(8)}` +
+          `${f.mirror ? "  (mirrored)" : ""}`,
+      );
+    }
   }
 }
