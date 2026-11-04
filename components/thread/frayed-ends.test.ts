@@ -139,7 +139,11 @@ test("the ends are five fibres, the tip rides the draw and never leads it, and W
       await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
         waitUntil: "load",
       });
-      await page.waitForTimeout(3600);
+      /* The opening draw is timed on its own rAF, so a fixed wait races it under load. */
+      await page.waitForSelector("[data-thread-opened]", {
+        state: "attached",
+        timeout: 15000,
+      });
 
       const [trunk] = (await page.evaluate(READ)) as Thread[];
       assert.equal(
