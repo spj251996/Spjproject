@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   type Crossing,
+  crossingRegion,
   findCrossings,
+  lineCrossings,
   orderCrossings,
 } from "./thread-crossings.ts";
+import { authoredMeasuredSections } from "./thread-fallback.ts";
 import type { MotifId, WeaveCrossing } from "./thread-geometry.ts";
-import type { ThreadPiece } from "./thread-line.ts";
+import { splitSubpaths, type ThreadPiece, threadLine } from "./thread-line.ts";
 import { samplePath } from "./thread-samples.ts";
 
 /* A cubic's own arc length, so a sample at arc `s` lands where the curve really is. */
@@ -170,4 +173,31 @@ test("a motif crossing with no entry near it lies later-over-earlier", () => {
       ["second", false],
     ],
   );
+});
+
+test("crossingRegion holds the overlay and the sway on both axes", () => {
+  const crossing: Crossing = {
+    x: 200,
+    y: 300,
+    first: { piece: 0, at: 10 },
+    second: { piece: 1, at: 20 },
+  };
+  const region = crossingRegion(crossing, 6.6, 12);
+  const holds = (low: number, size: number, centre: number) =>
+    low <= centre - 18.6 + 1e-9 && low + size >= centre + 18.6 - 1e-9;
+  assert.ok(holds(region.x, region.width, 200));
+  assert.ok(holds(region.y, region.height, 300));
+  assert.ok(region.width < 60 && region.height < 60, "the region is small");
+});
+
+test("lineCrossings orders a band's own crossings from the motifs' weaves", () => {
+  const line = threadLine("wide", authoredMeasuredSections("wide"));
+  const { samples, crossings } = lineCrossings(
+    splitSubpaths(line.d),
+    line.pieces,
+    2.2,
+  );
+  assert.equal(samples.length, line.pieces.length);
+  assert.ok(crossings.some((crossing) => crossing.woven));
+  assert.ok(crossings.some((crossing) => !crossing.woven));
 });

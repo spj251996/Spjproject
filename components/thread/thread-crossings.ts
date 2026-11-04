@@ -7,7 +7,8 @@
 import type { MotifId, Over, WeaveCrossing } from "./thread-geometry.ts";
 import type { PieceSpan } from "./thread-head.ts";
 import type { ThreadPiece } from "./thread-line.ts";
-import type { PieceSamples } from "./thread-samples.ts";
+import { MOTIFS } from "./thread-motifs.ts";
+import { type PieceSamples, samplePath } from "./thread-samples.ts";
 
 export interface StrandPass {
   /* Index into the whole chain's pieces. */
@@ -232,4 +233,43 @@ export function orderCrossings(
       ? { ...crossing, over: "second", woven: false }
       : { ...crossing, over: best.over, woven: true };
   });
+}
+
+/* x the cord's width: how far either side of a crossing the upper strand is redrawn over the lower,
+   and how far either side its lift shadow is cast from. */
+export const CROSSING_REACH = 3;
+export const LIFT_REACH = 1.5;
+
+/* The box a crossing's mask and lift shadow are fitted to: the overlay's reach either side of the
+   crossing, grown by `margin` (the shadow's reach and the sway's), so a page-sized region never forms. */
+export function crossingRegion(
+  crossing: Crossing,
+  reach: number,
+  margin: number,
+): { x: number; y: number; width: number; height: number } {
+  const half = reach + margin;
+  return {
+    x: crossing.x - half,
+    y: crossing.y - half,
+    width: 2 * half,
+    height: 2 * half,
+  };
+}
+
+/* A measured line's crossings, ordered, with each piece's samples: one call per `<svg>` per measure,
+   over the whole chain, so the trunk and the card thread agree on every crossing. */
+export function lineCrossings(
+  subpaths: readonly string[],
+  pieces: readonly ThreadPiece[],
+  strokeWidth: number,
+): { samples: PieceSamples[]; crossings: OrderedCrossing[] } {
+  const samples = pieces.map((piece, index) =>
+    samplePath(subpaths[index], piece.end - piece.start),
+  );
+  const crossings = orderCrossings(
+    findCrossings(samples, pieces, CROSSING_MIN_GAP * strokeWidth),
+    pieces,
+    (motif) => MOTIFS[motif].weave,
+  );
+  return { samples, crossings };
 }

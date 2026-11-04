@@ -2,6 +2,12 @@
    elements of the drawing head and the tapered ends. `PageThread` and `CardThread` each build their
    own painters. */
 
+import {
+  CROSSING_REACH,
+  crossingRegion,
+  LIFT_REACH,
+  type OrderedCrossing,
+} from "./thread-crossings.ts";
 import { endCut, type FrayShape, placeFray } from "./thread-fray.ts";
 import {
   HEAD_STEP_OVERLAP,
@@ -18,6 +24,8 @@ import {
   polylineBetween,
   samplePath,
 } from "./thread-samples.ts";
+import { reachOf } from "./thread-shadow-regions.ts";
+import { CROSSING_LIFT } from "./thread-shadows.ts";
 import {
   TAPER_STEPS,
   type TaperSegment,
@@ -26,6 +34,7 @@ import {
   taperSegments,
 } from "./thread-taper.ts";
 import type { TaperOptionsResolved } from "./thread-tokens.ts";
+import { gapWidth, ropeGaps } from "./thread-twist.ts";
 
 function applyDash(path: SVGPathElement, length: number, progress: number) {
   const { dasharray, dashoffset } = dashForPiece(length, progress);
@@ -403,3 +412,152 @@ export function createTipFrayPainter(
 }
 
 export type TipFrayPainter = ReturnType<typeof createTipFrayPainter>;
+
+/* ---------------------------------------------------------------------------------------------
+   CROSSINGS — where the line crosses itself, the upper strand is redrawn over the lower, with its
+   own twist and a lift shadow that falls on the lower strand only (`thread-crossings.ts`; DESIGN.md ->
+   Thread -> Crossings). Built once per measure, every element a `<path>` so the sway carries it with
+   the line; a frame only shows the overlays whose passes are drawn. An overlay whose upper strand is
+   the earlier pass lies over the head, so the tip passes under it; the rest lie under the head. */
+
+export function createCrossingPainter(
+  defs: SVGDefsElement,
+  underHead: SVGGElement,
+  overHead: SVGGElement,
+) {
+  let built: { group: SVGGElement; piece: number; from: number }[] = [];
+  let made = 0;
+
+  return {
+    /* `own` says which chain pieces this `<svg>` holds; `local` maps a chain piece to its index here.
+       `half` is half the cord's width and `sway` the most the sway moves a point. */
+    measured(
+      crossings: readonly OrderedCrossing[],
+      samplesOf: (piece: number) => PieceSamples | undefined,
+      local: (piece: number) => number | undefined,
+      half: number,
+      sway: number,
+    ) {
+      underHead.replaceChildren();
+      overHead.replaceChildren();
+      for (const element of defs.querySelectorAll(
+        "[data-thread-crossing-defs]",
+      ))
+        element.remove();
+      built = [];
+      const source = document.getElementById(CROSSING_LIFT.id);
+      const width = 2 * half;
+      const reach = CROSSING_REACH * width;
+      const lift = LIFT_REACH * width;
+      for (const crossing of crossings) {
+        const [upper, lower] =
+          crossing.over === "first"
+            ? [crossing.first, crossing.second]
+            : [crossing.second, crossing.first];
+        const upperSamples = samplesOf(upper.piece);
+        const lowerSamples = samplesOf(lower.piece);
+        const showPiece = local(crossing.second.piece);
+        if (
+          upperSamples === undefined ||
+          lowerSamples === undefined ||
+          showPiece === undefined ||
+          local(crossing.first.piece) === undefined
+        )
+          continue;
+        made += 1;
+        const region = crossingRegion(
+          crossing,
+          reach,
+          reachOf(CROSSING_LIFT) + sway,
+        );
+        const box = (element: Element) => {
+          element.setAttribute("x", region.x.toFixed(1));
+          element.setAttribute("y", region.y.toFixed(1));
+          element.setAttribute("width", region.width.toFixed(1));
+          element.setAttribute("height", region.height.toFixed(1));
+        };
+        const mask = document.createElementNS(SVG_NS, "mask");
+        mask.id = `thread-crossing-mask-${made}`;
+        mask.dataset.threadCrossingDefs = "";
+        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        box(mask);
+        const beneath = document.createElementNS(SVG_NS, "path");
+        beneath.setAttribute(
+          "d",
+          polylineBetween(lowerSamples, lower.at - reach, lower.at + reach),
+        );
+        beneath.setAttribute("stroke", "white");
+        beneath.setAttribute("stroke-width", width.toFixed(2));
+        beneath.setAttribute("fill", "none");
+        mask.append(beneath);
+        defs.append(mask);
+        let filterId = CROSSING_LIFT.id;
+        if (source instanceof SVGFilterElement) {
+          const copy = source.cloneNode(true) as SVGFilterElement;
+          copy.id = `${source.id}-fit-${made}`;
+          copy.dataset.threadCrossingDefs = "";
+          copy.setAttribute("filterUnits", "userSpaceOnUse");
+          box(copy);
+          defs.append(copy);
+          filterId = copy.id;
+        }
+
+        const group = document.createElementNS(SVG_NS, "g");
+        group.dataset.threadCrossing = "";
+        group.dataset.over = crossing.over;
+        group.dataset.woven = String(crossing.woven);
+        group.dataset.x = crossing.x.toFixed(1);
+        group.dataset.y = crossing.y.toFixed(1);
+        /* The earlier pass on top shows as the later pass reaches it, so the tip passes under it; the later
+           pass on top shows once it has been drawn across the whole overlay, never ahead of its ink. */
+        const from =
+          crossing.over === "first"
+            ? crossing.second.at - reach
+            : crossing.second.at + reach;
+        group.dataset.showPiece = String(showPiece);
+        group.dataset.laterAt = crossing.second.at.toFixed(1);
+        group.dataset.showFrom = from.toFixed(1);
+        group.style.display = "none";
+        const shade = document.createElementNS(SVG_NS, "g");
+        shade.setAttribute("mask", `url(#${mask.id})`);
+        const caster = document.createElementNS(SVG_NS, "path");
+        caster.setAttribute(
+          "d",
+          polylineBetween(upperSamples, upper.at - lift, upper.at + lift),
+        );
+        caster.style.filter = `url(#${filterId})`;
+        shade.append(caster);
+        const strand = document.createElementNS(SVG_NS, "path");
+        strand.setAttribute(
+          "d",
+          polylineBetween(upperSamples, upper.at - reach, upper.at + reach),
+        );
+        const gaps = document.createElementNS(SVG_NS, "path");
+        gaps.setAttribute(
+          "d",
+          ropeGaps(
+            upperSamples,
+            upper.at - reach,
+            upper.at + reach,
+            upperSamples.length,
+            half,
+          ),
+        );
+        gaps.style.strokeWidth = `${gapWidth(half).toFixed(2)}px`;
+        gaps.dataset.threadCrossingGaps = "";
+        group.append(shade, strand, gaps);
+        (crossing.over === "first" ? overHead : underHead).append(group);
+        built.push({ group, piece: crossing.second.piece, from });
+      }
+    },
+    /* `painted(piece)` is how far along a chain piece the cord has reached. */
+    painted(painted: (piece: number) => number) {
+      for (const { group, piece, from } of built) {
+        const display = painted(piece) >= from - NEGLIGIBLE ? "" : "none";
+        if (group.style.display !== display) group.style.display = display;
+      }
+    },
+  };
+}
+
+export type CrossingPainter = ReturnType<typeof createCrossingPainter>;

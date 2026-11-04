@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import styles from "./thread.module.css";
 import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
+import { lineCrossings } from "./thread-crossings";
 import { PAGE_FALLBACKS } from "./thread-fallback";
 import { ThreadFilters } from "./thread-filters";
 import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
@@ -29,7 +30,9 @@ import {
 } from "./thread-measure";
 import {
   applyPieceDashes,
+  type CrossingPainter,
   clearPieceDashes,
+  createCrossingPainter,
   createEndFrayPainter,
   createHeadPainter,
   createTipFrayPainter,
@@ -184,6 +187,9 @@ export function PageThread() {
   const endFrayRef = useRef<EndFrayPainter | null>(null);
   const tipGroupRef = useRef<SVGGElement>(null);
   const tipRef = useRef<TipFrayPainter | null>(null);
+  const crossingsUnderRef = useRef<SVGGElement>(null);
+  const crossingsOverRef = useRef<SVGGElement>(null);
+  const crossingsRef = useRef<CrossingPainter | null>(null);
   /* The fray's fibres for the cord's measured width, rebuilt with every measure. */
   const frayRef = useRef<FrayShape>(frayShape(0));
   const shadowDefsRef = useRef<SVGDefsElement>(null);
@@ -294,6 +300,15 @@ export function PageThread() {
     return tipRef.current;
   }, [pathOf]);
 
+  const crossingPainter = useCallback((): CrossingPainter | null => {
+    const defs = shadowDefsRef.current;
+    const under = crossingsUnderRef.current;
+    const over = crossingsOverRef.current;
+    if (defs === null || under === null || over === null) return null;
+    crossingsRef.current ??= createCrossingPainter(defs, under, over);
+    return crossingsRef.current;
+  }, []);
+
   /* The cord is drawn the fray's length behind the drawn length, so the moving tip's fibres end at
      `drawn` (DESIGN.md -> Thread -> The drawing head). */
   const draw = useCallback(
@@ -321,8 +336,9 @@ export function PageThread() {
         shadows()?.tipPainted(tipGroupRef.current);
       const first = piecesRef.current[0];
       if (first !== undefined) endFray()?.paint(paintedLength(cord, first));
+      crossingPainter()?.painted((piece) => paintedLength(cord, chain[piece]));
     },
-    [head, shadows, tip, endFray],
+    [head, shadows, tip, endFray, crossingPainter],
   );
 
   /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
@@ -434,7 +450,20 @@ export function PageThread() {
     );
     head()?.reset();
     tip()?.reset();
-    frayRef.current = frayShape(tokenLength("--stroke-thread"));
+    const cordWidth = tokenLength("--stroke-thread");
+    frayRef.current = frayShape(cordWidth);
+    const { samples: chainSamples, crossings } = lineCrossings(
+      subpaths,
+      pieces,
+      cordWidth,
+    );
+    crossingPainter()?.measured(
+      crossings,
+      (piece) => chainSamples[piece],
+      (piece) => (piece < range.start ? piece : undefined),
+      cordWidth / 2,
+      swayAmplitude(),
+    );
     const invitePiece = trunkPieces[0];
     endFray()?.set(
       invitePiece === undefined
@@ -468,6 +497,7 @@ export function PageThread() {
       clearPieceDashes(pathsRef.current);
       twistRef.current?.painted(Number.POSITIVE_INFINITY);
       endFray()?.paint(Number.POSITIVE_INFINITY);
+      crossingPainter()?.painted(() => Number.POSITIVE_INFINITY);
     } else {
       /* The path this ratchet's maximum was measured against no longer exists. The maximum is
          REBASED rather than discarded: it is the only thing holding the owner's "and then stay
@@ -726,7 +756,17 @@ export function PageThread() {
         ))}
         <g className={styles.pageFray} data-thread-fray ref={endFrayGroupRef} />
         <g className={styles.pageTip} data-thread-tip ref={tipGroupRef} />
+        <g
+          className={styles.pageCrossings}
+          data-thread-crossings="under"
+          ref={crossingsUnderRef}
+        />
         <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
+        <g
+          className={styles.pageCrossings}
+          data-thread-crossings="over"
+          ref={crossingsOverRef}
+        />
       </svg>
     </span>
   );

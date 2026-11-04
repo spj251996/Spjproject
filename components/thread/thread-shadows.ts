@@ -44,7 +44,17 @@ export const HEAD_HALO: ThreadFilter = {
   ],
 };
 
+/* Where the line crosses itself, the upper strand's shadow on the strand beneath it (DESIGN.md -> Thread ->
+   Crossings): straight down in the paper's shadow tint, like the contact shadow, and small. */
+export const CROSSING_LIFT: ThreadFilter = {
+  id: "thread-crossing-lift",
+  layers: [
+    { offsetY: 0.9, blur: 0.9, colour: "--color-shadow-warm", alpha: 0.7 },
+  ],
+};
+
 export const THREAD_FILTERS: readonly ThreadFilter[] = [
   CONTACT_SHADOW,
   HEAD_HALO,
+  CROSSING_LIFT,
 ];
