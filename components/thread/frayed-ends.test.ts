@@ -123,7 +123,7 @@ const BANDS = [
 /* The farthest a fibre reaches: `FRAY.reach` x 1.2 of the cord's 2.2px width. */
 const FRAY_REACH = FRAY.reach * 1.2 * 2.2;
 
-test("the ends are five fibres, the tip rides the draw and never leads it, and Wishes' end shows once the line is whole", async (t) => {
+test("the ends are five fibres, one tip rides the draw and never leads it, and Wishes' end shows once the line is whole", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
@@ -167,6 +167,12 @@ test("the ends are five fibres, the tip rides the draw and never leads it, and W
           withTip.length <= 1,
           `${band.name} at ${Math.round(y)}: ${withTip.length} tips show at once`,
         );
+        if (threads.some((thread) => thread.cordEnd !== null))
+          assert.equal(
+            withTip.length,
+            1,
+            `${band.name} at ${Math.round(y)}: a piece is mid-draw and no tip shows`,
+          );
         for (const thread of withTip) {
           tipSeen += 1;
           if (thread === threads[1]) tipsInCard += 1;

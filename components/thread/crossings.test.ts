@@ -270,6 +270,95 @@ test("an overlay appears as the draw reaches it, its lift once the later pass li
   }
 });
 
+/* The same, mid-draw: a resize while the line is part drawn rebuilds the crossings where a fresh load puts
+   them, leaves no mask or lift of the old geometry behind, and keeps one tip of five fibres and two ends of
+   five — nothing doubled from before the resize. */
+test("a resize mid-draw rebuilds the crossings, the tip and the ends from the new geometry alone", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  const STATE = `(() => {
+    const shown = (el) => el !== null && el.style.display !== "none";
+    const tips = Array.from(document.querySelectorAll("[data-thread-tip]"));
+    return {
+      overlays: Array.from(document.querySelectorAll("g[data-thread-crossing]")).map((g) => Math.round(Number(g.dataset.x)) + "," + Math.round(Number(g.dataset.y))).sort(),
+      masks: document.querySelectorAll("mask[id^='thread-crossing-mask-']").length,
+      lifts: document.querySelectorAll("filter[id^='thread-crossing-lift-fit-']").length,
+      tipsShown: tips.filter(shown).length,
+      tipFibres: tips.map((tip) => tip.querySelectorAll("path").length),
+      endFibres: Array.from(document.querySelectorAll("[data-thread-fray]")).map((end) => end.querySelectorAll("path").length),
+    };
+  })()`;
+  type State = {
+    overlays: string[];
+    masks: number;
+    lifts: number;
+    tipsShown: number;
+    tipFibres: number[];
+    endFibres: number[];
+  };
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 1536, height: 695 },
+    });
+    const page = await context.newPage();
+    await page.addInitScript(SWAY_OFF);
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.evaluate(
+      "window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.4)",
+    );
+    await page.waitForTimeout(1500);
+    const before = (await page.evaluate(STATE)) as State;
+    assert.equal(
+      before.tipsShown,
+      1,
+      "the line is not mid-draw before the resize",
+    );
+    await page.setViewportSize({ width: 1280, height: 695 });
+    await page.waitForTimeout(1500);
+    const after = (await page.evaluate(STATE)) as State;
+    t.diagnostic(
+      `${after.overlays.length} overlays, ${after.masks} masks, ${after.lifts} lifts, tips ${after.tipFibres.join("/")}, ends ${after.endFibres.join("/")}`,
+    );
+    assert.equal(
+      after.masks,
+      after.overlays.length,
+      "a mask outlived its crossing",
+    );
+    assert.equal(
+      after.lifts,
+      after.overlays.length,
+      "a lift outlived its crossing",
+    );
+    assert.equal(after.tipsShown, 1, "no single tip mid-draw after the resize");
+    assert.ok(
+      after.tipFibres.every((count) => count === 0 || count === 5),
+      `a tip holds ${after.tipFibres.join("/")} fibres`,
+    );
+    assert.deepEqual(after.endFibres, [5, 5]);
+    const fresh = await context.newPage();
+    await fresh.setViewportSize({ width: 1280, height: 695 });
+    await fresh.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await fresh.waitForTimeout(1500);
+    assert.deepEqual(
+      after.overlays,
+      ((await fresh.evaluate(STATE)) as State).overlays,
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("a resize rebuilds the overlays where a fresh load puts them", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");

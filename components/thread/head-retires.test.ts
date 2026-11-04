@@ -71,7 +71,9 @@ function serveExport(): Promise<{ server: Server; port: number }> {
 
 /* `headShown` counts only groups that are themselves displayed; `endShown` is the closing frayed
    end's fibres, which the head covers when it fails to retire — the owner's actual complaint was that
-   they could not SEE the closing end, so it is asserted directly rather than inferred from the head. */
+   they could not SEE the closing end, so it is asserted directly rather than inferred from the head. It
+   is read inside Wishes' card thread alone: the invite's end at rest always shows, so a count over both
+   would pass with the closing end missing. */
 const READ = `(() => {
   const shown = (selector) => Array.from(document.querySelectorAll(selector))
     .filter((g) => g.style.display !== "none")
@@ -79,7 +81,7 @@ const READ = `(() => {
   const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
   return {
     headShown: shown("[data-thread-head]"),
-    endShown: shown("[data-thread-fray]"),
+    endShown: shown("#wishes [data-thread-fray]"),
     pieces: pieces.length,
     undrawn: pieces.filter((p) => {
       const period = Number.parseFloat(p.style.strokeDasharray);
