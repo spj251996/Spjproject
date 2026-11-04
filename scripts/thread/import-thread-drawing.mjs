@@ -427,12 +427,15 @@ const SEAM_REACH = 12;
  * next stroke by whichever end lies nearest the line's current end, reversing it if needed. Where
  * the line stops at a motif's entry tick, the pen resumes at that motif's exit, so the next stroke
  * is measured from the exit instead.
+ * Across a patch seam the next stroke is entered at its point nearest the line's end: what lies
+ * before that is the old drawing the patch replaced.
  * @param {Point[][]} strokes
  * @param {Attachment[]} [attachments]
+ * @param {number[]} [seams] page rows where a patch meets the sheet
  * @returns {{ line: Point[], joints: number[] }} `joints` index the first point of every stroke
  *   after the first, where the pen was lifted.
  */
-export function chainStrokes(strokes, attachments = []) {
+export function chainStrokes(strokes, attachments = [], seams = []) {
   const left = strokes.map((s) => s.slice());
   const topmost = (/** @type {Point[]} */ s) =>
     Math.min(s[0].y, /** @type {Point} */ (s.at(-1)).y);
@@ -460,12 +463,67 @@ export function chainStrokes(strokes, attachments = []) {
         if (distance < best.distance) best = { index, flip, distance };
       }
     });
-    const [next] = left.splice(best.index, 1);
-    if (best.flip) next.reverse();
+    const [picked] = left.splice(best.index, 1);
+    if (best.flip) picked.reverse();
+    let next = picked;
+    const onSeam = (/** @type {Point} */ p) =>
+      seams.some((y) => Math.abs(p.y - y) <= SEAM_REACH);
+    if (onSeam(end) && onSeam(next[0])) {
+      let entry = 0;
+      for (let i = 1; i < next.length; i += 1)
+        if (gap(end, next[i]) < gap(end, next[entry])) entry = i;
+      next = blendAcross(line, next.slice(entry));
+    }
     joints.push(line.length);
     line.push(...next);
   }
   return { line, joints };
+}
+
+/* A patch seam is eased over this much line either side, so the patch's line flows into the
+   sheet's rather than stepping across. */
+const SEAM_BLEND = 60;
+
+/**
+ * Ease `line` into `next` across a seam: the last SEAM_BLEND px of the line and the first of `next`
+ * give way to one curve leaving the line and arriving on `next` along their own headings. `line` is
+ * shortened in place; the rest of `next`, curve first, is returned.
+ * @param {Point[]} line
+ * @param {Point[]} next
+ * @returns {Point[]}
+ */
+function blendAcross(line, next) {
+  let a = line.length - 1;
+  for (let run = 0; a > 1 && run < SEAM_BLEND; a -= 1)
+    run += gap(line[a], line[a - 1]);
+  let b = 0;
+  for (let run = 0; b < next.length - 2 && run < SEAM_BLEND; b += 1)
+    run += gap(next[b], next[b + 1]);
+  const from = line[a];
+  const to = next[b];
+  const span = gap(from, to);
+  const unit = (/** @type {Point} */ p, /** @type {Point} */ q) => {
+    const d = gap(p, q) || 1;
+    return { x: ((q.x - p.x) / d) * span, y: ((q.y - p.y) / d) * span };
+  };
+  const leave = unit(line[a - 1], from);
+  const arrive = unit(to, next[b + 1]);
+  const steps = Math.max(2, Math.ceil(span / 4));
+  /** @type {Point[]} */
+  const curve = [];
+  for (let k = 1; k < steps; k += 1) {
+    const t = k / steps;
+    const h00 = 2 * t ** 3 - 3 * t ** 2 + 1;
+    const h10 = t ** 3 - 2 * t ** 2 + t;
+    const h01 = -2 * t ** 3 + 3 * t ** 2;
+    const h11 = t ** 3 - t ** 2;
+    curve.push({
+      x: h00 * from.x + h10 * leave.x + h01 * to.x + h11 * arrive.x,
+      y: h00 * from.y + h10 * leave.y + h01 * to.y + h11 * arrive.y,
+    });
+  }
+  line.length = a + 1;
+  return [...curve, ...next.slice(b)];
 }
 
 /**
@@ -555,7 +613,17 @@ export function cutAtMotifs(
         gap(a, entry) <= gap(b, entry) ? a : b,
       );
       const radius = gap(entry, centre);
-      const at = meetsRing(line, cursor, centre, radius);
+      const offRing = (/** @type {Point} */ p) =>
+        Math.abs(gap(p, centre) - radius);
+      /* Where the pen lifted at the ring, the ring goes between the lift's two ends. */
+      const lift = joints.find(
+        (j) =>
+          j > cursor &&
+          offRing(line[j - 1]) <= RING_TOLERANCE &&
+          offRing(line[j]) <= RING_TOLERANCE,
+      );
+      const at =
+        lift !== undefined ? lift - 1 : meetsRing(line, cursor, centre, radius);
       if (at === null) {
         faults.push(`the line never runs along the ring around ${name}`);
         placed.push(entry, exit);
@@ -571,7 +639,7 @@ export function cutAtMotifs(
           heading: wrap(t.heading + deg(angle)),
         });
       iEntry = at;
-      iExit = at;
+      iExit = lift ?? at;
     } else {
       const nearEntry = nearestFrom(line, cursor, entry);
       const nearExit = nearestFrom(line, nearEntry.index, exit);
@@ -1257,7 +1325,7 @@ export async function importDrawing(args, { readPage = readLivePage } = {}) {
   }
 
   const { map, strokes, seams } = await extract(file, { page, patches });
-  const { line, joints } = chainStrokes(strokes, attachments);
+  const { line, joints } = chainStrokes(strokes, attachments, seams);
 
   /* A portrait ring is turned about its portrait, so the page is read before the cut when the
      sheet has one; otherwise a drawing that cannot be cut is refused before the page is read. */

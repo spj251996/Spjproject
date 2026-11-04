@@ -783,3 +783,63 @@ test("detourOffType passes over a run it cannot fix and reroutes the next", () =
   const on = out.some((p) => relaxProbe(p, label[1]) === 0);
   assert.ok(!on, "the run through the second label was left");
 });
+
+test("cutAtMotifs cuts a portrait ring where the pen lifted at it", () => {
+  /* The pen comes down to the ring's left at (150, 300), lifts, and resumes on the ring lower down
+     at (156, 322): the ring goes between the two, not at the first touch. */
+  const portrait = { x: 200, y: 300 };
+  const strokes = [
+    segment(150, 0, 150, 300, 100),
+    segment(156, 322, 156, 600, 100),
+  ];
+  const { line, joints } = chainStrokes(strokes);
+  const attachments = [
+    tick("portraitLoop", "entry", { x: 196, y: 250 }, 0),
+    tick("portraitLoop", "exit", { x: 204, y: 250 }, 10),
+  ];
+  const { connectors, faults } = cutAtMotifs(line, joints, attachments, {
+    portraits: [portrait],
+  });
+  assert.deepEqual(faults, []);
+  assert.deepEqual(connectors[0][connectors[0].length - 1], { x: 150, y: 300 });
+  assert.deepEqual(connectors[1][0], { x: 156, y: 322 });
+});
+
+test("chainStrokes enters a stroke across a patch seam at its point nearest the line's end", () => {
+  /* The patch's line ends on its bottom edge at x 100; the sheet's stroke below starts at x 300 and
+     runs left under it: that head belongs to the old drawing the patch replaced. */
+  const patchLine = segment(100, 0, 100, 500, 50);
+  const below = [
+    ...segment(300, 502, 104, 506, 49),
+    ...segment(100, 507, 100, 800, 50),
+  ];
+  const { line } = chainStrokes([patchLine, below], [], [500]);
+  const after = line[patchLine.length];
+  assert.ok(Math.abs(after.x - 100) < 6, `entered at x ${after.x}`);
+  assert.deepEqual(line[line.length - 1], { x: 100, y: 800 });
+});
+
+test("chainStrokes blends the line across a patch seam, with no corner", () => {
+  /* The patch's line comes down x 100 to its edge at y 500; the sheet's line resumes at x 130. */
+  const patchLine = segment(100, 0, 100, 500, 125);
+  const below = segment(130, 502, 130, 900, 100);
+  const { line } = chainStrokes([patchLine, below], [], [500]);
+  let worst = 0;
+  for (let i = 2; i < line.length; i += 1) {
+    const a = Math.atan2(
+      line[i - 1].y - line[i - 2].y,
+      line[i - 1].x - line[i - 2].x,
+    );
+    const b = Math.atan2(line[i].y - line[i - 1].y, line[i].x - line[i - 1].x);
+    worst = Math.max(
+      worst,
+      Math.abs(((b - a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI),
+    );
+  }
+  assert.ok(
+    worst * (180 / Math.PI) < 15,
+    `the seam turns ${(worst * 180) / Math.PI}deg at once`,
+  );
+  assert.deepEqual(line[0], patchLine[0]);
+  assert.deepEqual(line[line.length - 1], below[below.length - 1]);
+});
