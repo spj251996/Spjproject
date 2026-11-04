@@ -231,6 +231,43 @@ test("a target at or below what is shown changes nothing", () => {
   assert.deepEqual(run(true), run(false));
 });
 
+/* A leg from rest is timed from the moment of the re-target, and the next frame can carry an earlier timestamp. That
+   frame has nothing new to show: painting it repainted every piece at the length it already had. */
+test("a frame that begins before a resting follower's leg paints nothing", () => {
+  let clock = 1000;
+  let queued: ((now: number) => void) | null = null;
+  const painted: number[] = [];
+  const originalNow = performance.now;
+  performance.now = () => clock;
+  Object.assign(globalThis, {
+    window: {
+      requestAnimationFrame: (callback: (now: number) => void) => {
+        queued = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {},
+    },
+  });
+  try {
+    const follower = createCatchUp((drawn) => painted.push(drawn));
+    const flush = (now: number) => {
+      const callback = queued;
+      queued = null;
+      callback?.(now);
+    };
+    follower.to(100, 0.6);
+    flush(990);
+    assert.equal(painted.length, 0, "the early frame painted");
+    clock = 1016;
+    flush(1016);
+    assert.equal(painted.length, 1);
+    assert.ok(painted[0] > 0, `the first frame painted ${painted[0]}`);
+  } finally {
+    performance.now = originalNow;
+    Reflect.deleteProperty(globalThis, "window");
+  }
+});
+
 /* A follower at rest still holds the timestamp of the last frame it painted. Two re-targets before a new leg's first
    frame must not time that leg from the old frame, or the line jumps to its target in one frame. */
 test("a second re-target before a resting follower's first frame never jumps the draw", () => {

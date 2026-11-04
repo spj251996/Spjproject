@@ -99,13 +99,14 @@ export function createCatchUp(paint: (drawn: number) => void) {
   }
 
   function tick(now: number) {
+    /* Only a leg started from rest can begin after the frame it is first drawn in (see `to`): that frame has nothing
+       new to show, and waits for the next. */
+    if (duration > 0 && now < startedAt) {
+      raf = window.requestAnimationFrame(tick);
+      return;
+    }
     raf = null;
-    /* Only a leg started from rest can begin after the frame it is first drawn in (see `to`): that frame is no
-       time passed, not negative time, which the eased curve would carry below 0 and step the draw backwards. */
-    const t =
-      duration <= 0
-        ? 1
-        : Math.min(1, Math.max(0, (now - startedAt) / duration));
+    const t = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
     shown = Math.max(shown, Math.min(target, at(t)));
     if (t >= 1) shown = target;
     paintedAt = now;
