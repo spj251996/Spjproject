@@ -399,7 +399,11 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
     const current = path.getAttribute("d") ?? "";
     let entry = tracked.get(path);
     if (entry === undefined || current !== entry.written) {
-      if (current === "") return undefined;
+      /* A path a painter emptied is forgotten, or the frame would paint its old shape back. */
+      if (current === "") {
+        tracked.delete(path);
+        return undefined;
+      }
       entry = {
         base: current,
         written: current,
