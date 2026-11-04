@@ -91,16 +91,6 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     aspect: 1.588,
     weave: [],
   },
-  /* A single self-crossing loop with no reference drawing, specified by behaviour. It is placed in
-     Celebrations at every band (Wishes' motif is the bow), and drawn once. */
-  wishesLoop: {
-    id: "wishesLoop",
-    d: "M 0 40 C 4.69 40, 9.48 40.49, 14 41.5 C 18.47 42.5, 22.95 44.05, 27 46 C 30.94 47.9, 34.33 51.12, 38 53 C 41.33 54.71, 44.45 56.47, 48 57 C 51.76 57.56, 56.31 57.19, 60 56 C 63.63 54.83, 67.31 52.57, 70 50 C 72.59 47.53, 75.19 44.23, 76 41 C 76.78 37.88, 76.5 33.67, 75 31 C 73.5 28.34, 70 25.84, 67 25 C 64 24.16, 59.84 24.65, 57 26 C 54.18 27.34, 51.5 30.19, 50 33 C 48.48 35.85, 48.25 39.65, 48 43 C 47.75 46.32, 48.17 49.67, 48.5 53 C 48.83 56.34, 49.59 59.58, 50 63 C 50.43 66.57, 50.89 70.25, 51 74 C 51.11 77.91, 50.76 81.85, 50.6 86 C 50.43 90.49, 50 95.33, 50 100",
-    entry: { x: 0, y: 0.4, angle: 0 },
-    exit: { x: 0.5, y: 1, angle: 90 },
-    aspect: 1.013,
-    weave: [{ first: 0.2713, second: 0.7792, over: "first" }],
-  },
   /* Traced from the owner's outline of `final knot 2.jpg`, then MIRRORED left to right and walked
      LEFT TO RIGHT — both on the owner's call, once they had seen the bow on the page.
 

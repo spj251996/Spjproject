@@ -1,5 +1,7 @@
 import type { BandId } from "./thread-bands.ts";
 import type { ThreadId } from "./thread-geometry.ts";
+import { PHOTO_STRIP, type PhotoCombination } from "./thread-paths.ts";
+import { PHOTO_COMBINATION, photographedCount } from "./thread-photo-state.ts";
 
 /* MEASURED on the real render at each band's nominal viewport (`thread-bands.ts`: 393x700, 820x1180,
    1536x695, not the wider viewports the clearance gate sweeps; a card figure that looks changed is the
@@ -64,8 +66,19 @@ const CARDS_BY_BAND: Record<BandId, Sections> = {
   wide: WIDE_CARDS,
 };
 
-export function authoredCard(id: ThreadId, band: BandId): AuthoredCard {
-  return CARDS_BY_BAND[band][id];
+/* Celebrations' recorded height is the photo-free page; each photographed ritual adds its strip. */
+export function authoredCard(
+  id: ThreadId,
+  band: BandId,
+  combination: PhotoCombination = PHOTO_COMBINATION,
+): AuthoredCard {
+  const card = CARDS_BY_BAND[band][id];
+  if (id !== "celebrations") return card;
+  return {
+    ...card,
+    sectionHeight:
+      card.sectionHeight + photographedCount(combination) * PHOTO_STRIP[band],
+  };
 }
 
 /* A point on the family card, as the fraction of its width/height a later warp can resolve

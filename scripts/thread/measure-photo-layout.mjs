@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /* Measures the page the redraw was drawn on — every ritual's photo strip showing — for
  * `adapt-photo-states.mjs`: each ritual's block, its description's last line, the bottom of its
- * strip, every line box of type, and the sections, all in `<main>`'s coordinates; then removes one
+ * strip, every line box of type, the sections and each portrait's centre, all in `<main>`'s
+ * coordinates; then removes one
  * strip and measures again, which gives the height a strip adds.
  *
  * usage: node scripts/thread/measure-photo-layout.mjs <url of a build with stand-in photos>
@@ -104,8 +105,15 @@ try {
       const strips = document.querySelectorAll(strip);
       strips[strips.length - 1].remove();
       const strip_ = before - celebrations.getBoundingClientRect().height;
+      const portraits = [
+        ...main.querySelectorAll("[data-relationship] img"),
+      ].map((img) => {
+        const r = box(img.getBoundingClientRect());
+        return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 };
+      });
       return {
         width: document.documentElement.clientWidth,
+        portraits,
         strip: Math.round(strip_ * 64) / 64,
         strips: strips.length,
         sections: sectionBoxes,

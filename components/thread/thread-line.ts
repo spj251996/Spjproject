@@ -28,8 +28,8 @@ import {
   MOTIF_PLACEMENTS,
   type Placement,
   THREAD_IDS,
-  THREAD_PATHS,
 } from "./thread-paths.ts";
+import { threadPaths } from "./thread-photo-state.ts";
 import {
   type MeasuredSection,
   type Rect,
@@ -562,7 +562,7 @@ export function threadLine(
   const perSection: string[][] = THREAD_IDS.map((id, index) => {
     const from = authoredCard(id, band);
     const to = sections[index];
-    const connectors = THREAD_PATHS[band][id];
+    const connectors = threadPaths(band, id);
     const placements = MOTIF_PLACEMENTS[band][id];
     const sectionAnchors = anchors?.[id];
 
@@ -703,7 +703,7 @@ export function splitSubpaths(d: string): string[] {
 }
 
 function subpathCount(band: BandId, id: (typeof THREAD_IDS)[number]): number {
-  return THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length;
+  return threadPaths(band, id).length + MOTIF_PLACEMENTS[band][id].length;
 }
 
 /* The index range, in the FLATTENED subpath list `threadLine` emits, that belongs to one section —

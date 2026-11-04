@@ -1,29 +1,42 @@
 {
+  "band": "wide",
+  "state": "photos",
   "width": 1536,
+  "height": 4878.5,
   "sections": [
     {
+      "id": "invite",
       "top": 0,
-      "height": 695
+      "height": 695,
+      "stripImages": 0
     },
     {
+      "id": "event-info",
       "top": 695,
-      "height": 695
+      "height": 695,
+      "stripImages": 0
     },
     {
+      "id": "family",
       "top": 1390,
-      "height": 695
+      "height": 695,
+      "stripImages": 0
     },
     {
+      "id": "celebrations",
       "top": 2085,
-      "height": 695
+      "height": 2098.5,
+      "stripImages": 12
     },
     {
-      "top": 2780,
-      "height": 1319.78125
-    },
-    {
-      "top": 4099.78125,
-      "height": 695
+      "id": "wishes",
+      "top": 4183.5,
+      "height": 695,
+      "stripImages": 0
     }
-  ]
+  ],
+  "viewport": {
+    "width": 1536,
+    "height": 695
+  }
 }

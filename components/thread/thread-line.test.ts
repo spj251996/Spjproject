@@ -1219,7 +1219,7 @@ test("no group is ever empty -- every group spans length and holds at least one 
   }
 });
 
-test("at a stacked band, event-info and family split into two groups each, with each card's motif in its own group; celebrations splits one group per piece", () => {
+test("at a stacked band, event-info and family split into two groups each, with each card's motif in its own group; celebrations, one piece, stays one group", () => {
   for (const band of ["tall", "upright"] as const) {
     const sections = measuredSections(band);
     const line = threadLine(
@@ -1243,8 +1243,9 @@ test("at a stacked band, event-info and family split into two groups each, with 
       groupHolding(line, "family", "portraitLoop", 1),
       `${band}: the two portraitLoop placements sit in different cards, so they must fall in different groups`,
     );
-    // Six equal row slices put the midpoints of celebrations' three pieces in three different rows.
-    assert.equal(countFor("celebrations"), 3, `${band}: celebrations`);
+    /* The redraw crosses Celebrations as one connector with no motif, and a group never splits a
+       piece, so however it is sliced it stays one group. */
+    assert.equal(countFor("celebrations"), 1, `${band}: celebrations`);
     for (const id of THREAD_IDS) {
       if (id === "event-info" || id === "family" || id === "celebrations")
         continue;
@@ -1271,7 +1272,7 @@ test("at wide, a side-by-side pair shares one scroll window, so event-info and f
 
   assert.equal(countFor("event-info"), 1);
   assert.equal(countFor("family"), 1);
-  assert.equal(countFor("celebrations"), 3);
+  assert.equal(countFor("celebrations"), 1);
   for (const id of THREAD_IDS) {
     if (id === "event-info" || id === "family" || id === "celebrations")
       continue;

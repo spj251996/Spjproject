@@ -1,35 +1,42 @@
 {
   "band": "tall",
+  "state": "photos",
   "width": 393,
-  "height": 6568,
+  "height": 6702.5,
+  "sections": [
+    {
+      "id": "invite",
+      "top": 0,
+      "height": 700,
+      "stripImages": 0
+    },
+    {
+      "id": "event-info",
+      "top": 700,
+      "height": 1400,
+      "stripImages": 0
+    },
+    {
+      "id": "family",
+      "top": 2100,
+      "height": 1400,
+      "stripImages": 0
+    },
+    {
+      "id": "celebrations",
+      "top": 3500,
+      "height": 2502.5,
+      "stripImages": 8
+    },
+    {
+      "id": "wishes",
+      "top": 6002.5,
+      "height": 700,
+      "stripImages": 0
+    }
+  ],
   "viewport": {
     "width": 393,
     "height": 700
-  },
-  "sections": [
-    {
-      "top": 0,
-      "height": 700
-    },
-    {
-      "top": 700,
-      "height": 1400
-    },
-    {
-      "top": 2100,
-      "height": 700
-    },
-    {
-      "top": 2800,
-      "height": 1400
-    },
-    {
-      "top": 4200,
-      "height": 1667.78125
-    },
-    {
-      "top": 5867.78125,
-      "height": 700
-    }
-  ]
+  }
 }

@@ -1,13 +1,7 @@
 /* The red thread's pure geometry: the motif and section ids, a motif as a small square drawing with a
    tangent at each end, and the section box a thread is composed against. No React, no DOM. */
 
-export type MotifId =
-  | "heart"
-  | "rings"
-  | "knot"
-  | "portraitLoop"
-  | "wishesLoop"
-  | "bow";
+export type MotifId = "heart" | "rings" | "knot" | "portraitLoop" | "bow";
 
 export type ThreadId =
   | "invite"
