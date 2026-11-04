@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CROSSING_REACH,
   type Crossing,
   crossingRegion,
   findCrossings,
@@ -200,4 +201,9 @@ test("lineCrossings orders a band's own crossings from the motifs' weaves", () =
   assert.equal(samples.length, line.pieces.length);
   assert.ok(crossings.some((crossing) => crossing.woven));
   assert.ok(crossings.some((crossing) => !crossing.woven));
+});
+
+/* Set by eye on the live page (DESIGN.md -> Thread -> Crossings), so pinned to the value itself. */
+test("the upper strand is redrawn 3 cord widths either side of a crossing, the owner's pick", () => {
+  assert.equal(CROSSING_REACH, 3);
 });

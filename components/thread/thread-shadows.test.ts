@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { tokenValue } from "../../scripts/lib/built-tokens.ts";
-import { CONTACT_SHADOW, HEAD_HALO } from "./thread-shadows.ts";
+import { CONTACT_SHADOW, CROSSING_LIFT, HEAD_HALO } from "./thread-shadows.ts";
 
 /* Chosen on a render (DESIGN.md -> Thread -> The contact shadow): pinned so a stray edit cannot move
    the thread off the paper unseen. */
@@ -10,6 +10,13 @@ test("the thread's contact shadow falls straight down in the paper's own shadow 
   assert.deepEqual(CONTACT_SHADOW.layers, [
     { offsetY: 1, blur: 1.25, colour: "--color-shadow-warm", alpha: 0.65 },
     { offsetY: 4, blur: 6, colour: "--color-shadow-warm", alpha: 0.3 },
+  ]);
+});
+
+/* Set by eye on the live page (DESIGN.md -> Thread -> Crossings), so pinned to the value itself. */
+test("the crossing's lift is the owner's pick: strength 0.7, drop 0.9, softness 0.9", () => {
+  assert.deepEqual(CROSSING_LIFT.layers, [
+    { offsetY: 0.9, blur: 0.9, colour: "--color-shadow-warm", alpha: 0.7 },
   ]);
 });
 
