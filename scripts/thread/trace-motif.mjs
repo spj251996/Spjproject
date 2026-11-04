@@ -598,6 +598,239 @@ export function walk(field, { bridge = 0 } = {}) {
   return ordered.map((at) => ({ x: at % width, y: Math.floor(at / width) }));
 }
 
+/* `walkThrough` reads a hand-drawn ROUTE on a dpr-2 sheet, not a motif rasterised to RASTER_WIDTH,
+   so its lengths are sheet pixels. */
+/* A branch that leaves a crossing and returns to it is a loop the owner drew unless it is shorter
+   than this, which is the thinning debris inside a crossing. Four crossing radii here dropped real
+   joins on the sheets; the smallest drawn loop is well over 60px around. */
+const CROSSING_DEBRIS = 60;
+/* Two odd-degree crossings joined by a branch shorter than this are one crossing at a shallow angle,
+   which Zhang-Suen splits into two T-nodes up to ~3 stroke widths apart. */
+const SHALLOW_STUB = 200;
+/* An arm's heading out of its crossing, from its first pixel to this one: far enough to clear the
+   crossing's own distortion, near enough to read the arm and not the curve beyond it. */
+const ARM_HEADING_REACH = 25;
+
+/**
+ * Order the skeleton of ONE long hand-drawn stroke that crosses itself, from its upper free end to
+ * the other. Unlike `walk`, which follows a junction rule pixel by pixel, this resolves every
+ * crossing as a whole: it pairs the arms meeting there so each pair runs as straight as the drawing
+ * allows, which is how a pen passes through its own line.
+ * @param {Field} field
+ * @returns {Point[]}
+ */
+export function walkThrough(field) {
+  const { width } = field;
+  const xOf = (/** @type {number} */ at) => at % width;
+  const yOf = (/** @type {number} */ at) => Math.floor(at / width);
+
+  /** @type {number[]} */
+  const nodes = [];
+  for (let at = 0; at < field.ink.length; at += 1)
+    if (field.ink[at] && neighboursOf(field, at).length !== 2) nodes.push(at);
+
+  const parent = new Map(nodes.map((n) => [n, n]));
+  const root = (/** @type {number} */ n) => {
+    let at = n;
+    while (parent.get(at) !== at) at = /** @type {number} */ (parent.get(at));
+    parent.set(n, at);
+    return at;
+  };
+  /* Touching junction pixels are one crossing; no run joins them. A free end is never part of one,
+     however near it sits. Crossings further apart are joined below, by the stub between them. */
+  const junctions = nodes.filter((n) => neighboursOf(field, n).length > 2);
+  for (let i = 0; i < junctions.length; i += 1)
+    for (let j = i + 1; j < junctions.length; j += 1) {
+      const a = junctions[i];
+      const b = junctions[j];
+      if (Math.abs(xOf(a) - xOf(b)) <= 1 && Math.abs(yOf(a) - yOf(b)) <= 1)
+        parent.set(root(a), root(b));
+    }
+  const crossingOf = new Map(nodes.map((n) => [n, root(n)]));
+
+  /** @typedef {{ from: number, to: number, pixels: number[] }} Run */
+  /** @type {Run[]} */
+  let runs = [];
+  const walked = new Set();
+  for (const node of nodes)
+    for (const first of neighboursOf(field, node)) {
+      if (crossingOf.has(first) || walked.has(`${node}:${first}`)) continue;
+      const pixels = [node, first];
+      let previous = node;
+      let at = first;
+      while (!crossingOf.has(at)) {
+        const next = neighboursOf(field, at).find((n) => n !== previous);
+        if (next === undefined) break;
+        pixels.push(next);
+        previous = at;
+        at = next;
+      }
+      walked.add(`${node}:${first}`);
+      walked.add(`${at}:${pixels[pixels.length - 2]}`);
+      runs.push({
+        from: /** @type {number} */ (crossingOf.get(node)),
+        to: /** @type {number} */ (crossingOf.get(at)),
+        pixels,
+      });
+    }
+
+  const degreeOf = () => {
+    const degree = new Map();
+    for (const run of runs)
+      for (const end of [run.from, run.to])
+        degree.set(end, (degree.get(end) ?? 0) + 1);
+    return degree;
+  };
+  runs = runs.filter(
+    (run) => !(run.from === run.to && run.pixels.length < CROSSING_DEBRIS),
+  );
+  for (;;) {
+    const degree = degreeOf();
+    const odd = (/** @type {number} */ c) =>
+      degree.get(c) % 2 === 1 && degree.get(c) > 1;
+    const stub = runs
+      .filter(
+        (run) =>
+          run.from !== run.to &&
+          odd(run.from) &&
+          odd(run.to) &&
+          run.pixels.length < SHALLOW_STUB,
+      )
+      .sort((a, b) => a.pixels.length - b.pixels.length)[0];
+    if (stub === undefined) break;
+    runs = runs
+      .filter((run) => run !== stub)
+      .map((run) => ({
+        ...run,
+        from: run.from === stub.to ? stub.from : run.from,
+        to: run.to === stub.to ? stub.from : run.to,
+      }));
+  }
+
+  /** @typedef {{ run: Run, atStart: boolean, heading: Point }} Arm */
+  /** @type {Map<number, Arm[]>} */
+  const armsAt = new Map();
+  for (const run of runs)
+    for (const atStart of [true, false]) {
+      const outward = atStart ? run.pixels : [...run.pixels].reverse();
+      const p0 = outward[Math.min(1, outward.length - 1)];
+      const p1 = outward[Math.min(ARM_HEADING_REACH, outward.length - 1)];
+      const dx = xOf(p1) - xOf(p0);
+      const dy = yOf(p1) - yOf(p0);
+      const length = Math.hypot(dx, dy) || 1;
+      const crossing = atStart ? run.from : run.to;
+      if (!armsAt.has(crossing)) armsAt.set(crossing, []);
+      /** @type {Arm[]} */ (armsAt.get(crossing)).push({
+        run,
+        atStart,
+        heading: { x: dx / length, y: dy / length },
+      });
+    }
+
+  /** @type {Map<Arm, Arm>} */
+  const partner = new Map();
+  for (const arms of armsAt.values())
+    for (const [a, b] of straightestPairing(arms)) {
+      partner.set(a, b);
+      partner.set(b, a);
+    }
+
+  const crossingY = (/** @type {Arm} */ arm) =>
+    yOf((arm.atStart ? arm.run.pixels : [...arm.run.pixels].reverse())[0]);
+  const loose = [...armsAt.values()]
+    .flat()
+    .filter((arm) => !partner.has(arm))
+    .sort((a, b) => crossingY(a) - crossingY(b));
+  if (loose.length === 0)
+    throw new Error(
+      "the stroke is a closed loop, so it has no end to start a walk from",
+    );
+
+  /* A crossing's own pixels, and the stub a shallow one is merged across, belong to no run: the pen
+     crosses that gap in a straight line, which is what those pixels were. */
+  /** @type {Point[]} */
+  const points = [];
+  const done = new Set();
+  /** @type {Arm | undefined} */
+  let arm = loose[0];
+  while (arm !== undefined && !done.has(arm.run)) {
+    /** @type {Arm} */
+    const current = arm;
+    const { run, atStart } = current;
+    done.add(run);
+    const pixels = atStart ? run.pixels : [...run.pixels].reverse();
+    const last = points[points.length - 1];
+    if (last !== undefined)
+      points.push(
+        ...straightGap(last, { x: xOf(pixels[0]), y: yOf(pixels[0]) }),
+      );
+    for (const at of pixels) points.push({ x: xOf(at), y: yOf(at) });
+    const farEnd = /** @type {Arm[]} */ (
+      armsAt.get(atStart ? run.to : run.from)
+    ).find((other) => other.run === run && other.atStart !== atStart);
+    arm = farEnd === undefined ? undefined : partner.get(farEnd);
+  }
+  return points;
+}
+
+/**
+ * The whole pixels strictly between two points, one step apart.
+ * @param {Point} from
+ * @param {Point} to
+ * @returns {Point[]}
+ */
+function straightGap(from, to) {
+  const steps = Math.ceil(Math.hypot(to.x - from.x, to.y - from.y));
+  /** @type {Point[]} */
+  const between = [];
+  for (let k = 1; k < steps; k += 1)
+    between.push({
+      x: Math.round(from.x + ((to.x - from.x) * k) / steps),
+      y: Math.round(from.y + ((to.y - from.y) * k) / steps),
+    });
+  return between;
+}
+
+/**
+ * Pair the arms meeting at one crossing so the pairs run as straight as possible in total (two arms
+ * run straight when one leaves opposite the other). An odd arm out is a loose end.
+ * @template {{ heading: Point }} A
+ * @param {A[]} arms
+ * @returns {[A, A][]}
+ */
+function straightestPairing(arms) {
+  /** @type {[A, A][]} */
+  let best = [];
+  let bestScore = -Infinity;
+  /** @param {A[]} rest @param {[A, A][]} pairs @param {number} score */
+  const search = (rest, pairs, score) => {
+    if (rest.length < 2) {
+      if (score > bestScore) {
+        bestScore = score;
+        best = pairs.slice();
+      }
+      return;
+    }
+    const [head, ...tail] = rest;
+    tail.forEach((other, index) => {
+      const straightness = -(
+        head.heading.x * other.heading.x +
+        head.heading.y * other.heading.y
+      );
+      pairs.push([head, other]);
+      search(
+        tail.filter((_, i) => i !== index),
+        pairs,
+        score + straightness,
+      );
+      pairs.pop();
+    });
+    if (rest.length % 2 === 1) search(tail, pairs, score);
+  };
+  search(arms, [], 0);
+  return best;
+}
+
 /**
  * How much of the skeleton the walk actually covered. The emitted `d` is one open path, so on a
  * drawing with more than two loose ends it is a fragment — and `fitPath`'s aspect is then that
