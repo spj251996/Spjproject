@@ -268,6 +268,50 @@ test("a frame that begins before a resting follower's leg paints nothing", () =>
   }
 });
 
+/* A slow scroll on a busy page re-targets late in every frame. Started from rest, the leg must still begin: a re-target
+   stamped after the next frame's timestamp, every frame, held the draw still for as long as the frames ran late. */
+test("late re-targets on a resting follower never hold the draw still", () => {
+  let clock = 20;
+  let queued: ((now: number) => void) | null = null;
+  const painted: number[] = [];
+  const originalNow = performance.now;
+  performance.now = () => clock;
+  Object.assign(globalThis, {
+    window: {
+      requestAnimationFrame: (callback: (now: number) => void) => {
+        queued = callback;
+        return 1;
+      },
+      cancelAnimationFrame: () => {},
+    },
+  });
+  try {
+    const follower = createCatchUp((drawn) => painted.push(drawn));
+    const flush = (now: number) => {
+      const callback = queued;
+      queued = null;
+      callback?.(now);
+    };
+    let target = 100;
+    follower.to(target, 0.6);
+    for (let frameBegan = 16; frameBegan <= 160; frameBegan += 16) {
+      flush(frameBegan);
+      clock = frameBegan + 20;
+      target += 5;
+      follower.to(target, 0.6);
+    }
+    assert.ok(
+      painted.length >= 9,
+      `the draw moved on ${painted.length} of 10 frames`,
+    );
+    for (let i = 1; i < painted.length; i += 1)
+      assert.ok(painted[i] > painted[i - 1], `the draw held at frame ${i}`);
+  } finally {
+    performance.now = originalNow;
+    Reflect.deleteProperty(globalThis, "window");
+  }
+});
+
 /* A follower at rest still holds the timestamp of the last frame it painted. Two re-targets before a new leg's first
    frame must not time that leg from the old frame, or the line jumps to its target in one frame. */
 test("a second re-target before a resting follower's first frame never jumps the draw", () => {

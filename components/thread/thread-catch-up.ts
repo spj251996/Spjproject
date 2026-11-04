@@ -100,8 +100,12 @@ export function createCatchUp(paint: (drawn: number) => void) {
 
   function tick(now: number) {
     /* Only a leg started from rest can begin after the frame it is first drawn in (see `to`): that frame has nothing
-       new to show, and waits for the next. */
+       new to show, so it paints nothing and becomes the leg's start. The re-targets after it are then timed on the
+       frames' clock, as mid-chase; left on `performance.now()`, each late one restarted the leg after the next frame's
+       timestamp, and the draw held still for as long as the frames ran late. */
     if (duration > 0 && now < startedAt) {
+      startedAt = now;
+      paintedAt = now;
       raf = window.requestAnimationFrame(tick);
       return;
     }
