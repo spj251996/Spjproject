@@ -218,14 +218,15 @@ function joinPolyline(numbers: readonly number[], parts: readonly string[]) {
 }
 
 /* The shape a stopped sway leaves on a path: its base, unless a painter wrote a newer path since the sway last wrote
-   it, which the stop never saw because it disconnects the observer first; that newer path is the base, and stays.
-   Exported for its test. */
+   it, which the stop never saw because it disconnects the observer first; that newer path is the base, and stays. A
+   path the painter emptied stays empty. Exported for its test. */
 export function restoredShape(
   current: string | null,
   written: string,
   base: string,
-): string {
-  return current !== null && current !== written ? current : base;
+): string | null {
+  if (current === null) return null;
+  return current !== written ? current : base;
 }
 
 /* The paths a batch of mutation records changed, each once, and whether its style changed: a painter's write arrives
@@ -621,7 +622,7 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
         if (entry === undefined) continue;
         const current = path.getAttribute("d");
         const shape = restoredShape(current, entry.written, entry.base);
-        if (current !== shape) path.setAttribute("d", shape);
+        if (shape !== null && current !== shape) path.setAttribute("d", shape);
         if (path.style.visibility === "hidden") path.style.visibility = "";
         tracked.delete(path);
       }
