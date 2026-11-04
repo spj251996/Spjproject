@@ -499,10 +499,20 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   const observer = new MutationObserver((records) => {
     try {
       /* While the sway is stopped, a piece rewritten (a redraw on resize, a new tip) keeps the moment
-         the line stopped at: the twist, the head and the frayed ends hold that moment too. */
+         the line stopped at: the twist, the head, the frayed ends and the crossings hold that moment too. */
       const t = swayAwake ? seconds() : stoppedAt;
       const band = swayAwake ? view() : (stoppedBand ?? view());
       for (const [target, styled] of writesInBatch(records)) {
+        /* A painter that builds a group hidden and shows it whole — a crossing, a frayed end — records no change
+           on the paths it added, so showing the group is what shapes them, as showing a path shapes that path. */
+        if (target instanceof SVGGElement) {
+          if (styled && target.style.display !== "none")
+            for (const path of target.querySelectorAll("path")) {
+              const entry = track(path);
+              if (entry !== undefined) write(path, entry, t, band);
+            }
+          continue;
+        }
         const path = target as SVGPathElement;
         /* A path the painter has just hidden paints nothing; the change that shows it again shapes it. */
         if (path.style.display === "none") continue;

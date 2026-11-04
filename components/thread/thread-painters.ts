@@ -160,7 +160,8 @@ export function createHeadPainter(
       if (!used.has(element)) element.style.display = "none";
     }
     shown = used;
-    group.style.display = used.size === 0 ? "none" : "";
+    const display = used.size === 0 ? "none" : "";
+    if (group.style.display !== display) group.style.display = display;
   }
 
   return {

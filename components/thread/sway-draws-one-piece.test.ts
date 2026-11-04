@@ -340,3 +340,80 @@ test("while the page is idle, a redraw leaves the swayed ink where it stopped", 
     server.close();
   }
 });
+
+/* The layers a painter builds hidden and then shows as a group — a crossing's redrawn strand, a frayed end's
+   fibres — must be laid on the swayed line too when the redraw comes while the page is idle: adding a path
+   records no change for the sway to shape, and a group shown is not a path, so such a path kept the shape it
+   was built with while the ink beside it held the sway's. How far apart that leaves them depends on where the
+   sway stopped, so this reads the mechanism instead: the shape each strand was built with is recorded as the
+   painter adds it (hidden, so nothing has shaped it yet), and every strand shown on screen after an idle
+   redraw must have been reshaped since. */
+test("while the page is idle, a redraw lays the crossings on the swayed line", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    /* Registered before the page's own scripts, so it is told of each new group before the sway is: the
+       sway's observer, created first, would otherwise have reshaped the strand before this one read it. */
+    await page.addInitScript(`(() => {
+      window.__builtWith = new Map();
+      new MutationObserver((records) => {
+        for (const record of records)
+          for (const node of record.addedNodes)
+            if (node instanceof SVGGElement && "threadCrossing" in node.dataset)
+              for (const path of node.querySelectorAll("path")) window.__builtWith.set(path, path.getAttribute("d"));
+      }).observe(document, { subtree: true, childList: true });
+    })()`);
+    await page.clock.install();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.evaluate(
+      "window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.2)",
+    );
+    await page.waitForTimeout(2500);
+    await page.clock.fastForward(65_000);
+    await page.waitForTimeout(500);
+    /* A width the band still holds, so the page re-measures and the crossings are rebuilt. */
+    await page.setViewportSize({ width: 401, height: 700 });
+    await page.waitForTimeout(1000);
+    const read = (await page.evaluate(`(() => {
+      const visible = (el) => { for (let at = el; at && at.tagName !== "svg"; at = at.parentElement) if (at.style.display === "none") return false; return true; };
+      const shown = Array.from(document.querySelectorAll("[data-thread-svg] g[data-thread-crossing]")).filter((g) => {
+        const r = g.getBoundingClientRect();
+        return visible(g) && r.bottom > 0 && r.top < innerHeight;
+      });
+      const strands = shown.flatMap((g) => Array.from(g.querySelectorAll("path")));
+      return {
+        rebuilt: window.__builtWith.size,
+        shown: strands.length,
+        unshaped: strands.filter((p) => window.__builtWith.get(p) === p.getAttribute("d")).length,
+      };
+    })()`)) as { rebuilt: number; shown: number; unshaped: number };
+    t.diagnostic(JSON.stringify(read));
+    assert.ok(
+      read.rebuilt > 0,
+      "the resize rebuilt no crossing, so this proves nothing",
+    );
+    assert.ok(
+      read.shown > 0,
+      "no crossing is on screen, so this proves nothing",
+    );
+    assert.equal(
+      read.unshaped,
+      0,
+      `${read.unshaped} of ${read.shown} crossing paths on screen kept the shape they were built with`,
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
