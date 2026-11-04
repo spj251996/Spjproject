@@ -79,13 +79,13 @@ export function chunkShown(end: number, reached: number) {
 }
 
 /* One `<g data-thread-twist>` per `<svg>`, inserted before `before` so it sits over the ink and under
-   the light. A tapered piece's gaps are cut by the taper's own mask, as its ink is: full-width gaps
-   there would stand wider than the line they sit on. */
+   the light. A piece with a frayed end has its gaps cut by the end's own mask, as its ink is: gaps past
+   the cut would lie over the fibres. */
 export function createTwistPainter(
   svg: SVGSVGElement,
   before: Element | null,
   cutId: string,
-  taperPiece: (count: number) => number,
+  frayedPiece: (count: number) => number,
 ) {
   const layer = document.createElementNS(SVG_NS, "g");
   layer.dataset.threadTwist = "rope";
@@ -108,7 +108,7 @@ export function createTwistPainter(
         if (ink === null || ink === undefined) return;
         const length = piece.end - piece.start;
         const holder = document.createElementNS(SVG_NS, "g");
-        if (index === taperPiece(next.length))
+        if (index === frayedPiece(next.length))
           holder.setAttribute("mask", `url(#${cutId})`);
         layer.append(holder);
         const samples = samplePath(baseOf(ink), length);

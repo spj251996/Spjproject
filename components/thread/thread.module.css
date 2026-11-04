@@ -109,22 +109,13 @@
   stroke-width: var(--stroke-thread);
 }
 
-/* A piece that carries a taper takes its shadow on a group around the masked path (`ThreadInk`), so
-   the ink is cut before the filter runs. */
+/* A piece that carries a frayed end takes its shadow on a group around the masked path (`ThreadInk`),
+   so the ink is cut before the filter runs. */
 .pageInk,
 .pageBleed {
   filter: var(--bleed-thread);
 }
 
-/* A tapered end (`thread-taper.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
-   takes the thread's own colour and its contact shadow: a taper with no shadow would read as a
-   different material from the line it ends. The shadow is ONE filter on the group, over geometry that
-   never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
-   past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
-   compounds across the stack. The painter hides it with `display: none` once it has run and no run has
-   been reached; before that (the shipped markup, and for a reader with no script) the group is simply
-   empty, and an empty group's bounding box is empty, so it is INFERRED, not measured, that its filter
-   costs nothing. */
 /* Crossings (`createCrossingPainter`; DESIGN.md -> Thread -> Crossings): the upper strand redrawn in
    the ink's own colour and width, butt-capped so its ends sit invisibly on the strand they redraw, with
    its own twist over it. */
@@ -155,17 +146,6 @@
 .pageTip path {
   fill: none;
   stroke-linecap: round;
-}
-
-.pageTaper {
-  filter: var(--bleed-thread);
-}
-
-.pageTaper path {
-  fill: none;
-  stroke: var(--color-thread-red);
-  stroke-linecap: butt;
-  stroke-linejoin: round;
 }
 
 /* The drawing head (`thread-head.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE

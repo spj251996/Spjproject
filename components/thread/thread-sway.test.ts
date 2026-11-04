@@ -93,7 +93,7 @@ test("stopping keeps a path a painter rewrote since the sway last wrote it", () 
   assert.equal(restoredShape("M1 1L2 2", "M1 1L2 2", "M0 0L2 2"), "M0 0L2 2");
 });
 
-/* The taper painter removes a cut's `d` when its tokens do not resolve; the stop must not paint the base back. */
+/* The end painter removes a cut's `d` when the fray has no length; the stop must not paint the base back. */
 test("stopping leaves a path a painter emptied without a shape", () => {
   assert.equal(restoredShape(null, "M1 1L2 2", "M0 0L2 2"), null);
 });

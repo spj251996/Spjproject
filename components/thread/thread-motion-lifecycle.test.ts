@@ -861,9 +861,9 @@ test("hiding a twist mark or head step never re-shapes it", async (t) => {
   }
 });
 
-/* The taper painter removes its cut's `d` when a re-measure leaves the taper unresolved; the running sway must not
-   paint the old cut back from what it last tracked. */
-test("a taper cut whose d a painter removed stays removed while the sway runs", async (t) => {
+/* The end painter removes its cut's `d` when a re-measure leaves the fray without a length; the running sway must
+   not paint the old cut back from what it last tracked. */
+test("an end cut whose d a painter removed stays removed while the sway runs", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
@@ -882,13 +882,13 @@ test("a taper cut whose d a painter removed stays removed while the sway runs", 
     await page.waitForTimeout(500);
     const removed = await page.evaluate(`(() => {
       /* The trunk's cut, at the invite's top: on screen, so the sway's frame reaches it. */
-      const cut = document.querySelector("mask#thread-taper-cut-trunk path");
+      const cut = document.querySelector("mask#thread-end-cut-trunk path");
       if (!cut) return false;
       cut.setAttribute("data-test-cut", "");
       cut.removeAttribute("d");
       return true;
     })()`);
-    assert.ok(removed, "the trunk's taper cut exists");
+    assert.ok(removed, "the trunk's end cut exists");
     await page.waitForTimeout(500);
     assert.equal(
       await page.evaluate(

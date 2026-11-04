@@ -3,7 +3,7 @@
    from here through `baseOf`.
 
    The line moves, as a thread in moving air. A smooth displacement FIELD over `<main>`'s
-   coordinates moves every point of every path in the `<svg>` — ink, marks, taper, head — so the
+   coordinates moves every point of every path in the `<svg>` — ink, marks, fibres, crossings, head — so the
    layers stay on one another. The field is one for the page: the trunk's `<svg>` and the card thread's
    share its clock and phase, so the two move as one line at the Wishes join. Curves are flattened into
    short chords before they move, so the ink follows the field point for point exactly as the head's
@@ -494,12 +494,12 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   let stoppedAt = 0;
   let stoppedBand: View | null = null;
 
-  /* A painter that writes a new `d` mid-frame (the head, the taper) is displaced in the same
+  /* A painter that writes a new `d` mid-frame (the head, the moving tip) is displaced in the same
      frame: the observer runs at the end of that callback, before the frame paints. */
   const observer = new MutationObserver((records) => {
     try {
       /* While the sway is stopped, a piece rewritten (a redraw on resize, a new tip) keeps the moment
-         the line stopped at: the twist, the head and the tapered ends hold that moment too. */
+         the line stopped at: the twist, the head and the frayed ends hold that moment too. */
       const t = swayAwake ? seconds() : stoppedAt;
       const band = swayAwake ? view() : (stoppedBand ?? view());
       for (const [target, styled] of writesInBatch(records)) {

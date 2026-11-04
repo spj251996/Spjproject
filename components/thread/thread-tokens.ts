@@ -1,5 +1,5 @@
-/* THE THREAD'S TOKENS — read from the built stylesheet rather than copied, for the drawing head, the
-   tapered ends and the closing stretch's scroll budget. Each reader asks the browser
+/* THE THREAD'S TOKENS — read from the built stylesheet rather than copied, for the drawing head and
+   the closing stretch's scroll budget. Each reader asks the browser
    (`getComputedStyle`), so each is called from an effect or a measure, never at module top level. */
 
 import {
@@ -103,20 +103,4 @@ export function tokenTime(token: string): number | undefined {
   return parseCssTime(
     getComputedStyle(document.documentElement).getPropertyValue(token),
   );
-}
-
-export interface TaperOptionsResolved {
-  readonly taperLength: number;
-  readonly strokeWidth: number;
-}
-
-/* Read at each measure rather than cached, so a retuned token takes effect on the next re-measure. */
-export function taperOptions(): TaperOptionsResolved {
-  const root = getComputedStyle(document.documentElement);
-  return {
-    taperLength: Number.parseFloat(
-      root.getPropertyValue("--length-thread-taper"),
-    ),
-    strokeWidth: Number.parseFloat(root.getPropertyValue("--stroke-thread")),
-  };
 }

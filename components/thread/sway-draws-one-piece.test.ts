@@ -288,7 +288,7 @@ test("with the sway on, scrolling back up mid-draw never un-draws the line", asy
 
 /* While the page is idle the sway has stopped, and the line stays where it stopped: a draw that writes the
    pieces again (a resize, with the layout unchanged) must not move the ink to a new moment of the sway,
-   or the ink parts from the twist, the head and the tapered ends, which do not move. The page's clock is
+   or the ink parts from the twist, the head and the frayed ends, which do not move. The page's clock is
    driven so the idle timeout arrives without a minute's wait. */
 test("while the page is idle, a redraw leaves the swayed ink where it stopped", async (t) => {
   if (!labExport(t)) return;

@@ -7,7 +7,7 @@ import { createCatchUp } from "./thread-catch-up";
 import { lineCrossings } from "./thread-crossings";
 import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
 import { paintedLength } from "./thread-head";
-import { CARD_CUT_ID, TaperCutMask, ThreadInk } from "./thread-ink";
+import { CARD_CUT_ID, EndCutMask, ThreadInk } from "./thread-ink";
 import {
   type SectionRange,
   type SectionRect,
@@ -436,7 +436,7 @@ export function CardThread() {
         ref={svgRef}
         role="presentation"
       >
-        <TaperCutMask cutRef={cutRef} id={CARD_CUT_ID} />
+        <EndCutMask cutRef={cutRef} id={CARD_CUT_ID} />
         <defs ref={shadowDefsRef} />
         {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
           <ThreadInk

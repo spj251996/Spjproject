@@ -1,10 +1,10 @@
 import styles from "./thread.module.css";
-import { TAPER_CUT_WIDTH } from "./thread-taper";
+import { END_CUT_WIDTH } from "./thread-fray";
 
-/* One piece's ink. A piece that carries a taper is cut BEFORE its bleed, not after: the filter sits on
-   a group around the masked path, so the halo is the halo of the ink that is left and falls away
-   naturally at the cut. Masking the filter's output instead leaves the halo of the full-width ink
-   standing up to a straight edge, a visible rectangle beside the taper. */
+/* One piece's ink. A piece that carries a frayed end is cut BEFORE its bleed, not after: the filter
+   sits on a group around the masked path, so the halo is the halo of the ink that is left and falls
+   away naturally at the cut. Masking the filter's output instead leaves the halo of the full-width ink
+   standing up to a straight edge, a visible rectangle beside the fray. */
 export function ThreadInk({
   cutId,
   index,
@@ -37,7 +37,7 @@ export function ThreadInk({
   );
 }
 
-/* The mask that cuts the ink away under a taper. One per `<svg>`, so its id is fixed: the trunk's,
+/* The mask that cuts the ink away under a frayed end. One per `<svg>`, so its id is fixed: the trunk's,
    and the card thread's. `maskUnits` is the user space because the default
    region is a percentage margin around the piece's bounding box, which is not a margin the cut can
    rely on. Without a `region` the mask takes this extent, which is only the region before the page is
@@ -45,8 +45,8 @@ export function ThreadInk({
    never measures through the page (the gallery) passes the fitted `region` itself, because a mask
    this large costs 27.1ms mean frame time and 116 dropped frames on the page. */
 const MASK_EXTENT = 100000;
-export const TRUNK_CUT_ID = "thread-taper-cut-trunk";
-export const CARD_CUT_ID = "thread-taper-cut-card";
+export const TRUNK_CUT_ID = "thread-end-cut-trunk";
+export const CARD_CUT_ID = "thread-end-cut-card";
 
 interface MaskRegion {
   readonly x: number;
@@ -62,7 +62,7 @@ const UNMEASURED_REGION: MaskRegion = {
   height: 2 * MASK_EXTENT,
 };
 
-export function TaperCutMask({
+export function EndCutMask({
   id,
   cutRef,
   region = UNMEASURED_REGION,
@@ -94,7 +94,7 @@ export function TaperCutMask({
           stroke="black"
           strokeLinecap="butt"
           strokeLinejoin="round"
-          strokeWidth={TAPER_CUT_WIDTH}
+          strokeWidth={END_CUT_WIDTH}
         />
       </mask>
     </defs>

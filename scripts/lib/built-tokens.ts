@@ -1,5 +1,4 @@
-/* Token readers and head fixtures shared by the thread's test files (`thread-head.test.ts`,
-   `thread-taper.test.ts`): each reads the source stylesheet or the built
+/* Token readers and head fixtures shared by the thread's test files: each reads the source stylesheet or the built
    export, so the tests carry no copy of a token value. */
 
 import assert from "node:assert/strict";

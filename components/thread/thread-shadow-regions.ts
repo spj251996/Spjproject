@@ -44,7 +44,7 @@ export function fittedRegion(box: Box, margin: number): Box {
 }
 
 /* The element a piece's shadow sits on: the piece's own path, or the group round a path that carries a
-   taper's cut (`ThreadInk`), so the ink is cut before the filter runs. */
+   frayed end's cut (`ThreadInk`), so the ink is cut before the filter runs. */
 export function filteredElementOf(path: SVGPathElement): SVGGraphicsElement {
   return path.parentElement instanceof SVGGElement ? path.parentElement : path;
 }
@@ -102,15 +102,15 @@ export function createThreadShadows(defs: SVGDefsElement, sway: number) {
   const bleed = createShadowFitter(defs, "--bleed-thread", sway);
   const halo = createShadowFitter(defs, "--halo-thread-head", sway);
   return {
-    /* `taper` is the tapered end's group and the piece it lies on: the group is hidden when this runs,
-       so it takes that piece's box, which holds every run. */
+    /* `end` is the frayed end's group and the piece it lies on: the group is hidden when this runs,
+       so it takes that piece's box, which holds every fibre, since their tips sit at the piece's end. */
     measured(
       paths: readonly (SVGPathElement | null)[],
-      taper: { group: SVGGElement; piece: SVGPathElement } | undefined,
+      end: { group: SVGGElement; piece: SVGPathElement } | undefined,
     ) {
       for (const path of paths)
         if (path !== null) bleed.fit(filteredElementOf(path));
-      if (taper !== undefined) bleed.fit(taper.group, taper.piece.getBBox());
+      if (end !== undefined) bleed.fit(end.group, end.piece.getBBox());
     },
     headPainted(group: SVGGElement) {
       if (group.style.display !== "none") halo.fit(group);

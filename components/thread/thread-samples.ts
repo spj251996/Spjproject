@@ -118,7 +118,7 @@ export function frameAt({ xy, length }: PieceSamples, s: number) {
    start along the first. That is what lets a run cross into a piece that lives in another `<svg>`:
    this side has to overlap the far side, or this side's own round end cap of ink stands out past
    the join as a dark half-disc and the two runs' butt ends antialias into a hairline (both seen at
-   12x). It is also what lets the taper's cut reach past a free end far enough to take the ink's cap
+   12x). It is also what lets an end's cut reach past a free end far enough to take the ink's cap
    and its bleed with it. */
 export function polylineBetween(
   { xy, length }: PieceSamples,

@@ -203,15 +203,12 @@
      `sprig-ornament`). At dpr 1 it paints as a fainter full pixel rather than a thinner one. */
   --stroke-hairline: 0.5px;
   --stroke-thread: 2.2px;
-  /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
-     ends). */
-  --length-thread-taper: 24px;
   /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. `wishes.top` equals the page's maximum scroll, so
      Wishes' card is never scrolled through and would otherwise draw only what the previous section
      left over. Both values are fractions of the viewport's height, so one value holds at every band:
      `span` is how much of the final viewport the stretch draws across, and `finish` is how far before
      the page's end it completes, so the head retires while a reader resting just short of the bottom
-     still sees the taper. Their scroll comes out of the earlier sections' shared budget. Read by name
+     still sees the frayed end. Their scroll comes out of the earlier sections' shared budget. Read by name
      from script. */
   /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL, so a fling shows the line travelling
      rather than popping in. A follower, not a delay: the thread always ends at the length the scroll

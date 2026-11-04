@@ -1,5 +1,5 @@
 /* THE THREAD'S PAINTERS — what turns the arithmetic into the DOM: each piece's dash, and the
-   elements of the drawing head and the tapered ends. `PageThread` and `CardThread` each build their
+   elements of the drawing head, the frayed ends and the crossings. `PageThread` and `CardThread` each build their
    own painters. */
 
 import {
@@ -26,14 +26,6 @@ import {
 } from "./thread-samples.ts";
 import { reachOf } from "./thread-shadow-regions.ts";
 import { CROSSING_LIFT } from "./thread-shadows.ts";
-import {
-  TAPER_STEPS,
-  type TaperSegment,
-  taperCut,
-  taperReached,
-  taperSegments,
-} from "./thread-taper.ts";
-import type { TaperOptionsResolved } from "./thread-tokens.ts";
 import { gapWidth, ropeGaps } from "./thread-twist.ts";
 
 function applyDash(path: SVGPathElement, length: number, progress: number) {
@@ -186,15 +178,14 @@ export function createHeadPainter(
 export type HeadPainter = ReturnType<typeof createHeadPainter>;
 
 /* ---------------------------------------------------------------------------------------------
-   THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
-   `thread-taper.ts`'s; what is here is the DOM it needs.
+   THE FRAYED ENDS — the cut cord and its fibres (`thread-fray.ts`; DESIGN.md -> Thread -> The frayed
+   ends). An end at rest is built once, when the page is measured: the ink is cut back under the fray
+   and the fibres wait at the cut. The moving tip
+   is the same fibres, laid at the cord's end every frame.
 
-   A taper is a stack of narrowing runs laid over a stretch of ink that has been cut away beneath
-   them (a stroke cannot be thinned by drawing a narrower one over it). The cut is a `<mask>` on the
-   piece's own `<path>`, and deliberately not a change to the piece: its `d` and its dash are what
-   the draw-order gate reads, and "the light must not move the line" holds only while they stay
-   exactly as `applyPieceDashes` writes them. The runs and the cut are built once, when the page is
-   measured; a frame only shows the runs the ink has reached. */
+   The cut is a `<mask>` on the piece's own `<path>`, and deliberately not a change to the piece: its
+   `d` and its dash are what the draw-order gate reads, and "the light must not move the line" holds
+   only while they stay exactly as `applyPieceDashes` writes them. */
 
 interface FreeEnd {
   /* The `d` of the piece the end sits on, and its length from the model. */
@@ -226,73 +217,6 @@ function fitMaskRegion(cut: SVGPathElement, { xy }: PieceSamples) {
   mask.setAttribute("width", String(right - left + 2 * MASK_MARGIN));
   mask.setAttribute("height", String(bottom - top + 2 * MASK_MARGIN));
 }
-
-export function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
-  let runs: { element: SVGPathElement; segment: TaperSegment }[] = [];
-
-  return {
-    /* Replaces the taper for a new `d`: every run is built here, hidden until `paint` shows it. */
-    set(
-      end: FreeEnd | undefined,
-      { taperLength, strokeWidth }: TaperOptionsResolved,
-    ) {
-      group.replaceChildren();
-      runs = [];
-      cut.removeAttribute("d");
-      group.style.display = "none";
-      if (end === undefined) return;
-      const samples = samplePath(end.d, end.length);
-      /* Fitted even when no taper is built below it (an unresolved length or width). The early return
-         above is the one case that keeps the unmeasured region, and it cannot happen: both ends
-         always exist. */
-      fitMaskRegion(cut, samples);
-      if (!(taperLength > 0) || !(strokeWidth > 0)) return;
-      const span = taperCut(end.endAt, end.length, end.direction, taperLength);
-      cut.setAttribute("d", polylineBetween(samples, span.from, span.to));
-      for (const segment of taperSegments(
-        end.endAt,
-        end.length,
-        end.direction,
-        {
-          steps: TAPER_STEPS,
-          taperLength,
-          strokeWidth,
-        },
-      )) {
-        const element = document.createElementNS(SVG_NS, "path");
-        element.setAttribute(
-          "d",
-          polylineBetween(samples, segment.start, segment.end),
-        );
-        element.setAttribute("stroke-width", segment.width.toFixed(3));
-        element.style.display = "none";
-        group.append(element);
-        runs.push({ element, segment });
-      }
-    },
-    /* `painted` is how far along the piece the ink has reached. */
-    paint(painted: number) {
-      let shown = 0;
-      for (const { element, segment } of runs) {
-        const visible = taperReached(segment, painted);
-        const display = visible ? "" : "none";
-        if (element.style.display !== display) element.style.display = display;
-        if (visible) shown += 1;
-      }
-      const groupDisplay = shown === 0 ? "none" : "";
-      if (group.style.display !== groupDisplay)
-        group.style.display = groupDisplay;
-    },
-  };
-}
-
-export type TaperPainter = ReturnType<typeof createTaperPainter>;
-
-/* ---------------------------------------------------------------------------------------------
-   THE FRAYED ENDS — the cut cord and its fibres (`thread-fray.ts`; DESIGN.md -> Thread -> The frayed
-   ends). An end at rest is built once, when the page is measured: the ink is cut back under the fray
-   by the same mask the end's piece already carries, and the fibres wait at the cut. The moving tip
-   is the same fibres, laid at the cord's end every frame. */
 
 function createFibres(group: SVGGElement, shape: FrayShape): SVGPathElement[] {
   return shape.fibres.map((fibre) => {

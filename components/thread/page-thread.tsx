@@ -9,7 +9,7 @@ import { PAGE_FALLBACKS } from "./thread-fallback";
 import { ThreadFilters } from "./thread-filters";
 import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
 import { paintedLength } from "./thread-head";
-import { TaperCutMask, ThreadInk, TRUNK_CUT_ID } from "./thread-ink";
+import { EndCutMask, ThreadInk, TRUNK_CUT_ID } from "./thread-ink";
 import {
   type SectionRange,
   type SectionRect,
@@ -741,7 +741,7 @@ export function PageThread() {
             like the fallback's own `band` keys above: the SET of pieces this page draws is fixed
             (structural, band-invariant -- `MAIN_PIECE_COUNT`'s own header), so index and identity
             never diverge here. */}
-        <TaperCutMask cutRef={cutRef} id={TRUNK_CUT_ID} />
+        <EndCutMask cutRef={cutRef} id={TRUNK_CUT_ID} />
         <defs ref={shadowDefsRef} />
         {Array.from({ length: MAIN_PIECE_COUNT }, (_, index) => (
           <ThreadInk

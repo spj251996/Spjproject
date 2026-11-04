@@ -17,7 +17,7 @@
 /* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
    exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
    0.4s time constant the card thread still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
-   drawing head — which retires only when every piece is COMPLETE — stayed lit over the closing taper
+   drawing head — which retires only when every piece is COMPLETE — stayed lit over the closing end
    long after the thread looked finished. That is the very symptom the owner reported this round, so
    the fix must converge exactly rather than asymptotically.
 

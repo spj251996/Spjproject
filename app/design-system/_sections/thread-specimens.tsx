@@ -26,7 +26,7 @@ import {
   headSegments,
   type PieceSpan,
 } from "@/components/thread/thread-head";
-import { TaperCutMask } from "@/components/thread/thread-ink";
+import { EndCutMask } from "@/components/thread/thread-ink";
 import { MOTIFS } from "@/components/thread/thread-motifs";
 import {
   createCrossingPainter,
@@ -397,7 +397,7 @@ function FrayedEndBody({
   }, [d, at, m]);
   return (
     <>
-      <TaperCutMask
+      <EndCutMask
         cutRef={cutRef}
         id={maskId}
         region={{
