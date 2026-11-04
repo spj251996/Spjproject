@@ -145,8 +145,11 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0.0002, y: 0.5274, angle: 76.1 },
     exit: { x: 0.9887, y: 0.7171, angle: 92.2 },
     aspect: 2.308,
-    /* The two loops and the outer turns of the knot lie later-over-earlier; only the four innermost
-       crossings of the knot are woven, which is enough to read as tied at its size. */
+    /* Every crossing has its entry, so `woven` on the page means ordered by this list. The two loops
+       and the outer turns of the knot lie later-over-earlier; only the innermost crossings of the knot
+       alternate over and under, which is enough to read as tied at its size. The entry at 0.8658 exists
+       only from about 1.1x the upright band's size, where two passes that cross as one at smaller sizes
+       part; following the strand, it lies later-over-earlier between two crossings it lies on top of. */
     weave: [
       { first: 0.2094, second: 0.3963, over: "second" },
       { first: 0.215, second: 0.5729, over: "second" },
@@ -160,6 +163,7 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
       { first: 0.7455, second: 0.8524, over: "second" },
       { first: 0.851, second: 0.8923, over: "first" },
       { first: 0.8513, second: 0.8714, over: "second" },
+      { first: 0.8658, second: 0.8799, over: "second" },
       { first: 0.872, second: 0.8929, over: "first" },
     ],
   },

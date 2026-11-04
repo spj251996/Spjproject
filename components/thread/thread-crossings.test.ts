@@ -176,6 +176,27 @@ test("a motif crossing with no entry near it lies later-over-earlier", () => {
   );
 });
 
+/* A motif drawn larger can show a crossing its weave never named beside one it did — the bow does from
+   about 1.1x its upright size — and both can lie within the tolerance of one entry. The entry is one
+   crossing the owner confirmed, so the nearer takes it, whichever comes first, and the other falls back. */
+test("a weave entry orders one crossing: the nearest, the other lying later-over-earlier", () => {
+  const pieces: ThreadPiece[] = [
+    { id: "wishes", kind: "bow", start: 0, end: 400 },
+  ];
+  const ordered = orderCrossings(
+    [crossingIn(0, 204, 382), crossingIn(0, 200, 380)],
+    pieces,
+    () => [{ first: 0.5, second: 0.95, over: "first" }],
+  );
+  assert.deepEqual(
+    ordered.map((crossing) => [crossing.over, crossing.woven]),
+    [
+      ["second", false],
+      ["first", true],
+    ],
+  );
+});
+
 test("crossingRegion holds the overlay and the sway on both axes", () => {
   const crossing: Crossing = {
     x: 200,

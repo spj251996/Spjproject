@@ -201,37 +201,58 @@ export const WEAVE_TOLERANCE = 0.015;
 
 /* Which pass lies on top at each crossing, in the order handed in. A crossing is woven only when both
    passes lie in one motif piece and that motif's weave has an entry at the same place along it;
-   anything else, including a crossing the weave no longer names, lies later-over-earlier. */
+   anything else, including a crossing the weave no longer names, lies later-over-earlier. An entry is
+   one crossing the owner confirmed, so it orders one crossing per piece: where two lie within reach of
+   it (a motif drawn large enough shows one its weave never named), the nearer takes it. */
 export function orderCrossings(
   crossings: readonly Crossing[],
   pieces: readonly ThreadPiece[],
   weaveOf: (motif: MotifId) => readonly WeaveCrossing[] | undefined,
 ): OrderedCrossing[] {
-  return crossings.map((crossing) => {
+  const candidates: {
+    crossing: number;
+    piece: number;
+    entry: WeaveCrossing;
+    distance: number;
+  }[] = [];
+  crossings.forEach((crossing, index) => {
     const piece = pieces[crossing.first.piece];
     if (
       crossing.first.piece !== crossing.second.piece ||
       piece.kind === "connector"
     )
-      return { ...crossing, over: "second", woven: false };
+      return;
     const length = piece.end - piece.start;
     const first = crossing.first.at / length;
     const second = crossing.second.at / length;
-    let best: WeaveCrossing | undefined;
-    let bestDistance = WEAVE_TOLERANCE;
     for (const entry of weaveOf(piece.kind) ?? []) {
       const distance = Math.max(
         Math.abs(entry.first - first),
         Math.abs(entry.second - second),
       );
-      if (distance <= bestDistance) {
-        best = entry;
-        bestDistance = distance;
-      }
+      if (distance <= WEAVE_TOLERANCE)
+        candidates.push({
+          crossing: index,
+          piece: crossing.first.piece,
+          entry,
+          distance,
+        });
     }
-    return best === undefined
+  });
+  candidates.sort((a, b) => a.distance - b.distance);
+  const matched = new Map<number, WeaveCrossing>();
+  const claimed = new Set<string>();
+  for (const { crossing, piece, entry } of candidates) {
+    const key = `${piece}:${entry.first}:${entry.second}`;
+    if (matched.has(crossing) || claimed.has(key)) continue;
+    matched.set(crossing, entry);
+    claimed.add(key);
+  }
+  return crossings.map((crossing, index) => {
+    const entry = matched.get(index);
+    return entry === undefined
       ? { ...crossing, over: "second", woven: false }
-      : { ...crossing, over: best.over, woven: true };
+      : { ...crossing, over: entry.over, woven: true };
   });
 }
 
