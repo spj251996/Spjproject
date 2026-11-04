@@ -16,6 +16,9 @@ export type ThreadId =
   | "celebrations"
   | "wishes";
 
+/* Where the line crosses itself, which of its two passes lies on top, counted in draw order. */
+export type Over = "first" | "second";
+
 /* angle is degrees, the direction of travel: 0 is left-to-right, 90 is top-to-bottom. */
 export type Tangent = { x: number; y: number; angle: number };
 

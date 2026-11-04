@@ -6,7 +6,7 @@
    shadow, and a filter here would be a second page-length buffer. */
 import type { ThreadPiece } from "./thread-line.ts";
 import { pieceProgress } from "./thread-progress.ts";
-import { type PieceSamples, samplePath } from "./thread-samples.ts";
+import { frameAt, type PieceSamples, samplePath } from "./thread-samples.ts";
 import { tokenLength } from "./thread-tokens.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -29,17 +29,6 @@ export const ROPE = {
 export const GAP_FLOOR = 0.6;
 /* Px of arc per shown/hidden group: short, so a chunk shows soon after the ink passes it. */
 export const MARK_CHUNK = 12;
-
-/* A point, and the unit tangent there, at `s` px along a piece's samples. */
-function frameAt({ xy, length }: PieceSamples, s: number) {
-  const i = Math.max(0, Math.min(Math.floor(s), Math.floor(length) - 1));
-  const x = xy[2 * i];
-  const y = xy[2 * i + 1];
-  const dx = xy[2 * i + 2] - x;
-  const dy = xy[2 * i + 3] - y;
-  const run = Math.hypot(dx, dy) || 1;
-  return { x, y, tx: dx / run, ty: dy / run };
-}
 
 /* One gap between two strands, centred at `s`, across the line from -half to half, leaning `lean` px
    along the line over that span. Bowed a little: a strand's end is rounded, so the gap between two is

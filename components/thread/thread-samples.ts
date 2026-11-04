@@ -103,6 +103,17 @@ export interface PieceSamples {
   readonly length: number;
 }
 
+/* A point, and the unit tangent there, at `s` px along a piece's samples. */
+export function frameAt({ xy, length }: PieceSamples, s: number) {
+  const i = Math.max(0, Math.min(Math.floor(s), Math.floor(length) - 1));
+  const x = xy[2 * i];
+  const y = xy[2 * i + 1];
+  const dx = xy[2 * i + 2] - x;
+  const dy = xy[2 * i + 3] - y;
+  const run = Math.hypot(dx, dy) || 1;
+  return { x, y, tx: dx / run, ty: dy / run };
+}
+
 /* A position past the path's end continues along the path's own last direction, and one before its
    start along the first. That is what lets a run cross into a piece that lives in another `<svg>`:
    this side has to overlap the far side, or this side's own round end cap of ink stands out past
