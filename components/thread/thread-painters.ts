@@ -344,13 +344,16 @@ export type TipFrayPainter = ReturnType<typeof createTipFrayPainter>;
    the line; a frame only shows the overlays whose passes are drawn. An overlay whose upper strand is
    the earlier pass lies over the head, so the tip passes under it; the rest lie under the head. */
 
+/* Counted across every painter, not per painter: the trunk and Wishes' card thread each build their own
+   masks and lifts in one document, and an id both used resolved to the card's, in the card's coordinates. */
+let crossingsMade = 0;
+
 export function createCrossingPainter(
   defs: SVGDefsElement,
   underHead: SVGGElement,
   overHead: SVGGElement,
 ) {
   let built: { group: SVGGElement; piece: number; from: number }[] = [];
-  let made = 0;
 
   return {
     /* `own` says which chain pieces this `<svg>` holds; `local` maps a chain piece to its index here.
@@ -388,7 +391,7 @@ export function createCrossingPainter(
           local(crossing.first.piece) === undefined
         )
           continue;
-        made += 1;
+        crossingsMade += 1;
         const region = crossingRegion(
           crossing,
           reach,
@@ -401,7 +404,7 @@ export function createCrossingPainter(
           element.setAttribute("height", region.height.toFixed(1));
         };
         const mask = document.createElementNS(SVG_NS, "mask");
-        mask.id = `thread-crossing-mask-${made}`;
+        mask.id = `thread-crossing-mask-${crossingsMade}`;
         mask.dataset.threadCrossingDefs = "";
         mask.setAttribute("maskUnits", "userSpaceOnUse");
         box(mask);
@@ -418,7 +421,7 @@ export function createCrossingPainter(
         let filterId = CROSSING_LIFT.id;
         if (source instanceof SVGFilterElement) {
           const copy = source.cloneNode(true) as SVGFilterElement;
-          copy.id = `${source.id}-fit-${made}`;
+          copy.id = `${source.id}-fit-${crossingsMade}`;
           copy.dataset.threadCrossingDefs = "";
           copy.setAttribute("filterUnits", "userSpaceOnUse");
           box(copy);

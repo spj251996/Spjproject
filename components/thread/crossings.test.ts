@@ -153,6 +153,65 @@ test("every crossing has one overlay, in the layer its order names", async (t) =
   }
 });
 
+/* Every `url(#id)` a thread `<svg>` names — a crossing's mask and lift, an end's cut, a fitted shadow — must
+   name one element in the document, inside that same `<svg>`: the trunk and Wishes' card thread each
+   build their own, and a reused id resolves to whichever comes first, in the other's coordinates. */
+const REFERENCES = `(() => {
+  const named = new Map();
+  for (const element of document.querySelectorAll("[id]")) named.set(element.id, (named.get(element.id) ?? 0) + 1);
+  const wrong = [];
+  let checked = 0;
+  for (const svg of document.querySelectorAll("svg[data-thread-svg]")) {
+    for (const element of svg.querySelectorAll("*")) {
+      const sources = [element.getAttribute("mask"), element.getAttribute("filter"), element.style.filter, element.style.mask];
+      for (const source of sources) {
+        const id = /url\\(["']?#([^"')]+)["']?\\)/.exec(source ?? "")?.[1];
+        if (id === undefined) continue;
+        checked += 1;
+        const target = document.getElementById(id);
+        if (named.get(id) !== 1) wrong.push(id + " is named " + (named.get(id) ?? 0) + " times");
+        else if (target.closest("svg") !== svg) wrong.push(id + " resolves outside its own svg");
+      }
+    }
+  }
+  return { checked, wrong };
+})()`;
+
+test("every mask and filter a thread svg names resolves once, inside that svg", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    for (const band of BANDS) {
+      const context = await browser.newContext({
+        viewport: { width: band.width, height: band.height },
+        reducedMotion: "reduce",
+      });
+      const page = await context.newPage();
+      await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+        waitUntil: "load",
+      });
+      await page.waitForTimeout(1500);
+      const { checked, wrong } = (await page.evaluate(REFERENCES)) as {
+        checked: number;
+        wrong: string[];
+      };
+      assert.ok(checked > 0, `${band.name}: no references read`);
+      assert.deepEqual(
+        wrong,
+        [],
+        `${band.name}: ${wrong.length} bad references`,
+      );
+      t.diagnostic(`${band.name}: ${checked} references resolve`);
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("an overlay appears only once its later pass is drawn", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
