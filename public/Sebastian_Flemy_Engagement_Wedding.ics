@@ -1,0 +1,42 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Sebastian and Flemy//Wedding Calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Sebastian & Flemy - Engagement and Wedding
+X-WR-TIMEZONE:Asia/Kolkata
+BEGIN:VTIMEZONE
+TZID:Asia/Kolkata
+X-LIC-LOCATION:Asia/Kolkata
+BEGIN:STANDARD
+TZOFFSETFROM:+0530
+TZOFFSETTO:+0530
+TZNAME:IST
+DTSTART:19700101T000000
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:engagement-sebastian-flemy-20270104@flemy-weds-sebastian
+DTSTAMP:20261105T000000Z
+DTSTART;TZID=Asia/Kolkata:20270104T103000
+DTEND;TZID=Asia/Kolkata:20270104T160000
+SUMMARY:Sebastian & Flemy - Engagement
+LOCATION:Calicut\, Kerala
+DESCRIPTION:Join us to celebrate the engagement of Sebastian & Flemy.\nWedding invitation and details: https://flemy-weds-sebastian.vercel.app/
+CLASS:PRIVATE
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:wedding-sebastian-flemy-20270109@flemy-weds-sebastian
+DTSTAMP:20261105T000000Z
+DTSTART;TZID=Asia/Kolkata:20270109T103000
+DTEND;TZID=Asia/Kolkata:20270109T160000
+SUMMARY:Sebastian & Flemy - Wedding
+LOCATION:Koothattukulam\, Ernakulam\, Kerala
+DESCRIPTION:Join us to celebrate the wedding of Sebastian & Flemy.\nWedding invitation and details: https://flemy-weds-sebastian.vercel.app/
+CLASS:PRIVATE
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR
