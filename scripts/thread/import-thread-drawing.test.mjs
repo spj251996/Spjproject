@@ -19,13 +19,18 @@ import { join } from "node:path";
 import test from "node:test";
 import sharp from "sharp";
 import {
-  assignConnectors,
   CROSS_INSET,
+  chainStrokes,
+  cutAtMotifs,
+  detourOffType,
   extract,
   importDrawing,
+  joinsOf,
+  overlayPatch,
   relaxOffType,
   SECTION_ORDER,
   typeClearanceReport,
+  withLoops,
 } from "./import-thread-drawing.mjs";
 
 const PAGE = { width: 900, height: 900, crossInset: 64 };
@@ -160,19 +165,15 @@ test("recovers a hand-drawn thread from a rescaled, re-encoded JPEG", async () =
       `recovered scale x tracks the export scale (${map.scaleX})`,
     );
 
-    const { assigned, joins, unassigned } = assignConnectors(
-      recovered,
-      ATTACHMENTS,
-      PAGE,
-    );
-    assert.equal(unassigned, 0, "no stroke left unassigned");
+    const { line, joints } = chainStrokes(recovered, ATTACHMENTS);
+    const cut = cutAtMotifs(line, joints, ATTACHMENTS);
+    assert.deepEqual(cut.faults, []);
     assert.equal(
-      assigned.length,
+      cut.connectors.length,
       2,
       "one connector before the motif, one after",
     );
-    assert.ok(assigned[0].stroke, "connector 0 (free -> entry) got a stroke");
-    assert.ok(assigned[1].stroke, "connector 1 (exit -> free) got a stroke");
+    const { joins } = joinsOf(cut.connectors, cut.attachments, PAGE);
 
     const entryJoin = joins.find((j) => j.connector === 0 && j.end === "to");
     const exitJoin = joins.find((j) => j.connector === 1 && j.end === "from");
@@ -192,11 +193,9 @@ test("recovers a hand-drawn thread from a rescaled, re-encoded JPEG", async () =
       [EXIT, { x: 600, y: 380 }, { x: 550, y: 470 }, FREE_AFTER],
     ];
     let worst = 0;
-    assigned.forEach((a, k) => {
-      if (!a.stroke) return;
-      const interior = control[k].slice(1, -1);
-      for (const p of interior)
-        worst = Math.max(worst, toPolyline(p.x, p.y, a.stroke));
+    cut.connectors.forEach((stroke, k) => {
+      for (const p of control[k].slice(1, -1))
+        worst = Math.max(worst, toPolyline(p.x, p.y, stroke));
     });
     assert.ok(
       worst < 10,
@@ -292,8 +291,15 @@ const EARLIER_JOINS = '[{"connector":0,"end":"to"}]\n';
  * @param {number[][][]} drawn
  * @param {{ glyphs: { left: number, right: number, top: number, bottom: number, text?: string }[], sections: number }} page
  * @param {{ width: number, sections: { top: number, height: number }[] }} [geometry]
+ * @param {string[]} [extra] further command-line flags
  */
-async function runImport(t, drawn, page, geometry = SHEET_GEOMETRY) {
+async function runImport(
+  t,
+  drawn,
+  page,
+  geometry = SHEET_GEOMETRY,
+  extra = [],
+) {
   const dir = mkdtempSync(join(tmpdir(), "thread-import-cli-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   writeFileSync(join(dir, "geometry.json"), JSON.stringify(geometry));
@@ -312,18 +318,22 @@ async function runImport(t, drawn, page, geometry = SHEET_GEOMETRY) {
     errors.push(String(line)),
   );
   let reads = 0;
-  const code = await importDrawing(["tall", drawing, `--dir=${dir}`], {
-    readPage: async () => {
-      reads += 1;
-      return page;
+  const code = await importDrawing(
+    ["tall", drawing, `--dir=${dir}`, ...extra],
+    {
+      readPage: async () => {
+        reads += 1;
+        return { portraits: [], ...page };
+      },
     },
-  });
+  );
   return {
     code,
     reads,
     errors: errors.join("\n"),
     connectors: readFileSync(join(dir, "connectors.json"), "utf8"),
     joins: readFileSync(join(dir, "joins.json"), "utf8"),
+    dir,
   };
 }
 
@@ -343,19 +353,19 @@ test("a clean drawing imports: exit 0, every connector written with points", asy
   assert.notEqual(run.joins, EARLIER_JOINS);
 });
 
-test("a drawing missing a stroke is refused before the page is read, and writes nothing", async (t) => {
+test("a drawing that never reaches a motif's tick is refused before the page is read, and writes nothing", async (t) => {
   const run = await runImport(t, [STROKE_A], {
     glyphs: [],
     sections: SHEET_GEOMETRY.sections.length,
   });
   assert.notEqual(run.code, 0);
-  assert.match(run.errors, /REFUSED.*NO STROKE/s);
+  assert.match(run.errors, /REFUSED: the line passes invite\/heart's exit/);
   assert.equal(run.reads, 0, "refused before reading the live page");
   assert.equal(run.connectors, EARLIER_CONNECTORS);
   assert.equal(run.joins, EARLIER_JOINS);
 });
 
-test("a drawing with a stroke no connector takes is refused, and writes nothing", async (t) => {
+test("a stray stroke away from every motif is refused, and writes nothing", async (t) => {
   const stray = [
     [700, 650],
     [740, 700],
@@ -366,7 +376,7 @@ test("a drawing with a stroke no connector takes is refused, and writes nothing"
     sections: SHEET_GEOMETRY.sections.length,
   });
   assert.notEqual(run.code, 0);
-  assert.match(run.errors, /REFUSED: 1 drawn stroke\(s\) left unassigned/);
+  assert.match(run.errors, /REFUSED: a gap of \d+px/);
   assert.equal(run.reads, 0, "refused before reading the live page");
   assert.equal(run.connectors, EARLIER_CONNECTORS);
   assert.equal(run.joins, EARLIER_JOINS);
@@ -437,4 +447,339 @@ test("the importer expects the five sections the page has", () => {
    edge biases its own centroid, which reads as a scale error. */
 test("every band's crosses sit at the final sheets' 64px inset", () => {
   assert.deepEqual(CROSS_INSET, { wide: 64, tall: 64, upright: 64 });
+});
+
+/* ---- the continuous redraw: one line chained from its strokes, cut at every motif ---- */
+
+/** @param {number} x0 @param {number} y0 @param {number} x1 @param {number} y1 @param {number} [n] */
+const segment = (x0, y0, x1, y1, n = 40) =>
+  Array.from({ length: n + 1 }, (_, k) => ({
+    x: x0 + ((x1 - x0) * k) / n,
+    y: y0 + ((y1 - y0) * k) / n,
+  }));
+
+test("chainStrokes joins the strokes into one line from the top, each the way it runs", () => {
+  const top = segment(100, 0, 100, 100);
+  const middle = segment(110, 300, 105, 110); // drawn upward: must be reversed
+  const bottom = segment(120, 310, 120, 500);
+  const { line, joints } = chainStrokes([bottom, middle, top]);
+  assert.deepEqual(line[0], top[0]);
+  assert.deepEqual(line[line.length - 1], bottom[bottom.length - 1]);
+  assert.deepEqual(joints, [top.length, top.length + middle.length]);
+  assert.deepEqual(line[top.length], middle[middle.length - 1]);
+});
+
+/** @param {string} motif @param {string} which @param {{ x: number, y: number }} at @param {number} heading */
+const tick = (motif, which, at, heading) => ({
+  section: "invite",
+  motif,
+  which,
+  ...at,
+  heading,
+});
+
+test("chainStrokes crosses a motif to its exit before taking the next stroke", () => {
+  /* The pen stops at the heart's entry and resumes at its exit, 300px away. Another stroke's far
+     end lies nearer the entry than the exit does, which a nearest-end chain would take. */
+  const before = segment(100, 0, 100, 200);
+  const after = segment(400, 200, 150, 320);
+  const attachments = [
+    tick("heart", "entry", { x: 100, y: 200 }, 90),
+    tick("heart", "exit", { x: 400, y: 200 }, 90),
+  ];
+  const { line } = chainStrokes([before, after], attachments);
+  assert.deepEqual(line[before.length], after[0]);
+  assert.deepEqual(line[line.length - 1], after[after.length - 1]);
+});
+
+test("cutAtMotifs cuts the line out where it runs through a motif, from entry tick to exit tick", () => {
+  const line = segment(100, 0, 100, 600, 600);
+  const attachments = [
+    tick("heart", "entry", { x: 104, y: 200 }, 90),
+    tick("heart", "exit", { x: 97, y: 260 }, 90),
+  ];
+  const { connectors, faults } = cutAtMotifs(line, [], attachments);
+  assert.deepEqual(faults, []);
+  assert.equal(connectors.length, 2);
+  assert.equal(connectors[0][connectors[0].length - 1].y, 200);
+  assert.equal(connectors[1][0].y, 260);
+  assert.equal(connectors[1][connectors[1].length - 1].y, 600);
+});
+
+test("cutAtMotifs refuses a motif the line never comes near, at either tick", () => {
+  const line = segment(100, 0, 100, 600, 600);
+  for (const [entryAt, exitAt, which] of /** @type {const} */ ([
+    [{ x: 300, y: 200 }, { x: 100, y: 260 }, "entry"],
+    [{ x: 100, y: 200 }, { x: 300, y: 260 }, "exit"],
+  ])) {
+    const { faults } = cutAtMotifs(
+      line,
+      [],
+      [tick("knot", "entry", entryAt, 90), tick("knot", "exit", exitAt, 90)],
+    );
+    assert.match(faults.join("\n"), new RegExp(`knot's ${which}`));
+  }
+});
+
+test("cutAtMotifs refuses a long gap inside a connector: a stroke left stray, not a pen lift at a motif", () => {
+  const first = segment(100, 0, 100, 200);
+  const stray = segment(400, 220, 400, 300);
+  const { line, joints } = chainStrokes([first, stray]);
+  const { faults } = cutAtMotifs(line, joints, []);
+  assert.match(faults.join("\n"), /gap/);
+});
+
+test("cutAtMotifs turns a portrait ring about its portrait so its tick sits where the line meets the ring", () => {
+  /* A ring of radius 50 about (200, 300), its tick drawn at the top. The line runs down past the
+     ring's left side, touching it at (150, 300): the tick turns -90 degrees to meet it. */
+  const portrait = { x: 200, y: 300 };
+  const line = [
+    ...segment(150, 0, 150, 300, 300),
+    ...segment(150, 301, 150, 600, 299),
+  ];
+  const attachments = [
+    tick("portraitLoop", "entry", { x: 196, y: 250 }, 0),
+    tick("portraitLoop", "exit", { x: 204, y: 250 }, 10),
+  ];
+  const {
+    connectors,
+    attachments: turned,
+    faults,
+  } = cutAtMotifs(line, [], attachments, {
+    portraits: [portrait],
+  });
+  assert.deepEqual(faults, []);
+  const end = connectors[0][connectors[0].length - 1];
+  assert.ok(
+    Math.abs(end.x - 150) < 2 && Math.abs(end.y - 300) < 6,
+    `cut at ${end.x},${end.y}`,
+  );
+  for (const t of turned)
+    assert.ok(
+      Math.abs(Math.hypot(t.x - portrait.x, t.y - portrait.y) - 50) < 0.5,
+      "the tick left the ring",
+    );
+  assert.ok(
+    Math.hypot(turned[0].x - end.x, turned[0].y - end.y) < 1,
+    "the entry tick is not on the cut",
+  );
+  const spacing = Math.hypot(
+    turned[1].x - turned[0].x,
+    turned[1].y - turned[0].y,
+  );
+  assert.ok(Math.abs(spacing - 8) < 0.01, `the ticks moved apart: ${spacing}`);
+  /* The headings turn with the ring: by the angle the tick moved about the portrait. */
+  const moved =
+    (Math.atan2(turned[0].y - portrait.y, turned[0].x - portrait.x) -
+      Math.atan2(250 - portrait.y, 196 - portrait.x)) *
+    (180 / Math.PI);
+  for (const [k, t] of turned.entries()) {
+    const was = attachments[k].heading;
+    const turnedBy =
+      ((((t.heading - was - moved + 180) % 360) + 360) % 360) - 180;
+    assert.ok(Math.abs(turnedBy) < 1e-6, `heading ${k} off by ${turnedBy}`);
+  }
+});
+
+test("cutAtMotifs takes the last connector from the kept tail, moved onto the motif's new exit", () => {
+  const line = segment(100, 0, 100, 400, 400);
+  const attachments = [
+    tick("bow", "entry", { x: 100, y: 380 }, 90),
+    tick("bow", "exit", { x: 160, y: 300 }, 0),
+  ];
+  const tail = {
+    from: { x: 60, y: 1000 },
+    points: [
+      { x: 60, y: 1000 },
+      { x: 90, y: 1040 },
+    ],
+  };
+  const { connectors, faults } = cutAtMotifs(line, [], attachments, { tail });
+  assert.deepEqual(faults, []);
+  assert.equal(connectors.length, 2);
+  assert.equal(connectors[0][connectors[0].length - 1].y, 380);
+  assert.deepEqual(connectors[1], [
+    { x: 160, y: 300 },
+    { x: 190, y: 340 },
+  ]);
+});
+
+test("withLoops ties a loop into the line at its nearest point, turning the way the line runs", () => {
+  const line = segment(60, 0, 60, 200, 200);
+  const looped = withLoops(line, [{ x: 75, y: 100, r: 15 }]);
+  const around = looped.filter(
+    (p) => Math.abs(Math.hypot(p.x - 75, p.y - 100) - 15) < 1,
+  );
+  assert.ok(around.length > 40, `${around.length} points on the loop`);
+  const at = looped.findIndex(
+    (p) => Math.hypot(p.x - 75, p.y - 100) < 16 && p.x > 61,
+  );
+  /* The line runs down (+y); leaving (60,100) the loop must head down too, not back up. */
+  assert.ok(
+    looped[at + 2].y >= looped[at].y - 0.5,
+    "the loop leaves against the line",
+  );
+  assert.deepEqual(looped[looped.length - 1], line[line.length - 1]);
+});
+
+test("overlayPatch replaces the field's rows with the patch's, from its sheet row down", () => {
+  const field = { ink: new Uint8Array(4 * 6).fill(1), width: 4, height: 6 };
+  const patch = { ink: new Uint8Array(4 * 2), width: 4, height: 2 };
+  patch.ink[1] = 1;
+  overlayPatch(field, patch, 3);
+  assert.deepEqual([...field.ink.slice(12, 20)], [0, 1, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual([...field.ink.slice(0, 12)], Array(12).fill(1));
+  assert.deepEqual([...field.ink.slice(20)], Array(4).fill(1));
+});
+
+test("relaxOffType moves a free page end off type, never an end joined to a motif", () => {
+  const geometry = {
+    width: 1000,
+    sections: [
+      { top: 0, height: 1000 },
+      { top: 1000, height: 1 },
+      { top: 1001, height: 1 },
+      { top: 1002, height: 1 },
+      { top: 1003, height: 1 },
+    ],
+  };
+  /* The line starts at the page's free top end, 3px off the drawn names, and runs to a motif. */
+  const names = {
+    left: 100,
+    right: 300,
+    top: 50,
+    bottom: 120,
+    text: "drawn names",
+  };
+  const points = segment(303, 60, 450, 400, 40);
+  /** @param {boolean} freeStart */
+  const relaxed = (freeStart) =>
+    relaxOffType([{ connector: 0, points, freeStart }], geometry, [names])
+      .connectors;
+  const nearest = (/** @type {boolean} */ freeStart) =>
+    typeClearanceReport(relaxed(freeStart), geometry, [names])[0].min;
+  assert.ok(nearest(false) < 4, "a pinned start cannot leave the names");
+  assert.ok(
+    nearest(true) > 7.5,
+    `the free start sits ${nearest(true).toFixed(1)}px off the names`,
+  );
+  const after = /** @type {{ x: number, y: number }[]} */ (
+    relaxed(true)[0].points
+  );
+  assert.deepEqual(
+    after[after.length - 1],
+    points[points.length - 1],
+    "the motif end moved",
+  );
+});
+
+test("a speck of magenta is skipped, not traced as a stroke", async (t) => {
+  const run = await runImport(
+    t,
+    [
+      STROKE_A,
+      STROKE_B,
+      [
+        [700, 700],
+        [702, 700],
+      ],
+    ],
+    { glyphs: [], sections: SHEET_GEOMETRY.sections.length },
+  );
+  assert.equal(run.code, 0, run.errors);
+  assert.equal(JSON.parse(run.connectors).length, 2);
+});
+
+test("cutAtMotifs bridges a gap at a patch's edge, and still refuses one elsewhere", () => {
+  /* A patch redrawn down to y 500 leaves its line at x 100; the sheet's line resumes at x 300. */
+  const above = segment(100, 0, 100, 499);
+  const below = segment(300, 502, 300, 800);
+  const { line, joints } = chainStrokes([above, below]);
+  assert.deepEqual(cutAtMotifs(line, joints, [], { seams: [500] }).faults, []);
+  assert.match(
+    cutAtMotifs(line, joints, [], { seams: [200] }).faults.join("\n"),
+    /gap/,
+  );
+});
+
+test("--report writes the attempted line even when the import is refused", async (t) => {
+  const glyph = { left: 220, right: 280, top: 270, bottom: 330, text: "Flemy" };
+  const report = join(tmpdir(), `thread-import-report-${process.pid}.json`);
+  t.after(() => rmSync(report, { force: true }));
+  const run = await runImport(
+    t,
+    [STROKE_A, STROKE_B],
+    { glyphs: [glyph], sections: SHEET_GEOMETRY.sections.length },
+    SHEET_GEOMETRY,
+    [`--report=${report}`],
+  );
+  assert.notEqual(run.code, 0);
+  assert.equal(run.connectors, EARLIER_CONNECTORS);
+  const written = JSON.parse(readFileSync(report, "utf8"));
+  assert.equal(written.connectors.length, 2);
+  assert.equal(written.attachments.length, 2);
+});
+
+test("detourOffType takes a line that runs through a label round its nearer end, clear of the floor", () => {
+  /* A two-line label the line cuts straight through, too wide to push a vertex out of. */
+  const label = [
+    { left: 300, right: 420, top: 300, bottom: 320, text: "Sebastian" },
+    { left: 320, right: 400, top: 324, bottom: 344, text: "Groom" },
+  ];
+  const line = segment(330, 200, 360, 460, 80);
+  const out = detourOffType(line, label, 8);
+  assert.deepEqual(out[0], line[0]);
+  assert.deepEqual(out[out.length - 1], line[line.length - 1]);
+  const dense = segment(0, 0, 0, 0, 1).slice(0, 0);
+  for (let i = 1; i < out.length; i += 1)
+    dense.push(...segment(out[i - 1].x, out[i - 1].y, out[i].x, out[i].y, 20));
+  const nearest = Math.min(
+    ...dense.map((p) =>
+      Math.min(
+        ...label.map((g) =>
+          Math.hypot(
+            Math.max(g.left - p.x, 0, p.x - g.right),
+            Math.max(g.top - p.y, 0, p.y - g.bottom),
+          ),
+        ),
+      ),
+    ),
+  );
+  assert.ok(
+    nearest >= 7.9,
+    `the detour passes ${nearest.toFixed(1)}px from the label`,
+  );
+  /* Round the left end (x 300), which the line crosses nearer than the right (x 420). */
+  assert.ok(
+    Math.min(...out.map((p) => p.x)) < 300 &&
+      Math.max(...out.map((p) => p.x)) < 420,
+  );
+});
+
+test("detourOffType leaves a line already clear of type untouched", () => {
+  const label = [{ left: 300, right: 420, top: 300, bottom: 320 }];
+  const line = segment(100, 200, 100, 460, 40);
+  assert.deepEqual(detourOffType(line, label, 8), line);
+});
+
+/** Distance from a point to a glyph rect. @param {{ x: number, y: number }} p @param {{ left: number, right: number, top: number, bottom: number }} g */
+const relaxProbe = (p, g) =>
+  Math.hypot(
+    Math.max(g.left - p.x, 0, p.x - g.right),
+    Math.max(g.top - p.y, 0, p.y - g.bottom),
+  );
+
+test("detourOffType passes over a run it cannot fix and reroutes the next", () => {
+  /* The line starts pinned 3px under one label, then runs through a second further down. */
+  const label = [
+    { left: 80, right: 200, top: 180, bottom: 197, text: "Brother-in-law" },
+    { left: 300, right: 420, top: 300, bottom: 320, text: "Sebastian" },
+  ];
+  const line = [
+    ...segment(150, 200, 330, 250, 20),
+    ...segment(330, 251, 360, 460, 60),
+  ];
+  const out = detourOffType(line, label, 8);
+  const on = out.some((p) => relaxProbe(p, label[1]) === 0);
+  assert.ok(!on, "the run through the second label was left");
 });
