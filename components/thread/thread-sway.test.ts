@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cutPolyline, flatten, restoredShape } from "./thread-sway.ts";
+import {
+  cutPolyline,
+  flatten,
+  restoredShape,
+  writesInBatch,
+} from "./thread-sway.ts";
 
 /* The sway moves points, so a cubic it moved only at its control points could not follow the field
    between them the way a polyline laid on it does. Flattened, both are polylines. */
@@ -86,4 +91,25 @@ test("a cut is placed by the unswayed line's lengths and laid on the moved point
 test("stopping keeps a path a painter rewrote since the sway last wrote it", () => {
   assert.equal(restoredShape("M5 5L6 6", "M1 1L2 2", "M0 0L2 2"), "M5 5L6 6");
   assert.equal(restoredShape("M1 1L2 2", "M1 1L2 2", "M0 0L2 2"), "M0 0L2 2");
+});
+
+/* A painter's write arrives as two or three records, and the observer shaped the path once for each. A batch shapes
+   each path once, and a style change in it decides how. */
+test("a batch of records shapes each path once, a style change taking precedence", () => {
+  const a = { name: "a" };
+  const b = { name: "b" };
+  const writes = writesInBatch([
+    { target: a, attributeName: "style" },
+    { target: b, attributeName: "d" },
+    { target: a, attributeName: "d" },
+    { target: a, attributeName: "style" },
+    { target: b, attributeName: "d" },
+  ]);
+  assert.deepEqual(
+    [...writes],
+    [
+      [a, true],
+      [b, false],
+    ],
+  );
 });

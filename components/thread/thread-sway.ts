@@ -228,6 +228,21 @@ export function restoredShape(
   return current !== null && current !== written ? current : base;
 }
 
+/* The paths a batch of mutation records changed, each once, and whether its style changed: a painter's write arrives
+   as two or three records, and shaping the path once per record repeated the work for nothing. Exported for its
+   test. */
+export function writesInBatch<T>(
+  records: readonly { target: T; attributeName: string | null }[],
+): Map<T, boolean> {
+  const writes = new Map<T, boolean>();
+  for (const { target, attributeName } of records)
+    writes.set(
+      target,
+      (writes.get(target) ?? false) || attributeName === "style",
+    );
+  return writes;
+}
+
 /* The flattened path from its start to `fraction` of its length, ending on the point there: nothing past it
    is in the path. At 0 it is empty, and from 1 it is the whole path. The fraction is found along
    `measuredOn` — the same points before they moved, by default the path itself — and laid on `numbers`. */
@@ -482,11 +497,13 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
          the line stopped at: the twist, the head and the tapered ends hold that moment too. */
       const t = swayAwake ? seconds() : stoppedAt;
       const band = swayAwake ? view() : (stoppedBand ?? view());
-      for (const record of records) {
-        const path = record.target as SVGPathElement;
+      for (const [target, styled] of writesInBatch(records)) {
+        const path = target as SVGPathElement;
+        /* A path the painter has just hidden paints nothing; the change that shows it again shapes it. */
+        if (path.style.display === "none") continue;
         const entry = track(path);
         if (entry === undefined) continue;
-        if (record.attributeName === "style")
+        if (styled)
           write(path, entry, t, band, path.dataset.threadPiece === undefined);
         else if (entry.written === entry.base) write(path, entry, t, band);
       }

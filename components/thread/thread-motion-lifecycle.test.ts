@@ -799,6 +799,55 @@ test("the sway never re-shapes a hidden twist mark or head step", async (t) => {
   }
 });
 
+/* A painter hides a head step as the draw arrives, often while the line is swaying: the style change that hides it is
+   not a reason to re-shape it, and the frame the head is shown again shapes it then. */
+test("hiding a twist mark or head step never re-shapes it", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 393, height: 700 },
+    });
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
+    await page.evaluate(`(() => {
+      window.__hides = 0;
+      window.__reshapedHidden = 0;
+      const watch = new MutationObserver((records) => {
+        for (const record of records) {
+          if (record.target.style.display !== "none") continue;
+          if (record.attributeName === "d") window.__reshapedHidden += 1;
+          else if (!/display: none/.test(record.oldValue ?? "")) window.__hides += 1;
+        }
+      });
+      for (const svg of document.querySelectorAll("[data-thread-svg]"))
+        watch.observe(svg, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ["d", "style"] });
+    })()`);
+    for (let y = 300; y <= 1800; y += 300) {
+      await page.evaluate(`window.scrollTo(0, ${y})`);
+      await page.waitForTimeout(400);
+    }
+    await page.waitForTimeout(1500);
+    await page.evaluate("window.scrollTo(0, 600)");
+    await page.waitForTimeout(1000);
+    const seen = (await page.evaluate(
+      "({ hides: window.__hides, reshaped: window.__reshapedHidden })",
+    )) as { hides: number; reshaped: number };
+    assert.ok(seen.hides > 0, "a mark or head step was hidden to watch");
+    assert.equal(seen.reshaped, 0, "a path was re-shaped as it was hidden");
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
 test("coming back to the tab, the sway waits a second before it moves", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
