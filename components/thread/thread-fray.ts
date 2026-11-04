@@ -10,7 +10,7 @@ export const FRAY_FIBRES = 5;
 
 /* x the cord's width: how far the fibres reach past the cut, how far they splay, and how wide each
    is. The seed fixes which lengths and curls the five take, so the end is the same on every load. */
-export const FRAY = { reach: 2.7, spread: 0.9, width: 0.25, seed: 11 } as const;
+export const FRAY = { reach: 3.6, spread: 0.9, width: 0.34, seed: 11 } as const;
 
 type Point = readonly [number, number];
 

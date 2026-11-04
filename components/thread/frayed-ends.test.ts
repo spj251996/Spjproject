@@ -4,6 +4,7 @@ import { createServer, type Server } from "node:http";
 import { extname, join } from "node:path";
 import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
+import { FRAY } from "./thread-fray.ts";
 
 /* THE FRAYED ENDS ON THE PAGE (DESIGN.md -> Thread -> The frayed ends, The drawing head): five fibres
    at the invite's top and at Wishes' close, and the same five riding the draw, never ahead of it.
@@ -119,8 +120,8 @@ const BANDS = [
   { name: "wide", width: 1536, height: 695 },
 ];
 
-/* The fray reaches 2.7x the cord's width at most (`FRAY.reach` x 1.2); the cord is 2.2px. */
-const FRAY_REACH = 2.7 * 1.2 * 2.2;
+/* The farthest a fibre reaches: `FRAY.reach` x 1.2 of the cord's 2.2px width. */
+const FRAY_REACH = FRAY.reach * 1.2 * 2.2;
 
 test("the ends are five fibres, the tip rides the draw and never leads it, and Wishes' end shows once the line is whole", async (t) => {
   if (!labExport(t)) return;

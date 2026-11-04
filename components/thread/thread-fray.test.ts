@@ -4,6 +4,7 @@ import {
   cordDrawn,
   END_CUT_WIDTH,
   endCut,
+  FRAY,
   FRAY_FIBRES,
   frayShape,
   placeFray,
@@ -75,4 +76,9 @@ test("endCut takes the ink's cap past a free end", () => {
   assert.equal(backwards.from, -END_CUT_WIDTH / 2);
   assert.equal(backwards.to, 6);
   assert.ok(END_CUT_WIDTH / 2 > WIDTH / 2 + 1);
+});
+
+/* Set by eye on the live page (DESIGN.md -> Thread -> The frayed ends), so pinned to the value itself. */
+test("the fibres are the owner's pick: reach 3.6, splay 0.9, width 0.34", () => {
+  assert.deepEqual(FRAY, { reach: 3.6, spread: 0.9, width: 0.34, seed: 11 });
 });
