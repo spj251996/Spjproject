@@ -729,20 +729,33 @@ test("a piece finished during a fling is whole when scrolled back to", async (t)
       }
     })()`);
     await page.waitForTimeout(1000);
-    await page.evaluate("window.scrollTo(0, 900)");
-    await page.waitForTimeout(400);
-    const cut = (await page.evaluate(`(() => {
+    /* Passed pieces stopping short of the next: off screen beyond the sway's reach, before the scroll back, where
+       only the write that finished the piece can have shaped it; then on screen after it. */
+    const shortOf = (where: string) => `(() => {
       const svg = [...document.querySelectorAll("[data-thread-svg]")].sort((a, b) => b.querySelectorAll("path[data-thread-piece]").length - a.querySelectorAll("path[data-thread-piece]").length)[0];
       const pieces = [...svg.querySelectorAll("path[data-thread-piece]")];
       const last = pieces.findLastIndex((p) => p.style.visibility !== "hidden");
       return pieces.slice(0, last).filter((p) => {
         const r = p.getBoundingClientRect();
-        if (r.bottom < 0 || r.top > innerHeight) return false;
+        if (!(${where})) return false;
         const end = p.getPointAtLength(p.getTotalLength());
         const next = pieces[pieces.indexOf(p) + 1].getPointAtLength(0);
         return Math.hypot(end.x - next.x, end.y - next.y) > 2;
       }).map((p) => p.dataset.threadPiece);
-    })()`)) as string[];
+    })()`;
+    const offScreen = (await page.evaluate(
+      shortOf("r.bottom < -240"),
+    )) as string[];
+    assert.deepEqual(
+      offScreen,
+      [],
+      "a piece finished off screen stops short of the next",
+    );
+    await page.evaluate("window.scrollTo(0, 900)");
+    await page.waitForTimeout(400);
+    const cut = (await page.evaluate(
+      shortOf("r.bottom >= 0 && r.top <= innerHeight"),
+    )) as string[];
     assert.deepEqual(
       cut,
       [],
@@ -959,8 +972,8 @@ test("under reduced motion the twist is present and static", async (t) => {
     await page.waitForTimeout(1000);
     const second = (await page.evaluate(shapes)) as string;
     assert.ok(
-      first.split("\n").length > 0 && first !== "",
-      "the twist has chunks",
+      first.split("\n").some((chunk) => !chunk.endsWith("|none")),
+      "the twist shows a chunk",
     );
     assert.equal(second, first, "the twist moved under reduced motion");
   } finally {
