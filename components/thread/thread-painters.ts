@@ -2,15 +2,18 @@
    elements of the drawing head and the tapered ends. `PageThread` and `CardThread` each build their
    own painters. */
 
+import { endCut, type FrayShape, placeFray } from "./thread-fray.ts";
 import {
   HEAD_STEP_OVERLAP,
   type HeadOptions,
   type HeadSegment,
   headSegments,
+  NEGLIGIBLE,
 } from "./thread-head.ts";
 import type { ThreadPiece } from "./thread-line.ts";
 import { dashForPiece, pieceProgress } from "./thread-progress.ts";
 import {
+  frameAt,
   type PieceSamples,
   polylineBetween,
   samplePath,
@@ -184,7 +187,7 @@ export type HeadPainter = ReturnType<typeof createHeadPainter>;
    exactly as `applyPieceDashes` writes them. The runs and the cut are built once, when the page is
    measured; a frame only shows the runs the ink has reached. */
 
-interface TaperEnd {
+interface FreeEnd {
   /* The `d` of the piece the end sits on, and its length from the model. */
   readonly d: string;
   readonly length: number;
@@ -221,7 +224,7 @@ export function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
   return {
     /* Replaces the taper for a new `d`: every run is built here, hidden until `paint` shows it. */
     set(
-      end: TaperEnd | undefined,
+      end: FreeEnd | undefined,
       { taperLength, strokeWidth }: TaperOptionsResolved,
     ) {
       group.replaceChildren();
@@ -275,3 +278,128 @@ export function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
 }
 
 export type TaperPainter = ReturnType<typeof createTaperPainter>;
+
+/* ---------------------------------------------------------------------------------------------
+   THE FRAYED ENDS — the cut cord and its fibres (`thread-fray.ts`; DESIGN.md -> Thread -> The frayed
+   ends). An end at rest is built once, when the page is measured: the ink is cut back under the fray
+   by the same mask the end's piece already carries, and the fibres wait at the cut. The moving tip
+   is the same fibres, laid at the cord's end every frame. */
+
+function createFibres(group: SVGGElement, shape: FrayShape): SVGPathElement[] {
+  return shape.fibres.map((fibre) => {
+    const element = document.createElementNS(SVG_NS, "path");
+    element.setAttribute("stroke-width", fibre.width.toFixed(3));
+    group.append(element);
+    return element;
+  });
+}
+
+export function createEndFrayPainter(group: SVGGElement, cut: SVGPathElement) {
+  /* The arc along the piece the ink has to reach before the fibres show: the cut for the invite's
+     end, which the cord grows away from, and the piece's end for Wishes', which the cord reaches
+     last. */
+  let showFrom = Number.POSITIVE_INFINITY;
+
+  return {
+    set(end: FreeEnd | undefined, shape: FrayShape) {
+      group.replaceChildren();
+      cut.removeAttribute("d");
+      group.style.display = "none";
+      showFrom = Number.POSITIVE_INFINITY;
+      if (end === undefined) return;
+      const samples = samplePath(end.d, end.length);
+      fitMaskRegion(cut, samples);
+      if (!(shape.length > 0)) return;
+      const span = endCut(end.endAt, end.length, end.direction, shape.length);
+      cut.setAttribute("d", polylineBetween(samples, span.from, span.to));
+      const cutAt = end.direction === 1 ? span.from : span.to;
+      const frame = frameAt(samples, cutAt);
+      const pointing = {
+        x: frame.x + frame.tx * (cutAt - Math.floor(cutAt)),
+        y: frame.y + frame.ty * (cutAt - Math.floor(cutAt)),
+        tx: end.direction * frame.tx,
+        ty: end.direction * frame.ty,
+      };
+      const ds = placeFray(shape, pointing);
+      createFibres(group, shape).forEach((element, index) => {
+        element.setAttribute("d", ds[index]);
+      });
+      showFrom = end.direction === 1 ? end.length : cutAt;
+    },
+    /* `painted` is how far along the end's piece the cord has reached. */
+    paint(painted: number) {
+      const display = painted >= showFrom - NEGLIGIBLE ? "" : "none";
+      if (group.style.display !== display) group.style.display = display;
+    },
+  };
+}
+
+export type EndFrayPainter = ReturnType<typeof createEndFrayPainter>;
+
+/* One per `<svg>`: draws the tip only while the cord's end lies in a piece this `<svg>` holds
+   (`pathOf`), so the tip crosses the trunk's join with the card thread as the head does. */
+export function createTipFrayPainter(
+  group: SVGGElement,
+  pathOf: (piece: number) => string | undefined,
+  samples: Map<number, PieceSamples>,
+) {
+  let fibres: SVGPathElement[] = [];
+  let built: FrayShape | undefined;
+
+  function hide() {
+    if (group.style.display !== "none") group.style.display = "none";
+  }
+
+  return {
+    /* `cord` and `drawn` are on the chain's scale. Hidden once the line is whole, where the end at rest
+       takes over, and while the cord is still inside the invite's own cut. */
+    paint(
+      cord: number,
+      drawn: number,
+      chain: readonly ThreadPiece[],
+      shape: FrayShape,
+      colour: string,
+    ) {
+      const total = chain[chain.length - 1]?.end ?? 0;
+      if (drawn >= total - NEGLIGIBLE || cord <= shape.length) return hide();
+      let index = chain.findIndex((piece) => cord <= piece.end);
+      if (index === -1) index = chain.length - 1;
+      const d = pathOf(index);
+      if (d === undefined) return hide();
+      const piece = chain[index];
+      const length = piece.end - piece.start;
+      let sampled = samples.get(index);
+      if (sampled === undefined) {
+        sampled = samplePath(d, length);
+        samples.set(index, sampled);
+      }
+      if (built !== shape) {
+        group.replaceChildren();
+        fibres = createFibres(group, shape);
+        built = shape;
+      }
+      const at = Math.min(length, cord - piece.start);
+      const frame = frameAt(sampled, at);
+      const step =
+        at - Math.max(0, Math.min(Math.floor(at), Math.floor(length) - 1));
+      const ds = placeFray(shape, {
+        x: frame.x + frame.tx * step,
+        y: frame.y + frame.ty * step,
+        tx: frame.tx,
+        ty: frame.ty,
+      });
+      fibres.forEach((element, fibre) => {
+        setAttribute(element, "d", ds[fibre]);
+        setAttribute(element, "stroke", colour);
+      });
+      if (group.style.display !== "") group.style.display = "";
+    },
+    /* A re-measure replaces every piece's `d`. */
+    reset() {
+      samples.clear();
+      hide();
+    },
+  };
+}
+
+export type TipFrayPainter = ReturnType<typeof createTipFrayPainter>;

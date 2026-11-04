@@ -6,6 +6,7 @@ import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
 import { PAGE_FALLBACKS } from "./thread-fallback";
 import { ThreadFilters } from "./thread-filters";
+import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
 import { paintedLength } from "./thread-head";
 import { TaperCutMask, ThreadInk, TRUNK_CUT_ID } from "./thread-ink";
 import {
@@ -29,10 +30,12 @@ import {
 import {
   applyPieceDashes,
   clearPieceDashes,
+  createEndFrayPainter,
   createHeadPainter,
-  createTaperPainter,
+  createTipFrayPainter,
+  type EndFrayPainter,
   type HeadPainter,
-  type TaperPainter,
+  type TipFrayPainter,
 } from "./thread-painters";
 import { THREAD_IDS } from "./thread-paths";
 import {
@@ -55,7 +58,7 @@ import {
 import {
   headOptions,
   readTerminalWindow,
-  taperOptions,
+  tokenLength,
   tokenTime,
 } from "./thread-tokens";
 import { createTwistPainter } from "./thread-twist";
@@ -176,9 +179,13 @@ export function PageThread() {
   const chainRef = useRef<readonly ThreadPiece[]>([]);
   const headGroupRef = useRef<SVGGElement>(null);
   const headRef = useRef<HeadPainter | null>(null);
-  const taperGroupRef = useRef<SVGGElement>(null);
+  const endFrayGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
-  const taperRef = useRef<TaperPainter | null>(null);
+  const endFrayRef = useRef<EndFrayPainter | null>(null);
+  const tipGroupRef = useRef<SVGGElement>(null);
+  const tipRef = useRef<TipFrayPainter | null>(null);
+  /* The fray's fibres for the cord's measured width, rebuilt with every measure. */
+  const frayRef = useRef<FrayShape>(frayShape(0));
   const shadowDefsRef = useRef<SVGDefsElement>(null);
   const shadowsRef = useRef<ThreadShadows | null>(null);
   /* One sampling of each piece, made the first time the head reaches it. */
@@ -272,25 +279,50 @@ export function PageThread() {
     syncSway();
   }, [goIdle, syncSway]);
 
-  const taper = useCallback((): TaperPainter | null => {
-    const group = taperGroupRef.current;
+  const endFray = useCallback((): EndFrayPainter | null => {
+    const group = endFrayGroupRef.current;
     const cut = cutRef.current;
     if (group === null || cut === null) return null;
-    taperRef.current ??= createTaperPainter(group, cut);
-    return taperRef.current;
+    endFrayRef.current ??= createEndFrayPainter(group, cut);
+    return endFrayRef.current;
   }, []);
 
+  const tip = useCallback((): TipFrayPainter | null => {
+    const group = tipGroupRef.current;
+    if (group === null) return null;
+    tipRef.current ??= createTipFrayPainter(group, pathOf, samplesRef.current);
+    return tipRef.current;
+  }, [pathOf]);
+
+  /* The cord is drawn the fray's length behind the drawn length, so the moving tip's fibres end at
+     `drawn` (DESIGN.md -> Thread -> The drawing head). */
   const draw = useCallback(
     (drawn: number) => {
-      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
-      twistRef.current?.painted(drawn);
-      head()?.paint(drawn, chainRef.current, headOptions());
+      const chain = chainRef.current;
+      const cord = cordDrawn(
+        drawn,
+        chain[chain.length - 1]?.end ?? 0,
+        frayRef.current.length,
+      );
+      applyPieceDashes(pathsRef.current, piecesRef.current, cord);
+      twistRef.current?.painted(cord);
+      const options = headOptions();
+      head()?.paint(cord, chain, options);
       if (headGroupRef.current !== null)
         shadows()?.headPainted(headGroupRef.current);
+      tip()?.paint(
+        cord,
+        drawn,
+        chain,
+        frayRef.current,
+        `rgb(${options.tipColor.join(",")})`,
+      );
+      if (tipGroupRef.current !== null)
+        shadows()?.tipPainted(tipGroupRef.current);
       const first = piecesRef.current[0];
-      if (first !== undefined) taper()?.paint(paintedLength(drawn, first));
+      if (first !== undefined) endFray()?.paint(paintedLength(cord, first));
     },
-    [head, shadows, taper],
+    [head, shadows, tip, endFray],
   );
 
   /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
@@ -384,7 +416,7 @@ export function PageThread() {
     chainRef.current = pieces;
     twistRef.current ??= createTwistPainter(
       liveSvg,
-      taperGroupRef.current,
+      endFrayGroupRef.current,
       TRUNK_CUT_ID,
       () => 0,
     );
@@ -401,8 +433,10 @@ export function PageThread() {
       swayRef.current.baseOf,
     );
     head()?.reset();
+    tip()?.reset();
+    frayRef.current = frayShape(tokenLength("--stroke-thread"));
     const invitePiece = trunkPieces[0];
-    taper()?.set(
+    endFray()?.set(
       invitePiece === undefined
         ? undefined
         : {
@@ -411,15 +445,15 @@ export function PageThread() {
             endAt: 0,
             direction: -1,
           },
-      taperOptions(),
+      frayRef.current,
     );
-    const taperGroup = taperGroupRef.current;
+    const endGroup = endFrayGroupRef.current;
     const invitePath = pathsRef.current[0];
     shadows()?.measured(
       pathsRef.current,
-      taperGroup === null || invitePath === null || invitePath === undefined
+      endGroup === null || invitePath === null || invitePath === undefined
         ? undefined
-        : { group: taperGroup, piece: invitePath },
+        : { group: endGroup, piece: invitePath },
     );
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
@@ -433,7 +467,7 @@ export function PageThread() {
       catchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
       twistRef.current?.painted(Number.POSITIVE_INFINITY);
-      taper()?.paint(Number.POSITIVE_INFINITY);
+      endFray()?.paint(Number.POSITIVE_INFINITY);
     } else {
       /* The path this ratchet's maximum was measured against no longer exists. The maximum is
          REBASED rather than discarded: it is the only thing holding the owner's "and then stay
@@ -690,7 +724,8 @@ export function PageThread() {
             }}
           />
         ))}
-        <g className={styles.pageTaper} data-thread-taper ref={taperGroupRef} />
+        <g className={styles.pageFray} data-thread-fray ref={endFrayGroupRef} />
+        <g className={styles.pageTip} data-thread-tip ref={tipGroupRef} />
         <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
       </svg>
     </span>

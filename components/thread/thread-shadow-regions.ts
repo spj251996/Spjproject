@@ -95,8 +95,9 @@ export function createShadowFitter(
 
 export type ShadowFitter = ReturnType<typeof createShadowFitter>;
 
-/* One `<svg>`'s shadows: the contact shadow on each piece and on the tapered end, fitted when the page
-   is measured, and the head's halo, fitted on every paint because the head moves. */
+/* One `<svg>`'s shadows: the contact shadow on each piece and on the end at rest, fitted when the page
+   is measured, and the head's halo and the moving tip's contact shadow, fitted on every paint because
+   they move. */
 export function createThreadShadows(defs: SVGDefsElement, sway: number) {
   const bleed = createShadowFitter(defs, "--bleed-thread", sway);
   const halo = createShadowFitter(defs, "--halo-thread-head", sway);
@@ -113,6 +114,10 @@ export function createThreadShadows(defs: SVGDefsElement, sway: number) {
     },
     headPainted(group: SVGGElement) {
       if (group.style.display !== "none") halo.fit(group);
+    },
+    /* The moving tip's fibres take the contact shadow, fitted on every paint because they move. */
+    tipPainted(group: SVGGElement) {
+      if (group.style.display !== "none") bleed.fit(group);
     },
   };
 }

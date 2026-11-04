@@ -69,9 +69,9 @@ function serveExport(): Promise<{ server: Server; port: number }> {
   });
 }
 
-/* `headShown` counts only groups that are themselves displayed; `taperShown` is the closing taper's
-   own runs, which the head covers when it fails to retire — the owner's actual complaint was that
-   they could not SEE the taper, so it is asserted directly rather than inferred from the head. */
+/* `headShown` counts only groups that are themselves displayed; `endShown` is the closing frayed
+   end's fibres, which the head covers when it fails to retire — the owner's actual complaint was that
+   they could not SEE the closing end, so it is asserted directly rather than inferred from the head. */
 const READ = `(() => {
   const shown = (selector) => Array.from(document.querySelectorAll(selector))
     .filter((g) => g.style.display !== "none")
@@ -79,7 +79,7 @@ const READ = `(() => {
   const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
   return {
     headShown: shown("[data-thread-head]"),
-    taperShown: shown("[data-thread-taper]"),
+    endShown: shown("[data-thread-fray]"),
     pieces: pieces.length,
     undrawn: pieces.filter((p) => {
       const period = Number.parseFloat(p.style.strokeDasharray);
@@ -145,7 +145,7 @@ test("the drawing head is lit while drawing and gone once the whole thread is dr
       await page.waitForTimeout(2000);
       const rest = (await page.evaluate(READ)) as {
         headShown: number;
-        taperShown: number;
+        endShown: number;
         pieces: number;
         undrawn: number;
       };
@@ -161,8 +161,8 @@ test("the drawing head is lit while drawing and gone once the whole thread is dr
         `${band.name}: the drawing head is still showing ${rest.headShown} runs at rest, 40px short of the bottom, with nothing left to draw`,
       );
       assert.ok(
-        rest.taperShown > 0,
-        `${band.name}: the closing taper is not visible at rest`,
+        rest.endShown > 0,
+        `${band.name}: the closing frayed end is not visible at rest`,
       );
       await context.close();
     }
