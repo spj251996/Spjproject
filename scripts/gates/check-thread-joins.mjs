@@ -92,10 +92,16 @@ const onlyViewport = flag("viewport");
    admitted skin-tone fragments), and `r - g > 80` inside 75-99 (looser read Family's skin as ink; from
    100 `celebrations` breaks). The portrait bounds were measured with the page's content showing; the
    shot now hides everything but the thread, so only the `celebrations` bounds still bind. Recalibrate if
-   the thread's colour changes. */
+   the thread's colour changes.
+   Shaded ink is still ink: a crossing's lift shadow darkens the lower strand where it leaves the upper
+   one (measured 107,44,33 to 136,66,50, r - g as low as 63), and the first test alone read that strip as
+   a gap and split the invite at the tall band in two. Darkening keeps the red twice the green, which
+   neither ivory nor the contact shadow on paper comes near (both r ≈ g). */
 /** @param {number} r @param {number} g @param {number} b */
 function isInk(r, g, b) {
-  return g < 105 && r - g > 80 && r - b > 60;
+  const lit = g < 105 && r - g > 80;
+  const shaded = r > 2 * g;
+  return (lit || shaded) && r - b > 60;
 }
 
 /**
