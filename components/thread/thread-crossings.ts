@@ -261,6 +261,26 @@ export function orderCrossings(
 export const CROSSING_REACH = 3;
 export const LIFT_REACH = 1.5;
 
+/* How far along its later pass's piece the cord must reach before a crossing's upper strand shows, and
+   before its lift shadow does. An earlier pass on top lies over the head, so it shows as the tip's fibres
+   (`lead` past the cord) reach it, or they would lie over a strand that should cover them; its lift waits
+   until the later pass lies under it across the whole overlay, or it would fall on paper. A later pass on
+   top shows, lift and all, once drawn across its whole overlay. `reach` is the overlay's either side. */
+export function crossingShowsFrom(
+  crossing: OrderedCrossing,
+  reach: number,
+  lead: number,
+): { strand: number; shade: number } {
+  const drawnAcross = crossing.second.at + reach;
+  return {
+    strand:
+      crossing.over === "first"
+        ? crossing.second.at - reach - lead
+        : drawnAcross,
+    shade: drawnAcross,
+  };
+}
+
 /* The box a crossing's mask and lift shadow are fitted to: the overlay's reach either side of the
    crossing, grown by `margin` (the shadow's reach and the sway's), so a page-sized region never forms. */
 export function crossingRegion(

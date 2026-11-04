@@ -4,8 +4,10 @@ import {
   CROSSING_REACH,
   type Crossing,
   crossingRegion,
+  crossingShowsFrom,
   findCrossings,
   lineCrossings,
+  type OrderedCrossing,
   orderCrossings,
 } from "./thread-crossings.ts";
 import { authoredMeasuredSections } from "./thread-fallback.ts";
@@ -227,4 +229,34 @@ test("lineCrossings orders a band's own crossings from the motifs' weaves", () =
 /* Set by eye on the live page (DESIGN.md -> Thread -> Crossings), so pinned to the value itself. */
 test("the upper strand is redrawn 3 cord widths either side of a crossing, the owner's pick", () => {
   assert.equal(CROSSING_REACH, 3);
+});
+
+/* When a crossing's overlay shows, as how far the cord has reached along its later pass's piece. The tip's
+   fibres lead the cord by the fray's length, and the lift shadow falls on the lower strand only. */
+test("an earlier pass on top shows as the fibre tips reach it, its lift once the later pass lies beneath", () => {
+  const crossing: OrderedCrossing = {
+    x: 0,
+    y: 0,
+    first: { piece: 0, at: 40 },
+    second: { piece: 0, at: 300 },
+    over: "first",
+    woven: true,
+  };
+  const shows = crossingShowsFrom(crossing, 6.6, 7.8);
+  assert.equal(shows.strand, 300 - 6.6 - 7.8);
+  assert.equal(shows.shade, 300 + 6.6);
+});
+
+test("a later pass on top shows, lift and all, once drawn across its whole overlay", () => {
+  const crossing: OrderedCrossing = {
+    x: 0,
+    y: 0,
+    first: { piece: 0, at: 40 },
+    second: { piece: 0, at: 300 },
+    over: "second",
+    woven: false,
+  };
+  const shows = crossingShowsFrom(crossing, 6.6, 7.8);
+  assert.equal(shows.strand, 300 + 6.6);
+  assert.equal(shows.shade, 300 + 6.6);
 });

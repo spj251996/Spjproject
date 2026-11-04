@@ -5,10 +5,11 @@
 import {
   CROSSING_REACH,
   crossingRegion,
+  crossingShowsFrom,
   LIFT_REACH,
   type OrderedCrossing,
 } from "./thread-crossings.ts";
-import { endCut, type FrayShape, placeFray } from "./thread-fray.ts";
+import { endCut, type FrayShape, frayShape, placeFray } from "./thread-fray.ts";
 import {
   HEAD_STEP_OVERLAP,
   type HeadOptions,
@@ -342,8 +343,8 @@ export type TipFrayPainter = ReturnType<typeof createTipFrayPainter>;
    CROSSINGS — where the line crosses itself, the upper strand is redrawn over the lower, with its
    own twist and a lift shadow that falls on the lower strand only (`thread-crossings.ts`; DESIGN.md ->
    Thread -> Crossings). Built once per measure, every element a `<path>` so the sway carries it with
-   the line; a frame only shows the overlays whose passes are drawn. An overlay whose upper strand is
-   the earlier pass lies over the head, so the tip passes under it; the rest lie under the head. */
+   the line; a frame shows each as the draw reaches it (`crossingShowsFrom`). An overlay whose upper
+   strand is the earlier pass lies over the head, so the tip passes under it; the rest lie under it. */
 
 /* Counted across every painter, not per painter: the trunk and Wishes' card thread each build their own
    masks and lifts in one document, and an id both used resolved to the card's, in the card's coordinates. */
@@ -354,7 +355,13 @@ export function createCrossingPainter(
   underHead: SVGGElement,
   overHead: SVGGElement,
 ) {
-  let built: { group: SVGGElement; piece: number; from: number }[] = [];
+  let built: {
+    group: SVGGElement;
+    shade: SVGGElement;
+    piece: number;
+    from: number;
+    shadeFrom: number;
+  }[] = [];
 
   return {
     /* `own` says which chain pieces this `<svg>` holds; `local` maps a chain piece to its index here.
@@ -377,6 +384,7 @@ export function createCrossingPainter(
       const width = 2 * half;
       const reach = CROSSING_REACH * width;
       const lift = LIFT_REACH * width;
+      const lead = frayShape(width).length;
       for (const crossing of crossings) {
         const [upper, lower] =
           crossing.over === "first"
@@ -436,15 +444,15 @@ export function createCrossingPainter(
         group.dataset.woven = String(crossing.woven);
         group.dataset.x = crossing.x.toFixed(1);
         group.dataset.y = crossing.y.toFixed(1);
-        /* The earlier pass on top shows as the later pass reaches it, so the tip passes under it; the later
-           pass on top shows once it has been drawn across the whole overlay, never ahead of its ink. */
-        const from =
-          crossing.over === "first"
-            ? crossing.second.at - reach
-            : crossing.second.at + reach;
+        const { strand: from, shade: shadeFrom } = crossingShowsFrom(
+          crossing,
+          reach,
+          lead,
+        );
         group.dataset.showPiece = String(showPiece);
         group.dataset.laterAt = crossing.second.at.toFixed(1);
         group.dataset.showFrom = from.toFixed(1);
+        group.dataset.shadeFrom = shadeFrom.toFixed(1);
         group.style.display = "none";
         const shade = document.createElementNS(SVG_NS, "g");
         shade.setAttribute("mask", `url(#${mask.id})`);
@@ -475,13 +483,22 @@ export function createCrossingPainter(
         gaps.dataset.threadCrossingGaps = "";
         group.append(shade, strand, gaps);
         (crossing.over === "first" ? overHead : underHead).append(group);
-        built.push({ group, piece: crossing.second.piece, from });
+        built.push({
+          group,
+          shade,
+          piece: crossing.second.piece,
+          from,
+          shadeFrom,
+        });
       }
     },
     /* `painted(piece)` is how far along a chain piece the cord has reached. */
     painted(painted: (piece: number) => number) {
-      for (const { group, piece, from } of built) {
-        const display = painted(piece) >= from - NEGLIGIBLE ? "" : "none";
+      for (const { group, shade, piece, from, shadeFrom } of built) {
+        const reached = painted(piece);
+        const display = reached >= from - NEGLIGIBLE ? "" : "none";
+        const lifted = reached >= shadeFrom - NEGLIGIBLE ? "" : "none";
+        if (shade.style.display !== lifted) shade.style.display = lifted;
         if (group.style.display !== display) group.style.display = display;
       }
     },

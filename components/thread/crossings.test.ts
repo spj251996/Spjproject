@@ -7,7 +7,8 @@ import { labExport } from "../../scripts/lib/built-export.ts";
 
 /* CROSSINGS ON THE PAGE (DESIGN.md -> Thread -> Crossings): each crossing's upper strand redrawn over
    the lower in the layer its order names — under the head when the later pass is on top, over it when
-   the earlier one is — shown only once its later pass is drawn, and rebuilt when the page re-measures. */
+   the earlier one is — shown as the draw reaches it, its lift only once the later pass lies beneath, and
+   rebuilt when the page re-measures. */
 
 const LAB_ROUTE = "/thread.html";
 
@@ -83,9 +84,12 @@ const READ = `(() => {
       passes: g.dataset.showPiece + "@" + g.dataset.showFrom,
       shown: shown(g),
       /* Worked out here from where the later pass crosses, never read back from the painter's own threshold:
-         3x the 2.2px cord either side, the earlier pass on top showing as the later pass arrives and the
-         later pass on top once drawn across its whole overlay. */
-      ready: painted >= Number(g.dataset.laterAt) + (g.dataset.over === "first" ? -6.6 : 6.6) - 1,
+         3x the 2.2px cord either side; the earlier pass on top showing as the tip's fibres arrive (they lead
+         the cord by the fray's 7.8px), the later pass on top once drawn across its whole overlay, and the
+         lift only once the later pass lies under the whole overlay. */
+      ready: painted >= Number(g.dataset.laterAt) + (g.dataset.over === "first" ? -6.6 - 7.8 : 6.6) - 1,
+      lifted: shown(g) && g.querySelector("g[mask]").style.display !== "none",
+      liftReady: painted >= Number(g.dataset.laterAt) + 6.6 - 1,
       aboveHead: Boolean(head.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING),
     };
   });
@@ -99,6 +103,8 @@ type Overlay = {
   at: string;
   shown: boolean;
   ready: boolean;
+  lifted: boolean;
+  liftReady: boolean;
   aboveHead: boolean;
 };
 
@@ -212,7 +218,7 @@ test("every mask and filter a thread svg names resolves once, inside that svg", 
   }
 });
 
-test("an overlay appears only once its later pass is drawn", async (t) => {
+test("an overlay appears as the draw reaches it, its lift once the later pass lies beneath", async (t) => {
   if (!labExport(t)) return;
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ channel: "chromium" });
@@ -242,8 +248,13 @@ test("an overlay appears only once its later pass is drawn", async (t) => {
             seenShown += 1;
             assert.ok(
               overlay.ready,
-              `${band.name} at ${Math.round(y)}: the overlay at ${overlay.at} shows before its later pass is drawn`,
+              `${band.name} at ${Math.round(y)}: the overlay at ${overlay.at} shows before the draw reaches it`,
             );
+            if (overlay.lifted)
+              assert.ok(
+                overlay.liftReady,
+                `${band.name} at ${Math.round(y)}: the lift at ${overlay.at} shows before the later pass lies beneath it`,
+              );
           }
         }
       }
