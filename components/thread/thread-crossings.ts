@@ -4,7 +4,7 @@
    The later pass lies on top along the route, since the thread grows and each new stretch lands on
    what is already there. Only a crossing whose two passes both lie inside one motif is woven, from
    that motif's own order, so a motif's data never depends on the route around it. */
-import type { MotifId, Over } from "./thread-geometry.ts";
+import type { MotifId, Over, WeaveCrossing } from "./thread-geometry.ts";
 import type { PieceSpan } from "./thread-head.ts";
 import type { ThreadPiece } from "./thread-line.ts";
 import type { PieceSamples } from "./thread-samples.ts";
@@ -193,35 +193,43 @@ export function findCrossings(
   return kept.map((hit) => hit.crossing);
 }
 
+/* How close, as a fraction of the motif's length on both passes, a crossing must lie to a weave entry
+   to be that entry: a crossing moves by well under a pixel between bands, and the nearest two entries
+   of the busiest motif lie further apart than this. */
+export const WEAVE_TOLERANCE = 0.015;
+
 /* Which pass lies on top at each crossing, in the order handed in. A crossing is woven only when both
-   passes lie in one motif piece and that motif's weave names exactly as many crossings as the piece
-   has; anything else, including a weave that no longer matches its drawing, lies later-over-earlier. */
+   passes lie in one motif piece and that motif's weave has an entry at the same place along it;
+   anything else, including a crossing the weave no longer names, lies later-over-earlier. */
 export function orderCrossings(
   crossings: readonly Crossing[],
   pieces: readonly ThreadPiece[],
-  weaveOf: (motif: MotifId) => readonly Over[] | undefined,
+  weaveOf: (motif: MotifId) => readonly WeaveCrossing[] | undefined,
 ): OrderedCrossing[] {
-  const inMotif = (crossing: Crossing) =>
-    crossing.first.piece === crossing.second.piece &&
-    pieces[crossing.first.piece].kind !== "connector";
-  const byPiece = new Map<number, Crossing[]>();
-  for (const crossing of crossings) {
-    if (!inMotif(crossing)) continue;
-    const own = byPiece.get(crossing.first.piece) ?? [];
-    own.push(crossing);
-    byPiece.set(crossing.first.piece, own);
-  }
-  for (const own of byPiece.values())
-    own.sort((a, b) => a.first.at - b.first.at);
-
   return crossings.map((crossing) => {
-    if (!inMotif(crossing))
+    const piece = pieces[crossing.first.piece];
+    if (
+      crossing.first.piece !== crossing.second.piece ||
+      piece.kind === "connector"
+    )
       return { ...crossing, over: "second", woven: false };
-    const piece = crossing.first.piece;
-    const own = byPiece.get(piece) ?? [];
-    const weave = weaveOf(pieces[piece].kind as MotifId);
-    if (weave === undefined || weave.length !== own.length)
-      return { ...crossing, over: "second", woven: false };
-    return { ...crossing, over: weave[own.indexOf(crossing)], woven: true };
+    const length = piece.end - piece.start;
+    const first = crossing.first.at / length;
+    const second = crossing.second.at / length;
+    let best: WeaveCrossing | undefined;
+    let bestDistance = WEAVE_TOLERANCE;
+    for (const entry of weaveOf(piece.kind) ?? []) {
+      const distance = Math.max(
+        Math.abs(entry.first - first),
+        Math.abs(entry.second - second),
+      );
+      if (distance <= bestDistance) {
+        best = entry;
+        bestDistance = distance;
+      }
+    }
+    return best === undefined
+      ? { ...crossing, over: "second", woven: false }
+      : { ...crossing, over: best.over, woven: true };
   });
 }

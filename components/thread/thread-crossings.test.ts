@@ -5,7 +5,7 @@ import {
   findCrossings,
   orderCrossings,
 } from "./thread-crossings.ts";
-import type { MotifId, Over } from "./thread-geometry.ts";
+import type { MotifId, WeaveCrossing } from "./thread-geometry.ts";
 import type { ThreadPiece } from "./thread-line.ts";
 import { samplePath } from "./thread-samples.ts";
 
@@ -103,7 +103,8 @@ function crossingIn(piece: number, first: number, second: number): Crossing {
   };
 }
 
-const NO_WEAVE = (_: MotifId): readonly Over[] | undefined => undefined;
+const NO_WEAVE = (_: MotifId): readonly WeaveCrossing[] | undefined =>
+  undefined;
 
 test("orders a route crossing later-over-earlier", () => {
   const pieces: ThreadPiece[] = [
@@ -116,7 +117,9 @@ test("orders a route crossing later-over-earlier", () => {
     first: { piece: 0, at: 20 },
     second: { piece: 1, at: 50 },
   };
-  const [ordered] = orderCrossings([across], pieces, () => ["first"]);
+  const [ordered] = orderCrossings([across], pieces, () => [
+    { first: 0.2, second: 0.5, over: "first" },
+  ]);
   assert.equal(ordered.over, "second");
   assert.equal(ordered.woven, false);
   const [inConnector] = orderCrossings(
@@ -128,35 +131,43 @@ test("orders a route crossing later-over-earlier", () => {
   assert.equal(inConnector.woven, false);
 });
 
-test("weaves a motif's crossings from its data in first-pass order", () => {
+test("weaves a motif's crossings from the entry at the same place along it", () => {
   const pieces: ThreadPiece[] = [
     { id: "event-info", kind: "connector", start: 0, end: 50 },
     { id: "event-info", kind: "knot", start: 50, end: 450 },
   ];
-  const weave: readonly Over[] = ["first", "second", "first"];
-  /* Handed out of order: the motif's k-th crossing is k-th by its first pass. */
+  /* Fractions of the knot's own 400px; handed in a different order from the crossings. */
+  const weave: readonly WeaveCrossing[] = [
+    { first: 0.5, second: 0.95, over: "first" },
+    { first: 0.075, second: 0.3, over: "first" },
+    { first: 0.225, second: 0.75, over: "second" },
+  ];
   const ordered = orderCrossings(
-    [crossingIn(1, 200, 380), crossingIn(1, 30, 120), crossingIn(1, 90, 300)],
+    [crossingIn(1, 30, 120), crossingIn(1, 90, 300), crossingIn(1, 201, 379)],
     pieces,
     (motif) => (motif === "knot" ? weave : undefined),
   );
-  const byFirst = [...ordered].sort((a, b) => a.first.at - b.first.at);
   assert.deepEqual(
-    byFirst.map((crossing) => crossing.over),
+    ordered.map((crossing) => crossing.over),
     ["first", "second", "first"],
   );
   assert.ok(ordered.every((crossing) => crossing.woven));
 });
 
-test("falls back when a motif's weave does not match its crossings", () => {
+test("a motif crossing with no entry near it lies later-over-earlier", () => {
   const pieces: ThreadPiece[] = [
     { id: "event-info", kind: "knot", start: 0, end: 400 },
   ];
   const ordered = orderCrossings(
-    [crossingIn(0, 30, 120), crossingIn(0, 90, 300), crossingIn(0, 200, 380)],
+    [crossingIn(0, 30, 120), crossingIn(0, 200, 380)],
     pieces,
-    () => ["first", "first"],
+    () => [{ first: 0.075, second: 0.3, over: "first" }],
   );
-  assert.ok(ordered.every((crossing) => crossing.over === "second"));
-  assert.ok(ordered.every((crossing) => !crossing.woven));
+  assert.deepEqual(
+    ordered.map((crossing) => [crossing.over, crossing.woven]),
+    [
+      ["first", true],
+      ["second", false],
+    ],
+  );
 });

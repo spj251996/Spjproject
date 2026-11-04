@@ -19,6 +19,15 @@ export type ThreadId =
 /* Where the line crosses itself, which of its two passes lies on top, counted in draw order. */
 export type Over = "first" | "second";
 
+/* One crossing inside a motif, named by where its two passes fall along the motif (fractions of its
+   length), so it is the same crossing at every size; close crossings merge as a motif shrinks, so a
+   list position would not be. */
+export type WeaveCrossing = {
+  readonly first: number;
+  readonly second: number;
+  readonly over: Over;
+};
+
 /* angle is degrees, the direction of travel: 0 is left-to-right, 90 is top-to-bottom. */
 export type Tangent = { x: number; y: number; angle: number };
 
@@ -28,6 +37,8 @@ export type Motif = {
   entry: Tangent;
   exit: Tangent;
   aspect: number;
+  /* Which strand lies on top at each of the drawing's own crossings, confirmed by the owner. */
+  weave: readonly WeaveCrossing[];
 };
 
 /* The section box a thread is composed against. A band's nominal box states both its ASPECT and its

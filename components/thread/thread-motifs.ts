@@ -35,6 +35,7 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0, y: 0.7459, angle: 3.7 },
     exit: { x: 1, y: 0.8349, angle: 0.8 },
     aspect: 1.493,
+    weave: [{ first: 0.1842, second: 0.8162, over: "first" }],
   },
   /* Traced from the owner's outline of `ring 2.jpg`; the first `rings.svg` could not be traced,
      because its two ring contours touch tangentially and merge into one shared segment. It needs a
@@ -47,6 +48,12 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0, y: 0.6352, angle: 2.2 },
     exit: { x: 1, y: 0.4314, angle: -3.2 },
     aspect: 2.489,
+    weave: [
+      { first: 0.248, second: 0.5675, over: "first" },
+      { first: 0.4096, second: 0.547, over: "second" },
+      { first: 0.6417, second: 0.9187, over: "first" },
+      { first: 0.8382, second: 0.9018, over: "second" },
+    ],
   },
   /* Traced from the owner's outline of `knot 2.jpg`: a loose flat knot drawn ALONG a horizontal
      run. `knot.jpg` before it was drawn on a vertical one and was forced into a horizontal slot,
@@ -57,6 +64,12 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0, y: 0.4577, angle: -36.3 },
     exit: { x: 1, y: 0.4746, angle: -33.5 },
     aspect: 3.601,
+    weave: [
+      { first: 0.0514, second: 0.6819, over: "first" },
+      { first: 0.1627, second: 0.5144, over: "second" },
+      { first: 0.3216, second: 0.9404, over: "first" },
+      { first: 0.4772, second: 0.8293, over: "second" },
+    ],
   },
   /* potrait loop 2.jpg — two to three circular passes with a natural offset, around one portrait.
      The line BANKS into the loop's lower left and climbs back out of its lower right; run flat into
@@ -76,6 +89,7 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0, y: 0.5477, angle: -0.4 },
     exit: { x: 1, y: 0.6372, angle: -29.8 },
     aspect: 1.588,
+    weave: [],
   },
   /* A single self-crossing loop with no reference drawing, specified by behaviour. It is placed in
      Celebrations at every band (Wishes' motif is the bow), and drawn once. */
@@ -85,6 +99,7 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0, y: 0.4, angle: 0 },
     exit: { x: 0.5, y: 1, angle: 90 },
     aspect: 1.013,
+    weave: [{ first: 0.2713, second: 0.7792, over: "first" }],
   },
   /* Traced from the owner's outline of `final knot 2.jpg`, then MIRRORED left to right and walked
      LEFT TO RIGHT — both on the owner's call, once they had seen the bow on the page.
@@ -130,5 +145,22 @@ export const MOTIFS: Readonly<Record<MotifId, Motif>> = {
     entry: { x: 0.0002, y: 0.5274, angle: 76.1 },
     exit: { x: 0.9887, y: 0.7171, angle: 92.2 },
     aspect: 2.308,
+    /* The two loops and the outer turns of the knot lie later-over-earlier; only the four innermost
+       crossings of the knot are woven, which is enough to read as tied at its size. */
+    weave: [
+      { first: 0.2094, second: 0.3963, over: "second" },
+      { first: 0.215, second: 0.5729, over: "second" },
+      { first: 0.27, second: 0.4893, over: "second" },
+      { first: 0.4196, second: 0.5914, over: "second" },
+      { first: 0.6361, second: 0.8866, over: "second" },
+      { first: 0.6403, second: 0.8668, over: "second" },
+      { first: 0.6471, second: 0.9047, over: "second" },
+      { first: 0.7402, second: 0.8985, over: "second" },
+      { first: 0.7434, second: 0.8755, over: "second" },
+      { first: 0.7455, second: 0.8524, over: "second" },
+      { first: 0.851, second: 0.8923, over: "first" },
+      { first: 0.8513, second: 0.8714, over: "second" },
+      { first: 0.872, second: 0.8929, over: "first" },
+    ],
   },
 } as const;
