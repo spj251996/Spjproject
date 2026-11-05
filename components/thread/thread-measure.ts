@@ -3,7 +3,7 @@ import {
   authoredCard,
   familyPortraitFractions,
 } from "./thread-authored-layout.ts";
-import { aspectQuery, type BandId, THREAD_BANDS } from "./thread-bands.ts";
+import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
 import type {
   SectionAnchors,
   SectionRange,
@@ -21,7 +21,7 @@ type Point = { x: number; y: number };
 
 export function currentBand(): BandId | undefined {
   for (const band of THREAD_BANDS) {
-    if (window.matchMedia(aspectQuery(band.min, band.max)).matches) {
+    if (window.matchMedia(band.media).matches) {
       return band.id;
     }
   }

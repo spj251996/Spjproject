@@ -6,7 +6,7 @@
    fallback below is itself server-rendered. */
 
 import { authoredCard } from "./thread-authored-layout.ts";
-import { aspectQuery, type BandId, THREAD_BANDS } from "./thread-bands.ts";
+import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
 import { sectionBox } from "./thread-boxes.ts";
 import { threadLine } from "./thread-line.ts";
 import { THREAD_IDS } from "./thread-paths.ts";
@@ -70,6 +70,6 @@ export const PAGE_FALLBACKS: Fallback[] = THREAD_BANDS.map((band) => {
   return {
     band: band.id,
     d: normalise(d, band.box.width, totalHeight),
-    media: aspectQuery(band.min, band.max),
+    media: band.media,
   };
 });
