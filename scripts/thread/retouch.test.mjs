@@ -61,6 +61,24 @@ test("a piece's two ends never move, even for a nudge right beside one", () => {
   }
 });
 
+test("a nudge close to an end still moves the point it names by its full offset", () => {
+  /* 20px from the start of a 400px line, inside a 40px reach: the end stays put and the peak
+     stays on the named point rather than sliding inward. */
+  const line = straight(400, 4);
+  const out = retouchPiece(line, [{ at: 20 / 400, dx: 0, dy: -10, reach: 40 }]);
+  const named = out.find((p) => Math.abs(p.x - 20) < 1e-9);
+  assert.ok(named, "a vertex at x 20");
+  assert.ok(
+    Math.abs(named.y + 10) < 1e-9,
+    `x 20 moved to y ${named.y}, not -10`,
+  );
+  assert.ok(
+    out.every((p) => p.y >= -10 - 1e-9),
+    "nothing moves further than the named point",
+  );
+  assert.deepEqual(out[0], line[0]);
+});
+
 test("a later pass of the line close by in space but far along it stays put", () => {
   /* Out along y = 0, down, and back along y = 10: the return pass runs 10px from the nudged
      point, well inside its 40px reach, but some 400px further along the line. */

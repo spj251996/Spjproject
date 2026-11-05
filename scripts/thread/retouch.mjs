@@ -80,13 +80,18 @@ function applyEdit(points, edit) {
     centre + reach,
   );
 
-  /* cos² across the reach, times a smoothstep taper that holds both ends still. */
+  /* cos² across the reach, squeezed on the side of an end nearer than the reach so the end holds
+     still while the named point still takes the whole offset. A taper across the ends instead
+     slid the peak inward, onto the next dot the panel shows. */
+  const before = Math.min(reach, centre);
+  const after = Math.min(reach, length - centre);
+  /* An edit on an end itself has nothing it may move. */
+  if (before === 0 || after === 0) return points;
   const weight = (/** @type {number} */ at) => {
+    const side = at < centre ? before : after;
     const d = Math.abs(at - centre);
-    if (d >= reach) return 0;
-    const fall = Math.cos((Math.PI / 2) * (d / reach)) ** 2;
-    const e = Math.min(1, at / reach, (length - at) / reach);
-    return fall * e * e * (3 - 2 * e);
+    if (d >= side) return 0;
+    return Math.cos((Math.PI / 2) * (d / side)) ** 2;
   };
 
   if (edit.smooth) {
