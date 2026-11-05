@@ -1,0 +1,106 @@
+[
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.7777777777777778,
+    "dx": -8,
+    "dy": 0,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.8888888888888888,
+    "dx": 0,
+    "dy": -2,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 1,
+    "at": 0,
+    "dx": 0,
+    "dy": -2,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.6666666666666666,
+    "dx": -2,
+    "dy": 0,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 1,
+    "at": 0,
+    "dx": 0,
+    "dy": -8,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.6666666666666666,
+    "dx": -6,
+    "dy": 0,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 1,
+    "at": 0,
+    "dx": 0,
+    "dy": -10,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.8333333333333334,
+    "dx": -4,
+    "dy": 0,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.6666666666666666,
+    "dx": 0,
+    "dy": 0,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 0,
+    "at": 0.6111111111111112,
+    "dx": 2,
+    "dy": 0,
+    "reach": 40
+  },
+  {
+    "section": "invite",
+    "piece": 1,
+    "at": 0.047619047619047616,
+    "dx": 0,
+    "dy": -2,
+    "reach": 40
+  },
+  {
+    "section": "event-info",
+    "piece": 2,
+    "at": 0.9629629629629629,
+    "dx": 0,
+    "dy": -4,
+    "reach": 40
+  },
+  {
+    "section": "celebrations",
+    "piece": 0,
+    "at": 0.540084388185654,
+    "dx": 0,
+    "dy": -2,
+    "reach": 40
+  }
+]

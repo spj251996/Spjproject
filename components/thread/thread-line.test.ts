@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { authoredCard } from "./thread-authored-layout.ts";
+import { authoredCard, portraitPhotoWidth } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import { authoredMeasuredSections } from "./thread-fallback.ts";
 import {
+  JOIN_EASE,
+  joinReach,
   PORTRAIT_LOOP_TRIM_FRACTION,
   splitSubpaths,
   subpathRange,
@@ -16,6 +19,7 @@ import {
   THREAD_IDS,
   THREAD_PATHS,
 } from "./thread-paths.ts";
+import { threadPaths } from "./thread-photo-state.ts";
 import {
   createDrawRatchet,
   dashForPiece,
@@ -23,7 +27,11 @@ import {
   pieceProgress,
   sectionProgressAt,
 } from "./thread-progress.ts";
-import { type MeasuredSection, warpPlacement } from "./thread-warp.ts";
+import {
+  type MeasuredSection,
+  warpPlacement,
+  warpSection,
+} from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 
@@ -560,7 +568,18 @@ test("an anchor overrides a placement's warped centre, and the adjoining connect
   const unanchored = threadLine(band, sections);
 
   // family's two portraitLoop placements are indices 0 and 1 (thread-paths.ts).
-  const anchor = { left: 900, top: 200, width: 40, height: 40 };
+  /* The photo at the size this layout's card implies, so the ring keeps the size it has unanchored
+     and only moves. */
+  const familyCard = sections[THREAD_IDS.indexOf("family")];
+  const photo =
+    (portraitPhotoWidth(band) * familyCard.cardWidth) /
+    authoredCard("family", band).cardWidth;
+  const anchor = {
+    left: 920 - photo / 2,
+    top: 220 - photo / 2,
+    width: photo,
+    height: photo,
+  };
   const anchorCentre = {
     x: anchor.left + anchor.width / 2,
     y: anchor.top + anchor.height / 2,
@@ -590,8 +609,8 @@ test("an anchor overrides a placement's warped centre, and the adjoining connect
     unanchoredSubpaths[motifSubpathIndex],
   );
 
-  /* An anchor changes only the placement's CENTRE, never its rotation or scale, so every one of the
-     motif's baked points shifts by the SAME rigid translation -- the delta the first point moved by
+  /* An anchor the size of the authored photo changes only the placement's CENTRE, never its rotation
+     or scale, so every one of the motif's baked points shifts by the SAME rigid translation -- the delta the first point moved by
      must equal the delta every other point moved by, to float precision. */
   const shift = {
     x: anchoredPoints[0].x - unanchoredPoints[0].x,
@@ -1535,5 +1554,606 @@ test("each band emits one subpath per piece, and its section ranges are contiguo
       total,
       `${band.id}: the ranges cover all ${total} subpaths`,
     );
+  }
+});
+
+/* MOTIF JOINS — a connector is warped per axis and a motif baked uniformly (portraits anchored to
+   the photo), so away from the authored size the connector's end misses the motif's. The join is
+   carried along the connector and turned onto the motif's own direction, never just snapped. */
+
+/** A subpath sampled along its cubics, so a direction is read over visible line. */
+function sampled(d: string): Point[] {
+  const p = parseAllPoints(d);
+  const out = [p[0]];
+  for (let i = 1; i + 2 < p.length; i += 3) {
+    const a = out[out.length - 1];
+    for (let t = 1; t <= 16; t += 1) {
+      const u = t / 16;
+      const v = 1 - u;
+      out.push({
+        x:
+          v * v * v * a.x +
+          3 * v * v * u * p[i].x +
+          3 * v * u * u * p[i + 1].x +
+          u * u * u * p[i + 2].x,
+        y:
+          v * v * v * a.y +
+          3 * v * v * u * p[i].y +
+          3 * v * u * u * p[i + 1].y +
+          u * u * u * p[i + 2].y,
+      });
+    }
+  }
+  return out;
+}
+
+/** The first point `reach` px along a run of points. */
+function alongBy(points: Point[], reach: number): Point {
+  let run = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    run += Math.hypot(
+      points[i].x - points[i - 1].x,
+      points[i].y - points[i - 1].y,
+    );
+    if (run >= reach) return points[i];
+  }
+  return points[points.length - 1];
+}
+
+/** A MOTIF's direction leaving its first point, over its first 3px of visible line. */
+function leaving(d: string): number {
+  const p = sampled(d);
+  const q = alongBy(p, 3);
+  return Math.atan2(q.y - p[0].y, q.x - p[0].x);
+}
+
+/** A MOTIF's direction arriving at its last point, over its last 3px of visible line. */
+function arriving(d: string): number {
+  const p = sampled(d).reverse();
+  const q = alongBy(p, 3);
+  return Math.atan2(p[0].y - q.y, p[0].x - q.x);
+}
+
+/** A CONNECTOR's own direction at an end, off the control point beside it: its tangent there. */
+function tangentAt(d: string, end: "start" | "finish"): number {
+  const p = end === "start" ? parseAllPoints(d) : parseAllPoints(d).reverse();
+  const q =
+    p.slice(1).find((r) => Math.hypot(r.x - p[0].x, r.y - p[0].y) > 1e-9) ??
+    p[0];
+  const a = Math.atan2(q.y - p[0].y, q.x - p[0].x);
+  return end === "start" ? a : a + Math.PI;
+}
+
+function turnDegrees(a: number, b: number): number {
+  let d = Math.abs(a - b) % (2 * Math.PI);
+  if (d > Math.PI) d = 2 * Math.PI - d;
+  return (d * 180) / Math.PI;
+}
+
+/** Sections stretched from the authored ones by `sx` across the card and `sy` down the section. */
+function stretched(
+  band: "tall" | "upright" | "wide",
+  sx: number,
+  sy: number,
+): MeasuredSection[] {
+  let top = 0;
+  return THREAD_IDS.map((id) => {
+    const from = authoredCard(id, band);
+    const height = from.sectionHeight * sy;
+    const section = {
+      top,
+      height,
+      cardLeft: from.cardLeft * sx,
+      cardWidth: from.cardWidth * sx,
+    };
+    top += height;
+    return section;
+  });
+}
+
+const STRETCHES: [number, number][] = [
+  [0.7, 1],
+  [1.3, 1],
+  [1, 0.75],
+  [1, 1.4],
+  [0.85, 1.2],
+  [1.6, 0.9],
+];
+
+test("every connector meets its motif in the motif's own direction, on any stretched layout", () => {
+  for (const { id: band } of THREAD_BANDS)
+    for (const [sx, sy] of STRETCHES) {
+      const { d, pieces } = threadLine(band, stretched(band, sx, sy));
+      const subpaths = splitSubpaths(d);
+      pieces.forEach((piece, i) => {
+        if (piece.kind === "connector") return;
+        const where = `${band} ${sx}x${sy} ${piece.id}/${piece.kind}`;
+        const before = parseAllPoints(subpaths[i - 1]).at(-1) as Point;
+        const into = parseAllPoints(subpaths[i])[0];
+        const out = parseAllPoints(subpaths[i]).at(-1) as Point;
+        const after = parseAllPoints(subpaths[i + 1])[0];
+        assert.ok(
+          Math.hypot(before.x - into.x, before.y - into.y) < 0.01,
+          `${where}: gap in`,
+        );
+        assert.ok(
+          Math.hypot(out.x - after.x, out.y - after.y) < 0.01,
+          `${where}: gap out`,
+        );
+        const turnIn = turnDegrees(
+          tangentAt(subpaths[i - 1], "finish"),
+          leaving(subpaths[i]),
+        );
+        const turnOut = turnDegrees(
+          arriving(subpaths[i]),
+          tangentAt(subpaths[i + 1], "start"),
+        );
+        assert.ok(
+          turnIn < 1,
+          `${where}: turns ${turnIn.toFixed(1)}° into the motif`,
+        );
+        assert.ok(
+          turnOut < 1,
+          `${where}: turns ${turnOut.toFixed(1)}° out of it`,
+        );
+      });
+    }
+});
+
+test("a connector bends into its motif gradually: no 3px of its last 30px turns more than 40°", () => {
+  /* Turning only the end's control point onto the motif squeezes the whole turn into the last few
+     pixels — a hook, measured past 100°. Redrawing the last stretch spreads it. The owner's own
+     drawing bends up to ~25° in 3px near some motifs at the authored size, so the bound sits above
+     that. */
+  const hook = (points: Point[]) => {
+    const steps: Point[] = [points[0]];
+    let run = 0;
+    for (let i = 1; i < points.length && run < 30; i += 1) {
+      run += Math.hypot(
+        points[i].x - points[i - 1].x,
+        points[i].y - points[i - 1].y,
+      );
+      const last = steps[steps.length - 1];
+      if (Math.hypot(points[i].x - last.x, points[i].y - last.y) >= 3)
+        steps.push(points[i]);
+    }
+    let worst = 0;
+    for (let i = 1; i + 1 < steps.length; i += 1) {
+      const a = Math.atan2(
+        steps[i].y - steps[i - 1].y,
+        steps[i].x - steps[i - 1].x,
+      );
+      const b = Math.atan2(
+        steps[i + 1].y - steps[i].y,
+        steps[i + 1].x - steps[i].x,
+      );
+      worst = Math.max(worst, turnDegrees(a, b));
+    }
+    return worst;
+  };
+  for (const { id: band } of THREAD_BANDS)
+    for (const [sx, sy] of STRETCHES) {
+      const { d, pieces } = threadLine(band, stretched(band, sx, sy));
+      const subpaths = splitSubpaths(d);
+      pieces.forEach((piece, i) => {
+        if (piece.kind !== "connector") return;
+        const where = `${band} ${sx}x${sy} ${piece.id} connector`;
+        if (pieces[i + 1] && pieces[i + 1].kind !== "connector") {
+          const worst = hook(sampled(subpaths[i]).reverse());
+          assert.ok(
+            worst <= 40,
+            `${where} into ${pieces[i + 1].kind}: ${worst.toFixed(0)}°`,
+          );
+        }
+        if (pieces[i - 1] && pieces[i - 1].kind !== "connector") {
+          const worst = hook(sampled(subpaths[i]));
+          assert.ok(
+            worst <= 40,
+            `${where} out of ${pieces[i - 1].kind}: ${worst.toFixed(0)}°`,
+          );
+        }
+      });
+    }
+});
+
+test("beyond its join's reach along a connector, the connector is the plain warped drawing", () => {
+  const band = "wide";
+  const sections = stretched(band, 1.3, 0.9);
+  const { d, pieces } = threadLine(band, sections);
+  const subpaths = splitSubpaths(d);
+  let checked = 0;
+  THREAD_IDS.forEach((id, s) => {
+    const plain = threadPaths(band, id).map((c) =>
+      parseAllPoints(warpSection(c.d, authoredCard(id, band), sections[s])),
+    );
+    const drawn = pieces.flatMap((p, i) =>
+      p.id === id && p.kind === "connector"
+        ? [parseAllPoints(subpaths[i])]
+        : [],
+    );
+    plain.forEach((points, k) => {
+      /* Anchors only (every third point after the first), each at its chord-summed distance from
+         the connector's two ends. */
+      const anchors = points.filter((_, i) => i % 3 === 0);
+      const fromStart = [0];
+      for (let i = 1; i < anchors.length; i++)
+        fromStart.push(
+          fromStart[i - 1] +
+            Math.hypot(
+              anchors[i].x - anchors[i - 1].x,
+              anchors[i].y - anchors[i - 1].y,
+            ),
+        );
+      const total = fromStart[fromStart.length - 1];
+      /* Each end's reach follows how far that end had to move to meet its motif. */
+      const own = drawn[k];
+      const startMove = Math.hypot(
+        own[0].x - points[0].x,
+        own[0].y - points[0].y,
+      );
+      const finishMove = Math.hypot(
+        (own.at(-1) as Point).x - (points.at(-1) as Point).x,
+        (own.at(-1) as Point).y - (points.at(-1) as Point).y,
+      );
+      /* An end that moved may also have turned, by up to 180°: take the widest reach it could have. */
+      const startReach =
+        startMove > 1e-9 ? joinReach(startMove, total, 180) : 0;
+      const finishReach =
+        finishMove > 1e-9 ? joinReach(finishMove, total, 180) : 0;
+      anchors.forEach((p, i) => {
+        if (
+          fromStart[i] < startReach + 1 ||
+          total - fromStart[i] < finishReach + 1
+        )
+          return;
+        /* A redrawn stretch drops points, so the anchor is found by position, not index. */
+        const q = drawn[k].reduce((a, b) =>
+          Math.hypot(b.x - p.x, b.y - p.y) < Math.hypot(a.x - p.x, a.y - p.y)
+            ? b
+            : a,
+        );
+        assert.ok(
+          Math.hypot(p.x - q.x, p.y - q.y) < 1e-6,
+          `${id} connector ${k} anchor ${i} moved`,
+        );
+        checked += 1;
+      });
+    });
+  });
+  assert.ok(checked > 50, `${checked} anchors checked`);
+});
+
+test("a join's reach is four times how far the end moved and a pixel a degree it turned, at least JOIN_EASE, at most half the connector", () => {
+  assert.equal(joinReach(2, 1000), JOIN_EASE);
+  assert.equal(joinReach(30, 1000), 120);
+  assert.equal(joinReach(200, 1000), 500);
+  assert.equal(joinReach(2, 1000, 100), 100);
+});
+
+test("at the authored size, every connector is its drawing beyond its joins' reach, in every band", () => {
+  for (const band of THREAD_BANDS) {
+    const identity = stretched(band.id, 1, 1);
+    const { d, pieces } = threadLine(band.id, identity);
+    const subpaths = splitSubpaths(d);
+    let checked = 0;
+    THREAD_IDS.forEach((id, s) => {
+      const plain = threadPaths(band.id, id).map((c) =>
+        parseAllPoints(
+          warpSection(c.d, authoredCard(id, band.id), identity[s]),
+        ),
+      );
+      const drawn = pieces.flatMap((p, i) =>
+        p.id === id && p.kind === "connector"
+          ? [parseAllPoints(subpaths[i])]
+          : [],
+      );
+      plain.forEach((points, k) => {
+        const anchors = points.filter((_, i) => i % 3 === 0);
+        const fromStart = [0];
+        for (let i = 1; i < anchors.length; i++)
+          fromStart.push(
+            fromStart[i - 1] +
+              Math.hypot(
+                anchors[i].x - anchors[i - 1].x,
+                anchors[i].y - anchors[i - 1].y,
+              ),
+          );
+        const total = fromStart[fromStart.length - 1];
+        /* The widest reach each end can take: how far it moved, and a full turn's worth. */
+        const own = drawn[k];
+        const startMove = Math.hypot(
+          own[0].x - points[0].x,
+          own[0].y - points[0].y,
+        );
+        const finishMove = Math.hypot(
+          (own.at(-1) as Point).x - (points.at(-1) as Point).x,
+          (own.at(-1) as Point).y - (points.at(-1) as Point).y,
+        );
+        const startReach = joinReach(startMove, total, 180);
+        const finishReach = joinReach(finishMove, total, 180);
+        anchors.forEach((p, i) => {
+          if (
+            fromStart[i] < startReach + 1 ||
+            total - fromStart[i] < finishReach + 1
+          )
+            return;
+          const q = drawn[k].reduce((a, b) =>
+            Math.hypot(b.x - p.x, b.y - p.y) < Math.hypot(a.x - p.x, a.y - p.y)
+              ? b
+              : a,
+          );
+          assert.ok(
+            Math.hypot(p.x - q.x, p.y - q.y) < 1e-6,
+            `${band.id} ${id} connector ${k} anchor ${i}`,
+          );
+          checked += 1;
+        });
+      });
+    });
+    assert.ok(checked > 20, `${band.id}: ${checked} anchors checked`);
+  }
+});
+
+/* PORTRAIT RING SIZE — a ring wraps a real photo, and the photo follows the page's width tier, not
+   the card: an iPad mini shows the phone's 72px photo in a card wider than the tablet's. */
+test("a portrait ring is sized from its photo: ring width over photo width holds at any photo size", () => {
+  for (const { id: band } of THREAD_BANDS) {
+    const sections = stretched(band, 1, 1);
+    const familyIndex = THREAD_IDS.indexOf("family");
+    const ringWidths = (photo: number | undefined) => {
+      const anchors = MOTIF_PLACEMENTS[band].family.map((placement) => {
+        if (placement.motif !== "portraitLoop" || photo === undefined)
+          return undefined;
+        const at = warpPlacement(
+          placement,
+          authoredCard("family", band),
+          sections[familyIndex],
+        );
+        return {
+          left: at.x - photo / 2,
+          top: at.y - photo / 2,
+          width: photo,
+          height: photo,
+        };
+      });
+      const { d, pieces } = threadLine(band, sections, { family: anchors });
+      const subpaths = splitSubpaths(d);
+      return pieces.flatMap((piece, i) => {
+        if (piece.kind !== "portraitLoop") return [];
+        const xs = parseAllPoints(subpaths[i]).map((p) => p.x);
+        return [Math.max(...xs) - Math.min(...xs)];
+      });
+    };
+    const authored = portraitPhotoWidth(band);
+    const atAuthored = ringWidths(authored);
+    const unanchored = ringWidths(undefined);
+    for (const photo of [authored / 2, authored * 1.5]) {
+      ringWidths(photo).forEach((width, k) => {
+        const ratio = width / photo / (atAuthored[k] / authored);
+        assert.ok(
+          Math.abs(ratio - 1) < 0.01,
+          `${band} ring ${k} at a ${photo}px photo: ${ratio.toFixed(3)}× its authored proportion`,
+        );
+      });
+    }
+    /* A photo that cannot be found falls back to a zero-size anchor: the ring keeps its plain size. */
+    ringWidths(0).forEach((width, k) => {
+      assert.ok(
+        Math.abs(width / unanchored[k] - 1) < 0.01,
+        `${band} ring ${k}: a zero-size anchor keeps the plain size`,
+      );
+    });
+    atAuthored.forEach((width, k) => {
+      assert.ok(
+        Math.abs(width / unanchored[k] - 1) < 0.01,
+        `${band} ring ${k}: at the authored photo the ring keeps its authored size`,
+      );
+    });
+  }
+});
+
+/* The centre of the largest circle inside a ring that touches none of its samples: where the photo
+   it wraps sits. Searched coarse then fine around a first guess. */
+function emptyCircle(points: Point[], guess: Point): Point & { r: number } {
+  const clearance = (x: number, y: number) =>
+    Math.min(...points.map((p) => Math.hypot(p.x - x, p.y - y)));
+  let best = { x: guess.x, y: guess.y, r: clearance(guess.x, guess.y) };
+  for (const [reach, step] of [
+    [30, 1],
+    [1.5, 0.05],
+  ]) {
+    const around = { x: best.x, y: best.y };
+    for (let x = around.x - reach; x <= around.x + reach; x += step)
+      for (let y = around.y - reach; y <= around.y + reach; y += step) {
+        const r = clearance(x, y);
+        if (r > best.r) best = { x, y, r };
+      }
+  }
+  return best;
+}
+
+const HALF_STROKE = 1.1;
+
+/* The ring's loop is not centred in its drawing's square, so placing the square's centre on the photo
+   left every ring 10–15px off it, its strands across the face. */
+test("an anchored portrait ring's loop is centred on its photo and no strand crosses it", () => {
+  for (const { id: band } of THREAD_BANDS) {
+    for (const [sx, sy] of [
+      [1, 1],
+      [0.75, 1.2],
+    ]) {
+      const sections = stretched(band, sx, sy);
+      const familyIndex = THREAD_IDS.indexOf("family");
+      const photo = portraitPhotoWidth(band) * sx;
+      const anchors = MOTIF_PLACEMENTS[band].family.map((placement) => {
+        const at = warpPlacement(
+          placement,
+          authoredCard("family", band),
+          sections[familyIndex],
+        );
+        return {
+          left: at.x - photo / 2,
+          top: at.y - photo / 2,
+          width: photo,
+          height: photo,
+        };
+      });
+      const { d, pieces } = threadLine(band, sections, { family: anchors });
+      const subpaths = splitSubpaths(d);
+      let k = 0;
+      pieces.forEach((piece, i) => {
+        if (piece.kind !== "portraitLoop") return;
+        const anchor = anchors[k++];
+        const centre = {
+          x: anchor.left + photo / 2,
+          y: anchor.top + photo / 2,
+        };
+        const loop = emptyCircle(sampled(subpaths[i]), centre);
+        const off = Math.hypot(loop.x - centre.x, loop.y - centre.y);
+        assert.ok(
+          off < 0.5,
+          `${band} ${sx}×${sy} ring ${k - 1}: loop centre ${off.toFixed(1)}px off its photo`,
+        );
+        const nearest = Math.min(
+          ...sampled(subpaths[i]).map((p) =>
+            Math.hypot(p.x - centre.x, p.y - centre.y),
+          ),
+        );
+        assert.ok(
+          nearest - HALF_STROKE > photo / 2,
+          `${band} ${sx}×${sy} ring ${k - 1}: a strand ${(photo / 2 - nearest + HALF_STROKE).toFixed(1)}px over the photo`,
+        );
+      });
+    }
+  }
+});
+
+/* Unanchored at the authored size — the page before the photos are measured, and the generator's own
+   fit — each ring's loop sits on the photo the drawing was made around. */
+test("at the authored size each generated ring's loop is centred on its portrait", () => {
+  for (const { id: band } of THREAD_BANDS) {
+    const layout = JSON.parse(
+      readFileSync(`assets/thread/${band}/photo-layout.json`, "utf8"),
+    ) as {
+      portraits: Point[];
+      sections: { id: string; top: number }[];
+    };
+    const top = layout.sections.find((s) => s.id === "family")?.top ?? 0;
+    const sections = stretched(band, 1, 1);
+    const familyTop = sections[THREAD_IDS.indexOf("family")].top;
+    const { d, pieces } = threadLine(band, sections);
+    const subpaths = splitSubpaths(d);
+    pieces.forEach((piece, i) => {
+      if (piece.kind !== "portraitLoop") return;
+      const points = sampled(subpaths[i]);
+      const mean = {
+        x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+        y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+      };
+      const portrait = layout.portraits
+        .map((p) => ({ x: p.x, y: p.y - top + familyTop }))
+        .reduce((a, b) =>
+          Math.hypot(a.x - mean.x, a.y - mean.y) <=
+          Math.hypot(b.x - mean.x, b.y - mean.y)
+            ? a
+            : b,
+        );
+      const loop = emptyCircle(points, portrait);
+      const off = Math.hypot(loop.x - portrait.x, loop.y - portrait.y);
+      assert.ok(
+        off < 0.5,
+        `${band} ring at (${portrait.x}, ${portrait.y}): loop centre ${off.toFixed(1)}px off its portrait`,
+      );
+    });
+  }
+});
+
+/* The ring fit picks where the line enters and leaves each ring; a line that reaches the ring by
+   crossing its photo first reads as the thread over the face. */
+test("at the authored size no line crosses the photo its ring wraps", () => {
+  for (const { id: band } of THREAD_BANDS) {
+    const layout = JSON.parse(
+      readFileSync(`assets/thread/${band}/photo-layout.json`, "utf8"),
+    ) as {
+      portraits: Point[];
+      sections: { id: string; top: number }[];
+    };
+    const top = layout.sections.find((s) => s.id === "family")?.top ?? 0;
+    const sections = stretched(band, 1, 1);
+    const familyIndex = THREAD_IDS.indexOf("family");
+    const familyTop = sections[familyIndex].top;
+    const photo = portraitPhotoWidth(band);
+    const portraits = layout.portraits.map((p) => ({
+      x: p.x,
+      y: p.y - top + familyTop,
+    }));
+    const ringed = MOTIF_PLACEMENTS[band].family.map((placement) => {
+      const at = { x: placement.x, y: placement.y + familyTop };
+      return portraits.reduce((a, b) =>
+        Math.hypot(a.x - at.x, a.y - at.y) <= Math.hypot(b.x - at.x, b.y - at.y)
+          ? a
+          : b,
+      );
+    });
+    const anchors = ringed.map((c) => ({
+      left: c.x - photo / 2,
+      top: c.y - photo / 2,
+      width: photo,
+      height: photo,
+    }));
+    const { d, pieces } = threadLine(band, sections, { family: anchors });
+    const subpaths = splitSubpaths(d);
+    pieces.forEach((piece, i) => {
+      if (piece.id !== "family") return;
+      for (const c of ringed) {
+        const nearest = Math.min(
+          ...sampled(subpaths[i]).map((p) => Math.hypot(p.x - c.x, p.y - c.y)),
+        );
+        assert.ok(
+          nearest - HALF_STROKE > photo / 2,
+          `${band} family piece ${i} (${piece.kind}) is ${(photo / 2 - nearest + HALF_STROKE).toFixed(1)}px over the photo at (${c.x}, ${c.y})`,
+        );
+      }
+    });
+  }
+});
+
+/* The generator joins each connector to the motif's ends as the page draws them — a portrait ring
+   trimmed at its tails — so at the authored size no join has to move, and the owner's drawing
+   stands as drawn rather than being redrawn into the motif. */
+test("at the authored size every connector already meets its motif: no end moves half a pixel", () => {
+  for (const { id: band } of THREAD_BANDS) {
+    const identity = stretched(band, 1, 1);
+    const { d, pieces } = threadLine(band, identity);
+    const subpaths = splitSubpaths(d);
+    THREAD_IDS.forEach((id, s) => {
+      const plain = threadPaths(band, id).map((c) =>
+        parseAllPoints(warpSection(c.d, authoredCard(id, band), identity[s])),
+      );
+      pieces
+        .flatMap((p, i) => (p.id === id && p.kind === "connector" ? [i] : []))
+        .forEach((i, k) => {
+          const drawn = parseAllPoints(subpaths[i]);
+          if (pieces[i - 1] && pieces[i - 1].kind !== "connector") {
+            const moved = Math.hypot(
+              drawn[0].x - plain[k][0].x,
+              drawn[0].y - plain[k][0].y,
+            );
+            assert.ok(
+              moved < 0.5,
+              `${band} ${id} connector ${k} start moved ${moved.toFixed(1)}px to meet ${pieces[i - 1].kind}`,
+            );
+          }
+          if (pieces[i + 1] && pieces[i + 1].kind !== "connector") {
+            const a = drawn.at(-1) as Point;
+            const b = plain[k].at(-1) as Point;
+            const moved = Math.hypot(a.x - b.x, a.y - b.y);
+            assert.ok(
+              moved < 0.5,
+              `${band} ${id} connector ${k} end moved ${moved.toFixed(1)}px to meet ${pieces[i + 1].kind}`,
+            );
+          }
+        });
+    });
   }
 });

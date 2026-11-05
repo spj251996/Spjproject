@@ -112,3 +112,17 @@ const PORTRAITS_BY_BAND: Record<BandId, FamilyPortraits> = {
 export function familyPortraitFractions(band: BandId): FamilyPortraits {
   return PORTRAITS_BY_BAND[band];
 }
+
+/* The width of the photo a portrait ring wraps, at each band's authored size — measured on
+   `/thread` at 393x700 / 820x1180 / 1536x695. The photo follows the page's width tier, not the
+   card (72px on a phone, 112px from `{breakpoints.md}`, 72px in the laptop mount), so a ring is
+   sized from its real photo against this, never from the card. */
+const PORTRAIT_PHOTO_WIDTH: Record<BandId, number> = {
+  tall: 72,
+  upright: 112,
+  wide: 72,
+};
+
+export function portraitPhotoWidth(band: BandId): number {
+  return PORTRAIT_PHOTO_WIDTH[band];
+}

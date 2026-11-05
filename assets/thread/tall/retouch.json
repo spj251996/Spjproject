@@ -1,0 +1,42 @@
+[
+  {
+    "section": "wishes",
+    "piece": 0,
+    "at": 0.9777777777777777,
+    "dx": 0,
+    "dy": -10,
+    "reach": 40
+  },
+  {
+    "section": "wishes",
+    "piece": 0,
+    "at": 0.8478260869565217,
+    "dx": 0,
+    "dy": -20,
+    "reach": 40
+  },
+  {
+    "section": "wishes",
+    "piece": 0,
+    "at": 0.8043478260869565,
+    "dx": 0,
+    "dy": -8,
+    "reach": 40
+  },
+  {
+    "section": "wishes",
+    "piece": 0,
+    "at": 0.8913043478260869,
+    "dx": 0,
+    "dy": -10,
+    "reach": 40
+  },
+  {
+    "section": "wishes",
+    "piece": 0,
+    "at": 0.9782608695652174,
+    "dx": 0,
+    "dy": -4,
+    "reach": 40
+  }
+]

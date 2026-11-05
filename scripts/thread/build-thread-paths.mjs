@@ -33,8 +33,13 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { THREAD_BANDS } from "../../components/thread/thread-bands.ts";
+import {
+  motifEnds,
+  ringSquareCentre,
+} from "../../components/thread/thread-line.ts";
 import { MOTIFS } from "../../components/thread/thread-motifs.ts";
 import { adaptCelebrations, BAND_SMOOTHING } from "./adapt-photo-states.mjs";
+import { applyMoves, applyPen, checkPen, toState } from "./pen-marks.mjs";
 import { checkEdits, editsFor, retouchPiece } from "./retouch.mjs";
 import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
 
@@ -43,6 +48,7 @@ import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
  * @import { MotifId, Tangent } from "../../components/thread/thread-geometry.ts"
  * @import { EndTangents } from "./thread-spline.ts"
  * @import { Edit } from "./retouch.mjs"
+ * @import { Pen } from "./pen-marks.mjs"
  * @typedef {{ x: number, y: number }} Point
  * @typedef {{ motif: string, x: number, y: number, scale: number, turn: number, mirror?: true }} Placement
  * @typedef {{ section: string, motifId: MotifId, mirror: boolean, turn: number, x: number, y: number, entryHeadingVector: Point, exitHeadingVector: Point, drawnEntryHeading: number, drawnExitHeading: number, entryPointGlobal: Point, exitPointGlobal: Point }} Fitted
@@ -381,12 +387,15 @@ function shiftPathY(d, dy) {
  */
 
 /**
+ * `centre` is the ring drawing's square centre, placed so its loop sits on the portrait.
  * @typedef {{ centre: Point, turn: number, mirror: boolean }} Ring
  */
 
 /* How far a ring's ends may sit off the drawn line, against how far its tangents may turn from the
    line's heading there: a degree of heading costs as much as half a pixel of distance. */
 const RING_HEADING_WEIGHT = 0.5;
+/* A pen stroke passes a ring when it comes this near the drawn line's end at the ring (page px). */
+const RING_STROKE_REACH = 80;
 /* Family's floor off type (`import-thread-drawing.mjs`), which a ring and its eased joins keep too. */
 const RING_TYPE_FLOOR = 5;
 const TYPE_PENALTY = 100;
@@ -416,7 +425,7 @@ function nearestTypeAlong(a, b, glyphs) {
 }
 
 /**
- * Fit every portrait ring as the page will place it — centred on its portrait — and cut the drawn
+ * Fit every portrait ring as the page will place it — its loop centred on its portrait — and cut the drawn
  * line to it. The ring enters on one side of the portrait and leaves on the other; every turn and
  * both windings are tried, and the one whose two ends land nearest the line, heading the way the
  * line heads there, is kept. The line is then trimmed to end at the first and start again at the
@@ -428,7 +437,14 @@ function nearestTypeAlong(a, b, glyphs) {
  * @param {{ left: number, right: number, top: number, bottom: number }[]} glyphs line boxes of type
  * @returns {Map<number, Ring>} by motif index
  */
-function fitRings(band, attachments, lines, portraits, glyphs) {
+function fitRings(
+  band,
+  attachments,
+  lines,
+  portraits,
+  glyphs,
+  /** @type {Map<number, { turn: number, mirror: boolean }>} */ forced = new Map(),
+) {
   /** @type {Map<number, Ring>} */
   const rings = new Map();
   const motif = MOTIFS.portraitLoop;
@@ -477,10 +493,20 @@ function fitRings(band, attachments, lines, portraits, glyphs) {
     const line = [...lines[index], ...lines[index + 1]];
     /** @type {{ cost: number, ring: Ring, cutIn: number, cutOut: number } | null} */
     let best = null;
-    for (const mirror of [false, true]) {
-      const entryTangent = mirror ? mirrorTangent(motif.entry) : motif.entry;
-      const exitTangent = mirror ? mirrorTangent(motif.exit) : motif.exit;
-      for (let turn = -180; turn < 180; turn += 1) {
+    const held = forced.get(index);
+    for (const mirror of held ? [held.mirror] : [false, true]) {
+      /* The ring's ends as the page draws them — trimmed at its tails — so a connector is joined
+         where it will actually meet the ring. */
+      const ends = motifEnds("portraitLoop");
+      const entryTangent = mirror ? mirrorTangent(ends.entry) : ends.entry;
+      const exitTangent = mirror ? mirrorTangent(ends.exit) : ends.exit;
+      for (
+        let turn = held ? held.turn : -180;
+        held ? turn === held.turn : turn < 180;
+        turn += 1
+      ) {
+        /* The ring's loop, not its drawing's square, sits on the photo. */
+        const square = ringSquareCentre(centre, { turn, mirror }, size);
         /** @param {Tangent} t */
         const at = (t) => {
           const dx = t.x - 0.5;
@@ -488,8 +514,8 @@ function fitRings(band, attachments, lines, portraits, glyphs) {
           const c = Math.cos(rad(turn));
           const si = Math.sin(rad(turn));
           return {
-            x: centre.x + (dx * c - dy * si) * size,
-            y: centre.y + (dx * si + dy * c) * size,
+            x: square.x + (dx * c - dy * si) * size,
+            y: square.y + (dx * si + dy * c) * size,
           };
         };
         const entry = at(entryTangent);
@@ -555,7 +581,12 @@ function fitRings(band, attachments, lines, portraits, glyphs) {
             (apart(approach, entryTangent.angle + turn) +
               apart(departure, exitTangent.angle + turn));
         if (best === null || cost < best.cost)
-          best = { cost, ring: { centre, turn, mirror }, cutIn, cutOut };
+          best = {
+            cost,
+            ring: { centre: square, turn, mirror },
+            cutIn,
+            cutOut,
+          };
       }
     }
     if (best === null)
@@ -581,6 +612,7 @@ function buildBand(
   fits = null,
   rings = new Map(),
   /** @type {Edit[]} */ retouch = [],
+  /** @type {{ pen: Pen, combination: string, place: (p: Point) => Point } | null} */ marks = null,
 ) {
   const sections = geometry.sections;
   if (sections.length !== SECTION_ORDER.length)
@@ -614,7 +646,6 @@ function buildBand(
   const fitted =
     fits ??
     motifs.map((m, index) => {
-      const motif = MOTIFS[m.motifId];
       const arriving = connectors[index]?.points;
       const leaving = connectors[index + 1]?.points;
       if (!arriving || !leaving) {
@@ -631,8 +662,9 @@ function buildBand(
        other, so the ring takes whichever winding the line's two ends agree on. */
       /** @param {boolean} reflect */
       const fit = (reflect) => {
-        const entryTangent = reflect ? mirrorTangent(motif.entry) : motif.entry;
-        const exitTangent = reflect ? mirrorTangent(motif.exit) : motif.exit;
+        const ends = motifEnds(m.motifId);
+        const entryTangent = reflect ? mirrorTangent(ends.entry) : ends.entry;
+        const exitTangent = reflect ? mirrorTangent(ends.exit) : ends.exit;
         const atEntry = rad(drawnEntryHeading - entryTangent.angle);
         const atExit = rad(drawnExitHeading - exitTangent.angle);
         const disagreement = Math.abs(
@@ -721,24 +753,35 @@ function buildBand(
       sections.findIndex((x) => y >= x.top && y < x.top + x.height),
     );
 
+  /* Snapped onto the fit's own attachment point, not the raw drawn end, and eased into the motif. A
+     free page-end has nothing to snap to and keeps its raw point. */
+  const eased = connectors.map((connector, k) => {
+    const before = k > 0 ? fitted[k - 1] : null;
+    const after = k < fitted.length ? fitted[k] : null;
+    const snapped = connector.points.map((p, i, arr) => {
+      if (i === 0 && before) return before.exitPointGlobal;
+      if (i === arr.length - 1 && after) return after.entryPointGlobal;
+      return p;
+    });
+    return {
+      points: easedIntoMotifs(
+        snapped,
+        before?.exitHeadingVector,
+        after?.entryHeadingVector,
+      ),
+    };
+  });
+  /* The owner's pen marks were drawn on this line, eased into its motifs, so they land here. */
+  const marked = marks
+    ? applyPen(eased, marks.pen, marks.combination, marks.place)
+    : eased;
+
   /** @type {Set<Edit>} */
   const applied = new Set();
   for (let k = 0; k < connectors.length; k += 1) {
     const before = k > 0 ? fitted[k - 1] : null;
     const after = k < fitted.length ? fitted[k] : null;
-
-    /* Snapped onto the fit's own attachment point, not the raw drawn end. A free page-end has
-       nothing to snap to and keeps its raw point. */
-    const snapped = connectors[k].points.map((p, i, arr) => {
-      if (i === 0 && before) return before.exitPointGlobal;
-      if (i === arr.length - 1 && after) return after.entryPointGlobal;
-      return p;
-    });
-    const points = easedIntoMotifs(
-      snapped,
-      before?.exitHeadingVector,
-      after?.entryHeadingVector,
-    );
+    const { points } = marked[k];
     const first = before
       ? SECTION_ORDER.indexOf(before.section)
       : sectionAt(points[0].y);
@@ -844,8 +887,9 @@ const COMBINATIONS = Array.from({ length: 2 ** RITUALS }, (_, n) =>
  * the portrait rings, and each combination's page with Celebrations re-shaped — which is nearly all
  * of the build's time, so the retouch helper keeps this and rebuilds only from here on.
  * @param {BandId} band @param {string} dir
+ * @param {Pen} [pen] read only for `refitRings`: the strokes past each ring turn it
  */
-export function preparePhotoStates(band, dir) {
+export function preparePhotoStates(band, dir, pen = {}) {
   const read = (/** @type {string} */ name) =>
     JSON.parse(readFileSync(`${dir}/${name}`, "utf8"));
   /** @type {Geometry} */
@@ -857,12 +901,54 @@ export function preparePhotoStates(band, dir) {
   const layout = read("photo-layout.json");
   /* The rings are fitted once, on the drawn page; Family is the same page in every combination. */
   const lines = connectors.map((c) => c.points.slice());
+  /* Where the owner asked for the rings to be refitted, each ring is turned to fit the owner's
+     stroke past it — scored as the drawn line is, with the stroke standing in for the line — and the
+     drawn line is then cut against that turn. The stroke itself still lands on the eased line. */
+  /** @type {Map<number, { turn: number, mirror: boolean }>} */
+  const forced = new Map();
+  if (pen.refitRings)
+    for (let i = 0; i < attachments.length; i += 2) {
+      if (attachments[i].motif !== "portraitLoop") continue;
+      const index = i / 2;
+      const into = /** @type {Point} */ (lines[index].at(-1));
+      const past = (pen.strokes ?? [])
+        .filter((s) => s.states.includes(COMBINATIONS[COMBINATIONS.length - 1]))
+        .map((s) => ({
+          s,
+          d: Math.min(
+            ...s.points.map((p) => Math.hypot(p.x - into.x, p.y - into.y)),
+          ),
+        }))
+        .filter((c) => c.d < RING_STROKE_REACH)
+        .sort((a, b) => a.d - b.d)[0];
+      if (!past) continue;
+      const fromEnd = (/** @type {Point} */ p) =>
+        Math.min(...lines[index].map((q) => Math.hypot(q.x - p.x, q.y - p.y)));
+      const stroke =
+        fromEnd(past.s.points[0]) <=
+        fromEnd(/** @type {Point} */ (past.s.points.at(-1)))
+          ? past.s.points
+          : past.s.points.slice().reverse();
+      const alone = lines.map((l) => l.slice());
+      alone[index] = stroke.slice();
+      alone[index + 1] = [/** @type {Point} */ (stroke.at(-1))];
+      const fitted = fitRings(
+        band,
+        attachments,
+        alone,
+        layout.portraits,
+        layout.glyphs,
+      ).get(index);
+      if (fitted)
+        forced.set(index, { turn: fitted.turn, mirror: fitted.mirror });
+    }
   const rings = fitRings(
     band,
     attachments,
     lines,
     layout.portraits,
     layout.glyphs,
+    forced,
   );
   const ringed = lines.map((points) => ({ points }));
   const celebrations = geometry.sections[SECTION_ORDER.indexOf("celebrations")];
@@ -908,6 +994,7 @@ export function preparePhotoStates(band, dir) {
     const rise = (p) => ({ ...p, y: below(p.y) ? p.y - total : p.y });
     return {
       combination,
+      removed,
       rise,
       geometry: {
         width: geometry.width,
@@ -925,14 +1012,27 @@ export function preparePhotoStates(band, dir) {
       })),
     };
   });
-  return { band, rings, inputs, strip: layout.strip };
+  return {
+    band,
+    rings,
+    inputs,
+    strip: layout.strip,
+    layout,
+  };
 }
 
 /**
- * Every combination's band, built from the prepared pages with the owner's retouch applied.
+ * Every combination's band, built from the prepared pages with the owner's pen marks and retouch
+ * applied. The pen's marks sit on the drawn page; each combination takes them through its own
+ * close-up of Celebrations.
  * @param {ReturnType<typeof preparePhotoStates>} prepared @param {Edit[]} retouch
+ * @param {Pen} [pen]
  */
-export function buildPhotoStates({ band, rings, inputs, strip }, retouch) {
+export function buildPhotoStates(
+  { band, rings, inputs, strip, layout },
+  retouch,
+  pen = {},
+) {
   /** @type {Record<string, BandResult>} */
   const states = {};
   /* Motifs are fitted once, on the page the owner drew; a combination only re-shapes Celebrations,
@@ -941,11 +1041,19 @@ export function buildPhotoStates({ band, rings, inputs, strip }, retouch) {
   let drawnFits = null;
   for (const {
     combination,
+    removed,
     rise,
     geometry,
-    attachments,
-    connectors,
+    attachments: drawnAttachments,
+    connectors: drawnConnectors,
   } of inputs) {
+    const place = (/** @type {Point} */ p) => toState(p, layout, removed);
+    const { connectors, attachments } = applyMoves(
+      drawnConnectors,
+      drawnAttachments,
+      pen.moves,
+      place,
+    );
     const fits =
       drawnFits?.map((f) =>
         SECTION_ORDER.indexOf(f.section) > SECTION_ORDER.indexOf("celebrations")
@@ -962,6 +1070,7 @@ export function buildPhotoStates({ band, rings, inputs, strip }, retouch) {
       fits,
       rings,
       retouch,
+      { pen, combination, place },
     );
     drawnFits ??= states[combination].fitted;
   }
@@ -978,6 +1087,18 @@ export function readRetouch(band, dir) {
   const edits = JSON.parse(readFileSync(file, "utf8"));
   checkEdits(band, edits, SECTION_ORDER);
   return edits;
+}
+
+/**
+ * The band's pen marks, or none when it has no pen file.
+ * @param {BandId} band @param {string} dir @returns {Pen}
+ */
+export function readPen(band, dir) {
+  const file = `${dir}/pen.json`;
+  if (!existsSync(file)) return {};
+  const pen = JSON.parse(readFileSync(file, "utf8"));
+  checkPen(band, pen);
+  return pen;
 }
 
 /** @param {Record<string, { states: Record<string, BandResult>, strip: number }>} results */
@@ -1138,9 +1259,11 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const results = {};
   for (const [band, dir] of Object.entries(DIRS)) {
     const id = /** @type {BandId} */ (band);
+    const pen = readPen(id, dir);
     results[band] = buildPhotoStates(
-      preparePhotoStates(id, dir),
+      preparePhotoStates(id, dir, pen),
       readRetouch(id, dir),
+      pen,
     );
   }
 
