@@ -84,7 +84,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Sebastian & Flemy",
   description: "You’re invited — 4th & 9th January 2027, Kerala",
-  /* Every route names the designer here, including `/` while its visible credit waits for the couple. */
+  /* Every route names the designer in its metadata, beside the visible credit. */
   authors: [{ name: credit.name, url: credit.url }],
   creator: credit.name,
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the

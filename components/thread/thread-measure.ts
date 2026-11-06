@@ -236,7 +236,7 @@ export function pageDrawnLength(
 
    WHY TWO CALLBACKS. A mobile URL bar collapses when the reader scrolls down and expands when they
    scroll back up, and each is a HEIGHT-ONLY resize fired DURING the scroll. Running the full
-   re-measure there reset the head, stopped the re-trace and discarded the draw ratchet mid-gesture,
+   re-measure there reset the head and discarded the draw ratchet mid-gesture,
    which the owner saw as glitches and as the thread un-drawing itself on the way back up. A
    height-only change moves the draw WINDOW and nothing else, so it takes the cheap path.
 
