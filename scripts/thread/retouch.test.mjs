@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkEdits, editsFor, retouchPiece } from "./retouch.mjs";
+import { applyMoves } from "./pen-marks.mjs";
+import { checkEdits, editsFor, motifMoves, retouchPiece } from "./retouch.mjs";
 
 const SECTIONS = ["invite", "event-info", "family", "celebrations", "wishes"];
 
@@ -129,6 +130,105 @@ test("editsFor picks one piece's edits, in file order", () => {
     [1, 3],
   );
   assert.deepEqual(editsFor(edits, "invite", 0), []);
+});
+
+test("a motif move becomes a move of the box round that motif's two ends", () => {
+  const attachments = [
+    { section: "invite", motif: "heart", which: "entry", x: 10, y: 20 },
+    { section: "invite", motif: "heart", which: "exit", x: 30, y: 40 },
+    { section: "event-info", motif: "knot", which: "entry", x: 1253, y: 1065 },
+    { section: "event-info", motif: "knot", which: "exit", x: 1151, y: 1160 },
+  ];
+  const edits = [
+    { section: "invite", piece: 0, at: 0.5, dx: 1, dy: 1, reach: 40 },
+    { section: "event-info", motif: "knot", dx: 30, dy: -4, ease: 60 },
+  ];
+  assert.deepEqual(motifMoves(edits, attachments), [
+    {
+      box: { x0: 1139, y0: 1053, x1: 1265, y1: 1172 },
+      dx: 30,
+      dy: -4,
+      ease: 60,
+    },
+  ]);
+  assert.deepEqual(editsFor(edits, "event-info", 0), []);
+  assert.throws(
+    () =>
+      motifMoves(
+        [{ section: "family", motif: "knot", dx: 1, dy: 0, ease: 60 }],
+        attachments,
+      ),
+    /family has no knot/,
+  );
+});
+
+test("a motif move carries both drawn lines, though a drawn end sits a few px off the motif's own", () => {
+  /* The wide knot as drawn: the leaving line starts 4px left of the exit the motif was fitted to. */
+  const attachments = [
+    {
+      section: "event-info",
+      motif: "knot",
+      which: "entry",
+      x: 1253.3,
+      y: 1065.6,
+    },
+    {
+      section: "event-info",
+      motif: "knot",
+      which: "exit",
+      x: 1151.7,
+      y: 1160.4,
+    },
+  ];
+  const arriving = {
+    points: [
+      { x: 1245.25, y: 900 },
+      { x: 1245.25, y: 1075.75 },
+    ],
+  };
+  const leaving = {
+    points: [
+      { x: 1147.75, y: 1149.25 },
+      { x: 1100, y: 1400 },
+    ],
+  };
+  const moves = motifMoves(
+    [{ section: "event-info", motif: "knot", dx: 30, dy: 0, ease: 240 }],
+    attachments,
+  );
+  const { connectors } = applyMoves(
+    [arriving, leaving],
+    attachments,
+    moves,
+    (p) => p,
+  );
+  assert.equal(connectors[0].points[1].x, 1275.25);
+  assert.equal(connectors[1].points[0].x, 1177.75);
+});
+
+test("checkEdits takes a motif move and refuses one it cannot carry out", () => {
+  const good = {
+    section: "event-info",
+    motif: "knot",
+    dx: 30,
+    dy: 0,
+    ease: 60,
+  };
+  assert.doesNotThrow(() => checkEdits("wide", [good], SECTIONS));
+  /* A file is read as JSON, so a missing dx reaches the check whatever the type says. */
+  const missingDx = /** @type {typeof good} */ (
+    /** @type {unknown} */ ({ ...good, dx: undefined })
+  );
+  for (const bad of [
+    { ...good, motif: "" },
+    missingDx,
+    { ...good, ease: 0 },
+    { ...good, section: "contact" },
+  ])
+    assert.throws(
+      () => checkEdits("wide", [good, bad], SECTIONS),
+      /wide.*edit 1/,
+    );
 });
 
 test("checkEdits refuses an edit it cannot place, naming the band and the edit", () => {

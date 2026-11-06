@@ -11,12 +11,17 @@
  *
  * Either one fades to nothing `reach` px of line either side of `at`, and to nothing at the piece's
  * two ends: those meet a motif, a section boundary or the page's edge, and a moved end would open
- * the join there.
+ * the join there. So a motif is moved by an edit of its own, which carries the line with it:
+ *
+ *   move   { section, motif, dx, dy, ease }  the motif and the line round it move by (dx, dy), the
+ *                                            line easing back over `ease` px beyond the motif's ends
  */
 
 /** @typedef {{ x: number, y: number }} Point */
 /** @typedef {{ section: string, piece: number, at: number, reach: number, dx?: number, dy?: number, smooth?: true }} Edit */
 /** @typedef {Omit<Edit, "section" | "piece">} Change what an edit does, wherever it is */
+/** @typedef {{ section: string, motif: string, dx: number, dy: number, ease: number }} MotifMove */
+/** @typedef {Edit | MotifMove} Retouch one entry of a band's retouch file */
 
 /* Spacing of the points added inside an edit's reach, so the falloff has a shape to bend. */
 const STEP = 4;
@@ -134,20 +139,72 @@ export function retouchPiece(points, edits) {
 
 /**
  * One piece's edits, in the file's order.
- * @param {Edit[]} edits @param {string} section @param {number} piece
+ * @param {Retouch[]} edits @param {string} section @param {number} piece
+ * @returns {Edit[]}
  */
 export function editsFor(edits, section, piece) {
-  return edits.filter((e) => e.section === section && e.piece === piece);
+  return edits.filter(
+    /** @returns {e is Edit} */ (e) =>
+      "piece" in e && e.section === section && e.piece === piece,
+  );
+}
+
+/* How far a motif move's box reaches past the motif's two ends: a drawn line ends a few px off the
+   point its motif was fitted to, and a move leaves a line with no point in its box where it was. */
+const MOTIF_MARGIN = 12;
+
+/**
+ * The motif moves, each as a move of the box its motif's two ends span, MOTIF_MARGIN wider each way —
+ * the line inside it is the motif's own approach, and both connectors ease back beyond it.
+ * @param {Retouch[]} edits
+ * @param {{ section: string, motif: string, x: number, y: number }[]} attachments entry/exit pairs on the drawn page
+ */
+export function motifMoves(edits, attachments) {
+  return edits
+    .filter(/** @returns {e is MotifMove} */ (e) => "motif" in e)
+    .map((e) => {
+      const ends = attachments.filter(
+        (a) => a.section === e.section && a.motif === e.motif,
+      );
+      if (ends.length !== 2)
+        throw new Error(`${e.section} has no ${e.motif} to move`);
+      const xs = ends.map((a) => a.x);
+      const ys = ends.map((a) => a.y);
+      return {
+        box: {
+          x0: Math.min(...xs) - MOTIF_MARGIN,
+          y0: Math.min(...ys) - MOTIF_MARGIN,
+          x1: Math.max(...xs) + MOTIF_MARGIN,
+          y1: Math.max(...ys) + MOTIF_MARGIN,
+        },
+        dx: e.dx,
+        dy: e.dy,
+        ease: e.ease,
+      };
+    });
 }
 
 /**
  * Refuses an edit that names no section, piece or place, or moves nothing.
- * @param {string} band @param {Edit[]} edits @param {readonly string[]} sections
+ * @param {string} band @param {Retouch[]} edits @param {readonly string[]} sections
  */
 export function checkEdits(band, edits, sections) {
   edits.forEach((e, i) => {
     const finite = (/** @type {unknown} */ v) =>
       typeof v === "number" && Number.isFinite(v);
+    if ("motif" in e) {
+      const problem = !sections.includes(e.section)
+        ? `unknown section "${e.section}"`
+        : typeof e.motif !== "string" || e.motif === ""
+          ? "a move names no motif"
+          : !finite(e.dx) || !finite(e.dy)
+            ? "a move needs dx and dy"
+            : !finite(e.ease) || e.ease <= 0
+              ? `ease ${e.ease} is not a positive length`
+              : null;
+      if (problem) throw new Error(`${band}: retouch edit ${i}: ${problem}`);
+      return;
+    }
     const problem = !sections.includes(e.section)
       ? `unknown section "${e.section}"`
       : !Number.isInteger(e.piece) || e.piece < 0

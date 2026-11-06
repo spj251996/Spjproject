@@ -585,6 +585,43 @@ test("a move carries the line and the attachments inside its box down, easing ou
   assert.equal(moved[1].y, 500);
 });
 
+test("a move with a dx carries the line and the attachments inside its box sideways too", () => {
+  const line = straight(800);
+  const attachments = [
+    {
+      section: "wishes",
+      motif: "bow",
+      which: "entry",
+      x: 400,
+      y: 500,
+      heading: 0,
+    },
+    {
+      section: "wishes",
+      motif: "rings",
+      which: "entry",
+      x: 50,
+      y: 500,
+      heading: 0,
+    },
+  ];
+  const moves = [
+    { box: { x0: 300, y0: 450, x1: 500, y1: 550 }, dx: 20, dy: 0, ease: 60 },
+  ];
+  const {
+    connectors: [out],
+    attachments: moved,
+  } = applyMoves([{ points: line }], attachments, moves, (p) => p);
+  for (const [i, p] of out.points.entries()) {
+    const x = line[i].x;
+    if (x >= 300 && x <= 500) assert.equal(p.x, x + 20, `x ${x} carried`);
+    if (x < 230 || x > 570) assert.equal(p.x, x, `x ${x} untouched`);
+    assert.equal(p.y, 500);
+  }
+  assert.equal(moved[0].x, 420);
+  assert.equal(moved[1].x, 50);
+});
+
 test("a smoothing zone keeps a loop inside it and smooths the line either side", () => {
   /* A line along y 500 with a kink at x 150 and a small loop at x 200: the zone covers both. The
      loop must still cross itself afterwards; the kink must calm. */

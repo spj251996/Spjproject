@@ -13,7 +13,7 @@ import { retouchPiece } from "./retouch.mjs";
 /** @typedef {{ group: number, states: string[], spread?: boolean }} Drawn which stretch a mark fixes, the photo states it was drawn on, and whether it also reaches states drawn on no sheet of its own (Celebrations: the owner drew a repeated mistake on one or two states only) */
 /** @typedef {Drawn & { points: Point[], corners?: number[] }} Stroke `corners`: where the pen left the line, rounded on each photo state's page (`cornersOf`) */
 /** @typedef {Drawn & { x: number, y: number, r: number }} Zone */
-/** @typedef {{ box: { x0: number, y0: number, x1: number, y1: number }, dy: number, ease: number }} Move */
+/** @typedef {{ box: { x0: number, y0: number, x1: number, y1: number }, dx?: number, dy: number, ease: number }} Move */
 /** @typedef {{ strokes?: Stroke[], zones?: Zone[], moves?: Move[], refitRings?: boolean }} Pen `refitRings`: fit the portrait rings to the strokes past them */
 /** @typedef {{ top: number, descBottom: number, stripBottom: number }} Row */
 /** @typedef {{ top: number, bottom: number }} Glyph */
@@ -379,7 +379,7 @@ function splice(line, from, to, middle) {
 
 /**
  * The owner's moves for one photo state: the line and the attachments inside each box carried by
- * `dy`, the line easing back over `ease` px of itself beyond the box. Applied to the drawn
+ * (`dx`, `dy`), the line easing back over `ease` px of itself beyond the box. Applied to the drawn
  * connectors, before the motifs are fitted, so a motif inside the box moves with its line.
  * `place` takes a point of the drawn page to this state's page.
  * @template {{ points: Point[] }} C
@@ -407,10 +407,14 @@ export function applyMoves(connectors, attachments, moves, place) {
           : Math.min(...insideAt.map((t) => Math.abs(t - s[i])));
         if (d >= move.ease) return p;
         const w = Math.cos((Math.PI / 2) * (d / move.ease)) ** 2;
-        return { ...p, y: p.y + move.dy * w };
+        return { ...p, x: p.x + (move.dx ?? 0) * w, y: p.y + move.dy * w };
       });
     });
-    for (const att of moved) if (inBox(att)) att.y += move.dy;
+    for (const att of moved)
+      if (inBox(att)) {
+        att.x += move.dx ?? 0;
+        att.y += move.dy;
+      }
   }
   return {
     connectors: connectors.map((c, k) => ({ ...c, points: lines[k] })),
@@ -755,7 +759,12 @@ export function checkPen(band, pen) {
   (pen.moves ?? []).forEach((m, i) => {
     const b = m.box;
     if (!b || !(b.x0 < b.x1) || !(b.y0 < b.y1)) fail("move", i, "needs a box");
-    if (!finite(m.dy) || !finite(m.ease) || m.ease <= 0)
-      fail("move", i, "needs a dy and an ease");
+    if (
+      !finite(m.dy) ||
+      (m.dx !== undefined && !finite(m.dx)) ||
+      !finite(m.ease) ||
+      m.ease <= 0
+    )
+      fail("move", i, "needs a dy, a finite dx if any, and an ease");
   });
 }

@@ -22,7 +22,8 @@
  * RUN ONCE PER DRAWING UPDATE. Its sources are `assets/thread/{wide,tall,upright}/`; the owner's
  * drawn sheets stay out of the repo (about 18MB of PNG) and the extracted JSON is what this reads.
  * A band's `retouch.json`, when it has one, holds the owner's nudges made on the rendered page
- * (`retouch.mjs`); they are applied to each section's piece of line before it is fit.
+ * (`retouch.mjs`); they are applied to each section's piece of line before it is fit, and a motif
+ * move carries a motif and the line round it before the motifs are fitted.
  *
  *   node scripts/thread/build-thread-paths.mjs    # -> components/thread/thread-paths.ts
  *
@@ -40,14 +41,14 @@ import {
 import { MOTIFS } from "../../components/thread/thread-motifs.ts";
 import { adaptCelebrations, BAND_SMOOTHING } from "./adapt-photo-states.mjs";
 import { applyMoves, applyPen, checkPen, toState } from "./pen-marks.mjs";
-import { checkEdits, editsFor, retouchPiece } from "./retouch.mjs";
+import { checkEdits, editsFor, motifMoves, retouchPiece } from "./retouch.mjs";
 import { boundSpans, MAX_SPAN, splinePath } from "./thread-spline.ts";
 
 /**
  * @import { BandId } from "../../components/thread/thread-bands.ts"
  * @import { MotifId, Tangent } from "../../components/thread/thread-geometry.ts"
  * @import { EndTangents } from "./thread-spline.ts"
- * @import { Edit } from "./retouch.mjs"
+ * @import { Edit, Retouch } from "./retouch.mjs"
  * @import { Pen } from "./pen-marks.mjs"
  * @typedef {{ x: number, y: number }} Point
  * @typedef {{ motif: string, x: number, y: number, scale: number, turn: number, mirror?: true }} Placement
@@ -611,7 +612,7 @@ function buildBand(
   { geometry, attachments, connectors },
   fits = null,
   rings = new Map(),
-  /** @type {Edit[]} */ retouch = [],
+  /** @type {Retouch[]} */ retouch = [],
   /** @type {{ pen: Pen, combination: string, place: (p: Point) => Point } | null} */ marks = null,
 ) {
   const sections = geometry.sections;
@@ -841,7 +842,7 @@ function buildBand(
   }
 
   retouch.forEach((edit, i) => {
-    if (!applied.has(edit))
+    if (!("motif" in edit) && !applied.has(edit))
       throw new Error(
         `${band}: retouch edit ${i} names ${edit.section} piece ${edit.piece}, which this band does not have`,
       );
@@ -1025,7 +1026,7 @@ export function preparePhotoStates(band, dir, pen = {}) {
  * Every combination's band, built from the prepared pages with the owner's pen marks and retouch
  * applied. The pen's marks sit on the drawn page; each combination takes them through its own
  * close-up of Celebrations.
- * @param {ReturnType<typeof preparePhotoStates>} prepared @param {Edit[]} retouch
+ * @param {ReturnType<typeof preparePhotoStates>} prepared @param {Retouch[]} retouch
  * @param {Pen} [pen]
  */
 export function buildPhotoStates(
@@ -1039,6 +1040,12 @@ export function buildPhotoStates(
      which holds none, and raises everything below it. */
   /** @type {Fitted[] | null} */
   let drawnFits = null;
+  /* The first page is the drawn one (every strip present), where a motif move's box is read, like
+     the pen's own moves. */
+  const moves = [
+    ...(pen.moves ?? []),
+    ...motifMoves(retouch, inputs[0].attachments),
+  ];
   for (const {
     combination,
     removed,
@@ -1051,7 +1058,7 @@ export function buildPhotoStates(
     const { connectors, attachments } = applyMoves(
       drawnConnectors,
       drawnAttachments,
-      pen.moves,
+      moves,
       place,
     );
     const fits =
@@ -1079,7 +1086,7 @@ export function buildPhotoStates(
 
 /**
  * The band's retouch file, or no edits when it has none.
- * @param {BandId} band @param {string} dir @returns {Edit[]}
+ * @param {BandId} band @param {string} dir @returns {Retouch[]}
  */
 export function readRetouch(band, dir) {
   const file = `${dir}/retouch.json`;
