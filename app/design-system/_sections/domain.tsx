@@ -10,6 +10,7 @@ import {
   ThreadFrayedEndsSpecimen,
   ThreadHeadSpecimen,
   ThreadInkSpecimen,
+  ThreadMotifsSpecimen,
   ThreadSwaySpecimen,
   ThreadTwistSpecimen,
 } from "@/app/design-system/_sections/thread-specimens";
@@ -23,7 +24,7 @@ const THREAD_ENTRIES: InlineEntry[] = [
     home: "components/thread/page-thread.tsx",
     composes:
       "one page-length SVG over main · the ink, one path per piece, with its contact shadow · the twist across the ink · the drawing head with its halo and frayed tip · frayed ends at the invite's top and Wishes' close · crossings, one strand over the other · the sway: at most 8px, a 4s sway with a gust every 8s carrying half the motion, stopping once the page has gone --thread-idle (60s) untouched and resting while the page scrolls (Foundations · Motion)",
-    note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. Below, each layer is laid on a stretch of the page's own authored geometry, posed and static. Geometry is authored per aspect band, not per width tier (Interaction · Responsive Behavior).",
+    note: "Live at /thread on preview deploys and in dev, never in the production build — the invitation carries no thread. Below, each layer is laid on a stretch of the page's own authored geometry, posed and static. Geometry is the owner's drawing, one per band; a window takes the band drawn for its layout, not a width tier (Interaction · Responsive Behavior).",
   },
   {
     name: "card-thread",
@@ -214,6 +215,21 @@ export function DomainSections() {
           ]}
         >
           <ThreadCrossingsSpecimen />
+        </Specimen>
+
+        <Specimen
+          description="The motifs: the drawings the line passes through — a heart, the rings, a knot, a ring round each of the couple's photos and a bow — each laid along the flow where the owner's drawing places it."
+          id="thread-motifs"
+          name="motifs"
+          note="At the wide band's nominal size, turned and mirrored as the page draws them there. Only Family's two rings are anchored to real content; every other motif takes its place in the drawing. A connector meets each motif along the motif's own visible direction, at every window size."
+          source="components/thread/thread-motifs.ts · MOTIFS"
+          spec={[
+            "size · each motif's own scale of the band box's shorter side",
+            "portrait ring · sized from the photo it wraps, its loop — not its drawing's square — centred on the photo, so no strand crosses the face",
+            "route · the owner's drawing, one per band, fitted as a curve through it; Celebrations adapts to every combination of photo strips",
+          ]}
+        >
+          <ThreadMotifsSpecimen />
         </Specimen>
       </GallerySection>
 

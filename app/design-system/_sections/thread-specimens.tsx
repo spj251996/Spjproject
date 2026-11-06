@@ -10,16 +10,19 @@ import {
   useState,
 } from "react";
 import styles from "@/components/thread/thread.module.css";
+import { portraitPhotoWidth } from "@/components/thread/thread-authored-layout";
 import { THREAD_BANDS } from "@/components/thread/thread-bands";
 import {
   lineCrossings,
   type OrderedCrossing,
 } from "@/components/thread/thread-crossings";
+import { authoredMeasuredSections } from "@/components/thread/thread-fallback";
 import {
   cordDrawn,
   type FrayShape,
   frayShape,
 } from "@/components/thread/thread-fray";
+import type { MotifId } from "@/components/thread/thread-geometry";
 import {
   type HeadOptions,
   type HeadSegment,
@@ -27,6 +30,11 @@ import {
   type PieceSpan,
 } from "@/components/thread/thread-head";
 import { EndCutMask } from "@/components/thread/thread-ink";
+import {
+  ringSquareCentre,
+  splitSubpaths,
+  threadLine,
+} from "@/components/thread/thread-line";
 import { MOTIFS } from "@/components/thread/thread-motifs";
 import {
   createCrossingPainter,
@@ -35,6 +43,7 @@ import {
 } from "@/components/thread/thread-painters";
 import {
   MOTIF_PLACEMENTS,
+  THREAD_IDS,
   THREAD_PATHS,
 } from "@/components/thread/thread-paths";
 import {
@@ -628,6 +637,8 @@ function atOrigin(d: string, margin: number) {
   });
   return {
     d: moved,
+    dx,
+    dy,
     width: Math.max(...xs) + dx + margin,
     height: Math.max(...ys) + dy + margin,
   };
@@ -641,6 +652,84 @@ function scaled(d: string, factor: number) {
 }
 
 const SWAYING = atOrigin(MID_PAGE, MARGIN);
+
+/* The page's motifs at the wide band's nominal size, each as `threadLine` bakes it there — turned and
+   mirrored as the drawing places it. Family's ring is shown round a photo the size the band draws one,
+   centred by its loop, as the page anchors it. */
+const WIDE_SECTIONS = authoredMeasuredSections("wide");
+const WIDE_LINE = threadLine("wide", WIDE_SECTIONS);
+const WIDE_SUBPATHS = splitSubpaths(WIDE_LINE.d);
+const MOTIF_MARGIN = 16;
+const SHOWN: readonly { kind: MotifId; caption: string }[] = [
+  { kind: "heart", caption: "The invite's heart." },
+  { kind: "rings", caption: "Event Info's rings, on the betrothal sheet." },
+  { kind: "knot", caption: "Event Info's knot, on the wedding sheet." },
+  {
+    kind: "portraitLoop",
+    caption:
+      "Family's ring round Flemy's photo, sized from it and centred on it by its loop.",
+  },
+  { kind: "bow", caption: "Wishes' bow, closing the line." },
+];
+const BRIDE_RING = MOTIF_PLACEMENTS.wide.family[0];
+const BRIDE_RING_SIDE =
+  BRIDE_RING.scale * Math.min(WIDE_BOX?.width ?? 0, WIDE_BOX?.height ?? 0);
+/* Where the page puts the photo the ring wraps: the ring's own square centre plus its loop's offset. */
+const BRIDE_PHOTO = (() => {
+  const offset = ringSquareCentre({ x: 0, y: 0 }, BRIDE_RING, BRIDE_RING_SIDE);
+  return {
+    x: BRIDE_RING.x - offset.x,
+    y:
+      BRIDE_RING.y - offset.y + WIDE_SECTIONS[THREAD_IDS.indexOf("family")].top,
+  };
+})();
+const MOTIF_SPECIMENS = SHOWN.map(({ kind, caption }) => {
+  const index = WIDE_LINE.pieces.findIndex((piece) => piece.kind === kind);
+  const framed = atOrigin(WIDE_SUBPATHS[index], MOTIF_MARGIN);
+  return {
+    kind,
+    caption,
+    ...framed,
+    photo:
+      kind === "portraitLoop"
+        ? {
+            x: BRIDE_PHOTO.x + framed.dx,
+            y: BRIDE_PHOTO.y + framed.dy,
+            r: portraitPhotoWidth("wide") / 2,
+          }
+        : undefined,
+  };
+});
+
+export function ThreadMotifsSpecimen() {
+  return (
+    <div className="flex flex-wrap items-end gap-space-lg">
+      {MOTIF_SPECIMENS.map((motif) => (
+        <Panel caption={motif.caption} key={motif.kind}>
+          <svg
+            aria-label={motif.caption}
+            height={motif.height}
+            role="img"
+            viewBox={`0 0 ${motif.width} ${motif.height}`}
+            width={motif.width}
+          >
+            {motif.photo === undefined ? null : (
+              <circle
+                cx={motif.photo.x}
+                cy={motif.photo.y}
+                fill="none"
+                r={motif.photo.r}
+                stroke="var(--color-accent-gold)"
+                strokeWidth={1}
+              />
+            )}
+            <path className={styles.pageInk} d={motif.d} />
+          </svg>
+        </Panel>
+      ))}
+    </div>
+  );
+}
 
 /* The host holds no type, so no stretch here is held still, as one near type is on the page. */
 export function ThreadSwaySpecimen() {
