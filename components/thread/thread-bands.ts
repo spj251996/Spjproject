@@ -50,8 +50,8 @@ const SIDE_BY_SIDE = "(width >= 64rem) and (orientation: landscape)";
    section is not, so it is the section's aspect that decides where a connector's ends land. Each
    band's `box` is the nominal pixel box of the device it was chosen for — but it is not the box
    every section in that band composes against: a paired section stacks in portrait and
-   Celebrations is a list, so both run taller than a single card, and `thread-boxes.ts`'s
-   `sectionBox` gives each `(band, section)` pair its own measured height instead.
+   Celebrations is a list, so both run taller than a single card, and
+   `thread-authored-layout.ts` gives each `(band, section)` pair its own measured height instead.
 
    Three bands, from devices the owner named: their iPhone 16, a mid-range iPad, and their own
    laptop viewport (1536x695 — a laptop viewport is far wider than its 16:9 screen, because chrome

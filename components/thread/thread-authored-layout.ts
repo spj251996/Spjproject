@@ -12,8 +12,8 @@ import { PHOTO_COMBINATION, photographedCount } from "./thread-photo-state.ts";
    height; never derive either from a CSS expression.
 
    `cardLeft` is the card's left edge at the band's own nominal width: what a section's thread was
-   authored offset from, not a general-purpose value at any other width. `sectionHeight` reproduces
-   `thread-boxes.ts`'s `sectionBox`, measured the same way. */
+   authored offset from, not a general-purpose value at any other width. `sectionHeight` is the outer
+   `<section>`'s rendered height, measured the same way. */
 export type AuthoredCard = {
   cardWidth: number;
   cardLeft: number;

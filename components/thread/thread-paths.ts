@@ -5,7 +5,7 @@
    re-drawing; do not hand-edit the numbers below.
 
    Every connector's `d` and every placement's `x`/`y` are in the SAME per-section pixel box
-   `thread-boxes.ts`'s `sectionBox` describes: x from the section's left edge, y from the
+   `thread-authored-layout.ts` records: x from the section's left edge, y from the
    section's own top. A motif is met on its own tangent turned by `turn`, the fitted absolute
    angle described below. A SECTION BOUNDARY is not met on any authored tangent at all. The owner
    draws one continuous stroke down the page, so a

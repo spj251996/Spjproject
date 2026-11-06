@@ -78,8 +78,8 @@ function parseSubpaths(d: string): { start: Point; end: Point }[] {
 /* A synthetic per-band set of measured sections that is NOT the identity — every card narrower and
    every section shorter than what the section was authored against, and each section given a
    different left offset, so the test exercises the real warp (position AND uniform scale) rather
-   than an identity no-op. Real card/section figures come from `thread-authored-layout.ts` and
-   `thread-boxes.ts`; this is a deliberately different, but still plausible, measured layout. */
+   than an identity no-op. Real card/section figures come from `thread-authored-layout.ts`; this is a
+   deliberately different, but still plausible, measured layout. */
 function measuredSections(
   band: "tall" | "upright" | "wide",
 ): MeasuredSection[] {

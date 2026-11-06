@@ -6,7 +6,6 @@ import {
   familyPortraitFractions,
 } from "./thread-authored-layout.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
-import { sectionBox } from "./thread-boxes.ts";
 import type { ThreadId } from "./thread-geometry.ts";
 
 const SECTIONS: readonly ThreadId[] = [
@@ -24,20 +23,6 @@ test("every band carries an authored card for all five sections", () => {
       assert.ok(card.cardWidth > 0, `${id}/${band.id} cardWidth`);
       assert.ok(card.cardLeft >= 0, `${id}/${band.id} cardLeft`);
       assert.ok(card.sectionHeight > 0, `${id}/${band.id} sectionHeight`);
-    }
-  }
-});
-
-test("the recorded section heights reproduce thread-boxes.ts's sectionBox exactly", () => {
-  for (const band of THREAD_BANDS) {
-    for (const id of SECTIONS) {
-      const recorded = authoredCard(id, band.id).sectionHeight;
-      const box = sectionBox(id, band.id).height;
-      assert.equal(
-        recorded,
-        box,
-        `${id}/${band.id}: authored ${recorded} vs sectionBox ${box}`,
-      );
     }
   }
 });
@@ -77,8 +62,11 @@ test("upright band's authored cards, measured on the real render at 820x1180", (
     assert.equal(card.cardWidth, 564, id);
     assert.equal(card.cardLeft, 128, id);
   }
+  assert.equal(authoredCard("invite", "upright").sectionHeight, 1180);
   assert.equal(authoredCard("event-info", "upright").sectionHeight, 2360);
+  assert.equal(authoredCard("family", "upright").sectionHeight, 2360);
   assert.equal(authoredCard("celebrations", "upright").sectionHeight, 1968);
+  assert.equal(authoredCard("wishes", "upright").sectionHeight, 1180);
 });
 
 test("wide band's authored cards, measured on the real render at 1536x695", () => {
@@ -87,7 +75,11 @@ test("wide band's authored cards, measured on the real render at 1536x695", () =
     assert.equal(card.cardWidth, 960, id);
     assert.equal(card.cardLeft, 288, id);
   }
+  assert.equal(authoredCard("invite", "wide").sectionHeight, 695);
+  assert.equal(authoredCard("event-info", "wide").sectionHeight, 695);
+  assert.equal(authoredCard("family", "wide").sectionHeight, 695);
   assert.equal(authoredCard("celebrations", "wide").sectionHeight, 1339);
+  assert.equal(authoredCard("wishes", "wide").sectionHeight, 695);
 });
 
 test("Flemy's and Sebastian's portrait centres are recorded for every band, as a fraction of the family card", () => {

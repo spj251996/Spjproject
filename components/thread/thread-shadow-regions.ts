@@ -93,8 +93,6 @@ export function createShadowFitter(
   };
 }
 
-export type ShadowFitter = ReturnType<typeof createShadowFitter>;
-
 /* One `<svg>`'s shadows: the contact shadow on each piece and on the end at rest, fitted when the page
    is measured, and the head's halo and the moving tip's contact shadow, fitted on every paint because
    they move. */

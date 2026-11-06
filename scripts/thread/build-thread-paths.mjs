@@ -2,8 +2,8 @@
  *
  * Ports the original `fit-motifs.mjs`'s rotation/centre fit, run fresh against each band's
  * CURRENT `connectors.json` (post type-relax), and additionally: converts every connector's drawn
- * polyline from page pixels into the section's own LOCAL pixel box (matching `thread-boxes.ts`'s
- * `sectionBox`), and fits a cubic-Bezier `d` string through it with `splinePath`, meeting a motif
+ * polyline from page pixels into the section's own LOCAL pixel box (the box
+ * `thread-authored-layout.ts` records), and fits a cubic-Bezier `d` string through it with `splinePath`, meeting a motif
  * on its own fitted heading.
  *
  * A connector that crosses a section boundary is fit ONCE, whole, in the page's global pixels —
@@ -1190,7 +1190,7 @@ export function emit(results) {
    re-drawing; do not hand-edit the numbers below.
 
    Every connector's \`d\` and every placement's \`x\`/\`y\` are in the SAME per-section pixel box
-   \`thread-boxes.ts\`'s \`sectionBox\` describes: x from the section's left edge, y from the
+   \`thread-authored-layout.ts\` records: x from the section's left edge, y from the
    section's own top. A motif is met on its own tangent turned by \`turn\`, the fitted absolute
    angle described below. A SECTION BOUNDARY is not met on any authored tangent at all. The owner
    draws one continuous stroke down the page, so a
