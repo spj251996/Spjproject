@@ -26,6 +26,7 @@ const group = (over: Partial<FamilyGroup> = {}): FamilyGroup => ({
   id: "g",
   side: "bride",
   familyName: "A Family",
+  origin: "A Place",
   members: [member()],
   ...over,
 });

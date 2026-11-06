@@ -17,13 +17,20 @@
 /* A FIXED DURATION, NOT AN EXPONENTIAL. The obvious shape for a follower is `shown += gap * (1 -
    exp(-dt/tau))`, and it was tried first and measured wrong: an exponential never arrives. With a
    0.4s time constant the card thread still read 99.69% drawn 2.5 seconds after the scroll stopped, so the
-   drawing head — which retires only when every piece is COMPLETE — stayed lit over the closing taper
+   drawing head — which retires only when every piece is COMPLETE — stayed lit over the closing end
    long after the thread looked finished. That is the very symptom the owner reported this round, so
    the fix must converge exactly rather than asymptotically.
 
    `--thread-catchup` is therefore how long the thread takes to ARRIVE, which is also what the owner
-   is setting when they dial it. Re-targeting mid-flight eases from wherever it has got to, so a
-   continuous scroll trails smoothly rather than restarting with a jerk.
+   is setting when they dial it.
+
+   A RE-TARGET KEEPS THE SPEED. A scroll re-targets many times a second, and restarting the eased curve at
+   each one began every leg at the curve's own start speed — up to three times the speed the line had
+   reached — so the line surged at each new scroll position: the owner's "catch up in parts" (measured:
+   35.6 → 99.6 px a frame). So a leg is a cubic Hermite from where the line is, at the speed it has, to the
+   target at rest, over the same duration. The start speed is capped at the curve's own (`startSlope`),
+   which keeps every leg monotonic — no overshoot, never backwards — and a leg begun from rest is the
+   eased curve exactly.
 
    The curve is named by `--thread-catchup-ease`, so the line is pulled into place fast and settles
    slowly (DESIGN.md -> Motion). Every curve here starts at 0, arrives at exactly 1 and never overshoots:
@@ -45,14 +52,46 @@ function chosenEasing(): (t: number) => number {
   return CATCH_UP_EASES[keyword] ?? FALLBACK_EASE;
 }
 
+/* The curve's speed as it leaves 0, in curve units: 3 for ease-out-cubic, 2 for ease-out-quad. */
+function startSlope(ease: (t: number) => number): number {
+  const h = 1e-6;
+  return ease(h) / h;
+}
+
 export function createCatchUp(paint: (drawn: number) => void) {
   let from = 0;
   let target = 0;
   let shown = 0;
   let startedAt = 0;
   let duration = 0;
+  /* The leg's start speed, in px per ms. */
+  let startSpeed = 0;
   let raf: number | null = null;
+  /* The timestamp of the frame that painted `shown`. */
+  let paintedAt: number | null = null;
   let ease: ((t: number) => number) | undefined;
+
+  /* The leg's cubic Hermite at `u` (0 to 1): from `from` at `startSpeed` to `target` at rest. */
+  function at(u: number): number {
+    const u2 = u * u;
+    const u3 = u2 * u;
+    return (
+      (2 * u3 - 3 * u2 + 1) * from +
+      (u3 - 2 * u2 + u) * duration * startSpeed +
+      (-2 * u3 + 3 * u2) * target
+    );
+  }
+
+  function speedAt(u: number): number {
+    if (duration <= 0) return 0;
+    const u2 = u * u;
+    return (
+      ((6 * u2 - 6 * u) * from +
+        (3 * u2 - 4 * u + 1) * duration * startSpeed +
+        (-6 * u2 + 6 * u) * target) /
+      duration
+    );
+  }
 
   function stop() {
     if (raf !== null) window.cancelAnimationFrame(raf);
@@ -60,10 +99,21 @@ export function createCatchUp(paint: (drawn: number) => void) {
   }
 
   function tick(now: number) {
+    /* Only a leg started from rest can begin after the frame it is first drawn in (see `to`): that frame has nothing
+       new to show, so it paints nothing and becomes the leg's start. The re-targets after it are then timed on the
+       frames' clock, as mid-chase; left on `performance.now()`, each late one restarted the leg after the next frame's
+       timestamp, and the draw held still for as long as the frames ran late. */
+    if (duration > 0 && now < startedAt) {
+      startedAt = now;
+      paintedAt = now;
+      raf = window.requestAnimationFrame(tick);
+      return;
+    }
     raf = null;
     const t = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-    shown = from + (target - from) * (ease ?? FALLBACK_EASE)(t);
+    shown = Math.max(shown, Math.min(target, at(t)));
     if (t >= 1) shown = target;
+    paintedAt = now;
     paint(shown);
     if (t < 1) raf = window.requestAnimationFrame(tick);
   }
@@ -80,10 +130,28 @@ export function createCatchUp(paint: (drawn: number) => void) {
         stop();
         return;
       }
+      /* A re-target mid-chase starts its leg at the frame that painted `shown`, on the frames' own clock. Stamped
+         with `performance.now()` instead, a re-target made late in a busy frame fell after the next frame's
+         timestamp, which read as no time passed: a slow scroll re-targets every frame, and the draw held still on
+         every late one and drew in chunks (the owner's iPhone, 2026-11-03). */
+      const moving =
+        raf !== null &&
+        paintedAt !== null &&
+        duration > 0 &&
+        paintedAt - startedAt < duration;
+      const now = moving && paintedAt !== null ? paintedAt : performance.now();
+      /* A leg from rest is timed from now; the last frame painted belongs to the leg before it. */
+      if (!moving) paintedAt = null;
+      const speed = moving
+        ? speedAt(Math.min(1, Math.max(0, (now - startedAt) / duration)))
+        : 0;
+      const nextDuration = seconds * 1000;
+      const cap = (startSlope(ease) * (next - shown)) / nextDuration;
+      startSpeed = moving ? Math.min(Math.max(0, speed), cap) : cap;
       from = shown;
       target = next;
-      startedAt = performance.now();
-      duration = seconds * 1000;
+      startedAt = now;
+      duration = nextDuration;
       if (raf === null) raf = window.requestAnimationFrame(tick);
     },
     /* The opening draw paints directly; this keeps the follower from replaying what is already up. */

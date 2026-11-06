@@ -1,5 +1,7 @@
 import type { BandId } from "./thread-bands.ts";
 import type { ThreadId } from "./thread-geometry.ts";
+import { PHOTO_STRIP, type PhotoCombination } from "./thread-paths.ts";
+import { PHOTO_COMBINATION, photographedCount } from "./thread-photo-state.ts";
 
 /* MEASURED on the real render at each band's nominal viewport (`thread-bands.ts`: 393x700, 820x1180,
    1536x695, not the wider viewports the clearance gate sweeps; a card figure that looks changed is the
@@ -10,8 +12,8 @@ import type { ThreadId } from "./thread-geometry.ts";
    height; never derive either from a CSS expression.
 
    `cardLeft` is the card's left edge at the band's own nominal width: what a section's thread was
-   authored offset from, not a general-purpose value at any other width. `sectionHeight` reproduces
-   `thread-boxes.ts`'s `sectionBox`, measured the same way. */
+   authored offset from, not a general-purpose value at any other width. `sectionHeight` is the outer
+   `<section>`'s rendered height, measured the same way. */
 export type AuthoredCard = {
   cardWidth: number;
   cardLeft: number;
@@ -27,9 +29,7 @@ const TALL_CARDS: Sections = {
   // Celebrations takes `mounted-sheet`'s `tall` mode (no measured fit), so its padding chain is
   // its own and its card is narrower than every fitted section's at this band.
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 1895 },
   wishes: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
 };
@@ -39,9 +39,7 @@ const UPRIGHT_CARDS: Sections = {
   "event-info": { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
   family: { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 1968 },
   wishes: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
 };
@@ -51,9 +49,7 @@ const WIDE_CARDS: Sections = {
   "event-info": { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   family: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1339 },
   wishes: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
 };
@@ -64,8 +60,19 @@ const CARDS_BY_BAND: Record<BandId, Sections> = {
   wide: WIDE_CARDS,
 };
 
-export function authoredCard(id: ThreadId, band: BandId): AuthoredCard {
-  return CARDS_BY_BAND[band][id];
+/* Celebrations' recorded height is the photo-free page; each photographed ritual adds its strip. */
+export function authoredCard(
+  id: ThreadId,
+  band: BandId,
+  combination: PhotoCombination = PHOTO_COMBINATION,
+): AuthoredCard {
+  const card = CARDS_BY_BAND[band][id];
+  if (id !== "celebrations") return card;
+  return {
+    ...card,
+    sectionHeight:
+      card.sectionHeight + photographedCount(combination) * PHOTO_STRIP[band],
+  };
 }
 
 /* A point on the family card, as the fraction of its width/height a later warp can resolve
@@ -75,19 +82,21 @@ export type PortraitFraction = { x: number; y: number };
 
 type FamilyPortraits = { flemy: PortraitFraction; sebastian: PortraitFraction };
 
+/* Read off each band's drawn page (`assets/thread/<band>/photo-layout.json`, the bride third and the
+   groom last in page order); a test holds them to it. */
 const TALL_PORTRAITS: FamilyPortraits = {
-  flemy: { x: 0.356, y: 0.3067 },
-  sebastian: { x: 0.7881, y: 0.7868 },
+  flemy: { x: 0.356, y: 0.3216 },
+  sebastian: { x: 0.5, y: 0.8745 },
 };
 
 const UPRIGHT_PORTRAITS: FamilyPortraits = {
-  flemy: { x: 0.344, y: 0.2619 },
-  sebastian: { x: 0.8121, y: 0.8026 },
+  flemy: { x: 0.344, y: 0.3016 },
+  sebastian: { x: 0.5, y: 0.8397 },
 };
 
 const WIDE_PORTRAITS: FamilyPortraits = {
-  flemy: { x: 0.1875, y: 0.5291 },
-  sebastian: { x: 0.875, y: 0.5291 },
+  flemy: { x: 0.1875, y: 0.5302 },
+  sebastian: { x: 0.75, y: 0.7144 },
 };
 
 const PORTRAITS_BY_BAND: Record<BandId, FamilyPortraits> = {
@@ -98,4 +107,18 @@ const PORTRAITS_BY_BAND: Record<BandId, FamilyPortraits> = {
 
 export function familyPortraitFractions(band: BandId): FamilyPortraits {
   return PORTRAITS_BY_BAND[band];
+}
+
+/* The width of the photo a portrait ring wraps, at each band's authored size — measured on
+   `/thread` at 393x700 / 820x1180 / 1536x695. The photo follows the page's width tier, not the
+   card (72px on a phone, 112px from `{breakpoints.md}`, 72px in the laptop mount), so a ring is
+   sized from its real photo against this, never from the card. */
+const PORTRAIT_PHOTO_WIDTH: Record<BandId, number> = {
+  tall: 72,
+  upright: 112,
+  wide: 72,
+};
+
+export function portraitPhotoWidth(band: BandId): number {
+  return PORTRAIT_PHOTO_WIDTH[band];
 }

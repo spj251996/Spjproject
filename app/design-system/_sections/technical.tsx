@@ -112,7 +112,11 @@ export function TechnicalSections() {
 
       <GallerySection
         id="responsive"
-        intro="Two layout systems across three width tiers: lg switches the system, md adjusts within it. The device ruler scrolls sideways on a narrow screen."
+        intro="Two layout systems across three width tiers."
+        points={[
+          "lg switches the system, md adjusts within it",
+          "the device ruler scrolls sideways on a narrow screen",
+        ]}
         mapsTo="Interaction Rules → Responsive Behavior"
         source="--breakpoint-*"
         title="Interaction · Responsive Behavior"
@@ -124,7 +128,12 @@ export function TechnicalSections() {
 
       <GallerySection
         id="variant-routes"
-        intro="Two routes compose from one section module. What differs between them is whether the thread mounts — never the card paint, which follows each card's role, and never the geometry, which is identical for every section the two share."
+        intro="Two routes compose from one section module."
+        points={[
+          "what differs between them is whether the thread mounts",
+          "never the card paint, which follows each card's role",
+          "never the geometry, which is identical for every section the two share",
+        ]}
         mapsTo="Technical Conventions → Variant Routes"
         source="app/_sections/index.tsx · app/thread/page.dev.tsx"
         title="Technical · Variant Routes"

@@ -1,29 +1,33 @@
 /* THE THREAD'S PAINTERS — what turns the arithmetic into the DOM: each piece's dash, and the
-   elements of the drawing head, the re-trace and the tapered ends. `PageThread` and `CardThread`
-   each build their own painters; `cardRetraces` is the one registry both share. */
+   elements of the drawing head, the frayed ends and the crossings. `PageThread` and `CardThread` each build their
+   own painters. */
 
+import {
+  CROSSING_REACH,
+  crossingRegion,
+  crossingShowsFrom,
+  LIFT_REACH,
+  type OrderedCrossing,
+} from "./thread-crossings.ts";
+import { endCut, type FrayShape, frayShape, placeFray } from "./thread-fray.ts";
 import {
   HEAD_STEP_OVERLAP,
   type HeadOptions,
   type HeadSegment,
   headSegments,
+  NEGLIGIBLE,
 } from "./thread-head.ts";
 import type { ThreadPiece } from "./thread-line.ts";
 import { dashForPiece, pieceProgress } from "./thread-progress.ts";
-import { retraceFade, retraceGlow, retraceSegments } from "./thread-retrace.ts";
 import {
+  frameAt,
   type PieceSamples,
   polylineBetween,
   samplePath,
 } from "./thread-samples.ts";
-import {
-  TAPER_STEPS,
-  type TaperSegment,
-  taperCut,
-  taperReached,
-  taperSegments,
-} from "./thread-taper.ts";
-import type { TaperOptionsResolved } from "./thread-tokens.ts";
+import { reachOf } from "./thread-shadow-regions.ts";
+import { CROSSING_LIFT } from "./thread-shadows.ts";
+import { gapWidth, ropeGaps } from "./thread-twist.ts";
 
 function applyDash(path: SVGPathElement, length: number, progress: number) {
   const { dasharray, dashoffset } = dashForPiece(length, progress);
@@ -157,146 +161,35 @@ export function createHeadPainter(
       if (!used.has(element)) element.style.display = "none";
     }
     shown = used;
-    group.style.display = used.size === 0 ? "none" : "";
+    const display = used.size === 0 ? "none" : "";
+    if (group.style.display !== display) group.style.display = display;
   }
 
   return {
     paint(drawn: number, pieces: readonly ThreadPiece[], options: HeadOptions) {
       paintSegments(headSegments(drawn, pieces, options), pieces);
     },
-    paintSegments,
     /* A re-measure replaces every piece's `d`, so what was sampled describes a path that is gone. */
     reset() {
       samples.clear();
       hide();
     },
-    hide,
   };
 }
 
 export type HeadPainter = ReturnType<typeof createHeadPainter>;
 
 /* ---------------------------------------------------------------------------------------------
-   THE RE-TRACE — a lit segment that runs a stretch of the thread once it is already drawn
-   (`thread-retrace.ts`; DESIGN.md -> Thread -> The re-trace). The arithmetic is `thread-retrace.ts`'s;
-   what is here is what needs a DOM: the painters. The loop that drives them is `PageThread`'s, and
-   the tokens are `thread-tokens.ts`'s.
+   THE FRAYED ENDS — the cut cord and its fibres (`thread-fray.ts`; DESIGN.md -> Thread -> The frayed
+   ends). An end at rest is built once, when the page is measured: the ink is cut back under the fray
+   and the fibres wait at the cut. The moving tip
+   is the same fibres, laid at the cord's end every frame.
 
-   It is the head's own stack, laid again, so each stretch that is animating gets a `<g>` and the head's
-   painter inside it. The painters share the head's samples, so a piece is sampled once whichever
-   layer reaches it first. A second `<g>` per stretch, beneath it, holds the glow as translucent strokes
-   (`thread-retrace.ts`); there is no filter on either. */
+   The cut is a `<mask>` on the piece's own `<path>`, and deliberately not a change to the piece: its
+   `d` and its dash are what the draw-order gate reads, and "the light must not move the line" holds
+   only while they stay exactly as `applyPieceDashes` writes them. */
 
-export interface RetraceFrame {
-  readonly tail: number;
-  readonly tip: number;
-}
-
-export function createRetracePainter(
-  container: SVGGElement,
-  glowContainer: SVGGElement,
-  pathOf: (piece: number) => string | undefined,
-  samples: Map<number, PieceSamples>,
-) {
-  const stretches = new Map<
-    number,
-    {
-      element: SVGGElement;
-      painter: HeadPainter;
-      glowElement: SVGGElement;
-      glowPainter: HeadPainter;
-    }
-  >();
-
-  function stretchFor(index: number) {
-    const existing = stretches.get(index);
-    if (existing !== undefined) return existing;
-    const element = document.createElementNS(SVG_NS, "g");
-    element.dataset.threadRetraceGroup = String(index);
-    container.append(element);
-    const glowElement = document.createElementNS(SVG_NS, "g");
-    glowElement.dataset.threadRetraceGlow = String(index);
-    glowContainer.append(glowElement);
-    const made = {
-      element,
-      painter: createHeadPainter(element, pathOf, samples),
-      glowElement,
-      glowPainter: createHeadPainter(glowElement, pathOf, samples),
-    };
-    stretches.set(index, made);
-    return made;
-  }
-
-  return {
-    /* One frame: the segment of each animating stretch, and every other stretch hidden. A stretch
-       with no piece in THIS `<svg>` is hidden too and built nowhere: the trunk and the card thread are
-       handed the same frames and each paints the share that lies in its own pieces, which is how the
-       terminal's stretch reaches the card thread and the others reach the trunk. */
-    paint(
-      frames: ReadonlyMap<number, RetraceFrame>,
-      pieces: readonly ThreadPiece[],
-      options: HeadOptions,
-    ) {
-      const painted = new Set<number>();
-      for (const [index, { tail, tip }] of frames) {
-        const holdsAPiece = pieces.some(
-          (piece, at) =>
-            piece.end > tail && piece.start < tip && pathOf(at) !== undefined,
-        );
-        if (!holdsAPiece) continue;
-        painted.add(index);
-        const { element, painter, glowElement, glowPainter } =
-          stretchFor(index);
-        painter.paintSegments(
-          retraceSegments(tail, tip, pieces, options),
-          pieces,
-        );
-        glowPainter.paintSegments(
-          retraceGlow(tail, tip, pieces, options.midColor),
-          pieces,
-        );
-        const opacity = retraceFade(tip - tail, options.length);
-        const value = opacity >= 1 ? "" : opacity.toFixed(3);
-        if (element.style.opacity !== value) element.style.opacity = value;
-        if (glowElement.style.opacity !== value) {
-          glowElement.style.opacity = value;
-        }
-      }
-      for (const [index, { painter, glowPainter }] of stretches) {
-        if (painted.has(index)) continue;
-        painter.hide();
-        glowPainter.hide();
-      }
-    },
-    hide() {
-      for (const { painter, glowPainter } of stretches.values()) {
-        painter.hide();
-        glowPainter.hide();
-      }
-    },
-  };
-}
-
-export type RetracePainter = ReturnType<typeof createRetracePainter>;
-
-/* The re-trace is one loop for the whole page, driven by `PageThread`, but Wishes' stretch is drawn in
-   `CardThread`'s own `<svg>`, whose pieces `PageThread`'s painter cannot reach. The card thread registers its
-   painter here and the loop hands every registered painter the same frames: one clock, one budget and
-   one thing to stop. */
-export const cardRetraces = new Set<RetracePainter>();
-
-/* ---------------------------------------------------------------------------------------------
-   THE TAPERED ENDS — the invite's top terminal and Wishes' close come to a point. The arithmetic is
-   `thread-taper.ts`'s; what is here is the DOM it needs.
-
-   A taper is a stack of narrowing runs laid over a stretch of ink that has been cut away beneath
-   them (a stroke cannot be thinned by drawing a narrower one over it). The cut is a `<mask>` on the
-   piece's own `<path>`, and deliberately not a change to the piece: its `d` and its dash are what
-   the draw-order gate reads, and "the light must not move the line" holds only while they stay
-   exactly as `applyPieceDashes` writes them. The runs and the cut are built once, when the page is
-   measured; a frame only shows the runs the ink has reached. */
-
-interface TaperEnd {
+interface FreeEnd {
   /* The `d` of the piece the end sits on, and its length from the model. */
   readonly d: string;
   readonly length: number;
@@ -327,63 +220,289 @@ function fitMaskRegion(cut: SVGPathElement, { xy }: PieceSamples) {
   mask.setAttribute("height", String(bottom - top + 2 * MASK_MARGIN));
 }
 
-export function createTaperPainter(group: SVGGElement, cut: SVGPathElement) {
-  let runs: { element: SVGPathElement; segment: TaperSegment }[] = [];
+function createFibres(group: SVGGElement, shape: FrayShape): SVGPathElement[] {
+  return shape.fibres.map((fibre) => {
+    const element = document.createElementNS(SVG_NS, "path");
+    element.setAttribute("stroke-width", fibre.width.toFixed(3));
+    group.append(element);
+    return element;
+  });
+}
+
+export function createEndFrayPainter(group: SVGGElement, cut: SVGPathElement) {
+  /* The arc along the piece the ink has to reach before the fibres show: the cut for the invite's
+     end, which the cord grows away from, and the piece's end for Wishes', which the cord reaches
+     last. */
+  let showFrom = Number.POSITIVE_INFINITY;
 
   return {
-    /* Replaces the taper for a new `d`: every run is built here, hidden until `paint` shows it. */
-    set(
-      end: TaperEnd | undefined,
-      { taperLength, strokeWidth }: TaperOptionsResolved,
-    ) {
+    set(end: FreeEnd | undefined, shape: FrayShape) {
       group.replaceChildren();
-      runs = [];
       cut.removeAttribute("d");
       group.style.display = "none";
+      showFrom = Number.POSITIVE_INFINITY;
       if (end === undefined) return;
       const samples = samplePath(end.d, end.length);
-      /* Fitted even when no taper is built below it (an unresolved length or width). The early return
-         above is the one case that keeps the unmeasured region, and it cannot happen: both ends
-         always exist. */
       fitMaskRegion(cut, samples);
-      if (!(taperLength > 0) || !(strokeWidth > 0)) return;
-      const span = taperCut(end.endAt, end.length, end.direction, taperLength);
+      if (!(shape.length > 0)) return;
+      const span = endCut(end.endAt, end.length, end.direction, shape.length);
       cut.setAttribute("d", polylineBetween(samples, span.from, span.to));
-      for (const segment of taperSegments(
-        end.endAt,
-        end.length,
-        end.direction,
-        {
-          steps: TAPER_STEPS,
-          taperLength,
-          strokeWidth,
-        },
-      )) {
-        const element = document.createElementNS(SVG_NS, "path");
-        element.setAttribute(
-          "d",
-          polylineBetween(samples, segment.start, segment.end),
-        );
-        element.setAttribute("stroke-width", segment.width.toFixed(3));
-        element.style.display = "none";
-        group.append(element);
-        runs.push({ element, segment });
-      }
+      const cutAt = end.direction === 1 ? span.from : span.to;
+      const frame = frameAt(samples, cutAt);
+      const pointing = {
+        x: frame.x + frame.tx * (cutAt - Math.floor(cutAt)),
+        y: frame.y + frame.ty * (cutAt - Math.floor(cutAt)),
+        tx: end.direction * frame.tx,
+        ty: end.direction * frame.ty,
+      };
+      const ds = placeFray(shape, pointing);
+      createFibres(group, shape).forEach((element, index) => {
+        element.setAttribute("d", ds[index]);
+      });
+      showFrom = end.direction === 1 ? end.length : cutAt;
     },
-    /* `painted` is how far along the piece the ink has reached. */
+    /* `painted` is how far along the end's piece the cord has reached. */
     paint(painted: number) {
-      let shown = 0;
-      for (const { element, segment } of runs) {
-        const visible = taperReached(segment, painted);
-        const display = visible ? "" : "none";
-        if (element.style.display !== display) element.style.display = display;
-        if (visible) shown += 1;
-      }
-      const groupDisplay = shown === 0 ? "none" : "";
-      if (group.style.display !== groupDisplay)
-        group.style.display = groupDisplay;
+      const display = painted >= showFrom - NEGLIGIBLE ? "" : "none";
+      if (group.style.display !== display) group.style.display = display;
     },
   };
 }
 
-export type TaperPainter = ReturnType<typeof createTaperPainter>;
+export type EndFrayPainter = ReturnType<typeof createEndFrayPainter>;
+
+/* One per `<svg>`: draws the tip only while the cord's end lies in a piece this `<svg>` holds
+   (`pathOf`), so the tip crosses the trunk's join with the card thread as the head does. */
+export function createTipFrayPainter(
+  group: SVGGElement,
+  pathOf: (piece: number) => string | undefined,
+  samples: Map<number, PieceSamples>,
+) {
+  let fibres: SVGPathElement[] = [];
+  let built: FrayShape | undefined;
+
+  function hide() {
+    if (group.style.display !== "none") group.style.display = "none";
+  }
+
+  return {
+    /* `cord` and `drawn` are on the chain's scale. Hidden once the line is whole, where the end at rest
+       takes over, and while the cord is still inside the invite's own cut. */
+    paint(
+      cord: number,
+      drawn: number,
+      chain: readonly ThreadPiece[],
+      shape: FrayShape,
+      colour: string,
+    ) {
+      const total = chain[chain.length - 1]?.end ?? 0;
+      if (drawn >= total - NEGLIGIBLE || cord <= shape.length) return hide();
+      let index = chain.findIndex((piece) => cord <= piece.end);
+      if (index === -1) index = chain.length - 1;
+      const d = pathOf(index);
+      if (d === undefined) return hide();
+      const piece = chain[index];
+      const length = piece.end - piece.start;
+      let sampled = samples.get(index);
+      if (sampled === undefined) {
+        sampled = samplePath(d, length);
+        samples.set(index, sampled);
+      }
+      if (built !== shape) {
+        group.replaceChildren();
+        fibres = createFibres(group, shape);
+        built = shape;
+      }
+      const at = Math.min(length, cord - piece.start);
+      const frame = frameAt(sampled, at);
+      const step =
+        at - Math.max(0, Math.min(Math.floor(at), Math.floor(length) - 1));
+      const ds = placeFray(shape, {
+        x: frame.x + frame.tx * step,
+        y: frame.y + frame.ty * step,
+        tx: frame.tx,
+        ty: frame.ty,
+      });
+      fibres.forEach((element, fibre) => {
+        setAttribute(element, "d", ds[fibre]);
+        setAttribute(element, "stroke", colour);
+      });
+      if (group.style.display !== "") group.style.display = "";
+    },
+    /* A re-measure replaces every piece's `d`. */
+    reset() {
+      samples.clear();
+      hide();
+    },
+  };
+}
+
+export type TipFrayPainter = ReturnType<typeof createTipFrayPainter>;
+
+/* ---------------------------------------------------------------------------------------------
+   CROSSINGS — where the line crosses itself, the upper strand is redrawn over the lower, with its
+   own twist and a lift shadow that falls on the lower strand only (`thread-crossings.ts`; DESIGN.md ->
+   Thread -> Crossings). Built once per measure, every element a `<path>` so the sway carries it with
+   the line; a frame shows each as the draw reaches it (`crossingShowsFrom`). An overlay whose upper
+   strand is the earlier pass lies over the head, so the tip passes under it; the rest lie under it. */
+
+/* Counted across every painter, not per painter: the trunk and Wishes' card thread each build their own
+   masks and lifts in one document, and an id both used resolved to the card's, in the card's coordinates. */
+let crossingsMade = 0;
+
+export function createCrossingPainter(
+  defs: SVGDefsElement,
+  underHead: SVGGElement,
+  overHead: SVGGElement,
+) {
+  let built: {
+    group: SVGGElement;
+    shade: SVGGElement;
+    piece: number;
+    from: number;
+    shadeFrom: number;
+  }[] = [];
+
+  return {
+    /* `own` says which chain pieces this `<svg>` holds; `local` maps a chain piece to its index here.
+       `half` is half the cord's width and `sway` the most the sway moves a point. */
+    measured(
+      crossings: readonly OrderedCrossing[],
+      samplesOf: (piece: number) => PieceSamples | undefined,
+      local: (piece: number) => number | undefined,
+      half: number,
+      sway: number,
+    ) {
+      underHead.replaceChildren();
+      overHead.replaceChildren();
+      for (const element of defs.querySelectorAll(
+        "[data-thread-crossing-defs]",
+      ))
+        element.remove();
+      built = [];
+      const source = document.getElementById(CROSSING_LIFT.id);
+      const width = 2 * half;
+      const reach = CROSSING_REACH * width;
+      const lift = LIFT_REACH * width;
+      const lead = frayShape(width).length;
+      for (const crossing of crossings) {
+        const [upper, lower] =
+          crossing.over === "first"
+            ? [crossing.first, crossing.second]
+            : [crossing.second, crossing.first];
+        const upperSamples = samplesOf(upper.piece);
+        const lowerSamples = samplesOf(lower.piece);
+        const showPiece = local(crossing.second.piece);
+        if (
+          upperSamples === undefined ||
+          lowerSamples === undefined ||
+          showPiece === undefined ||
+          local(crossing.first.piece) === undefined
+        )
+          continue;
+        crossingsMade += 1;
+        const region = crossingRegion(
+          crossing,
+          reach,
+          reachOf(CROSSING_LIFT) + sway,
+        );
+        const box = (element: Element) => {
+          element.setAttribute("x", region.x.toFixed(1));
+          element.setAttribute("y", region.y.toFixed(1));
+          element.setAttribute("width", region.width.toFixed(1));
+          element.setAttribute("height", region.height.toFixed(1));
+        };
+        const mask = document.createElementNS(SVG_NS, "mask");
+        mask.id = `thread-crossing-mask-${crossingsMade}`;
+        mask.dataset.threadCrossingDefs = "";
+        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        box(mask);
+        const beneath = document.createElementNS(SVG_NS, "path");
+        beneath.setAttribute(
+          "d",
+          polylineBetween(lowerSamples, lower.at - reach, lower.at + reach),
+        );
+        beneath.setAttribute("stroke", "white");
+        beneath.setAttribute("stroke-width", width.toFixed(2));
+        beneath.setAttribute("fill", "none");
+        mask.append(beneath);
+        defs.append(mask);
+        let filterId = CROSSING_LIFT.id;
+        if (source instanceof SVGFilterElement) {
+          const copy = source.cloneNode(true) as SVGFilterElement;
+          copy.id = `${source.id}-fit-${crossingsMade}`;
+          copy.dataset.threadCrossingDefs = "";
+          copy.setAttribute("filterUnits", "userSpaceOnUse");
+          box(copy);
+          defs.append(copy);
+          filterId = copy.id;
+        }
+
+        const group = document.createElementNS(SVG_NS, "g");
+        group.dataset.threadCrossing = "";
+        group.dataset.over = crossing.over;
+        group.dataset.woven = String(crossing.woven);
+        group.dataset.x = crossing.x.toFixed(1);
+        group.dataset.y = crossing.y.toFixed(1);
+        const { strand: from, shade: shadeFrom } = crossingShowsFrom(
+          crossing,
+          reach,
+          lead,
+        );
+        group.dataset.showPiece = String(showPiece);
+        group.dataset.laterAt = crossing.second.at.toFixed(1);
+        group.dataset.showFrom = from.toFixed(1);
+        group.dataset.shadeFrom = shadeFrom.toFixed(1);
+        group.style.display = "none";
+        const shade = document.createElementNS(SVG_NS, "g");
+        shade.setAttribute("mask", `url(#${mask.id})`);
+        const caster = document.createElementNS(SVG_NS, "path");
+        caster.setAttribute(
+          "d",
+          polylineBetween(upperSamples, upper.at - lift, upper.at + lift),
+        );
+        caster.style.filter = `url(#${filterId})`;
+        shade.append(caster);
+        const strand = document.createElementNS(SVG_NS, "path");
+        strand.setAttribute(
+          "d",
+          polylineBetween(upperSamples, upper.at - reach, upper.at + reach),
+        );
+        const gaps = document.createElementNS(SVG_NS, "path");
+        gaps.setAttribute(
+          "d",
+          ropeGaps(
+            upperSamples,
+            upper.at - reach,
+            upper.at + reach,
+            upperSamples.length,
+            half,
+          ),
+        );
+        gaps.style.strokeWidth = `${gapWidth(half).toFixed(2)}px`;
+        gaps.dataset.threadCrossingGaps = "";
+        group.append(shade, strand, gaps);
+        (crossing.over === "first" ? overHead : underHead).append(group);
+        built.push({
+          group,
+          shade,
+          piece: crossing.second.piece,
+          from,
+          shadeFrom,
+        });
+      }
+    },
+    /* `painted(piece)` is how far along a chain piece the cord has reached. */
+    painted(painted: (piece: number) => number) {
+      for (const { group, shade, piece, from, shadeFrom } of built) {
+        const reached = painted(piece);
+        const display = reached >= from - NEGLIGIBLE ? "" : "none";
+        const lifted = reached >= shadeFrom - NEGLIGIBLE ? "" : "none";
+        if (shade.style.display !== lifted) shade.style.display = lifted;
+        if (group.style.display !== display) group.style.display = display;
+      }
+    },
+  };
+}
+
+export type CrossingPainter = ReturnType<typeof createCrossingPainter>;

@@ -6,6 +6,7 @@ import {
   Playfair_Display,
 } from "next/font/google";
 import { CoupleNamesSymbol, SprigSymbol } from "@/components/shell";
+import { credit } from "@/content";
 import "./globals.css";
 
 /* Libre Baskerville ships as static faces and needs explicit weights; Playfair Display is variable,
@@ -83,6 +84,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Sebastian & Flemy",
   description: "You’re invited — 4th & 9th January 2027, Kerala",
+  /* Every route names the designer in its metadata, beside the visible credit. */
+  authors: [{ name: credit.name, url: credit.url }],
+  creator: credit.name,
   /* No twitter block is declared, but Next synthesises twitter:* from openGraph regardless, so the
      export carries them. Left alone rather than suppressed: they are free, they agree with the og:
      values, and some clients read them as a fallback. Twitterbot itself is blocked in robots.txt,

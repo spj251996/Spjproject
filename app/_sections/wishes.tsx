@@ -6,6 +6,7 @@ import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { CardThread } from "@/components/thread/card-thread";
 import { CoupleNames } from "@/components/ui/couple-names";
+import { DesignerCredit } from "@/components/ui/designer-credit";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 import { wishes } from "@/content";
 
@@ -118,6 +119,12 @@ export function WishesSection({ thread = false }: { thread?: boolean }) {
           </p>
         </div>
       </MountedSheet>
+      {/* At the screen's foot, out of the card's flow so no fit moves and the page gains no scroll
+          (DESIGN.md → Domain Components → Wishes). After the botanical in document order, so it
+          paints over the pieces it meets. */}
+      <div className="pointer-events-auto absolute inset-x-0 bottom-0 px-space-md pb-space-xs">
+        <DesignerCredit layout="line" />
+      </div>
     </section>
   );
 }

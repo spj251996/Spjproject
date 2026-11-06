@@ -20,8 +20,8 @@ import {
   DURATION_TOKENS,
   EASING_TOKENS,
   LAYOUT_CAPS,
-  LOOP_CADENCE_USES,
   SPACING_STEPS,
+  THREAD_TIMING_USES,
   TYPE_TOKENS,
 } from "@/app/design-system/_sections/token-tables";
 import {
@@ -106,7 +106,7 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-red",
         name: "thread-red",
         usage:
-          "The thread's ink, tapered ends included, and the tail of the drawing head's and the re-trace's sheen; the start of the scroll-progress line's fill.",
+          "The thread's ink — including the fibres of its two frayed ends and the upper strand at a crossing — and the tail of the drawing head's sheen; the start of the scroll-progress line's fill.",
       },
       {
         token: "--color-thread-vermilion",
@@ -124,13 +124,12 @@ const COLOR_GROUPS: SwatchGroup[] = [
         token: "--color-thread-sheen",
         name: "thread-sheen",
         usage:
-          "The tip of the drawing head and of the re-trace's sheen: the thread's red lifted 0.12 in OKLCH lightness, the light the line catches. Never the ink, never text.",
+          "The tip of the drawing head's sheen: the thread's red lifted 0.12 in OKLCH lightness, the light the line catches. Never the ink, never text.",
       },
       {
         token: "--color-thread-sheen-mid",
         name: "thread-sheen-mid",
-        usage:
-          "The sheen's middle stop, half its lift, and the colour of the re-trace's glow strokes. Never text.",
+        usage: "The sheen's middle stop, half its lift. Never text.",
       },
       {
         token: "--color-thread-twist",
@@ -314,7 +313,11 @@ export function FoundationsSections() {
     <>
       <GallerySection
         id="colors"
-        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own: red ink, the sheen's two lighter reds, the twist's gap red, and the vermilion and orange the progress line carries."
+        intro="A fixed palette: ivory, mahogany ink, one gold, and the thread's own colours."
+        points={[
+          "the thread's own: red ink, the sheen's two lighter reds, the twist's gap red",
+          "the vermilion and orange the progress line carries",
+        ]}
         mapsTo="Foundations → Colors"
         source="app/styles/tokens.css"
         title="Foundations · Colors"
@@ -324,13 +327,19 @@ export function FoundationsSections() {
 
       <GallerySection
         id="typography"
-        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop. The Malayalam family carries no role of its own — a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself, which is weight 700 where the face ships no cut above 600 — so it has no row below; see it on the page at Domain · Celebrations."
+        intro="Three families and twelve roles, each stepping at phone, tablet, laptop and desktop."
+        points={[
+          "the Malayalam family carries no role of its own, so it has no row below; see it on the page at Domain · Celebrations",
+          "a ritual title takes heading-sm's SIZE at weight 600 with that family substituted, never the role itself",
+          "not the role itself: heading-sm is weight 700, and the Malayalam face ships no cut above 600",
+        ]}
         mapsTo="Foundations → Typography"
         source="app/styles/tokens.css · app/styles/type-scale.css"
         title="Foundations · Typography"
       >
         <Specimen
-          description="Each role with its size / line height in px at phone, tablet, laptop and desktop; the sans and serif samples state their use."
+          description="Each role with its size / line height in px at phone, tablet, laptop and desktop."
+          points={["the sans and serif samples state their use"]}
           id="typography-scale"
           name="The scale"
           note="Samples render at the window's current tier. The couple's names are drawn geometry (Components · UI · couple-names), not a type role; only the two SIZE tokens --text-display-name and --text-heading-script remain, as the em the drawn lockups are measured in."
@@ -339,7 +348,11 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A separate visual because the scale's own rows sample each role as one flat line — this renders Event Info's own date line, PrimaryDate, which is what shows the ordinal's zero-height superscript."
+          description="A separate visual, because the scale's own rows sample each role as one flat line."
+          points={[
+            "renders Event Info's own date line, PrimaryDate",
+            "shows the ordinal's zero-height superscript",
+          ]}
           id="typography-names-and-date"
           name="Date line"
           note="The raised ordinal takes no line height, visible only against a real baseline — and it belongs to Event Info's date line, not the invite's: the invite's day is a bare numeral inside a bracket, where a superscript would collide with the rule (Domain · Invite → date-block)."
@@ -366,7 +379,11 @@ export function FoundationsSections() {
 
       <GallerySection
         id="layout"
-        intro="Parallel splits on desktop, vertical flow on phone. Every section is built on the mounted card and every section is framed; one taller than any window takes the card's tall mode rather than fitting one screen."
+        intro="Parallel splits on desktop, vertical flow on phone."
+        points={[
+          "every section is built on the mounted card and every section is framed",
+          "one taller than any window takes the card's tall mode rather than fitting one screen",
+        ]}
         mapsTo="Foundations → Layout"
         source="--container-* / --card-height-cap"
         title="Foundations · Layout"
@@ -382,7 +399,8 @@ export function FoundationsSections() {
         />
 
         <Specimen
-          description="The card every section is built on: a backing mount with an inner sheet laid onto it — or, for the hero, no backing at all."
+          description="The card every section is built on: a backing mount with an inner sheet laid onto it."
+          points={["for the hero, no backing at all"]}
           id="layout-mounted-sheet"
           name="mounted-sheet"
           note="Unframed, as every specimen box is. Resize across md, lg and xl to step the reveal; below md the non-hero mount drops its fill and reveal while the hero keeps its reveal (and paints none of it), which is why only the hero reaches the first rung. A framed section on the page follows a stricter rule: a non-hero section mounts only where a pair can stand side by side (landscape, laptop or desktop width), the hero everywhere. A card's paint follows its role: the hero paints no backing (the invitation's opening screen), every other framed card is mounted. Geometry is identical either way — same reveal, same padding, same box — which is what licenses one set of fit files across every route."
@@ -440,7 +458,11 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Thin rule separating grouped content within a section. Its only consumer is Event Info's event sheet, after the heading block. It carries no mark: it shows only in Event Info's tablet band, its tightest, where a mark that size earns nothing."
+          description="Thin rule separating grouped content within a section."
+          points={[
+            "its only consumer is Event Info's event sheet, after the heading block",
+            "it carries no mark: it shows only in Event Info's tablet band, its tightest, where a mark that size earns nothing",
+          ]}
           id="layout-divider"
           name="divider"
           source="@/components/layout/divider"
@@ -454,7 +476,11 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="A drawn divider that sets a passage apart. Decoration, not separation — it carries no separator role, which is the whole difference from divider. The sprig mark it centres is the Invite's own; the mark's other places are the five section-head eyebrows, through sprig-ornament (Components · UI), each ritual's header line from lg up, set once as drawn, plus the link preview card, which sets it inline."
+          description="A drawn divider that sets a passage apart."
+          points={[
+            "decoration, not separation — it carries no separator role, which is the whole difference from divider",
+            "the sprig mark it centres is the Invite's own; its other places are listed at Foundations · Iconography → sprig",
+          ]}
           id="layout-ornamental-divider"
           name="ornamental-divider"
           source="@/components/layout/ornamental-divider"
@@ -477,7 +503,10 @@ export function FoundationsSections() {
 
       <GallerySection
         id="motion"
-        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only. The thread's looping re-trace and its catch-up and closing-stretch budgets are the exceptions, and take their own values."
+        intro="Scroll is the primary interaction; the duration and easing tokens govern discrete transitions only."
+        points={[
+          "the thread's sway, its catch-up and its closing-stretch budgets are the exceptions, and take their own values",
+        ]}
         mapsTo="Foundations → Motion"
         source="--duration-* / --ease-*"
         title="Foundations · Motion"
@@ -492,14 +521,18 @@ export function FoundationsSections() {
           <RuleList rules={EASING_USES} />
         </SpecimenGroup>
 
-        <SpecimenGroup title="Loop cadence and thread budgets — exceptions to both scales">
-          <RuleList rules={LOOP_CADENCE_USES} />
+        <SpecimenGroup title="Thread timing and budgets — exceptions to both scales">
+          <RuleList rules={THREAD_TIMING_USES} />
         </SpecimenGroup>
       </GallerySection>
 
       <GallerySection
         id="shapes"
-        intro="One radius, on everything with corners: 3px, small enough to read as a trimmed paper corner rather than a web dialog. Circles serve two named uses and are a shape, not a step on the scale."
+        intro="One radius, on everything with corners: 3px."
+        points={[
+          "small enough to read as a trimmed paper corner rather than a web dialog",
+          "circles serve two named uses and are a shape, not a step on the scale",
+        ]}
         mapsTo="Foundations → Shapes"
         source="--radius-*"
         title="Foundations · Shapes"
@@ -509,7 +542,12 @@ export function FoundationsSections() {
 
       <GallerySection
         id="elevation"
-        intro="Depth from paper edge, subtle shadow and tone. The outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other. Four recipes in all, plus the couple's portrait glow, which is light rather than depth; every shadow is tinted warm, the glow is gold, and the stock's inset highlight alone stays untinted."
+        intro="Depth from paper edge, subtle shadow and tone."
+        points={[
+          "the outer lift and the contact shadow are two independent systems, not one recipe at two strengths — either tunes without touching the other",
+          "four recipes in all, plus the couple's portrait glow, which is light rather than depth",
+          "every shadow is tinted warm, the glow is gold, and the stock's inset highlight alone stays untinted",
+        ]}
         mapsTo="Foundations → Elevation & Depth"
         source="--shadow-*"
         title="Foundations · Elevation & Depth"
@@ -553,7 +591,11 @@ export function FoundationsSections() {
 
       <GallerySection
         id="iconography"
-        intro="A closed set of six marks, plus the seal mark that serves as the site's icon and three control glyphs (chevron, close, grid) shown on photo-viewer in Components · UI → Gallery, all drawn for this invitation."
+        intro="A closed set of six marks, all drawn for this invitation."
+        points={[
+          "plus the seal mark that serves as the site's icon",
+          "plus three control glyphs (chevron, close, grid) shown on photo-viewer in Components · UI → Gallery",
+        ]}
         mapsTo="Foundations → Iconography"
         source="@/components/icons"
         title="Foundations · Iconography"
@@ -611,7 +653,14 @@ export function FoundationsSections() {
         </Specimen>
 
         <Specimen
-          description="Punctuation, not a label's companion — centres the Invite's ornamental-divider, brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament, leads each Celebrations ritual's header line from lg up (once, as drawn), closes the link preview card's text column. An outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px."
+          description="Punctuation, not a label's companion."
+          points={[
+            "centres the Invite's ornamental-divider",
+            "brackets five section-head eyebrows in pairs (mirrored outward, between rules) through sprig-ornament",
+            "leads each Celebrations ritual's header line from lg up (once, as drawn)",
+            "closes the link preview card's text column, signs off the not-found card through designer-credit",
+            "an outline rather than a silhouette: its stroke weight is baked into the artwork and thins below a pixel under ~16px",
+          ]}
           id="iconography-sprig"
           name="sprig"
           source="@/components/icons/sprig"

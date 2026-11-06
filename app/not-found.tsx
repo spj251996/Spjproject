@@ -4,6 +4,7 @@ import { Botanical } from "@/components/background/botanical";
 import { SECTION_PLACEMENT } from "@/components/background/botanical-placement";
 import { MountedSheet } from "@/components/layout/mounted-sheet";
 import { ButtonAction } from "@/components/ui/button-action";
+import { DesignerCredit } from "@/components/ui/designer-credit";
 import { SprigOrnament } from "@/components/ui/sprig-ornament";
 
 /* The screen an unmatched path reaches. It takes the section frame so a wrong turn still reads as
@@ -24,18 +25,26 @@ export default function NotFound() {
       <section className="relative" id="not-found">
         <Botanical fit={notFoundFit} pieces={SECTION_PLACEMENT["not-found"]} />
         <MountedSheet fit={notFoundFit}>
+          {/* Three tracks: the empty first mirrors the credit's last, so the eyebrow, heading and
+              action stay centred in the card while the sign-off sits at its foot, in flow, where a
+              short phone cannot put it over the action (DESIGN.md → Not found). */}
           <div
-            className="flex w-full flex-col items-center text-center"
+            className="grid w-full grow grid-rows-[1fr_auto_1fr] justify-items-center text-center"
             data-not-found-stack
           >
-            <p className="type-eyebrow">
-              <SprigOrnament>A Small Detour</SprigOrnament>
-            </p>
-            <h1 className="type-heading-xl text-ink-muted mt-space-2xs">
-              This page isn&apos;t part of the invitation.
-            </h1>
-            <div className="mt-space-2xl">
-              <ButtonAction href="/">Back to the Invitation</ButtonAction>
+            <div className="row-start-2 flex flex-col items-center">
+              <p className="type-eyebrow">
+                <SprigOrnament>A Small Detour</SprigOrnament>
+              </p>
+              <h1 className="type-heading-xl text-ink-muted mt-space-2xs">
+                This page isn&apos;t part of the invitation.
+              </h1>
+              <div className="mt-space-2xl">
+                <ButtonAction href="/">Back to the Invitation</ButtonAction>
+              </div>
+            </div>
+            <div className="row-start-3 self-end mt-space-2xl">
+              <DesignerCredit layout="signoff" />
             </div>
           </div>
         </MountedSheet>

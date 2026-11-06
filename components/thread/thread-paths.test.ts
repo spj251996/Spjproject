@@ -3,7 +3,13 @@ import { test } from "node:test";
 import type { BandId } from "./thread-bands.ts";
 import { THREAD_BANDS } from "./thread-bands.ts";
 import type { MotifId, ThreadId } from "./thread-geometry.ts";
-import { MOTIF_PLACEMENTS, THREAD_IDS, THREAD_PATHS } from "./thread-paths.ts";
+import {
+  MOTIF_PLACEMENTS,
+  PHOTO_STATE_PATHS,
+  THREAD_IDS,
+  THREAD_PATHS,
+} from "./thread-paths.ts";
+import { threadPaths } from "./thread-photo-state.ts";
 
 /* The page order, restated here rather than imported: this table is what a fresh reader needs to
    know which section owns how many motifs — the shape every other assertion below checks against. */
@@ -11,7 +17,8 @@ const SECTION_MOTIF_COUNT: Record<ThreadId, number> = {
   invite: 1,
   "event-info": 2,
   family: 2,
-  celebrations: 1,
+  /* The owner's redraw dropped Celebrations' motif: the loops drawn there are joins in the line. */
+  celebrations: 0,
   wishes: 1,
 };
 
@@ -35,8 +42,14 @@ test("every band declares every section and nothing else", () => {
 test("a section's connector count is exactly its motif count plus one", () => {
   for (const band of THREAD_BANDS) {
     for (const id of SECTION_IDS) {
-      const connectors = THREAD_PATHS[band.id][id];
       const placements = MOTIF_PLACEMENTS[band.id][id];
+      for (const combination of COMBINATIONS)
+        assert.equal(
+          threadPaths(band.id, id, combination).length,
+          SECTION_MOTIF_COUNT[id] + 1,
+          `${band.id}/${id} ${combination} connector count`,
+        );
+      const connectors = THREAD_PATHS[band.id][id];
       assert.equal(
         placements.length,
         SECTION_MOTIF_COUNT[id],
@@ -74,7 +87,6 @@ test("every placement names a real motif and carries finite geometry", () => {
     "rings",
     "knot",
     "portraitLoop",
-    "wishesLoop",
     "bow",
   ]);
   for (const band of THREAD_BANDS) {
@@ -99,53 +111,33 @@ test("every placement names a real motif and carries finite geometry", () => {
   }
 });
 
-/* Owner decision, in chat: the reflection that negates portraitLoop's internal turn is wanted in
-   `wide` and `tall`, where the drawn line turns the opposite sign from the motif's own authored
-   turn; `upright`'s two loops wind opposite ways, so mirroring one would only fix the other, and
-   that choice is not this task's to make. */
-test("portraitLoop is mirrored in wide and tall, and not in upright", () => {
-  for (const band of THREAD_BANDS) {
-    const placements = [
-      ...MOTIF_PLACEMENTS[band.id].family,
-      ...MOTIF_PLACEMENTS[band.id].celebrations,
-    ].filter((p) => p.motif === "portraitLoop");
-    assert.ok(
-      placements.length > 0,
-      `${band.id} has no portraitLoop placement`,
-    );
-    for (const placement of placements) {
-      if (band.id === "upright") {
-        assert.equal(
-          placement.mirror,
-          undefined,
-          `upright's portraitLoop must not carry mirror`,
-        );
-      } else {
-        assert.equal(
-          placement.mirror,
-          true,
-          `${band.id}'s portraitLoop must carry mirror: true`,
-        );
-      }
-    }
-  }
-});
-
-/* No other motif is mirrored — the reflection is a fitted correction for portraitLoop's two winding
-   directions specifically, not a general-purpose flag any placement happens to carry. */
-test("no motif other than portraitLoop carries mirror", () => {
+/* The heart was drawn against its reflection on the owner's sheets, so it is always mirrored; a
+   portrait ring's mirror is fitted per ring; no other motif is ever reflected. */
+test("the heart is always mirrored, and no motif but it and portraitLoop ever is", () => {
   for (const band of THREAD_BANDS) {
     for (const id of SECTION_IDS) {
       for (const placement of MOTIF_PLACEMENTS[band.id][id]) {
         if (placement.motif === "portraitLoop") continue;
         assert.equal(
           placement.mirror,
-          undefined,
-          `${band.id}/${id}/${placement.motif} must not carry mirror`,
+          placement.motif === "heart" ? true : undefined,
+          `${band.id}/${id}/${placement.motif}: mirror ${placement.mirror}`,
         );
       }
     }
   }
+});
+
+/* Fitted against the wrong reflection, the heart turned some 140 degrees and sat upside down. */
+test("the heart sits upright: its fitted turn stays within 60 degrees", () => {
+  for (const band of THREAD_BANDS)
+    for (const placement of MOTIF_PLACEMENTS[band.id].invite.filter(
+      (p) => p.motif === "heart",
+    ))
+      assert.ok(
+        Math.abs(placement.turn) <= 60,
+        `${band.id}: the heart is turned ${placement.turn} degrees`,
+      );
 });
 
 /* ---- the handoff, restated as a geometric fact rather than a grid-cell one -------------------
@@ -210,11 +202,8 @@ const REACH = 10;
    noise above without losing the separation that matters: forcing a vertical tangent measured 13-80
    degrees off at this same reach on at least one boundary in every band.
 
-   The worst join reads 5.6 degrees at `tall` family/celebrations, and the machine-made Event Info /
-   Family join 2.3 / 1.4 / 0.3 at `tall` / `upright` / `wide` (`build-thread-paths.mjs` →
-   `SEAM_MARGIN`). Span bounding (`boundSpans`, off by default) moves the two worst joins to about 8.8
-   while improving every other, which leaves about 1 degree of room: re-record these figures rather
-   than widening the bound. */
+   Every join is the owner's drawn line, sliced where it crosses the boundary; re-record the worst
+   join after a regeneration rather than widening the bound. */
 const TOLERANCE = 10;
 
 function headingAt(
@@ -247,37 +236,53 @@ const SECTION_ORDER: ThreadId[] = [
   "wishes",
 ];
 
+/* Every combination of photographed rituals, the drawn page ("1111") among them. */
+const COMBINATIONS = Object.keys(PHOTO_STATE_PATHS.tall);
+
+test("every combination of photographs is generated, in every band", () => {
+  assert.equal(COMBINATIONS.length, 16);
+  for (const band of THREAD_BANDS)
+    assert.deepEqual(Object.keys(PHOTO_STATE_PATHS[band.id]), COMBINATIONS);
+});
+
 test("every section boundary reads as one line: same x and same heading on both sides", () => {
-  for (const band of THREAD_BANDS) {
-    for (let i = 0; i < SECTION_ORDER.length - 1; i += 1) {
-      const upper = THREAD_PATHS[band.id][SECTION_ORDER[i]].at(-1);
-      const lower = THREAD_PATHS[band.id][SECTION_ORDER[i + 1]][0];
-      assert.ok(
-        upper && lower,
-        `${band.id}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} missing`,
-      );
+  for (const band of THREAD_BANDS)
+    for (const combination of COMBINATIONS) {
+      for (let i = 0; i < SECTION_ORDER.length - 1; i += 1) {
+        const upper = threadPaths(band.id, SECTION_ORDER[i], combination).at(
+          -1,
+        );
+        const lower = threadPaths(
+          band.id,
+          SECTION_ORDER[i + 1],
+          combination,
+        )[0];
+        assert.ok(
+          upper && lower,
+          `${band.id}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} missing`,
+        );
 
-      const upperPoints = flatten(upper.d);
-      const lowerPoints = flatten(lower.d);
-      const upperEnd = upperPoints[upperPoints.length - 1];
-      const lowerStart = lowerPoints[0];
+        const upperPoints = flatten(upper.d);
+        const lowerPoints = flatten(lower.d);
+        const upperEnd = upperPoints[upperPoints.length - 1];
+        const lowerStart = lowerPoints[0];
 
-      assert.ok(
-        Math.abs(upperEnd.x - lowerStart.x) <= 0.5,
-        `${band.id}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} x mismatch ` +
-          `${upperEnd.x.toFixed(2)} vs ${lowerStart.x.toFixed(2)}`,
-      );
+        assert.ok(
+          Math.abs(upperEnd.x - lowerStart.x) <= 0.5,
+          `${band.id} ${combination}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} x mismatch ` +
+            `${upperEnd.x.toFixed(2)} vs ${lowerStart.x.toFixed(2)}`,
+        );
 
-      const upperHeading = headingAt(upperPoints, "to");
-      const lowerHeading = headingAt(lowerPoints, "from");
-      assert.ok(
-        angleDiff(upperHeading, lowerHeading) <= TOLERANCE,
-        `${band.id}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} heading mismatch ` +
-          `${upperHeading.toFixed(1)} vs ${lowerHeading.toFixed(1)} ` +
-          `(${angleDiff(upperHeading, lowerHeading).toFixed(1)} deg off)`,
-      );
+        const upperHeading = headingAt(upperPoints, "to");
+        const lowerHeading = headingAt(lowerPoints, "from");
+        assert.ok(
+          angleDiff(upperHeading, lowerHeading) <= TOLERANCE,
+          `${band.id} ${combination}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} heading mismatch ` +
+            `${upperHeading.toFixed(1)} vs ${lowerHeading.toFixed(1)} ` +
+            `(${angleDiff(upperHeading, lowerHeading).toFixed(1)} deg off)`,
+        );
+      }
     }
-  }
 });
 
 /* The reach-sampled test above absorbs `splinePath`'s own arm-length asymmetry (see `TOLERANCE`'s
@@ -298,21 +303,26 @@ function exactTangent(d: string, which: "start" | "end"): number {
 }
 
 test("the exact tangent at a boundary is continuous to a fraction of a degree", () => {
-  for (const band of THREAD_BANDS) {
-    for (let i = 0; i < SECTION_ORDER.length - 1; i += 1) {
-      const connectors = THREAD_PATHS[band.id][SECTION_ORDER[i]];
-      const upper = connectors[connectors.length - 1];
-      const lower = THREAD_PATHS[band.id][SECTION_ORDER[i + 1]][0];
-      const diff = angleDiff(
-        exactTangent(upper.d, "end"),
-        exactTangent(lower.d, "start"),
-      );
-      assert.ok(
-        diff <= 0.5,
-        `${band.id}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} exact tangent off by ${diff.toFixed(3)} deg`,
-      );
+  for (const band of THREAD_BANDS)
+    for (const combination of COMBINATIONS) {
+      for (let i = 0; i < SECTION_ORDER.length - 1; i += 1) {
+        const connectors = threadPaths(band.id, SECTION_ORDER[i], combination);
+        const upper = connectors[connectors.length - 1];
+        const lower = threadPaths(
+          band.id,
+          SECTION_ORDER[i + 1],
+          combination,
+        )[0];
+        const diff = angleDiff(
+          exactTangent(upper.d, "end"),
+          exactTangent(lower.d, "start"),
+        );
+        assert.ok(
+          diff <= 0.5,
+          `${band.id} ${combination}: ${SECTION_ORDER[i]}/${SECTION_ORDER[i + 1]} exact tangent off by ${diff.toFixed(3)} deg`,
+        );
+      }
     }
-  }
 });
 
 /* ---- scale is an INPUT to the fit, never an output of it -------------------------------------
@@ -324,16 +334,10 @@ test("the exact tangent at a boundary is continuous to a fraction of a degree", 
 const AUTHORED_SCALE: Record<BandId, Partial<Record<MotifId, number>>> = {
   tall: { heart: 0.2, rings: 0.25, knot: 0.25, portraitLoop: 0.35 },
   wide: { heart: 0.3, rings: 0.28, knot: 0.2, portraitLoop: 0.2 },
-  upright: {
-    heart: 0.2,
-    rings: 0.25,
-    knot: 0.25,
-    portraitLoop: 0.25,
-    wishesLoop: 0.2,
-  },
+  upright: { heart: 0.2, rings: 0.25, knot: 0.25, portraitLoop: 0.25 },
 };
-/* Every cell the table above leaves out — `wishesLoop` and `bow` in every band except
-   `upright`/`wishesLoop` — carries no `scale` in the source and takes this default. */
+/* Every cell the table above leaves out — `bow` in every band — carries no `scale` in the source
+   and takes this default. */
 const DEFAULT_SCALE = 0.3;
 
 test("a motif with no authored scale takes the generator's default", () => {
@@ -374,4 +378,75 @@ test("every placement's scale is the owner's authored value, never derived from 
 test("THREAD_IDS matches the page order", () => {
   assert.deepEqual([...THREAD_IDS], SECTION_ORDER);
   assert.deepEqual(Object.keys(SECTION_MOTIF_COUNT), SECTION_ORDER);
+});
+
+/* ---- a connector meets its motif smoothly -------------------------------------------------- */
+
+/** Points every `step` px along a flattened path. */
+function everyStep(points: { x: number; y: number }[], step: number) {
+  const out = [points[0]];
+  let run = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    run += Math.hypot(
+      points[i].x - points[i - 1].x,
+      points[i].y - points[i - 1].y,
+    );
+    if (run >= step) {
+      out.push(points[i]);
+      run = 0;
+    }
+  }
+  return out;
+}
+
+/** The sharpest bend between consecutive `step`-px chords, in degrees. */
+function sharpestBend(points: { x: number; y: number }[]): number {
+  let worst = 0;
+  for (let i = 2; i < points.length; i += 1) {
+    const a = Math.atan2(
+      points[i - 1].y - points[i - 2].y,
+      points[i - 1].x - points[i - 2].x,
+    );
+    const b = Math.atan2(
+      points[i].y - points[i - 1].y,
+      points[i].x - points[i - 1].x,
+    );
+    worst = Math.max(
+      worst,
+      angleDiff((a * 180) / Math.PI, (b * 180) / Math.PI),
+    );
+  }
+  return worst;
+}
+
+/* The drawn line arrives at a motif some degrees off the motif's own tangent; the join is eased so it
+   curves onto the tangent rather than turning there. Before the easing the portrait rings hooked at
+   60-80 degrees per 6px; eased, the worst join is a ring entered from nearly behind (wide, ~41),
+   which reads as a curve on the page. */
+const JOIN_REACH = 48;
+const JOIN_BEND = 45;
+
+test("every connector meets its motifs smoothly, with no sharp bend near the join", () => {
+  for (const band of THREAD_BANDS)
+    for (const id of SECTION_IDS) {
+      const motifs = MOTIF_PLACEMENTS[band.id][id].length;
+      THREAD_PATHS[band.id][id].forEach((connector, k) => {
+        const points = everyStep(flatten(connector.d), 6);
+        const reach = Math.ceil(JOIN_REACH / 6);
+        if (k > 0) {
+          const bend = sharpestBend(points.slice(0, reach));
+          assert.ok(
+            bend <= JOIN_BEND,
+            `${band.id}/${id} connector ${k} leaves its motif bending ${bend.toFixed(1)} deg`,
+          );
+        }
+        if (k < motifs) {
+          const bend = sharpestBend(points.slice(-reach));
+          assert.ok(
+            bend <= JOIN_BEND,
+            `${band.id}/${id} connector ${k} meets its motif bending ${bend.toFixed(1)} deg`,
+          );
+        }
+      });
+    }
 });

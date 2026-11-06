@@ -56,7 +56,7 @@ function terminalSectionProgress(
    wishes occupies exactly the final viewport, so its card is never scrolled THROUGH and the chain
    would hand it only whatever the previous section left over: the stretch would draw too fast to read
    as a draw and reach 100% only at the page's last pixel, leaving the drawing head lit over the
-   closing taper at any resting position short of the bottom.
+   closing end at any resting position short of the bottom.
 
    `span` buys the stretch a real window and `finish` lands it before the page bottom, so the head
    retires while the reader is still there. Both are read from tokens rather than coined here: the

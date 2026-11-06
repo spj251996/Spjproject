@@ -11,6 +11,7 @@ export const sampleFamilyGroups: FamilyGroup[] = [
     id: "placeholder-bride-family",
     side: "bride",
     familyName: "Bride Family",
+    origin: "Hometown, State",
     members: [
       {
         id: "placeholder-bride-parent-1",
@@ -46,6 +47,7 @@ export const sampleFamilyGroups: FamilyGroup[] = [
     id: "placeholder-groom-family",
     side: "groom",
     familyName: "Groom Family",
+    origin: "Hometown, State",
     members: [
       {
         id: "placeholder-groom-parent-1",

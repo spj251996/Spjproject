@@ -4,8 +4,10 @@ import { useEffect, useRef } from "react";
 import styles from "./thread.module.css";
 import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
+import { lineCrossings } from "./thread-crossings";
+import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
 import { paintedLength } from "./thread-head";
-import { CARD_CUT_ID, TaperCutMask, ThreadInk } from "./thread-ink";
+import { CARD_CUT_ID, EndCutMask, ThreadInk } from "./thread-ink";
 import {
   type SectionRange,
   type SectionRect,
@@ -26,14 +28,15 @@ import {
 } from "./thread-measure";
 import {
   applyPieceDashes,
-  cardRetraces,
+  type CrossingPainter,
   clearPieceDashes,
+  createCrossingPainter,
+  createEndFrayPainter,
   createHeadPainter,
-  createRetracePainter,
-  createTaperPainter,
+  createTipFrayPainter,
+  type EndFrayPainter,
   type HeadPainter,
-  type RetracePainter,
-  type TaperPainter,
+  type TipFrayPainter,
 } from "./thread-painters";
 import { THREAD_IDS } from "./thread-paths";
 import {
@@ -43,13 +46,22 @@ import {
   totalLength,
 } from "./thread-progress";
 import type { PieceSamples } from "./thread-samples";
-import { createThreadSpikes, type ThreadSpikes } from "./thread-spikes";
+import {
+  createThreadShadows,
+  type ThreadShadows,
+} from "./thread-shadow-regions";
+import {
+  createThreadSway,
+  swayAmplitude,
+  type ThreadSway,
+} from "./thread-sway";
 import {
   headOptions,
   readTerminalWindow,
-  taperOptions,
+  tokenLength,
   tokenTime,
 } from "./thread-tokens";
+import { createTwistPainter } from "./thread-twist";
 
 /* ---------------------------------------------------------------------------------------------
    THE CARD THREAD — a stretch of the thread drawn INSIDE a card's own stacking context, so it paints
@@ -95,13 +107,19 @@ export function CardThread() {
   const firstPieceRef = useRef(0);
   const headGroupRef = useRef<SVGGElement>(null);
   const headRef = useRef<HeadPainter | null>(null);
-  const taperGroupRef = useRef<SVGGElement>(null);
+  const endFrayGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
-  const taperRef = useRef<TaperPainter | null>(null);
-  const retraceGroupRef = useRef<SVGGElement>(null);
-  const retraceGlowRef = useRef<SVGGElement>(null);
-  const retraceRef = useRef<RetracePainter | null>(null);
-  /* The head's and the re-trace's painters share what they sample, as the trunk's do. */
+  const endFrayRef = useRef<EndFrayPainter | null>(null);
+  const tipGroupRef = useRef<SVGGElement>(null);
+  const tipRef = useRef<TipFrayPainter | null>(null);
+  const crossingsUnderRef = useRef<SVGGElement>(null);
+  const crossingsOverRef = useRef<SVGGElement>(null);
+  const crossingsRef = useRef<CrossingPainter | null>(null);
+  /* The fray's fibres for the cord's measured width, rebuilt with every measure, as the trunk's are. */
+  const frayRef = useRef<FrayShape>(frayShape(0));
+  const shadowDefsRef = useRef<SVGDefsElement>(null);
+  const shadowsRef = useRef<ThreadShadows | null>(null);
+  /* One sampling of each piece, made the first time the head reaches it, as the trunk's are. */
   const samplesRef = useRef(new Map<number, PieceSamples>());
   /* Same three inputs `PageThread` keeps, captured at the same layout instant as its own copy --
      `CardThread` measures independently (see the header comment), so it keeps its own.
@@ -119,18 +137,16 @@ export function CardThread() {
      ratchet to do it: this component's maximum is a length along the card thread's path, which is not the
      trunk's (`PageThread`'s own `ratchetRef`). */
   const ratchetRef = useRef(createDrawRatchet());
-  /* TEMPORARY: the review panel's twist and sway spikes (`thread-spikes.ts`). */
-  const spikesRef = useRef<ThreadSpikes | null>(null);
+  const swayRef = useRef<ThreadSway | null>(null);
+  const twistRef = useRef<ReturnType<typeof createTwistPainter> | null>(null);
 
   /* The `d` of a chain piece that lives in THIS `<svg>`, or nothing for the trunk's. */
   function pathOf(index: number): string | undefined {
     if (index < firstPieceRef.current) return undefined;
     const path = pathsRef.current[index - firstPieceRef.current];
     if (path === null || path === undefined) return undefined;
-    /* TEMPORARY (review panel): a swaying `d` is not the geometry; the spike holds the unswayed one. */
-    return (
-      spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
-    );
+    /* A swaying `d` is not the geometry; the sway holds the unswayed one. */
+    return swayRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined;
   }
 
   function head(): HeadPainter | null {
@@ -140,33 +156,63 @@ export function CardThread() {
     return headRef.current;
   }
 
-  function retrace(): RetracePainter | null {
-    const group = retraceGroupRef.current;
-    const glow = retraceGlowRef.current;
-    if (group === null || glow === null) return null;
-    retraceRef.current ??= createRetracePainter(
-      group,
-      glow,
-      pathOf,
-      samplesRef.current,
-    );
-    return retraceRef.current;
+  function shadows(): ThreadShadows | null {
+    const defs = shadowDefsRef.current;
+    if (defs === null) return null;
+    shadowsRef.current ??= createThreadShadows(defs, swayAmplitude());
+    return shadowsRef.current;
   }
 
-  function taper(): TaperPainter | null {
-    const group = taperGroupRef.current;
+  function endFray(): EndFrayPainter | null {
+    const group = endFrayGroupRef.current;
     const cut = cutRef.current;
     if (group === null || cut === null) return null;
-    taperRef.current ??= createTaperPainter(group, cut);
-    return taperRef.current;
+    endFrayRef.current ??= createEndFrayPainter(group, cut);
+    return endFrayRef.current;
   }
 
+  function tip(): TipFrayPainter | null {
+    const group = tipGroupRef.current;
+    if (group === null) return null;
+    tipRef.current ??= createTipFrayPainter(group, pathOf, samplesRef.current);
+    return tipRef.current;
+  }
+
+  function crossingPainter(): CrossingPainter | null {
+    const defs = shadowDefsRef.current;
+    const under = crossingsUnderRef.current;
+    const over = crossingsOverRef.current;
+    if (defs === null || under === null || over === null) return null;
+    crossingsRef.current ??= createCrossingPainter(defs, under, over);
+    return crossingsRef.current;
+  }
+
+  /* The cord trails the drawn length by the fray, as the trunk's does (`PageThread`'s `draw`). */
   function paintCard(drawn: number) {
-    applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
-    spikesRef.current?.painted(drawn);
-    head()?.paint(drawn, chainRef.current, headOptions());
+    const chain = chainRef.current;
+    const cord = cordDrawn(
+      drawn,
+      chain[chain.length - 1]?.end ?? 0,
+      frayRef.current.length,
+    );
+    applyPieceDashes(pathsRef.current, piecesRef.current, cord);
+    twistRef.current?.painted(cord);
+    const options = headOptions();
+    head()?.paint(cord, chain, options);
+    if (headGroupRef.current !== null)
+      shadows()?.headPainted(headGroupRef.current);
+    tip()?.paint(
+      cord,
+      drawn,
+      chain,
+      frayRef.current,
+      `rgb(${options.tipColor.join(",")})`,
+    );
+    if (tipGroupRef.current !== null)
+      shadows()?.tipPainted(tipGroupRef.current);
     const last = piecesRef.current[piecesRef.current.length - 1];
-    if (last !== undefined) taper()?.paint(paintedLength(drawn, last));
+    if (last !== undefined) endFray()?.paint(paintedLength(cord, last));
+    crossingPainter()?.painted((piece) => paintedLength(cord, chain[piece]));
   }
 
   const cardCatchUpRef = useRef<ReturnType<typeof createCatchUp> | null>(null);
@@ -188,8 +234,9 @@ export function CardThread() {
     if (reducedMotion()) {
       cardCatchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
-      spikesRef.current?.painted(Number.POSITIVE_INFINITY);
-      taper()?.paint(Number.POSITIVE_INFINITY);
+      twistRef.current?.painted(Number.POSITIVE_INFINITY);
+      endFray()?.paint(Number.POSITIVE_INFINITY);
+      crossingPainter()?.painted(() => Number.POSITIVE_INFINITY);
       return;
     }
     const drawn = ratchetRef.current.advance(pageDrawn);
@@ -200,7 +247,8 @@ export function CardThread() {
   function revealScrolled() {
     if (reducedMotion()) {
       clearPieceDashes(pathsRef.current);
-      taper()?.paint(Number.POSITIVE_INFINITY);
+      endFray()?.paint(Number.POSITIVE_INFINITY);
+      crossingPainter()?.painted(() => Number.POSITIVE_INFINITY);
       return;
     }
     cardCatchUpRef.current?.to(
@@ -270,20 +318,44 @@ export function CardThread() {
     piecesRef.current = wishesPieces;
     chainRef.current = pieces;
     firstPieceRef.current = range.start;
-    spikesRef.current ??= createThreadSpikes(
+    twistRef.current ??= createTwistPainter(
       svg,
-      taperGroupRef.current,
+      endFrayGroupRef.current,
       CARD_CUT_ID,
       (count) => count - 1,
-      reducedMotion(),
     );
-    spikesRef.current.measured(pathsRef.current, wishesPieces, main);
+    /* Built once, and again when the reader's motion preference changes, which re-measures. */
+    const reduced = reducedMotion();
+    if (swayRef.current?.reduced !== reduced) {
+      swayRef.current?.stop();
+      swayRef.current = createThreadSway(svg, reduced);
+    }
+    swayRef.current.measured(main);
+    twistRef.current.measured(
+      pathsRef.current,
+      wishesPieces,
+      swayRef.current.baseOf,
+    );
     head()?.reset();
-    retrace()?.hide();
+    tip()?.reset();
+    const cordWidth = tokenLength("--stroke-thread");
+    frayRef.current = frayShape(cordWidth);
+    const { samples: chainSamples, crossings } = lineCrossings(
+      subpaths,
+      pieces,
+      cordWidth,
+    );
+    crossingPainter()?.measured(
+      crossings,
+      (piece) => chainSamples[piece],
+      (piece) => (piece >= range.start ? piece - range.start : undefined),
+      cordWidth / 2,
+      swayAmplitude(),
+    );
     const closingPiece = wishesPieces[wishesPieces.length - 1];
     const closingLength =
       closingPiece === undefined ? 0 : closingPiece.end - closingPiece.start;
-    taper()?.set(
+    endFray()?.set(
       closingPiece === undefined
         ? undefined
         : {
@@ -292,7 +364,15 @@ export function CardThread() {
             endAt: closingLength,
             direction: 1,
           },
-      taperOptions(),
+      frayRef.current,
+    );
+    const endGroup = endFrayGroupRef.current;
+    const closingPath = pathsRef.current[pathsRef.current.length - 1];
+    shadows()?.measured(
+      pathsRef.current,
+      endGroup === null || closingPath === null || closingPath === undefined
+        ? undefined
+        : { group: endGroup, piece: closingPath },
     );
 
     groupRectsRef.current = groupRects;
@@ -311,7 +391,7 @@ export function CardThread() {
   /* The cheap half, as in `PageThread`: a viewport-height change moves the draw window and nothing
      else, so this re-reads the two window values and re-paints. `reveal` is already the no-travel
      painter ("a re-measure paints where the page already is" -- its own header), which is exactly
-     what a URL bar moving needs; `revealScrolled` would ease it. No head reset, no re-trace stop, no
+     what a URL bar moving needs; `revealScrolled` would ease it. No head reset, no
      rebase. The card thread takes no `openingFloor`: the opening sequence draws the INVITE's pieces, which
      live in `PageThread`'s `<svg>`, not this one. */
   function refreshWindow() {
@@ -323,19 +403,7 @@ export function CardThread() {
 
   useLayoutTriggers(measureLayout, refreshWindow);
 
-  /* Joins the page's one re-trace loop (`cardRetraces`'s header): `PageThread` drives it, and this
-     paints Wishes' stretch of it into its own `<svg>`. */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `retrace` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
-  useEffect(() => {
-    const painter = retrace();
-    if (painter === null) return;
-    cardRetraces.add(painter);
-    return () => {
-      cardRetraces.delete(painter);
-      painter.hide();
-      spikesRef.current?.stop();
-    };
-  }, []);
+  useEffect(() => () => swayRef.current?.stop(), []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bind once -- `reveal` closes over refs by their stable `.current`, not by closure value, so the first render's copy stays correct forever.
   useEffect(() => {
@@ -368,7 +436,8 @@ export function CardThread() {
         ref={svgRef}
         role="presentation"
       >
-        <TaperCutMask cutRef={cutRef} id={CARD_CUT_ID} />
+        <EndCutMask cutRef={cutRef} id={CARD_CUT_ID} />
+        <defs ref={shadowDefsRef} />
         {Array.from({ length: WISHES_PIECE_COUNT }, (_, index) => (
           <ThreadInk
             cutId={index === WISHES_PIECE_COUNT - 1 ? CARD_CUT_ID : undefined}
@@ -380,10 +449,19 @@ export function CardThread() {
             }}
           />
         ))}
-        <g className={styles.pageTaper} data-thread-taper ref={taperGroupRef} />
-        <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
-        <g className={styles.pageRetrace} ref={retraceGroupRef} />
+        <g className={styles.pageFray} data-thread-fray ref={endFrayGroupRef} />
+        <g className={styles.pageTip} data-thread-tip ref={tipGroupRef} />
+        <g
+          className={styles.pageCrossings}
+          data-thread-crossings="under"
+          ref={crossingsUnderRef}
+        />
         <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
+        <g
+          className={styles.pageCrossings}
+          data-thread-crossings="over"
+          ref={crossingsOverRef}
+        />
       </svg>
     </span>
   );

@@ -4,9 +4,12 @@ import { useCallback, useEffect, useRef } from "react";
 import styles from "./thread.module.css";
 import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
+import { lineCrossings } from "./thread-crossings";
 import { PAGE_FALLBACKS } from "./thread-fallback";
+import { ThreadFilters } from "./thread-filters";
+import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
 import { paintedLength } from "./thread-head";
-import { TaperCutMask, ThreadInk, TRUNK_CUT_ID } from "./thread-ink";
+import { EndCutMask, ThreadInk, TRUNK_CUT_ID } from "./thread-ink";
 import {
   type SectionRange,
   type SectionRect,
@@ -27,15 +30,15 @@ import {
 } from "./thread-measure";
 import {
   applyPieceDashes,
-  cardRetraces,
+  type CrossingPainter,
   clearPieceDashes,
+  createCrossingPainter,
+  createEndFrayPainter,
   createHeadPainter,
-  createRetracePainter,
-  createTaperPainter,
+  createTipFrayPainter,
+  type EndFrayPainter,
   type HeadPainter,
-  type RetraceFrame,
-  type RetracePainter,
-  type TaperPainter,
+  type TipFrayPainter,
 } from "./thread-painters";
 import { THREAD_IDS } from "./thread-paths";
 import {
@@ -44,32 +47,24 @@ import {
   type TerminalWindow,
   totalLength,
 } from "./thread-progress";
-import {
-  type RetracePhase,
-  retraceLoopAt,
-  retraceNominalMs,
-  retracePeriodMs,
-  retracePhase,
-  retraceSpan,
-  retraceTargets,
-  tipGroupIndex,
-} from "./thread-retrace";
 import type { PieceSamples } from "./thread-samples";
 import {
-  createThreadSpikes,
+  createThreadShadows,
+  type ThreadShadows,
+} from "./thread-shadow-regions";
+import {
+  createThreadSway,
   setSwayAwake,
-  type ThreadSpikes,
-} from "./thread-spikes";
+  swayAmplitude,
+  type ThreadSway,
+} from "./thread-sway";
 import {
   headOptions,
   readTerminalWindow,
-  retraceLoops,
-  retraceOptions,
-  retraceSettle,
-  taperOptions,
   tokenLength,
   tokenTime,
 } from "./thread-tokens";
+import { createTwistPainter } from "./thread-twist";
 
 /* THE MODEL.
 
@@ -90,7 +85,7 @@ import {
    own stretch of the total, never one global fraction.
 
    WISHES: this SVG paints at `{z.thread}` above every card, so Wishes' stretch is drawn by
-   `CardThread` inside its card (DESIGN.md → Thread → Wishes).
+   `CardThread` inside its card (DESIGN.md → Thread → `card-thread`).
 
    ANCHORING: `family`'s two `portraitLoop`s translate onto the portraits labelled Bride and Groom,
    paired by nearest distance, which is safe because the correction is under 18px across `wide`; a
@@ -164,33 +159,13 @@ function openingFloor(
   return invite.end - CROSSING_HOLD_BACK * invite.lastPieceLength;
 }
 
-/* Which stretches should be looping now, and in which phase. The thread loops only while the page is
-   still, which is what `moving` records: any scroll frame or advance of the drawn length starts it,
-   and a settle interval without another ends it. */
-function retraceNow(
-  ranges: readonly SectionRange[],
-  groupRects: readonly SectionRect[],
-  drawn: number,
-  moving: boolean,
-  viewport: { scrollY: number; height: number },
-): { phase: RetracePhase; targets: number[] } {
-  const last = ranges[ranges.length - 1];
-  if (last === undefined) return { phase: "drawing", targets: [] };
-  const phase = retracePhase(drawn, last.end);
-  if (moving) return { phase, targets: [] };
-  return {
-    phase,
-    targets: retraceTargets(
-      phase,
-      groupRects,
-      viewport,
-      tipGroupIndex(ranges, drawn),
-    ),
-  };
-}
-
 /* ---------------------------------------------------------------------------------------------
    THE COMPONENT */
+
+/* The sway's rests (DESIGN.md -> Thread -> The sway): from a scroll until this long after the last one, and
+   this long after the tab comes back. Its own timings, outside the motion tokens. */
+const SCROLL_REST_MS = 150;
+const RETURN_REST_MS = 1000;
 
 export function PageThread() {
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -207,38 +182,27 @@ export function PageThread() {
   const chainRef = useRef<readonly ThreadPiece[]>([]);
   const headGroupRef = useRef<SVGGElement>(null);
   const headRef = useRef<HeadPainter | null>(null);
-  const taperGroupRef = useRef<SVGGElement>(null);
+  const endFrayGroupRef = useRef<SVGGElement>(null);
   const cutRef = useRef<SVGPathElement>(null);
-  const taperRef = useRef<TaperPainter | null>(null);
-  const retraceGroupRef = useRef<SVGGElement>(null);
-  const retraceGlowRef = useRef<SVGGElement>(null);
-  const retraceRef = useRef<RetracePainter | null>(null);
-  /* One sampling of each piece, whichever of the head and the re-trace reaches it first. */
+  const endFrayRef = useRef<EndFrayPainter | null>(null);
+  const tipGroupRef = useRef<SVGGElement>(null);
+  const tipRef = useRef<TipFrayPainter | null>(null);
+  const crossingsUnderRef = useRef<SVGGElement>(null);
+  const crossingsOverRef = useRef<SVGGElement>(null);
+  const crossingsRef = useRef<CrossingPainter | null>(null);
+  /* The fray's fibres for the cord's measured width, rebuilt with every measure. */
+  const frayRef = useRef<FrayShape>(frayShape(0));
+  const shadowDefsRef = useRef<SVGDefsElement>(null);
+  const shadowsRef = useRef<ThreadShadows | null>(null);
+  /* One sampling of each piece, made the first time the head reaches it. */
   const samplesRef = useRef(new Map<number, PieceSamples>());
-  /* The re-trace's state. `drawnRef` is the ratchet's held value as the last frame saw it; `moving`
-     is true from any scroll frame or advance of it until `--retrace-settle` has passed without
-     another. The loop's lifecycle is these four: `retraceStartRef` is the clock's zero and non-null
-     for exactly as long as a loop is live, running or suspended; `retraceFrameRef` is the pending
-     frame and null while suspended; `retraceSuspendedAtRef` is when a hidden tab stopped it; and
-     `retraceSpentRef` is the budget being used up, which only a settle after movement clears. */
-  const drawnRef = useRef(0);
-  const movingRef = useRef(false);
-  const settleTimerRef = useRef<number | null>(null);
-  const retraceFrameRef = useRef<number | null>(null);
-  const retraceStartRef = useRef<number | null>(null);
-  const retraceSuspendedAtRef = useRef<number | null>(null);
-  const retraceSpentRef = useRef(false);
-  /* IDLE: the page has gone `--thread-idle` without a scroll, tap, click or key, or the tab is hidden.
-     The re-trace then stops at the end of its current budget (never before `--retrace-loops` whole
-     loops) and the sway stops with it; any interaction wakes both. `idleAtRef` is when the page went
-     idle, so the loop knows which budget is its last. */
+  /* IDLE: the page has gone `--thread-idle` without a scroll, tap, click or key. The sway stops then, and any
+     interaction wakes it. The clock starts at load. */
   const idleRef = useRef(false);
-  const idleAtRef = useRef<number | null>(null);
   const idleTimerRef = useRef<number | null>(null);
-  const retraceNowRef = useRef<ReturnType<typeof retraceNow>>({
-    phase: "drawing",
-    targets: [],
-  });
+  /* RESTING: the sway holds its shape while the page scrolls and for a moment after the tab comes back, so the
+     page's own work has the main thread (DESIGN.md -> Thread -> The sway). Non-null while a rest is running. */
+  const restTimerRef = useRef<number | null>(null);
   /* Fed to `pageDrawnLength` on every scroll frame -- all three captured at the same layout instant
      as `measured.sections` itself, never re-measured on scroll. `groupRectsRef` is `threadLine`'s own
      per-GROUP window rects (a stacked pair's own two card rects, a ritual list's own row rects, or a
@@ -254,18 +218,23 @@ export function PageThread() {
      line where it was, never unravel it. `CardThread` owns its own; the two maxima are in
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
-  /* TEMPORARY: the review panel's twist and sway spikes (`thread-spikes.ts`). */
-  const spikesRef = useRef<ThreadSpikes | null>(null);
+  const swayRef = useRef<ThreadSway | null>(null);
+  const twistRef = useRef<ReturnType<typeof createTwistPainter> | null>(null);
 
   /* The `d` of a chain piece that lives in this `<svg>`, or nothing for the card thread's. */
   const pathOf = useCallback((index: number) => {
     if (index >= piecesRef.current.length) return undefined;
     const path = pathsRef.current[index];
     if (path === null || path === undefined) return undefined;
-    /* TEMPORARY (review panel): a swaying `d` is not the geometry; the spike holds the unswayed one. */
-    return (
-      spikesRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined
-    );
+    /* A swaying `d` is not the geometry; the sway holds the unswayed one. */
+    return swayRef.current?.baseOf(path) ?? path.getAttribute("d") ?? undefined;
+  }, []);
+
+  const shadows = useCallback((): ThreadShadows | null => {
+    const defs = shadowDefsRef.current;
+    if (defs === null) return null;
+    shadowsRef.current ??= createThreadShadows(defs, swayAmplitude());
+    return shadowsRef.current;
   }, []);
 
   const head = useCallback((): HeadPainter | null => {
@@ -275,171 +244,36 @@ export function PageThread() {
     return headRef.current;
   }, [pathOf]);
 
-  const retrace = useCallback((): RetracePainter | null => {
-    const group = retraceGroupRef.current;
-    const glow = retraceGlowRef.current;
-    if (group === null || glow === null) return null;
-    retraceRef.current ??= createRetracePainter(
-      group,
-      glow,
-      pathOf,
-      samplesRef.current,
+  /* The one place the sway is woken or stopped: it moves only while the page is touched, in view and not
+     resting. */
+  const syncSway = useCallback(() => {
+    setSwayAwake(
+      !idleRef.current &&
+        document.visibilityState !== "hidden" &&
+        restTimerRef.current === null,
     );
-    return retraceRef.current;
-  }, [pathOf]);
+  }, []);
 
-  /* Ends the loop: no frame stays scheduled and nothing stays painted, in this `<svg>` or in the card thread's. A
-     loop that is not live has painted nothing, so there is nothing to hide when none is. */
-  const stopRetrace = useCallback(() => {
-    if (retraceFrameRef.current !== null) {
-      window.cancelAnimationFrame(retraceFrameRef.current);
-      retraceFrameRef.current = null;
-    }
-    if (retraceStartRef.current === null) return;
-    retraceStartRef.current = null;
-    retraceSuspendedAtRef.current = null;
-    retrace()?.hide();
-    for (const card of cardRetraces) card.hide();
-  }, [retrace]);
+  const restSway = useCallback(
+    (ms: number) => {
+      if (restTimerRef.current !== null)
+        window.clearTimeout(restTimerRef.current);
+      restTimerRef.current = window.setTimeout(() => {
+        restTimerRef.current = null;
+        syncSway();
+      }, ms);
+      syncSway();
+    },
+    [syncSway],
+  );
 
-  /* Brings the loop in line with the state: starts it, stops it, or lets a running one pick up new
-     targets on its next frame. Called at every event that can change which stretches should animate —
-     an advance of the drawn length, a scroll frame, the end of the settle interval, a re-measure, a
-     tab coming back to the foreground.
-
-     The loop is bounded, and all of the bounds are this one lifecycle: movement clears the loop, the
-     settle interval after it starts one, it runs `--retrace-loops` whole loops and stops, and the next
-     movement is what starts it again. A hidden tab suspends it WITHOUT spending any of the budget
-     (`onVisibility` below shifts the clock's zero by the time spent hidden), and a loop that is
-     suspended starts no frame. */
-  const syncRetrace = useCallback(() => {
-    const painter = retrace();
-    const state = reducedMotion()
-      ? { phase: "drawing" as const, targets: [] }
-      : retraceNow(
-          rangesRef.current,
-          groupRectsRef.current,
-          drawnRef.current,
-          movingRef.current,
-          { scrollY: window.scrollY, height: viewportHeightRef.current },
-        );
-    retraceNowRef.current = state;
-    if (
-      painter === null ||
-      state.targets.length === 0 ||
-      retraceSpentRef.current
-    ) {
-      stopRetrace();
-      return;
-    }
-    if (
-      retraceFrameRef.current !== null ||
-      document.visibilityState === "hidden"
-    ) {
-      return;
-    }
-    const duration = tokenTime("--retrace-duration");
-    const loops = retraceLoops();
-    if (duration === undefined || loops === undefined) return;
-    /* A LOOP OF FIXED DURATION MAKES THE LIGHT'S SPEED DEPEND ON THE STRETCH'S LENGTH, because every
-       stretch has to finish in the same 3.2s whatever distance it covers. The owner's judgement on a
-       render, 2026-10-05: that spread is "not calm retrace but jarring effect". With a speed set, a
-       stretch's loop lasts as long as its own length needs, so every lit stretch moves at the same
-       rate and the page reads as one steady light rather than several at different paces.
-       0 keeps the fixed-duration behaviour exactly. */
-    const speed = tokenLength("--retrace-speed");
-    const byLength = Number.isFinite(speed) && speed > 0;
-    /* The token is the TIP's own speed in px/s, so a loop lasts as long as the tip needs to cross the
-       stretch, plus the share of the loop the tail then takes to follow it in. */
-    const loopMs = (extent: number) =>
-      byLength ? retraceNominalMs(extent, speed) : duration;
-    /* THE BUDGET IS THE LONGEST STRETCH'S OWN LOOPS, and every other stretch is fitted to it so that
-       none is cut off mid-loop (the owner, 2026-10-05: "max looping duration as 4 loops on biggest
-       thread section ... find looping duration that ensures complete loops for all").
-
-       A constant speed alone cannot give that: each stretch's period is proportional to its length,
-       and arbitrary lengths share no common multiple, so a shared stop would always catch most of
-       them part-way round. So each stretch takes the WHOLE number of loops nearest its own speed --
-       `budget / nominal period`, rounded -- and then runs at `budget / that count`. Every stretch
-       ends exactly on a loop boundary and they all stop together, at the cost of a few per cent of
-       speed: measured against the shipped layout, at most 9.6% at `wide` and 7.9% at `tall`, against
-       the 10.3x spread this replaces. The longest stretch is exact by construction. */
-    const longestExtent = rangesRef.current.reduce(
-      (most, r) => Math.max(most, r.end - r.start),
-      0,
-    );
-    const budgetMs = byLength
-      ? loops * loopMs(longestExtent)
-      : loops * duration;
-    const periodFor = (extent: number) =>
-      retracePeriodMs(budgetMs, loopMs(extent));
-    retraceStartRef.current ??= performance.now();
-    const frame = (now: number) => {
-      const start = retraceStartRef.current;
-      if (start === null) return;
-      /* Awake, the loop keeps going; once idle, it runs to the end of the budget it is in, and never
-         fewer than `loops` whole loops, so every stretch stops on a loop boundary together. */
-      const idleAt = idleAtRef.current;
-      const allowed =
-        idleAt === null
-          ? Number.POSITIVE_INFINITY
-          : loops * Math.max(1, Math.ceil((idleAt - start) / budgetMs));
-      const { loop, spent } = retraceLoopAt(
-        now - start,
-        budgetMs / loops,
-        allowed,
-      );
-      if (spent) {
-        retraceSpentRef.current = true;
-        stopRetrace();
-        setSwayAwake(false);
-        return;
-      }
-      const { phase, targets } = retraceNowRef.current;
-      const options = retraceOptions();
-      const frames = new Map<number, RetraceFrame>();
-      for (const index of targets) {
-        const range = rangesRef.current[index];
-        const end =
-          phase === "drawing"
-            ? Math.min(range.end, drawnRef.current)
-            : range.end;
-        const extent = end - range.start;
-        if (extent <= 0) continue;
-        /* Each stretch reads its own clock when a speed is set: same rate, its own loop length.
-           It is NOT given its own BUDGET: a short stretch would spend a few quick loops and go dark
-           while a long one beside it was still on its first, trading one incoherence for another.
-           Every lit stretch keeps looping until the page's single budget -- the LONGEST stretch's
-           `--retrace-loops` loops -- runs out, so they all quiet together. */
-        const own = byLength
-          ? { loop: ((now - start) / periodFor(extent)) % 1 }
-          : { loop };
-        const span = retraceSpan(own.loop, extent, options.length);
-        frames.set(index, {
-          tail: range.start + span.tail,
-          tip: range.start + span.tip,
-        });
-      }
-      painter.paint(frames, chainRef.current, options);
-      for (const card of cardRetraces) {
-        card.paint(frames, chainRef.current, options);
-      }
-      retraceFrameRef.current = window.requestAnimationFrame(frame);
-    };
-    retraceFrameRef.current = window.requestAnimationFrame(frame);
-  }, [retrace, stopRetrace]);
-
-  /* The page has gone idle: a running loop finishes its budget and then stops the sway too; with no loop
-     running, the sway stops now. */
   const goIdle = useCallback(() => {
     idleTimerRef.current = null;
     idleRef.current = true;
-    idleAtRef.current = performance.now();
-    if (retraceStartRef.current === null) setSwayAwake(false);
-  }, []);
+    syncSway();
+  }, [syncSway]);
 
-  /* Any scroll, tap, click or key: the idle clock starts over, and a page that had gone idle wakes, its
-     sway moving again and its re-trace free to start once the page is still. */
+  /* Any scroll, tap, click or key: the idle clock starts over, and a page that had gone idle sways again. */
   const wake = useCallback(() => {
     if (idleTimerRef.current !== null)
       window.clearTimeout(idleTimerRef.current);
@@ -448,58 +282,63 @@ export function PageThread() {
       idle === undefined ? null : window.setTimeout(goIdle, idle);
     if (!idleRef.current) return;
     idleRef.current = false;
-    idleAtRef.current = null;
-    retraceSpentRef.current = false;
-    setSwayAwake(true);
-  }, [goIdle]);
+    syncSway();
+  }, [goIdle, syncSway]);
 
-  const rest = useCallback(() => {
-    if (settleTimerRef.current !== null) {
-      window.clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = null;
-    }
-    movingRef.current = false;
-    retraceSpentRef.current = false;
-    syncRetrace();
-  }, [syncRetrace]);
-
-  /* Every scroll frame, and every frame of the opening draw, starts the page's stillness over: the loop
-     is cleared now and the settle interval has to pass again before it begins. Scrolling back up over a
-     drawn thread counts, which an advance of the drawn length alone would not: the owner's ruling is
-     that the loop re-arms on any scroll. */
-  const advanced = useCallback(
-    (drawn: number) => {
-      if (drawn > drawnRef.current) drawnRef.current = drawn;
-      movingRef.current = true;
-      wake();
-      if (settleTimerRef.current !== null) {
-        window.clearTimeout(settleTimerRef.current);
-      }
-      const settle = retraceSettle();
-      settleTimerRef.current =
-        settle === undefined ? null : window.setTimeout(rest, settle);
-      syncRetrace();
-    },
-    [rest, syncRetrace, wake],
-  );
-
-  const taper = useCallback((): TaperPainter | null => {
-    const group = taperGroupRef.current;
+  const endFray = useCallback((): EndFrayPainter | null => {
+    const group = endFrayGroupRef.current;
     const cut = cutRef.current;
     if (group === null || cut === null) return null;
-    taperRef.current ??= createTaperPainter(group, cut);
-    return taperRef.current;
+    endFrayRef.current ??= createEndFrayPainter(group, cut);
+    return endFrayRef.current;
   }, []);
 
+  const tip = useCallback((): TipFrayPainter | null => {
+    const group = tipGroupRef.current;
+    if (group === null) return null;
+    tipRef.current ??= createTipFrayPainter(group, pathOf, samplesRef.current);
+    return tipRef.current;
+  }, [pathOf]);
+
+  const crossingPainter = useCallback((): CrossingPainter | null => {
+    const defs = shadowDefsRef.current;
+    const under = crossingsUnderRef.current;
+    const over = crossingsOverRef.current;
+    if (defs === null || under === null || over === null) return null;
+    crossingsRef.current ??= createCrossingPainter(defs, under, over);
+    return crossingsRef.current;
+  }, []);
+
+  /* The cord is drawn the fray's length behind the drawn length, so the moving tip's fibres end at
+     `drawn` (DESIGN.md -> Thread -> The drawing head). */
   const draw = useCallback(
     (drawn: number) => {
-      applyPieceDashes(pathsRef.current, piecesRef.current, drawn);
-      spikesRef.current?.painted(drawn);
-      head()?.paint(drawn, chainRef.current, headOptions());
+      const chain = chainRef.current;
+      const cord = cordDrawn(
+        drawn,
+        chain[chain.length - 1]?.end ?? 0,
+        frayRef.current.length,
+      );
+      applyPieceDashes(pathsRef.current, piecesRef.current, cord);
+      twistRef.current?.painted(cord);
+      const options = headOptions();
+      head()?.paint(cord, chain, options);
+      if (headGroupRef.current !== null)
+        shadows()?.headPainted(headGroupRef.current);
+      tip()?.paint(
+        cord,
+        drawn,
+        chain,
+        frayRef.current,
+        `rgb(${options.tipColor.join(",")})`,
+      );
+      if (tipGroupRef.current !== null)
+        shadows()?.tipPainted(tipGroupRef.current);
       const first = piecesRef.current[0];
-      if (first !== undefined) taper()?.paint(paintedLength(drawn, first));
+      if (first !== undefined) endFray()?.paint(paintedLength(cord, first));
+      crossingPainter()?.painted((piece) => paintedLength(cord, chain[piece]));
     },
-    [head, taper],
+    [head, shadows, tip, endFray, crossingPainter],
   );
 
   /* The opening draw paints directly -- it is already timed on its own rAF -- and tells the follower
@@ -509,32 +348,29 @@ export function PageThread() {
       const drawn = ratchetRef.current.advance(value);
       catchUpRef.current?.seen(drawn);
       draw(drawn);
-      advanced(drawn);
+      wake();
     },
-    [draw, advanced],
+    [draw, wake],
   );
 
   const paintRef = useRef<(drawn: number) => void>(() => {});
   paintRef.current = (drawn: number) => {
     draw(drawn);
-    advanced(drawn);
+    wake();
   };
   const catchUpRef = useRef<ReturnType<typeof createCatchUp> | null>(null);
   catchUpRef.current ??= createCatchUp((drawn) => paintRef.current(drawn));
 
-  /* A reader's own scroll goes through the follower instead.
-
-     `advanced` is called here as well as from the follower's own frames, and unconditionally: the
-     owner's ruling is that the loop re-arms on ANY scroll, including scrolling back up over a thread
-     that is already finished, where the drawn length does not move and the follower has nothing to
-     paint. Routing the re-arm through the follower alone silently dropped exactly that case. */
+  /* A reader's own scroll goes through the follower instead. It wakes the page here as well as from the
+     follower's frames: scrolling back up a finished thread moves no drawn length, so the follower paints
+     nothing, and it is still an interaction. */
   const commitScrolled = useCallback(
     (value: number) => {
       const drawn = ratchetRef.current.advance(value);
       catchUpRef.current?.to(drawn, catchUpSecondsRef.current);
-      advanced(drawn);
+      wake();
     },
-    [advanced],
+    [wake],
   );
 
   function measureLayout() {
@@ -594,18 +430,42 @@ export function PageThread() {
     });
     piecesRef.current = trunkPieces;
     chainRef.current = pieces;
-    spikesRef.current ??= createThreadSpikes(
+    twistRef.current ??= createTwistPainter(
       liveSvg,
-      taperGroupRef.current,
+      endFrayGroupRef.current,
       TRUNK_CUT_ID,
       () => 0,
-      reducedMotion(),
     );
-    spikesRef.current.measured(pathsRef.current, trunkPieces, main);
-    stopRetrace();
+    /* Built once, and again when the reader's motion preference changes, which re-measures. */
+    const reduced = reducedMotion();
+    if (swayRef.current?.reduced !== reduced) {
+      swayRef.current?.stop();
+      swayRef.current = createThreadSway(liveSvg, reduced);
+    }
+    swayRef.current.measured(main);
+    twistRef.current.measured(
+      pathsRef.current,
+      trunkPieces,
+      swayRef.current.baseOf,
+    );
     head()?.reset();
+    tip()?.reset();
+    const cordWidth = tokenLength("--stroke-thread");
+    frayRef.current = frayShape(cordWidth);
+    const { samples: chainSamples, crossings } = lineCrossings(
+      subpaths,
+      pieces,
+      cordWidth,
+    );
+    crossingPainter()?.measured(
+      crossings,
+      (piece) => chainSamples[piece],
+      (piece) => (piece < range.start ? piece : undefined),
+      cordWidth / 2,
+      swayAmplitude(),
+    );
     const invitePiece = trunkPieces[0];
-    taper()?.set(
+    endFray()?.set(
       invitePiece === undefined
         ? undefined
         : {
@@ -614,7 +474,15 @@ export function PageThread() {
             endAt: 0,
             direction: -1,
           },
-      taperOptions(),
+      frayRef.current,
+    );
+    const endGroup = endFrayGroupRef.current;
+    const invitePath = pathsRef.current[0];
+    shadows()?.measured(
+      pathsRef.current,
+      endGroup === null || invitePath === null || invitePath === undefined
+        ? undefined
+        : { group: endGroup, piece: invitePath },
     );
     groupRectsRef.current = groupRects;
     rangesRef.current = ranges;
@@ -627,8 +495,9 @@ export function PageThread() {
       stopOpeningRef.current();
       catchUpRef.current?.stop();
       clearPieceDashes(pathsRef.current);
-      spikesRef.current?.painted(Number.POSITIVE_INFINITY);
-      taper()?.paint(Number.POSITIVE_INFINITY);
+      twistRef.current?.painted(Number.POSITIVE_INFINITY);
+      endFray()?.paint(Number.POSITIVE_INFINITY);
+      crossingPainter()?.painted(() => Number.POSITIVE_INFINITY);
     } else {
       /* The path this ratchet's maximum was measured against no longer exists. The maximum is
          REBASED rather than discarded: it is the only thing holding the owner's "and then stay
@@ -636,7 +505,7 @@ export function PageThread() {
          opening draw's own floor is still RE-DERIVED from the new ranges rather than carried across
          as a stale length -- without it, a resize at the very top after the sequence has run would
          unravel the invite's thread and leave a reader who has not scrolled looking at nothing. The
-         rebase is not movement, so it does not start the re-trace's settle interval over. */
+         rebase is not an interaction, so it does not wake the page. */
       ratchetRef.current.rebase(
         totalLength(previousRanges),
         totalLength(ranges),
@@ -652,25 +521,18 @@ export function PageThread() {
           openingFloor(rangesRef.current, openingCompleteRef.current),
         ),
       );
-      drawnRef.current = drawn;
       draw(drawn);
     }
-    syncRetrace();
   }
 
   /* The cheap half of the old `measure`. A viewport-height change moves where the draw window starts
      and ends and changes nothing else about the page's geometry, so this re-reads the two window
-     values and re-paints the drawn length. It deliberately does NOT reset the head, stop the
-     re-trace, re-measure sections or rebase the ratchet -- doing those mid-scroll is what the owner
-     saw as glitches.
+     values and re-paints the drawn length. It deliberately does NOT reset the head, re-measure
+     sections or rebase the ratchet -- doing those mid-scroll is what the owner saw as glitches.
 
-     It paints the way `measureLayout` does rather than through `commitScrolled`, for two separate
-     reasons: there is no TRAVEL (easing a layout change the reader did not ask for would animate the
-     thread sideways under them), and it must not ARM the re-trace. `advanced` is what arms it, and
-     both `commit` and `commitScrolled` call it unconditionally -- so a URL bar moving would start
-     the re-trace's settle interval, which is the owner's third reported symptom ("the re-trace
-     running where no thread is drawn"). `syncRetrace` still runs, so the loop's target segments
-     follow the new window without the page being treated as moving. */
+     It paints the way `measureLayout` does rather than through `commitScrolled`: there is no TRAVEL
+     (easing a layout change the reader did not ask for would animate the thread sideways under them),
+     and a URL bar moving is not an interaction, so it does not wake the page. */
   function refreshWindow() {
     if (reducedMotion()) return;
     viewportHeightRef.current = window.innerHeight;
@@ -687,9 +549,7 @@ export function PageThread() {
       ),
     );
     catchUpRef.current?.seen(drawn);
-    drawnRef.current = drawn;
     draw(drawn);
-    syncRetrace();
   }
 
   useLayoutTriggers(measureLayout, refreshWindow);
@@ -741,9 +601,6 @@ export function PageThread() {
                gate that parks a section before it lands measures the race, not the thread
                (`check-thread-joins.mjs`). Never set under reduced motion, where no opening runs. */
             liveSvgRef.current?.setAttribute("data-thread-opened", "true");
-            /* The opening draw ends in a stop, not a scroll, so the cue's loop begins now rather than
-               after the settle interval a reader's own scroll waits out. */
-            rest();
           }
         };
         rafId = window.requestAnimationFrame(step);
@@ -772,12 +629,13 @@ export function PageThread() {
       motion.removeEventListener("change", onMotionChange);
       stopCurrent();
     };
-  }, [commit, rest]);
+  }, [commit]);
 
   useEffect(() => {
     let rafId: number | null = null;
 
     function onScroll() {
+      restSway(SCROLL_REST_MS);
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
@@ -797,44 +655,30 @@ export function PageThread() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [commitScrolled]);
+  }, [commitScrolled, restSway]);
 
-  /* A hidden tab is throttled by rAF but not stopped, and a throttled chain still holds the main
-     thread, so it is cancelled outright. The clock's zero moves forward by exactly the time spent
-     hidden on the way back, so the loop resumes where it was and the budget has spent nothing: what the
-     page does must not depend on the reader switching tabs. */
+  /* A hidden tab stops the sway; coming back resumes it after a rest unless the page has gone idle, since a tab
+     coming back is not an interaction. */
   useEffect(() => {
     function onVisibility() {
-      const now = performance.now();
-      if (document.visibilityState === "hidden") {
-        setSwayAwake(false);
-        if (retraceFrameRef.current === null) return;
-        window.cancelAnimationFrame(retraceFrameRef.current);
-        retraceFrameRef.current = null;
-        retraceSuspendedAtRef.current = now;
-        return;
-      }
-      const suspendedAt = retraceSuspendedAtRef.current;
-      if (suspendedAt !== null && retraceStartRef.current !== null) {
-        retraceStartRef.current += now - suspendedAt;
-      }
-      retraceSuspendedAtRef.current = null;
-      /* Coming back resumes what was running; it is not an interaction, so an idle page stays idle. */
-      setSwayAwake(!idleRef.current);
-      syncRetrace();
+      if (document.visibilityState === "hidden") syncSway();
+      else restSway(RETURN_REST_MS);
     }
     document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [syncRetrace]);
+    /* A remount mid-rest (a fast refresh, a navigation back) inherits the page-wide sleeping sway: the cleanup drops
+       the rest it cancels, and the mount settles the sway from this page's own state. */
+    syncSway();
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (restTimerRef.current !== null)
+        window.clearTimeout(restTimerRef.current);
+      restTimerRef.current = null;
+    };
+  }, [restSway, syncSway]);
 
-  /* A tap, click or key wakes the page as a scroll does; a page that had gone idle also gets its
-     re-trace back once it is still. The idle clock starts at load. */
+  /* A tap, click or key wakes the page as a scroll does. The idle clock starts at load. */
   useEffect(() => {
-    function onInteraction() {
-      const wasIdle = idleRef.current;
-      wake();
-      if (wasIdle) syncRetrace();
-    }
+    const onInteraction = () => wake();
     wake();
     const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
     for (const name of events)
@@ -845,22 +689,20 @@ export function PageThread() {
       if (idleTimerRef.current !== null)
         window.clearTimeout(idleTimerRef.current);
     };
-  }, [wake, syncRetrace]);
+  }, [wake]);
 
   useEffect(
     () => () => {
-      if (settleTimerRef.current !== null) {
-        window.clearTimeout(settleTimerRef.current);
-      }
-      stopRetrace();
-      spikesRef.current?.stop();
+      swayRef.current?.stop();
     },
-    [stopRetrace],
+    [],
   );
 
   return (
     <span aria-hidden="true" className={styles.pageWrapper} ref={wrapperRef}>
       <style>{FALLBACK_STYLE}</style>
+      {/* The page's one copy of the shadow and halo filters; Wishes' card thread names them too. */}
+      <ThreadFilters />
       <svg
         className={styles.pageRoot}
         data-thread-svg="true"
@@ -899,7 +741,8 @@ export function PageThread() {
             like the fallback's own `band` keys above: the SET of pieces this page draws is fixed
             (structural, band-invariant -- `MAIN_PIECE_COUNT`'s own header), so index and identity
             never diverge here. */}
-        <TaperCutMask cutRef={cutRef} id={TRUNK_CUT_ID} />
+        <EndCutMask cutRef={cutRef} id={TRUNK_CUT_ID} />
+        <defs ref={shadowDefsRef} />
         {Array.from({ length: MAIN_PIECE_COUNT }, (_, index) => (
           <ThreadInk
             cutId={index === 0 ? TRUNK_CUT_ID : undefined}
@@ -911,10 +754,19 @@ export function PageThread() {
             }}
           />
         ))}
-        <g className={styles.pageTaper} data-thread-taper ref={taperGroupRef} />
-        <g className={styles.pageRetraceGlow} ref={retraceGlowRef} />
-        <g className={styles.pageRetrace} ref={retraceGroupRef} />
+        <g className={styles.pageFray} data-thread-fray ref={endFrayGroupRef} />
+        <g className={styles.pageTip} data-thread-tip ref={tipGroupRef} />
+        <g
+          className={styles.pageCrossings}
+          data-thread-crossings="under"
+          ref={crossingsUnderRef}
+        />
         <g className={styles.pageHead} data-thread-head ref={headGroupRef} />
+        <g
+          className={styles.pageCrossings}
+          data-thread-crossings="over"
+          ref={crossingsOverRef}
+        />
       </svg>
     </span>
   );

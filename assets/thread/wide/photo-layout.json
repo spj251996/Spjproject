@@ -1,0 +1,931 @@
+{
+  "width": 1536,
+  "portraits": [
+    {
+      "x": 468,
+      "y": 1630.5
+    },
+    {
+      "x": 588,
+      "y": 1630.5
+    },
+    {
+      "x": 468,
+      "y": 1758.5
+    },
+    {
+      "x": 588,
+      "y": 1758.5
+    },
+    {
+      "x": 948,
+      "y": 1630.5
+    },
+    {
+      "x": 1068,
+      "y": 1630.5
+    },
+    {
+      "x": 888,
+      "y": 1758.5
+    },
+    {
+      "x": 1008,
+      "y": 1758.5
+    },
+    {
+      "x": 1128,
+      "y": 1758.5
+    },
+    {
+      "x": 1008,
+      "y": 1886.5
+    }
+  ],
+  "strip": 190,
+  "sections": [
+    {
+      "id": "invite",
+      "top": 0,
+      "bottom": 695
+    },
+    {
+      "id": "event-info",
+      "top": 695,
+      "bottom": 1390
+    },
+    {
+      "id": "family",
+      "top": 1390,
+      "bottom": 2085
+    },
+    {
+      "id": "celebrations",
+      "top": 2085,
+      "bottom": 4183.5
+    },
+    {
+      "id": "wishes",
+      "top": 4183.5,
+      "bottom": 4878.5
+    }
+  ],
+  "rows": [
+    {
+      "top": 2443.5,
+      "descBottom": 2595.5,
+      "stripBottom": 2809.5,
+      "textLeft": 400,
+      "textRight": 1125.953125
+    },
+    {
+      "top": 2833.5,
+      "descBottom": 2985.5,
+      "stripBottom": 3199.5,
+      "textLeft": 400,
+      "textRight": 1120
+    },
+    {
+      "top": 3223.5,
+      "descBottom": 3401.5,
+      "stripBottom": 3615.5,
+      "textLeft": 400,
+      "textRight": 1132.625
+    },
+    {
+      "top": 3639.5,
+      "descBottom": 3817.5,
+      "stripBottom": 4031.5,
+      "textLeft": 400,
+      "textRight": 1129.171875
+    }
+  ],
+  "glyphs": [
+    {
+      "left": 705.4375,
+      "right": 830.5625,
+      "top": 110.609375,
+      "bottom": 123.609375,
+      "text": "By God’s Grace"
+    },
+    {
+      "left": 562.25,
+      "right": 973.75,
+      "top": 339.40625,
+      "bottom": 356.40625,
+      "text": "joyfully invite you to share in the cele"
+    },
+    {
+      "left": 730.078125,
+      "right": 805.921875,
+      "top": 397.40625,
+      "bottom": 413.40625,
+      "text": "Saturday"
+    },
+    {
+      "left": 671.40625,
+      "right": 697.078125,
+      "top": 427.40625,
+      "bottom": 443.40625,
+      "text": "Jan"
+    },
+    {
+      "left": 755.6875,
+      "right": 780.296875,
+      "top": 405.40625,
+      "bottom": 464.40625,
+      "text": "9"
+    },
+    {
+      "left": 838.921875,
+      "right": 872.484375,
+      "top": 427.40625,
+      "bottom": 443.40625,
+      "text": "2027"
+    },
+    {
+      "left": 747.484375,
+      "right": 788.5,
+      "top": 460.40625,
+      "bottom": 479.40625,
+      "text": "Kerala"
+    },
+    {
+      "left": 521.53125,
+      "right": 1014.46875,
+      "top": 546,
+      "bottom": 561,
+      "text": "with all humility and gentleness, with p"
+    },
+    {
+      "left": 721.28125,
+      "right": 814.703125,
+      "top": 572,
+      "bottom": 587,
+      "text": "— Ephesians 4:2"
+    },
+    {
+      "left": 481.703125,
+      "right": 574.296875,
+      "top": 812.5,
+      "bottom": 825.5,
+      "text": "Betrothal"
+    },
+    {
+      "left": 456.8125,
+      "right": 599.171875,
+      "top": 839.5,
+      "bottom": 879.5,
+      "text": "A Promise"
+    },
+    {
+      "left": 445.703125,
+      "right": 503.8125,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "Monday,"
+    },
+    {
+      "left": 503.8125,
+      "right": 511.21875,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "4"
+    },
+    {
+      "left": 511.21875,
+      "right": 524.015625,
+      "top": 898.84375,
+      "bottom": 913.84375,
+      "text": "th"
+    },
+    {
+      "left": 527.28125,
+      "right": 577.09375,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "January"
+    },
+    {
+      "left": 580.25,
+      "right": 610.296875,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "2027"
+    },
+    {
+      "left": 434.375,
+      "right": 506.65625,
+      "top": 933.5,
+      "bottom": 952.5,
+      "text": "Paroppadi,"
+    },
+    {
+      "left": 506.65625,
+      "right": 621.625,
+      "top": 933.5,
+      "bottom": 952.5,
+      "text": "Kozhikode, Kerala"
+    },
+    {
+      "left": 452.984375,
+      "right": 512.0625,
+      "top": 993.5,
+      "bottom": 1012.5,
+      "text": "10:30 AM"
+    },
+    {
+      "left": 534.0625,
+      "right": 594.765625,
+      "top": 993.5,
+      "bottom": 1012.5,
+      "text": "Betrothal"
+    },
+    {
+      "left": 452.984375,
+      "right": 534.546875,
+      "top": 1021.5,
+      "bottom": 1038.5,
+      "text": "St. Antony's"
+    },
+    {
+      "left": 534.546875,
+      "right": 625.796875,
+      "top": 1021.5,
+      "bottom": 1038.5,
+      "text": "Syro-Malabar"
+    },
+    {
+      "left": 625.796875,
+      "right": 679.578125,
+      "top": 1021.5,
+      "bottom": 1038.5,
+      "text": "Church"
+    },
+    {
+      "left": 492.984375,
+      "right": 589.203125,
+      "top": 1064.5,
+      "bottom": 1081.5,
+      "text": "Get directions"
+    },
+    {
+      "left": 452.984375,
+      "right": 510.75,
+      "top": 1123.5,
+      "bottom": 1142.5,
+      "text": "12:30 PM"
+    },
+    {
+      "left": 532.75,
+      "right": 597.75,
+      "top": 1123.5,
+      "bottom": 1142.5,
+      "text": "Reception"
+    },
+    {
+      "left": 452.984375,
+      "right": 661.203125,
+      "top": 1151.5,
+      "bottom": 1168.5,
+      "text": "St. Antony's Church Parish Hall"
+    },
+    {
+      "left": 492.984375,
+      "right": 589.203125,
+      "top": 1194.5,
+      "bottom": 1211.5,
+      "text": "Get directions"
+    },
+    {
+      "left": 970.796875,
+      "right": 1045.1875,
+      "top": 812.5,
+      "bottom": 825.5,
+      "text": "Wedding"
+    },
+    {
+      "left": 902.53125,
+      "right": 1113.46875,
+      "top": 839.5,
+      "bottom": 879.5,
+      "text": "A Life Together"
+    },
+    {
+      "left": 922.375,
+      "right": 986.78125,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "Saturday,"
+    },
+    {
+      "left": 986.78125,
+      "right": 994.53125,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "9"
+    },
+    {
+      "left": 994.53125,
+      "right": 1007.328125,
+      "top": 898.84375,
+      "bottom": 913.84375,
+      "text": "th"
+    },
+    {
+      "left": 1010.59375,
+      "right": 1060.40625,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "January"
+    },
+    {
+      "left": 1063.5625,
+      "right": 1093.609375,
+      "top": 901.5,
+      "bottom": 920.5,
+      "text": "2027"
+    },
+    {
+      "left": 893.890625,
+      "right": 1003.6875,
+      "top": 933.5,
+      "bottom": 952.5,
+      "text": "Koothattukulam,"
+    },
+    {
+      "left": 1003.6875,
+      "right": 1122.09375,
+      "top": 933.5,
+      "bottom": 952.5,
+      "text": "Ernakulam, Kerala"
+    },
+    {
+      "left": 890.578125,
+      "right": 949.65625,
+      "top": 993.5,
+      "bottom": 1012.5,
+      "text": "10:30 AM"
+    },
+    {
+      "left": 971.65625,
+      "right": 1028.6875,
+      "top": 993.5,
+      "bottom": 1012.5,
+      "text": "Wedding"
+    },
+    {
+      "left": 890.578125,
+      "right": 1197.71875,
+      "top": 1021.5,
+      "bottom": 1038.5,
+      "text": "St. John the Baptist Catholic Church, Va"
+    },
+    {
+      "left": 930.578125,
+      "right": 1026.796875,
+      "top": 1064.5,
+      "bottom": 1081.5,
+      "text": "Get directions"
+    },
+    {
+      "left": 890.578125,
+      "right": 948.34375,
+      "top": 1123.5,
+      "bottom": 1142.5,
+      "text": "12:30 PM"
+    },
+    {
+      "left": 970.34375,
+      "right": 1035.34375,
+      "top": 1123.5,
+      "bottom": 1142.5,
+      "text": "Reception"
+    },
+    {
+      "left": 890.578125,
+      "right": 1111.96875,
+      "top": 1151.5,
+      "bottom": 1168.5,
+      "text": "Thuvampallil Convention Centre"
+    },
+    {
+      "left": 930.578125,
+      "right": 1026.796875,
+      "top": 1194.5,
+      "bottom": 1211.5,
+      "text": "Get directions"
+    },
+    {
+      "left": 467.546875,
+      "right": 588.4375,
+      "top": 1499.5,
+      "bottom": 1512.5,
+      "text": "Bride's Family"
+    },
+    {
+      "left": 441.109375,
+      "right": 614.890625,
+      "top": 1522.5,
+      "bottom": 1562.5,
+      "text": "Edatt Family"
+    },
+    {
+      "left": 465.6875,
+      "right": 590.296875,
+      "top": 1571.5,
+      "bottom": 1586.5,
+      "text": "Harinagar, New Delhi"
+    },
+    {
+      "left": 423.453125,
+      "right": 512.53125,
+      "top": 1674.5,
+      "bottom": 1691.5,
+      "text": "Minimol Roy"
+    },
+    {
+      "left": 447.890625,
+      "right": 488.09375,
+      "top": 1695.5,
+      "bottom": 1710.5,
+      "text": "Mother"
+    },
+    {
+      "left": 537.921875,
+      "right": 638.078125,
+      "top": 1674.5,
+      "bottom": 1691.5,
+      "text": "Roy John Edatt"
+    },
+    {
+      "left": 569.6875,
+      "right": 606.3125,
+      "top": 1695.5,
+      "bottom": 1710.5,
+      "text": "Father"
+    },
+    {
+      "left": 446.796875,
+      "right": 489.203125,
+      "top": 1802.5,
+      "bottom": 1819.5,
+      "text": "Flemy"
+    },
+    {
+      "left": 452.546875,
+      "right": 483.4375,
+      "top": 1823.5,
+      "bottom": 1838.5,
+      "text": "Bride"
+    },
+    {
+      "left": 570.28125,
+      "right": 605.703125,
+      "top": 1802.5,
+      "bottom": 1819.5,
+      "text": "Amal"
+    },
+    {
+      "left": 566.765625,
+      "right": 609.21875,
+      "top": 1823.5,
+      "bottom": 1838.5,
+      "text": "Brother"
+    },
+    {
+      "left": 942.65625,
+      "right": 1073.328125,
+      "top": 1499.5,
+      "bottom": 1512.5,
+      "text": "Groom's Family"
+    },
+    {
+      "left": 899.796875,
+      "right": 1116.1875,
+      "top": 1522.5,
+      "bottom": 1562.5,
+      "text": "Plackeel Family"
+    },
+    {
+      "left": 910.875,
+      "right": 1105.109375,
+      "top": 1571.5,
+      "bottom": 1586.5,
+      "text": "Vadakara, Koothattukulam, Kerala"
+    },
+    {
+      "left": 908.515625,
+      "right": 987.484375,
+      "top": 1674.5,
+      "bottom": 1691.5,
+      "text": "Rani Joseph"
+    },
+    {
+      "left": 927.890625,
+      "right": 968.09375,
+      "top": 1695.5,
+      "bottom": 1710.5,
+      "text": "Mother"
+    },
+    {
+      "left": 1032.046875,
+      "right": 1103.9375,
+      "top": 1674.5,
+      "bottom": 1691.5,
+      "text": "P D Joseph"
+    },
+    {
+      "left": 1049.6875,
+      "right": 1086.3125,
+      "top": 1695.5,
+      "bottom": 1710.5,
+      "text": "Father"
+    },
+    {
+      "left": 859.75,
+      "right": 916.25,
+      "top": 1802.5,
+      "bottom": 1819.5,
+      "text": "Marietta"
+    },
+    {
+      "left": 872.5,
+      "right": 903.5,
+      "top": 1823.5,
+      "bottom": 1838.5,
+      "text": "Sister"
+    },
+    {
+      "left": 988.03125,
+      "right": 1027.96875,
+      "top": 1802.5,
+      "bottom": 1819.5,
+      "text": "Harry"
+    },
+    {
+      "left": 965.34375,
+      "right": 1050.65625,
+      "top": 1823.5,
+      "bottom": 1838.5,
+      "text": "Brother-in-law"
+    },
+    {
+      "left": 1106.984375,
+      "right": 1149.015625,
+      "top": 1802.5,
+      "bottom": 1819.5,
+      "text": "Oliver"
+    },
+    {
+      "left": 1105.8125,
+      "right": 1150.1875,
+      "top": 1823.5,
+      "bottom": 1838.5,
+      "text": "Nephew"
+    },
+    {
+      "left": 976.515625,
+      "right": 1039.46875,
+      "top": 1930.5,
+      "bottom": 1947.5,
+      "text": "Sebastian"
+    },
+    {
+      "left": 988.9375,
+      "right": 1027.0625,
+      "top": 1951.5,
+      "bottom": 1966.5,
+      "text": "Groom"
+    },
+    {
+      "left": 702.0625,
+      "right": 833.9375,
+      "top": 2266.5,
+      "bottom": 2279.5,
+      "text": "Our traditions"
+    },
+    {
+      "left": 649.5,
+      "right": 886.5,
+      "top": 2293.5,
+      "bottom": 2333.5,
+      "text": "The Celebrations"
+    },
+    {
+      "left": 567.78125,
+      "right": 968.203125,
+      "top": 2347.5,
+      "bottom": 2364.5,
+      "text": "A look at the ceremonies and rituals tha"
+    },
+    {
+      "left": 608.3125,
+      "right": 927.671875,
+      "top": 2389.5,
+      "bottom": 2406.5,
+      "text": "Moments leading up to the day, shared as"
+    },
+    {
+      "left": 424.484375,
+      "right": 531.265625,
+      "top": 2447.5,
+      "bottom": 2471.5,
+      "text": "Wedding Eve"
+    },
+    {
+      "left": 555.265625,
+      "right": 636.515625,
+      "top": 2454.5,
+      "bottom": 2471.5,
+      "text": "മധുരംവെപ്പ്"
+    },
+    {
+      "left": 400,
+      "right": 665.03125,
+      "top": 2487.5,
+      "bottom": 2504.5,
+      "text": "Where the celebrations begin with sweetn"
+    },
+    {
+      "left": 400,
+      "right": 1125.953125,
+      "top": 2521.5,
+      "bottom": 2538.5,
+      "text": "Madhuramveppu is a pre-wedding tradition"
+    },
+    {
+      "left": 400,
+      "right": 1109.015625,
+      "top": 2547.5,
+      "bottom": 2564.5,
+      "text": "Madhuramveppu is a pre-wedding tradition"
+    },
+    {
+      "left": 400,
+      "right": 565.96875,
+      "top": 2573.5,
+      "bottom": 2590.5,
+      "text": "Madhuramveppu is a pre-wedding tradition"
+    },
+    {
+      "left": 1015.53125,
+      "right": 1031.59375,
+      "top": 2677.5,
+      "bottom": 2694.5,
+      "text": "+3"
+    },
+    {
+      "left": 1043.296875,
+      "right": 1120,
+      "top": 2778.5,
+      "bottom": 2795.5,
+      "text": "View photos"
+    },
+    {
+      "left": 424.484375,
+      "right": 502.515625,
+      "top": 2837.5,
+      "bottom": 2861.5,
+      "text": "Betrothal"
+    },
+    {
+      "left": 526.515625,
+      "right": 604.703125,
+      "top": 2844.5,
+      "bottom": 2861.5,
+      "text": "മനസ്സമ്മതം"
+    },
+    {
+      "left": 400,
+      "right": 551.265625,
+      "top": 2877.5,
+      "bottom": 2894.5,
+      "text": "Where a promise is made."
+    },
+    {
+      "left": 400,
+      "right": 1087.8125,
+      "top": 2911.5,
+      "bottom": 2928.5,
+      "text": "A sacred commitment made in the presence"
+    },
+    {
+      "left": 400,
+      "right": 1104.171875,
+      "top": 2937.5,
+      "bottom": 2954.5,
+      "text": "A sacred commitment made in the presence"
+    },
+    {
+      "left": 400,
+      "right": 622.796875,
+      "top": 2963.5,
+      "bottom": 2980.5,
+      "text": "A sacred commitment made in the presence"
+    },
+    {
+      "left": 1015.53125,
+      "right": 1031.59375,
+      "top": 3067.5,
+      "bottom": 3084.5,
+      "text": "+3"
+    },
+    {
+      "left": 1043.296875,
+      "right": 1120,
+      "top": 3168.5,
+      "bottom": 3185.5,
+      "text": "View photos"
+    },
+    {
+      "left": 424.484375,
+      "right": 497.8125,
+      "top": 3227.5,
+      "bottom": 3251.5,
+      "text": "Wedding"
+    },
+    {
+      "left": 521.8125,
+      "right": 584.109375,
+      "top": 3234.5,
+      "bottom": 3251.5,
+      "text": "വിവാഹം"
+    },
+    {
+      "left": 400,
+      "right": 569.546875,
+      "top": 3267.5,
+      "bottom": 3284.5,
+      "text": "Where two lives become one."
+    },
+    {
+      "left": 400,
+      "right": 1127.78125,
+      "top": 3301.5,
+      "bottom": 3318.5,
+      "text": "Rooted in the beautiful traditions of th"
+    },
+    {
+      "left": 400,
+      "right": 1127.65625,
+      "top": 3327.5,
+      "bottom": 3344.5,
+      "text": "Rooted in the beautiful traditions of th"
+    },
+    {
+      "left": 400,
+      "right": 1132.625,
+      "top": 3353.5,
+      "bottom": 3370.5,
+      "text": "Rooted in the beautiful traditions of th"
+    },
+    {
+      "left": 400,
+      "right": 980.453125,
+      "top": 3379.5,
+      "bottom": 3396.5,
+      "text": "Rooted in the beautiful traditions of th"
+    },
+    {
+      "left": 1015.53125,
+      "right": 1031.59375,
+      "top": 3483.5,
+      "bottom": 3500.5,
+      "text": "+3"
+    },
+    {
+      "left": 1043.296875,
+      "right": 1120,
+      "top": 3584.5,
+      "bottom": 3601.5,
+      "text": "View photos"
+    },
+    {
+      "left": 424.484375,
+      "right": 547.34375,
+      "top": 3643.5,
+      "bottom": 3667.5,
+      "text": "Tying the Knot"
+    },
+    {
+      "left": 571.34375,
+      "right": 640.546875,
+      "top": 3650.5,
+      "bottom": 3667.5,
+      "text": "മിന്നുകെട്ട്"
+    },
+    {
+      "left": 400,
+      "right": 592.0625,
+      "top": 3683.5,
+      "bottom": 3700.5,
+      "text": "A promise tied close to the heart."
+    },
+    {
+      "left": 400,
+      "right": 1129.171875,
+      "top": 3717.5,
+      "bottom": 3734.5,
+      "text": "The Minnukettu and Manthrakodi are cheri"
+    },
+    {
+      "left": 400,
+      "right": 1115.078125,
+      "top": 3743.5,
+      "bottom": 3760.5,
+      "text": "The Minnukettu and Manthrakodi are cheri"
+    },
+    {
+      "left": 400,
+      "right": 1097.546875,
+      "top": 3769.5,
+      "bottom": 3786.5,
+      "text": "The Minnukettu and Manthrakodi are cheri"
+    },
+    {
+      "left": 400,
+      "right": 737.546875,
+      "top": 3795.5,
+      "bottom": 3812.5,
+      "text": "The Minnukettu and Manthrakodi are cheri"
+    },
+    {
+      "left": 1015.53125,
+      "right": 1031.59375,
+      "top": 3899.5,
+      "bottom": 3916.5,
+      "text": "+3"
+    },
+    {
+      "left": 1043.296875,
+      "right": 1120,
+      "top": 4000.5,
+      "bottom": 4017.5,
+      "text": "View photos"
+    },
+    {
+      "left": 529.953125,
+      "right": 646.03125,
+      "top": 4345.0625,
+      "bottom": 4358.0625,
+      "text": "A life in love"
+    },
+    {
+      "left": 368.125,
+      "right": 807.859375,
+      "top": 4390.0625,
+      "bottom": 4407.0625,
+      "text": "Love is patient, love is kind. It does n"
+    },
+    {
+      "left": 389.78125,
+      "right": 786.21875,
+      "top": 4416.0625,
+      "bottom": 4433.0625,
+      "text": "Love is patient, love is kind. It does n"
+    },
+    {
+      "left": 457.515625,
+      "right": 718.46875,
+      "top": 4442.0625,
+      "bottom": 4459.0625,
+      "text": "Love is patient, love is kind. It does n"
+    },
+    {
+      "left": 520.421875,
+      "right": 655.578125,
+      "top": 4483.0625,
+      "bottom": 4498.0625,
+      "text": "— 1 Corinthians 13:4–5"
+    },
+    {
+      "left": 523.390625,
+      "right": 652.59375,
+      "top": 4677.421875,
+      "bottom": 4692.421875,
+      "text": "With love and joy, from"
+    },
+    {
+      "left": 453.078125,
+      "right": 722.921875,
+      "top": 4703.421875,
+      "bottom": 4718.421875,
+      "text": "Marietta Joseph, Harry William & Amal Ro"
+    },
+    {
+      "left": 683.984375,
+      "right": 722.265625,
+      "top": 4847.5,
+      "bottom": 4862.5,
+      "text": "Design"
+    },
+    {
+      "left": 732.59375,
+      "right": 852,
+      "top": 4847.5,
+      "bottom": 4862.5,
+      "text": "Aishwarya Ganesan"
+    }
+  ]
+}

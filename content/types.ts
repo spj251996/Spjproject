@@ -56,6 +56,8 @@ export interface FamilyGroup {
   id: string;
   side: "bride" | "groom";
   familyName: string;
+  /** Where the family is from or based, in the couple's words — rendered beneath the family name. */
+  origin: string;
   members: FamilyMember[];
 }
 
@@ -94,4 +96,13 @@ export interface FormattedDate {
   /** The ISO date this was formatted from, carried so a caller can emit `<time datetime>` without
       being handed the raw value separately. */
   iso: string;
+}
+
+/** The site's credit to its designer (PROJECT.md → Content Model → DesignerCredit). */
+export interface DesignerCredit {
+  /** The word before the name — "Design". */
+  lead: string;
+  name: string;
+  /** The name's link: an https URL. */
+  url: string;
 }

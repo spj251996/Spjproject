@@ -6,29 +6,31 @@
    fallback below is itself server-rendered. */
 
 import { authoredCard } from "./thread-authored-layout.ts";
-import { aspectQuery, type BandId, THREAD_BANDS } from "./thread-bands.ts";
-import { sectionBox } from "./thread-boxes.ts";
+import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
 import { threadLine } from "./thread-line.ts";
-import { THREAD_IDS } from "./thread-paths.ts";
+import { type PhotoCombination, THREAD_IDS } from "./thread-paths.ts";
 import type { MeasuredSection } from "./thread-warp.ts";
 
 const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g;
 
 /* An IDENTITY warp (a band's own authored card/section figures as both `from` and `to`) reproduces
    the authored geometry exactly (`thread-line.test.ts`'s own identity test) — what every static,
-   script-free render of this page (the no-JS fallback) draws from. */
-export function authoredMeasuredSections(band: BandId): MeasuredSection[] {
+   script-free render of this page (the no-JS fallback) draws from. Celebrations is as tall as its
+   photographed rituals make it, as `authoredCard` composes it. */
+export function authoredMeasuredSections(
+  band: BandId,
+  combination?: PhotoCombination,
+): MeasuredSection[] {
   let top = 0;
   return THREAD_IDS.map((id) => {
-    const card = authoredCard(id, band);
-    const box = sectionBox(id, band);
+    const card = authoredCard(id, band, combination);
     const section: MeasuredSection = {
       top,
-      height: box.height,
+      height: card.sectionHeight,
       cardLeft: card.cardLeft,
       cardWidth: card.cardWidth,
     };
-    top += box.height;
+    top += card.sectionHeight;
     return section;
   });
 }
@@ -70,6 +72,6 @@ export const PAGE_FALLBACKS: Fallback[] = THREAD_BANDS.map((band) => {
   return {
     band: band.id,
     d: normalise(d, band.box.width, totalHeight),
-    media: aspectQuery(band.min, band.max),
+    media: band.media,
   };
 });

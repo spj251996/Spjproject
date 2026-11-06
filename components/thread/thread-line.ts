@@ -20,16 +20,21 @@
    copies of the same point (see the comments on `bakeMotif`'s neighbours and on the boundary loop in
    `threadLine` below for which side is authoritative and why). */
 
-import { authoredCard } from "./thread-authored-layout.ts";
+import { authoredCard, portraitPhotoWidth } from "./thread-authored-layout.ts";
 import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
-import type { MotifId, SectionBox, ThreadId } from "./thread-geometry.ts";
+import type {
+  MotifId,
+  SectionBox,
+  Tangent,
+  ThreadId,
+} from "./thread-geometry.ts";
 import { MOTIFS } from "./thread-motifs.ts";
 import {
   MOTIF_PLACEMENTS,
   type Placement,
   THREAD_IDS,
-  THREAD_PATHS,
 } from "./thread-paths.ts";
+import { threadPaths } from "./thread-photo-state.ts";
 import {
   type MeasuredSection,
   type Rect,
@@ -63,7 +68,7 @@ export type ThreadLine = {
      invent a rect for each one. */
   groupRects: readonly SectionRect[];
   /* ONE PIECE PER connector and per motif, in draw order, over the SAME cumulative scale as
-     `length`/`sections`. The thread has 19 pieces in all (16 on the main path; Wishes' card thread
+     `length`/`sections`. The thread has 17 pieces in all (14 on the main path; Wishes' card thread
      owns the other 3), each its own `<path>` with its own dash, because `stroke-dasharray` restarts
      at every `M` subpath. `page-thread.tsx` and
      `CardThread` give each piece its OWN `<path>` and its OWN dash, computed from its own
@@ -165,23 +170,6 @@ function bakeMotifPoint(
   return { x: placement.x + rx * side, y: placement.y + ry * side };
 }
 
-/* A connector's own authored `d` ends exactly at its neighbouring motif's authored entry/exit point
-   (`thread-paths.ts`'s header: a boundary is "sliced at the join it already passes through"). But
-   `warpSection` warps a connector PER AXIS (`thread-warp.ts`'s x/y each carry their own ratio) while
-   a motif's own points must warp with a single UNIFORM factor to hold its shape
-   (`bakeMotifPoint`/`bakeMotif` above) — and those two ratios need not be equal on a real measured
-   layout (a section's card width and its own height reflow independently). So the SAME authored
-   point, warped both ways, lands at two different pixels whenever the layout is anisotropic; a
-   synthetic layout with only a 5.9% width/height ratio difference already opens a ~0.1px gap at a
-   motif's own entry, which the `d` cannot afford under the "one continuous line" requirement this
-   module exists for.
-
-   The motif's transform is the one that must not bend — it measured 0.0% aspect spread under it, against 82.9% for either axis-independent alternative. The connector's endpoint carries
-   no such constraint, so IT yields: every connector point that touches a motif is snapped to that
-   motif's own baked entry/exit point after both are computed, rather than trusted as an independent
-   warp of the same authored coordinate. This is also the more literal reading of "connector k runs
-   from motif k's exit to motif k+1's entry" — the connector's endpoint IS the motif's point, not a
-   second, separately-derived copy of it. */
 function tokenizePath(d: string): string[] {
   return d.match(PATH_TOKEN) ?? [];
 }
@@ -197,11 +185,171 @@ function firstAndLastPoint(d: string): { first: Point; last: Point } {
   };
 }
 
-function withFirstPoint(d: string, point: Point): string {
-  const tokens = tokenizePath(d);
-  tokens[1] = String(point.x);
-  tokens[2] = String(point.y);
-  return tokens.join(" ");
+/* A connector's own authored `d` ends exactly at its neighbouring motif's authored entry/exit point
+   (`thread-paths.ts`'s header: a boundary is "sliced at the join it already passes through"). But
+   `warpSection` warps a connector PER AXIS (`thread-warp.ts`'s x/y each carry their own ratio) while
+   a motif's own points must warp with a single UNIFORM factor to hold its shape
+   (`bakeMotifPoint`/`bakeMotif` above) — and those two ratios need not be equal on a real measured
+   layout (a section's card width and its own height reflow independently). So the SAME authored
+   point, warped both ways, lands at two different pixels whenever the layout is anisotropic; a
+   synthetic layout with only a 5.9% width/height ratio difference already opens a ~0.1px gap at a
+   motif's own entry, which the `d` cannot afford under the "one continuous line" requirement this
+   module exists for.
+
+   The motif's transform is the one that must not bend — it measured 0.0% aspect spread under it, against 82.9% for either axis-independent alternative. The connector's endpoint carries
+   no such constraint, so IT yields: each connector end is joined to its motif's own baked entry/exit
+   (`joined`, below) rather than trusted as an independent warp of the same authored coordinate —
+   "connector k runs from motif k's exit to motif k+1's entry", so the connector's endpoint IS the
+   motif's point, not a second, separately-derived copy of it. */
+/* The least distance back along a connector, in page px, a motif join's correction is carried. Away
+   from the authored size a connector's end and its motif's can disagree by over 100px where the
+   window's shape is far from the authored one. */
+export const JOIN_EASE = 40;
+
+/* A connector's `M x y C …` path as its points: the anchor, then each cubic's two control points and
+   its end anchor. Every connector `warpSection` returns has exactly that shape. */
+function pathPoints(d: string): Point[] {
+  const numbers = tokenizePath(d)
+    .filter((token) => !/^[A-Za-z]$/.test(token))
+    .map(Number);
+  const points: Point[] = [];
+  for (let i = 0; i + 1 < numbers.length; i += 2)
+    points.push({ x: numbers[i], y: numbers[i + 1] });
+  return points;
+}
+
+function pointsPath(points: Point[]): string {
+  const round = (value: number) => String(Math.round(value * 1e6) / 1e6);
+  const out = [`M ${round(points[0].x)} ${round(points[0].y)}`];
+  for (let i = 1; i + 2 < points.length; i += 3)
+    out.push(
+      `C ${points
+        .slice(i, i + 3)
+        .map((p) => `${round(p.x)} ${round(p.y)}`)
+        .join(" ")}`,
+    );
+  return out.join(" ");
+}
+
+/* How far a motif's drawing is read for its direction at each end (px). A control point can sit a
+   fraction of a pixel from its anchor and point anywhere — the trimmed portrait ring's does — so
+   the direction is read over visible line instead. */
+const DIRECTION_REACH = 3;
+
+function unit(from: Point, to: Point): Point {
+  const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+  return { x: (to.x - from.x) / length, y: (to.y - from.y) / length };
+}
+
+/* The unit direction a motif's drawing leaves its first point and arrives at its last, read over
+   its first and last DIRECTION_REACH px: the direction a connector must share at the join. */
+function endDirections(points: Point[]): { leaving: Point; arriving: Point } {
+  const curve: Point[] = [points[0]];
+  for (let i = 1; i + 2 < points.length; i += 3) {
+    const a = curve[curve.length - 1];
+    for (let t = 1; t <= 16; t += 1)
+      curve.push(
+        pointOnCubic(a, points[i], points[i + 1], points[i + 2], t / 16),
+      );
+  }
+  const reached = (run: Point[]) => {
+    let length = 0;
+    for (let i = 1; i < run.length; i += 1) {
+      length += Math.hypot(run[i].x - run[i - 1].x, run[i].y - run[i - 1].y);
+      if (length >= DIRECTION_REACH) return run[i];
+    }
+    return run[run.length - 1];
+  };
+  const last = curve[curve.length - 1];
+  return {
+    leaving: unit(curve[0], reached(curve)),
+    arriving: unit(reached([...curve].reverse()), last),
+  };
+}
+
+/* How much of a connector a join redraws: four times the distance its end moves, and a pixel per
+   degree it must turn, so a large correction bends the line gently rather than hooking it; never
+   less than JOIN_EASE, and never more than half the connector, so its other end has room. */
+export function joinReach(
+  moved: number,
+  connectorLength: number,
+  turnDegrees = 0,
+): number {
+  return Math.min(
+    Math.max(JOIN_EASE, 4 * moved, turnDegrees),
+    connectorLength / 2,
+  );
+}
+
+/* One end of a connector joined to a motif. Where the warped connector already meets the motif (within
+   half a pixel and two degrees — every join at the authored size) its
+   end is set on the motif and its end control point turned onto the motif's direction. Anywhere else
+   the connector's last stretch, `joinReach` of it, is redrawn as one cubic: from the point that far
+   back, leaving in the connector's own direction there, to the motif's end, arriving in the motif's
+   direction — so however far the end had to move or turn, the line takes it in one smooth bend.
+   Snapping the end anchor alone would leave the turn to a control point a pixel from it. */
+export function joined(
+  d: string,
+  end: "start" | "finish",
+  point: Point,
+  direction: Point,
+): string {
+  /* Oriented so the connector runs away from the motif; `away` is the motif's direction carried on
+     into it. */
+  const points =
+    end === "start" ? pathPoints(d) : pathPoints(d).slice().reverse();
+  const away =
+    end === "start" ? direction : { x: -direction.x, y: -direction.y };
+  const tip = points[0];
+  const next =
+    points.slice(1).find((p) => Math.hypot(p.x - tip.x, p.y - tip.y) > 1e-9) ??
+    tip;
+  const own = unit(tip, next);
+  const moved = Math.hypot(point.x - tip.x, point.y - tip.y);
+  const turn =
+    (Math.acos(Math.max(-1, Math.min(1, own.x * away.x + own.y * away.y))) *
+      180) /
+    Math.PI;
+  const orient = (out: Point[]) =>
+    pointsPath(end === "start" ? out : out.slice().reverse());
+
+  if (moved < 0.5 && turn < 2) {
+    const out = points.slice();
+    out[0] = point;
+    if (out.length > 1) {
+      const arm = Math.hypot(points[1].x - tip.x, points[1].y - tip.y);
+      out[1] = { x: point.x + away.x * arm, y: point.y + away.y * arm };
+    }
+    return orient(out);
+  }
+
+  /* Distance along the connector from the joined end, at each anchor (every third point). */
+  const along: number[] = [0];
+  for (let n = 3; n < points.length; n += 3)
+    along.push(
+      along[along.length - 1] +
+        Math.hypot(
+          points[n].x - points[n - 3].x,
+          points[n].y - points[n - 3].y,
+        ),
+    );
+  const reach = joinReach(moved, along[along.length - 1], turn);
+  let j = along.findIndex((s) => s >= reach);
+  if (j <= 0) j = along.length - 1;
+  const from = points[3 * j];
+  /* Reaching the far end, the redraw keeps the direction the connector arrives there in, so the join
+     at that end is not undone. */
+  const onward =
+    3 * j + 1 < points.length
+      ? unit(from, points[3 * j + 1])
+      : unit(points[3 * j - 1], from);
+  const arm = Math.hypot(from.x - point.x, from.y - point.y) / 3;
+  return orient([
+    point,
+    { x: point.x + away.x * arm, y: point.y + away.y * arm },
+    { x: from.x - onward.x * arm, y: from.y - onward.y * arm },
+    ...points.slice(3 * j),
+  ]);
 }
 
 function withLastPoint(d: string, point: Point): string {
@@ -214,13 +362,11 @@ function withLastPoint(d: string, point: Point): string {
 /* PORTRAIT LOOP TAIL TRIM — the owner's ask: "can we trim the entry/exit
    tails of the motif so that connectors don't do weird turns there?" `portraitLoop`'s own drawn
    tails run nearly flat (entry angle -0.4deg, exit -29.8deg — `thread-motifs.ts`) before curving into
-   the loop proper, while the connectors either side of it were authored against those FULL,
-   untrimmed endpoints — measured on the real rendered page, the join turns
-   30-117 degrees at every band, far past what that shallow authored tangent alone would predict.
-   Dropping a fraction of the motif's own arc at each end moves the point the connector meets
-   further round the loop's curve, onto ink closer to the connector's actual angle of approach.
+   the loop proper. Dropping a fraction of the motif's own arc at each end moves the point a connector
+   meets further round the loop's curve, onto ink close to the line's angle of approach; the generator
+   joins the drawn line to these trimmed ends (`motifEnds`), so at the authored size no join turns.
 
-   Scoped to `portraitLoop` ONLY, at composition time — `thread-motifs.ts`'s seven drawings are
+   Scoped to `portraitLoop` ONLY, at composition time — `thread-motifs.ts`'s five drawings are
    owner-confirmed and off limits (`heart` is part-traced and part-composed by hand; re-tracing it
    would silently undo that hand work). ONE number, tunable on a render — the owner chose this over
    editing the drawing for exactly that reason.
@@ -230,6 +376,30 @@ function withLastPoint(d: string, point: Point): string {
    applied to a shorter curve exactly as it is applied to the full one, and cannot itself introduce a
    non-uniform squash: dropping arc length changes WHICH points get transformed, never how they do. */
 export const PORTRAIT_LOOP_TRIM_FRACTION = 0.12;
+
+/* Where the ring's loop is centred in its drawing's unit square: the centre of the largest circle
+   inside the trimmed loop, measured on the drawing and pinned by a test. The drawing is not centred
+   on (0.5, 0.5), so a ring placed by its square's centre sat 10–15px off the photo it wraps, with
+   only ~4px to spare when centred. */
+export const PORTRAIT_LOOP_CENTRE = { x: 0.547, y: 0.557 };
+
+/** The square centre that puts a portrait ring's loop centre on `photo`, for a ring of `side` px. */
+export function ringSquareCentre(
+  photo: Point,
+  ring: { turn: number; mirror?: boolean },
+  side: number,
+): Point {
+  let lx = PORTRAIT_LOOP_CENTRE.x - 0.5;
+  const ly = PORTRAIT_LOOP_CENTRE.y - 0.5;
+  if (ring.mirror) lx = -lx;
+  const radians = (ring.turn * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  return {
+    x: photo.x - (cos * lx - sin * ly) * side,
+    y: photo.y - (sin * lx + cos * ly) * side,
+  };
+}
 
 function bakeMotif(
   motifD: string,
@@ -542,6 +712,24 @@ function trimMotifTails(d: string, fraction: number): string {
   return parts.join(" ");
 }
 
+/* A motif's entry and exit as the page draws them: a portrait ring's are its TRIMMED tails' ends,
+   where a connector actually meets it. The generator joins the owner's line to these, so at the
+   authored size no join has to move and the drawing stands as drawn. Positions in the motif's unit
+   square, directions read over its visible line (`endDirections`). */
+export function motifEnds(motif: MotifId): { entry: Tangent; exit: Tangent } {
+  const own = MOTIFS[motif];
+  if (motif !== "portraitLoop") return { entry: own.entry, exit: own.exit };
+  const points = pathPoints(trimMotifTails(own.d, PORTRAIT_LOOP_TRIM_FRACTION));
+  const { leaving, arriving } = endDirections(points);
+  const first = points[0];
+  const last = points[points.length - 1];
+  const degrees = (v: Point) => (Math.atan2(v.y, v.x) * 180) / Math.PI;
+  return {
+    entry: { x: first.x / 100, y: first.y / 100, angle: degrees(leaving) },
+    exit: { x: last.x / 100, y: last.y / 100, angle: degrees(arriving) },
+  };
+}
+
 export function threadLine(
   band: BandId,
   sections: MeasuredSection[],
@@ -562,23 +750,54 @@ export function threadLine(
   const perSection: string[][] = THREAD_IDS.map((id, index) => {
     const from = authoredCard(id, band);
     const to = sections[index];
-    const connectors = THREAD_PATHS[band][id];
+    const connectors = threadPaths(band, id);
     const placements = MOTIF_PLACEMENTS[band][id];
     const sectionAnchors = anchors?.[id];
 
     const bakedMotifs = placements.map((placement, placementIndex) => {
       const anchor = sectionAnchors?.[placementIndex];
-      const warped = warpPlacement(placement, from, to, anchor);
+      const plain = warpPlacement(placement, from, to, anchor);
+      /* A portrait ring wraps its photo, and the photo follows the page's width tier rather than
+         the card, so an anchored ring is sized from the photo itself. */
+      const ringed =
+        anchor !== undefined &&
+        anchor.width > 0 &&
+        placement.motif === "portraitLoop"
+          ? {
+              ...plain,
+              scale:
+                (placement.scale * anchor.width) / portraitPhotoWidth(band),
+            }
+          : plain;
+      /* The anchor is the photo, and the ring's LOOP — not its drawing's square — sits on it. */
+      const warped =
+        anchor !== undefined && placement.motif === "portraitLoop"
+          ? {
+              ...ringed,
+              ...ringSquareCentre(
+                ringed,
+                ringed,
+                ringed.scale * Math.min(bandBox.width, bandBox.height),
+              ),
+            }
+          : ringed;
       const bakedD = bakeMotif(MOTIFS[placement.motif].d, warped, bandBox);
       const { first, last } = firstAndLastPoint(bakedD);
-      return { d: bakedD, entry: first, exit: last };
+      const { leaving, arriving } = endDirections(pathPoints(bakedD));
+      return { d: bakedD, entry: first, exit: last, leaving, arriving };
     });
 
     const group: string[] = [];
     connectors.forEach((connector, k) => {
       let d = warpSection(connector.d, from, to);
-      if (k > 0) d = withFirstPoint(d, bakedMotifs[k - 1].exit);
-      if (k < bakedMotifs.length) d = withLastPoint(d, bakedMotifs[k].entry);
+      if (k > 0) {
+        const motif = bakedMotifs[k - 1];
+        d = joined(d, "start", motif.exit, motif.arriving);
+      }
+      if (k < bakedMotifs.length) {
+        const motif = bakedMotifs[k];
+        d = joined(d, "finish", motif.entry, motif.leaving);
+      }
       group.push(d);
       if (k < bakedMotifs.length) group.push(bakedMotifs[k].d);
     });
@@ -703,7 +922,7 @@ export function splitSubpaths(d: string): string[] {
 }
 
 function subpathCount(band: BandId, id: (typeof THREAD_IDS)[number]): number {
-  return THREAD_PATHS[band][id].length + MOTIF_PLACEMENTS[band][id].length;
+  return threadPaths(band, id).length + MOTIF_PLACEMENTS[band][id].length;
 }
 
 /* The index range, in the FLATTENED subpath list `threadLine` emits, that belongs to one section —

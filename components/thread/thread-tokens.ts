@@ -1,5 +1,5 @@
-/* THE THREAD'S TOKENS — read from the built stylesheet rather than copied, for the drawing head, the
-   re-trace, the tapered ends and the closing stretch's scroll budget. Each reader asks the browser
+/* THE THREAD'S TOKENS — read from the built stylesheet rather than copied, for the drawing head and
+   the closing stretch's scroll budget. Each reader asks the browser
    (`getComputedStyle`), so each is called from an effect or a measure, never at module top level. */
 
 import {
@@ -12,12 +12,6 @@ import {
   CHAIN_TERMINAL_WINDOW,
   type TerminalWindow,
 } from "./thread-progress.ts";
-import {
-  parseCssCount,
-  parseCssTime,
-  RETRACE_LENGTH_RATIO,
-} from "./thread-retrace.ts";
-import { readVariant } from "./thread-variant.ts";
 
 /* Read from the built stylesheet rather than copied, so a token edit cannot leave the head behind. */
 export function tokenLength(token: string): number {
@@ -58,11 +52,10 @@ function tokenColour(token: string): Rgb {
   return [r, g, b];
 }
 
-/* The shipped head, the head with any review choice over it, and the re-trace each resolve their tokens
-   once per load and hand back the same object (`stackFor` keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
+/* The head resolves its tokens once per load and hands back the same object
+   (`stackFor` keys its cache on that identity), so a retuned token takes effect on a reload, the gallery's
    specimens included, not on a hot update. */
 let resolvedShippedHead: HeadOptions | undefined;
-let resolvedHeadOptions: HeadOptions | undefined;
 
 function shippedHead(): HeadOptions {
   if (resolvedShippedHead !== undefined) return resolvedShippedHead;
@@ -78,53 +71,13 @@ function shippedHead(): HeadOptions {
   return resolvedShippedHead;
 }
 
-/* The head as shipped, or the review panel's `light` candidate over it. The re-trace builds on the
-   same options, so the drawing head and the re-trace always carry one look as a pair. */
 export function headOptions(): HeadOptions {
-  resolvedHeadOptions ??= {
-    ...shippedHead(),
-    ...sheenFor(readVariant("light")),
-  };
-  return resolvedHeadOptions;
+  return shippedHead();
 }
 
-/* The drawing head's own values with the re-trace's peak length: the head's options, read once from
-   the same tokens, not a second copy of any of them. */
-let resolvedRetraceOptions: HeadOptions | undefined;
-
-export function retraceOptions(): HeadOptions {
-  resolvedRetraceOptions ??= retraceFrom(
-    headOptions(),
-    tokenLength("--stroke-thread"),
-  );
-  return resolvedRetraceOptions;
-}
-
-/* The re-trace is the head's look at its own peak length: everything but the length comes from the
-   head, so the two can never be judged apart. */
-export function retraceFrom(head: HeadOptions, stroke: number): HeadOptions {
-  return { ...head, length: RETRACE_LENGTH_RATIO * stroke };
-}
-
-/* The review panel's light candidates: `sheen-<L>-<glow>` paints the head and the re-trace in a lighter
-   stretch of the thread's own red — the tip L hundredths of OKLCH lightness over it, the middle half
-   that — at the ink's own width; `orange` is the earlier head's colours, vermilion and the hot core, at the same width. The glow
-   is the panel's property and stylesheet. */
-function sheenFor(id: string | undefined): Partial<HeadOptions> {
-  if (id === "orange")
-    return {
-      midColor: tokenColour("--color-thread-vermilion"),
-      tipColor: tokenColour("--color-thread-core"),
-    };
-  const match = /^sheen-(\d+)-\w+$/.exec(id ?? "");
-  if (match === null) return {};
-  return sheenColours(
-    tokenColour("--color-thread-red"),
-    Number(match[1]) / 100,
-    tokenLength("--stroke-thread"),
-  );
-}
-
+/* The sheen's two colours as a lift of the thread's red: the tip L of OKLCH lightness over it, the middle
+   half that, at the ink's own width. The registry's `thread-sheen` and `thread-sheen-mid` are this at
+   0.12, which `thread-tokens.test.ts` holds them to. */
 export function sheenColours(
   red: Rgb,
   lift: number,
@@ -137,46 +90,17 @@ export function sheenColours(
   };
 }
 
+/* A CSS time token, `2s` or `800ms`, in milliseconds; undefined when it is not one, so a missing or
+   malformed token stops what it times rather than running it at a value nobody chose. */
+export function parseCssTime(value: string): number | undefined {
+  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  if (match === null) return undefined;
+  const time = Number(match[1]) * (match[2] === "s" ? 1000 : 1);
+  return time > 0 && Number.isFinite(time) ? time : undefined;
+}
+
 export function tokenTime(token: string): number | undefined {
   return parseCssTime(
     getComputedStyle(document.documentElement).getPropertyValue(token),
   );
-}
-
-/* Read once: it is asked for on every frame that advances the drawn length, which is every frame of
-   the opening draw and of the first descent. */
-let resolvedRetraceSettle: number | undefined;
-
-export function retraceSettle(): number | undefined {
-  resolvedRetraceSettle ??= tokenTime("--retrace-settle");
-  return resolvedRetraceSettle;
-}
-
-/* The budget of whole loops, read once like the settle: a malformed token stays undefined and the loop
-   never starts. */
-let resolvedRetraceLoops: number | undefined;
-
-export function retraceLoops(): number | undefined {
-  resolvedRetraceLoops ??= parseCssCount(
-    getComputedStyle(document.documentElement).getPropertyValue(
-      "--retrace-loops",
-    ),
-  );
-  return resolvedRetraceLoops;
-}
-
-export interface TaperOptionsResolved {
-  readonly taperLength: number;
-  readonly strokeWidth: number;
-}
-
-/* Read at each measure rather than cached, so a retuned token takes effect on the next re-measure. */
-export function taperOptions(): TaperOptionsResolved {
-  const root = getComputedStyle(document.documentElement);
-  return {
-    taperLength: Number.parseFloat(
-      root.getPropertyValue("--length-thread-taper"),
-    ),
-    strokeWidth: Number.parseFloat(root.getPropertyValue("--stroke-thread")),
-  };
 }

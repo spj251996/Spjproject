@@ -3,8 +3,8 @@
    viewport, and for every section reads:
      - the `.mounted-sheet-frame__box` element's rendered width and left offset (the card the
        thread must land on)
-     - the outer `<section>`'s rendered height (cross-checked against thread-boxes.ts's
-       `sectionBox`, which was measured the same way)
+     - the outer `<section>`'s rendered height (the section box the thread's paths are
+       laid out in)
      - Flemy's and Sebastian's portrait centres as a fraction of the family section's card
 
    channel: "chromium" is required — the default reaches for headless_shell, which quantises

@@ -203,31 +203,12 @@
      `sprig-ornament`). At dpr 1 it paints as a fainter full pixel rather than a thinner one. */
   --stroke-hairline: 0.5px;
   --stroke-thread: 2.2px;
-  /* How far back from a free end the thread narrows to a point (DESIGN.md -> Thread -> The tapered
-     ends). */
-  --length-thread-taper: 24px;
-  /* THE RE-TRACE'S CADENCE (DESIGN.md -> Thread -> The re-trace): how long one loop of the lit
-     segment takes when no speed is set, and how long the thread must have been still before its cue
-     loops. Exceptions to the motion scale, read by name from script because the segment's length and
-     gradient change every frame. */
-  --retrace-duration: 3.2s;
-  --retrace-settle: 1500ms;
-  /* How many whole loops the LONGEST stretch runs once the page has been still for the settle
-     interval, before everything stops until the next scroll. A count, not a time, so the pace can
-     change without changing how long the page stays busy; every shorter stretch fits whole loops into
-     the same window (`page-thread.tsx` -> `periodFor`). */
-  --retrace-loops: 5;
-  /* THE RE-TRACE'S SPEED, in px of thread per second, so every lit stretch moves at one rate: a
-     fixed-duration loop makes a long stretch travel several times faster than a short one. 0 keeps
-     the fixed-duration behaviour. 845 is the invite's speed at `wide` under a 3.2s loop, the pace the
-     owner judged by eye. */
-  --retrace-speed: 845;
   /* THE CLOSING STRETCH'S OWN SCROLL BUDGET. `wishes.top` equals the page's maximum scroll, so
      Wishes' card is never scrolled through and would otherwise draw only what the previous section
      left over. Both values are fractions of the viewport's height, so one value holds at every band:
      `span` is how much of the final viewport the stretch draws across, and `finish` is how far before
      the page's end it completes, so the head retires while a reader resting just short of the bottom
-     still sees the taper. Their scroll comes out of the earlier sections' shared budget. Read by name
+     still sees the frayed end. Their scroll comes out of the earlier sections' shared budget. Read by name
      from script. */
   /* HOW LONG THE DRAW TAKES TO CATCH UP WITH A FAST SCROLL, so a fling shows the line travelling
      rather than popping in. A follower, not a delay: the thread always ends at the length the scroll
@@ -236,8 +217,8 @@
      (`thread-catch-up.ts`). 0 paints immediately. */
   --thread-catchup: 0.6s;
   --thread-catchup-ease: ease-out-cubic;
-  /* How long the page may go untouched, in view, before the sway and the re-trace stop together; any
-     scroll, tap, click or key starts both again. */
+  /* How long the page may go untouched, in view, before the sway stops; any scroll, tap, click or key
+     starts it again. */
   --thread-idle: 60s;
   --thread-terminal-span: 0.2;
   --thread-terminal-finish: 0.08;
@@ -245,36 +226,19 @@
 
   /* THE THREAD'S CONTACT SHADOW — the line lying on the paper casts it, so it takes the paper's own
      shadow tint and falls straight down: a tight contact layer and a softer lift, which seat the
-     thread a little above the paper rather than soaking it in. One value so tuning touches one line
-     (DESIGN.md → Thread → The contact shadow). Wide radii on every piece's ink cost a cliff, not a
-     gradual scaling (55 dropped frames over a 5s scrub at 33px against 4 at 8.25px), so do not widen
-     the blur without re-measuring. */
-  --bleed-thread: drop-shadow(
-      0 1px 1.25px color-mix(in srgb, var(--color-shadow-warm) 65%, transparent)
-    )
-    drop-shadow(
-      0 4px 6px color-mix(in srgb, var(--color-shadow-warm) 30%, transparent)
-    );
+     thread a little above the paper rather than soaking it in (DESIGN.md → Thread → The contact
+     shadow). An SVG filter, never a CSS drop-shadow, which no iPhone paints on the thread's paths; its
+     layers and the reason they cannot widen cheaply live with it in `thread-filters.tsx`. */
+  --bleed-thread: url(#thread-contact-shadow);
 
-  /* THE DRAWING HEAD'S HALO — at half strength, as the re-trace's glow is: the head and the sheen are one
-     look (DESIGN.md -> Thread -> The drawing head). One value on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
+  /* THE DRAWING HEAD'S HALO — at three-quarter strength (DESIGN.md -> Thread -> The drawing head). One filter on one group wrapping the whole head. These are exactly the radii `--bleed-thread` was cut down from. As three shadows on
      every piece of a static line they cost 55 dropped frames over a 5s scrub at 393x700; as one
      filter over the moving head's tight silhouette they cost 6 as built (3 above the bleed alone).
      What was isolated is that geometry dominated: dashed copies of whole pieces under the same
      filter cost 54 against 10. Radius matters too (the bleed alone went 55 -> 9 -> 4 at 1.0x / 0.5x
-     / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). */
-  --halo-thread-head: drop-shadow(
-      0 0 3.5px
-        color-mix(in srgb, var(--color-thread-vermilion) 34%, transparent)
-    )
-    drop-shadow(
-      0 0 12px
-        color-mix(in srgb, var(--color-thread-vermilion) 22%, transparent)
-    )
-    drop-shadow(
-      0 0 33px
-        color-mix(in srgb, var(--color-thread-vermilion) 15%, transparent)
-    );
+     / 0.25x), so do not raise this without re-measuring (DESIGN.md -> Thread). An SVG filter, as the
+     contact shadow is; its layers live in `thread-filters.tsx`. */
+  --halo-thread-head: url(#thread-head-halo);
 
   /* Every texture is one SVG drawn at three times its tile's CSS size and rasterised once by
      the browser, then tiled — at 1:1 a high-density display upscales the tile into blotches, and a

@@ -1,0 +1,6 @@
+/* TEAM */
+Design & build: Aishwarya Ganesan
+Site: https://aishwaryaganesan.vercel.app/
+
+/* SITE */
+Built with: Next.js, Tailwind CSS

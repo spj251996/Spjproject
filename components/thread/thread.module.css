@@ -109,31 +109,43 @@
   stroke-width: var(--stroke-thread);
 }
 
-/* A piece that carries a taper takes its shadow on a group around the masked path (`ThreadInk`), so
-   the ink is cut before the filter runs. */
+/* A piece that carries a frayed end takes its shadow on a group around the masked path (`ThreadInk`),
+   so the ink is cut before the filter runs. */
 .pageInk,
 .pageBleed {
   filter: var(--bleed-thread);
 }
 
-/* A tapered end (`thread-taper.ts`; DESIGN.md -> Thread -> The tapered ends) is INK, not light, so it
-   takes the thread's own colour and its contact shadow: a taper with no shadow would read as a
-   different material from the line it ends. The shadow is ONE filter on the group, over geometry that
-   never moves. `butt` caps, not `round`: a round cap adds half a stroke-width of ink
-   past each run's own end, which is exactly the blunt tip the taper exists to remove, and it
-   compounds across the stack. The painter hides it with `display: none` once it has run and no run has
-   been reached; before that (the shipped markup, and for a reader with no script) the group is simply
-   empty, and an empty group's bounding box is empty, so it is INFERRED, not measured, that its filter
-   costs nothing. */
-.pageTaper {
-  filter: var(--bleed-thread);
-}
-
-.pageTaper path {
+/* Crossings (`createCrossingPainter`; DESIGN.md -> Thread -> Crossings): the upper strand redrawn in
+   the ink's own colour and width, butt-capped so its ends sit invisibly on the strand they redraw, with
+   its own twist over it. */
+.pageCrossings path {
   fill: none;
   stroke: var(--color-thread-red);
   stroke-linecap: butt;
-  stroke-linejoin: round;
+  stroke-width: var(--stroke-thread);
+}
+
+.pageCrossings [data-thread-crossing-gaps] {
+  stroke: var(--color-thread-twist);
+}
+
+/* The frayed ends (`thread-fray.ts`; DESIGN.md -> Thread -> The frayed ends): the fibres are ink, so
+   they take the thread's colour and its contact shadow — the end at rest on its group here, the
+   moving tip on a copy fitted as it moves. Round caps: a fibre's end is soft, not cut. */
+.pageFray {
+  filter: var(--bleed-thread);
+}
+
+.pageFray path {
+  fill: none;
+  stroke: var(--color-thread-red);
+  stroke-linecap: round;
+}
+
+.pageTip path {
+  fill: none;
+  stroke-linecap: round;
 }
 
 /* The drawing head (`thread-head.ts`; DESIGN.md -> Thread -> The drawing head). The halo is ONE
@@ -148,35 +160,6 @@
 }
 
 .pageHead path {
-  fill: none;
-  stroke-linejoin: round;
-}
-
-/* The re-trace (`thread-retrace.ts`; DESIGN.md -> Thread -> The re-trace): a lit segment on the already
-   drawn line, one `<g>` per stretch that is animating, laid by script beneath the head. It takes NO
-   FILTER, and that is the point: the head's 4x halo as a filter over these segments cost 77 dropped
-   frames at three stretches at `wide` and the bleed's quarter-radius one still cost a buffer per
-   stretch, so its glow is `.pageRetraceGlow` below instead, a stack of translucent strokes (geometry,
-   which has been free every time a cost finding came down to a buffer). Colour, width and opacity
-   are set per element by `thread-painters.ts`. There is no CSS animation and so no media query: the loop
-   is script, and script does not start under reduced motion (the same gate the draw already has),
-   which leaves the group empty rather than overridden. */
-.pageRetrace path {
-  fill: none;
-  stroke-linejoin: round;
-}
-
-/* The re-trace's glow, under its core (DESIGN.md -> The re-trace -> The glow is strokes, not a
-   filter): eight translucent vermilion strokes on the segment's own path, fitted to the 4x halo's
-   measured falloff. One `<g>` per stretch, set by script, below `.pageRetrace` in paint order so the
-   core lies over it. */
-/* At half strength, as the head's halo is: the sheen glows faintly rather than burns. One opacity on
-   the group, so the strokes composite inside it before it fades. */
-.pageRetraceGlow {
-  opacity: 0.5;
-}
-
-.pageRetraceGlow path {
   fill: none;
   stroke-linejoin: round;
 }

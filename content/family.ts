@@ -11,6 +11,7 @@ export const familyGroups: FamilyGroup[] = validateFamilyGroups([
     id: "bride-family",
     side: "bride",
     familyName: "Edatt Family",
+    origin: "Harinagar, New Delhi",
     members: [
       {
         id: "minimol-roy",
@@ -46,6 +47,7 @@ export const familyGroups: FamilyGroup[] = validateFamilyGroups([
     id: "groom-family",
     side: "groom",
     familyName: "Plackeel Family",
+    origin: "Vadakara, Koothattukulam, Kerala",
     members: [
       {
         id: "rani-joseph",

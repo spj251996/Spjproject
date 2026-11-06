@@ -15,10 +15,12 @@ type Side = FamilyGroup["side"];
 
 /* Portrait diameter and row gaps per type step; values in DESIGN.md Components, portrait. */
 const SHEET_CLASS =
-  "flex w-full flex-col items-center text-center [--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px] [--rows-gap:var(--spacing-space-md)] md:[--rows-gap:var(--spacing-space-sm)] lg:[--rows-gap:var(--spacing-space-xs)] xl:[--rows-gap:var(--spacing-space-sm)] [--family-row-gap:var(--spacing-space-lg)] md:[--family-row-gap:var(--spacing-space-2xl)] lg:[--family-row-gap:var(--spacing-space-xl)] xl:[--family-row-gap:var(--spacing-space-2xl)]";
+  "flex w-full flex-col items-center text-center [--portrait-diameter:72px] md:[--portrait-diameter:112px] lg:[--portrait-diameter:72px] xl:[--portrait-diameter:88px] [--rows-gap:var(--spacing-space-md)] md:[--rows-gap:var(--spacing-space-sm)] lg:[--rows-gap:var(--spacing-space-2xs)] xl:[--rows-gap:var(--spacing-space-sm)] [--family-row-gap:var(--spacing-space-lg)] md:[--family-row-gap:var(--spacing-space-2xl)] lg:[--family-row-gap:var(--spacing-space-xl)] xl:[--family-row-gap:var(--spacing-space-2xl)]";
 
+/* The origin line takes its room out of this gap. The laptop step tightens it, the eyebrow gap and
+   the row gap so the card still fits the laptop frame (DESIGN.md → Domain Components → Family). */
 const ROWS_CLASS =
-  "mt-space-lg flex flex-col items-center gap-(--rows-gap) md:mt-space-sm lg:mt-space-xs xl:mt-space-sm";
+  "mt-space-2xs lg:mt-space-3xs xl:mt-space-2xs flex flex-col items-center gap-(--rows-gap)";
 
 const PORTRAIT_TO_NAME = "gap-space-2xs md:gap-space-3xs";
 
@@ -57,9 +59,12 @@ export function Family({ group, eyebrow }: FamilyProps) {
       <p className="type-eyebrow">
         <SprigOrnament>{eyebrow}</SprigOrnament>
       </p>
-      <h2 className="type-heading-xl text-ink-muted mt-space-2xs">
+      <h2 className="type-heading-xl text-ink-muted mt-space-2xs lg:mt-space-3xs xl:mt-space-2xs">
         {group.familyName}
       </h2>
+      <p className="type-caption-italic text-ink-muted mt-space-3xs">
+        {group.origin}
+      </p>
       <div className={ROWS_CLASS}>
         <Couple gap={EQUAL_GAP}>
           <MemberPortrait member={mother} overrun={OVERRUN.parent} />

@@ -1,5 +1,6 @@
 import { parseIsoDate } from "./format.ts";
 import type {
+  DesignerCredit,
   EventSegment,
   FamilyGroup,
   FamilyMember,
@@ -199,6 +200,7 @@ export function validateFamilyGroups(groups: FamilyGroup[]): FamilyGroup[] {
     const at = `familyGroups[${index}]`;
     claimId(group.id, `${at}.id`, groupIds);
     required(group.familyName, `${at}.familyName`);
+    required(group.origin, `${at}.origin`);
     if (group.members.length === 0) {
       throw new ContentValidationError(
         `${at}.members`,
@@ -237,4 +239,16 @@ export function validateWishes(wishes: WishesContent): WishesContent {
   required(wishes.wishesLead, "wishes.wishesLead");
   required(wishes.wishesLine, "wishes.wishesLine");
   return wishes;
+}
+
+export function validateDesignerCredit(credit: DesignerCredit): DesignerCredit {
+  required(credit.lead, "credit.lead");
+  required(credit.name, "credit.name");
+  absoluteUrl(credit.url, "credit.url");
+  if (new URL(credit.url).protocol !== "https:")
+    throw new ContentValidationError(
+      "credit.url",
+      `must be https ("${credit.url}")`,
+    );
+  return credit;
 }

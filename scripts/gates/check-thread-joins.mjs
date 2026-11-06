@@ -92,10 +92,16 @@ const onlyViewport = flag("viewport");
    admitted skin-tone fragments), and `r - g > 80` inside 75-99 (looser read Family's skin as ink; from
    100 `celebrations` breaks). The portrait bounds were measured with the page's content showing; the
    shot now hides everything but the thread, so only the `celebrations` bounds still bind. Recalibrate if
-   the thread's colour changes. */
+   the thread's colour changes.
+   Shaded ink is still ink: a crossing's lift shadow darkens the lower strand where it leaves the upper
+   one (measured 107,44,33 to 136,66,50, r - g as low as 63), and the first test alone read that strip as
+   a gap and split the invite at the tall band in two. Darkening keeps the red twice the green, which
+   neither ivory nor the contact shadow on paper comes near (both r ≈ g). */
 /** @param {number} r @param {number} g @param {number} b */
 function isInk(r, g, b) {
-  return g < 105 && r - g > 80 && r - b > 60;
+  const lit = g < 105 && r - g > 80;
+  const shaded = r > 2 * g;
+  return (lit || shaded) && r - b > 60;
 }
 
 /**
@@ -239,9 +245,11 @@ try {
          names reads as two runs of ink with the type shown. Everything in `<main>` but the thread's
          own `<svg>`s and the sections themselves (an element screenshot needs a visible element) is
          hidden for the shot; `visibility` hides an element's own paint and leaves its box, so
-         nothing reflows and a visible descendant still paints. */
+         nothing reflows and a visible descendant still paints. Inside the `<svg>`s nothing is
+         forced: while the line sways, a piece the draw has not reached is hidden by the page itself,
+         and forcing it visible would shoot ink the page never paints. */
       await page.addStyleTag({
-        content: `main * { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg], [data-thread-svg] * { visibility: visible !important; }`,
+        content: `main *:not([data-thread-svg], [data-thread-svg] *) { visibility: hidden !important; } ${SECTIONS.map((name) => `#${name}`).join(", ")}, [data-thread-svg] { visibility: visible !important; }`,
       });
 
       for (const id of SECTIONS) {
@@ -266,14 +274,12 @@ try {
           continue;
         }
         /* The Next dev-tools badge turns into a red pill the moment the dev server has anything to
-           say, and would read as a second piece of ink. The thread review panel's button is fixed
-           over the thread's right-hand run, so a section screenshot taller than the window draws it
-           mid-crop as a gap in the line (it split Celebrations in two at tall). The thread itself needs no isolation: the
+           say, and would read as a second piece of ink. The thread itself needs no isolation: the
            page thread is one SVG over all of `<main>` (and Wishes' card thread lives inside its own
            section), so the section-clipped screenshot already holds only this section's stretch. */
         await page.evaluate(() => {
           for (const portal of /** @type {NodeListOf<HTMLElement>} */ (
-            document.querySelectorAll("nextjs-portal, [data-thread-review]")
+            document.querySelectorAll("nextjs-portal")
           )) {
             portal.style.display = "none";
           }

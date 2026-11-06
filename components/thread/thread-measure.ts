@@ -3,7 +3,7 @@ import {
   authoredCard,
   familyPortraitFractions,
 } from "./thread-authored-layout.ts";
-import { aspectQuery, type BandId, THREAD_BANDS } from "./thread-bands.ts";
+import { type BandId, THREAD_BANDS } from "./thread-bands.ts";
 import type {
   SectionAnchors,
   SectionRange,
@@ -21,7 +21,7 @@ type Point = { x: number; y: number };
 
 export function currentBand(): BandId | undefined {
   for (const band of THREAD_BANDS) {
-    if (window.matchMedia(aspectQuery(band.min, band.max)).matches) {
+    if (window.matchMedia(band.media).matches) {
       return band.id;
     }
   }
@@ -236,7 +236,7 @@ export function pageDrawnLength(
 
    WHY TWO CALLBACKS. A mobile URL bar collapses when the reader scrolls down and expands when they
    scroll back up, and each is a HEIGHT-ONLY resize fired DURING the scroll. Running the full
-   re-measure there reset the head, stopped the re-trace and discarded the draw ratchet mid-gesture,
+   re-measure there reset the head and discarded the draw ratchet mid-gesture,
    which the owner saw as glitches and as the thread un-drawing itself on the way back up. A
    height-only change moves the draw WINDOW and nothing else, so it takes the cheap path.
 

@@ -1,0 +1,262 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  CROSSING_REACH,
+  type Crossing,
+  crossingRegion,
+  crossingShowsFrom,
+  findCrossings,
+  lineCrossings,
+  type OrderedCrossing,
+  orderCrossings,
+} from "./thread-crossings.ts";
+import { authoredMeasuredSections } from "./thread-fallback.ts";
+import type { MotifId, WeaveCrossing } from "./thread-geometry.ts";
+import { splitSubpaths, type ThreadPiece, threadLine } from "./thread-line.ts";
+import { samplePath } from "./thread-samples.ts";
+
+/* A cubic's own arc length, so a sample at arc `s` lands where the curve really is. */
+function cubicLength(d: string): number {
+  const [x0, y0, x1, y1, x2, y2, x3, y3] = (d.match(/-?\d*\.?\d+/g) ?? []).map(
+    Number,
+  );
+  let length = 0;
+  let [px, py] = [x0, y0];
+  for (let i = 1; i <= 4000; i += 1) {
+    const t = i / 4000;
+    const u = 1 - t;
+    const x =
+      u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3;
+    const y =
+      u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3;
+    length += Math.hypot(x - px, y - py);
+    [px, py] = [x, y];
+  }
+  return length;
+}
+
+/* A chain of pieces laid end to end on one cumulative scale, as `threadLine` builds them. */
+function chain(pieces: readonly { d: string; kind?: ThreadPiece["kind"] }[]): {
+  samples: ReturnType<typeof samplePath>[];
+  pieces: ThreadPiece[];
+} {
+  let start = 0;
+  const spans: ThreadPiece[] = [];
+  const samples = pieces.map(({ d, kind }) => {
+    const length = cubicLength(d);
+    spans.push({
+      id: "invite",
+      kind: kind ?? "connector",
+      start,
+      end: start + length,
+    });
+    start += length;
+    return samplePath(d, length);
+  });
+  return { samples, pieces: spans };
+}
+
+/* A cubic whose control points cross, so it loops once and crosses itself. */
+const LOOP = "M 0 0 C 200 100 -100 100 100 0";
+const MIN_GAP = 6 * 2.2;
+
+test("finds the one crossing of an X made of two pieces", () => {
+  /* Two diagonals, joined by a connector that turns the line back across the first. */
+  const { samples, pieces } = chain([
+    { d: "M 0 0 C 33.33 33.33 66.67 66.67 100 100" },
+    { d: "M 100 100 C 100 120 0 120 0 100" },
+    { d: "M 0 100 C 33.33 66.67 66.67 33.33 100 0" },
+  ]);
+  const found = findCrossings(samples, pieces, MIN_GAP);
+  assert.equal(found.length, 1);
+  const [crossing] = found;
+  assert.ok(
+    Math.abs(crossing.x - 50) <= 0.5 && Math.abs(crossing.y - 50) <= 0.5,
+  );
+  assert.equal(crossing.first.piece, 0);
+  assert.equal(crossing.second.piece, 2);
+  assert.ok(Math.abs(crossing.first.at - Math.SQRT2 * 50) <= 0.5);
+});
+
+test("finds a loop's self-crossing in one piece, first pass first", () => {
+  const { samples, pieces } = chain([{ d: LOOP }]);
+  const found = findCrossings(samples, pieces, MIN_GAP);
+  assert.equal(found.length, 1);
+  const [crossing] = found;
+  assert.equal(crossing.first.piece, 0);
+  assert.equal(crossing.second.piece, 0);
+  assert.ok(crossing.first.at < crossing.second.at);
+});
+
+test("ignores a join and a tight bend", () => {
+  const joined = chain([
+    { d: "M 0 0 C 33.33 0 66.67 0 100 0" },
+    { d: "M 100 0 C 100 33.33 100 66.67 100 100" },
+  ]);
+  assert.deepEqual(findCrossings(joined.samples, joined.pieces, MIN_GAP), []);
+  /* The same loop at a twentieth of the size: its crossing passes are closer than `minGap` along the
+     line, so it is one bend of the cord, not a crossing. */
+  const tiny = chain([{ d: "M 0 0 C 10 5 -5 5 5 0" }]);
+  assert.deepEqual(findCrossings(tiny.samples, tiny.pieces, MIN_GAP), []);
+});
+
+function crossingIn(piece: number, first: number, second: number): Crossing {
+  return {
+    x: 0,
+    y: 0,
+    first: { piece, at: first },
+    second: { piece, at: second },
+  };
+}
+
+const NO_WEAVE = (_: MotifId): readonly WeaveCrossing[] | undefined =>
+  undefined;
+
+test("orders a route crossing later-over-earlier", () => {
+  const pieces: ThreadPiece[] = [
+    { id: "invite", kind: "connector", start: 0, end: 100 },
+    { id: "invite", kind: "heart", start: 100, end: 200 },
+  ];
+  const across: Crossing = {
+    x: 0,
+    y: 0,
+    first: { piece: 0, at: 20 },
+    second: { piece: 1, at: 50 },
+  };
+  const [ordered] = orderCrossings([across], pieces, () => [
+    { first: 0.2, second: 0.5, over: "first" },
+  ]);
+  assert.equal(ordered.over, "second");
+  assert.equal(ordered.woven, false);
+  const [inConnector] = orderCrossings(
+    [crossingIn(0, 10, 60)],
+    pieces,
+    NO_WEAVE,
+  );
+  assert.equal(inConnector.over, "second");
+  assert.equal(inConnector.woven, false);
+});
+
+test("weaves a motif's crossings from the entry at the same place along it", () => {
+  const pieces: ThreadPiece[] = [
+    { id: "event-info", kind: "connector", start: 0, end: 50 },
+    { id: "event-info", kind: "knot", start: 50, end: 450 },
+  ];
+  /* Fractions of the knot's own 400px; handed in a different order from the crossings. */
+  const weave: readonly WeaveCrossing[] = [
+    { first: 0.5, second: 0.95, over: "first" },
+    { first: 0.075, second: 0.3, over: "first" },
+    { first: 0.225, second: 0.75, over: "second" },
+  ];
+  const ordered = orderCrossings(
+    [crossingIn(1, 30, 120), crossingIn(1, 90, 300), crossingIn(1, 201, 379)],
+    pieces,
+    (motif) => (motif === "knot" ? weave : undefined),
+  );
+  assert.deepEqual(
+    ordered.map((crossing) => crossing.over),
+    ["first", "second", "first"],
+  );
+  assert.ok(ordered.every((crossing) => crossing.woven));
+});
+
+test("a motif crossing with no entry near it lies later-over-earlier", () => {
+  const pieces: ThreadPiece[] = [
+    { id: "event-info", kind: "knot", start: 0, end: 400 },
+  ];
+  const ordered = orderCrossings(
+    [crossingIn(0, 30, 120), crossingIn(0, 200, 380)],
+    pieces,
+    () => [{ first: 0.075, second: 0.3, over: "first" }],
+  );
+  assert.deepEqual(
+    ordered.map((crossing) => [crossing.over, crossing.woven]),
+    [
+      ["first", true],
+      ["second", false],
+    ],
+  );
+});
+
+/* A motif drawn larger can show a crossing its weave never named beside one it did — the bow does from
+   about 1.1x its upright size — and both can lie within the tolerance of one entry. The entry is one
+   crossing the owner confirmed, so the nearer takes it, whichever comes first, and the other falls back. */
+test("a weave entry orders one crossing: the nearest, the other lying later-over-earlier", () => {
+  const pieces: ThreadPiece[] = [
+    { id: "wishes", kind: "bow", start: 0, end: 400 },
+  ];
+  const ordered = orderCrossings(
+    [crossingIn(0, 204, 382), crossingIn(0, 200, 380)],
+    pieces,
+    () => [{ first: 0.5, second: 0.95, over: "first" }],
+  );
+  assert.deepEqual(
+    ordered.map((crossing) => [crossing.over, crossing.woven]),
+    [
+      ["second", false],
+      ["first", true],
+    ],
+  );
+});
+
+test("crossingRegion holds the overlay and the sway on both axes", () => {
+  const crossing: Crossing = {
+    x: 200,
+    y: 300,
+    first: { piece: 0, at: 10 },
+    second: { piece: 1, at: 20 },
+  };
+  const region = crossingRegion(crossing, 6.6, 12);
+  const holds = (low: number, size: number, centre: number) =>
+    low <= centre - 18.6 + 1e-9 && low + size >= centre + 18.6 - 1e-9;
+  assert.ok(holds(region.x, region.width, 200));
+  assert.ok(holds(region.y, region.height, 300));
+  assert.ok(region.width < 60 && region.height < 60, "the region is small");
+});
+
+test("lineCrossings orders a band's own crossings from the motifs' weaves", () => {
+  const line = threadLine("wide", authoredMeasuredSections("wide"));
+  const { samples, crossings } = lineCrossings(
+    splitSubpaths(line.d),
+    line.pieces,
+    2.2,
+  );
+  assert.equal(samples.length, line.pieces.length);
+  assert.ok(crossings.some((crossing) => crossing.woven));
+  assert.ok(crossings.some((crossing) => !crossing.woven));
+});
+
+/* Set by eye on the live page (DESIGN.md -> Thread -> Crossings), so pinned to the value itself. */
+test("the upper strand is redrawn 3 cord widths either side of a crossing, the owner's pick", () => {
+  assert.equal(CROSSING_REACH, 3);
+});
+
+/* When a crossing's overlay shows, as how far the cord has reached along its later pass's piece. The tip's
+   fibres lead the cord by the fray's length, and the lift shadow falls on the lower strand only. */
+test("an earlier pass on top shows as the fibre tips reach it, its lift once the later pass lies beneath", () => {
+  const crossing: OrderedCrossing = {
+    x: 0,
+    y: 0,
+    first: { piece: 0, at: 40 },
+    second: { piece: 0, at: 300 },
+    over: "first",
+    woven: true,
+  };
+  const shows = crossingShowsFrom(crossing, 6.6, 7.8);
+  assert.equal(shows.strand, 300 - 6.6 - 7.8);
+  assert.equal(shows.shade, 300 + 6.6);
+});
+
+test("a later pass on top shows, lift and all, once drawn across its whole overlay", () => {
+  const crossing: OrderedCrossing = {
+    x: 0,
+    y: 0,
+    first: { piece: 0, at: 40 },
+    second: { piece: 0, at: 300 },
+    over: "second",
+    woven: false,
+  };
+  const shows = crossingShowsFrom(crossing, 6.6, 7.8);
+  assert.equal(shows.strand, 300 + 6.6);
+  assert.equal(shows.shade, 300 + 6.6);
+});

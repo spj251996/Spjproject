@@ -5,9 +5,17 @@ import { extname, join } from "node:path";
 import test from "node:test";
 import { labExport } from "../../scripts/lib/built-export.ts";
 
-/* These cases test the draw and the re-trace, not the sway, which ships on and keeps a frame loop of its
-   own and re-shapes every path: the panel's "off" turns it off for them. */
-const SWAY_OFF = `localStorage.setItem("thread-review", JSON.stringify({ sway: "off" }))`;
+/* These cases test the draw, not the sway, which ships on and keeps a frame loop of its
+   own and re-shapes every path: `data-thread-sway="off"` on `<html>`, set the moment the element exists, turns it
+   off for them. */
+const SWAY_OFF = `(() => {
+  const off = () => {
+    if (!document.documentElement) return false;
+    document.documentElement.dataset.threadSway = "off";
+    return true;
+  };
+  if (!off()) new MutationObserver((_, watcher) => off() && watcher.disconnect()).observe(document, { childList: true });
+})()`;
 
 /* The thread is not on the published page -- `/` carries none since the lab split, so a gate pointed
    there measures a thread-free page and reads as a product defect (DESIGN.md -> Technical Conventions
@@ -539,6 +547,67 @@ test("the second layout event of one viewport change does not paint against the 
       afterShare <= beforeShare + 0.005,
       `the thread over-drew across a reflow the reader did not scroll through: ${(beforeShare * 100).toFixed(1)}% -> ${(afterShare * 100).toFixed(1)}% ` +
         "— a layout event inside the debounce window painted the cheap path against the old layout",
+    );
+    await context.close();
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+/* THE SAME GESTURE WITH THE SWAY ON. The dash cannot be the readout here: while the line sways, no piece
+   carries one (`sway-draws-one-piece.test.ts`). The twist can — each rope chunk is shown once the draw has
+   passed its end (`thread-twist.ts`), so the share of chunks shown is the draw's own progress, to one chunk
+   in several hundred, whatever the sway does to the ink. A share that never moved would prove nothing, so it
+   must also grow on the way down. */
+const TWIST_SHARE = `(() => {
+  const chunks = Array.from(document.querySelectorAll("[data-thread-twist] path"));
+  return chunks.length === 0 ? 0 : chunks.filter((c) => c.style.display !== "none").length / chunks.length;
+})()`;
+
+test("with the sway on, a height-only resize that reflows the page does not un-draw the thread", async (t) => {
+  if (!labExport(t)) return;
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ channel: "chromium" });
+  const { server, port } = await serveExport();
+  try {
+    const context = await browser.newContext({
+      viewport: PHONE,
+      deviceScaleFactor: 1,
+    });
+    const page = await context.newPage();
+    await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
+      waitUntil: "load",
+    });
+    await page.waitForTimeout(3600);
+    const scrollTo = (at: number) =>
+      page.evaluate(
+        `window.scrollTo(0, (document.documentElement.scrollHeight - window.innerHeight) * ${at})`,
+      );
+    await scrollTo(0.2);
+    await page.waitForTimeout(SETTLE);
+    const early = (await page.evaluate(TWIST_SHARE)) as number;
+    for (const at of [0.4, 0.6, 0.78, 0.85]) {
+      await scrollTo(at);
+      await page.waitForTimeout(SETTLE);
+    }
+    const deep = (await page.evaluate(TWIST_SHARE)) as number;
+    assert.ok(
+      deep > early,
+      `the readout did not move on the way down (${early} -> ${deep})`,
+    );
+    await scrollTo(0.45);
+    await page.waitForTimeout(SETTLE);
+    const before = (await page.evaluate(TWIST_SHARE)) as number;
+
+    await page.setViewportSize(TALLER);
+    await page.waitForTimeout(600);
+    await page.waitForTimeout(SETTLE);
+
+    const after = (await page.evaluate(TWIST_SHARE)) as number;
+    assert.ok(
+      after >= before - 0.002,
+      `the thread un-drew with the sway on: ${(before * 100).toFixed(2)}% -> ${(after * 100).toFixed(2)}% of the twist shown`,
     );
     await context.close();
   } finally {

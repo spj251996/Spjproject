@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { centreline, neighboursOf } from "./trace-motif.mjs";
+import {
+  centreline,
+  neighboursOf,
+  pruneSpurs,
+  thin,
+  walkThrough,
+} from "./trace-motif.mjs";
 
 test("a rectangle's centreline is its long axis", async () => {
   // A 200x20 filled rectangle is a straight stroke 20 wide; its skeleton is the horizontal midline.
@@ -170,4 +176,172 @@ test("coverage reports how much of the skeleton the walk reached", async () => {
     `a four-armed skeleton cannot be one open path, yet coverage read ${crossing.coverage.fraction.toFixed(3)}`,
   );
   assert.ok(crossing.coverage.walked < crossing.coverage.skeleton);
+});
+
+/* `walkThrough` is the walk for a long hand-drawn route rather than a motif: one stroke that may
+   cross itself many times, with loops the owner draws as joins. A stroke is painted here as discs
+   along a polyline, then thinned and pruned exactly as a drawing is. */
+/** @param {number} width @param {number} height @param {{ x: number, y: number }[]} line @param {number} radius */
+const strokeField = (width, height, line, radius) => {
+  const ink = new Uint8Array(width * height);
+  for (let i = 0; i < line.length - 1; i += 1) {
+    const a = line[i];
+    const b = line[i + 1];
+    const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y));
+    for (let s = 0; s <= steps; s += 1) {
+      const cx = a.x + ((b.x - a.x) * s) / steps;
+      const cy = a.y + ((b.y - a.y) * s) / steps;
+      for (let y = Math.floor(cy - radius); y <= cy + radius; y += 1)
+        for (let x = Math.floor(cx - radius); x <= cx + radius; x += 1)
+          if (Math.hypot(x - cx, y - cy) <= radius) ink[y * width + x] = 1;
+    }
+  }
+  return { ink, width, height };
+};
+
+/* The alpha curve (t^2 - 1, t^3 - t) crosses itself once, at t = -1 and t = 1, with two tails. */
+/** @param {number} sx @param {number} sy @param {number} ox @param {number} oy @param {number} [reach] */
+const alpha = (sx, sy, ox, oy, reach = 1.7) => {
+  const line = [];
+  for (let t = -reach; t <= reach; t += 0.002)
+    line.push({ x: ox + sx * (t * t - 1), y: oy + sy * (t * t * t - t) });
+  return line;
+};
+
+/** @param {{ ink: Uint8Array, width: number }} skeleton @param {{ x: number, y: number }[]} points */
+const unreached = (skeleton, points) => {
+  let missed = 0;
+  for (let at = 0; at < skeleton.ink.length; at += 1) {
+    if (!skeleton.ink[at]) continue;
+    const x = at % skeleton.width;
+    const y = Math.floor(at / skeleton.width);
+    if (!points.some((p) => Math.hypot(p.x - x, p.y - y) <= 3)) missed += 1;
+  }
+  return missed;
+};
+
+/** @param {{ x: number, y: number }[]} points @param {number} index @param {number} reach */
+const turnAt = (points, index, reach) => {
+  const before = points[Math.max(0, index - reach)];
+  const at = points[index];
+  const after = points[Math.min(points.length - 1, index + reach)];
+  const a = Math.atan2(at.y - before.y, at.x - before.x);
+  const b = Math.atan2(after.y - at.y, after.x - at.x);
+  return (
+    Math.abs(((b - a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) *
+    (180 / Math.PI)
+  );
+};
+
+test("walkThrough walks a self-crossing stroke end to end, through its crossing", () => {
+  const line = alpha(70, 45, 90, 200);
+  const skeleton = pruneSpurs(thin(strokeField(300, 400, line, 5)));
+  const points = walkThrough(skeleton);
+  assert.equal(
+    unreached(skeleton, points),
+    0,
+    "part of the stroke was never walked",
+  );
+  const first = points[0];
+  const last = points[points.length - 1];
+  const tails = [line[0], line[line.length - 1]];
+  for (const end of [first, last])
+    assert.ok(
+      tails.some((t) => Math.hypot(t.x - end.x, t.y - end.y) < 12),
+      `the walk ends at ${end.x},${end.y}, not at a tail`,
+    );
+});
+
+test("walkThrough goes straight through a shallow crossing that thins to two T-nodes", () => {
+  /* Stretched tall, the alpha curve crosses itself at about 15 degrees; at this stroke width the
+     two strands overlap for ~88px, which thins into two odd nodes further apart than one crossing's
+     radius, joined by a stub both strands share. */
+  const line = alpha(40, 300, 60, 250, 1.25);
+  const skeleton = pruneSpurs(thin(strokeField(140, 500, line, 7)));
+  const points = walkThrough(skeleton);
+  assert.equal(
+    unreached(skeleton, points),
+    0,
+    "part of the stroke was never walked",
+  );
+  const crossing = { x: 60, y: 250 };
+  const visits = points
+    .map((p, i) => ({ i, d: Math.hypot(p.x - crossing.x, p.y - crossing.y) }))
+    .filter((v) => v.d < 4);
+  assert.ok(visits.length > 0, "the walk never reached the crossing");
+  for (const v of visits)
+    assert.ok(
+      turnAt(points, v.i, 20) < 35,
+      `the walk turns ${turnAt(points, v.i, 20).toFixed(0)}deg at the crossing`,
+    );
+});
+
+test("walkThrough keeps a small loop drawn as a join", () => {
+  /* A vertical stroke with a 14px-radius loop (88px around) tied into it: the loop's skeleton is a short branch
+     returning to its own crossing, the shape a stub filter mistakes for noise. */
+  const line = [];
+  for (let y = 10; y <= 100; y += 1) line.push({ x: 60, y });
+  for (let a = 0; a <= 2 * Math.PI; a += 0.05)
+    line.push({
+      x: 74 - 14 * Math.cos(a),
+      y: 100 - 14 * Math.sin(a),
+    });
+  for (let y = 100; y <= 190; y += 1) line.push({ x: 60, y });
+  const skeleton = pruneSpurs(thin(strokeField(120, 200, line, 2)));
+  const points = walkThrough(skeleton);
+  assert.equal(
+    unreached(skeleton, points),
+    0,
+    "the loop was dropped from the walk",
+  );
+});
+
+test("walkThrough never lifts the pen: consecutive points are neighbours", () => {
+  /* Merging a shallow crossing's two T-nodes removes the stub between them from the graph; the walk
+     must still run along it rather than jump the gap. */
+  /** @type {[{ x: number, y: number }[], number, number, number][]} */
+  const cases = [
+    [alpha(70, 45, 90, 200), 300, 400, 5],
+    [alpha(40, 300, 60, 250, 1.25), 140, 500, 7],
+  ];
+  for (const [line, w, h, r] of cases) {
+    const points = walkThrough(pruneSpurs(thin(strokeField(w, h, line, r))));
+    let step = 0;
+    for (let i = 1; i < points.length; i += 1)
+      step = Math.max(
+        step,
+        Math.hypot(
+          points[i].x - points[i - 1].x,
+          points[i].y - points[i - 1].y,
+        ),
+      );
+    assert.ok(step <= 1.5, `the walk jumps ${step.toFixed(1)}px`);
+  }
+});
+
+test("walkThrough treats a clump of touching junction pixels as one crossing", () => {
+  /* A 1px skeleton drawn by hand: down the left, round a square loop to the right, back across the
+     first stroke and out to the left edge. Two stray pixels at the crossing make five touching
+     junction pixels with no run between them, as a thick crossing thins. Both free ends sit near
+     the crossing, and must stay ends. */
+  /** @type {number[][]} */
+  const pixels = [];
+  for (let y = 2; y <= 60; y += 1) pixels.push([30, y]);
+  for (let x = 31; x <= 60; x += 1) pixels.push([x, 60]);
+  for (let y = 59; y >= 30; y -= 1) pixels.push([60, y]);
+  for (let x = 59; x >= 2; x -= 1) pixels.push([x, 30]);
+  pixels.push([31, 31], [29, 29]);
+  const skeleton = fieldOf(70, 70, pixels);
+  const points = walkThrough(skeleton);
+  assert.equal(
+    unreached(skeleton, points),
+    0,
+    "part of the stroke was never walked",
+  );
+  const ends = [points[0], points[points.length - 1]];
+  assert.ok(
+    ends.some((p) => p.x === 30 && p.y === 2) &&
+      ends.some((p) => p.x === 2 && p.y === 30),
+    `the walk runs ${JSON.stringify(ends)}, not from one free end to the other`,
+  );
 });
