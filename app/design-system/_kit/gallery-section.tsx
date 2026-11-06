@@ -1,10 +1,26 @@
 import type { ReactNode } from "react";
 
+/* The details after an intro line, one fact per bullet, so a reader scans rather than reads a passage. */
+function Points({ points }: { points?: readonly string[] }) {
+  if (points === undefined) return null;
+  return (
+    <ul className="flex list-disc flex-col gap-space-3xs pl-space-md">
+      {points.map((point) => (
+        <li className="type-body text-ink" key={point}>
+          {point}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 interface GallerySectionProps {
   /** Section slug WITHOUT the `ds-` prefix; the rendered id is always `ds-{id}`. */
   id: string;
   title: string;
+  /** One sentence: what the section holds. Anything more goes in `points`. */
   intro: string;
+  points?: readonly string[];
   /** Full DESIGN.md heading path, e.g. "Foundations → Colors". */
   mapsTo: string;
   /** Real project artifact this section reflects — a code path or token selector, never a kit file. */
@@ -16,6 +32,7 @@ export function GallerySection({
   id,
   title,
   intro,
+  points,
   mapsTo,
   source,
   children,
@@ -32,6 +49,7 @@ export function GallerySection({
           <p className="type-caption text-ink">{source}</p>
         )}
         <p className="type-body text-ink">{intro}</p>
+        <Points points={points} />
       </div>
 
       <div className="flex flex-col gap-space-xl">{children}</div>
@@ -60,8 +78,9 @@ interface SpecimenProps {
   name: string;
   /** Real import/file path the demo renders from. */
   source?: string;
-  /** One line: what it is and where it is used. */
+  /** One line: what it is and where it is used. Anything more goes in `points`. */
   description?: string;
+  points?: readonly string[];
   /** Only what the render cannot show: an interaction to try, an unposable state, a resize, a known gap. */
   note?: string;
   /** Terse token or trait list, rendered last because it annotates the demo above it. A string is
@@ -77,6 +96,7 @@ export function Specimen({
   name,
   source,
   description,
+  points,
   note,
   spec,
   headingLevel = 3,
@@ -94,6 +114,7 @@ export function Specimen({
       {description === undefined ? null : (
         <p className="type-body text-ink">{description}</p>
       )}
+      <Points points={points} />
       {note === undefined ? null : (
         <p className="type-caption text-ink">{note}</p>
       )}

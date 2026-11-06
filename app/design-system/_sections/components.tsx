@@ -102,15 +102,24 @@ export function ComponentsSections() {
 
       <GallerySection
         id="ui"
-        intro="The UI primitives: the action, portraits, the gallery's preview row, overlay and full-screen viewer, the image stand-in, the sprig ornament, the designer's credit and the scroll progress line — plus the couple's drawn names, which are not portable but shared by two sections."
+        intro="The UI primitives."
+        points={[
+          "the action, portraits, and the gallery's preview row, overlay and full-screen viewer",
+          "the image stand-in, the sprig ornament, the designer's credit and the scroll progress line",
+          "plus the couple's drawn names, which are not portable but shared by two sections",
+        ]}
         mapsTo="Components → UI"
         source="@/components/ui/*"
         title="Components · UI"
       >
         <Specimen
-          description="The page's one control: a sentence-case italic label with no box around it. Used for the map action, a ritual's photo-row gallery action and the not-found page's way back. The map action alone takes the pill ground — a piece of the card's paper holding the map mark and an upright label."
+          description="The page's one control: a sentence-case italic label with no box around it."
           id="ui-button-action"
           name="button-action"
+          points={[
+            "used for the map action, a ritual's photo-row gallery action and the not-found page's way back",
+            "the map action alone takes the pill ground — a piece of the card's paper holding the map mark and an upright label",
+          ]}
           note="The three states cannot be posed — hover it on a pointer device to see the label (or the whole pill) grow and thicken without shifting, press it (on any device, phones having no hover) to see it dim, and tab to it for the focus ring. The gallery action here does nothing when pressed."
           source="@/components/ui/button-action"
           spec={[
@@ -166,8 +175,9 @@ export function ComponentsSections() {
 
         <SpecimenGroup title="Gallery">
           <Specimen
-            description="One ritual's preview strip, the cue that its set continues, and the action that opens the gallery. A ritual with no photographs renders none of it."
+            description="One ritual's preview strip, the cue that its set continues, and the action that opens the gallery."
             headingLevel={4}
+            points={["a ritual with no photographs renders none of it"]}
             id="ui-photo-row"
             name="photo-row"
             note="Shown through photo-row's client seam, photo-strip, which measures this cell rather than a ritual's block — so the frame count and row height are this box's answer, not the section's. The five frames come from a three-image sample set, so the +N cue has something to count, and each sample is its own thumbnail — the specimen shows the component, not the build-time pipeline that derives three deliveries on the page. Pressing a frame opens the real viewer on that photograph; the +N frame and the action open the real grid."
@@ -240,7 +250,11 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules, on five eyebrows — Event Info's, Family's, the timeline's, Wishes' and the not-found screen's. Five call sites; SIX ornaments on the published page, since Event Info and Family each render theirs twice and the not-found screen is not part of it."
+          description="The section-head eyebrow's frame: two sprig marks mirrored outward between two hairline rules."
+          points={[
+            "on five eyebrows: Event Info's, Family's, the timeline's, Wishes' and the not-found screen's",
+            "five call sites; SIX ornaments on the published page, since Event Info and Family each render theirs twice and the not-found screen is not part of it",
+          ]}
           id="ui-sprig-ornament"
           name="sprig-ornament"
           note="It carries no type role and no colour: the call site keeps its own element and role, and a colour utility here would beat .type-eyebrow's own gold, declared in @layer components. The invite's eyebrow deliberately takes none: it leads the hero. The rituals' header line carries one leading sprig instead; see it on the page at Domain · Celebrations."
@@ -253,7 +267,10 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="The couple's names as drawn geometry rather than type, traced from the legacy invitation's own lettering. One source serves the invite's stack and Wishes' single line by translation alone."
+          description="The couple's names as drawn geometry rather than type, traced from the legacy invitation's own lettering."
+          points={[
+            "one source serves the invite's stack and Wishes' single line by translation alone",
+          ]}
           id="ui-couple-names"
           name="couple-names"
           note="Each lockup here is sized in em of a size token — --text-display-name for the stack, --text-heading-script for the line — read from the token rather than copied, which is how the drawing stays on the names scale rather than on a size chosen for it, so the two specimens step at the breakpoints those tokens do. The dilation is per call site and has no default (the values above copy the two sections). What a specimen cannot show: the invite switches between these two forms on orientation, and the single line grows to 5.3em at laptop and 5.8em at desktop in landscape. The names are real text to a reader — an sr-only span carries them and the drawing is aria-hidden, so the invite's h1 has an accessible name. The names are drawn geometry, not a type role; two SIZE tokens are left, and these em widths resolve against them."
@@ -291,7 +308,11 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="The site's credit to its designer: the lead Design and the designer's name, which is the one link. Two layouts — one line at Wishes' foot, and a sign-off at the foot of the not-found card; every route also names the designer in its metadata."
+          description="The site's credit to its designer: the lead Design and the designer's name, which is the one link."
+          points={[
+            "two layouts: one line at Wishes' foot, and a sign-off at the foot of the not-found card",
+            "every route also names the designer in its metadata",
+          ]}
           id="ui-designer-credit"
           name="designer-credit"
           note="It places nothing: each call site positions it — absolute at Wishes' foot, in the not-found stack's last track. The link is live and leaves the gallery. In line, the name's weight follows this window: bold below md, regular from md up."
@@ -314,7 +335,11 @@ export function ComponentsSections() {
         </Specimen>
 
         <Specimen
-          description="A hairline across the top of the screen on / that fills as the guest scrolls. Its track is /'s scroll cue: present from the first screen, it says the page continues before anything has moved."
+          description="A hairline across the top of the screen on / that fills as the guest scrolls."
+          points={[
+            "its track is /'s scroll cue",
+            "present from the first screen, it says the page continues before anything has moved",
+          ]}
           id="ui-scroll-progress"
           name="scroll-progress"
           note="The real component, held inside a frame so its fixed position resolves here instead of over the gallery — so its fill is LIVE and follows this gallery page's own scroll. Fixed beside <main> on /, never inside it, so no section's box or fit can move; the lab route, /thread, carries none and keeps the thread as its cue."

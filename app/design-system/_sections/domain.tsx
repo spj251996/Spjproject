@@ -138,7 +138,11 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="The twist: the ink carries the lay of a long-lay rope — lighter gaps slanting across it at a steady pitch — so the line reads as twisted fibre rather than a pen stroke."
+          description="The twist: the ink carries the lay of a long-lay rope."
+          points={[
+            "lighter gaps slant across it at a steady pitch",
+            "the line reads as twisted fibre rather than a pen stroke",
+          ]}
           id="thread-twist"
           name="twist"
           note="One end of a mid-page connector, at its own size and magnified; the magnified view is a crop, not a different drawing. On the page a gap shows only once the ink has drawn past it."
@@ -153,7 +157,11 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="The sway: the whole line moves a little, as a thread in moving air — a slow sway with gusts passing through it — so the thread is alive at rest."
+          description="The sway: the whole line moves a little, as a thread in moving air."
+          points={[
+            "a slow sway with gusts passing through it",
+            "the thread is alive at rest",
+          ]}
           id="thread-sway"
           name="sway"
           note="One mid-page connector with its twist, at its own size, moved by the page's own sway."
@@ -170,7 +178,12 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="The drawing head: while a piece draws, its leading end carries the sheen's light — the thread's red lightening toward its tip, at the ink's own width, with a faint halo."
+          description="The drawing head: while a piece draws, its leading end carries the sheen's light."
+          points={[
+            "the thread's red lightening toward its tip",
+            "at the ink's own width",
+            "with a faint halo",
+          ]}
           id="thread-head"
           name="drawing head"
           note="Posed on a stretch drawn partway, over the same ink, on a mid-page connector in the wide band's own geometry, with the page's own tip painter laying the fibres. The head is a stack of abutting opaque butt-capped steps, each a polyline of only its own run, with the colour stepped along the arc; the halo is one filter on the one group holding them all, never on a step."
@@ -187,7 +200,12 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="The frayed ends: the thread's two free ends at rest, the invite's top terminal and Wishes' closing end, end as cut cord does — full width and twist up to a square cut, then five fibres leaving it."
+          description="The frayed ends: the thread's two free ends at rest end as cut cord does."
+          points={[
+            "the two ends are the invite's top terminal and Wishes' closing end",
+            "full width and twist up to a square cut",
+            "then five fibres leaving it",
+          ]}
           id="thread-fray"
           name="frayed ends"
           note="Each end is shown at its own size and magnified; the magnified view is a crop, not a different drawing, and it clips the contact shadow and the line at its own edge. Both are laid by the page's own end painter on the page's own cut mask. The moving tip is the same end in thread-sheen, under the drawing head above."
@@ -204,7 +222,8 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="Crossings: where the line crosses itself, one strand lies over the other and casts a small lift shadow onto the strand beneath."
+          description="Crossings: where the line crosses itself, one strand lies over the other."
+          points={["it casts a small lift shadow onto the strand beneath"]}
           id="thread-crossings"
           name="crossings"
           note="Laid on Wishes' bow at the wide band's nominal size, unrotated, by the page's own crossing painter. Along the route, and wherever only one pass lies inside a motif, the later pass lies on top; inside a motif the crossings follow that motif's own woven order. An earlier pass on top lies over the drawing head, so the tip passes under it."
@@ -218,7 +237,11 @@ export function DomainSections() {
         </Specimen>
 
         <Specimen
-          description="The motifs: the drawings the line passes through — a heart, the rings, a knot, a ring round each of the couple's photos and a bow — each laid along the flow where the owner's drawing places it."
+          description="The motifs: the drawings the line passes through."
+          points={[
+            "a heart, the rings, a knot, a ring round each of the couple's photos and a bow",
+            "each laid along the flow where the owner's drawing places it",
+          ]}
           id="thread-motifs"
           name="motifs"
           note="At the wide band's nominal size, turned and mirrored as the page draws them there. Only Family's two rings are anchored to real content; every other motif takes its place in the drawing. A connector meets each motif along the motif's own visible direction, at every window size."
@@ -258,7 +281,12 @@ export function DomainSections() {
         title="Domain · Family"
       >
         <Specimen
-          description="Each sheet is one Family: its side as an eyebrow, the family name, where the family is from beneath it, then rows of portraits — the parents, then one row for each child who has a family of their own carrying that whole family, then a last row for the children with none."
+          description="Each sheet is one Family: its side as an eyebrow, the family name, where the family is from beneath it, then rows of portraits."
+          points={[
+            "the parents first",
+            "then one row for each child who has a family of their own, carrying that whole family",
+            "then a last row for the children with none",
+          ]}
           id="domain-family"
           name="family"
           note="Unframed, as every specimen box is: the sheet reproduces the unfitted pair's sheet by hand and always stacks, since its rows never reflow (Layout → mounted-pair) and MountedPair has no always-stacked form. The framed pair, composed by FamilySection in app/_sections/family.tsx, is live at / and sits side by side in landscape windows from lg. The samples take the real roster's shape: the bride's two siblings, and the groom's sibling with a spouse and a child, which is the gallery's only view of a whole family on one row, and a second sibling on the row beneath. Resize across md, lg and xl: diameters and gaps step with the type."
