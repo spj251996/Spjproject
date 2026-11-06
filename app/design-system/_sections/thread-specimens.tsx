@@ -756,7 +756,9 @@ export function ThreadSwaySpecimen() {
   const half = (measured?.strokeWidth ?? 0) / 2;
   return (
     <Panel caption="Moving, at its own size; still under reduced motion.">
-      <div className="max-w-full" ref={host}>
+      {/* Clipped, never scaled: the sway reads the svg's units as pixels, so on a phone the stretch is wider
+          than the screen and would otherwise scroll the whole gallery sideways. */}
+      <div className="max-w-full overflow-x-clip" ref={host}>
         <svg
           aria-label="The sway, on the thread's ink and twist"
           /* Marks it as the thread, which the sway never treats as type to hold still beside. */
