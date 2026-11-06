@@ -345,6 +345,41 @@ test("a traced stroke's corner between two long runs is found; its short traced 
   );
 });
 
+test("corners closer than their two reaches are not both kept, so rounding one cannot move the other", () => {
+  const zigzag = [];
+  for (let k = 0; k <= 6; k += 1)
+    zigzag.push({ x: k * 30, y: k % 2 === 0 ? 0 : 30 });
+  const corners = cornersOf(zigzag);
+  assert.ok(corners.length > 0, "the zig-zag has corners");
+  for (let k = 1; k < corners.length; k += 1)
+    assert.ok(
+      corners[k] - corners[k - 1] >= 3,
+      `corners ${corners[k - 1]} and ${corners[k]} lie within each other's reach`,
+    );
+});
+
+test("checkPen refuses corners out of order or named twice", () => {
+  const stroke = {
+    group: 0,
+    states: ["1111"],
+    points: [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 200, y: 100 },
+      { x: 300, y: 100 },
+    ],
+  };
+  assert.throws(() =>
+    checkPen("tall", { strokes: [{ ...stroke, corners: [2, 1] }] }),
+  );
+  assert.throws(() =>
+    checkPen("tall", { strokes: [{ ...stroke, corners: [1, 1] }] }),
+  );
+  assert.doesNotThrow(() =>
+    checkPen("tall", { strokes: [{ ...stroke, corners: [1, 2] }] }),
+  );
+});
+
 test("where a stroke left the line, its corner is rounded on the photo state's page, and the line bends gently", () => {
   /* The pen traced the red line, then left it at a single point; spliced as it is, the line kinks
      there. */

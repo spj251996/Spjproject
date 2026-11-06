@@ -6,6 +6,7 @@ import { THREAD_BANDS } from "./thread-bands.ts";
 import { authoredMeasuredSections } from "./thread-fallback.ts";
 import {
   JOIN_EASE,
+  joined,
   joinReach,
   PORTRAIT_LOOP_TRIM_FRACTION,
   splitSubpaths,
@@ -2043,21 +2044,17 @@ test("at the authored size each generated ring's loop is centred on its portrait
     const familyTop = sections[THREAD_IDS.indexOf("family")].top;
     const { d, pieces } = threadLine(band, sections);
     const subpaths = splitSubpaths(d);
+    /* The drawn page lists its portraits in page order: the bride third, the groom last; the first
+       ring is the bride's. */
+    const people = [
+      layout.portraits[2],
+      layout.portraits[layout.portraits.length - 1],
+    ].map((p) => ({ x: p.x, y: p.y - top + familyTop }));
+    let ring = 0;
     pieces.forEach((piece, i) => {
       if (piece.kind !== "portraitLoop") return;
       const points = sampled(subpaths[i]);
-      const mean = {
-        x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
-        y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
-      };
-      const portrait = layout.portraits
-        .map((p) => ({ x: p.x, y: p.y - top + familyTop }))
-        .reduce((a, b) =>
-          Math.hypot(a.x - mean.x, a.y - mean.y) <=
-          Math.hypot(b.x - mean.x, b.y - mean.y)
-            ? a
-            : b,
-        );
+      const portrait = people[ring++];
       const loop = emptyCircle(points, portrait);
       const off = Math.hypot(loop.x - portrait.x, loop.y - portrait.y);
       assert.ok(
@@ -2156,4 +2153,25 @@ test("at the authored size every connector already meets its motif: no end moves
         });
     });
   }
+});
+
+/* A short connector can need its whole length for the join: the redraw must still leave its far end
+   as it was, or the join at that end is undone by this one. */
+test("a join that reaches a short connector's far end leaves that end and its direction as they were", () => {
+  const d = "M 0 0 C 10 0 20 5 30 10 C 40 15 50 30 60 40";
+  const far = { x: 60, y: 40 };
+  const farDirection = Math.atan2(40 - 30, 60 - 50);
+  const out = joined(d, "start", { x: 20, y: -30 }, { x: 0, y: 1 });
+  const n = (out.match(/-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? []).map(Number);
+  const end = { x: n[n.length - 2], y: n[n.length - 1] };
+  const before = { x: n[n.length - 4], y: n[n.length - 3] };
+  assert.ok(
+    Math.hypot(end.x - far.x, end.y - far.y) < 1e-6,
+    "the far end stays put",
+  );
+  const direction = Math.atan2(end.y - before.y, end.x - before.x);
+  assert.ok(
+    Math.abs(direction - farDirection) < (0.5 * Math.PI) / 180,
+    `the far end arrives at ${((direction * 180) / Math.PI).toFixed(1)}°, was ${((farDirection * 180) / Math.PI).toFixed(1)}°`,
+  );
 });

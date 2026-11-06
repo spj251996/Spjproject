@@ -202,7 +202,15 @@ function withoutRepeats(points) {
 export function cornersOf(points) {
   /** @type {number[]} */
   const corners = [];
+  const s = arcLengths(points);
   for (let i = 1; i < points.length - 1; i += 1) {
+    /* Rounding a corner replaces the stroke within CORNER_REACH of it, so a corner closer than two
+       reaches to the last one kept would land on that curve. */
+    if (
+      corners.length > 0 &&
+      s[i] - s[corners[corners.length - 1]] < 2 * CORNER_REACH
+    )
+      continue;
     const [p, q, r] = [points[i - 1], points[i], points[i + 1]];
     if (
       Math.hypot(q.x - p.x, q.y - p.y) < CORNER_RUN ||
@@ -607,7 +615,7 @@ export function applyPen(connectors, pen, combination, place) {
 
   return connectors.map((c, k) => ({
     ...c,
-    points: lines[k] === c.points ? c.points : thinned(lines[k], c.points),
+    points: thinned(lines[k], c.points),
   }));
 }
 
@@ -724,11 +732,19 @@ export function checkPen(band, pen) {
       !(
         Array.isArray(m.corners) &&
         m.corners.every(
-          (k) => Number.isInteger(k) && k > 0 && k < m.points.length - 1,
+          (k, n, corners) =>
+            Number.isInteger(k) &&
+            k > 0 &&
+            k < m.points.length - 1 &&
+            (n === 0 || k > corners[n - 1]),
         )
       )
     )
-      fail("stroke", i, "corners name points inside the stroke");
+      fail(
+        "stroke",
+        i,
+        "corners name points inside the stroke, in order, once each",
+      );
   });
   (pen.zones ?? []).forEach((m, i) => {
     if (!drawnOk(m))

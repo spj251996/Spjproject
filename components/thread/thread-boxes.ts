@@ -22,9 +22,7 @@ const TALL_HEIGHTS: SectionHeights = {
   "event-info": 1400,
   family: 1400,
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: 1895,
   wishes: 700,
 };
@@ -34,9 +32,7 @@ const UPRIGHT_HEIGHTS: SectionHeights = {
   "event-info": 2360,
   family: 2360,
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: 1968,
   wishes: 1180,
 };
@@ -46,9 +42,7 @@ const WIDE_HEIGHTS: SectionHeights = {
   "event-info": 695,
   family: 695,
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: 1339,
   wishes: 695,
 };
