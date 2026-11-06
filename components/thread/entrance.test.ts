@@ -40,6 +40,21 @@ const RECORD = `(() => {
       ink = Number.isFinite(period) && Number.isFinite(offset) ? Math.max(0, period - offset) : piece.style.strokeDasharray === "" ? Infinity : 0;
     }
     const lines = group ? Array.from(group.querySelectorAll("path"), (p) => p.getAttribute("d") ?? "").join("|") : "";
+    /* The line's leading front along the invite's piece: its own ink, or the entrance cord's head once that is on the
+       piece (within 3px of it), whichever is further. Sampled every 2px on first use. */
+    let front = ink === Infinity ? 0 : ink;
+    if (piece && group) {
+      window.__pieceSamples ??= Array.from({ length: Math.ceil(piece.getTotalLength() / 2) }, (_, i) => piece.getPointAtLength(i * 2));
+      const cord = group.querySelector(":scope > path");
+      const n = (cord?.getAttribute("d") ?? "").match(/-?[\\d.]+/g);
+      if (n && n.length >= 2) {
+        const hx = Number(n[n.length - 2]);
+        const hy = Number(n[n.length - 1]);
+        let best = Infinity, at = 0;
+        window.__pieceSamples.forEach((p, i) => { const d = Math.hypot(p.x - hx, p.y - hy); if (d < best) { best = d; at = i * 2; } });
+        if (best <= 3) front = Math.max(front, at);
+      }
+    }
     const dashes = Array.from(document.querySelectorAll("svg[data-thread-svg][class*='pageRoot'] path[data-thread-piece]"), (p) => p.style.strokeDashoffset).join(",");
     const state = lines + "#" + dashes;
     const fibres = group ? Array.from(group.querySelectorAll("g[filter*='fibre'] path")).filter((p) => (p.getAttribute("d") ?? "") !== "") : [];
@@ -50,6 +65,7 @@ const RECORD = `(() => {
       longest: Math.max(0, ...fibres.map((p) => p.getTotalLength())),
       moved: state !== last,
       ink,
+      front,
       height: innerHeight,
       viewBox: document.querySelector("svg[data-thread-svg][class*='pageRoot']:has(path[data-thread-piece])")?.getAttribute("viewBox") ?? "",
       opened: document.querySelector("[data-thread-opened]") !== null,
@@ -67,6 +83,7 @@ type Frame = {
   longest: number;
   moved: boolean;
   ink: number;
+  front: number;
   height: number;
   viewBox: string;
   opened: boolean;
@@ -114,7 +131,11 @@ function serveExport(): Promise<{ server: Server; port: number }> {
 const ALL_UNDASHED = `Array.from(document.querySelectorAll("svg[data-thread-svg] path[data-thread-piece]")).every((p) => p.style.strokeDasharray === "")`;
 
 async function withPage(
-  options: { reducedMotion?: "reduce" | "no-preference" },
+  options: {
+    reducedMotion?: "reduce" | "no-preference";
+    sway?: boolean;
+    viewport?: { width: number; height: number };
+  },
   run: (page: Page) => Promise<void>,
   prepare?: (page: Page) => Promise<void>,
 ) {
@@ -123,12 +144,12 @@ async function withPage(
   const { server, port } = await serveExport();
   try {
     const context = await browser.newContext({
-      viewport: PHONE,
+      viewport: options.viewport ?? PHONE,
       deviceScaleFactor: 1,
       reducedMotion: options.reducedMotion ?? "no-preference",
     });
     const page = await context.newPage();
-    await page.addInitScript(SWAY_OFF);
+    if (!options.sway) await page.addInitScript(SWAY_OFF);
     await page.addInitScript(RECORD);
     await prepare?.(page);
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
@@ -141,14 +162,17 @@ async function withPage(
   }
 }
 
-/* The entrance starts as the type lands; a second in, the bundle is still on its way. */
+/* In flight: once the first fibre is drawn (before the type lands the entrance paints nothing), and a moment on,
+   with the bundle still on its way. */
 async function midEntrance(page: Page) {
-  await page.waitForSelector(ENTRANCE, { state: "attached", timeout: 10000 });
-  await page.waitForTimeout(1000);
-  assert.ok(
-    await page.$(ENTRANCE),
-    "the entrance landed within a second of starting",
+  await page.waitForFunction(
+    "window.__entranceFrames.some((frame) => frame.fibres > 0)",
+    null,
+    { timeout: 15000 },
   );
+  await page.waitForTimeout(300);
+  const [last] = await framesSince(page, (await frameCount(page)) - 1);
+  assert.ok(last.entrance && last.fibres > 0, "the entrance was not in flight");
 }
 
 async function framesSince(page: Page, from: number) {
@@ -344,6 +368,93 @@ test("a late start plays in full", async (t) => {
         await new Promise((resolve) => setTimeout(resolve, 4000));
         await route.continue();
       });
+    },
+  );
+});
+
+/* The entrance draws inside the page thread's svg, whose sway displaces every path it is given. The spike drew in an
+   overlay with no sway, and that is what the owner signed off: the painter's one write per path per frame must be
+   the only one. */
+test("the sway leaves the entrance alone", async (t) => {
+  if (!labExport(t)) return;
+  await withPage(
+    { sway: true },
+    async (page) => {
+      await page.waitForFunction(
+        "window.__entranceFrames.some((frame) => frame.fibres > 0)",
+        null,
+        { timeout: 15000 },
+      );
+      await page.waitForTimeout(800);
+      const most = (await page.evaluate(
+        "window.__entranceMostWrites",
+      )) as number;
+      assert.ok(most >= 1, "no write to the entrance's paths was seen");
+      assert.equal(
+        most,
+        1,
+        `an entrance path was written ${most} times in one frame — the sway reshaped it`,
+      );
+    },
+    async (page) => {
+      await page.addInitScript(`(() => {
+        let writes = new Map();
+        window.__entranceMostWrites = 0;
+        new MutationObserver((records) => {
+          for (const record of records) {
+            const target = record.target;
+            if (record.attributeName !== "d" || !target.closest?.("[data-thread-entrance]")) continue;
+            const count = (writes.get(target) ?? 0) + 1;
+            writes.set(target, count);
+            window.__entranceMostWrites = Math.max(window.__entranceMostWrites, count);
+          }
+        }).observe(document, { subtree: true, attributes: true, attributeFilter: ["d"] });
+        const frame = () => { writes = new Map(); requestAnimationFrame(frame); };
+        requestAnimationFrame(frame);
+      })()`);
+    },
+  );
+});
+
+/* Under long frames the timed draw must still start where the scene meant it to, or it trails the entrance's cord for
+   its whole run and the line steps back when the cord is cleared at the landing. */
+test("under long frames the line never steps back at the landing", async (t) => {
+  if (!labExport(t)) return;
+  await withPage(
+    { viewport: { width: 820, height: 1180 } },
+    async (page) => {
+      await page.waitForSelector("[data-thread-opened]", {
+        state: "attached",
+        timeout: 30000,
+      });
+      const frames = await framesSince(page, 0);
+      const last = frames.findLastIndex((frame) => frame.entrance);
+      assert.ok(last >= 0, "no entrance ran");
+      const before = Math.max(
+        ...frames.slice(Math.max(0, last - 2), last + 1).map((f) => f.front),
+      );
+      assert.ok(
+        before > 0,
+        "the entrance's cord never reached the invite's piece",
+      );
+      const after = frames[last + 1].front;
+      assert.ok(
+        after >= before - 2,
+        `the line stepped back ${(before - after).toFixed(1)}px at the landing`,
+      );
+    },
+    /* From the first fibre on, every frame takes ~100ms: a busy phone. */
+    async (page) => {
+      await page.addInitScript(`(() => {
+        const slow = () => {
+          if (document.querySelector("[data-thread-entrance] path[d^='M']")) {
+            const until = performance.now() + 90;
+            while (performance.now() < until);
+          }
+          requestAnimationFrame(slow);
+        };
+        requestAnimationFrame(slow);
+      })()`);
     },
   );
 });

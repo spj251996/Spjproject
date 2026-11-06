@@ -58,7 +58,21 @@ const DESKTOP = fixture(
   { left: 705, top: 108, right: 831, bottom: 128 },
   0.62,
 );
-const FIXTURES = { phone: PHONE, tablet: TABLET, desktop: DESKTOP };
+/* A short landscape phone: the eyebrow sits 52px from the window's top, so the band above it is 24px tall, and the
+   thread starts level with the eyebrow, to its right (probed at 844×390). */
+const SHORT_LANDSCAPE = fixture(
+  { left: 0, top: 0, right: 844, bottom: 390 },
+  { x: 563, y: 61 },
+  { x: -0.77, y: 0.64 },
+  { left: 353, top: 52, right: 491, bottom: 72 },
+  0.4,
+);
+const FIXTURES = {
+  phone: PHONE,
+  tablet: TABLET,
+  desktop: DESKTOP,
+  "short landscape": SHORT_LANDSCAPE,
+};
 
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -109,10 +123,12 @@ test("every fibre sets off beyond the top-left edges, within the owner's limits"
         if (points && points.length > 0) first = points[0];
       }
       assert.ok(first, `${name}: fibre ${fibre} never appears`);
+      /* A fibre sets off `outside` (30px) beyond the edge; sampled every 5ms, its first point has already moved up
+         to a few px in. */
       const onTop =
-        first.y <= view.top - 29 && first.x <= view.left + width / 3 + 1;
+        first.y <= view.top - 25 && first.x <= view.left + width / 3 + 1;
       const onLeft =
-        first.x <= view.left - 29 && first.y <= view.top + (2 / 3) * height + 1;
+        first.x <= view.left - 25 && first.y <= view.top + (2 / 3) * height + 1;
       assert.ok(
         onTop || onLeft,
         `${name}: fibre ${fibre} sets off at ${first.x.toFixed(1)},${first.y.toFixed(1)}`,

@@ -201,8 +201,8 @@ test("a change to reduced motion during the opening draw or a catch-up leaves no
       { timeout: 10000, polling: 10 },
     );
     await switchToReduce(opening);
-    /* The opening draw lasts 1200ms from its first frame; this outlasts all of it. */
-    await opening.waitForTimeout(2000);
+    /* The opening draw lasts 2040ms from its first frame; this outlasts all of it. */
+    await opening.waitForTimeout(3000);
     const afterOpening = (await opening.evaluate(DASHES)) as Dashes;
     assert.ok(afterOpening.pieces > 0, "the thread is on the page");
     assert.equal(
@@ -968,7 +968,7 @@ test("motion arriving at the top runs the opening that reduced motion held back"
       0,
       "the reader is still at the top",
     );
-    /* A re-armed draw starts at once and lasts 1200ms; this outlasts it. */
+    /* A re-armed draw starts at once and lasts 2040ms; this outlasts it. */
     await page.waitForTimeout(3000);
     const drawn = (await page.evaluate(`(() => {
       const pieces = Array.from(document.querySelectorAll("path[data-thread-piece]"));
