@@ -7,8 +7,7 @@
 
    WHY A STACK OF STEPS. A dash follows a curve because it is geometry; an SVG gradient lives in
    user space and does not, so a gradient laid along a bend puts its colour in the wrong place. A
-   chord-aligned gradient was rendered and rejected on measurement (DESIGN.md → Thread → The drawing
-   head). The head is instead N abutting opaque butt-capped runs of the piece, each one flat colour,
+   chord-aligned gradient was rendered and rejected on measurement. The head is instead N abutting opaque butt-capped runs of the piece, each one flat colour,
    the colour stepped along the arc — with N chosen so no two neighbours differ by more than the eye
    can see.
 
@@ -23,7 +22,7 @@ import { dashForPiece, pieceProgress } from "./thread-progress.ts";
 
 export type Rgb = readonly [number, number, number];
 
-/* The head is 96px at the 1.6px stroke: a ratio rather than a length, so it follows the stroke. The
+/* The head is 60× the ink's width, 132px at the 2.2px stroke: a ratio rather than a length, so it follows the stroke. The
    owner chose it on live renders (DESIGN.md → Thread → The drawing head). */
 export const HEAD_LENGTH_RATIO = 60;
 

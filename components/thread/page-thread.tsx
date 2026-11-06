@@ -85,7 +85,7 @@ import { createTwistPainter } from "./thread-twist";
    own stretch of the total, never one global fraction.
 
    WISHES: this SVG paints at `{z.thread}` above every card, so Wishes' stretch is drawn by
-   `CardThread` inside its card (DESIGN.md → Thread → Wishes).
+   `CardThread` inside its card (DESIGN.md → Thread → `card-thread`).
 
    ANCHORING: `family`'s two `portraitLoop`s translate onto the portraits labelled Bride and Groom,
    paired by nearest distance, which is safe because the correction is under 18px across `wide`; a
