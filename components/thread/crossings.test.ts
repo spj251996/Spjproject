@@ -344,11 +344,15 @@ test("a resize mid-draw rebuilds the crossings, the tip and the ends from the ne
     );
     assert.deepEqual(after.endFibres, [5, 5]);
     const fresh = await context.newPage();
+    await fresh.addInitScript(SWAY_OFF);
     await fresh.setViewportSize({ width: 1280, height: 695 });
     await fresh.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    await fresh.waitForTimeout(1500);
+    await fresh.waitForSelector("[data-thread-opened]", {
+      state: "attached",
+      timeout: 15000,
+    });
     assert.deepEqual(
       after.overlays,
       ((await fresh.evaluate(STATE)) as State).overlays,
