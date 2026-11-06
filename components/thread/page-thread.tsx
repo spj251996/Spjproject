@@ -222,11 +222,8 @@ export function PageThread() {
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
   /* The entrance while it runs. Until it lands its own cord carries the thread's far end, so the thread's
-     frayed end stays hidden (`holdsTail`); `end` cuts it short, repainting unless the caller is about to. */
-  const entranceRef = useRef<{
-    holdsTail: boolean;
-    end(repaint: boolean): void;
-  } | null>(null);
+     frayed end stays hidden; `end` cuts it short, repainting unless the caller is about to. */
+  const entranceRef = useRef<{ end(repaint: boolean): void } | null>(null);
   /* How far the cord has drawn along the invite's piece, at the last paint: the entrance's cord leaves that
      much of its own run uncovered, so nothing is drawn twice. */
   const inviteInkRef = useRef(0);
@@ -350,7 +347,7 @@ export function PageThread() {
       if (first !== undefined) {
         inviteInkRef.current = paintedLength(cord, first);
         endFray()?.paint(
-          entranceRef.current?.holdsTail ? 0 : inviteInkRef.current,
+          entranceRef.current !== null ? 0 : inviteInkRef.current,
         );
       }
       crossingPainter()?.painted((piece) => paintedLength(cord, chain[piece]));
@@ -592,6 +589,8 @@ export function PageThread() {
     let drawFrame: number | null = null;
     let entranceFrame: number | null = null;
     let cancelled = false;
+    /* While `run` waits for the type, a change of motion preference leaves the entrance to it. */
+    let waiting = false;
 
     const startDraw = () => {
       if (released) return;
@@ -631,12 +630,14 @@ export function PageThread() {
        screen matrix -- the draw starts at once. */
     const run = async () => {
       const svg = liveSvgRef.current;
+      waiting = true;
       const landed = await typeLandedAt(
         document.getElementById("invite"),
         parseCssTime(
           svg === null ? "" : getComputedStyle(svg).animationDelay,
         ) ?? 0,
       );
+      waiting = false;
       if (cancelled || released) return;
       if (reducedMotion() || window.scrollY > 0) return startDraw();
       const input =
@@ -664,7 +665,7 @@ export function PageThread() {
         /* The thread's own frayed end comes back with the ratchet's peak, which the entrance never moved. */
         if (repaint && !reducedMotion()) draw(ratchetRef.current.advance(0));
       };
-      const entrance = { holdsTail: true, end };
+      const entrance = { end };
       entranceRef.current = entrance;
       draw(ratchetRef.current.advance(0));
       /* Every time here is the frame's own timestamp: a start stamped with `performance.now()` and frames timed
@@ -673,7 +674,12 @@ export function PageThread() {
       const step = (now: number) => {
         entranceFrame = null;
         startAt ??= entranceStartAt(landed, now);
-        const elapsed = Math.max(0, now - startAt);
+        /* Until the type lands there is nothing to draw, so nothing is written. */
+        if (now < startAt) {
+          entranceFrame = window.requestAnimationFrame(step);
+          return;
+        }
+        const elapsed = now - startAt;
         if (elapsed >= scene.release) startDraw();
         if (elapsed >= scene.land) return end(true);
         painter.paint(
@@ -701,7 +707,7 @@ export function PageThread() {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const onMotionChange = () => {
       if (motion.matches) return stop();
-      if (drawing || openingCompleteRef.current) return;
+      if (waiting || drawing || openingCompleteRef.current) return;
       if (window.scrollY > 0) return;
       released = false;
       startDraw();
