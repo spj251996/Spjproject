@@ -39,7 +39,7 @@
 
 /* WHEN THE OPENING'S TYPE HAS LANDED — the one place that says so: the passage, the last row, starts
    at 6.5 × fast and rises for 2.5 × fast. The scroll progress bar's track arrives here, and the lab
-   thread fades in from here. A new sequence changes THIS value, never a copy of it. */
+   thread's entrance starts here. A new sequence changes THIS value, never a copy of it. */
 :root {
   --opening-type-end: calc(var(--duration-fast) * 9);
 }
