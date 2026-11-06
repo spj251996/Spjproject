@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { authoredCard } from "./thread-authored-layout.ts";
 import { TALL_UPRIGHT_BOUNDARY, THREAD_BANDS } from "./thread-bands.ts";
-import { normalise, PAGE_FALLBACKS } from "./thread-fallback.ts";
+import {
+  authoredMeasuredSections,
+  normalise,
+  PAGE_FALLBACKS,
+} from "./thread-fallback.ts";
+import { THREAD_IDS } from "./thread-paths.ts";
 
 /* Evaluates the media queries the bands carry — a comma list of `and`-joined conditions on
    aspect-ratio, width in rem and orientation — against a window, so the bands can be checked at sample
@@ -66,4 +72,20 @@ test("normalise is idempotent once its output is in the unit box", () => {
   const d = "M 10 20 C 30 40 50 60 70 80";
   const once = normalise(d, 100, 200);
   assert.equal(normalise(once, 1, 1), once);
+});
+
+/* The no-JS thread composes each section at the size the drawing was authored for; once a ritual
+   carries photographs, Celebrations is that much taller, or its route is squashed. */
+test("the no-JS sections are the authored sections, Celebrations' photo strips included", () => {
+  for (const band of THREAD_BANDS)
+    for (const combination of ["0000", "1010", "1111"]) {
+      const sections = authoredMeasuredSections(band.id, combination);
+      THREAD_IDS.forEach((id, i) => {
+        assert.equal(
+          sections[i].height,
+          authoredCard(id, band.id, combination).sectionHeight,
+          `${band.id} ${combination} ${id}`,
+        );
+      });
+    }
 });

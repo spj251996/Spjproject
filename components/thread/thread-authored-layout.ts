@@ -29,9 +29,7 @@ const TALL_CARDS: Sections = {
   // Celebrations takes `mounted-sheet`'s `tall` mode (no measured fit), so its padding chain is
   // its own and its card is narrower than every fitted section's at this band.
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: { cardWidth: 345, cardLeft: 24, sectionHeight: 1895 },
   wishes: { cardWidth: 361, cardLeft: 16, sectionHeight: 700 },
 };
@@ -41,9 +39,7 @@ const UPRIGHT_CARDS: Sections = {
   "event-info": { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
   family: { cardWidth: 564, cardLeft: 128, sectionHeight: 2360 },
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: { cardWidth: 564, cardLeft: 128, sectionHeight: 1968 },
   wishes: { cardWidth: 564, cardLeft: 128, sectionHeight: 1180 },
 };
@@ -53,9 +49,7 @@ const WIDE_CARDS: Sections = {
   "event-info": { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   family: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
   /* Photo-free base, plus +184 / +184 / +190 per photographed ritual (tall / upright / wide);
-     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change.
-     The thread's route through Celebrations is still composed for the placeholder section: this
-     height is real, its shape awaits the redraw. */
+     measured to the pixel across 0, 1, 2 and 3 rituals. Re-measure after any ritual or photo change. */
   celebrations: { cardWidth: 960, cardLeft: 288, sectionHeight: 1339 },
   wishes: { cardWidth: 960, cardLeft: 288, sectionHeight: 695 },
 };
@@ -88,19 +82,21 @@ export type PortraitFraction = { x: number; y: number };
 
 type FamilyPortraits = { flemy: PortraitFraction; sebastian: PortraitFraction };
 
+/* Read off each band's drawn page (`assets/thread/<band>/photo-layout.json`, the bride third and the
+   groom last in page order); a test holds them to it. */
 const TALL_PORTRAITS: FamilyPortraits = {
-  flemy: { x: 0.356, y: 0.3067 },
-  sebastian: { x: 0.7881, y: 0.7868 },
+  flemy: { x: 0.356, y: 0.3216 },
+  sebastian: { x: 0.5, y: 0.8745 },
 };
 
 const UPRIGHT_PORTRAITS: FamilyPortraits = {
-  flemy: { x: 0.344, y: 0.2619 },
-  sebastian: { x: 0.8121, y: 0.8026 },
+  flemy: { x: 0.344, y: 0.3016 },
+  sebastian: { x: 0.5, y: 0.8397 },
 };
 
 const WIDE_PORTRAITS: FamilyPortraits = {
-  flemy: { x: 0.1875, y: 0.5291 },
-  sebastian: { x: 0.875, y: 0.5291 },
+  flemy: { x: 0.1875, y: 0.5302 },
+  sebastian: { x: 0.75, y: 0.7144 },
 };
 
 const PORTRAITS_BY_BAND: Record<BandId, FamilyPortraits> = {

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   authoredCard,
@@ -95,6 +96,35 @@ test("Flemy's and Sebastian's portrait centres are recorded for every band, as a
     for (const point of [flemy, sebastian]) {
       assert.ok(point.x >= 0 && point.x <= 1, `${band.id} x in [0,1]`);
       assert.ok(point.y >= 0 && point.y <= 1, `${band.id} y in [0,1]`);
+    }
+  }
+});
+
+/* The fallback when a portrait cannot be found on the page: it must still put each ring on its own
+   person. The drawn page lists its portraits in page order — the bride's family, the bride third, then
+   the groom's, the groom last. */
+test("the fallback portrait fractions land on Flemy's and Sebastian's own photos at the authored size", () => {
+  for (const band of THREAD_BANDS) {
+    const layout = JSON.parse(
+      readFileSync(`assets/thread/${band.id}/photo-layout.json`, "utf8"),
+    ) as {
+      portraits: { x: number; y: number }[];
+      sections: { id: string; top: number }[];
+    };
+    const top = layout.sections.find((s) => s.id === "family")?.top ?? 0;
+    const card = authoredCard("family", band.id);
+    const { flemy, sebastian } = familyPortraitFractions(band.id);
+    const people = [
+      [flemy, layout.portraits[2]],
+      [sebastian, layout.portraits[layout.portraits.length - 1]],
+    ] as const;
+    for (const [fraction, photo] of people) {
+      const x = card.cardLeft + fraction.x * card.cardWidth;
+      const y = fraction.y * card.sectionHeight;
+      assert.ok(
+        Math.hypot(x - photo.x, y - (photo.y - top)) < 1,
+        `${band.id}: the fallback lands at (${x.toFixed(1)}, ${y.toFixed(1)}), the photo is at (${photo.x}, ${(photo.y - top).toFixed(1)})`,
+      );
     }
   }
 });
