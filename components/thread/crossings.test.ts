@@ -233,11 +233,7 @@ test("an overlay appears as the draw reaches it, its lift once the later pass li
       await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
         waitUntil: "load",
       });
-      /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-      await page.waitForSelector("[data-thread-opened]", {
-        state: "attached",
-        timeout: 15000,
-      });
+      await page.waitForTimeout(3600);
       const maxScroll = (await page.evaluate(
         "document.documentElement.scrollHeight - window.innerHeight",
       )) as number;

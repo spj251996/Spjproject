@@ -36,7 +36,7 @@ function calcMs(expression: string, what: string) {
 }
 
 /* THE ONE SOURCE. `--opening-type-end` in `app/_sections/invite.css` says when the type has landed; the
-   thread's appearance step, its entrance and the progress bar's track read it. */
+   thread's fade and the progress bar's track read it, and the timed draw is derived from it. */
 function typeEndMs() {
   const match = stripComments(inviteCss).match(
     /--opening-type-end:\s*(calc\([^;]*\));/,
@@ -64,40 +64,25 @@ test("--opening-type-end is when the last row of type lands", () => {
   assert.equal(typeEndMs(), landing);
 });
 
-test("the thread appears at --opening-type-end rather than restating it", () => {
-  const css = stripComments(moduleCss);
+test("the thread's fade starts at --opening-type-end rather than restating it", () => {
   assert.match(
-    css,
-    /animation:\s*pageThreadAppear 1ms step-start\s+var\(--opening-type-end\) both/,
+    stripComments(moduleCss),
+    /animation:\s*pageThreadFadeIn var\(--duration-base\) var\(--ease-entrance\)\s+var\(--opening-type-end\) both/,
   );
-  const frames = css.match(
-    /@keyframes pageThreadAppear\s*\{([\s\S]*?)\n {2}\}/,
-  );
-  assert.ok(frames, "@keyframes pageThreadAppear not found");
-  assert.match(frames[1], /from\s*\{\s*visibility:\s*hidden;\s*\}/);
-  assert.match(frames[1], /to\s*\{\s*visibility:\s*visible;\s*\}/);
-  assert.doesNotMatch(css, /pageThreadFadeIn/);
-  assert.doesNotMatch(frames[1], /opacity/);
 });
 
-test("the opening draw runs 2040ms and holds back a quarter of the last connector", () => {
-  assert.equal(constant("OPENING_DRAW_DURATION"), 2040);
+// The draw must start exactly as the fade ends, or the sequence's last beat is a fade over an empty
+// stroke (draw late) or a line drawing before it is visible (draw early).
+test("the timed draw begins as the thread's fade completes", () => {
+  assert.equal(
+    constant("OPENING_DRAW_DELAY"),
+    typeEndMs() + tokenMs("duration-base"),
+  );
+});
+
+test("the opening draw runs 1200ms and holds back a quarter of the last connector", () => {
+  assert.equal(constant("OPENING_DRAW_DURATION"), 1200);
   assert.equal(constant("CROSSING_HOLD_BACK"), 0.25);
-});
-
-/* The entrance hands the line to the timed draw as its head passes the start, so no timer may restate when
-   that happens (DESIGN.md -> Motion -> The thread's entrance). */
-test("the entrance replaces the fade's timer", () => {
-  assert.doesNotMatch(source, /OPENING_DRAW_DELAY/);
-  assert.match(
-    source,
-    /import \{[^}]*\bentranceScene\b[^}]*\} from "\.\/thread-entrance"/,
-  );
-  assert.match(
-    source,
-    /import \{[^}]*\bentranceStartAt\b[^}]*\} from "\.\/thread-entrance"/,
-  );
-  assert.match(source, /window\.scrollY\s*>\s*0/);
 });
 
 /* A page that loads already scrolled is not an arrival, so no step runs. The guard subtracts each
@@ -127,8 +112,8 @@ function animatedSelectors(css: string): string[] {
   return selectors;
 }
 
-/* SEVEN steps live in this file under Bloom: the flowers and six rows of type. The thread's own appearance
-   step lives in `thread.module.css`, asserted separately below. */
+/* SEVEN steps live in this file under Bloom: the flowers and six rows of type. The thread's own fade
+   lives in `thread.module.css`, asserted separately below. */
 test("no step of the invite's sequence animates without the gate", () => {
   const selectors = animatedSelectors(inviteCss);
   assert.equal(
@@ -144,14 +129,14 @@ test("no step of the invite's sequence animates without the gate", () => {
   }
 });
 
-test("the page thread's appearance carries the gate too", () => {
+test("the page thread's own fade carries the gate too", () => {
   const rule = moduleCss.match(
-    /([^}]*)\{[^}]*animation:\s*pageThreadAppear[^}]*}/,
+    /([^}]*)\{[^}]*animation:\s*pageThreadFadeIn[^}]*}/,
   );
-  assert.ok(rule, "the .pageRoot appearance rule was not found");
+  assert.ok(rule, "the .pageRoot fade rule was not found");
   assert.ok(
     rule[1].includes(GATE),
-    ".pageRoot covers all of <main>, so an ungated step hides the thread in every section",
+    ".pageRoot covers all of <main>, so an ungated fade blanks the thread in every section",
   );
 });
 

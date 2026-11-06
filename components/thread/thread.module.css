@@ -40,19 +40,14 @@
 }
 
 /* THE OPENING SEQUENCE's last step (DESIGN.md → Motion → "The opening sequence"; `app/_sections/invite.css`
-   carries the steps ahead of it). The thread appears once those have each completed in turn — the
+   carries the steps ahead of it). The thread fades in once those have each completed in turn — the
    ground carries no step at all, it is present from the first frame — so the two files describe one
    discrete-beat sequence without sharing a keyframe across a module boundary.
 
-   It appears at `--opening-type-end` (`app/_sections/invite.css`, 1800ms under Bloom) — the moment the type
-   lands, the owner's rule, to leave no dead air between the names appearing and the line starting. With
-   script, the entrance (`thread-entrance.ts`) starts there too and hands the line to the timed draw as its
-   bundle reaches the start (DESIGN.md → Motion → The thread's entrance). It reads the custom property
-   rather than restating its value, so a new sequence moves it with the type.
-
-   A `visibility` step, never `opacity`: fading `.pageRoot`, which covers all of `<main>`, composited it as
-   one page-sized layer — a whole-page repaint, and on the spike the line vanished for ~280ms. A step costs
-   nothing and leaves the settled screen exactly as it was.
+   It starts at `--opening-type-end` (`app/_sections/invite.css`, 1800ms under Bloom) — the moment the type
+   lands, the owner's rule, to leave no dead air between the names appearing and the line starting —
+   and runs one base, ending at 2200ms, which is `OPENING_DRAW_DELAY` in `page-thread.tsx`. It reads
+   the custom property rather than restating its value, so a new sequence moves it with the type.
    This rule governs BOTH the no-JS fallback svg and the live one (both
    carry `.pageRoot`): the fallback paints the thread in its authored position and this is the only
    thing that ever animates it, so "without JS the same sequence runs from CSS alone" (this file's
@@ -60,28 +55,26 @@
    `CardThread`'s `.cardRoot` root, which is Wishes' own in-card stretch, not the page-opening thread.
 
    Reduced motion drops this whole rule (the media query it lives in) rather than overriding it, so
-   there is no specificity contest to lose — `visibility`'s un-animated initial value is already
-   `visible`, which is the same "present and complete on the first frame" state `page-thread.tsx`'s own
+   there is no specificity contest to lose — `opacity`'s un-animated initial value is already `1`,
+   which is the same "present and complete on the first frame" state `page-thread.tsx`'s own
    `reducedMotion()` branch draws by clearing the dash. */
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes pageThreadAppear {
+  @keyframes pageThreadFadeIn {
     from {
-      visibility: hidden;
+      opacity: 0;
     }
     to {
-      visibility: visible;
+      opacity: 1;
     }
   }
 
   /* Gated with the sequence's other three steps: `.pageRoot` covers the whole of `<main>`, so this
-     one step hides the thread in EVERY section until it lands, which is what a reader reloading
+     one fade blanks the thread in EVERY section until it lands, which is what a reader reloading
      part-way down the page actually complained about. `app/layout.tsx`'s own header carries why the
      attribute is set at `DOMContentLoaded` by an inline script, and what the threshold means. */
   :root:not([data-opening-skipped]) .pageRoot {
-    /* `step-start`, never `step-end`: the finished animation's progress lands a float short of 1
-       (0.99999999999989 in Chromium), which `step-end` holds at `hidden` for good. `step-start` turns
-       `visible` at any progress past 0, and the spec's before flag keeps it hidden through the delay. */
-    animation: pageThreadAppear 1ms step-start var(--opening-type-end) both;
+    animation: pageThreadFadeIn var(--duration-base) var(--ease-entrance)
+      var(--opening-type-end) both;
   }
 }
 

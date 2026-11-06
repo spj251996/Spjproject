@@ -53,16 +53,6 @@ export const CROSSING_LIFT: ThreadFilter = {
   ],
 };
 
-/* The entrance's loose fibres, lighter than the cord's contact shadow (DESIGN.md -> Thread -> The contact shadow).
-   Not in `THREAD_FILTERS`: the entrance painter builds its own copy with a window-sized region, because a
-   bounding-box region clips a near-flat fibre's shadow (`thread-entrance-painter.ts`). */
-export const FIBRE_SHADOW: ThreadFilter = {
-  id: "thread-fibre-shadow",
-  layers: [
-    { offsetY: 0.8, blur: 0.8, colour: "--color-shadow-warm", alpha: 0.5 },
-  ],
-};
-
 export const THREAD_FILTERS: readonly ThreadFilter[] = [
   CONTACT_SHADOW,
   HEAD_HALO,

@@ -114,11 +114,8 @@ test("the drawing head is lit while drawing and gone once the whole thread is dr
       await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
         waitUntil: "load",
       });
-      /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-      await page.waitForSelector("[data-thread-opened]", {
-        state: "attached",
-        timeout: 15000,
-      });
+      /* The opening sequence hands off at 2200ms and its own draw runs 1200ms beyond that. */
+      await page.waitForTimeout(3600);
 
       const maxScroll = (await page.evaluate(
         "document.documentElement.scrollHeight - window.innerHeight",

@@ -396,8 +396,6 @@ function createSway(svg: SVGSVGElement, sway: Sway) {
   }
 
   function track(path: SVGPathElement): Tracked | undefined {
-    /* The entrance draws in this svg with its own wiggle, signed off without the sway; it is never displaced. */
-    if (path.closest("[data-thread-entrance]") !== null) return undefined;
     const current = path.getAttribute("d") ?? "";
     let entry = tracked.get(path);
     if (entry === undefined || current !== entry.written) {

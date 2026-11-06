@@ -182,11 +182,8 @@ test("a height-only resize that reflows the page does not un-draw the thread (sl
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-    await page.waitForSelector("[data-thread-opened]", {
-      state: "attached",
-      timeout: 15000,
-    });
+    /* The opening sequence ends at `OPENING_DRAW_DELAY` and its own draw runs beyond it. */
+    await page.waitForTimeout(3600);
 
     /* Fractions of the page, never pixel values. Descend in steps so the head is observed WHILE
        drawing — without that, an unchanged reading would prove nothing if the thread never drew at
@@ -275,11 +272,7 @@ test("a height-only resize that reflows the page does not erase what the opening
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-    await page.waitForSelector("[data-thread-opened]", {
-      state: "attached",
-      timeout: 15000,
-    });
+    await page.waitForTimeout(3600); // the opening sequence plus its draw
 
     const before = (await page.evaluate(READ)) as Reading;
     assert.ok(
@@ -334,11 +327,7 @@ test("a resize that reflows the page re-measures rather than taking the cheap pa
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-    await page.waitForSelector("[data-thread-opened]", {
-      state: "attached",
-      timeout: 15000,
-    });
+    await page.waitForTimeout(3600);
 
     const before = (await page.evaluate(BOXES)) as {
       mainHeight: number;
@@ -424,11 +413,7 @@ test("a resize event with an unchanged layout takes the cheap path and keeps the
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-    await page.waitForSelector("[data-thread-opened]", {
-      state: "attached",
-      timeout: 15000,
-    });
+    await page.waitForTimeout(3600);
     for (const at of [0.2, 0.4, 0.5]) {
       await page.evaluate(
         `window.scrollTo(0, (document.documentElement.scrollHeight - window.innerHeight) * ${at})`,
@@ -508,11 +493,7 @@ test("the second layout event of one viewport change does not paint against the 
     await page.addStyleTag({
       content: "html, body { overflow-anchor: none; }",
     });
-    /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-    await page.waitForSelector("[data-thread-opened]", {
-      state: "attached",
-      timeout: 15000,
-    });
+    await page.waitForTimeout(3600);
     for (const at of [0.2, 0.4, 0.6, 0.8, 0.9]) {
       await page.evaluate(
         `window.scrollTo(0, (document.documentElement.scrollHeight - window.innerHeight) * ${at})`,
@@ -598,11 +579,7 @@ test("with the sway on, a height-only resize that reflows the page does not un-d
     await page.goto(`http://localhost:${port}${LAB_ROUTE}`, {
       waitUntil: "load",
     });
-    /* The opening (the thread's entrance, then its timed draw) is timed on its own rAF, so a fixed wait races it. */
-    await page.waitForSelector("[data-thread-opened]", {
-      state: "attached",
-      timeout: 15000,
-    });
+    await page.waitForTimeout(3600);
     const scrollTo = (at: number) =>
       page.evaluate(
         `window.scrollTo(0, (document.documentElement.scrollHeight - window.innerHeight) * ${at})`,

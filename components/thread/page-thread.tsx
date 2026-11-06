@@ -5,12 +5,6 @@ import styles from "./thread.module.css";
 import { THREAD_BANDS } from "./thread-bands";
 import { createCatchUp } from "./thread-catch-up";
 import { lineCrossings } from "./thread-crossings";
-import { entranceScene, entranceStartAt } from "./thread-entrance";
-import {
-  createEntrancePainter,
-  entranceInput,
-  typeLandedAt,
-} from "./thread-entrance-painter";
 import { PAGE_FALLBACKS } from "./thread-fallback";
 import { ThreadFilters } from "./thread-filters";
 import { cordDrawn, type FrayShape, frayShape } from "./thread-fray";
@@ -66,7 +60,6 @@ import {
 } from "./thread-sway";
 import {
   headOptions,
-  parseCssTime,
   readTerminalWindow,
   tokenLength,
   tokenTime,
@@ -137,11 +130,15 @@ const FALLBACK_STYLE = [
   ),
 ].join("\n");
 
-/* The opening sequence's last beat (`DESIGN.md` -> Motion -> The thread's entrance): as the type lands at
-   `--opening-type-end`, the thread is spun from fibres while it travels into place (`thread-entrance.ts`), and the
-   invite's own pieces draw on a timer released as the bundle's head passes their start, at the bundle's speed. The
-   owner's pick on the spike: 1.7 times the old 1200ms, so the bundle arrives slowly enough to be seen. */
-const OPENING_DRAW_DURATION = 2040;
+/* The opening sequence hands off at 2200ms -- ground present, the invite's flowers unfurling, the
+   type rising line by line until it lands at `--opening-type-end` (1800ms under Bloom, owner
+   2026-10-14), then the thread's own fade for one `--duration-base` (`DESIGN.md` -> Motion -> The
+   opening sequence). The draw begins as that fade completes, so this is the sequence's own end, not a
+   value of its own: `opening-draw.test.ts` derives it from `app/_sections/invite.css` and fails if the two
+   part. The duration is the invite's three pieces at one `--duration-base` (400ms) each -- a token
+   multiple rather than a coined number, since a fresh design value is the owner's to set. */
+const OPENING_DRAW_DELAY = 2200;
+const OPENING_DRAW_DURATION = 1200;
 
 /* The fraction of a group's last connector left undrawn as the reader arrives -- the owner's
    75%/25% crossing rule, so the line visibly travels into the next card as they scroll on. */
@@ -221,12 +218,6 @@ export function PageThread() {
      line where it was, never unravel it. `CardThread` owns its own; the two maxima are in
      different path lengths and would mean nothing to each other. */
   const ratchetRef = useRef(createDrawRatchet());
-  /* The entrance while it runs. Until it lands its own cord carries the thread's far end, so the thread's
-     frayed end stays hidden; `end` cuts it short, repainting unless the caller is about to. */
-  const entranceRef = useRef<{ end(repaint: boolean): void } | null>(null);
-  /* How far the cord has drawn along the invite's piece, at the last paint: the entrance's cord leaves that
-     much of its own run uncovered, so nothing is drawn twice. */
-  const inviteInkRef = useRef(0);
   const swayRef = useRef<ThreadSway | null>(null);
   const twistRef = useRef<ReturnType<typeof createTwistPainter> | null>(null);
 
@@ -344,12 +335,7 @@ export function PageThread() {
       if (tipGroupRef.current !== null)
         shadows()?.tipPainted(tipGroupRef.current);
       const first = piecesRef.current[0];
-      if (first !== undefined) {
-        inviteInkRef.current = paintedLength(cord, first);
-        endFray()?.paint(
-          entranceRef.current !== null ? 0 : inviteInkRef.current,
-        );
-      }
+      if (first !== undefined) endFray()?.paint(paintedLength(cord, first));
       crossingPainter()?.painted((piece) => paintedLength(cord, chain[piece]));
     },
     [head, shadows, tip, endFray, crossingPainter],
@@ -504,8 +490,6 @@ export function PageThread() {
     terminalWindowRef.current = readTerminalWindow(viewportHeightRef.current);
     catchUpSecondsRef.current = (tokenTime("--thread-catchup") ?? 0) / 1000;
     fallbackSvg.style.display = "none";
-    /* The entrance was laid out on the old geometry; this re-measure paints the line below. */
-    entranceRef.current?.end(false);
 
     if (reducedMotion()) {
       stopOpeningRef.current();
@@ -570,164 +554,88 @@ export function PageThread() {
 
   useLayoutTriggers(measureLayout, refreshWindow);
 
-  /* The owner's opening sequence ends with the thread arriving and drawing (`DESIGN.md` -> Motion -> The thread's
-     entrance). The invite's own pieces draw on a timer, released by the entrance as its bundle's head passes their
-     start, and scroll takes over by `Math.max` -- never by replacing the timed value, or scrolling back to the top
-     would erase what the opening just drew. Skipped when the page loads already scrolled: the sequence is an
-     ENTRANCE, and re-running it under a reader who is midway down the page hides the thread they are actually
-     looking at.
+  /* The owner's opening sequence ends with "thread starts drawing" (`DESIGN.md` -> Motion). Without
+     this the last beat is a no-op: the thread's fade ramps opacity over a stroke with nothing drawn,
+     so a reader who never scrolls never sees a thread at all. The invite's own pieces therefore draw
+     on a timer once that fade completes, and scroll takes over by `Math.max` -- never by replacing
+     the timed value, or scrolling back to the top would erase what the opening just drew.
+     Skipped when the page loads already scrolled: the sequence is an ENTRANCE, and re-running it
+     under a reader who is midway down the page hides the thread they are actually looking at.
 
-     "Scroll takes over by `Math.max`" is the ratchet's job rather than a second floor kept here: the timed draw
-     advances the same ratchet every scroll frame advances, so the higher of the two wins by construction and there
-     is one mechanism holding the line instead of two. */
+     "Scroll takes over by `Math.max`" is now the ratchet's job rather than a second floor kept
+     here: the timed draw advances the same ratchet every scroll frame advances, so the higher of
+     the two wins by construction and there is one mechanism holding the line instead of two. */
   const openingCompleteRef = useRef(false);
   const stopOpeningRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    let released = false;
-    let drawing = false;
-    let drawFrame: number | null = null;
-    let entranceFrame: number | null = null;
-    let cancelled = false;
-    /* While `run` waits for the type, a change of motion preference leaves the entrance to it. */
-    let waiting = false;
+    let running = false;
+    let stopCurrent = () => {};
 
-    const startDraw = () => {
-      if (released) return;
-      released = true;
-      if (reducedMotion()) return;
-      /* The invite stops its own last connector at 75%, exactly as every other group does, so the line is
-         already reaching toward Event Info when the reader starts scrolling. Drawing it to 100% here made the
-         thread look stuck for the whole first screen of scroll -- there was nothing left in the invite to draw
-         and the next group had not opened yet. */
-      const target = openingFloor(rangesRef.current, true);
-      if (target <= 0) return;
-      drawing = true;
+    const start = (delay: number) => {
+      let rafId: number | null = null;
       let startedAt = 0;
-      const step = (now: number) => {
-        drawFrame = null;
-        if (reducedMotion()) {
-          drawing = false;
-          return;
-        }
-        if (startedAt === 0) startedAt = now;
-        const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
-        commit(target * t);
-        if (t < 1) drawFrame = window.requestAnimationFrame(step);
-        else {
-          drawing = false;
-          openingCompleteRef.current = true;
-          /* A signal for harnesses, not for styling: the opening draw is timed on its own rAF, and a gate that
-             parks a section before it lands measures the race, not the thread (`check-thread-joins.mjs`).
-             Never set under reduced motion, where no opening runs. */
-          liveSvgRef.current?.setAttribute("data-thread-opened", "true");
-        }
+      running = true;
+      const finish = () => {
+        running = false;
       };
-      drawFrame = window.requestAnimationFrame(step);
-    };
 
-    /* The entrance, then the draw it releases. Without an entrance to run -- no invite piece measured yet, no
-       screen matrix -- the draw starts at once. */
-    const run = async () => {
-      const svg = liveSvgRef.current;
-      waiting = true;
-      const landed = await typeLandedAt(
-        document.getElementById("invite"),
-        parseCssTime(
-          svg === null ? "" : getComputedStyle(svg).animationDelay,
-        ) ?? 0,
-      );
-      waiting = false;
-      if (cancelled || released) return;
-      if (reducedMotion() || window.scrollY > 0) return startDraw();
-      const input =
-        svg === null
-          ? undefined
-          : entranceInput(
-              svg,
-              pathOf(0),
-              document.querySelector("#invite .type-eyebrow"),
-              tokenLength("--stroke-thread"),
-              frayRef.current.length,
-              openingFloor(rangesRef.current, true) / OPENING_DRAW_DURATION,
-              Math.floor(Math.random() * 2 ** 31),
-            );
-      if (svg === null || input === undefined) return startDraw();
-      const scene = entranceScene(input);
-      const painter = createEntrancePainter(svg, input.view, frayRef.current);
-      const end = (repaint: boolean) => {
-        if (entranceRef.current !== entrance) return;
-        entranceRef.current = null;
-        if (entranceFrame !== null) window.cancelAnimationFrame(entranceFrame);
-        entranceFrame = null;
-        painter.clear();
-        startDraw();
-        /* The thread's own frayed end comes back with the ratchet's peak, which the entrance never moved. */
-        if (repaint && !reducedMotion()) draw(ratchetRef.current.advance(0));
+      const timer = window.setTimeout(() => {
+        if (reducedMotion()) return finish();
+        /* The invite stops its own last connector at 75%, exactly as every other group does, so the
+         line is already reaching toward Event Info when the reader starts scrolling. Drawing it to
+         100% here made the thread look stuck for the whole first screen of scroll -- there was
+         nothing left in the invite to draw and the next group had not opened yet. */
+        const target = openingFloor(rangesRef.current, true);
+        if (target <= 0) return finish();
+        const step = (now: number) => {
+          if (reducedMotion()) return finish();
+          if (startedAt === 0) startedAt = now;
+          const t = Math.min(1, (now - startedAt) / OPENING_DRAW_DURATION);
+          commit(target * t);
+          if (t < 1) rafId = window.requestAnimationFrame(step);
+          else {
+            finish();
+            openingCompleteRef.current = true;
+            /* A signal for harnesses, not for styling: the opening draw is timed on its own rAF, and a
+               gate that parks a section before it lands measures the race, not the thread
+               (`check-thread-joins.mjs`). Never set under reduced motion, where no opening runs. */
+            liveSvgRef.current?.setAttribute("data-thread-opened", "true");
+          }
+        };
+        rafId = window.requestAnimationFrame(step);
+      }, delay);
+
+      stopCurrent = () => {
+        window.clearTimeout(timer);
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
+        finish();
       };
-      const entrance = { end };
-      entranceRef.current = entrance;
-      draw(ratchetRef.current.advance(0));
-      /* Every time here is the frame's own timestamp: a start stamped with `performance.now()` and frames timed
-         by the rAF clock part on a busy page. */
-      let startAt: number | undefined;
-      const step = (now: number) => {
-        entranceFrame = null;
-        startAt ??= entranceStartAt(landed, now);
-        /* Until the type lands there is nothing to draw, so nothing is written. */
-        if (now < startAt) {
-          entranceFrame = window.requestAnimationFrame(step);
-          return;
-        }
-        const elapsed = now - startAt;
-        if (elapsed >= scene.release) startDraw();
-        if (elapsed >= scene.land) return end(true);
-        painter.paint(
-          scene.frame(
-            elapsed,
-            released ? inviteInkRef.current : Number.NEGATIVE_INFINITY,
-          ),
-        );
-        entranceFrame = window.requestAnimationFrame(step);
-      };
-      entranceFrame = window.requestAnimationFrame(step);
     };
+    stopOpeningRef.current = () => stopCurrent();
 
-    const stop = () => {
-      entranceRef.current?.end(false);
-      if (drawFrame !== null) window.cancelAnimationFrame(drawFrame);
-      drawFrame = null;
-      drawing = false;
-    };
-    stopOpeningRef.current = stop;
-
-    /* Reduced motion cuts the opening short, or keeps it from starting at all; when motion comes back while the
-       reader is still at the top, the draw runs then, at once -- the entrance is an arrival, and that moment has
-       passed -- rather than leaving the invite's stretch undrawn until the first scroll. */
+    /* Reduced motion cuts the opening short, or keeps it from starting at all; when motion comes back
+       while the reader is still at the top, the opening runs then, at once, rather than leaving the
+       invite's stretch undrawn until the first scroll. */
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const onMotionChange = () => {
-      if (motion.matches) return stop();
-      if (waiting || drawing || openingCompleteRef.current) return;
+      if (motion.matches || running || openingCompleteRef.current) return;
       if (window.scrollY > 0) return;
-      released = false;
-      startDraw();
+      start(0);
     };
     motion.addEventListener("change", onMotionChange);
-    if (!reducedMotion() && window.scrollY === 0) void run();
+    if (!reducedMotion() && window.scrollY === 0) start(OPENING_DRAW_DELAY);
     return () => {
-      cancelled = true;
       motion.removeEventListener("change", onMotionChange);
-      stop();
+      stopCurrent();
     };
-  }, [commit, draw, pathOf]);
+  }, [commit]);
 
   useEffect(() => {
     let rafId: number | null = null;
 
     function onScroll() {
       restSway(SCROLL_REST_MS);
-      /* A reader who scrolls has arrived: the entrance gives way to the line it was bringing. */
-      if (window.scrollY > 0) entranceRef.current?.end(true);
       if (rafId !== null || reducedMotion()) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
@@ -753,11 +661,8 @@ export function PageThread() {
      coming back is not an interaction. */
   useEffect(() => {
     function onVisibility() {
-      if (document.visibilityState === "hidden") {
-        /* Coming back to a half-spun thread would replay nothing the reader saw arrive. */
-        entranceRef.current?.end(true);
-        syncSway();
-      } else restSway(RETURN_REST_MS);
+      if (document.visibilityState === "hidden") syncSway();
+      else restSway(RETURN_REST_MS);
     }
     document.addEventListener("visibilitychange", onVisibility);
     /* A remount mid-rest (a fast refresh, a navigation back) inherits the page-wide sleeping sway: the cleanup drops
