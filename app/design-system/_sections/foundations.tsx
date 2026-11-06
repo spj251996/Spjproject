@@ -195,8 +195,8 @@ const IMAGERY_POINTERS = [
 
 const DURATION_USES = [
   "fast · the action press and hover, the opening sequence beat, gallery-modal's layer change and tile hover, photo-viewer's slide",
-  "base · gallery-modal's open and close, photo-viewer's swipe nudge, the lab thread's fade-in",
-  "--opening-type-end · 9 × fast (1800ms) · when the Bloom opening's last row of type has landed — the scroll progress bar's track arrives here and the lab thread fades in from here; a new sequence changes this one value",
+  "base · gallery-modal's open and close, photo-viewer's swipe nudge",
+  "--opening-type-end · 9 × fast (1800ms) · when the Bloom opening's last row of type has landed — the scroll progress bar's track arrives here and the lab thread's entrance starts here; a new sequence changes this one value",
 ];
 
 const EASING_USES = [
