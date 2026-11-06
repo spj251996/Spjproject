@@ -102,5 +102,12 @@
     "dx": 0,
     "dy": -2,
     "reach": 40
+  },
+  {
+    "section": "event-info",
+    "motif": "knot",
+    "dx": 30,
+    "dy": 0,
+    "ease": 240
   }
 ]
